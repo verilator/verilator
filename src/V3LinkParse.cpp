@@ -57,6 +57,7 @@ class LinkParseVisitor final : public VNVisitor {
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
     AstRSProd* m_rsProdp = nullptr;  // Current randsequence production
+    AstNodeSchema* m_schemap = nullptr;  // Current let, sequence or property
     AstNodeBlock* m_blockp = nullptr;  // Current AstNodeBlock
     AstNodeStmt* m_blockAddAutomaticStmtp = nullptr;  // Initial statements to add to block
     AstNodeStmt* m_blockAddStaticStmtp = nullptr;  // Initial statements to add to block
@@ -267,8 +268,8 @@ class LinkParseVisitor final : public VNVisitor {
             if (nodep->classMethod()) {
                 // Class methods are automatic by default
                 m_lifetime = VLifetime::AUTOMATIC_IMPLICIT;
-            } else if (nodep->dpiImport() || VN_IS(nodep, Property)) {
-                // DPI-imported functions and properties don't have lifetime specifiers
+            } else if (nodep->dpiImport()) {
+                // DPI-imported functions don't have lifetime specifiers
                 m_lifetime = VLifetime::NONE;
             }
             nodep->lifetime(m_lifetime);
@@ -287,6 +288,12 @@ class LinkParseVisitor final : public VNVisitor {
 
         // Variable initializations precede the statements
         nodep->prependStmtsp(getBlockAdds());
+    }
+    void visit(AstNodeSchema* nodep) override {
+        cleanFileline(nodep);
+        VL_RESTORER(m_schemap);
+        m_schemap = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
     void visit(AstConstraint* nodep) override {
@@ -526,9 +533,10 @@ class LinkParseVisitor final : public VNVisitor {
                 UINFO(9, "VarInit case0 " << nodep);
             } else if (nodep->isParam() || nodep->isGenVar()
                        || (m_ftaskp && (nodep->isNonOutput() || nodep->isFuncReturn()))
-                       || (m_rsProdp && nodep->isNonOutput())) {
-                // 1. Parameters, function inputs, and randsequence production formal
-                // ports (IEEE 1800-2023 18.17.7): default to use if not overridden
+                       || (m_rsProdp && nodep->isNonOutput()) || m_schemap) {
+                // 1. Parameters, function inputs, randsequence production formal
+                // ports (IEEE 1800-2023 18.17.7): default to use if not overridden.
+                // Variables of a let, sequence or property keep it too.
                 UINFO(9, "VarInit case1 " << nodep);
             } else if (!m_ftaskp && !VN_IS(m_modp, Class) && nodep->isNonOutput()
                        && !nodep->isInput()) {

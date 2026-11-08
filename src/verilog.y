@@ -5607,10 +5607,10 @@ letId<letp>:  // IEEE: pert of let_declaration
 let_declaration<letp>:  // IEEE: let_declaration
                 yLET letId '=' expr ';'
                         { $$ = $2;
-                          $$->addStmtsp(new AstStmtExpr{$1, $4}); }
+                          $$->exprp($4); }
         |       yLET letId '(' let_port_listE ')' '=' expr ';'
                         { $$ = $2;
-                          $$->addStmtsp(new AstStmtExpr{$1, $7});
+                          $$->exprp($7);
                           $$->addDeclsp($4); }
         ;
 
@@ -5632,7 +5632,6 @@ let_port_item<varp>:  // IEEE: let_port_Item
                         { $$ = new AstVar{$<fl>2, VVarType::VAR, *$2, VFlagChildDType{},
                                           new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
                           $$->direction(VDirection::INOUT);
-                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           if ($4) $$->valuep($4);
                           PINNUMINC(); }
         |       data_type idAny/*formal_port_identifier*/ variable_dimensionListE exprEqE
@@ -5640,7 +5639,6 @@ let_port_item<varp>:  // IEEE: let_port_Item
                           $$ = new AstVar{$<fl>2, VVarType::VAR, *$2, VFlagChildDType{},
                                           new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
                           $$->direction(VDirection::INOUT);
-                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           if ($4) $$->valuep($4);
                           PINNUMINC(); }
         |       implicit_typeE id/*formal_port_identifier*/ variable_dimensionListE exprEqE
@@ -5648,7 +5646,6 @@ let_port_item<varp>:  // IEEE: let_port_Item
                           $$ = new AstVar{$<fl>2, VVarType::VAR, *$2, VFlagChildDType{},
                                           new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
                           $$->direction(VDirection::INOUT);
-                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           if ($4) $$->valuep($4);
                           PINNUMINC(); }
         ;
@@ -6582,12 +6579,12 @@ concurrent_assertion_statement<nodeStmtp>:  // ==IEEE: concurrent_assertion_stat
                         { $$ = new AstRestrict{$1, $4}; }
         ;
 
-property_declaration<nodeFTaskp>:  // ==IEEE: property_declaration
+property_declaration<propertyp>:  // ==IEEE: property_declaration
                 property_declarationFront property_port_listE ';' property_declarationBody
                         yENDPROPERTY endLabelE
                         { $$ = $1;
                           $$->addDeclsp($2);
-                          $$->addStmtsp($4);
+                          $$->specp($4);
                           GRAMMARP->endLabel($<fl>6, $$, $6);
                           GRAMMARP->m_insideProperty = false;
                           GRAMMARP->m_typedPropertyPort = false; }
@@ -6596,15 +6593,15 @@ property_declaration<nodeFTaskp>:  // ==IEEE: property_declaration
                         { $$ = $1;
                           $$->addDeclsp($2);
                           $$->addDeclsp($4);
-                          $$->addStmtsp($5);
+                          $$->specp($5);
                           GRAMMARP->endLabel($<fl>7, $$, $7);
                           GRAMMARP->m_insideProperty = false;
                           GRAMMARP->m_typedPropertyPort = false; }
         ;
 
-property_declarationFront<nodeFTaskp>:  // IEEE: part of property_declaration
+property_declarationFront<propertyp>:  // IEEE: part of property_declaration
                 yPROPERTY idAny/*property_identifier*/
-                        { $$ = new AstProperty{$<fl>2, *$2, nullptr};
+                        { $$ = new AstProperty{$<fl>2, *$2};
                           GRAMMARP->m_insideProperty = true; }
         ;
 
@@ -6664,7 +6661,7 @@ property_port_itemDirE:
                           BBUNSUP($1, "Unsupported: property port 'local'"); }
         ;
 
-property_declarationBody<nodep>:  // IEEE: part of property_declaration
+property_declarationBody<propSpecp>:  // IEEE: part of property_declaration
         //                      // IEEE-2012: Incorrectly has yCOVER ySEQUENCE then property_spec here.
         //                      // Fixed in IEEE 1800-2017
                 property_spec                           { $$ = $1; }
@@ -6677,12 +6674,12 @@ assertion_variable_declarationList<nodep>:  // IEEE: part of assertion_variable_
                         { $$ = addNextNull($1, $2); }
         ;
 
-sequence_declaration<nodeFTaskp>:  // ==IEEE: sequence_declaration
+sequence_declaration<sequencep>:  // ==IEEE: sequence_declaration
                 sequence_declarationFront sequence_port_listE ';' sequence_declarationBody
         /*cont*/    yENDSEQUENCE endLabelE
                         { $$ = $1;
                           $$->addDeclsp($2);
-                          $$->addStmtsp($4);
+                          $$->exprp($4);
                           GRAMMARP->endLabel($<fl>6, $$, $6);
                           // Sequence declarations are allowed; they are inlined by V3AssertPre.
                           // Sequences in unsupported contexts are reported by assertPreAll
@@ -6693,13 +6690,13 @@ sequence_declaration<nodeFTaskp>:  // ==IEEE: sequence_declaration
                         { $$ = $1;
                           $$->addDeclsp($2);
                           $$->addDeclsp($4);
-                          $$->addStmtsp($5);
+                          $$->exprp($5);
                           GRAMMARP->endLabel($<fl>7, $$, $7); }
         ;
 
-sequence_declarationFront<nodeFTaskp>:  // IEEE: part of sequence_declaration
+sequence_declarationFront<sequencep>:  // IEEE: part of sequence_declaration
                 ySEQUENCE idAny/*new_sequence*/
-                        { $$ = new AstSequence{$<fl>2, *$2, nullptr}; }
+                        { $$ = new AstSequence{$<fl>2, *$2}; }
         ;
 
 sequence_port_listE<nodep>:  // IEEE: [ ( [ sequence_port_list ] ) ]
@@ -6731,7 +6728,7 @@ sequence_formal_typeNoDt<nodeDTypep>:  // ==IEEE: sequence_formal_type (w/o data
                         { $$ = nullptr; GRAMMARP->m_typedPropertyPort = false; }
         ;
 
-sequence_declarationBody<nodep>:  // IEEE: part of sequence_declaration
+sequence_declarationBody<nodeExprp>:  // IEEE: part of sequence_declaration
                 sequence_declarationBodyExpr            { $$ = $1; }
         //                      // IEEE: clocking_event sequence_expr (16.7)
         //                      // A leading clocking event on a named sequence body.

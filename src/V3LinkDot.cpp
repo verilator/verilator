@@ -1821,6 +1821,16 @@ class LinkDotFindVisitor final : public VNVisitor {
         m_ftaskp = nodep;
         iterateChildren(nodep);
     }
+    void visit(AstNodeSchema* nodep) override {  // FindVisitor::
+        VL_RESTORER(m_curSymp);
+        m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
+        // Mark formal ports as port-checked so the primary resolve pass does not
+        // flag them with "does not appear in port list"
+        for (AstNode* const declp : nodep->declspList()) {
+            if (AstVar* const varp = VN_CAST(declp, Var)) varp->user4(true);
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstClocking* nodep) override {  // FindVisitor::
         VL_RESTORER(m_clockingp);
         m_clockingp = nodep;
@@ -4774,7 +4784,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 ok = true;
                 m_ds.m_dotSymp = foundp;
                 m_ds.m_dotPos = DP_SCOPE;
-            } else if (allowFTask && VN_IS(foundp->nodep(), NodeFTask)) {
+            } else if (allowFTask
+                       && (VN_IS(foundp->nodep(), NodeFTask)
+                           || VN_IS(foundp->nodep(), NodeSchema))) {
                 AstNodeFTaskRef* taskrefp;
                 if (VN_IS(foundp->nodep(), Task)) {
                     taskrefp = new AstTaskRef{nodep->fileline(), nodep->name()};
@@ -5023,8 +5035,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (!ftaskp->isFunction() || ftaskp->classMethod()) {
                     ok = m_ds.m_dotPos == DP_NONE;
                     if (ok) {
-                        // The condition is true for tasks,
-                        // properties and void functions.
+                        // The condition is true for tasks
+                        // and void functions.
                         // In these cases, the parentheses may be skipped.
                         // Also SV class methods can be called without parens
                         AstFuncRef* const funcRefp
@@ -5032,6 +5044,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         nodep->replaceWith(funcRefp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     }
+                }
+            } else if (AstNodeSchema* const schemap = VN_CAST(foundp->nodep(), NodeSchema)) {
+                ok = m_ds.m_dotPos == DP_NONE;
+                if (ok) {
+                    // Reference without parentheses
+                    nodep->replaceWith(new AstSchemaRef{nodep->fileline(), schemap,
+                                                        foundp->classOrPackagep(), nullptr});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
             } else if (AstTypedef* const defp = VN_CAST(foundp->nodep(), Typedef)) {
                 const bool ifaceFinalSegmentAllowed
@@ -5724,6 +5744,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->taskp(taskp);
                 nodep->classOrPackagep(foundp->classOrPackagep());
                 UINFO(7, indent() << "Resolved " << nodep);  // Also prints taskp
+            } else if (AstNodeSchema* const schemap
+                       = foundp ? VN_CAST(foundp->nodep(), NodeSchema) : nullptr) {
+                // V3Param might specialize the module a hierarchical reference is into, so link
+                // a sequence or property after it. A let is substituted before V3Param.
+                if (m_statep->forPrimary() && !nodep->dotted().empty() && !VN_IS(schemap, Let)) {
+                    return;
+                }
+                AstArg* const argsp = nodep->argsp();
+                if (argsp) argsp->unlinkFrBackWithNext();
+                nodep->replaceWith(new AstSchemaRef{nodep->fileline(), schemap,
+                                                    foundp->classOrPackagep(), argsp});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {
                 // Note ParseRef has similar error handling/message output
                 UINFO(7, indent() << "   ErrFtask curSymp=se" << cvtToHex(m_curSymp)
@@ -6010,6 +6042,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
+    }
+    void visit(AstNodeSchema* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep);
+        checkNoDot(nodep);
+        symIterateChildren(nodep, m_statep->getNodeSym(nodep));
+    }
+    void visit(AstSchemaRef* nodep) override {
+        // Resolved when created, perhaps as the RHS of a dot, but the arguments are relinked on
+        // each pass, as V3Param might have changed what they refer to
+        LINKDOT_VISIT_START();
+        symIterateChildren(nodep, m_curSymp);
     }
     void visit(AstNodeForeach* nodep) override {
         LINKDOT_VISIT_START();

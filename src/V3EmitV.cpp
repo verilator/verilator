@@ -212,6 +212,14 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateAndNextConstNull(nodep->stmtsp());
         putqs(nodep, "end" + nodep->verilogKwd() + "\n");
     }
+    void visit(AstNodeSchema* nodep) override {
+        putfs(nodep, nodep->verilogKwd());
+        puts(" ");
+        puts(nodep->prettyName());
+        puts(";\n");
+        iterateChildrenConst(nodep);
+        putqs(nodep, "end" + nodep->verilogKwd() + "\n");
+    }
 
     void visit(AstGenBlock* nodep) override {
         const std::string name = nodep->name().empty() ? "" : " : " + nodep->name();
@@ -1417,11 +1425,17 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         } else {
             putfs(nodep, nodep->prettyName());
         }
-        if (!VN_IS(nodep->taskp(), Property)) {
+        puts("(");
+        iterateAndNextConstNull(nodep->argsp());
+        puts(")");
+        iterateConstNull(nodep->withp());
+    }
+    void visit(AstSchemaRef* nodep) override {
+        putfs(nodep, nodep->prettyName());
+        if (!VN_IS(nodep->schemap(), Property)) {
             puts("(");
             iterateAndNextConstNull(nodep->argsp());
             puts(")");
-            iterateConstNull(nodep->withp());
         }
     }
     void visit(AstCCall* nodep) override {
@@ -1450,7 +1464,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(";\n");
     }
     void visit(AstPropSpec* nodep) override {
-        if (!VN_IS(nodep->propp(), FuncRef)) {
+        if (!VN_IS(nodep->propp(), SchemaRef)) {
             // Same dumping as in AstSenTree
             putfs(nodep, "@(");
             for (AstNode* expp = nodep->sensesp(); expp; expp = expp->nextp()) {

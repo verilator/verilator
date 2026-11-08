@@ -1151,14 +1151,7 @@ class CoverageVisitor final : public VNVisitor {
     }
 
     // VISITORS - BOTH
-    void visit(AstProperty* nodep) override {
-        VL_RESTORER(m_state);
-        VL_RESTORER(m_inToggleOff);
-        m_state.m_on = false;
-        m_inToggleOff = true;
-        iterateChildren(nodep);
-    }
-    void visit(AstSequence* nodep) override {
+    void visit(AstNodeSchema* nodep) override {
         VL_RESTORER(m_state);
         VL_RESTORER(m_inToggleOff);
         m_state.m_on = false;

@@ -394,6 +394,7 @@ class WidthVisitor final : public VNVisitor {
     std::vector<AstVar*> m_splitIfaceArrayVarps;  // Interface arrays split by V3Param
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstProperty* m_propertyp = nullptr;  // Current property
     AstNodeModule* m_modep = nullptr;  // Current module
     const AstConstraint* m_constraintp = nullptr;  // Current constraint
     AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
@@ -8602,12 +8603,8 @@ class WidthVisitor final : public VNVisitor {
             m_funcp = VN_AS(nodep, Func);
             UASSERT_OBJ(m_funcp, nodep, "FTask with function variable, but isn't a function");
             nodep->dtypeFrom(nodep->fvarp());  // Which will get it from fvarp()->dtypep()
-        } else if (VN_IS(nodep, Property)) {
-            nodep->dtypeSetBit();
         }
-        WidthVP* vup = nullptr;
-        if (VN_IS(nodep, Property)) vup = WidthVP{SELF, BOTH}.p();
-        userIterateChildren(nodep, vup);
+        userIterateChildren(nodep, nullptr);
 
         nodep->didWidth(true);
         nodep->doingWidth(false);
@@ -8697,28 +8694,16 @@ class WidthVisitor final : public VNVisitor {
             UINFO(5, "Recursive property call: " << nodep);
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Recursive property call: " << nodep->prettyNameQ());
-            nodep->recursive(true);
             nodep->didWidth(true);
             return;
         }
         nodep->doingWidth(true);
-        VL_RESTORER(m_ftaskp);
-        m_ftaskp = nodep;
-        // Property call will be replaced by property body in V3AssertPre. Property body has bit
-        // dtype, so set it here too
-        nodep->dtypeSetBit();
+        // Temporaries made for the body are property-local variables, promoted per instance by
+        // V3AssertPre/V3AssertNfa
+        VL_RESTORER(m_propertyp);
+        m_propertyp = nodep;
         userIterateAndNext(nodep->declsp(), nullptr);
-        for (AstNode* propStmtp = nodep->stmtsp(); propStmtp; propStmtp = propStmtp->nextp()) {
-            if (VN_IS(propStmtp, PropSpec)) {
-                iterateCheckSelf(nodep, "PropSpec", propStmtp, SELF, BOTH);
-            } else if (VN_IS(propStmtp, InitialStaticStmt)
-                       || VN_IS(propStmtp, InitialAutomaticStmt)) {
-                // Property-local variable initialization -- iterate this node only
-                userIterate(propStmtp, nullptr);
-            } else {
-                propStmtp->v3fatalSrc("Invalid statement under AstProperty");
-            }
-        }
+        iterateCheckSelf(nodep, "PropSpec", nodep->specp(), SELF, BOTH);
         nodep->didWidth(true);
         nodep->doingWidth(false);
     }
@@ -8728,17 +8713,29 @@ class WidthVisitor final : public VNVisitor {
         // Width-check the sequence body so expressions are typed for later inlining.
         // Referenced sequences in assertion context will be inlined by V3AssertPre.
         if (nodep->didWidth()) return;
-        nodep->dtypeSetBit();
         userIterateAndNext(nodep->declsp(), nullptr);
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (VN_IS(stmtp, NodeExpr)) {
-                iterateCheckSelf(nodep, "SeqBody", stmtp, SELF, BOTH);
-            } else {
-                stmtp->v3fatalSrc("Invalid statement under AstSequence");
-            }
-        }
+        iterateCheckSelf(nodep, "SeqBody", nodep->exprp(), SELF, BOTH);
         nodep->didWidth(true);
         // Keep all sequences for now; cleanup happens after V3AssertPre inlining.
+    }
+    void visit(AstSchemaRef* nodep) override {
+        if (nodep->didWidth()) return;
+        userIterate(nodep->schemap(), nullptr);
+        for (const auto& tconnect : V3Task::taskConnects(nodep)) {
+            const AstVar* const portp = tconnect.first;
+            const AstArg* const argp = tconnect.second;
+            // An untyped formal preserves the actual argument's self-determined type, a typed
+            // one casts it to its type (IEEE 1800-2023 16.8.1)
+            if (portp->basicp() && portp->basicp()->untyped()) {
+                iterateCheckSelf(nodep, "Function Argument", argp->exprp(), SELF, BOTH);
+            } else {
+                userIterate(argp->exprp(), WidthVP{portp->dtypep(), PRELIM}.p());
+                iterateCheckAssign(nodep, "Function Argument", argp->exprp(), FINAL,
+                                   portp->dtypep());
+            }
+        }
+        nodep->dtypeSetBit();
+        nodep->didWidth(true);
     }
 
     AstPackage* getItemPackage(AstNode* pkgItemp) {
@@ -8979,8 +8976,6 @@ class WidthVisitor final : public VNVisitor {
                     relinkHandle.relink(newp);
                 }
                 if (portp->direction() != VDirection::REF
-                    && !(portp->basicp()
-                         && portp->basicp()->untyped())  // for properties, handled in V3AssertPre
                     && ((VN_IS(portDTypep, BasicDType) && pinDTypep->isNonPackedArray())
                         || (VN_IS(pinDTypep, BasicDType) && portDTypep->isNonPackedArray()))) {
                     pinp->v3error("Function Argument expects " << portDTypep->prettyDTypeNameQ()
@@ -8988,10 +8983,7 @@ class WidthVisitor final : public VNVisitor {
                                                                << pinDTypep->prettyDTypeNameQ());
                     continue;
                 }
-                // An untyped formal preserves the actual argument's self-determined type.
-                if (portp->basicp() && portp->basicp()->untyped()) {
-                    iterateCheckSelf(nodep, "Function Argument", pinp, SELF, FINAL);
-                } else if (!portp->basicp() || portp->basicp()->isOpaque()) {
+                if (!portp->basicp() || portp->basicp()->isOpaque()) {
                     // Output args: at return caller = callee, reverse direction.
                     pinp = checkClassAssign(nodep, "Function Argument", pinp, portDTypep,
                                             portp->direction() == VDirection::OUTPUT);
@@ -10170,7 +10162,8 @@ class WidthVisitor final : public VNVisitor {
         return enumDtp;
     }
 
-    // Declare and return a temporary for a value, local to the function, or else of the module
+    // Declare and return a temporary for a value, local to the function or property, or else of
+    // the module
     AstVar* makeTempVarp(const string& name, AstNodeExpr* const valuep,
                          AstNodeDType* const dtypep) {
         AstVar* const varp = new AstVar{valuep->fileline(), VVarType::XTEMP, name, dtypep};
@@ -10179,6 +10172,8 @@ class WidthVisitor final : public VNVisitor {
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             // Declare before use, including in non-inlined class methods.
             m_ftaskp->prependDeclsp(varp);
+        } else if (m_propertyp) {
+            m_propertyp->prependDeclsp(varp);
         } else {
             UASSERT_OBJ(m_modep, valuep, "Temporary without a containing module");
             // Static as any variable of a module (IEEE 1800-2023 6.21), e.g. for V3Fork

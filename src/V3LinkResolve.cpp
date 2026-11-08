@@ -41,7 +41,7 @@ class LinkResolveVisitor final : public VNVisitor {
     // NODE STATE
     //  Entire netlist:
     //   AstCaseItem::user2()   // bool     Moved default caseitems
-    //   AstNodeFTaskRef::user2()  // bool  Processing - to check for recursion
+    //   AstLet::user2()        // bool     Processing - to check for recursion
     const VNUser2InUse m_inuser2;
 
     // STATE
@@ -129,7 +129,6 @@ class LinkResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeFTask* nodep) override {
-        // Note AstLet is handled specifically elsewhere
         // NodeTask: Remember its name for later resolution
         if (m_underGenerate) nodep->underGenerate(true);
         // Remember the existing symbol table scope
@@ -156,9 +155,9 @@ class LinkResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
-    void visit(AstNodeFTaskRef* nodep) override {
+    void visit(AstSchemaRef* nodep) override {
         iterateChildren(nodep);
-        if (AstLet* letp = VN_CAST(nodep->taskp(), Let)) {
+        if (AstLet* letp = VN_CAST(nodep->schemap(), Let)) {
             UINFO(7, "letSubstitute() " << nodep << " <- " << letp);
             if (letp->user2()) {
                 nodep->v3error("Recursive let substitution " << letp->prettyNameQ());
@@ -172,10 +171,8 @@ class LinkResolveVisitor final : public VNVisitor {
             }
             // UINFOTREE(9, letp, "", "let-let");
             // UINFOTREE(9, nodep, "", "let-ref");
-            // cppcheck-suppress constVariablePointer
-            AstStmtExpr* const letStmtp = VN_AS(letp->stmtsp(), StmtExpr);
-            AstNodeExpr* const newp = letStmtp->exprp()->cloneTree(false);
-            const V3TaskConnects tconnects = V3Task::taskConnects(nodep, letp->declsp());
+            AstNodeExpr* const newp = letp->exprp()->cloneTree(false);
+            const V3TaskConnects tconnects = V3Task::taskConnects(nodep);
             std::map<const AstVar*, AstNodeExpr*> portToExprs;
             for (const auto& tconnect : tconnects) {
                 const AstVar* const portp = tconnect.first;

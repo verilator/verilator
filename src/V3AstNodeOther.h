@@ -110,7 +110,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     // @astgen op1 := classOrPackagep : Optional[AstNode]
     // Ports/Vars/other declarations
     // @astgen op2 := declsp : List[AstNode]
-    // Statements, or body of a property/sequence
+    // Statements
     // @astgen op3 := stmtsp : List[AstNode]
     // Scope name
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
@@ -475,6 +475,22 @@ public:
     ASTGEN_MEMBERS_AstNodeRange;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
+};
+class AstNodeSchema VL_NOT_FINAL : public AstNode {
+    // A definition whose body is substituted at each reference (AstSchemaRef),
+    // with the actual arguments replacing the formal ports
+    // @astgen op1 := declsp : List[AstNode]  // Ports and local declarations
+    std::string m_name;  // Name of definition
+
+protected:
+    AstNodeSchema(VNType t, FileLine* fl, const std::string& name)
+        : AstNode{t, fl}
+        , m_name{name} {}
+
+public:
+    ASTGEN_MEMBERS_AstNodeSchema;
+    std::string name() const override VL_MT_STABLE { return m_name; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
 };
 
 // === Concrete node types =====================================================
@@ -3052,47 +3068,6 @@ public:
     bool hasDType() const override VL_MT_SAFE { return true; }
     string verilogKwd() const override { return "function"; }
 };
-class AstLet final : public AstNodeFTask {
-    // Verilog "let" statement
-    // Parents: MODULE
-    // stmtp list first item is returned StmtExpr, as Let always returns AstNodeExpr
-public:
-    AstLet(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_Let(fl, name, nullptr) {}
-    ASTGEN_MEMBERS_AstLet;
-    bool hasDType() const override VL_MT_SAFE { return true; }
-    const char* broken() const override {
-        BROKEN_RTN(!VN_IS(stmtsp(), StmtExpr));
-        return nullptr;
-    }
-    string verilogKwd() const override { return "let"; }
-};
-class AstProperty final : public AstNodeFTask {
-    // A property inside a module
-public:
-    AstProperty(FileLine* fl, const string& name, AstNode* stmtp)
-        : ASTGEN_SUPER_Property(fl, name, stmtp) {}
-    ASTGEN_MEMBERS_AstProperty;
-    bool hasDType() const override VL_MT_SAFE { return true; }
-    string verilogKwd() const override { return "property"; }
-};
-class AstSequence final : public AstNodeFTask {
-    // A sequence inside a module
-    // TODO when supported might not want to be a NodeFTask
-    bool m_referenced = false;  // Set by V3LinkResolve when referenced; cleared by
-                                // V3AssertPre after inlining; if still set after
-                                // V3AssertPre, the reference is in an unsupported context
-public:
-    AstSequence(FileLine* fl, const string& name, AstNode* stmtp)
-        : ASTGEN_SUPER_Sequence(fl, name, stmtp) {}
-    ASTGEN_MEMBERS_AstSequence;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    bool hasDType() const override VL_MT_SAFE { return true; }
-    string verilogKwd() const override { return "sequence"; }
-    bool isReferenced() const { return m_referenced; }
-    void isReferenced(bool flag) { m_referenced = flag; }
-};
 class AstTask final : public AstNodeFTask {
     // A task inside a module
 public:
@@ -3662,6 +3637,44 @@ public:
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual string emitVerilog() { return "[*]"; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
+
+// === AstNodeSchema ===
+class AstLet final : public AstNodeSchema {
+    // Verilog "let" definition
+    // Parents: MODULE
+    // @astgen op2 := exprp : AstNodeExpr
+public:
+    AstLet(FileLine* fl, const std::string& name)
+        : ASTGEN_SUPER_Let(fl, name) {}
+    ASTGEN_MEMBERS_AstLet;
+    std::string verilogKwd() const override { return "let"; }
+};
+class AstProperty final : public AstNodeSchema {
+    // Verilog "property" definition
+    // @astgen op2 := specp : AstPropSpec
+public:
+    AstProperty(FileLine* fl, const std::string& name)
+        : ASTGEN_SUPER_Property(fl, name) {}
+    ASTGEN_MEMBERS_AstProperty;
+    std::string verilogKwd() const override { return "property"; }
+};
+class AstSequence final : public AstNodeSchema {
+    // Verilog "sequence" definition
+    // @astgen op2 := exprp : AstNodeExpr
+    // Set by V3LinkWith when referenced; cleared by V3AssertPre after inlining; if still set
+    // after V3AssertPre, the reference is in an unsupported context
+    bool m_referenced = false;
+
+public:
+    AstSequence(FileLine* fl, const std::string& name)
+        : ASTGEN_SUPER_Sequence(fl, name) {}
+    ASTGEN_MEMBERS_AstSequence;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    std::string verilogKwd() const override { return "sequence"; }
+    bool isReferenced() const { return m_referenced; }
+    void isReferenced(bool flag) { m_referenced = flag; }
 };
 
 #endif  // Guard

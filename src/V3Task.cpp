@@ -2353,8 +2353,12 @@ public:
 
 const char* const V3Task::s_dpiTemporaryVarSuffix = "__Vcvt";
 
-V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
-                                    V3TaskConnectState* statep, bool makeChanges) {
+// Connect the arguments of reference 'nodep' to the ports in 'taskDeclsp' of 'calleep'.
+// Defaulted ports needing an argument wrapper (only with 'statep') are added to 'argWrap'.
+template <typename T_Ref>
+static V3TaskConnects connectArgs(T_Ref* nodep, const AstNode* calleep, AstNode* taskDeclsp,
+                                  V3TaskConnectState* statep, bool makeChanges,
+                                  VInsertionSet<const AstVar*>& argWrap) {
     // Output list will be in order of the port declaration variables (so
     // func calls are made right in C)
     // Missing pin/expr?  We return (pinvar, nullptr)
@@ -2362,7 +2366,6 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
     UINFO(9, "taskConnects " << nodep);
     std::map<const std::string, int> nameToIndex;
     V3TaskConnects tconnects;
-    UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");
 
     // Find ports
     int tpinnum = 0;
@@ -2392,14 +2395,14 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
             const auto it = nameToIndex.find(argp->name());
             if (it == nameToIndex.end()) {
                 if (makeChanges) {
-                    argp->v3error(
-                        "No such argument "
-                        << argp->prettyNameQ() << " in call to " << nodep->taskp()->verilogKwd()
-                        << " " << nodep->taskp()->prettyNameQ() << '\n'
-                        << nodep->warnContextPrimary() << '\n'
-                        << nodep->warnMore() << "... Location of " << nodep->taskp()->verilogKwd()
-                        << " " << nodep->taskp()->prettyNameQ() << " declaration\n"
-                        << nodep->taskp()->warnContextSecondary());
+                    argp->v3error("No such argument "
+                                  << argp->prettyNameQ() << " in call to " << calleep->verilogKwd()
+                                  << " " << calleep->prettyNameQ() << '\n'
+                                  << nodep->warnContextPrimary() << '\n'
+                                  << nodep->warnMore() << "... Location of "
+                                  << calleep->verilogKwd() << " " << calleep->prettyNameQ()
+                                  << " declaration\n"
+                                  << calleep->warnContextSecondary());
                     // We'll just delete it; seems less error prone than making a false argument
                     VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                 }
@@ -2407,14 +2410,14 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
                 if (tconnects[it->second].second && makeChanges) {
                     argp->v3error("Duplicate argument " << argp->prettyNameQ()
                                                         << " in function call to "
-                                                        << nodep->taskp()->prettyTypeName());
+                                                        << calleep->prettyTypeName());
                     tconnects[it->second].second->unlinkFrBack()->deleteTree();
                 }
                 tconnects[it->second].second = argp;
                 reorganize = true;
             }
         } else {  // By pin number
-            if (nodep->taskp()->prettyName() == "randomize") {
+            if (calleep->prettyName() == "randomize") {
                 // Arguments to randomize() are special, will be handled in V3Randomize
             } else if (ppinnum >= tpinnum) {
                 if (sformatp) {
@@ -2423,13 +2426,12 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
                     ++tpinnum;
                 } else if (makeChanges) {
                     argp->v3error("Too many arguments in call to "
-                                  << nodep->taskp()->verilogKwd() << " "
-                                  << nodep->taskp()->prettyNameQ() << '\n'
+                                  << calleep->verilogKwd() << " " << calleep->prettyNameQ() << '\n'
                                   << nodep->warnContextPrimary() << '\n'
                                   << nodep->warnMore() << "... Location of "
-                                  << nodep->taskp()->verilogKwd() << " "
-                                  << nodep->taskp()->prettyNameQ() << " declaration:\n"
-                                  << nodep->taskp()->warnContextSecondary());
+                                  << calleep->verilogKwd() << " " << calleep->prettyNameQ()
+                                  << " declaration:\n"
+                                  << calleep->warnContextSecondary());
                     // We'll just delete it; seems less error prone than making a false argument
                     VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                 }
@@ -2443,7 +2445,6 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
     if (!makeChanges) return tconnects;
 
     // Connect missing ones
-    VInsertionSet<const AstVar*> argWrap;  // Which ports are defaulted; need arg wrapper creation
     for (int i = 0; i < tpinnum; ++i) {
         AstVar* const portp = tconnects[i].first;
         if (!tconnects[i].second || !tconnects[i].second->exprp()) {
@@ -2451,7 +2452,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
             if (!portp->valuep()) {
                 nodep->v3error("Missing argument on non-defaulted argument "
                                << portp->prettyNameQ() << " in function call to "
-                               << nodep->taskp()->prettyTypeName());
+                               << calleep->prettyTypeName());
                 newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
             } else if (AstFuncRef* const funcRefp = VN_CAST(portp->valuep(), FuncRef)) {
                 const AstNodeFTask* const funcp = funcRefp->taskp();
@@ -2479,7 +2480,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
                             E_UNSUPPORTED,
                             "Unsupported: Non-constant default value in missing argument "
                                 << portp->prettyNameQ() << " in function call to "
-                                << nodep->taskp()->prettyTypeName());
+                                << calleep->prettyTypeName());
                         newvaluep = new AstConst{nodep->fileline(), AstConst::Unsized32{}, 0};
                     }
                 }
@@ -2529,6 +2530,15 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
         }
     }  // LCOV_EXCL_STOP
 
+    return tconnects;
+}
+
+V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
+                                    V3TaskConnectState* statep, bool makeChanges) {
+    UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");
+    VInsertionSet<const AstVar*> argWrap;  // Which ports are defaulted; need arg wrapper creation
+    const V3TaskConnects tconnects
+        = connectArgs(nodep, nodep->taskp(), taskDeclsp, statep, makeChanges, argWrap);
     if (!argWrap.empty()) {
         UINFO(9, "Arg wrapper generation " << nodep);
         // Create wrapper function with default argument settings.
@@ -2540,6 +2550,12 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
                             nullptr);
     }
     return tconnects;
+}
+
+V3TaskConnects V3Task::taskConnects(AstSchemaRef* nodep) {
+    VInsertionSet<const AstVar*> argWrap;  // Stays empty without a V3TaskConnectState
+    return connectArgs(nodep, nodep->schemap(), nodep->schemap()->declsp(), nullptr, true,
+                       argWrap);
 }
 
 void V3Task::taskConnectWrap(AstNodeFTaskRef* nodep, const V3TaskConnects& tconnects,

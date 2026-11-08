@@ -2610,6 +2610,32 @@ public:
     bool internal() const { return m_internal; }
     bool isSystemFunc() const override { return true; }
 };
+class AstSchemaRef final : public AstNodeExpr {
+    // A reference to a schema, to be substituted by its body
+    // @astgen op1 := argsp : List[AstArg]
+    //
+    // @astgen ptr := m_schemap : AstNodeSchema  // The definition referenced
+    // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Package of the definition
+public:
+    AstSchemaRef(FileLine* fl, AstNodeSchema* schemap, AstNodeModule* classOrPackagep,
+                 AstArg* argsp)
+        : ASTGEN_SUPER_SchemaRef(fl)
+        , m_schemap{schemap}
+        , m_classOrPackagep{classOrPackagep} {
+        addArgsp(argsp);
+    }
+    ASTGEN_MEMBERS_AstSchemaRef;
+    std::string name() const override VL_MT_STABLE;
+    bool sameNode(const AstNode* samep) const override {
+        return schemap() == VN_DBG_AS(samep, SchemaRef)->schemap();
+    }
+    AstNodeSchema* schemap() const VL_MT_STABLE { return m_schemap; }
+    AstNodeModule* classOrPackagep() const VL_MT_STABLE { return m_classOrPackagep; }
+    bool isPure() override { return false; }  // Unknown until substituted
+    std::string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
+    std::string emitC() final override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
+};
 class AstScopeName final : public AstNodeExpr {
     // For display %m and DPI context imports
     // Parents:  AstSFormatF, AstNodeFTaskRef, AstNodeFTask, AstScope

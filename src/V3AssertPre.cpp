@@ -284,31 +284,14 @@ private:
         }
         return newp;
     }
-    AstNodeExpr* getSequenceBodyExprp(const AstSequence* const seqp) const {
-        // The statements in AstSequence are the body expr.
-        return VN_CAST(seqp->stmtsp(), NodeExpr);
-    }
-    AstPropSpec* getPropertyExprp(const AstProperty* const propp) {
-        // Statements in AstProperty: AstInitialStaticStmt/AstInitialAutomaticStmt (var init),
-        // AstPropSpec (body).
-        AstNode* propExprp = propp->stmtsp();
-        while (
-            propExprp
-            && (VN_IS(propExprp, InitialStaticStmt) || VN_IS(propExprp, InitialAutomaticStmt))) {
-            propExprp = propExprp->nextp();
-        }
-        return VN_CAST(propExprp, PropSpec);
-    }
-    void substituteSequenceCall(AstFuncRef* funcrefp, AstSequence* seqp) {
+    void substituteSequenceCall(AstSchemaRef* schemaRefp, AstSequence* seqp) {
         // IEEE 1800-2023 16.7 (sequence declarations), 16.8 (sequence instances)
-        // Inline the sequence body at the call site, replacing the FuncRef
-        AstNodeExpr* bodyExprp = getSequenceBodyExprp(seqp);
-        UASSERT_OBJ(bodyExprp, funcrefp, "Sequence has no body expression");
+        // Inline the sequence body at the call site, replacing the reference
         // Clone the body expression since the sequence may be referenced multiple times
-        AstNodeExpr* clonedp = bodyExprp->cloneTree(false);
+        AstNodeExpr* clonedp = seqp->exprp()->cloneTree(false);
         // Build substitution map, then do a single traversal to replace all formals
         // (textual substitution per IEEE 16.8.2).
-        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, seqp->declsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(schemaRefp);
         std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
         for (const auto& tconnect : tconnects) {
             portMap[tconnect.first] = tconnect.second->exprp();
@@ -323,15 +306,15 @@ private:
         for (const auto& tconnect : tconnects) {
             pushDeletep(tconnect.second->exprp()->unlinkFrBack());
         }
-        V3AssertCommon::checkSvaInstanceDelays(clonedp, funcrefp);
-        // Replace the FuncRef with the inlined body
-        funcrefp->replaceWith(clonedp);
-        VL_DO_DANGLING(pushDeletep(funcrefp), funcrefp);
+        V3AssertCommon::checkSvaInstanceDelays(clonedp, schemaRefp);
+        // Replace the reference with the inlined body
+        schemaRefp->replaceWith(clonedp);
+        VL_DO_DANGLING(pushDeletep(schemaRefp), schemaRefp);
         // Clear referenced flag; sequences with isReferenced==false are deleted in assertPreAll
         seqp->isReferenced(false);
     }
-    AstPropSpec* clonePropertyBody(AstFuncRef* funcrefp, const AstProperty* propp) {
-        AstPropSpec* propExprp = getPropertyExprp(propp);
+    AstPropSpec* clonePropertyBody(AstSchemaRef* schemaRefp, const AstProperty* propp) {
+        AstPropSpec* propExprp = propp->specp();
         // Substitute inner property call before copying in order to not doing the same for
         // each call of outer property call.
         propExprp = substitutePropertyCall(propExprp);
@@ -341,7 +324,7 @@ private:
         // Build substitution maps for formal arguments and property-local
         // variables, then perform a single foreach to apply all replacements.
         // Map port vars to their actual argument expressions
-        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propp->declsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(schemaRefp);
         std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
         for (const auto& tconnect : tconnects) {
             portMap[tconnect.first] = tconnect.second->exprp();
@@ -380,13 +363,13 @@ private:
         for (const auto& tconnect : tconnects) {
             pushDeletep(tconnect.second->exprp()->unlinkFrBack());
         }
-        V3AssertCommon::checkSvaInstanceDelays(propExprp, funcrefp);
+        V3AssertCommon::checkSvaInstanceDelays(propExprp, schemaRefp);
         return propExprp;
     }
     AstPropSpec* substitutePropertyCall(AstPropSpec* nodep) {
-        if (AstFuncRef* const funcrefp = VN_CAST(nodep->propp(), FuncRef)) {
-            if (const AstProperty* const propp = VN_CAST(funcrefp->taskp(), Property)) {
-                AstPropSpec* const propExprp = clonePropertyBody(funcrefp, propp);
+        if (AstSchemaRef* const schemaRefp = VN_CAST(nodep->propp(), SchemaRef)) {
+            if (const AstProperty* const propp = VN_CAST(schemaRefp->schemap(), Property)) {
+                AstPropSpec* const propExprp = clonePropertyBody(schemaRefp, propp);
 
                 // Handle case with 2 disable iff statement (IEEE 1800-2023 16.12.1)
                 if (nodep->disablep() && propExprp->disablep()) {
@@ -421,25 +404,25 @@ private:
         return nodep;
     }
 
-    void substituteNestedPropertyCall(AstFuncRef* funcrefp, const AstProperty* propp) {
-        AstPropSpec* const specp = clonePropertyBody(funcrefp, propp);
+    void substituteNestedPropertyCall(AstSchemaRef* schemaRefp, const AstProperty* propp) {
+        AstPropSpec* const specp = clonePropertyBody(schemaRefp, propp);
         AstNode* replp = nullptr;
         if (specp->disablep()) {
-            funcrefp->v3error("Illegal 'disable iff' in a nested property instance"
-                              " (IEEE 1800-2023 16.12.1)");
+            schemaRefp->v3error("Illegal 'disable iff' in a nested property instance"
+                                " (IEEE 1800-2023 16.12.1)");
         } else if (specp->sensesp()) {
-            funcrefp->v3warn(E_UNSUPPORTED,
-                             "Unsupported: clock event in a nested property instance");
+            schemaRefp->v3warn(E_UNSUPPORTED,
+                               "Unsupported: clock event in a nested property instance");
         } else if (specp->propp()->exists(
                        [](const AstNodeExpr* np) { return np->isMultiCycleSva(); })) {
-            funcrefp->v3warn(E_UNSUPPORTED,
-                             "Unsupported: multi-cycle body in a nested property instance");
+            schemaRefp->v3warn(E_UNSUPPORTED,
+                               "Unsupported: multi-cycle body in a nested property instance");
         } else {
             replp = specp->propp()->unlinkFrBack();
         }
-        if (!replp) replp = new AstConst{funcrefp->fileline(), AstConst::BitFalse{}};
-        funcrefp->replaceWith(replp);
-        VL_DO_DANGLING(pushDeletep(funcrefp), funcrefp);
+        if (!replp) replp = new AstConst{schemaRefp->fileline(), AstConst::BitFalse{}};
+        schemaRefp->replaceWith(replp);
+        VL_DO_DANGLING(pushDeletep(schemaRefp), schemaRefp);
         VL_DO_DANGLING(pushDeletep(specp), specp);
     }
 
@@ -1401,20 +1384,16 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
-    void visit(AstFuncRef* nodep) override {
+    void visit(AstSchemaRef* nodep) override {
         // IEEE 1800-2023 16.8: Inline sequence instances wherever they appear
         // in the expression tree (inside implications, boolean ops, nested refs, etc.)
-        if (AstSequence* const seqp = VN_CAST(nodep->taskp(), Sequence)) {
+        if (AstSequence* const seqp = VN_CAST(nodep->schemap(), Sequence)) {
             substituteSequenceCall(nodep, seqp);
-            // The FuncRef has been replaced; do not access nodep after this point.
+            // The reference has been replaced; do not access nodep after this point.
             // The replacement node will be visited by the parent's iterateChildren.
             return;
         }
-        if (const AstProperty* const propp = VN_CAST(nodep->taskp(), Property)) {
-            substituteNestedPropertyCall(nodep, propp);
-            return;
-        }
-        iterateChildren(nodep);
+        substituteNestedPropertyCall(nodep, VN_AS(nodep->schemap(), Property));
     }
     void visit(AstImplication* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
@@ -1867,12 +1846,12 @@ private:
     }
     void visit(AstProperty* nodep) override {
         // The body will be visited when will be substituted in place of property reference
-        // (AstFuncRef)
+        // (AstSchemaRef)
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstSequence* nodep) override {
         // Sequence declarations are not visited directly; their bodies are inlined
-        // at call sites by visit(AstFuncRef*). Collect for post-traversal cleanup.
+        // at call sites by visit(AstSchemaRef*). Collect for post-traversal cleanup.
         m_seqsToCleanup.push_back(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
