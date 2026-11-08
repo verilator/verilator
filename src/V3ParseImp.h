@@ -315,7 +315,7 @@ public:
     void dumpInputsFile() VL_MT_DISABLED;
     void dumpTokensAhead(int line) VL_MT_DISABLED;
     static void candidatePli(VSpellCheck* spellerp) VL_MT_DISABLED;
-    void importIfInStd(FileLine* fileline, const string& id, bool doImport);
+    void importIfInStd(FileLine* fileline, const string& id);
     AstNodeExpr* makePropertyCase(FileLine* flp, AstNodeExpr* exprp, AstCaseItem* itemsp);
 
 private:

@@ -64,7 +64,7 @@ V3ParseImp::~V3ParseImp() {
 //######################################################################
 // Parser utility methods
 
-void V3ParseImp::importIfInStd(FileLine* fileline, const string& id, bool doImport) {
+void V3ParseImp::importIfInStd(FileLine* fileline, const string& id) {
     // Keywords that auto-import to require use of verilated_std.vh.
     // OK if overly sensitive; will over-import and keep std:: around
     // longer than migt otherwise.
@@ -78,16 +78,14 @@ void V3ParseImp::importIfInStd(FileLine* fileline, const string& id, bool doImpo
         = v3Global.rootp()->stdPackagep()) {  // else e.g. --no-std-package
         UINFO(9, "import and keep std:: for " << fileline);
         v3Global.setUsesStdPackage();
-        if (doImport) {
-            AstPackageImport* const impp = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
-            unitPackage(stdpkgp->fileline())->addStmtsp(impp);
-            for (AstNode* const itemp : v3Global.rootp()->stdPackagep()->stmtspList()) {
-                if (itemp->name() == "process") {
-                    v3Global.rootp()->stdPackageProcessp(VN_AS(itemp, Class));
-                    UASSERT_OBJ(v3Global.rootp()->stdPackageProcessp(), v3Global.rootp(),
-                                "'std' package class should be found");
-                    break;
-                }
+        AstPackageImport* const impp = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
+        unitPackage(stdpkgp->fileline())->addStmtsp(impp);
+        for (AstNode* const itemp : v3Global.rootp()->stdPackagep()->stmtspList()) {
+            if (itemp->name() == "process") {
+                v3Global.rootp()->stdPackageProcessp(VN_AS(itemp, Class));
+                UASSERT_OBJ(v3Global.rootp()->stdPackageProcessp(), v3Global.rootp(),
+                            "'std' package class should be found");
+                break;
             }
         }
     }
@@ -889,9 +887,9 @@ void V3ParseImp::tokenPipelineSym() {
     // Note above sometimes converts yGLOBAL to a yaID__LEX
     tokenPipeline();  // sets yylval
     int token = yylval.token;
-    if (token == yRANDOMIZE) importIfInStd(yylval.fl, "randomize", false);
+    if (token == yRANDOMIZE) importIfInStd(yylval.fl, "randomize");
     if (token == yaID__ETC || token == yaID__CC || token == yaID__LEX || token == yaID__aTYPE) {
-        importIfInStd(yylval.fl, *(yylval.strp), true);
+        importIfInStd(yylval.fl, *(yylval.strp));
         if (token == yaID__LEX) {
             if (VString::startsWith(*(yylval.strp), "PATHPULSE__024")) {
                 token = yaID__PATHPULSE;

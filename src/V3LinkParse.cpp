@@ -1251,7 +1251,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // IEEE: option / type_option members allow external access (cg_inst.option.X)
-        // and require std:: types; std:: is kept because setUsesStdPackage() is called
+        // and require std:: types; std:: is kept because importIfInStd() is called
         // at parse time for every covergroup declaration.
         {
             AstVar* const varp

@@ -3709,7 +3709,7 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
         |       yDISABLE yFORK ';'                      { $$ = new AstDisableFork{$1}; }
         |       yDISABLE idDottedSel ';'
                         { $$ = new AstDisable{$1, $2};
-                          PARSEP->importIfInStd($1, "process", true);
+                          PARSEP->importIfInStd($1, "process");
                         }
         //                      // IEEE: event_trigger
         |       yP_MINUSGT expr ';'
@@ -6859,7 +6859,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       yS_EVENTUALLY pexpr  %prec prS_EVENTUALLY
                         {
                             $$ = new AstSEventually{$1, $2};
-                            PARSEP->importIfInStd($1, "process", true);
+                            PARSEP->importIfInStd($1, "process");
                         }
         |       yS_EVENTUALLY anyrange pexpr  %prec prS_EVENTUALLY
                         { $$ = $3; BBUNSUP($1, "Unsupported: s_eventually[] (in property expression)"); DEL($2); }
@@ -7063,7 +7063,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                                                  static_cast<AstVar*>(sampleArgsp), $6, clockp};
                           // Every covergroup has option/type_option members (added by V3LinkParse)
                           // referencing std:: types, so mark std as needed at parse time.
-                          v3Global.setUsesStdPackage();
+                          PARSEP->importIfInStd($<fl>1, "std");
                           GRAMMARP->endLabel($<fl>8, $$, $8); }
         |        yCOVERGROUP yEXTENDS idAny ';'
         /*cont*/     coverage_spec_or_optionListE
