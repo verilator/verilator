@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
         const VNUser pointer{&value};
         UASSERT_STATIC(integer.toUQuad() == 42 && pointer.to<void*>() == &value,
                        "Valid user-slot conversions changed.");
-#if defined(VL_USER_TYPE_CHECKS) && __cplusplus >= 201703L
+#ifdef VL_USER_TYPE_CHECKS
         if (argc > 1) {
             if (argv[1][0] == 'p') {
                 (void)integer.to<void*>();

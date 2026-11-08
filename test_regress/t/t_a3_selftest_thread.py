@@ -29,21 +29,21 @@ source = os.path.relpath(os.path.abspath("t/t_a3_selftest_thread.cpp"),
 executable = os.path.abspath(test.obj_dir + "/static_assertion")
 obj = executable + ".o"
 macros = executable + ".macros"
+rules = executable + ".mk"
+test.write_wholefile(
+    rules,
+    "static_thread_fixture:\n\t$(CXX) $(CXXFLAGS) $(CPPFLAGSWALL) -c " + source
+    + " -o " + obj + " && $(LINK) $(LDFLAGS) -o " + executable + " " + obj + " "
+    + ' '.join(objects) + " $(CCMALLOC) $(LIBS)\n"
+    + "static_thread_macros:\n\t$(CXX) $(CXXFLAGS) $(CPPFLAGSWALL) -dM -E " + source
+    + " -MF " + obj + ".macros.d > " + macros + "\n")
 test.run(cmd=[os.environ['MAKE'], "-C", test.root + "/src/obj_dbg", "-f", "../Makefile_obj",
-              "VL_DEBUG=1", "--eval",
-              "'static_thread_fixture:;$(CXX) $(CXXFLAGS) $(CPPFLAGSWALL) -c " + source
-              + " -o " + obj + " && $(LINK) $(LDFLAGS) -o " + executable + " " + obj + " "
-              + ' '.join(objects) + " $(CCMALLOC) $(LIBS)'", "--eval",
-              "'static_thread_macros:;$(CXX) $(CXXFLAGS) $(CPPFLAGSWALL) -dM -E " + source
-              + " -MF " + obj + ".macros.d > " + macros + "'", "static_thread_fixture",
-              "static_thread_macros"])
+              "-f", rules, "VL_DEBUG=1", "static_thread_fixture", "static_thread_macros"])
 test.run(cmd=[executable], logfile=test.obj_dir + "/static_valid.log")
 modes = ["direct"]
 profile = test.file_contents(macros)
 if re.search(r'^#define VL_USER_TYPE_CHECKS\b', profile, re.MULTILINE):
-    cpp_version = re.search(r'^#define __cplusplus (\d+)', profile, re.MULTILINE)
-    if cpp_version and int(cpp_version.group(1)) >= 201703:
-        modes += ["pointer", "integer"]
+    modes += ["pointer", "integer"]
 for mode in modes:
     test.run(cmd=[executable, mode], fails='any',
              logfile=test.obj_dir + "/static_" + mode + ".log",
