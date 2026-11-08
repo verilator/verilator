@@ -46,9 +46,9 @@
 // means an NBA in such a function may be executed by different classes of logic.
 //
 // NBAs in combinational logic cannot be supported. These have either been
-// rejected earlier in V3Active with a COMBDLY error, or will be rejected
-// in this pass with a COMBDLYCALL error if performed by a non-inlined function
-// which is called from combinational logic.
+// converted to blocking assignments earlier in V3Active with a COMBDLY warning,
+// or will be rejected in this pass with a COMBDLYCALL error if performed by a
+// non-inlined function which is called from combinational logic.
 //
 // For the choice of the correct scheme, it is also necessary to know if the
 // target of an NBA also has other blocking writes also targeting it.
@@ -522,9 +522,6 @@ class DelayedRecord final : public VNVisitorConst, public DelayedBase {
         VL_RESTORER(m_vtxp);
         m_vtxp = new ProcVertex{&m_state.graph, m_activep->sentreep(), nodep};
         iterateChildrenConst(nodep);
-    }
-    void visit(AstCoverToggle*) override {
-        // Toggle coverage only writes its own variables, which are not updated by NBAs, ignored
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_vtxp);
@@ -1173,7 +1170,7 @@ class DelayedRewrite final : public VNDeleter, public DelayedBase {
         topScopep->scopep()->addBlocksp(activep);
         // Add 'Post' scheduled process for the commit
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
-        activep->addStmtsp(postp);
+        activep->addProcsp(postp);
         m_globalNbaCommitp
             = new AstNbaCommit{flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}};
         postp->addStmtsp(m_globalNbaCommitp);
@@ -1205,12 +1202,12 @@ class DelayedRewrite final : public VNDeleter, public DelayedBase {
         scopep->addBlocksp(activep);
         // Add 'Pre' scheduled 'shadowVariable = originalVariable' assignment
         AstAlwaysPre* const prep = new AstAlwaysPre{flp};
-        activep->addStmtsp(prep);
+        activep->addProcsp(prep);
         prep->addStmtsp(new AstAssign{flp, new AstVarRef{flp, shadowVscp, VAccess::WRITE},
                                       new AstVarRef{flp, vscp, VAccess::READ}});
         // Add 'Post' scheduled 'originalVariable = shadowVariable' assignment
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
-        activep->addStmtsp(postp);
+        activep->addProcsp(postp);
         postp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
                                        new AstVarRef{flp, shadowVscp, VAccess::READ}});
     }
@@ -1250,7 +1247,7 @@ class DelayedRewrite final : public VNDeleter, public DelayedBase {
         scopep->addBlocksp(activep);
         // Add 'Post' scheduled process for the commit and mask clear
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
-        activep->addStmtsp(postp);
+        activep->addProcsp(postp);
         // Add the commit - vscp = (shadowVscp & maskVscp) | (vscp & ~maskVscp);
         postp->addStmtsp(new AstAssign{
             flp, new AstVarRef{flp, vscp, VAccess::WRITE},
@@ -1307,7 +1304,7 @@ class DelayedRewrite final : public VNDeleter, public DelayedBase {
         targetInfo.flagSharedKit().activep = activep;
         // Add 'Post' scheduled process to be populated later
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
-        activep->addStmtsp(postp);
+        activep->addProcsp(postp);
         targetInfo.flagSharedKit().postp = postp;
         // Initialize
         targetInfo.flagSharedKit().commitFlagp = nullptr;
@@ -1358,7 +1355,7 @@ class DelayedRewrite final : public VNDeleter, public DelayedBase {
                               new AstConst{flp, AstConst::BitTrue{}}});
             // Add the 'Pre' scheduled reset for the flag
             AstAlwaysPre* const prep = new AstAlwaysPre{flp};
-            targetInfo.flagSharedKit().activep->addStmtsp(prep);
+            targetInfo.flagSharedKit().activep->addProcsp(prep);
             prep->addStmtsp(new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
                                           new AstConst{flp, AstConst::BitFalse{}}});
             // Add the 'Post' scheduled commit
@@ -1416,7 +1413,7 @@ class DelayedRewrite final : public VNDeleter, public DelayedBase {
         scopep->addBlocksp(activep);
         // Add 'Post' scheduled process for the commit
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
-        activep->addStmtsp(postp);
+        activep->addProcsp(postp);
         AstNbaCommit* const commitp
             = new AstNbaCommit{flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}};
         postp->addStmtsp(commitp);

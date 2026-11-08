@@ -155,7 +155,7 @@ class LinkIncVisitor final : public VNVisitor {
                            << m_illegalReasonp);
             return;
         }
-        AstNode* const hoistedp = hoistIndices(nodep->lhsp());
+        AstNodeStmt* const hoistedp = hoistIndices(nodep->lhsp());
         AstNodeExpr* const readp = nodep->lhsp();
         AstNodeExpr* const writep = readp->cloneTreePure(true);
         V3LinkLValue::linkLValueSet(writep);
@@ -171,7 +171,7 @@ class LinkIncVisitor final : public VNVisitor {
         AstAssignCompound* const incp = newIncAssignp(nodep, writep);
         AstAssign* const savep
             = new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, readp->unlinkFrBack()};
-        AstNode* stmtsp;
+        AstNodeStmt* stmtsp;
         if (VN_IS(nodep, PreInc) || VN_IS(nodep, PreDec)) {
             stmtsp = incp;
             stmtsp->addNext(savep);

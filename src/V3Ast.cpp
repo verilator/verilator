@@ -1199,10 +1199,11 @@ AstNode* AstNode::iterateSubtreeReturnEdits(VNVisitor& v) {
     } else if (!nodep->backp()) {
         // Calling on standalone tree; insert a shim node so we can keep
         // track, then delete it on completion
-        AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep, false};
+        AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false};
+        tempp->addDeclsp(nodep);
         // nodep to null as may be replaced
-        VL_DO_DANGLING(tempp->stmtsp()->accept(v), nodep);
-        nodep = tempp->stmtsp()->unlinkFrBackWithNext();
+        VL_DO_DANGLING(tempp->declsp()->accept(v), nodep);
+        nodep = tempp->declsp()->unlinkFrBackWithNext();
         VL_DO_DANGLING(tempp->deleteTree(), tempp);
     } else {
         // Use back to determine who's pointing at us (IE assume new node
@@ -1645,6 +1646,45 @@ void AstNode::dtypeChgWidth(int width, int widthMin) {
     UASSERT_OBJ(dtypep(), this, "No dtype when changing width");
     dtypeChgWidthSigned(width, widthMin, dtypep()->numeric());
 }
+AstNodeDType* AstNode::findStatesCounterpart(const bool isFourstate) const {
+    UASSERT_OBJ(dtypep(), this, "No dtype when changing logic");
+    if (isFourstate == dtypep()->skipRefp()->isFourstate()) return dtypep();
+    if (const AstBasicDType* const basicp = VN_CAST(dtypep()->skipRefToEnump(), BasicDType)) {
+        UASSERT_OBJ(basicp->isIntegralOrPacked(), this,
+                    "Can't change logic type of not integral type");
+        switch (basicp->keyword()) {
+        case VBasicDTypeKwd::BIT:
+        case VBasicDTypeKwd::BYTE:
+        case VBasicDTypeKwd::LONGINT:
+        case VBasicDTypeKwd::SHORTINT:
+        case VBasicDTypeKwd::INT:
+        case VBasicDTypeKwd::UINT32:
+        case VBasicDTypeKwd::UINT64:
+        case VBasicDTypeKwd::LOGIC2STATE: {
+            if (basicp->isRanged()) {
+                return findLogicRangeDType(basicp->declRange(), basicp->widthMin(),
+                                           basicp->numeric());
+            }
+            return findLogicDType(basicp->width(), basicp->widthMin(), basicp->numeric());
+        }
+        case VBasicDTypeKwd::TIME2STATE: return findTimeDType();
+        case VBasicDTypeKwd::TIME: return findTime2StateDType();
+        case VBasicDTypeKwd::INTEGER2STATE: return findIntegerDType();
+        case VBasicDTypeKwd::INTEGER: return findInteger2StateDType();
+        case VBasicDTypeKwd::LOGIC: {
+            if (basicp->isRanged()) {
+                return findLogic2StateRangeDType(basicp->declRange(), basicp->widthMin(),
+                                                 basicp->numeric());
+            }
+            return findLogic2StateDType(basicp->width(), basicp->widthMin(), basicp->numeric());
+        }
+        default: v3fatalSrc("Cannot change logic of not integral type"); return nullptr;
+        }
+    }
+    v3fatalSrc("Can't change logic of not basic type");  // Maybe it is an enum or a struct? - then
+                                                         // it have to be changed manually
+    return nullptr;
+}
 
 void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
     UASSERT_OBJ(dtypep(), this, "No dtype when changing width");
@@ -1658,6 +1698,10 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
     const AstNodeDType* const dtypep = enumDTypep->skipRefp();
     // This cannot be asserted yet, because V3Clean tends to change width of everything
     // UASSERT_OBJ(!dtypep->isCompound(), this, "Cannot change width of compound dtype.");
+    if (dtypep->mimicsFourstate()) {
+        dtypeSetLogic2StateUnsized(width, widthMin, numeric);
+        return;
+    }
     dtypeSetBitOrLogicUnsized(width, widthMin, numeric, dtypep->isFourstate());
 }
 
@@ -1677,6 +1721,11 @@ AstNodeDType* AstNode::findLogicDType(int width, int widthMin, VSigning numeric)
 AstNodeDType* AstNode::findLogic2StateDType(int width, int widthMin, VSigning numeric) const {
     return v3Global.rootp()->typeTablep()->findLogicBitDType(
         fileline(), VBasicDTypeKwd::LOGIC2STATE, width, widthMin, numeric);
+}
+AstNodeDType* AstNode::findLogic2StateRangeDType(const VNumRange& range, int widthMin,
+                                                 VSigning numeric) const {
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(
+        fileline(), VBasicDTypeKwd::LOGIC2STATE, range, widthMin, numeric);
 }
 AstNodeDType* AstNode::findLogicRangeDType(const VNumRange& range, int widthMin,
                                            VSigning numeric) const {

@@ -94,7 +94,7 @@ static AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
     subFuncp->isLoose(true);
     subFuncp->slow(ofuncp->slow());
     subFuncp->declPrivate(ofuncp->declPrivate());
-    if (ofuncp->needProcess()) subFuncp->setNeedProcess();
+    if (ofuncp->needsVlProcess()) subFuncp->setNeedsVlProcess();
     for (AstVar* const argp : ofuncp->argspList()) {
         AstVar* const clonep = argp->cloneTree(false);
         subFuncp->addArgsp(clonep);
@@ -202,9 +202,9 @@ void splitCheck(AstCFunc* const ofuncp) {
     AstCFunc* subFuncp = nullptr;
 
     // Move statements one by one to the new sub-functions
-    AstNode* stmtsp = ofuncp->stmtsp()->unlinkFrBackWithNext();
-    for (size_t index = 0; AstNode* const itemp = stmtsp; ++index) {
-        stmtsp = stmtsp->nextp();
+    AstNodeStmt* stmtsp = ofuncp->stmtsp()->unlinkFrBackWithNext();
+    for (size_t index = 0; AstNodeStmt* const itemp = stmtsp; ++index) {
+        stmtsp = VN_AS(stmtsp->nextp(), NodeStmt);
         if (stmtsp) stmtsp->unlinkFrBackWithNext();
         const size_t itemSize = static_cast<size_t>(itemp->nodeCount());
         size += itemSize;

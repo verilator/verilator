@@ -45,6 +45,16 @@ module t;
       end
        $display("ok");
 
+    // A loop as a fork branch, followed by the next branch
+    fork
+      for (;0;)
+        $display("ok");
+        $display("bad5");  // <--- Bad
+      while (0)
+        $display("ok");
+        $display("bad6");  // <--- Bad
+    join
+
   end
 
 endmodule

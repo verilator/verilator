@@ -735,5 +735,8 @@ package p;
   logic pkgvar;
 endpackage
 
+class ClsParamExt extends ClsParam #(bit, 2);
+endclass
+
 `verilator_config
 threads_group -module "sub"

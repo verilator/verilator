@@ -41,6 +41,7 @@ class AstNetlist;
 class V3ConstPool;
 class V3HierGraph;
 class V3LibMap;
+class V3SolverBackend;
 class V3ThreadPool;
 
 //######################################################################
@@ -84,6 +85,8 @@ class V3Global final {
     V3ThreadPool* m_threadPoolp = nullptr;
     // Library Mapping, nullptr unless --libmap is used
     V3LibMap* m_libMapp = nullptr;
+    // Constraint solver back-end, see V3SolverBackend.h, set via solverBackendp(V3SolverBackend*)
+    V3SolverBackend* m_solverBackendp = nullptr;
     VWidthMinUsage m_widthMinUsage
         = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
 
@@ -96,6 +99,7 @@ class V3Global final {
     // Experimenting with always requiring heavy, see issue #2701
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
+    bool m_fourstateResolved = false;  // No four-state types should be present in AST
     bool m_hasEvents = false;  // Design uses SystemVerilog named events
     bool m_hasClasses = false;  // Design uses SystemVerilog classes
     bool m_hasSampled = false;  // Design uses SAMPLED expresions
@@ -169,6 +173,8 @@ public:
     void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
     bool dpi() const VL_MT_SAFE { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
+    bool fourstateResolved() const { return m_fourstateResolved; }
+    void fourstateResolved(bool flag) { m_fourstateResolved = flag; }
     bool assignsEvents() const { return m_assignsEvents; }
     void setAssignsEvents() { m_assignsEvents = true; }
     bool hasEvents() const { return m_hasEvents; }
@@ -197,6 +203,11 @@ public:
     void setUsesForce() { m_usesForce = true; }
     V3HierGraph* hierGraphp() const { return m_hierGraphp; }
     void hierGraphp(V3HierGraph* graphp) { m_hierGraphp = graphp; }
+    V3SolverBackend* solverBackendp() const { return m_solverBackendp; }
+    void solverBackendp(V3SolverBackend* backendp) {
+        UASSERT(!m_solverBackendp, "attempted to create multiple solver back-ends");
+        m_solverBackendp = backendp;
+    }
     bool useParallelBuild() const { return m_useParallelBuild; }
     void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useRandSequence() const { return m_useRandSequence; }

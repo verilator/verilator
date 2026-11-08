@@ -6,18 +6,17 @@ AST patterns with depth 1
            21 (VARREF):a/a
            20 (CCAST _:a/1):a/1
            18 (SHIFTR _:a/b (CONST #A):a/a):a/1
-           17 (VARREF):(w64)u[1:0]
            16 (AND (CONST #A):a/a _:a/a):a/a
            15 (SHIFTL _:a/1 (CONST #A):a/a):a/a
+           15 (VARREF):(w64)u[1:0]
            14 (NEGATE _:a/1):a/a
            12 (AND (CONST #A):a/a _:a/b):a/b
            12 (CONST ZERO):a/a
            12 (NOT _:a/b):a/b
-           12 (VARREF):(w64)u[0:0]
            11 (OR _:a/a _:a/b):a/c
+           10 (VARREF):(w64)u[0:0]
            10 (VARREF):a/1
             9 (OR _:a/a _:a/1):a/b
-            9 (VARREF):(G/str)
             8 (CCAST _:a/a):a/a
             8 (CCAST _:a/a):b/b
             8 (CRESET):a/a
@@ -25,6 +24,7 @@ AST patterns with depth 1
             8 (REDXOR _:a/b):a/1
             7 (CONST ZERO):a/1
             7 (SHIFTL _:a/b (CONST #A):a/a):a/a
+            7 (VARREF):(G/str)
             6 (AND _:a/b _:a/b):a/b
             6 (OR _:a/a _:a/a):a/a
             6 (REDXOR _:a/a):b/1
@@ -38,8 +38,6 @@ AST patterns with depth 1
             3 (AND (VARREF):a/a (CONST #A):b/b):a/a
             3 (ARRAYSEL (VARREF):(w64)u[0:0] (CONST ZERO):a/a):b/b
             3 (ARRAYSEL (VARREF):(w64)u[1:0] (CONST #A):a/a):b/b
-            3 (CRESET):(w64)u[0:0]
-            3 (CRESET):(w64)u[1:0]
             2 (ADD _:a/a (VARREF):a/a):a/a
             2 (CCALL [(VARREF):(w64)u[0:0], (VARREF):(w64)u[0:0]]):a/a
             2 (CCALL [(VARREF):(w64)u[0:0]]):a/1
@@ -48,8 +46,6 @@ AST patterns with depth 1
             2 (CCAST (CONST #A):a/a):a/a
             2 (CCAST _:a/1):b/b
             2 (CONST #A):a/1
-            2 (CRESET):(G/str)
-            2 (CRESET):1/1
             2 (GT (CONST #A):a/a (VARREF):a/a):a/1
             2 (NEQ _:a/b _:a/b):a/1
             2 (NOT _:a/1):a/1
@@ -59,11 +55,12 @@ AST patterns with depth 1
             2 (REDXOR _:a/b):c/1
             2 (SHIFTR _:a/a (CONST #A):b/b):a/a
             2 (TRIGGERED (VARREF):(w64)u[1:0]):a/1
-            2 (VARREF):1/1
             1 (ARRAYSEL (VARREF):(w64)u[0:0] (VARREF):a/a):b/b
             1 (ARRAYSEL (VARREF):(w64)u[1:0] (VARREF):a/a):b/b
             1 (CCAST _:a/b):a/b
             1 (CCAST _:a/b):c/c
+            1 (CRESET):(w64)u[0:0]
+            1 (CRESET):(w64)u[1:0]
             1 (NEQ _:a/b _:a/b):a/c
             1 (TRIGGERED (VARREF):(w64)u[0:0]):a/1
 

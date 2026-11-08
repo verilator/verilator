@@ -109,7 +109,7 @@ inline std::ostream& operator<<(std::ostream& os, const VAccess& rhs) { return o
 
 class VAlwaysKwd final {
 public:
-    enum en : uint8_t { ALWAYS, ALWAYS_FF, ALWAYS_LATCH, ALWAYS_COMB, CONT_ASSIGN };
+    enum en : uint8_t { ALWAYS, ALWAYS_FF, ALWAYS_LATCH, ALWAYS_COMB, CONT_ASSIGN, COVER_TOGGLE };
     enum en m_e;
     VAlwaysKwd()
         : m_e{ALWAYS} {}
@@ -120,8 +120,8 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static constexpr const char* const names[]
-            = {"always", "always_ff", "always_latch", "always_comb", "cont_assign"};
+        static constexpr const char* const names[] = {
+            "always", "always_ff", "always_latch", "always_comb", "cont_assign", "cover_toggle"};
         return names[m_e];
     }
 };
@@ -736,6 +736,10 @@ public:
         return m_e == BYTE || m_e == SHORTINT || m_e == INT || m_e == LONGINT || m_e == INTEGER
                || m_e == INTEGER2STATE || m_e == TIME || m_e == TIME2STATE;
     }
+    // Originally four-state, converted by V3Unknown to two-state domain
+    bool mimicsFourstate() const VL_MT_SAFE {
+        return m_e == LOGIC2STATE || m_e == INTEGER2STATE || m_e == TIME2STATE;
+    }
     // Does this represent a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_SAFE {
         switch (m_e) {
@@ -1188,7 +1192,8 @@ FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
 #define FOR_EACH_CFUNCTION(macro) \
     /*    id,                                 function,                 pure,   args */ \
     macro(_NONE,                              "_none",                  false,  "") \
-    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",          PURE,   "r")
+    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",          PURE,   "r") \
+    macro(STRING_APPEND,                      "VL_APPENDN_NN",          false,  "mr")
 // clang-format on
 
 class VCFunction final {
@@ -1661,8 +1666,7 @@ public:
         ET_HYBRID,  // This is like ET_COMB, but with explicit sensitivity to an expression
         ET_STATIC,  // static variable initializers (runs before 'initial')
         ET_INITIAL,  // 'initial' statements
-        ET_FINAL,  // 'final' statements
-        ET_NEVER  // Never occurs (optimized away)
+        ET_FINAL  // 'final' statements
     };
     enum en m_e;
     bool clockedStmt() const {
@@ -1680,7 +1684,6 @@ public:
             false,  // ET_STATIC
             false,  // ET_INITIAL
             false,  // ET_FINAL
-            false,  // ET_NEVER
         };
         return clocked[m_e];
     }
@@ -1696,14 +1699,14 @@ public:
     }
     const char* ascii() const {
         static constexpr const char* const names[]
-            = {"CHANGED",    "BOTH",   "POS",    "NEG",     "EVENT", "TRUE", "COMBO",
-               "COMBO_STAR", "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
+            = {"CHANGED", "BOTH",       "POS",    "NEG",    "EVENT",   "TRUE",
+               "COMBO",   "COMBO_STAR", "HYBRID", "STATIC", "INITIAL", "FINAL"};
         return names[m_e];
     }
     const char* verilogKwd() const {
         static constexpr const char* const names[]
-            = {"[changed]", "edge",     "posedge",  "negedge",   "[event]", "[true]", "*",
-               "*",         "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
+            = {"[changed]", "edge", "posedge",  "negedge",  "[event]",   "[true]",
+               "*",         "*",    "[hybrid]", "[static]", "[initial]", "[final]"};
         return names[m_e];
     }
     // Return true iff this and the other have mutually exclusive transitions
@@ -2471,6 +2474,7 @@ public:
     }
     bool isWor() const { return (m_e == TRIOR); }
     bool isWiredNet() const { return (m_e == TRIOR || m_e == TRIAND); }
+    bool isWireNet() const { return (m_e == WIRE); }
     bool isContAssignable() const {  // In Verilog, always ok in SystemVerilog
         return (m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == WIRE || m_e == WREAL || m_e == TRIWIRE
                 || m_e == TRI0 || m_e == TRI1 || m_e == PORT || m_e == BLOCKTEMP

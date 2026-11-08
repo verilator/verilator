@@ -119,7 +119,7 @@ class OrderGraphBuilder final : public VNVisitor {
 
     // METHODS
 
-    void iterateLogic(AstNode* nodep) {
+    void iterateLogic(AstNodeProcedure* nodep) {
         UASSERT_OBJ(!m_logicVxp, nodep, "Should not nest");
         // Reset VarUsage and VarAccess
         AstNode::user2ClearTree();
@@ -413,9 +413,6 @@ class OrderGraphBuilder final : public VNVisitor {
     }  // LCOV_EXCL_STOP
 
     //--- Verilator concoctions
-    void visit(AstCoverToggle* nodep) override {  //
-        iterateLogic(nodep);
-    }
     void visit(AstNbaCommit* nodep) override {
         UASSERT_OBJ(m_inPost, nodep, "AstNbaCommit should be in AstAlwaysPost");
         // Commit the NBAs enqueued by clocked logic in the same pass, with the other NBAs. Like

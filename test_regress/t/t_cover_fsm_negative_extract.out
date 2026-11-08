@@ -358,6 +358,26 @@
             state_q <= rst_n ? state_d : state_t'(dyn_reset);
           end
         endmodule
+        module fsm_reg_enable_no_else_bad (
+            input logic clk,
+            input logic start
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1
+          } state_t;
+          state_t state_q  /*verilator fsm_state*/;
+          state_t state_d;
+          always_comb begin
+            state_d = state_q;
+            if (state_q == S0) state_d = S1;
+            else state_d = S0;
+          end
+          // An enable with no else is not a reset guard
+          always_ff @(posedge clk) begin
+            if (start) state_q <= state_d;
+          end
+        endmodule
         module t (
             input logic clk
         );
@@ -406,6 +426,10 @@
               .clk(clk),
               .rst_n(cyc != 0),
               .dyn_reset(dyn_case[1:0])
+          );
+          fsm_reg_enable_no_else_bad reg_enable_no_else_u (
+              .clk(clk),
+              .start(start)
           );
 
           always @(posedge clk) begin

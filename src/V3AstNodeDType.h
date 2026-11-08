@@ -151,6 +151,8 @@ public:
     bool isDpiLogicVec() const;  // DPI uses svLogicVecVal
     bool isDpiPrimitive() const { return !isDpiBitVec() && !isDpiLogicVec(); }
     virtual bool isFourstate() const;
+    // Originally four-state, converted by V3Unknown to two-state domain
+    virtual bool mimicsFourstate() const VL_MT_STABLE;
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
     string prettyDTypeNameQ(bool full = false) const { return "'" + prettyDTypeName(full) + "'"; }
@@ -272,18 +274,21 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     // @astgen op1 := membersp : List[AstMemberDType]
     //
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Package emitted with
+    // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Equivalent BasicDType if packed
     string m_name;  // Name from upper typedef, if any
     string m_typedefName;  // Typedef's dtypeName() once moved off the typedef declaring it
     const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
     bool m_packed;  // Packed struct/union, else unpacked
     bool m_isFourstate = false;  // V3Width computes; true if any member is 4-state
+    bool m_mimicsFourstate = false;  // Optimized to 2-state from an originally 4-state type
     bool m_constrainedRand = false;  // True if struct has constraint expression
     bool m_emitToString = false;  // Generate to_string() for this struct/union if set
 
 protected:
     AstNodeUOrStructDType(VNType t, FileLine* fl, VSigning numericUnpack)
         : AstNodeDType{t, fl}
-        , m_uniqueNum{uniqueNumInc()} {
+        , m_uniqueNum{uniqueNumInc()}
+        , m_refDTypep{nullptr} {
         // VSigning::NOSIGN overloaded to indicate not packed
         m_packed = (numericUnpack != VSigning::NOSIGN);
         numeric(VSigning::fromBool(numericUnpack.isSigned()));
@@ -294,7 +299,9 @@ protected:
         , m_typedefName{other.m_typedefName}
         , m_uniqueNum{uniqueNumInc()}
         , m_packed{other.m_packed}
-        , m_isFourstate{other.m_isFourstate} {}
+        , m_isFourstate{other.m_isFourstate}
+        , m_mimicsFourstate{other.m_mimicsFourstate}
+        , m_refDTypep{other.m_refDTypep} {}
 
 public:
     ASTGEN_MEMBERS_AstNodeUOrStructDType;
@@ -303,15 +310,13 @@ public:
     void dumpJson(std::ostream& str) const override;
     string prettyDTypeName(bool) const override;
     bool isCompound() const override { return !packed(); }
-    // For basicp() we reuse the size to indicate a "fake" basic type of same size
-    AstBasicDType* basicp() const override VL_MT_STABLE {
-        if (!m_packed) return nullptr;
-        return (isFourstate()
-                    ? VN_AS(findLogicRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
-                            BasicDType)
-                    : VN_AS(findBitRangeDType(VNumRange{width() - 1, 0}, width(), numeric()),
-                            BasicDType));
+    AstBasicDType* basicp() const override VL_MT_STABLE { return VN_AS(m_refDTypep, BasicDType); }
+    void refDTypep(AstNodeDType* const dtypep) {
+        UASSERT_OBJ(packed(), this, "Only packed union/struct have their integral counterparts");
+        m_refDTypep = dtypep;
     }
+    AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
+    AstNodeDType* subDTypep() const override VL_MT_STABLE { return m_refDTypep; }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     int widthAlignBytes() const override;
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
@@ -331,6 +336,9 @@ public:
     static bool packedUnsup() { return true; }
     void isFourstate(bool flag) { m_isFourstate = flag; }
     bool isFourstate() const override VL_MT_SAFE { return m_isFourstate; }
+    void mimicsFourstate(bool flag) { m_mimicsFourstate = flag; }
+    // Originally four-state, converted by V3Unknown to two-state domain
+    bool mimicsFourstate() const override VL_MT_STABLE { return m_mimicsFourstate; }
     static int lo() VL_MT_STABLE { return 0; }
     int hi() const VL_MT_STABLE {
         return dtypep()->width() - 1;
@@ -515,6 +523,8 @@ public:
     // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
     int widthTotalBytes() const override;
     bool isFourstate() const override { return keyword().isFourstate(); }
+    // Originally four-state, converted by V3Unknown to two-state domain
+    bool mimicsFourstate() const override VL_MT_STABLE { return keyword().mimicsFourstate(); }
     VBasicDTypeKwd keyword() const VL_MT_SAFE {  // Avoid using - use isSomething accessors instead
         return m.m_keyword;
     }

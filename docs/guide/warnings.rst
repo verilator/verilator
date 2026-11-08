@@ -468,17 +468,17 @@ List Of Warnings
 
 .. option:: COMBDLY
 
-   Error issued when a non-blocking assignment `<=`, or a non-blocking event
-   trigger `->>`, is used in a combinational logic block. Using non-blocking
-   assignments in this way is bad practice, and may lead to the simulation not
-   matching synthesis. Verilator, like synthesis, will always convert these to
-   the blocking forms `=` and `->` and execute them as such. This may result in
-   race conditions and differ from other simulators.
+   Warns that a non-blocking assignment `<=`, or a non-blocking event trigger
+   `->>`, is used in a combinational logic block. Using non-blocking assignments
+   in this way is bad practice, and may lead to the simulation not matching
+   synthesis. Verilator, like synthesis, will always convert these to the
+   blocking forms `=` and `->` and execute them as such. This may result in race
+   conditions and differ from other simulators.
    `http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf
    <http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf>`_
 
-   This error can be disabled. Disabling it does not change execution, only
-   suppresses the error message.
+   Disabling this warning does not change execution, only suppresses the
+   warning message.
 
    Faulty example:
 
@@ -1439,7 +1439,7 @@ List Of Warnings
 
 .. option:: MULTIDRIVEN
 
-   Warns that the specified signal has multiple procedural drivers.
+   Warns that the specified signal has multiple drivers.
 
    One case is when a variable written in an ``always_comb`` or
    ``always_ff`` block is also written by another process. IEEE 1800
@@ -1474,6 +1474,16 @@ List Of Warnings
    signal, so the design and the testbench contend for it and the
    synchronous drive may be silently lost. Declare the clocking block
    ``input`` if the intent is only to observe the signal.
+
+   A module output port connection is another driver of a wire net: a
+   wire with a declaration initializer or a continuous assignment that is
+   also connected to a module output port is multi-driven, and so is a
+   wire connected to two or more module output ports. A port only counts
+   as a driver if the instantiated module actually drives it; a port the
+   module never drives only ever contributes ``Z`` to the net. Tri-family
+   nets are excluded, as they resolve multiple drivers by design, and the
+   initializer of a ``logic``/``var`` variable is not a net driver, so
+   neither triggers this check.
 
    Ignoring this warning may hide clock domain crossing, timing, or
    portability bugs. It may also cause longer simulation runtimes due to
@@ -2629,6 +2639,10 @@ List Of Warnings
    signals in one place makes it easy to find what is unused and reduces
    the number of lint_off pragmas, reducing bugs.
 
+   Verilator intentionally does not consider a `$display("%p")` to consume
+   all members of a class/structure as this would otherwise hide that a
+   variable is unused functionally otherwise.
+
 
 .. option:: USEBEFOREDECL
 
@@ -2765,7 +2779,8 @@ List Of Warnings
 
    Verilator attempts to track the minimum width of unsized constants
    and will suppress the warning when the minimum width is appropriate to
-   fit the required size.
+   fit the required size. A size cast or an integral type cast can also
+   suppress operand width warnings within its expression.
 
    Disabling/enabling WIDTH is equivalent to disabling/enabling the
    :option:`WIDTHDIGITS`, :option:`WIDTHEXPAND`, :option:`WIDTHTRUNC`,
