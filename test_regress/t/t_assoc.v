@@ -217,6 +217,7 @@ module t (
       int by_enum[color_t];
       bit [3:0][7:0] equivalent_type;
       bit [31:0] index_select[2];
+      bit [31:0] index_select3[3];
       Base base_handle;
       Derived derived_handle;
       string string_key;
@@ -230,6 +231,9 @@ module t (
       i = by_data.last(index_select[cyc+1]);
       `checkh(i, 1);
       `checkh(index_select[1], 9);
+      i = by_data.last(index_select3[cyc+1]);  // Bounds checked, as not a power of 2
+      `checkh(i, 1);
+      `checkh(index_select3[1], 9);
       derived_handle = new;
       by_class[derived_handle] = 1;
       i = by_class.first(base_handle);

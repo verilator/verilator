@@ -130,7 +130,8 @@ class UnknownVisitor final : public VNVisitor {
                                                 prep->dtypep()};
                 addVar(varp);
                 AstNode* const prepCopyp = prep->clonep();
-                prepCopyp->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
+                // As written by the original, e.g. read-write as a library call's inout argument
+                prepCopyp->replaceWith(new AstVarRef{fl, varp, prep->getVAccessRecurse()});
                 VL_DO_DANGLING(pushDeletep(prepCopyp), prepCopyp);
             }
             AstIf* const newp = new AstIf{fl, condp, origStmtp, elseStmtp};
