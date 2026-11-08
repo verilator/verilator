@@ -1045,13 +1045,4 @@ public:
     bool next() { return VlRandomizer::next(m_rng); }
 };
 
-//======================================================================
-//Helper method for dynamic array handling in SMT expressions
-
-inline std::string vlToSolverHex(const IData& value) {
-    std::ostringstream oss;
-    oss << std::hex << std::setfill('0') << std::setw(8) << value;
-    return oss.str();
-}
-
 #endif  // Guard

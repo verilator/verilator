@@ -373,11 +373,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         return "";
     }
 
-    // Solver name of the element at index 'idxp' of the array named 'namep'
+    // Solver name of the element at index 'idxp' of the array named 'namep'. The index is
+    // formatted as 32 bits, so as 8 hex digits.
     static AstNodeExpr* newElementNamep(FileLine* fl, AstNodeExpr* namep, AstNodeExpr* idxp) {
-        AstCFuncHard* const hexp = new AstCFuncHard{fl, VCFunction::RANDOMIZER_TO_SOLVER_HEX,
-                                                    idxp->cloneTreePure(false)};
-        hexp->dtypeSetString();
+        AstNodeExpr* const idx32p
+            = adjustWidth(fl, idxp->cloneTreePure(false), 32, VSigning::UNSIGNED);
+        AstSFormatF* const hexp = new AstSFormatF{fl, "%x", false, idx32p};
         AstNodeExpr* const prefixp
             = new AstConcatN{fl, namep, new AstConst{fl, AstConst::String{}, "."}};
         return new AstConcatN{fl, prefixp, hexp};
@@ -623,8 +624,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
     // Convert expression to target width using extend or truncate as needed
-    AstNodeExpr* adjustWidth(FileLine* fl, AstNodeExpr* exprp, int targetWidth,
-                             VSigning targetSigning) {
+    static AstNodeExpr* adjustWidth(FileLine* fl, AstNodeExpr* exprp, int targetWidth,
+                                    VSigning targetSigning) {
         const int exprWidth = exprp->width();
         if (targetWidth > exprWidth) {
             // Extend to match target width
