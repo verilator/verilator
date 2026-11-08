@@ -1178,7 +1178,7 @@ class FsmDetectVisitor final : public VNVisitor {
                 && !condConstTargets(targetp, value, elseValue)) {
                 return nullptr;
             }
-        }
+        }  // LCOV_EXCL_LINE
         return chain.branches.front().nodep;
     }
 
