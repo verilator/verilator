@@ -402,7 +402,36 @@ module fsm_if_chain_guard (
       else state_d = S2;
     end
     else if (state_q == S1) state_d = sel ? S2 : S0;
-    else if (state_q == S2) state_d = S0;
+    else state_d = S0;
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
+module fsm_if_chain_guard_noelse_off (
+    input logic clk,
+    input logic rst,
+    input logic sel
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+
+  // A nested guard without else is not a supported chain branch
+  always_comb begin
+    state_d = state_q;
+    if (state_q == S0) begin
+      if (sel) state_d = S1;
+    end
+    else if (state_q == S1) state_d = S2;
     else state_d = S0;
   end
 
@@ -458,6 +487,11 @@ module t (
       .sel(sel)
   );
   fsm_if_chain_guard if_chain_guard_u (
+      .clk(clk),
+      .rst(rst),
+      .sel(cyc[1])
+  );
+  fsm_if_chain_guard_noelse_off if_chain_guard_noelse_off_u (
       .clk(clk),
       .rst(rst),
       .sel(sel)

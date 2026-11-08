@@ -1663,8 +1663,16 @@ class FsmDetectVisitor final : public VNVisitor {
                     UASSERT_OBJ(visitValuep(branch.valuep), branch.valuep,
                                 "FSM if-chain source values should be prevalidated");
                     AstNodeExpr* const targetp = branchTargetp(branch, assignVscp);
-                    // As for case items, an if/else body adds no target values
-                    if (!targetp) continue;
+                    if (!targetp) {
+                        // A nested if/else: the constant each arm assigns
+                        const AstIf* const ifp = VN_AS(branch.stmtsp, If);
+                        for (AstNode* const armp : {ifp->thensp(), ifp->elsesp()}) {
+                            const AstNodeAssign* const assp
+                                = VN_AS(skipLeadingIgnorableStmt(armp), NodeAssign);
+                            if (!visitValuep(assp->rhsp())) return false;
+                        }
+                        continue;
+                    }
                     FsmStateValue thenValue;
                     FsmStateValue elseValue;
                     AstCond* const condp = VN_CAST(targetp, Cond);

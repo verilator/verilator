@@ -453,33 +453,62 @@
         module fsm_if_chain_guard (
 %000009     input logic clk,
 %000001     input logic rst,
-%000001     input logic sel
+%000002     input logic sel
         );
           localparam logic [1:0] S0 = 2'd0;
           localparam logic [1:0] S1 = 2'd1;
           localparam logic [1:0] S2 = 2'd2;
         
-%000004   logic [1:0] state_q;
+%000002   logic [1:0] state_q;
 %000004   logic [1:0] state_d;
         
           // Input guards inside the state branches of an if/else-if chain
  000010   always_comb begin
 %000006     if (state_q == S0) begin
         // [FSM coverage]
-%000000        // [fsm_arc t.if_chain_guard_u.state_q::S0->S1]
-%000004        // [fsm_arc t.if_chain_guard_u.state_q::S0->S2]
-%000000        // [fsm_arc t.if_chain_guard_u.state_q::S1->S0]
-%000000        // [fsm_arc t.if_chain_guard_u.state_q::S1->S2]
-%000003        // [fsm_arc t.if_chain_guard_u.state_q::S2->S0]
+%000002        // [fsm_arc t.if_chain_guard_u.state_q::S0->S1]
+%000001        // [fsm_arc t.if_chain_guard_u.state_q::S0->S2]
+%000001        // [fsm_arc t.if_chain_guard_u.state_q::S1->S0]
+%000001        // [fsm_arc t.if_chain_guard_u.state_q::S1->S2]
+%000002        // [fsm_arc t.if_chain_guard_u.state_q::S2->S0]
 %000004        // [fsm_state t.if_chain_guard_u.state_q::S0]
-%000000        // [fsm_state t.if_chain_guard_u.state_q::S1] *** UNCOVERED ***
-%000004        // [fsm_state t.if_chain_guard_u.state_q::S2]
-%000006       if (sel) state_d = S1;
-%000006       else state_d = S2;
+%000002        // [fsm_state t.if_chain_guard_u.state_q::S1]
+%000002        // [fsm_state t.if_chain_guard_u.state_q::S2]
+%000004       if (sel) state_d = S1;
+%000004       else state_d = S2;
             end
-%000000     else if (state_q == S1) state_d = sel ? S2 : S0;
-%000004     else if (state_q == S2) state_d = S0;
-%000000     else state_d = S0;
+%000002     else if (state_q == S1) state_d = sel ? S2 : S0;
+%000002     else state_d = S0;
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_q <= S0;
+%000007     else state_q <= state_d;
+          end
+        endmodule
+        
+        module fsm_if_chain_guard_noelse_off (
+%000009     input logic clk,
+%000001     input logic rst,
+%000001     input logic sel
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+%000001   state_t state_q;
+%000001   state_t state_d;
+        
+          // A nested guard without else is not a supported chain branch
+ 000010   always_comb begin
+ 000010     state_d = state_q;
+%000008     if (state_q == S0) begin
+%000007       if (sel) state_d = S1;
+            end
+%000001     else if (state_q == S1) state_d = S2;
+%000001     else state_d = S0;
           end
         
 %000009   always_ff @(posedge clk) begin
@@ -534,6 +563,11 @@
               .sel(sel)
           );
           fsm_if_chain_guard if_chain_guard_u (
+              .clk(clk),
+              .rst(rst),
+              .sel(cyc[1])
+          );
+          fsm_if_chain_guard_noelse_off if_chain_guard_noelse_off_u (
               .clk(clk),
               .rst(rst),
               .sel(sel)
