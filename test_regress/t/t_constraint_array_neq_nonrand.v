@@ -349,6 +349,32 @@ class rand_mode_side;
   constraint c { frame == target; }
 endclass
 
+// Both sides rand queues: keeps the solver's own queue comparison.
+class rr_queues;
+  rand bit [1:0] frame[$];
+  rand bit [1:0] other[$];
+  constraint c_size { frame.size() == 3; other.size() == 3; }
+  constraint c_pin { other[0] == 1; other[1] == 2; other[2] == 3; }
+  constraint c { frame == other; }
+endclass
+
+// Both sides rand, a fixed array of queues: can't be expanded per element,
+// so it keeps the solver's own comparison too.
+class rr_fixed_of_queues;
+  rand bit [1:0] frame[2][$];
+  rand bit [1:0] other[2][$];
+  constraint c_pin { other[0][0] == 1; other[0][1] == 2; other[1][0] == 3; other[1][1] == 0; }
+  constraint c { frame == other; }
+  function new();
+    foreach (frame[i]) begin
+      frame[i].push_back(0);
+      frame[i].push_back(0);
+      other[i].push_back(0);
+      other[i].push_back(0);
+    end
+  endfunction
+endclass
+
 // The non-rand operand as a randomize() with {} caller local.
 class inline_target;
   rand bit [1:0] frame[3];
@@ -382,6 +408,8 @@ module t;
     const_operands const_obj;
     rand_mode_side rmode_obj;
     inline_target inline_obj;
+    rr_queues rrq_obj;
+    rr_fixed_of_queues rrfq_obj;
     bit [7:0] prev[4][4];
     bit [7:0] prev_cube1[2][2];
     int randomize_result;
@@ -653,6 +681,26 @@ module t;
     rmode_obj.frame = '{2'd0, 2'd2};
     randomize_result = rmode_obj.randomize();
     `checkd(randomize_result, 0);
+
+    rrq_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = rrq_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(rrq_obj.frame.size(), 3);
+      `checkd(rrq_obj.frame[0], 2'd1);
+      `checkd(rrq_obj.frame[1], 2'd2);
+      `checkd(rrq_obj.frame[2], 2'd3);
+    end
+
+    rrfq_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = rrfq_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(rrfq_obj.frame[0][0], 2'd1);
+      `checkd(rrfq_obj.frame[0][1], 2'd2);
+      `checkd(rrfq_obj.frame[1][0], 2'd3);
+      `checkd(rrfq_obj.frame[1][1], 2'd0);
+    end
 
     inline_obj = new;
     begin
