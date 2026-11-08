@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-TEST_FILENAME_RE = r'test_regress/t/.*\.(c|cpp|dat|gitattributes|gprof|h|map|mem|mk|out|pf|py|tree|vc|vh|vlt)$'
+TEST_FILENAME_RE = r'test_regress/t/.*\.(c|cpp|cppm|dat|gitattributes|gprof|h|map|mem|mk|out|pf|py|tree|vc|vh|vlt)$'
 TEST_FILENAME_EXEMPT = r't_inst_v2k__sub.vi'
 
 
