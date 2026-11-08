@@ -1169,17 +1169,13 @@ class FsmDetectVisitor final : public VNVisitor {
         if (AstNodeAssign* const assp = VN_CAST(chain.stmtp, NodeAssign)) {
             if (!directStateAssign(assp, stateVscp)) return nullptr;
         }
-        // Branches support the same transitions as case items
         FsmStateValue value;
         FsmStateValue elseValue;
         for (const FsmIfBranch& branch : chain.branches) {
             AstNodeExpr* const targetp = branchTargetp(branch, stateVscp);
-            if (!targetp) {
-                if (!ifStateConstAssign(branch.stmtsp, stateVscp, value, elseValue)) {
-                    return nullptr;
-                }
-            } else if (constValueStatus(targetp, value) != ConstValueStatus::OK
-                       && !condConstTargets(targetp, value, elseValue)) {
+            if (!targetp) return nullptr;
+            if (constValueStatus(targetp, value) != ConstValueStatus::OK
+                && !condConstTargets(targetp, value, elseValue)) {
                 return nullptr;
             }
         }
@@ -1654,8 +1650,8 @@ class FsmDetectVisitor final : public VNVisitor {
                     UASSERT_OBJ(visitValuep(branch.valuep), branch.valuep,
                                 "FSM if-chain source values should be prevalidated");
                     AstNodeExpr* const targetp = branchTargetp(branch, assignVscp);
-                    // As for case items, an if/else body adds no target values
-                    if (!targetp) continue;
+                    UASSERT_OBJ(targetp, branch.nodep,
+                                "FSM if-chain target values should be prevalidated");
                     FsmStateValue thenValue;
                     FsmStateValue elseValue;
                     AstCond* const condp = VN_CAST(targetp, Cond);
@@ -1733,14 +1729,14 @@ class FsmDetectVisitor final : public VNVisitor {
         AstNode* assignNodep = targetp;
         AstNode* bodyNodep = targetp;
         if (!targetp) {
+            AstNodeAssign* const assp = directStateAssign(branch.stmtsp, stateVscp);
+            UASSERT_OBJ(assp, branch.stmtsp, "FSM if-chain branch should have been prevalidated");
+            targetp = assp->rhsp();
+            assignNodep = assp;
             bodyNodep = branch.stmtsp;
-            if (AstNodeAssign* const assp = directStateAssign(branch.stmtsp, stateVscp)) {
-                targetp = assp->rhsp();
-                assignNodep = assp;
-            }
         }
         FsmStateValue toValue;
-        if (targetp && constValueStatus(targetp, toValue) == ConstValueStatus::OK) {
+        if (constValueStatus(targetp, toValue) == ConstValueStatus::OK) {
             if (!validateKnownStateValue(assignNodep, stateSpace, toValue, "target")) return;
             // Preserve the user's guard in coverage by marking this arc
             // conditional even when the branch body is a direct assignment.
@@ -1751,10 +1747,9 @@ class FsmDetectVisitor final : public VNVisitor {
 
         FsmStateValue thenValue;
         FsmStateValue elseValue;
-        const bool guarded
-            = targetp ? condConstTargets(targetp, thenValue, elseValue)
-                      : ifStateConstAssign(branch.stmtsp, stateVscp, thenValue, elseValue);
-        UASSERT_OBJ(guarded, bodyNodep, "FSM if-chain branch should have been prevalidated");
+        const bool condAssign = condConstTargets(targetp, thenValue, elseValue);
+        UASSERT_OBJ(condAssign, bodyNodep,
+                    "FSM if-chain branch should be a direct constant transition");
         if (!validateKnownStateValue(bodyNodep, stateSpace, thenValue, "target")) return;
         if (!validateKnownStateValue(bodyNodep, stateSpace, elseValue, "target")) return;
         for (const FsmStateValue& branchValue : {thenValue, elseValue}) {
