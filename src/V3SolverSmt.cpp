@@ -2136,7 +2136,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         } else {
             VL_RESTORER(m_foreachBodyp);
             VL_RESTORER_COPY(m_foreachIdxVars);
-            for (AstNode* elemp = nodep->headerp()->elementsp(); elemp; elemp = elemp->nextp()) {
+            for (AstNode* const elemp : nodep->headerp()->elementspList()) {
                 if (const AstVar* const varp = VN_CAST(elemp, Var)) m_foreachIdxVars.insert(varp);
             }
             AstBegin* const holderp
@@ -2158,15 +2158,14 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         AstNodeModule* const genModp = VN_AS(m_genp->user2p(), NodeModule);
 
-        for (AstNodeExpr* lhsp = nodep->lhssp(); lhsp; lhsp = VN_CAST(lhsp->nextp(), NodeExpr)) {
+        for (AstNodeExpr* const lhsp : nodep->lhsspList()) {
             AstNodeExpr* const lhsTestp = buildSolveBeforeNameExpr(fl, lhsp);
             if (!lhsTestp) {
                 lhsp->v3fatalSrc("Unexpected expression type in solve...before lhs");
                 continue;
             }
             VL_DO_DANGLING(lhsTestp->deleteTree(), lhsTestp);
-            for (AstNodeExpr* rhsp = nodep->rhssp(); rhsp;
-                 rhsp = VN_CAST(rhsp->nextp(), NodeExpr)) {
+            for (AstNodeExpr* const rhsp : nodep->rhsspList()) {
                 AstNodeExpr* const rhsNamep = buildSolveBeforeNameExpr(fl, rhsp);
                 if (!rhsNamep) {
                     rhsp->v3fatalSrc("Unexpected expression type in solve...before rhs");
@@ -2921,8 +2920,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // disable-soft real conditional semantics per IEEE 1800-2023 18.5.13.
     AstNode* extractConditionalDisableSofts(AstNode* itemsp, AstNodeExpr* outerCondp) {
         AstNode* hoistListp = nullptr;
-        for (AstNode *stmtp = itemsp, *nextp; stmtp; stmtp = nextp) {
-            nextp = stmtp->nextp();
+        for (AstNode* const stmtp : VNList<AstNode>{itemsp}) {
             if (AstConstraintIf* const ifp = VN_CAST(stmtp, ConstraintIf)) {
                 FileLine* const fl = ifp->fileline();
                 // then branch: accumulated = outer && this.cond
@@ -3033,25 +3031,18 @@ class SolverSmtLowering final : public V3SolverLowering {
     // Recurses into conditional and foreach bodies, so that the pairwise
     // constraints stay under the guard they were written under.
     static void expandUniqueElementList(AstNode* itemsp) {
-        AstNode* itemp = itemsp;
-        while (itemp) {
-            AstNode* const nextp = itemp->nextp();
+        for (AstNode* const itemp : VNList<AstNode>{itemsp}) {
             if (const AstConstraintIf* const ifp = VN_CAST(itemp, ConstraintIf)) {
                 expandUniqueElementList(ifp->thensp());
                 expandUniqueElementList(ifp->elsesp());
-                itemp = nextp;
                 continue;
             }
             if (const AstConstraintForeach* const foreachp = VN_CAST(itemp, ConstraintForeach)) {
                 expandUniqueElementList(foreachp->bodyp());
-                itemp = nextp;
                 continue;
             }
             AstConstraintUnique* const uniquep = VN_CAST(itemp, ConstraintUnique);
-            if (!uniquep) {
-                itemp = nextp;
-                continue;
-            }
+            if (!uniquep) continue;
 
             std::vector<AstNodeExpr*> exprItems;
             bool hasArrayVarRef = false;
@@ -3090,7 +3081,6 @@ class SolverSmtLowering final : public V3SolverLowering {
                 uniquep->unlinkFrBack();
                 VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
             }
-            itemp = nextp;
         }
     }
     void createRandomGenerator(AstClass* const classp) {
@@ -3236,7 +3226,7 @@ class SolverSmtLowering final : public V3SolverLowering {
     }
 
     static void addUpdateRandVarsStmts(AstFunc* const updatep, AstNode* const stmtsp) {
-        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : VNList<AstNode>{stmtsp}) {
             if (AstBegin* const blockp = VN_CAST(stmtp, Begin)) {
                 addUpdateRandVarsStmts(updatep, blockp->stmtsp());
                 continue;
@@ -3681,9 +3671,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             }
         };
 
-        for (AstNode *nextip, *itemp = constrItemsp; itemp; itemp = nextip) {
-            nextip = itemp->nextp();
-
+        for (AstNode* const itemp : VNList<AstNodeConstraintItem>{constrItemsp}) {
             // dist can appear inside an if/else or foreach constraint.
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
                 UASSERT_OBJ(cifp->thensp(), cifp, "constraint if without a then body");
@@ -4137,8 +4125,7 @@ public:
             if (!sizeArrayVars.empty() && prepareArraysTaskp->stmtsp()) {
                 AstNodeStmt* const preparep = (new AstTaskRef{fl, prepareArraysTaskp})->makeStmt();
                 // A size-constrained array always has a preceding write_var registration.
-                for (AstNode* stmtp = randomizep->stmtsp(); stmtp;  // LCOV_EXCL_BR_LINE
-                     stmtp = stmtp->nextp()) {
+                for (AstNode* const stmtp : randomizep->stmtspList()) {  // LCOV_EXCL_BR_LINE
                     bool writesArray = false;
                     stmtp->foreach([&](AstCMethodHard* methodp) {
                         writesArray |= methodp->method() == VCMethod::RANDOMIZER_WRITE_VAR;

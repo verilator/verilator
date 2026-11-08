@@ -146,7 +146,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(nodep->prettyName());
         puts("(");
         bool first = true;
-        for (AstNode* itemp = nodep->declsp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : nodep->declspList()) {
             AstVar* const portp = VN_AS(itemp, Var);
             UASSERT_OBJ(portp->isIO(), portp, "Non-port in a DPI import prototype");
             if (portp->isFuncReturn()) continue;
@@ -1228,7 +1228,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         // A specialization's name is mangled, so only the generic carries the '#()' header
         if (nodep->name() == nodep->origName()) {
             bool first = true;
-            for (const AstNode* stmtp = nodep->membersp(); stmtp; stmtp = stmtp->nextp()) {
+            for (const AstNode* const stmtp : nodep->memberspList()) {
                 if (const AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
                     if (!ptp->isGParam()) continue;
                     puts(first ? " #(" : ", ");
@@ -1264,7 +1264,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(";\n");
 
-        for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : nodep->memberspList()) {
             // Type parameters are emitted in the #() header, not the body
             if (!VN_IS(itemp, ParamTypeDType)) iterateConst(itemp);
         }

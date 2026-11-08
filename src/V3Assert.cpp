@@ -663,11 +663,9 @@ class AssertVisitor final : public VNVisitor {
         m_obsFlushp = AstNode::addNext(m_obsFlushp, clearp->makeStmt());
     }
     void snapshotObservedSFormatArgs(AstSFormatF* fmtp, AstNodeStmt*& queuesp) {
-        for (AstNodeExpr* exprp = fmtp->exprsp(); exprp;) {
-            AstNodeExpr* const nextp = VN_CAST(exprp->nextp(), NodeExpr);
+        for (AstNodeExpr* const exprp : fmtp->exprspList()) {
             AstSFormatArg* const argp = VN_CAST(exprp, SFormatArg);
             snapshotObservedExpr(argp ? argp->exprp() : exprp, queuesp);
-            exprp = nextp;
         }
     }
     static AstIf* newIfAssertOn(AstNodeStmt* bodyp, VAssertDirectiveType directiveType,

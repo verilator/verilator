@@ -2190,7 +2190,7 @@ class ParamProcessor final {
         // Link source class to its specialized version for later relinking of method references
         if (defaultsResolved) srcModp->user4p(newModp);
 
-        for (auto* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : newModp->stmtspList()) {
             if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
                 if (VN_IS(dtypep->skipRefOrNullp(), VoidDType)) {
                     nodep->v3error(
@@ -3881,7 +3881,7 @@ class ParamVisitor final : public VNVisitor {
         V3Case::caseLint(nodep);
         // Case-item expressions must also be linked before widthing the case.
         for (AstGenCaseItem* const itemp : nodep->itemspList()) {
-            for (AstNode* ep = itemp->condsp(); ep; ep = ep->nextp()) {
+            for (AstNode* const ep : itemp->condspList()) {
                 m_processor.resolveDeferredDotsReachableFrom(ep, m_modp);
             }
         }
@@ -3966,7 +3966,7 @@ class ParamTop final : VNDeleter {
             const AstClassOrPackageRef* const classRefp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
             const AstClass* const lhsClassp = VN_AS(classRefp->classOrPackageSkipp(), Class);
             AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
-            for (auto* itemp = lhsClassp->membersp(); itemp; itemp = itemp->nextp()) {
+            for (AstNode* const itemp : lhsClassp->memberspList()) {
                 if (itemp->name() == rhsp->name()) {
                     rhsp->classOrPackageNodep(itemp);
                     break;

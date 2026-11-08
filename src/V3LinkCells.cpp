@@ -804,9 +804,7 @@ class LinkCellsVisitor final : public VNVisitor {
                 if (nodep->rangep()) {
                     // Multi-dim arrays wrap one UnpackArrayDType per range, innermost first.
                     std::vector<AstRange*> rangesp;
-                    for (AstRange* rp = nodep->rangep(); rp; rp = VN_CAST(rp->nextp(), Range)) {
-                        rangesp.push_back(rp);
-                    }
+                    for (AstRange* const rp : nodep->rangepList()) rangesp.push_back(rp);
                     AstNodeDType* dtp = idtypep;
                     for (auto it = rangesp.rbegin(); it != rangesp.rend(); ++it) {
                         dtp = new AstUnpackArrayDType{nodep->fileline(), VFlagChildDType{}, dtp,

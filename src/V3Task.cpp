@@ -1909,7 +1909,7 @@ class TaskVisitor final : public VNVisitor {
         funcp->argTypes(tmplp->argTypes());
         AstCCall* const callp = calleep ? new AstCCall{flp, calleep} : nullptr;
         if (callp && !tmplp->argTypes().empty()) callp->argTypes("vlSymsp");
-        for (AstNode* argp = tmplp->argsp(); argp; argp = argp->nextp()) {
+        for (AstNode* const argp : tmplp->argspList()) {
             AstVar* const varp = VN_AS(argp, Var)->cloneTree(false);
             funcp->addArgsp(varp);
             AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};

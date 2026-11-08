@@ -263,7 +263,7 @@ class OutlineVisitor final : public VNVisitor {
         m_count = 0;
         m_targetDepth = std::numeric_limits<int>::max();
         iterateAndNextNull(funcp->stmtsp());
-        for (AstNode* nodep = funcp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : funcp->stmtspList()) {
             AstNodeStmt* const stmtp = VN_CAST(nodep, NodeStmt);  // Else a declaration
             if (stmtp && m_info(stmtp).m_size > m_limit) reduce(stmtp);
         }
@@ -286,13 +286,12 @@ class OutlineVisitor final : public VNVisitor {
     explicit OutlineVisitor(AstNetlist* netlistp) {
         // Gather the coroutines first, as outlining adds functions
         std::vector<AstCFunc*> funcps;
-        for (AstNode* modp = netlistp->modulesp(); modp; modp = modp->nextp()) {
-            for (AstNode* nodep = VN_AS(modp, NodeModule)->stmtsp(); nodep;
-                 nodep = nodep->nextp()) {
+        for (AstNodeModule* const modp : netlistp->modulespList()) {
+            for (AstNode* const nodep : modp->stmtspList()) {
                 AstScope* scopep = VN_CAST(nodep, Scope);
                 if (AstTopScope* const topp = VN_CAST(nodep, TopScope)) scopep = topp->scopep();
                 if (!scopep) continue;
-                for (AstNode* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
+                for (AstNode* const blockp : scopep->blockspList()) {
                     AstCFunc* const funcp = VN_AS(blockp, CFunc);
                     if (funcp->isCoroutine()) funcps.push_back(funcp);
                 }
