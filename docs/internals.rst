@@ -44,6 +44,7 @@ The main flow of Verilator can be followed by reading the Verilator.cpp
    Class instances share a clone per specialization, including default arguments.
    Plain nested classes copied with an outer specialization remain members of that copy.
    Nested generic classes are elaborated only when requested.
+   Member and type references are rebound before source class definitions retire.
 
 #. Verilator then performs additional edits and optimizations on the
    hierarchical design. This includes coverage, assertions, X elimination,

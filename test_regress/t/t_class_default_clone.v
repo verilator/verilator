@@ -27,6 +27,24 @@ class Outer #(int ID = 1);
    endclass
 endclass
 
+class Holder #(type T = int);
+   T value;
+   static function Holder#(T) create();
+      Holder#(T) h = new;
+      return h;
+   endfunction
+endclass
+
+class Types;
+   class Nested;
+   endclass
+   typedef logic [7:0] byte_t;
+   typedef byte_t values_t[$];
+   typedef enum int { READY = 3, BUSY = 7 } status_t;
+   typedef Holder#(values_t) queue_holder_t;
+   typedef Holder#(byte_t) type_id;
+endclass
+
 module t;
    typedef Outer#() O0;
    typedef Outer#(1) O1;
@@ -40,12 +58,19 @@ module t;
       automatic I0 i0 = new;
       automatic I1 i1 = new;
       automatic I2 i2 = new;
+      automatic Types::queue_holder_t h = new;
+      automatic Types::type_id b = Types::type_id::create();
       i0 = i1;
       if (Plain::count != 1) $stop;
       if (p.argument(9) != 9 || p.local_value() != 7) $stop;
       if (Plain::foreign_value() != 11 || Other::shared != 11) $stop;
       if (I0::count != 2 || I1::count != 2 || I2::count != 1) $stop;
       if (i0.owner() != 1 || i2.owner() != 2) $stop;
+      h.value.push_back(8'h5a);
+      h.value.push_back(8'ha5);
+      if (h.value.pop_front() != 8'h5a || h.value.pop_front() != 8'ha5) $stop;
+      if ($bits(b.value) != 8) $stop;
+      if (Types::READY != 3 || Types::BUSY != 7) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

@@ -2623,8 +2623,6 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
     // typedefs have been correctly bound (via classRefDeparam), so we use
     // those local typedefs as ground truth.
     void retargetRefDType(AstRefDType* refp) {
-        if (!m_ownerModp) return;
-
         // IEEE 1800-2023 8.25.1: a bare class-qualified reference to the class
         // being compiled means the current specialization, but V3LinkDot binds
         // it to the default instance, so a typedef reached through it widens
@@ -2652,7 +2650,9 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
                                      << ownerClassp->name());
                         refp->typedefp(selfTdp);
                         refp->classOrPackagep(V3LinkDotIfaceCapture::findOwnerModule(selfTdp));
-                        refp->refDTypep(selfTdp->subDTypep());
+                        refp->refDTypep(nullptr);
+                        refp->dtypep(nullptr);
+                        refp->didWidth(false);
                         return;
                     }
                 }
@@ -2661,27 +2661,27 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
 
         AstTypedef* const oldTdp = refp->typedefp();
         if (!oldTdp) return;
-        AstClass* const oldOwnerp = VN_CAST(V3LinkDotIfaceCapture::findOwnerModule(oldTdp), Class);
+        AstClass* const oldOwnerp = VN_CAST(oldTdp->aboveLoopp(), Class);
         if (!oldOwnerp) return;
 
-        ensureOwnerMap();
-        if (m_origNameToClone.empty()) return;
-        const std::string origName
-            = oldOwnerp->origName().empty() ? oldOwnerp->name() : oldOwnerp->origName();
-        if (m_ambiguous.count(origName)) {
-            // The owner has two locally-resolved typedefs pointing at
-            // different specializations of the same template, e.g.:
-            //   typedef driver #(.IW(5)) drv5_t;
-            //   typedef driver #(.IW(6)) drv6_t;
-            // A stripped REFDTYPE only carries the origName, so we cannot
-            // tell which sibling it meant; leave it alone.
-            UINFO(9, "post-param REFDTYPE retarget skipped (ambiguous owner '" << origName
-                                                                               << "'): " << refp);
-            return;
+        AstClass* correctClassp
+            = oldOwnerp->hasGParam() ? nullptr : VN_CAST(oldOwnerp->user4p(), Class);
+        if (!correctClassp) {
+            if (!m_ownerModp) return;
+            ensureOwnerMap();
+            if (m_origNameToClone.empty()) return;
+            const std::string origName
+                = oldOwnerp->origName().empty() ? oldOwnerp->name() : oldOwnerp->origName();
+            if (m_ambiguous.count(origName)) {
+                // Ambiguous references cannot select a specialization by name.
+                UINFO(9, "post-param REFDTYPE retarget skipped (ambiguous owner '" << origName
+                                                                                   << "'): " << refp);
+                return;
+            }
+            const auto it = m_origNameToClone.find(origName);
+            if (it == m_origNameToClone.end()) return;
+            correctClassp = it->second;
         }
-        const auto it = m_origNameToClone.find(origName);
-        if (it == m_origNameToClone.end()) return;
-        AstClass* const correctClassp = it->second;
         if (correctClassp == oldOwnerp) return;
         AstTypedef* const newTdp
             = V3LinkDotIfaceCapture::findTypedefInModule(correctClassp, refp->name());
@@ -2694,16 +2694,12 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
                          << refp->name() << "' in " << correctClassp->name() << "): " << refp);
             return;
         }
-        // typedefp / classOrPackagep / refDTypep must agree. If newTdp lacks
-        // a subDTypep we cannot keep all three in sync, so skip the entire
-        // retarget rather than leaving the REFDTYPE half-updated.
-        if (!newTdp->subDTypep()) {
-            UINFO(9, "post-param REFDTYPE retarget skipped (newTdp has null subDTypep): " << refp);
-            return;
-        }
+        // Keep the typedef indirection until width resolves its selected type.
         refp->typedefp(newTdp);
         refp->classOrPackagep(correctClassp);
-        refp->refDTypep(newTdp->subDTypep());
+        refp->refDTypep(nullptr);
+        refp->dtypep(nullptr);
+        refp->didWidth(false);
         UINFO(9, "post-param REFDTYPE re-resolve: " << refp << " from " << oldOwnerp->name()
                                                     << " to " << correctClassp->name());
     }
@@ -2726,6 +2722,30 @@ public:
             }
         }
         iterateChildren(nodep);
+    }
+    void visit(AstClassRefDType* nodep) override {
+        iterateChildren(nodep);
+        AstClass* const classp = nodep->classp();
+        if (classp && !classp->hasGParam() && classp->user4p()) {
+            AstClass* const selectedp = VN_AS(classp->user4p(), Class);
+            nodep->classp(selectedp);
+            nodep->classOrPackagep(selectedp);
+        }
+    }
+    void visit(AstClassOrPackageRef* nodep) override {
+        iterateChildren(nodep);
+        AstNode* const targetp = nodep->classOrPackageNodep();
+        if (AstClass* const classp = VN_CAST(targetp, Class)) {
+            if (!classp->hasGParam() && classp->user4p()) {
+                nodep->classOrPackagep(VN_AS(classp->user4p(), Class));
+            }
+        } else if (AstTypedef* const tdp = VN_CAST(targetp, Typedef)) {
+            AstClass* const classp = VN_CAST(tdp->aboveLoopp(), Class);
+            if (!classp || classp->hasGParam() || !classp->user4p()) return;
+            AstTypedef* const selectedp = V3LinkDotIfaceCapture::findTypedefInModule(
+                VN_AS(classp->user4p(), Class), tdp->name());
+            if (selectedp) nodep->classOrPackageNodep(selectedp);
+        }
     }
     void visit(AstRefDType* nodep) override {
         iterateChildren(nodep);
@@ -3908,6 +3928,12 @@ public:
         const ClassRefUnlinkerVisitor classUnlinkerVisitor{netlistp};
 
         netlistp->foreach([](AstNode* nodep) {
+            const auto ancestorClassOf = [](AstNode* startp) -> AstClass* {
+                for (AstNode* np = startp->aboveLoopp(); np; np = np->aboveLoopp()) {
+                    if (AstClass* const cp = VN_CAST(np, Class)) return cp;
+                }
+                return nullptr;
+            };
             if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
                 AstVar* const varp = refp->varp();
                 if (!varp) return;
@@ -3926,20 +3952,31 @@ public:
                 }
                 return;
             }
+            if (AstEnumItemRef* const refp = VN_CAST(nodep, EnumItemRef)) {
+                if (!refp->itemp()) return;
+                AstClass* const classp = ancestorClassOf(refp->itemp());
+                if (!classp || classp->hasGParam() || !classp->user4p()) return;
+                AstClass* const selectedp = VN_AS(classp->user4p(), Class);
+                for (AstNode* const stmtp : selectedp->memberspList()) {
+                    AstEnumItemRef* const memberp = VN_CAST(stmtp, EnumItemRef);
+                    if (memberp && memberp->name() == refp->name()) {
+                        refp->itemp(memberp->itemp());
+                        refp->classOrPackagep(selectedp);
+                        return;
+                    }
+                }
+                return;
+            }
             AstNodeFTaskRef* const ftaskrefp = VN_CAST(nodep, NodeFTaskRef);
             if (!ftaskrefp) return;
+            AstClass* const qualifierp = VN_CAST(ftaskrefp->classOrPackagep(), Class);
+            // Preserve unresolved method qualifiers when their plain class is cloned.
+            if (qualifierp && !qualifierp->hasGParam() && qualifierp->user4p()) {
+                ftaskrefp->classOrPackagep(VN_AS(qualifierp->user4p(), Class));
+            }
             AstNodeFTask* ftaskp = ftaskrefp->taskp();
             if (!ftaskp || !ftaskp->classMethod()) return;
             const std::string funcName = ftaskp->name();
-            // Find the nearest containing (ancestor) class for a node.
-            // Uses aboveLoopp() which correctly skips sibling links
-            // (e.g. covergroup classes) to find the true parent.
-            const auto ancestorClassOf = [](AstNode* startp) -> AstClass* {
-                for (AstNode* np = startp->aboveLoopp(); np; np = np->aboveLoopp()) {
-                    if (AstClass* const cp = VN_CAST(np, Class)) return cp;
-                }
-                return nullptr;
-            };
             AstClass* refClassp = ancestorClassOf(ftaskrefp);
             if (refClassp == ftaskrefp->classOrPackagep())
                 return;  // task is in the same class as reference
@@ -3995,6 +4032,11 @@ public:
         }
         // Set all links pointing to a user3 (deleting) node as null
         netlistp->foreach([](AstNode* const nodep) {
+            // Recompute typedef caches that still reference a retiring class body.
+            if (VN_IS(nodep, RefDType) && nodep->dtypep() && nodep->dtypep()->user3()) {
+                nodep->dtypep(nullptr);
+                nodep->didWidth(false);
+            }
             nodep->foreachLink([&](AstNode** const linkpp, const char* namep) {
                 if (*linkpp && (*linkpp)->user3()) {
                     UINFO(9, "clear   link " << namep << " on " << nodep);
