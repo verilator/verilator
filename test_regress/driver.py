@@ -1225,7 +1225,6 @@ class VlTest:
             verilator_flags += ["--threads", str(param['threads'])]
         if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["--exe"]
-        if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["../" + self.main_filename]
 
         cmdargs = [
