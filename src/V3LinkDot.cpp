@@ -1762,10 +1762,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         // Change to appropriate package if extern declaration (vs definition)
         if (nodep->classOrPackagep()) {
             // class-in-class
-            AstDot* const dotp = VN_CAST(nodep->classOrPackagep(), Dot);
-            AstClassOrPackageRef* const cpackagerefp
-                = VN_CAST(nodep->classOrPackagep(), ClassOrPackageRef);
-            if (dotp) {
+            if (AstDot* const dotp = VN_CAST(nodep->classOrPackagep(), Dot)) {
                 AstClassOrPackageRef* const lhsp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
                 m_statep->resolveClassOrPackage(m_curSymp, lhsp, true, false,
                                                 "External definition :: reference");
@@ -1787,7 +1784,9 @@ class LinkDotFindVisitor final : public VNVisitor {
                         moveExternFuncDecl(nodep, rhsclassp);
                     }
                 }
-            } else if (cpackagerefp) {
+            } else {
+                AstClassOrPackageRef* const cpackagerefp
+                    = VN_AS(nodep->classOrPackagep(), ClassOrPackageRef);
                 if (!cpackagerefp->classOrPackageSkipp()) {
                     m_statep->resolveClassOrPackage(m_curSymp, cpackagerefp, true, false,
                                                     "External definition :: reference");
@@ -1800,8 +1799,6 @@ class LinkDotFindVisitor final : public VNVisitor {
                     upSymp = m_curSymp;
                     moveExternFuncDecl(nodep, classp);
                 }
-            } else {
-                v3fatalSrc("Unhandled extern function definition package");
             }
         }
         // Set the class as package for iteration
@@ -2273,7 +2270,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         // Mark formal ports as port-checked so the primary resolve pass does not
         // flag them with "does not appear in port list" -- V3RandSequence will
         // later move them onto the generated task as real input ports.
-        for (AstNode* const itp : nodep->portspList()) { VN_AS(itp, Var)->user4(true); }
+        for (AstVar* const varp : nodep->portspList()) varp->user4(true);
         iterateChildren(nodep);
     }
 

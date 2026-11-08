@@ -2642,17 +2642,17 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
         |       yTYPEDEF error idAny ';'                { $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3, VFwdType::NONE); }  // LCOV_EXCL_LINE
         ;
 
-dtypeAttrListE<nodep>:
+dtypeAttrListE<attrOfp>:
                 /* empty */                             { $$ = nullptr; }
         |       dtypeAttrList                           { $$ = $1; }
         ;
 
-dtypeAttrList<nodep>:
+dtypeAttrList<attrOfp>:
                 dtypeAttr                               { $$ = $1; }
         |       dtypeAttrList dtypeAttr                 { $$ = addNextNull($1, $2); }
         ;
 
-dtypeAttr<nodep>:
+dtypeAttr<attrOfp>:
                 yVL_PUBLIC                              { $$ = new AstAttrOf{$1, VAttrType::DT_PUBLIC}; }
         ;
 
@@ -3122,17 +3122,17 @@ sigAttrScope:
         |       yVL_PUBLIC_OFF                          { GRAMMARP->setScopedSigAttr(nullptr); }
         ;
 
-sigAttrListE<nodep>: // Scoped Attributes are added to explicit attributes
+sigAttrListE<attrOfp>: // Scoped Attributes are added to explicit attributes
                 /* empty */                             { $$ = nullptr; }
         |       sigAttrList                             { $$ = $1; }
         ;
 
-sigAttrList<nodep>:
+sigAttrList<attrOfp>:
                 sigAttr                                 { $$ = $1; }
         |       sigAttrList sigAttr                     { $$ = addNextNull($1, $2); }
         ;
 
-sigAttr<nodep>:
+sigAttr<attrOfp>:
                 yVL_CLOCKER                             { $$ = nullptr; /* Historical, now has no effect */ }
         |       yVL_NO_CLOCKER                          { $$ = nullptr; /* Historical, now has no effect */ }
         |       yVL_CLOCK_ENABLE                        { $$ = nullptr; /* Historical, now has no effect */ }
@@ -4863,14 +4863,14 @@ tf_item_declarationVerilator<nodep>:    // Verilator extensions
         |       yVL_NO_INLINE_TASK                      { $$ = new AstPragma{$1, VPragmaType::NO_INLINE_TASK}; }
         ;
 
-tf_port_listE<nodep>:           // IEEE: tf_port_list + empty
+tf_port_listE<varp>:           // IEEE: tf_port_list + empty
         //                      // Empty covered by tf_port_item
                 /*empty*/
         /*mid*/         { VARRESET_LIST(UNKNOWN); VARIO(INPUT); }
         /*cont*/    tf_port_listList                    { $$ = $2; VARRESET_NONLIST(UNKNOWN); }
         ;
 
-tf_port_listList<nodep>:        // IEEE: part of tf_port_list
+tf_port_listList<varp>:        // IEEE: part of tf_port_list
                 tf_port_item                            { $$ = $1; }
         |       tf_port_listList ',' tf_port_item       { $$ = addNextNull($1, $3); }
         ;
@@ -4891,7 +4891,7 @@ class_constructor_arg<nodep>:  // ==IEEE: class_constructor_arg
         |       yDEFAULT                                { $$ = nullptr; BBUNSUP($1, "Unsupported: new constructor 'default' argument"); }
         ;
 
-tf_port_item<nodep>:            // ==IEEE: tf_port_item
+tf_port_item<varp>:            // ==IEEE: tf_port_item
         //                      // We split tf_port_item into the type and assignment as don't know what follows a comma
                 /* empty */                             { $$ = nullptr; PINNUMINC(); }  // For example a ",," port
         |       tf_port_itemFront tf_port_itemAssignment { $$ = $2; }
@@ -6640,13 +6640,14 @@ property_port_itemFront:  // IEEE: part of property_port_item/sequence_port_item
                         { VARDTYPE($2); }
         ;
 
-property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item
+property_port_itemAssignment<varp>:  // IEEE: part of property_port_item/sequence_port_item
                 id variable_dimensionListE
                         { VARDECL(VAR);
                           $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
         |       id variable_dimensionListE '=' property_actual_arg
                         { VARDECL(VAR);
-                          $$ = VARDONEA($<fl>1, *$1, $2, $4);
+                          $$ = VARDONEA($<fl>1, *$1, $2, nullptr);
+                          $$->valuep($4);
                           BBUNSUP($3, "Unsupported: property variable default value"); }
         ;
 
@@ -7885,7 +7886,9 @@ checker_port_itemAssignment<nodep>:  // IEEE: part of checker_port_direction
                           $$->addNext(VARDONEA($<fl>1, *$1, $2, nullptr)); }
         |       id variable_dimensionListE '=' property_actual_arg
                         { $$ = new AstPort{CRELINE(), PINNUMINC(), *$1};
-                          $$->addNext(VARDONEA($<fl>1, *$1, $2, $4));
+                          AstVar* const varp = VARDONEA($<fl>1, *$1, $2, nullptr);
+                          varp->valuep($4);
+                          $$->addNext(varp);
                           BBUNSUP($3, "Unsupported: checker port variable default value"); }
         ;
 

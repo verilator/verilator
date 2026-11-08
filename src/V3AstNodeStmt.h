@@ -93,7 +93,7 @@ public:
 class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     // Cover or Assert
     // Parents:  {statement list}
-    // @astgen op1 := propp : AstNode
+    // @astgen op1 := propp : AstNode<AstNodeExpr|AstPropSpec>
     // @astgen op2 := sentreep : Optional[AstSenTree]
     // op3 used by some sub-types only
     // @astgen op4 := passsp: List[AstNodeStmt] // Statements when propp is passing/truthly

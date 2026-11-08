@@ -106,7 +106,8 @@ public:
     AstNodeCoverDecl* dataDeclThisp() { return dataDeclNullp() ? dataDeclNullp() : this; }
 };
 class AstNodeFTask VL_NOT_FINAL : public AstNode {
-    // @astgen op1 := classOrPackagep : Optional[AstNode]  // Class/package scope
+    // Class/package scope
+    // @astgen op1 := classOrPackagep : Optional[AstNode<AstClassOrPackageRef|AstDot>]
     // @astgen op2 := declsp : List[AstNode]  // Ports/Vars/other declarations
     // @astgen op3 := stmtsp : List[AstNodeStmt]  // Statements
     // @astgen op4 := scopeNamep : Optional[AstScopeName]  // DPI export scope
@@ -1841,12 +1842,12 @@ class AstPropSpec final : public AstNode {
     // Children: SENITEM, Properties
     // @astgen op1 := sensesp : Optional[AstSenItem]
     // @astgen op2 := disablep : Optional[AstNodeExpr]
-    // @astgen op3 := propp : AstNode
+    // @astgen op3 := propp : AstNodeExpr
     // @astgen op4 := matchCountp : Optional[AstNodeExpr] // Cover sequence matches this tick
     VPropStrength m_propStrength = VPropStrength::DEFAULT;
 
 public:
-    AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNodeExpr* disablep, AstNode* propp,
+    AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNodeExpr* disablep, AstNodeExpr* propp,
                 VPropStrength propStrength = VPropStrength::DEFAULT)
         : ASTGEN_SUPER_PropSpec(fl)
         , m_propStrength{propStrength} {
@@ -1884,11 +1885,11 @@ public:
 class AstRSProd final : public AstNode {
     // randomsequence production, under a AstRandSequence
     // @astgen op1 := fvarp : Optional[AstVar]
-    // @astgen op2 := portsp : List[AstNode]
+    // @astgen op2 := portsp : List[AstVar]
     // @astgen op3 := rulesp : List[AstRSRule]
     string m_name;  // Name of block, or "" to use first production
 public:
-    AstRSProd(FileLine* fl, const string& name, AstNode* portsp, AstRSRule* rulesp)
+    AstRSProd(FileLine* fl, const string& name, AstVar* portsp, AstRSRule* rulesp)
         : ASTGEN_SUPER_RSProd(fl)
         , m_name{name} {
         addPortsp(portsp);
@@ -2192,7 +2193,7 @@ public:
 };
 class AstTypedef final : public AstNode {
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
-    // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
+    // @astgen op4 := attrsp : List[AstAttrOf] // Attributes during early parse
 
     string m_name;  // Name of the typedef
     string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
@@ -2203,7 +2204,7 @@ class AstTypedef final : public AstNode {
     bool m_isUnderClass : 1;  // Underneath class
 
 public:
-    AstTypedef(FileLine* fl, const string& name, AstNode* attrsp, VFlagChildDType,
+    AstTypedef(FileLine* fl, const string& name, AstAttrOf* attrsp, VFlagChildDType,
                AstNodeDType* dtp)
         : ASTGEN_SUPER_Typedef(fl)
         , m_name{name}
@@ -2331,7 +2332,7 @@ class AstVar final : public AstNode {
     // Initial value that never changes (static const)
     // @astgen op3 := valuep : Optional[AstNode<AstNodeExpr|AstNodeDType>]
     //     Value is a DType for type parameter defaults
-    // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
+    // @astgen op4 := attrsp : List[AstAttrOf] // Attributes during early parse
     // @astgen ptr := m_sensIfacep : Optional[AstIface]  // Interface type to which reads from this
     //                                                      var are sensitive
 
@@ -3148,7 +3149,7 @@ public:
 // === AstNodeGen ===
 class AstGenBlock final : public AstNodeGen {
     // Generate 'begin'
-    // @astgen op1 := genforp : Optional[AstNode]
+    // @astgen op1 := genforp : Optional[AstGenFor]
     // @astgen op2 := itemsp : List[AstNode]
     std::string m_name;  // Name of block
     const bool m_unnamed;  // Originally unnamed (name change does not affect this)
