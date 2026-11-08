@@ -49,6 +49,7 @@ private:
         m_curTaskp = nodep;
         UINFO(9, "undriven capture enter ftask " << nodep << " " << nodep->prettyNameQ());
         m_cap.noteTask(nodep);
+        iterateAndNextConstNull(nodep->declsp());
         iterateAndNextConstNull(nodep->stmtsp());
     }
 
@@ -180,7 +181,7 @@ void V3UndrivenCapture::noteDirectWrite(const AstNodeFTask* taskp, AstVar* varp)
     FTaskInfo& info = m_info[taskp];
 
     // Exclude function return variable (not an externally visible side-effect)
-    AstVar* const retVarp = VN_CAST(taskp->fvarp(), Var);
+    AstVar* const retVarp = taskp->fvarp();
     if (retVarp && varp == retVarp) return;
 
     // Filter out duplicates.

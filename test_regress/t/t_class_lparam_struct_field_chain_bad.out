@@ -7,13 +7,9 @@
                                                                    : ... note: In instance 't.u'
    41 |   Sub #(int'(CFG::cfg.tag.bogus)) u_nonstruct ();
       |            ^
-%Error: t/t_class_lparam_struct_field_chain_bad.v:41:12: Can't convert defparam value to constant: Param '__paramNumber1' of 'u_nonstruct'
-                                                       : ... note: In instance 't.u'
-   41 |   Sub #(int'(CFG::cfg.tag.bogus)) u_nonstruct ();
-      |            ^
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_class_lparam_struct_field_chain_bad.v:43:26: Member 'nosuchfield' not found in structure
                                                        : ... note: In instance 't.u'
    43 |   Sub #(int'(CFG::cfg.jt.nosuchfield)) u_nomember ();
       |                          ^~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

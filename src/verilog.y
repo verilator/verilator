@@ -2642,17 +2642,17 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
         |       yTYPEDEF error idAny ';'                { $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3, VFwdType::NONE); }  // LCOV_EXCL_LINE
         ;
 
-dtypeAttrListE<nodep>:
+dtypeAttrListE<attrOfp>:
                 /* empty */                             { $$ = nullptr; }
         |       dtypeAttrList                           { $$ = $1; }
         ;
 
-dtypeAttrList<nodep>:
+dtypeAttrList<attrOfp>:
                 dtypeAttr                               { $$ = $1; }
         |       dtypeAttrList dtypeAttr                 { $$ = addNextNull($1, $2); }
         ;
 
-dtypeAttr<nodep>:
+dtypeAttr<attrOfp>:
                 yVL_PUBLIC                              { $$ = new AstAttrOf{$1, VAttrType::DT_PUBLIC}; }
         ;
 
@@ -3122,17 +3122,17 @@ sigAttrScope:
         |       yVL_PUBLIC_OFF                          { GRAMMARP->setScopedSigAttr(nullptr); }
         ;
 
-sigAttrListE<nodep>: // Scoped Attributes are added to explicit attributes
+sigAttrListE<attrOfp>: // Scoped Attributes are added to explicit attributes
                 /* empty */                             { $$ = nullptr; }
         |       sigAttrList                             { $$ = $1; }
         ;
 
-sigAttrList<nodep>:
+sigAttrList<attrOfp>:
                 sigAttr                                 { $$ = $1; }
         |       sigAttrList sigAttr                     { $$ = addNextNull($1, $2); }
         ;
 
-sigAttr<nodep>:
+sigAttr<attrOfp>:
                 yVL_CLOCKER                             { $$ = nullptr; /* Historical, now has no effect */ }
         |       yVL_NO_CLOCKER                          { $$ = nullptr; /* Historical, now has no effect */ }
         |       yVL_CLOCK_ENABLE                        { $$ = nullptr; /* Historical, now has no effect */ }
@@ -3709,7 +3709,7 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
         |       yDISABLE yFORK ';'                      { $$ = new AstDisableFork{$1}; }
         |       yDISABLE idDottedSel ';'
                         { $$ = new AstDisable{$1, $2};
-                          PARSEP->importIfInStd($1, "process", true);
+                          PARSEP->importIfInStd($1, "process");
                         }
         //                      // IEEE: event_trigger
         |       yP_MINUSGT expr ';'
@@ -3722,12 +3722,13 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                         { AstLoop* const loopp = new AstLoop{$1, $2};
                           loopp->addContsp(new AstLoopTest{$<fl>5, loopp, $5});
                           $$ = loopp; }
-        |       yFOR  '(' { VARRESET_NONLIST(UNKNOWN); } for_initializationE ';' exprE ';' for_stepE ')' stmt
-                        { AstBegin* const blockp = new AstBegin{$1, "", $4, true};
+        |       yFOR '(' for_initializationE ';' exprE ';' for_stepE ')' stmt
+                        { AstBegin* const blockp = $3;
+                          blockp->fileline($1);
                           AstLoop* const loopp = new AstLoop{$1};
-                          if ($6) loopp->addStmtsp(new AstLoopTest{$<fl>6, loopp, $6});
-                          loopp->addStmtsp($10);
-                          loopp->addContsp($8);
+                          if ($5) loopp->addStmtsp(new AstLoopTest{$<fl>5, loopp, $5});
+                          loopp->addStmtsp($9);
+                          loopp->addContsp($7);
                           blockp->addStmtsp(loopp);
                           $$ = blockp; }
         |       yFOREVER stmt
@@ -4088,56 +4089,62 @@ assignment_pattern<patternp>:   // ==IEEE: assignment_pattern
         ;
 
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal
-for_initializationE<nodep>:      // ==IEEE: for_initialization + for_variable_declaration
-                /* empty */                     { $$ = nullptr; }
-        |       for_initializationItemList      { $$ = $1; }
+for_initializationE<beginp>:     // ==IEEE: [for_initialization], in the block of the loop
+                /* empty */                     { $$ = new AstBegin{CRELINE(), "", nullptr, true}; }
+        |       for_variable_declarationList
+                        { $$ = new AstBegin{$<fl>1, "", nullptr, true};
+                          $$->addDeclsp($1); }
+        |       list_of_variable_assignments    { $$ = new AstBegin{$<fl>1, "", $1, true}; }
         ;
 
-for_initializationItemList<nodep>:      // IEEE: [for_variable_declaration...]
-                for_initializationItem                  { $$ = $1; }
-        |       for_initializationItemList ',' for_initializationItem   { $$ = addNextNull($1, $3); }
+for_variable_declarationList<varp>:     // IEEE: for_variable_declaration { ',' for_variable_declaration }
+                for_variable_declaration        { $$ = $1; }
+        |       for_variable_declarationList ',' for_variable_declaration
+                        { $$ = addNextNull($1, $3); }
+        //                      // IEEE: part of for_variable_declaration, of the same data type
+        |       for_variable_declarationList ',' id/*new*/ '=' expr
+                        { AstVar* const varp = VARDONEA($<fl>3, *$3, nullptr, nullptr);
+                          varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                          varp->valuep($5);
+                          $$ = addNextNull($1, varp); }
         ;
 
-for_initializationItem<nodep>:          // IEEE: variable_assignment + for_variable_declaration
-        //                      // IEEE: for_variable_declaration
+for_variable_declaration<varp>:         // ==IEEE: for_variable_declaration (first variable)
                 data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($1);
-                          AstVar* const varp = VARDONEA($<fl>2, *$2, nullptr, nullptr);
-                          varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                          $$ = varp;
-                          $$->addNext(new AstAssign{$3, new AstParseRef{$<fl>2, *$2}, $4}); }
+                          $$ = VARDONEA($<fl>2, *$2, nullptr, nullptr);
+                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                          $$->valuep($4); }
         //                      // IEEE-2012:
         |       yVAR data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($2);
-                          AstVar* const varp = VARDONEA($<fl>3, *$3, nullptr, nullptr);
-                          varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                          $$ = varp;
-                          $$->addNext(new AstAssign{$4, new AstParseRef{$<fl>3, *$3}, $5}); }
-        //                      // IEEE: variable_assignment
-        //                      // UNSUP variable_lvalue below
-        |       id/*newOrExisting*/ '=' expr
-                        { if (GRAMMARP->m_varDecl) {
-                              AstVar* const varp = VARDONEA($<fl>1, *$1, nullptr, nullptr);
-                              varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                              $$ = varp;
-                              $$->addNext(new AstAssign{$2, new AstParseRef{$<fl>1, *$1}, $3});
-                          } else {
-                              $$ = new AstAssign{$2, new AstParseRef{$<fl>1, *$1}, $3};
-                          }
-                        }
+                          $$ = VARDONEA($<fl>3, *$3, nullptr, nullptr);
+                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                          $$->valuep($5); }
         ;
 
-for_stepE<nodep>:               // IEEE: for_step + empty
+list_of_variable_assignments<nodeStmtp>:        // ==IEEE: list_of_variable_assignments
+                variable_assignment             { $$ = $1; }
+        |       list_of_variable_assignments ',' variable_assignment
+                        { $$ = addNextNull($1, $3); }
+        ;
+
+variable_assignment<nodeStmtp>:         // ==IEEE: variable_assignment
+        //                      // UNSUP variable_lvalue below
+                id '=' expr                     { $$ = new AstAssign{$2, new AstParseRef{$<fl>1, *$1}, $3}; }
+        ;
+
+for_stepE<nodeStmtp>:               // IEEE: for_step + empty
                 /* empty */                             { $$ = nullptr; }
         |       for_step                                { $$ = $1; }
         ;
 
-for_step<nodep>:                // IEEE: for_step
+for_step<nodeStmtp>:                // IEEE: for_step
                 for_step_assignment                     { $$ = $1; }
         |       for_step ',' for_step_assignment        { $$ = addNextNull($1, $3); }
         ;
 
-for_step_assignment<nodep>:     // ==IEEE: for_step_assignment
+for_step_assignment<nodeStmtp>:     // ==IEEE: for_step_assignment
                 foperator_assignment                    { $$ = $1; }
         |       finc_or_dec_expression                  { $$ = new AstStmtExpr{$<fl>1, $1}; }
         //                      // IEEE: function_subroutine_call
@@ -4668,36 +4675,51 @@ list_of_argumentsE<argp>:  // IEEE: [list_of_arguments]
         ;
 
 task_declaration<nodeFTaskp>:   // ==IEEE: task_declaration
-                yTASK dynamic_override_specifiersE lifetimeE taskId tfGuts yENDTASK endLabelE
-                        { $$ = $4; $$->addStmtsp($5);
+                task_declarationFront stmtListE yENDTASK endLabelE
+                        { $$ = $1; $$->addStmtsp($2);
+                          GRAMMARP->endLabel($<fl>4, $$, $4); }
+        |       task_declarationFront tf_item_declarationList stmtListE yENDTASK endLabelE
+                        { $$ = $1; $$->addDeclsp($2); $$->addStmtsp($3);
+                          GRAMMARP->endLabel($<fl>5, $$, $5); }
+        ;
+
+task_declarationFront<nodeFTaskp>:  // IEEE: part of task_declaration
+                yTASK dynamic_override_specifiersE lifetimeE taskId tfPortsE ';'
+                        { $$ = $4; $$->addDeclsp($5);
                           $$->baseOverride($2);
-                          $$->lifetime($3);
-                          GRAMMARP->endLabel($<fl>7, $$, $7); }
+                          $$->lifetime($3); }
         ;
 
 task_prototype<nodeFTaskp>:             // ==IEEE: task_prototype
                 yTASK dynamic_override_specifiersE taskId '(' tf_port_listE ')'
-                        { $$ = $3; $$->addStmtsp($5); $$->prototype(true); }
+                        { $$ = $3; $$->addDeclsp($5); $$->prototype(true); }
         |       yTASK dynamic_override_specifiersE taskId
                         { $$ = $3; $$->prototype(true); }
         ;
 
 function_declaration<nodeFTaskp>:       // IEEE: function_declaration + function_body_declaration
-                yFUNCTION dynamic_override_specifiersE lifetimeE funcId funcIsolateE tfGuts yENDFUNCTION endLabelE
-                        { $$ = $4; $$->addStmtsp($6);
+                function_declarationFront stmtListE yENDFUNCTION endLabelE
+                        { $$ = $1; $$->addStmtsp($2);
+                          GRAMMARP->endLabel($<fl>4, $$, $4); }
+        |       function_declarationFront tf_item_declarationList stmtListE yENDFUNCTION endLabelE
+                        { $$ = $1; $$->addDeclsp($2); $$->addStmtsp($3);
+                          GRAMMARP->endLabel($<fl>5, $$, $5); }
+        ;
+
+function_declarationFront<nodeFTaskp>:  // IEEE: part of function_declaration
+                yFUNCTION dynamic_override_specifiersE lifetimeE funcId funcIsolateE tfPortsE ';'
+                        { $$ = $4; $$->addDeclsp($6);
                           $$->baseOverride($2);
-                          $$->lifetime($3);
-                          GRAMMARP->endLabel($<fl>8, $$, $8); }
-        |       yFUNCTION dynamic_override_specifiersE lifetimeE funcIdNew funcIsolateE tfNewGuts yENDFUNCTION endLabelE
-                        { $$ = $4; $$->addStmtsp($6);
+                          $$->lifetime($3); }
+        |       yFUNCTION dynamic_override_specifiersE lifetimeE funcIdNew funcIsolateE tfNewPortsE ';'
+                        { $$ = $4; $$->addDeclsp($6);
                           $$->baseOverride($2);
-                          $$->lifetime($3);
-                          GRAMMARP->endLabel($<fl>8, $$, $8); }
+                          $$->lifetime($3); }
         ;
 
 function_prototype<nodeFTaskp>: // IEEE: function_prototype
                 yFUNCTION dynamic_override_specifiersE funcId '(' tf_port_listE ')'
-                        { $$ = $3; $$->addStmtsp($5); $$->prototype(true); }
+                        { $$ = $3; $$->addDeclsp($5); $$->prototype(true); }
         |       yFUNCTION dynamic_override_specifiersE funcId
                         { $$ = $3; $$->prototype(true); }
         ;
@@ -4706,7 +4728,7 @@ class_constructor_prototype<nodeFTaskp>:        // ==IEEE: class_constructor_pro
         //                      // IEEE has no dynamic_override_specifiersE,
         //                      // but required to avoid conflicts, so we must check after parsing
                 yFUNCTION dynamic_override_specifiersE funcIdNew '(' class_constructor_arg_listE ')' ';'
-                        { $$ = $3; $$->addStmtsp($5); $$->prototype(true); }
+                        { $$ = $3; $$->addDeclsp($5); $$->prototype(true); }
         |       yFUNCTION dynamic_override_specifiersE funcIdNew ';'
                         { $$ = $3; $$->prototype(true); }
         ;
@@ -4734,16 +4756,16 @@ lifetime<lifetime>:             // ==IEEE: lifetime
 
 taskId<nodeFTaskp>:
                 id
-                        { $$ = new AstTask{$<fl>$, *$1, nullptr};
+                        { $$ = new AstTask{$<fl>$, *$1};
                           $$->verilogTask(true); }
         //
         |       id/*interface_identifier*/ '.' idAny
-                        { $$ = new AstTask{$<fl>$, *$3, nullptr};
+                        { $$ = new AstTask{$<fl>$, *$3};
                           $$->verilogTask(true);
                           $$->ifacePortName(*$1); }
         //
         |       packageClassScope id
-                        { $$ = new AstTask{$<fl>$, *$2, nullptr};
+                        { $$ = new AstTask{$<fl>$, *$2};
                           $$->verilogTask(true);
                           $$->classOrPackagep($1);
                           $$->classMethod(true); }
@@ -4751,28 +4773,32 @@ taskId<nodeFTaskp>:
 
 funcId<nodeFTaskp>:             // IEEE: function_data_type_or_implicit + part of function_body_declaration
         //                      // IEEE: function_data_type_or_implicit must be expanded here to prevent conflict
-        //                      // function_data_type expanded here to prevent conflicts with
         //                      // implicit_type:empty vs data_type:ID
-                /**/ fIdScoped
-                        { $$ = $1;
-                          $$->fvarp(new AstBasicDType{$<fl>1, LOGIC_IMPLICIT}); }
-        |       signingE rangeList fIdScoped
-                        { $$ = $3;
-                          $$->fvarp(GRAMMARP->addRange(new AstBasicDType{$<fl>3, LOGIC_IMPLICIT, $1}, $2, true)); }
-        |       signing fIdScoped
-                        { $$ = $2;
-                          $$->fvarp(new AstBasicDType{$<fl>2, LOGIC_IMPLICIT, $1}); }
-        |       data_typeNoRef fIdScoped
-                        { $$ = $2;
-                          $$->fvarp($1); }
-        |       packageClassScopeE idInstType packed_dimensionListE fIdScoped
-                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
-                          $$ = $4;
-                          $$->fvarp(GRAMMARP->createArray(refp, $3, true)); }
-        |       packageClassScopeE idInstType parameter_value_assignmentClass packed_dimensionListE fIdScoped
-                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
-                          $$ = $5;
-                          $$->fvarp(GRAMMARP->createArray(refp, $4, true)); }
+        //                      // IEEE: [ interface_identifier '.' | class_scope ] function_identifier
+                id
+                        { $$ = new AstFunc{$<fl>1, *$1, VFlagChildDType{}, new AstBasicDType{$<fl>1, LOGIC_IMPLICIT}};
+                          $$->verilogFunction(true); }
+        |       id/*interface_identifier*/ '.' idAny
+                        { $$ = new AstFunc{$<fl>1, *$3, VFlagChildDType{}, new AstBasicDType{$<fl>1, LOGIC_IMPLICIT}};
+                          $$->verilogFunction(true);
+                          $$->ifacePortName(*$1); }
+        |       packageClassScope id
+                        { $$ = new AstFunc{$<fl>1, *$2, VFlagChildDType{}, new AstBasicDType{$<fl>1, LOGIC_IMPLICIT}};
+                          $$->verilogFunction(true);
+                          $$->classMethod(true);
+                          $$->classOrPackagep($1); }
+        |       funcDType id
+                        { $$ = new AstFunc{$<fl>2, *$2, VFlagChildDType{}, $1};
+                          $$->verilogFunction(true); }
+        |       funcDType id/*interface_identifier*/ '.' idAny
+                        { $$ = new AstFunc{$<fl>2, *$4, VFlagChildDType{}, $1};
+                          $$->verilogFunction(true);
+                          $$->ifacePortName(*$2); }
+        |       funcDType packageClassScope id
+                        { $$ = new AstFunc{$<fl>2, *$3, VFlagChildDType{}, $1};
+                          $$->verilogFunction(true);
+                          $$->classMethod(true);
+                          $$->classOrPackagep($2); }
         //                      // To verilator tasks are the same as void functions (we separately detect time passing)
         |       yVOID taskId
                         { $$ = $2;  // Internals represent it as a task, not a function (TODO cleanup)
@@ -4780,59 +4806,45 @@ funcId<nodeFTaskp>:             // IEEE: function_data_type_or_implicit + part o
                           $$->verilogFunction(true); }
         ;
 
+funcDType<nodeDTypep>:          // IEEE: function_data_type_or_implicit, except empty
+        //                      // function_data_type expanded here to prevent conflicts with
+        //                      // implicit_type:empty vs data_type:ID
+                signingE rangeList                      { $$ = GRAMMARP->addRange(new AstBasicDType{$<fl>2, LOGIC_IMPLICIT, $1}, $2, true); }
+        |       signing                                 { $$ = new AstBasicDType{$<fl>1, LOGIC_IMPLICIT, $1}; }
+        |       data_typeNoRef                          { $$ = $1; }
+        |       packageClassScopeE idInstType packed_dimensionListE
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
+                          $$ = GRAMMARP->createArray(refp, $3, true); }
+        |       packageClassScopeE idInstType parameter_value_assignmentClass packed_dimensionListE
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
+                          $$ = GRAMMARP->createArray(refp, $4, true); }
+        ;
+
 funcIdNew<nodeFTaskp>:          // IEEE: from class_constructor_declaration
                 yNEW__ETC
-                        { $$ = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                        { $$ = new AstFunc{$<fl>1, "new"};
                           $$->verilogFunction(true);
                           $$->isConstructor(true); }
         |       yNEW__PAREN
-                        { $$ = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                        { $$ = new AstFunc{$<fl>1, "new"};
                           $$->verilogFunction(true);
                           $$->isConstructor(true); }
         |       packageClassScopeNoId yNEW__PAREN
-                        { $$ = new AstFunc{$<fl>2, "new", nullptr, nullptr};
+                        { $$ = new AstFunc{$<fl>2, "new"};
                           $$->verilogFunction(true);
                           $$->classOrPackagep($1);
                           $$->isConstructor(true);
                           $$->classMethod(true); }
         ;
 
-fIdScoped<funcp>:               // IEEE: part of function_body_declaration/task_body_declaration
-        //                      // IEEE: [ interface_identifier '.' | class_scope ] function_identifier
-                id
-                        { $<fl>$ = $<fl>1;
-                          $$ = new AstFunc{$<fl>$, *$1, nullptr, nullptr};
-                          $$->verilogFunction(true); }
-        //
-        |       id/*interface_identifier*/ '.' idAny
-                        { $<fl>$ = $<fl>1;
-                          $$ = new AstFunc{$<fl>$, *$3, nullptr, nullptr};
-                          $$->verilogFunction(true);
-                          $$->ifacePortName(*$1); }
-        //
-        |       packageClassScope id
-                        { $<fl>$ = $<fl>1;
-                          $$ = new AstFunc{$<fl>$, *$2, nullptr, nullptr};
-                          $$->verilogFunction(true);
-                          $$->classMethod(true);
-                          $$->classOrPackagep($1); }
-        ;
-
-tfGuts<nodep>:
-                '(' tf_port_listE ')' ';' tfBodyE       { $$ = addNextNull($2, $5); }
-        |       ';' tfBodyE                             { $$ = $2; }
-        ;
-
-tfNewGuts<nodep>:
-                '(' class_constructor_arg_listE ')' ';' tfBodyE       { $$ = addNextNull($2, $5); }
-        |       ';' tfBodyE                             { $$ = $2; }
-        ;
-
-tfBodyE<nodep>:                 // IEEE: part of function_body_declaration/task_body_declaration
+tfPortsE<nodep>:                // IEEE: part of function_body_declaration/task_body_declaration
                 /* empty */                             { $$ = nullptr; }
-        |       tf_item_declarationList                 { $$ = $1; }
-        |       tf_item_declarationList stmtList        { $$ = addNextNull($1, $2); }
-        |       stmtList                                { $$ = $1; }
+        |       '(' tf_port_listE ')'                   { $$ = $2; }
+        ;
+
+tfNewPortsE<nodep>:             // IEEE: part of class_constructor_declaration
+                /* empty */                             { $$ = nullptr; }
+        |       '(' class_constructor_arg_listE ')'     { $$ = $2; }
         ;
 
 tf_item_declarationList<nodep>:
@@ -4851,14 +4863,14 @@ tf_item_declarationVerilator<nodep>:    // Verilator extensions
         |       yVL_NO_INLINE_TASK                      { $$ = new AstPragma{$1, VPragmaType::NO_INLINE_TASK}; }
         ;
 
-tf_port_listE<nodep>:           // IEEE: tf_port_list + empty
+tf_port_listE<varp>:           // IEEE: tf_port_list + empty
         //                      // Empty covered by tf_port_item
                 /*empty*/
         /*mid*/         { VARRESET_LIST(UNKNOWN); VARIO(INPUT); }
         /*cont*/    tf_port_listList                    { $$ = $2; VARRESET_NONLIST(UNKNOWN); }
         ;
 
-tf_port_listList<nodep>:        // IEEE: part of tf_port_list
+tf_port_listList<varp>:        // IEEE: part of tf_port_list
                 tf_port_item                            { $$ = $1; }
         |       tf_port_listList ',' tf_port_item       { $$ = addNextNull($1, $3); }
         ;
@@ -4879,7 +4891,7 @@ class_constructor_arg<nodep>:  // ==IEEE: class_constructor_arg
         |       yDEFAULT                                { $$ = nullptr; BBUNSUP($1, "Unsupported: new constructor 'default' argument"); }
         ;
 
-tf_port_item<nodep>:            // ==IEEE: tf_port_item
+tf_port_item<varp>:            // ==IEEE: tf_port_item
         //                      // We split tf_port_item into the type and assignment as don't know what follows a comma
                 /* empty */                             { $$ = nullptr; PINNUMINC(); }  // For example a ",," port
         |       tf_port_itemFront tf_port_itemAssignment { $$ = $2; }
@@ -5595,11 +5607,11 @@ letId<letp>:  // IEEE: pert of let_declaration
 let_declaration<letp>:  // IEEE: let_declaration
                 yLET letId '=' expr ';'
                         { $$ = $2;
-                          $$->addStmtsp(new AstStmtExpr{$1, $4}); }
+                          $$->exprp($4); }
         |       yLET letId '(' let_port_listE ')' '=' expr ';'
                         { $$ = $2;
-                          $$->addStmtsp(new AstStmtExpr{$1, $7});
-                          $$->addStmtsp($4); }
+                          $$->exprp($7);
+                          $$->addDeclsp($4); }
         ;
 
 let_port_listE<nodep>:   // IEEE: [ let_port_list ]
@@ -5620,7 +5632,6 @@ let_port_item<varp>:  // IEEE: let_port_Item
                         { $$ = new AstVar{$<fl>2, VVarType::VAR, *$2, VFlagChildDType{},
                                           new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
                           $$->direction(VDirection::INOUT);
-                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           if ($4) $$->valuep($4);
                           PINNUMINC(); }
         |       data_type idAny/*formal_port_identifier*/ variable_dimensionListE exprEqE
@@ -5628,7 +5639,6 @@ let_port_item<varp>:  // IEEE: let_port_Item
                           $$ = new AstVar{$<fl>2, VVarType::VAR, *$2, VFlagChildDType{},
                                           new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
                           $$->direction(VDirection::INOUT);
-                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           if ($4) $$->valuep($4);
                           PINNUMINC(); }
         |       implicit_typeE id/*formal_port_identifier*/ variable_dimensionListE exprEqE
@@ -5636,7 +5646,6 @@ let_port_item<varp>:  // IEEE: let_port_Item
                           $$ = new AstVar{$<fl>2, VVarType::VAR, *$2, VFlagChildDType{},
                                           new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
                           $$->direction(VDirection::INOUT);
-                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           if ($4) $$->valuep($4);
                           PINNUMINC(); }
         ;
@@ -6457,7 +6466,7 @@ assertion_item<nodep>:          // ==IEEE: assertion_item
                         { $$ = $1 ? new AstAlways{$1->fileline(), VAlwaysKwd::ALWAYS_COMB, nullptr, $1} : nullptr; }
         ;
 
-deferred_immediate_assertion_item<nodep>:       // ==IEEE: deferred_immediate_assertion_item
+deferred_immediate_assertion_item<nodeStmtp>:       // ==IEEE: deferred_immediate_assertion_item
                 deferred_immediate_assertion_statement  { $$ = $1; }
         |       id/*block_identifier*/ ':' deferred_immediate_assertion_statement
                         { $$ = new AstBegin{$<fl>1, *$1, $3, true}; }
@@ -6514,9 +6523,11 @@ deferred_immediate_assertion_statement<nodeStmtp>:  // ==IEEE: deferred_immediat
         ;
 
 concurrent_assertion_item<nodep>:       // IEEE: concurrent_assertion_item
-                concurrent_assertion_statement          { $$ = $1; }
+                concurrent_assertion_statement
+                        { $$ = new AstAlways{$1->fileline(), VAlwaysKwd::ASSERT_COVER, nullptr, $1}; }
         |       id/*block_identifier*/ ':' concurrent_assertion_statement
-                        { $$ = new AstBegin{$<fl>1, *$1, $3, true}; }
+                        { $$ = new AstAlways{$<fl>1, VAlwaysKwd::ASSERT_COVER, nullptr,
+                                             new AstBegin{$<fl>1, *$1, $3, true}}; }
         //                      // IEEE: checker_instantiation
         //                      // identical to module_instantiation; see etcInst
         ;
@@ -6568,20 +6579,29 @@ concurrent_assertion_statement<nodeStmtp>:  // ==IEEE: concurrent_assertion_stat
                         { $$ = new AstRestrict{$1, $4}; }
         ;
 
-property_declaration<nodeFTaskp>:  // ==IEEE: property_declaration
+property_declaration<propertyp>:  // ==IEEE: property_declaration
                 property_declarationFront property_port_listE ';' property_declarationBody
                         yENDPROPERTY endLabelE
                         { $$ = $1;
-                          $$->addStmtsp($2);
-                          $$->addStmtsp($4);
+                          $$->addDeclsp($2);
+                          $$->specp($4);
                           GRAMMARP->endLabel($<fl>6, $$, $6);
+                          GRAMMARP->m_insideProperty = false;
+                          GRAMMARP->m_typedPropertyPort = false; }
+        |       property_declarationFront property_port_listE ';' assertion_variable_declarationList
+                        property_declarationBody yENDPROPERTY endLabelE
+                        { $$ = $1;
+                          $$->addDeclsp($2);
+                          $$->addDeclsp($4);
+                          $$->specp($5);
+                          GRAMMARP->endLabel($<fl>7, $$, $7);
                           GRAMMARP->m_insideProperty = false;
                           GRAMMARP->m_typedPropertyPort = false; }
         ;
 
-property_declarationFront<nodeFTaskp>:  // IEEE: part of property_declaration
+property_declarationFront<propertyp>:  // IEEE: part of property_declaration
                 yPROPERTY idAny/*property_identifier*/
-                        { $$ = new AstProperty{$<fl>2, *$2, nullptr};
+                        { $$ = new AstProperty{$<fl>2, *$2};
                           GRAMMARP->m_insideProperty = true; }
         ;
 
@@ -6620,13 +6640,14 @@ property_port_itemFront:  // IEEE: part of property_port_item/sequence_port_item
                         { VARDTYPE($2); }
         ;
 
-property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item
+property_port_itemAssignment<varp>:  // IEEE: part of property_port_item/sequence_port_item
                 id variable_dimensionListE
                         { VARDECL(VAR);
                           $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
         |       id variable_dimensionListE '=' property_actual_arg
                         { VARDECL(VAR);
-                          $$ = VARDONEA($<fl>1, *$1, $2, $4);
+                          $$ = VARDONEA($<fl>1, *$1, $2, nullptr);
+                          $$->valuep($4);
                           BBUNSUP($3, "Unsupported: property variable default value"); }
         ;
 
@@ -6641,14 +6662,10 @@ property_port_itemDirE:
                           BBUNSUP($1, "Unsupported: property port 'local'"); }
         ;
 
-property_declarationBody<nodep>:  // IEEE: part of property_declaration
-                assertion_variable_declarationList property_spec
-                        { $$ = addNextNull($1, $2); }
-        |       assertion_variable_declarationList property_spec ';'
-                        { $$ = addNextNull($1, $2); }
+property_declarationBody<propSpecp>:  // IEEE: part of property_declaration
         //                      // IEEE-2012: Incorrectly has yCOVER ySEQUENCE then property_spec here.
         //                      // Fixed in IEEE 1800-2017
-        |       property_spec                           { $$ = $1; }
+                property_spec                           { $$ = $1; }
         |       property_spec ';'                       { $$ = $1; }
         ;
 
@@ -6658,22 +6675,29 @@ assertion_variable_declarationList<nodep>:  // IEEE: part of assertion_variable_
                         { $$ = addNextNull($1, $2); }
         ;
 
-sequence_declaration<nodeFTaskp>:  // ==IEEE: sequence_declaration
+sequence_declaration<sequencep>:  // ==IEEE: sequence_declaration
                 sequence_declarationFront sequence_port_listE ';' sequence_declarationBody
         /*cont*/    yENDSEQUENCE endLabelE
                         { $$ = $1;
-                          $$->addStmtsp($2);
-                          $$->addStmtsp($4);
+                          $$->addDeclsp($2);
+                          $$->exprp($4);
                           GRAMMARP->endLabel($<fl>6, $$, $6);
                           // Sequence declarations are allowed; they are inlined by V3AssertPre.
                           // Sequences in unsupported contexts are reported by assertPreAll
                           // after inlining.
                         }
+        |       sequence_declarationFront sequence_port_listE ';' assertion_variable_declarationList
+        /*cont*/    sequence_declarationBodyExpr yENDSEQUENCE endLabelE
+                        { $$ = $1;
+                          $$->addDeclsp($2);
+                          $$->addDeclsp($4);
+                          $$->exprp($5);
+                          GRAMMARP->endLabel($<fl>7, $$, $7); }
         ;
 
-sequence_declarationFront<nodeFTaskp>:  // IEEE: part of sequence_declaration
+sequence_declarationFront<sequencep>:  // IEEE: part of sequence_declaration
                 ySEQUENCE idAny/*new_sequence*/
-                        { $$ = new AstSequence{$<fl>2, *$2, nullptr}; }
+                        { $$ = new AstSequence{$<fl>2, *$2}; }
         ;
 
 sequence_port_listE<nodep>:  // IEEE: [ ( [ sequence_port_list ] ) ]
@@ -6705,18 +6729,20 @@ sequence_formal_typeNoDt<nodeDTypep>:  // ==IEEE: sequence_formal_type (w/o data
                         { $$ = nullptr; GRAMMARP->m_typedPropertyPort = false; }
         ;
 
-sequence_declarationBody<nodep>:  // IEEE: part of sequence_declaration
-        //                      // 1800-2012 makes ';' optional
-                assertion_variable_declarationList sexpr        { $$ = addNextNull($1, $2); }
-        |       assertion_variable_declarationList sexpr ';'    { $$ = addNextNull($1, $2); }
-        |       sexpr                                   { $$ = $1; }
-        |       sexpr ';'                               { $$ = $1; }
+sequence_declarationBody<nodeExprp>:  // IEEE: part of sequence_declaration
+                sequence_declarationBodyExpr            { $$ = $1; }
         //                      // IEEE: clocking_event sequence_expr (16.7)
         //                      // A leading clocking event on a named sequence body.
         |       '@' '(' event_expression ')' sexpr      { $$ = new AstSClocked{$1, $3, $5}; }
         |       '@' '(' event_expression ')' sexpr ';'  { $$ = new AstSClocked{$1, $3, $5}; }
         |       '@' senitemVar sexpr                    { $$ = new AstSClocked{$1, $2, $3}; }
         |       '@' senitemVar sexpr ';'                { $$ = new AstSClocked{$1, $2, $3}; }
+        ;
+
+sequence_declarationBodyExpr<nodeExprp>:  // IEEE: part of sequence_declaration
+        //                      // 1800-2012 makes ';' optional
+                sexpr                                   { $$ = $1; }
+        |       sexpr ';'                               { $$ = $1; }
         ;
 
 property_spec<propSpecp>:               // IEEE: property_spec
@@ -6768,9 +6794,12 @@ property_case_item<caseItemp>:  // ==IEEE: property_case_item
         //                      // IEEE: expression_or_dist { ',' expression_or_dist } ':' property_expr
         //                      // IEEE 1800-2012 changed from property_statement to property_expr
         //                      // IEEE 1800-2017 changed to require the semicolon
-                caseCondList ':' pexpr ';'              { $$ = new AstCaseItem{$2, $1, $3}; }
-        |       yDEFAULT pexpr ';'                      { $$ = new AstCaseItem{$1, nullptr, $2}; }
-        |       yDEFAULT ':' pexpr ';'                  { $$ = new AstCaseItem{$1, nullptr, $3}; }
+                caseCondList ':' pexpr ';'
+                        { $$ = new AstCaseItem{$2, $1, new AstStmtExpr{$3->fileline(), $3}}; }
+        |       yDEFAULT pexpr ';'
+                        { $$ = new AstCaseItem{$1, nullptr, new AstStmtExpr{$2->fileline(), $2}}; }
+        |       yDEFAULT ':' pexpr ';'
+                        { $$ = new AstCaseItem{$1, nullptr, new AstStmtExpr{$3->fileline(), $3}}; }
         ;
 
 //UNSUPpev_expr<nodep>:  // IEEE: property_actual_arg | expr
@@ -6847,7 +6876,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       yS_EVENTUALLY pexpr  %prec prS_EVENTUALLY
                         {
                             $$ = new AstSEventually{$1, $2};
-                            PARSEP->importIfInStd($1, "process", true);
+                            PARSEP->importIfInStd($1, "process");
                         }
         |       yS_EVENTUALLY anyrange pexpr  %prec prS_EVENTUALLY
                         { $$ = $3; BBUNSUP($1, "Unsupported: s_eventually[] (in property expression)"); DEL($2); }
@@ -7013,12 +7042,12 @@ cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
                           $$->rhsp(new AstUnbounded{$1}); }
         ;
 
-sequence_match_itemList<nodep>:  // IEEE: [sequence_match_item] part of sequence_expr
+sequence_match_itemList<nodeStmtp>:  // IEEE: [sequence_match_item] part of sequence_expr
                 sequence_match_item                     { $$ = $1; }
         |       sequence_match_itemList ',' sequence_match_item { $$ = addNextNull($1, $3); }
         ;
 
-sequence_match_item<nodep>:  // ==IEEE: sequence_match_item
+sequence_match_item<nodeStmtp>:  // ==IEEE: sequence_match_item
         //                      // IEEE says: operator_assignment
         //                      // IEEE says: inc_or_dec_expression
         //                      // IEEE says: subroutine_call
@@ -7051,7 +7080,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                                                  static_cast<AstVar*>(sampleArgsp), $6, clockp};
                           // Every covergroup has option/type_option members (added by V3LinkParse)
                           // referencing std:: types, so mark std as needed at parse time.
-                          v3Global.setUsesStdPackage();
+                          PARSEP->importIfInStd($<fl>1, "std");
                           GRAMMARP->endLabel($<fl>8, $$, $8); }
         |        yCOVERGROUP yEXTENDS idAny ';'
         /*cont*/     coverage_spec_or_optionListE
@@ -7726,27 +7755,28 @@ rs_weight_specification<nodeExprp>:  // ==IEEE: rs_weight_specification
         |       '(' expr ')'                            { $$ = $2; }
         ;
 
-rs_code_block<nodep>:  // ==IEEE: rs_code_block
-                '{' '}'                                 { $$ = nullptr; }
-        |       '{' rs_code_blockItemList '}'           { $$ = $2; }
+rs_code_block<nodeStmtp>:  // ==IEEE: rs_code_block
+                '{' rs_code_blockDeclListE stmtListE '}'
+                        { $$ = $3;
+                          // The data declarations are local to the code block
+                          if ($2) {
+                              AstBegin* const blockp = new AstBegin{$<fl>1, "", $3, true};
+                              blockp->addDeclsp($2);
+                              $$ = blockp;
+                          } }
         ;
 
-rs_code_blockItemList<nodep>:  // IEEE: part of rs_code_block
-                rs_code_blockItem                       { $$ = $1; }
-        |       rs_code_blockItemList rs_code_blockItem         { $$ = addNextNull($1, $2); }
+rs_code_blockDeclListE<nodep>:  // IEEE: part of rs_code_block
+                /*empty*/                               { $$ = nullptr; }
+        |       rs_code_blockDeclListE data_declaration { $$ = addNextNull($1, $2); }
         ;
 
-rs_code_blockItem<nodep>:  // IEEE: part of rs_code_block
-                data_declaration                        { $$ = $1; }
-        |       stmt                                    { $$ = $1; }
-        ;
-
-rs_prodList<nodep>:  // IEEE: rs_prod+
+rs_prodList<nodeStmtp>:  // IEEE: rs_prod+
                 rs_prod                                 { $$ = $1; }
         |       rs_prodList rs_prod                     { $$ = addNextNull($1, $2); }
         ;
 
-rs_prod<nodep>:  // ==IEEE: rs_prod
+rs_prod<nodeStmtp>:  // ==IEEE: rs_prod
                 rs_production_item                      { $$ = $1; }
         |       rs_code_block                           { $$ = $1; }
         //                      // IEEE: rs_if_else
@@ -7762,12 +7792,12 @@ rs_prod<nodep>:  // ==IEEE: rs_prod
                         { $$ = new AstCase{$<fl>1, VCaseType::CT_RANDSEQUENCE, $3, $5}; }
         ;
 
-rs_production_itemList<nodep>:  // IEEE: rs_production_item+
+rs_production_itemList<nodeStmtp>:  // IEEE: rs_production_item+
                 rs_production_item                         { $$ = $1; }
         |       rs_production_itemList rs_production_item  { $$ = addNextNull($1, $2); }
         ;
 
-rs_production_item<nodep>:  // ==IEEE: rs_production_item
+rs_production_item<nodeStmtp>:  // ==IEEE: rs_production_item
                 idAny/*production_identifier*/
                         { $$ = new AstRSProdItem{$<fl>1, *$1, nullptr}; }
         |       idAny/*production_identifier*/ '(' list_of_argumentsE ')'
@@ -7856,7 +7886,9 @@ checker_port_itemAssignment<nodep>:  // IEEE: part of checker_port_direction
                           $$->addNext(VARDONEA($<fl>1, *$1, $2, nullptr)); }
         |       id variable_dimensionListE '=' property_actual_arg
                         { $$ = new AstPort{CRELINE(), PINNUMINC(), *$1};
-                          $$->addNext(VARDONEA($<fl>1, *$1, $2, $4));
+                          AstVar* const varp = VARDONEA($<fl>1, *$1, $2, nullptr);
+                          varp->valuep($4);
+                          $$->addNext(varp);
                           BBUNSUP($3, "Unsupported: checker port variable default value"); }
         ;
 
@@ -8253,7 +8285,7 @@ constraint_primary<nodeExprp>:  // ==IEEE: constraint_primary
                 exprScope                                       { $$ = $1; }
         ;
 
-constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
+constraint_expressionList<nodeStmtp>:  // ==IEEE: { constraint_expression }
                 constraint_expression                           { $$ = $1; }
         |       ySOLVE solve_before_list yBEFORE solve_before_list ';'
                         { $$ = new AstConstraintBefore{$1, $2, $4}; }
@@ -8262,7 +8294,7 @@ constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
                         { $$ = addNextNull($1, new AstConstraintBefore{$<fl>2, $3, $5}); }
         ;
 
-constraint_expression<nodep>:  // ==IEEE: constraint_expression
+constraint_expression<nodeStmtp>:  // ==IEEE: constraint_expression
                 expr/*expression_or_dist*/ ';'
                         { $$ = new AstConstraintExpr{$1->fileline(), $1}; }
         //                      // 1800-2012:
@@ -8326,7 +8358,7 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
                         { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
-constraint_set<nodep>:  // ==IEEE: constraint_set
+constraint_set<nodeStmtp>:  // ==IEEE: constraint_set
                 constraint_expression                   { $$ = $1; }
         |       '{' constraint_expressionList '}'       { $$ = $2; }
         //

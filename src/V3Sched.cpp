@@ -217,7 +217,7 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "combinational logic with additional sensitivities");
                 if (activep->isPostponed()) {
-                    UASSERT_OBJ(!activep->stmtsp()->nextp(), activep,
+                    UASSERT_OBJ(!activep->procsp()->nextp(), activep,
                                 "AlwaysPostponed must be alone under its active");
                     result.m_postponed.add(scopep, activep);
                 } else {
@@ -225,9 +225,9 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
                 }
             } else {
                 UASSERT_OBJ(senTreep->hasClocked(), activep, "What else could it be?");
-                if (VN_IS(activep->stmtsp(), AlwaysObserved)) {
+                if (VN_IS(activep->procsp(), AlwaysObserved)) {
                     result.m_observed.add(scopep, activep);
-                } else if (VN_IS(activep->stmtsp(), AlwaysReactive)) {
+                } else if (VN_IS(activep->procsp(), AlwaysReactive)) {
                     result.m_reactive.add(scopep, activep);
                 } else {
                     result.m_clocked.add(scopep, activep);
@@ -264,27 +264,22 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
         // Create a sub-function per scope so we can V3Combine them later
         if (!scopep->user1p()) scopep->user1p(createNewSubFuncp(scopep));
         // Add statements to sub-function
-        for (AstNode* const logicp : activep->stmtspList()) {
+        for (AstNodeProcedure* const procp : activep->procspList()) {
             auto* subFuncp = VN_AS(scopep->user1p(), CFunc);
-            if (AstNodeProcedure* const procp = VN_CAST(logicp, NodeProcedure)) {
-                if (AstNode* const bodyp = procp->stmtsp()) {
-                    bodyp->unlinkFrBackWithNext();
-                    // If the process is suspendable, we need a separate function (a coroutine)
-                    if (procp->isSuspendable()) {
-                        funcp->slow(false);
-                        subFuncp = createNewSubFuncp(scopep);
-                        subFuncp->name(subFuncp->name() + "__Vtiming__"
-                                       + cvtToStr(scopep->user2Inc()));
-                        subFuncp->rtnType("VlCoroutine");
-                    }
-                    subFuncp->addStmtsp(bodyp);
-                    if (procp->needProcess()) subFuncp->setNeedProcess();
-                    // A coroutine holds a single process, so it is complete here
-                    if (procp->isSuspendable()) util::splitCheck(subFuncp);
+            if (AstNodeStmt* const bodyp = procp->stmtsp()) {
+                bodyp->unlinkFrBackWithNext();
+                // If the process is suspendable, we need a separate function (a coroutine)
+                if (procp->isSuspendable()) {
+                    funcp->slow(false);
+                    subFuncp = createNewSubFuncp(scopep);
+                    subFuncp->name(subFuncp->name() + "__Vtiming__"
+                                   + cvtToStr(scopep->user2Inc()));
+                    subFuncp->rtnType("VlCoroutine");
                 }
-            } else {
-                logicp->unlinkFrBack();
-                subFuncp->addStmtsp(logicp);
+                subFuncp->addStmtsp(bodyp);
+                if (procp->needsVlProcess()) subFuncp->setNeedsVlProcess();
+                // A coroutine holds a single process, so it is complete here
+                if (procp->isSuspendable()) util::splitCheck(subFuncp);
             }
         }
         if (activep->backp()) activep->unlinkFrBack();
@@ -421,8 +416,8 @@ void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
     // SystemC only: Any top level inputs feeding a combinational logic must be marked,
     // so we can make them sc_sensitive
     if (v3Global.opt.systemC()) {
-        logic.foreachLogic([](AstNode* logicp) {
-            logicp->foreach([](AstVarRef* refp) {
+        logic.foreachProcess([](AstNodeProcedure* procp) {
+            procp->foreach([](AstVarRef* refp) {
                 if (refp->access().isWriteOnly()) return;
                 AstVarScope* const vscp = refp->varScopep();
                 if (vscp->scopep()->isTop() && vscp->varp()->isNonOutput()) {
@@ -750,7 +745,7 @@ VirtIfaceTriggers::VscpTrigMap VirtIfaceTriggers::makeVscpToTrigMap(const Trigge
 void schedule(AstNetlist* netlistp) {
     const auto addSizeStat = [](const string& name, const LogicByScope& lbs) {
         uint64_t size = 0;
-        lbs.foreachLogic([&](AstNode* nodep) { size += nodep->nodeCount(); });
+        lbs.foreachProcess([&](AstNodeProcedure* procp) { size += procp->nodeCount(); });
         V3Stats::addStat("Scheduling, " + name, size);
     };
 

@@ -146,7 +146,7 @@ protected:
         const AstCFunc* const ctorp = VN_CAST(newp, CFunc);
         if (!ctorp) return false;
         UASSERT_OBJ(ctorp->isConstructor(), ctorp, "`new` is not a constructor!");
-        return ctorp->needProcess();
+        return ctorp->needsVlProcess();
     }
 
     bool constructorNeedsProcess(const AstNodeDType* const dtypep) {
@@ -453,10 +453,6 @@ public:
         emitCFuncHeader(nodep, m_modp, /* withScope: */ true);
 
         puts(" {\n");
-        if (nodep->isConstructor()) {
-            const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
-            if (classp && classp->extendsp()) putConstructorSubinit(classp, nodep);
-        }
 
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
@@ -484,9 +480,9 @@ public:
 
         // Instantiate a process class if it's going to be needed somewhere later
         nodep->forall([&](const AstNodeCCall* ccallp) -> bool {
-            if (ccallp->funcp()->needProcess()
+            if (ccallp->funcp()->needsVlProcess()
                 && (ccallp->funcp()->isCoroutine() == VN_IS(ccallp->backp(), CAwait))) {
-                if (!nodep->needProcess() && !m_instantiatesOwnProcess) {
+                if (!nodep->needsVlProcess() && !m_instantiatesOwnProcess) {
                     m_instantiatesOwnProcess = true;
                     return false;
                 }
@@ -498,7 +494,7 @@ public:
             vlprocp->add("VlProcessRef vlProcess = std::make_shared<VlProcess>();\n");
             vlprocp->add("VlProcess::currentp(vlProcess.get());");
             nodep->prependStmtsp(vlprocp);
-        } else if (nodep->needProcess() && nodep->stmtsp()) {
+        } else if (nodep->needsVlProcess() && nodep->stmtsp()) {
             // Set current process so VlRNG() constructors in this function seed from it
             AstCStmt* const setProcessp = new AstCStmt{nodep->fileline()};
             setProcessp->add("VlProcess::currentp(vlProcess.get());");
@@ -530,6 +526,15 @@ public:
         if (nodep->varsp()) {
             putsDecoration(nodep, "// Locals\n");
             iterateAndNextConstNull(nodep->varsp());
+        }
+
+        // After the locals, as the super.new arguments might use them
+        if (nodep->isConstructor()) {
+            const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
+            if (classp && classp->extendsp()) {
+                putsDecoration(nodep, "// Super\n");
+                putConstructorSubinit(classp, nodep);
+            }
         }
 
         if (nodep->stmtsp()) {
@@ -770,7 +775,7 @@ public:
             puts(cvtToStr(castp->srcElementBits()));
             puts(", ");
             puts(cvtToStr(castp->dstElementBits()));
-        } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
+        } else if (nodep->isWide() && !unpackDtp && VN_IS(nodep->lhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //
                    // Although not here currently, note putting !VN_IS(Const) works,
@@ -864,7 +869,8 @@ public:
             }
             putns(nodep, funcp->nameProtect());
         }
-        emitCCallArgs(nodep, nodep->selfPointerProtect(m_useSelfForThis), m_cfuncp->needProcess());
+        emitCCallArgs(nodep, nodep->selfPointerProtect(m_useSelfForThis),
+                      m_cfuncp->needsVlProcess());
     }
     void visit(AstCMethodCall* nodep) override {
         const AstCFunc* const funcp = nodep->funcp();
@@ -877,7 +883,7 @@ public:
             putns(funcModp, EmitCUtil::prefixNameProtect(funcModp) + "::");
         }
         putns(funcp, funcp->nameProtect());
-        emitCCallArgs(nodep, "", m_cfuncp->needProcess());
+        emitCCallArgs(nodep, "", m_cfuncp->needsVlProcess());
     }
     void visit(AstCAwait* nodep) override {
         putns(nodep, "co_await ");
@@ -1418,7 +1424,14 @@ public:
     void visit(AstCLocalScope* nodep) override {
         putns(nodep, "{\n");
         VL_RESTORER(m_createdScopeHash);
-        iterateAndNextConstNull(nodep->stmtsp());
+        if (nodep->varsp()) {
+            putsDecoration(nodep, "// Locals\n");
+            iterateAndNextConstNull(nodep->varsp());
+        }
+        if (nodep->stmtsp()) {
+            putsDecoration(nodep, "// Body\n");
+            iterateAndNextConstNull(nodep->stmtsp());
+        }
         puts("}\n");
     }
     void visit(AstNodeIf* nodep) override {
@@ -1458,10 +1471,6 @@ public:
             putnbs(nodep, "(co_await ([&]() -> VlCoroutine {\n");
             iterateAndNextConstNull(nodep->stmtsp());
             puts("co_return;\n");
-            if (!nodep->hasResult()) {
-                puts("}()))");
-                return;
-            }
             puts("}()), ");
             iterateAndNextConstNull(nodep->resultp());
             puts(")");
@@ -1470,11 +1479,6 @@ public:
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
         putnbs(nodep, "([&]() {\n");
-        if (!nodep->hasResult()) {
-            iterateAndNextConstNull(nodep->stmtsp());
-            puts("}())");
-            return;
-        }
         iterateAndNextConstNull(nodep->stmtsp());
         puts("}(), ");
         iterateAndNextConstNull(nodep->resultp());
@@ -1491,7 +1495,7 @@ public:
     }
     void visit(AstFinish* nodep) override {
         // Disable all the forks so they don't operate after simulation is finished.
-        if (m_cfuncp && m_cfuncp->needProcess()) putns(nodep, "vlProcess->disableFork();\n");
+        if (m_cfuncp && m_cfuncp->needsVlProcess()) putns(nodep, "vlProcess->disableFork();\n");
         putns(nodep, "VL_FINISH_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
@@ -1500,7 +1504,7 @@ public:
     }
     void visit(AstFinishFork* nodep) override {
         // Disable all the forks so they don't operate after simulation is finished.
-        if (m_cfuncp && m_cfuncp->needProcess()) putns(nodep, "vlProcess->disableFork();\n");
+        if (m_cfuncp && m_cfuncp->needsVlProcess()) putns(nodep, "vlProcess->disableFork();\n");
         putns(nodep, "VL_FINISH_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");

@@ -224,16 +224,16 @@ class InlineCFuncsVisitor final : public VNVisitor {
         for (AstVar* const varp : calleep->varspList()) {
             AstVar* const newVarp = varp->cloneTree(false);
             newVarp->name(varPrefix + varp->name());
-            lscopep->addStmtsp(newVarp);
+            lscopep->addVarsp(newVarp);
             varp->user2p(newVarp);
         }
 
         // Clone the function body
-        AstNode* const bodyp = calleep->stmtsp()->cloneTree(true);
+        AstNodeStmt* const bodyp = calleep->stmtsp()->cloneTree(true);
         lscopep->addStmtsp(bodyp);
 
         // Retarget local variable references to the cloned locals
-        // Rename locals defined in the body, TODO: there should be none after #6280
+        // Rename locals declared inside the body
         // Reset vertex pointers on calls
         bodyp->foreachAndNext([&](AstNode* nodep) {
             if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {

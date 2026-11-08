@@ -61,7 +61,7 @@ module t;
     Derived d;
     Base copy;
 
-    // Test 1: Copy via base handle pointing to Derived
+    // Test: Copy via base handle pointing to Derived
     d = new();
     b = d;
     copy = new b;
@@ -69,11 +69,11 @@ module t;
     `checkd(copy.get_id(), 2);
     `checkd(copy.value, 20);
 
-    // Test 2: Verify it's a true copy (not alias)
+    // Test: Verify it's a true copy (not alias)
     copy.value = 999;
     `checkd(d.value, 20);
 
-    // Test 3: Copy via base handle pointing to GrandChild
+    // Test: Copy via base handle pointing to GrandChild
     begin
       GrandChild gc;
       gc = new();
@@ -84,7 +84,7 @@ module t;
       `checkd(copy.value, 30);
     end
 
-    // Test 4: Copy of base-type object (no polymorphism, still works)
+    // Test: Copy of base-type object (no polymorphism, still works)
     begin
       Base b2;
       Base copy2;
@@ -95,7 +95,7 @@ module t;
       `checkd(copy2.value, 10);
     end
 
-    // Test 5: Copy of a derived handle assigned to a base handle (IEEE 1800-2023 8.12)
+    // Test: Copy of a derived handle assigned to a base handle (IEEE 1800-2023 8.12)
     begin
       Derived d2;
       Base copy3;

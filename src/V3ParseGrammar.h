@@ -27,7 +27,7 @@ class V3ParseGrammar final {
 public:
     AstVar* m_varAttrp = nullptr;  // Current variable for attribute adding
     AstRange* m_gateRangep = nullptr;  // Current range for gate declarations
-    AstNode* m_scopedSigAttrp = nullptr;  // Pointer to default signal attribute
+    AstAttrOf* m_scopedSigAttrp = nullptr;  // Pointer to default signal attribute
     AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
     AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
@@ -80,7 +80,7 @@ public:
     AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* nrangep,
                               bool isPacked) VL_MT_DISABLED;
     AstVar* createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp,
-                           AstNode* attrsp) VL_MT_DISABLED;
+                           AstAttrOf* attrsp) VL_MT_DISABLED;
     AstAssignW* createSupplyExpr(FileLine* fileline, const string& name, int value) VL_MT_DISABLED;
     std::string textQuoted(FileLine* fileline, const std::string& text) {
         return singletonp()->unquoteString(fileline, text);
@@ -174,8 +174,8 @@ public:
         V3ParseImp::parsep()->tagNodep(nodep);
         return nodep;
     }
-    AstNode* createTypedef(FileLine* fl, const string& name, AstNode* attrsp, AstNodeDType* basep,
-                           AstNodeRange* rangep) {
+    AstNode* createTypedef(FileLine* fl, const string& name, AstAttrOf* attrsp,
+                           AstNodeDType* basep, AstNodeRange* rangep) {
         AstTypedef* const nodep = new AstTypedef{fl, name, attrsp, VFlagChildDType{},
                                                  singletonp()->createArray(basep, rangep, false)};
         V3ParseImp::parsep()->tagNodep(nodep);
@@ -272,7 +272,7 @@ public:
         return itemsp;
     }
 
-    void setScopedSigAttr(AstNode* attrsp) {
+    void setScopedSigAttr(AstAttrOf* attrsp) {
         if (m_scopedSigAttrp) {  // clearing set attribute
             UASSERT_OBJ(!m_scopedSigAttrp->backp(), m_scopedSigAttrp, "Should not link directly");
             VL_DO_DANGLING(m_scopedSigAttrp->deleteTree(), m_scopedSigAttrp);
@@ -284,12 +284,12 @@ public:
         setScopedSigAttr(new AstAttrOf{V3ParseImp::parsep()->lexFileline(), vattrT});
     }
 
-    AstNode* cloneScopedSigAttr() const {
+    AstAttrOf* cloneScopedSigAttr() const {
         return m_scopedSigAttrp ? m_scopedSigAttrp->cloneTree(true) : nullptr;
     }
 
     void createGenericIface(AstNode* const nodep, AstNodeRange* const rangep,
-                            AstNode* sigAttrListp, FileLine* const modportFileline = nullptr,
+                            AstAttrOf* sigAttrListp, FileLine* const modportFileline = nullptr,
                             const string& modportstrp = "") {
         m_varDecl = VVarType::GPARAM;
         m_varIO = VDirection::NONE;

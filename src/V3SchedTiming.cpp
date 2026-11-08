@@ -90,10 +90,11 @@ AstCCall* TimingKit::createResume(AstVarScope* trigVscp) {
             AstActive* const activep = entry.m_activep;
             // Resume time delays last. For no particular reason other than
             // that's what we used to do prior to proper #0 support.
-            AstVarRef* const schedrefp = VN_AS(
-                VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
+            AstStmtExpr* const resumeStmtp = VN_AS(activep->procsp()->stmtsp(), StmtExpr);
+            AstVarRef* const schedrefp
+                = VN_AS(VN_AS(resumeStmtp->exprp(), CMethodHard)->fromp(), VarRef);
 
-            AstNode* const actionp = activep->stmtsp()->unlinkFrBackWithNext();
+            AstNodeStmt* const actionp = resumeStmtp->unlinkFrBack();
             if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
                 FileLine* const flp = trigVscp->fileline();
                 const std::set<uint32_t>& triggers = entry.m_triggers;
@@ -118,9 +119,9 @@ AstCCall* TimingKit::createResume(AstVarScope* trigVscp) {
 AstVarScope* TimingKit::getDelayScheduler(AstNetlist* const /*netlistp*/) {
     for (const auto& entry : m_lbs) {
         AstActive* const ap = entry.m_activep;
-        // TODO: this triple VN_AS expression is ridiculous
+        AstStmtExpr* const resumeStmtp = VN_AS(ap->procsp()->stmtsp(), StmtExpr);
         AstVarRef* const schedrefp
-            = VN_AS(VN_AS(VN_AS(ap->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
+            = VN_AS(VN_AS(resumeStmtp->exprp(), CMethodHard)->fromp(), VarRef);
         AstVarScope* const vscp = schedrefp->varScopep();
         if (vscp->dtypep()->basicp()->isDelayScheduler()) return vscp;
     }
@@ -135,7 +136,8 @@ AstCCall* TimingKit::createReady(AstVarScope* trigVscp) {
     if (!m_readyFuncp) {
         for (const auto& entry : m_lbs) {
             AstActive* const activep = entry.m_activep;
-            auto* const resumep = VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard);
+            auto* const resumep
+                = VN_AS(VN_AS(activep->procsp()->stmtsp(), StmtExpr)->exprp(), CMethodHard);
             UASSERT_OBJ(!resumep->nextp(), resumep, "Should be the only statement here");
             AstVarScope* const schedulerp = VN_AS(resumep->fromp(), VarRef)->varScopep();
             UASSERT_OBJ(schedulerp->dtypep()->basicp()->isDelayScheduler()
@@ -298,7 +300,7 @@ class TransformForksVisitor final : public VNVisitor {
         m_itemHasAwaits = false;
         iterateChildrenConst(nodep);
         if (!nodep->stmtsp()) return;
-        if (!m_itemHasAwaits && !nodep->needProcess()) return;
+        if (!m_itemHasAwaits && !nodep->needsVlProcess()) return;
 
         // Create a function to put this fork item's statements in
         FileLine* const flp = nodep->fileline();
@@ -323,13 +325,13 @@ class TransformForksVisitor final : public VNVisitor {
         if (AstVar* const declsp = nodep->declsp()) {
             newfuncp->addVarsp(declsp->unlinkFrBackWithNext());
         }
-        if (AstNode* const stmtsp = nodep->stmtsp()) {
+        if (AstNodeStmt* const stmtsp = nodep->stmtsp()) {
             newfuncp->addStmtsp(stmtsp->unlinkFrBackWithNext());
         }
         // Replace the body of the fork item with a call to the newly created function
         nodep->addStmtsp(callp->makeStmt());
         // Propagate if needs process
-        if (nodep->needProcess()) newfuncp->setNeedProcess();
+        if (nodep->needsVlProcess()) newfuncp->setNeedsVlProcess();
         remapLocals(newfuncp, callp);
     }
     void visit(AstCAwait* nodep) override {

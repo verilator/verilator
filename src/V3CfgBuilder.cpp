@@ -67,11 +67,10 @@ class CfgBuilder final : public VNVisitorConst {
 
     // VISITORS
 
-    // Eventually we should handle all procedural statements, however, what
-    // is a procedural statemen is a bit unclear (#6280), so in the first
-    // instance we will only handle select statemetns that cover the requied
-    // use cases, and in the base case we conservatively assume the statement
-    // is non-representable. More visits can be added case by case if needed.
+    // Eventually we should handle all procedural statements (AstNodeStmt), but in the first
+    // instance we will only handle select statements that cover the required use cases, and
+    // in the base case we conservatively assume the statement is non-representable. More
+    // visits can be added case by case if needed.
     void visit(AstNode* nodep) override {
         if (!m_cfgp) return;
         UINFO(9, "Unhandled AstNode type " << nodep->typeName());

@@ -32,13 +32,32 @@ module t;
         for (int i = 0; i < 4; i++) begin
           @(posedge clk);
           if (i == 2) begin
-            work(1); work(2); work(3); work(4); work(5); work(6); work(7); work(8);
-            work(9); work(10); work(11); work(12); work(13); work(14); work(15); work(16);
+            work(1);
+            work(2);
+            work(3);
+            work(4);
+            work(5);
+            work(6);
+            work(7);
+            work(8);
+            work(9);
+            work(10);
+            work(11);
+            work(12);
+            work(13);
+            work(14);
+            work(15);
+            work(16);
             $write("*-* All Finished *-*\n");
             $finish;
           end
           // Large enough to be moved out on its own
-          work(i); work(i + 1); work(i + 2); work(i + 3); work(i + 4); work(i + 5);
+          work(i);
+          work(i + 1);
+          work(i + 2);
+          work(i + 3);
+          work(i + 4);
+          work(i + 5);
           count++;
         end
       end

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.top_filename = 't/t_flag_unlimited_stack.v'
 
 # Just check whether the flag is recognized.
 test.lint(verilator_flags2=["--no-unlimited-stack"])

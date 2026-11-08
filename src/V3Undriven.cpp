@@ -765,7 +765,7 @@ class UndrivenVisitor final : public VNVisitorConst {
         bool ftaskDef = false;
         if (m_taskp && !m_alwaysp && !m_inContAssign && !m_inInitialStatic && !m_inBBox
             && !m_taskp->dpiExport()) {
-            AstVar* const retVarp = VN_CAST(m_taskp->fvarp(), Var);
+            AstVar* const retVarp = m_taskp->fvarp();
             if (!retVarp || nodep->varp() != retVarp) ftaskDef = true;
         }
 

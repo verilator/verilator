@@ -106,34 +106,34 @@ class SeqEventLowerVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstSenItem* nodep) override {
-        AstFuncRef* const funcrefp = VN_CAST(nodep->sensp(), FuncRef);
-        if (funcrefp && VN_IS(funcrefp->taskp(), Sequence)) {
+        AstSchemaRef* const schemaRefp = VN_CAST(nodep->sensp(), SchemaRef);
+        if (schemaRefp && VN_IS(schemaRefp->schemap(), Sequence)) {
             FileLine* const flp = nodep->fileline();
             AstVar* const eventp = new AstVar{flp, VVarType::MODULETEMP, m_names.get(nodep),
                                               m_modp->findBasicDType(VBasicDTypeKwd::EVENT)};
             eventp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(eventp);
             v3Global.setHasEvents();
-            funcrefp->unlinkFrBack();
+            schemaRefp->unlinkFrBack();
             nodep->sensp(new AstVarRef{flp, eventp, VAccess::READ});
-            const bool automaticActual = funcrefp->exists([](const AstNodeVarRef* refp) {
+            const bool automaticActual = schemaRefp->exists([](const AstNodeVarRef* refp) {
                 return refp->varp() && refp->varp()->lifetime().isAutomatic();
             });
             if (automaticActual) {
                 nodep->v3error("Arguments to a sequence used as an event control must be"
                                " static (IEEE 1800-2023 9.4.2.4)");
-                VN_AS(funcrefp->taskp(), Sequence)->isReferenced(false);
-                VL_DO_DANGLING(pushDeletep(funcrefp), funcrefp);
+                VN_AS(schemaRefp->schemap(), Sequence)->isReferenced(false);
+                VL_DO_DANGLING(pushDeletep(schemaRefp), schemaRefp);
                 return;
             }
             AstFireEvent* const firep
                 = new AstFireEvent{flp, new AstVarRef{flp, eventp, VAccess::WRITE}, false};
             AstCover* const coverp
-                = new AstCover{flp, new AstPropSpec{flp, nullptr, nullptr, funcrefp}, firep,
+                = new AstCover{flp, new AstPropSpec{flp, nullptr, nullptr, schemaRefp}, firep,
                                VAssertType::CONCURRENT};
             coverp->isCoverSeq(true);
             coverp->isSeqEvent(true);
-            m_modp->addStmtsp(coverp);
+            m_modp->addStmtsp(new AstAlways{flp, VAlwaysKwd::ASSERT_COVER, nullptr, coverp});
             return;
         }
         iterateChildren(nodep);
@@ -229,7 +229,7 @@ bool V3AssertCommon::refsSvaFormal(const AstNode* nodep) {
         const AstVar* const varp = refp->varp();
         if (!varp || !varp->isIO()) return false;
         const AstNode* const declp = varp->aboveLoopp();
-        return VN_IS(declp, Sequence) || VN_IS(declp, Property);
+        return VN_IS(declp, NodeSchema);
     });
 }
 
@@ -300,7 +300,8 @@ class AssertDeFutureVisitor final : public VNVisitor {
             varRefAWritep->user1(true);
             AstNodeVarRef* varRefAReadp = nodep->cloneTree(false);
             varRefAReadp->user1(true);
-            AstNode* const assp = new AstAssignDly{nodep->fileline(), varRefAWritep, varRefAReadp};
+            AstNodeStmt* const assp
+                = new AstAssignDly{nodep->fileline(), varRefAWritep, varRefAReadp};
             alwaysp->addStmtsp(assp);
             m_delayedVars.emplace(nodep->varp(), outvarp);
         } else {
@@ -339,13 +340,34 @@ public:
 
 // Prepare one default sampled expression.
 class DefaultSampledValueVisitor final : public VNVisitor {
+    // STATE
+    bool m_defaulted = false;  // A reference below was replaced by its default
+
     // METHODS
-    static AstConst* newTypeDefault(AstNodeExpr* nodep) {
+    AstConst* newTypeDefault(AstNodeExpr* nodep) {
+        m_defaulted = true;
         AstConst* const constp
             = new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()};
         if (nodep->dtypep()->isFourstate()) constp->num().setAllBitsX();
         constp->dtypeFrom(nodep);
         return constp;
+    }
+
+    void visitSelect(AstNodeExpr* nodep) {
+        // A select of a replaced value or index is itself the default of its type
+        bool setDefaulted;
+        {
+            VL_RESTORER(m_defaulted);
+            m_defaulted = false;
+            iterateChildren(nodep);
+            setDefaulted = m_defaulted;
+        }
+        if (setDefaulted) {
+            m_defaulted = true;  // Propagate up that replacement was made
+            nodep->replaceWith(newTypeDefault(nodep));
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
     }
 
     // VISITORS
@@ -366,13 +388,8 @@ class DefaultSampledValueVisitor final : public VNVisitor {
         nodep->replaceWith(newTypeDefault(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstArraySel* nodep) override {
-        iterateChildren(nodep);
-        // The default of an element of an array replaced by its default above
-        if (!VN_IS(nodep->fromp(), Const)) return;
-        nodep->replaceWith(newTypeDefault(nodep));
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
+    void visit(AstArraySel* nodep) override { visitSelect(nodep); }
+    void visit(AstSel* nodep) override { visitSelect(nodep); }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
@@ -413,6 +430,7 @@ class AssertVisitor final : public VNVisitor {
     AstVar* m_obsEventp = nullptr;  // Current module event to run deferred calls
     AstAlwaysReactive* m_obsReactivep = nullptr;  // Current module block running deferred calls
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
+    AstAlways* m_assertCoverp = nullptr;  // Process of the current concurrent assertion
     VDouble0 m_statCover;  // Statistic tracking
     VDouble0 m_statAsNotImm;  // Statistic tracking
     VDouble0 m_statAsImm;  // Statistic tracking
@@ -422,8 +440,8 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statAssertOnHoisted;  // Statistic tracking
     bool m_inSampled = false;  // True inside a sampled expression
     bool m_inRestrict = false;  // True inside restrict assertion
-    AstNode* m_passsp = nullptr;  // Current pass statement
-    AstNode* m_failsp = nullptr;  // Current fail statement
+    AstNodeStmt* m_passsp = nullptr;  // Current pass statement
+    AstNodeStmt* m_failsp = nullptr;  // Current fail statement
     AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     AstFinal* m_finalp = nullptr;  // Current final block
     VDouble0 m_statLiftedCaseExprs;  // Count of purified case expressions
@@ -652,7 +670,7 @@ class AssertVisitor final : public VNVisitor {
             exprp = nextp;
         }
     }
-    static AstIf* newIfAssertOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+    static AstIf* newIfAssertOn(AstNodeStmt* bodyp, VAssertDirectiveType directiveType,
                                 VAssertType type = VAssertType::INTERNAL) {
         // Add an internal if to check assertions are on.
         // Don't make this an AND term, as it's unlikely to need to test this.
@@ -664,7 +682,7 @@ class AssertVisitor final : public VNVisitor {
         newp->user2(true);  // Mark as an assertOn() check
         return newp;
     }
-    static AstNodeStmt* newIfAssertPassOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+    static AstNodeStmt* newIfAssertPassOn(AstNodeStmt* bodyp, VAssertDirectiveType directiveType,
                                           VAssertType type, bool vacuous) {
         // Add an internal if to check assertion passOn is enabled.
         // Don't make this an AND term, as it's unlikely to need to test this.
@@ -676,7 +694,7 @@ class AssertVisitor final : public VNVisitor {
         newp->user2(true);  // Mark as an assertOn() check
         return newp;
     }
-    static AstNodeStmt* newIfAssertFailOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+    static AstNodeStmt* newIfAssertFailOn(AstNodeStmt* bodyp, VAssertDirectiveType directiveType,
                                           VAssertType type) {
         // Add an internal if to check assertion failOn is enabled.
         // Don't make this an AND term, as it's unlikely to need to test this.
@@ -690,7 +708,7 @@ class AssertVisitor final : public VNVisitor {
     }
 
     static AstIf* assertCond(const AstNodeCoverOrAssert* nodep, AstNodeExpr* propp,
-                             AstNode* passsp, AstNode* failsp) {
+                             AstNodeStmt* passsp, AstNodeStmt* failsp) {
         AstIf* const ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
         // It's more LIKELY that we'll take the nullptr if clause
         // than the sim-killing else clause:
@@ -699,8 +717,8 @@ class AssertVisitor final : public VNVisitor {
         return ifp;
     }
 
-    AstNodeStmt* assertBody(const AstNodeCoverOrAssert* nodep, AstNode* propp, AstNode* passsp,
-                            AstNode* failsp) {
+    AstNodeStmt* assertBody(const AstNodeCoverOrAssert* nodep, AstNode* propp, AstNodeStmt* passsp,
+                            AstNodeStmt* failsp) {
         if (AstPExpr* const pexprp = VN_CAST(propp, PExpr)) {
             if (!v3Global.opt.timing().isSetTrue()) {
                 nodep->v3warn(E_NOTIMING, "This property expression requires --timing");
@@ -839,7 +857,7 @@ class AssertVisitor final : public VNVisitor {
     // Lower observed deferred action into a pending call with its input arguments snapshotted.
     // Pending calls run in the Reactive region unless a flush of their process clears them
     // (IEEE 1800-2023 16.4.1).
-    AstNodeStmt* newObservedDeferredAction(FileLine* flp, AstNode* actionsp) {
+    AstNodeStmt* newObservedDeferredAction(FileLine* flp, AstNodeStmt* actionsp) {
         if (!(actionsp->isOutputter() || VN_IS(actionsp, SFormat) || VN_IS(actionsp, StmtExpr))) {
             actionsp->v3error("Observed deferred immediate assertion action block must be a "
                               "single subroutine call (IEEE 1800-2023 16.4).");
@@ -867,7 +885,7 @@ class AssertVisitor final : public VNVisitor {
         } else if (refp) {
             // Match actuals to formal ports, including named/default arguments
             const V3TaskConnects tconnects
-                = V3Task::taskConnects(refp, refp->taskp()->stmtsp(), nullptr, false);
+                = V3Task::taskConnects(refp, refp->taskp()->declsp(), nullptr, false);
             for (const auto& tconnect : tconnects) {
                 AstVar* const portp = tconnect.first;
                 AstArg* const argp = tconnect.second;
@@ -892,7 +910,8 @@ class AssertVisitor final : public VNVisitor {
         return newObservedDeferredCall(flp, actionsp, queuesp);
     }
     // Make statements pending, appending what queues them to queuesp
-    AstNodeStmt* newObservedDeferredCall(FileLine* flp, AstNode* callsp, AstNodeStmt* queuesp) {
+    AstNodeStmt* newObservedDeferredCall(FileLine* flp, AstNodeStmt* callsp,
+                                         AstNodeStmt* queuesp) {
         AstVar* const pendingp
             = newModuleTemp(flp, m_obsNames.get("Pending"), m_modp->findUInt32DType(), m_modp);
         pendingp->setIgnoreSchedWrite();
@@ -931,7 +950,7 @@ class AssertVisitor final : public VNVisitor {
         return queuesp;
     }
 
-    void visitAssertionIterate(AstNodeCoverOrAssert* nodep, AstNode* failsp) {
+    void visitAssertionIterate(AstNodeCoverOrAssert* nodep, AstNodeStmt* failsp) {
         FileLine* const flp = nodep->fileline();
         const bool obsDeferred = nodep->userType() == VAssertType::OBSERVED_DEFERRED_IMMEDIATE;
         if (obsDeferred && (!v3Global.opt.timing().isSetTrue() || m_ftaskp || m_inSpawnedFork)) {
@@ -979,7 +998,14 @@ class AssertVisitor final : public VNVisitor {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Procedural concurrent assertion with"
                               " clocking event inside always (IEEE 1800-2023 16.14.6)");
-                static_cast<AstNode*>(m_procedurep)->addNext(nodep->unlinkFrBack());
+                m_procedurep->addNext(
+                    new AstAlways{flp, VAlwaysKwd::ASSERT_COVER, nullptr, nodep->unlinkFrBack()});
+                return;  // Later iterate will pick up
+            }
+            // A task is not a process, so the assertion gets its own beside the task
+            if (m_ftaskp) {
+                m_ftaskp->addNextHere(
+                    new AstAlways{flp, VAlwaysKwd::ASSERT_COVER, nullptr, nodep->unlinkFrBack()});
                 return;  // Later iterate will pick up
             }
             sentreep->unlinkFrBack();
@@ -987,7 +1013,7 @@ class AssertVisitor final : public VNVisitor {
         }
         //
         const string& message = nodep->name();
-        AstNode* passsp = nodep->passsp();
+        AstNodeStmt* passsp = nodep->passsp();
         if (passsp) passsp->unlinkFrBackWithNext();
         if (AstAssert* const assertp = VN_CAST(nodep, Assert)) {
             failsp = assertp->failsp();
@@ -1014,7 +1040,7 @@ class AssertVisitor final : public VNVisitor {
                 covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
                 if (message != "") covincp->declp()->comment(message);
                 // IEEE 1800-2023 16.4.2: Deferred coverage is flushed like a pending report
-                AstNode* creditsp = covincp;
+                AstNodeStmt* creditsp = covincp;
                 if (obsDeferred) {
                     creditsp = newObservedDeferredCall(flp, covincp, nullptr);
                     if (passsp) passsp = newObservedDeferredAction(flp, passsp);
@@ -1023,7 +1049,7 @@ class AssertVisitor final : public VNVisitor {
                     passsp = newIfAssertPassOn(passsp, nodep->directive(), nodep->userType(),
                                                /*vacuous=*/false);
                     passspGated = true;
-                    passsp = AstNode::addNext<AstNode, AstNode>(creditsp, passsp);
+                    passsp = AstNode::addNext(creditsp, passsp);
                 } else {
                     passsp = creditsp;
                 }
@@ -1081,7 +1107,7 @@ class AssertVisitor final : public VNVisitor {
                 flp, VVarType::MODULETEMP, m_matchCountNames.get(""), matchCountp->dtypep()};
             remainingp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(remainingp);
-            AstNode* const replaysp
+            AstNodeStmt* const replaysp
                 = new AstAssign{flp, new AstVarRef{flp, remainingp, VAccess::WRITE}, matchCountp};
             AstLoop* const loopp = new AstLoop{flp};
             loopp->addStmtsp(
@@ -1095,11 +1121,10 @@ class AssertVisitor final : public VNVisitor {
             replaysp->addNext(loopp);
             passsp = replaysp;
         }
-        AstNode* bodysp = assertBody(nodep, propExprp, passsp, failsp);
+        AstNodeStmt* bodysp = assertBody(nodep, propExprp, passsp, failsp);
         if (disablep) bodysp = new AstIf{flp, new AstLogNot{flp, disablep}, bodysp};
         // Add assertOn check last, for better combining
         if (!seqEvent) bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->userType());
-        if (sentreep) bodysp = new AstAlways{flp, VAlwaysKwd::ALWAYS, sentreep, bodysp};
 
         if (passsp && !passsp->backp()) VL_DO_DANGLING(pushDeletep(passsp), passsp);
         if (failsp && !failsp->backp()) VL_DO_DANGLING(pushDeletep(failsp), failsp);
@@ -1109,8 +1134,15 @@ class AssertVisitor final : public VNVisitor {
             // Delete it after making the tree.  This way we can tell the user
             // if it wasn't constructed nicely or has other errors without needing --coverage.
             VL_DO_DANGLING(bodysp->deleteTree(), bodysp);
+            if (sentreep) VL_DO_DANGLING(sentreep->deleteTree(), sentreep);
             nodep->unlinkFrBack();
         } else {
+            if (sentreep) {
+                // The process of the concurrent assertion is clocked by it
+                UASSERT_OBJ(m_assertCoverp, nodep, "Concurrent assertion not in its process");
+                m_assertCoverp->keyword(VAlwaysKwd::ALWAYS);
+                m_assertCoverp->sentreep(sentreep);
+            }
             nodep->replaceWith(bodysp);
         }
         // Bye
@@ -1267,7 +1299,7 @@ class AssertVisitor final : public VNVisitor {
             if (m_ftaskp) {
                 varp->funcLocal(true);
                 varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                m_ftaskp->prependStmtsp(varp);
+                m_ftaskp->prependDeclsp(varp);
             } else {
                 m_modp->prependStmtsp(varp);
             }
@@ -1469,7 +1501,7 @@ class AssertVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstPExprClause* nodep) override {
-        AstNode* stmtsp = nullptr;
+        AstNodeStmt* stmtsp = nullptr;
         if (nodep->pass() && m_passsp) {
             // Cover adds COVERINC by AstNode::addNext, thus need to clone next too.
             stmtsp = m_passsp->cloneTree(true);
@@ -1572,7 +1604,7 @@ class AssertVisitor final : public VNVisitor {
                                                      new AstConst{fl, AstConst::BitTrue{}}};
             nodep->replaceWith(newsetp);
             // Add "always_comb if (__Vstrobe) begin $display(...); __Vstrobe = '0; end"
-            AstNode* const stmtsp = nodep;
+            AstNodeStmt* const stmtsp = nodep;
             AstIf* const ifp = new AstIf{fl, new AstVarRef{fl, varp, VAccess::READ}, stmtsp};
             ifp->isBoundsCheck(true);  // To avoid LATCH warning
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
@@ -1746,6 +1778,20 @@ class AssertVisitor final : public VNVisitor {
         m_modStrobeNum = 0;
         m_finalp = nullptr;
         iterateChildren(nodep);
+    }
+    void visit(AstAlways* nodep) override {
+        if (nodep->keyword() != VAlwaysKwd::ASSERT_COVER) {
+            visit(static_cast<AstNodeProcedure*>(nodep));
+            return;
+        }
+        // The process of a concurrent assertion, not a procedural context. The assertion clocks
+        // it, or it goes with the assertion.
+        VL_RESTORER(m_assertCoverp);
+        m_assertCoverp = nodep;
+        iterateChildren(nodep);
+        if (nodep->keyword() == VAlwaysKwd::ASSERT_COVER) {
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        }
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procedurep);

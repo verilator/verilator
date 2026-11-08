@@ -172,7 +172,7 @@ class DescopeVisitor final : public VNVisitor {
                     } else {
                         callp->dtypeSetVoid();
                     }
-                    AstNode* const returnp = new AstCReturn{funcp->fileline(), callp};
+                    AstCReturn* const returnp = new AstCReturn{funcp->fileline(), callp};
 
                     if (moreOfSame) {
                         AstIf* const ifp = new AstIf{

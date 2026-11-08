@@ -243,7 +243,7 @@ class ReloopVisitor final : public VNVisitor {
         // Replace the constants with the loop variable
         replaceConsts(itp);
         // Create the loop initializer
-        AstNode* const initp
+        AstNodeStmt* const initp
             = new AstAssign{flp, new AstVarRef{flp, itp, VAccess::WRITE}, new AstConst{flp, 0U}};
         firstp->replaceWith(initp);
         // Create the loop
@@ -251,7 +251,7 @@ class ReloopVisitor final : public VNVisitor {
         initp->addNextHere(loopp);
         // Add the loop body
         loopp->addStmtsp(firstp);
-        AstNode* const incp = new AstAssign{
+        AstNodeStmt* const incp = new AstAssign{
             flp, new AstVarRef{flp, itp, VAccess::WRITE},
             new AstAdd{flp, new AstConst{flp, 1U}, new AstVarRef{flp, itp, VAccess::READ}}};
         loopp->addStmtsp(incp);

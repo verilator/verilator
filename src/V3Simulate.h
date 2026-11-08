@@ -1762,7 +1762,7 @@ private:
             });
         }
         // Apply function call values to function
-        V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+        V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->declsp());
         // Must do this in two steps, eval all params, then apply them
         // Otherwise chained functions may have the wrong results
         std::vector<std::pair<AstVar*, AstNodeExpr*>> portValues;
@@ -1792,7 +1792,7 @@ private:
         m_callStack.push_back(&stackNode);
         if (!m_checkOnly) {
             // Clear output variable
-            initVar(VN_CAST(funcp->fvarp(), Var));
+            initVar(funcp->fvarp());
             // Clear other automatic variables
             funcp->foreach([this](AstVar* varp) {
                 if (varp->lifetime().isAutomatic() && (!varp->isIO() || varp->isFuncReturn()))

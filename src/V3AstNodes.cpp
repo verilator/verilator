@@ -883,7 +883,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isUnlikely()) str << " [UNL]";
     if (isVirtual()) str << " [VIRT]";
     if (isCoroutine()) str << " [CORO]";
-    if (needProcess()) str << " [NPRC]";
+    if (needsVlProcess()) str << " [NPRC]";
     if (entryPoint()) str << " [ENTRY]";
     if (noLife()) str << " [NOLIFE]";
     if (voidSelf()) str << " [VOIDSELF]";
@@ -908,7 +908,7 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isUnlikely);
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonBoolFuncIf(str, isCoroutine);
-    dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, needsVlProcess);
     dumpJsonBoolFuncIf(str, noLife);
     dumpJsonBoolFuncIf(str, voidSelf);
     dumpJsonStr(str, "isConst", isConst().ascii());
@@ -1910,13 +1910,9 @@ const char* AstExecGraph::broken() const {
     return nullptr;
 }
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
-void AstExprStmt::dump(std::ostream& str) const {
-    Super::dump(str);
-    if (hasResult()) str << " [HASRESULT]";
-}
-void AstExprStmt::dumpJson(std::ostream& str) const {
-    dumpJsonBoolIf(str, "hasResult", hasResult());
-    dumpJsonGen(str);
+bool AstExprStmt::isPure() {
+    if (AstNode::afterCommentp(stmtsp())) return false;
+    return resultp()->isPure();
 }
 void AstFireEvent::dump(std::ostream& str) const {
     Super::dump(str);
@@ -1938,13 +1934,22 @@ void AstFork::dumpJson(std::ostream& str) const {
 }
 void AstForkItem::dump(std::ostream& str) const {
     Super::dump(str);
-    if (needProcess()) str << " [NPRC]";
+    if (needsVlProcess()) str << " [NPRC]";
     if (disableWrapper()) str << " [DISABLEWRAP]";
 }
 void AstForkItem::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, needsVlProcess);
     dumpJsonBoolFuncIf(str, disableWrapper);
     dumpJsonGen(str);
+}
+void AstFunc::initFvarp(AstVar* varp) {
+    // The function implicitly declares a variable with its name (IEEE 1800-2023 13.4.1)
+    varp->direction(VDirection::OUTPUT);
+    varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+    varp->funcLocal(true);
+    varp->funcReturn(true);
+    addDeclsp(varp);
+    fvarp(varp);
 }
 string AstGenBlock::dtypeNameInnerScope(const string& outer) const {
     // A named generate block is a scope (IEEE 1800-2023 27.6), so the types of distinct blocks,
@@ -3231,7 +3236,7 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (isStatic()) str << " [STATIC]";
     if (verilogTask()) str << " [VTASK]";
     if (verilogFunction()) str << " [VFUNC]";
-    if (needProcess()) str << " [NPRC]";
+    if (needsVlProcess()) str << " [NPRC]";
     if (!ifacePortName().empty()) str << " ifp=" << ifacePortName();
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
@@ -3247,7 +3252,7 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isExternProto);
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonBoolFuncIf(str, keepAlive);
-    dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, needsVlProcess);
     dumpJsonBoolFuncIf(str, prototype);
     dumpJsonBoolFuncIf(str, recursive);
     dumpJsonBoolFuncIf(str, taskPublic);
@@ -3259,22 +3264,24 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
 }
 bool AstNodeFTask::getPurityRecurse() const {
     if (this->dpiImport()) return this->dpiPure();
-    // Check the list of statements if it contains any impure statement
+    // Check the declarations and statements if they contain any impure node
     // or any write reference to a variable that isn't an automatic function local.
-    for (AstNode* const stmtp : this->stmtspList()) {
-        if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
-            if (varp->isInoutOrRef()) return false;
+    for (AstNode* const listp : std::initializer_list<AstNode*>{this->declsp(), this->stmtsp()}) {
+        for (AstNode* itemp = listp; itemp; itemp = itemp->nextp()) {
+            if (const AstVar* const varp = VN_CAST(itemp, Var)) {
+                if (varp->isInoutOrRef()) return false;
+            }
+            if (!itemp->isPure()) return false;
+            if (itemp->exists([](AstNode* const nodep) {
+                    if (AstNodeVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
+                        return (!varrefp->varp()->isFuncLocal()
+                                || varrefp->varp()->lifetime().isStatic())
+                               && varrefp->access().isWriteOrRW();
+                    }
+                    return !nodep->isPure();
+                }))
+                return false;
         }
-        if (!stmtp->isPure()) return false;
-        if (stmtp->exists([](AstNode* const nodep) {
-                if (AstNodeVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
-                    return (!varrefp->varp()->isFuncLocal()
-                            || varrefp->varp()->lifetime().isStatic())
-                           && varrefp->access().isWriteOrRW();
-                }
-                return !nodep->isPure();
-            }))
-            return false;
     }
     return true;
 }
@@ -3417,11 +3424,11 @@ bool AstNodePreSel::isPure() {
 void AstNodeProcedure::dump(std::ostream& str) const {
     Super::dump(str);
     if (isSuspendable()) str << " [SUSP]";
-    if (needProcess()) str << " [NPRC]";
+    if (needsVlProcess()) str << " [NPRC]";
 }
 void AstNodeProcedure::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isSuspendable);
-    dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, needsVlProcess);
     dumpJsonGen(str);
 }
 const char* AstNodeQuadop::broken() const {
@@ -3858,6 +3865,7 @@ void AstSampled::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, internal);
     dumpJsonGen(str);
 }
+std::string AstSchemaRef::name() const { return schemap()->name(); }
 AstActive* AstScope::comboActivep(bool create) {
     // Use an existing one, but not the active of an AlwaysPostponed, which must stay alone
     for (AstNode* const nodep : blockspList()) {

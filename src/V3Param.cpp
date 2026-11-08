@@ -862,10 +862,10 @@ class ParamProcessor final {
             // This fixes static method calls through typedefs in parameterized classes
             if (ftaskRefp->classOrPackagep() == oldClassp) ftaskRefp->classOrPackagep(newClassp);
             // Also update taskp if it points to a function in the old class.
-            // AstNodeFTask::classOrPackagep() (op2) holds a parse-time
+            // AstNodeFTask::classOrPackagep() (op1) holds a parse-time
             // Dot/ClassOrPackageRef for extern declarations, which is deleted
             // in LinkDot::moveExternFuncDecl before V3Param runs. For inline
-            // class methods op2 is nullptr. So this should never match.
+            // class methods op1 is nullptr. So this should never match.
             if (AstNodeFTask* const oldTaskp = ftaskRefp->taskp()) {
                 if (oldTaskp->classOrPackagep() == oldClassp) {
                     oldTaskp->v3fatalSrc(  // LCOV_EXCL_LINE
@@ -3843,7 +3843,7 @@ class ParamVisitor final : public VNVisitor {
         // conditional expression, since this is currently restricted to simple
         // comparisons. If we ever do move to more generic constant expressions, such code
         // will be needed here.
-        if (AstGenFor* const forp = VN_AS(nodep->genforp(), GenFor)) {
+        if (AstGenFor* const forp = nodep->genforp()) {
             // We should have a GENFOR under here.  We will be replacing the begin,
             // so process here rather than at the generate to avoid iteration problems
             UINFO(9, "  BEGIN " << nodep);
@@ -3862,14 +3862,10 @@ class ParamVisitor final : public VNVisitor {
             // Note m_unroller will replace some AstVarRef's to the loop variable with constants
             // Don't remove any deleted nodes in m_unroller until whole process finishes,
             // as some AstXRefs may still point to old nodes.
+            // Unroll after the begin, so the blocks it makes go there, and the begin is no
+            // longer special
+            nodep->addNextHere(forp->unlinkFrBack());
             VL_DO_DANGLING(m_unroller.unroll(forp, beginName), forp);
-            // Blocks were constructed under the special begin, move them up
-            // Note forp is null, so grab statements again
-            if (AstNode* const stmtsp = nodep->genforp()) {
-                stmtsp->unlinkFrBackWithNext();
-                nodep->addNextHere(stmtsp);
-                // Note this clears nodep->genforp(), so begin is no longer special
-            }
         } else {
             VL_RESTORER_COPY(m_generateHierName);
             m_generateHierName += "." + nodep->prettyName();

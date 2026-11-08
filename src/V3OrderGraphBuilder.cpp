@@ -119,7 +119,7 @@ class OrderGraphBuilder final : public VNVisitor {
 
     // METHODS
 
-    void iterateLogic(AstNode* nodep) {
+    void iterateLogic(AstNodeProcedure* nodep) {
         UASSERT_OBJ(!m_logicVxp, nodep, "Should not nest");
         // Reset VarUsage and VarAccess
         AstNode::user2ClearTree();

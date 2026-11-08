@@ -141,7 +141,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
             args += "* vlSelf";
         }
     }
-    if (nodep->needProcess()) {
+    if (nodep->needsVlProcess()) {
         if (!args.empty()) args += ", ";
         args += "VlProcessRef vlProcess";
     }
