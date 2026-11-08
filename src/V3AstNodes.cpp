@@ -4667,6 +4667,9 @@ void AstVar::dump(std::ostream& str) const {
     if (isStdRandomizeArg()) str << " [STDRANDARG]";
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
+    if (forceRdVarp()) str << " forceRdVarp=" << nodeAddr(forceRdVarp());
+    if (forceEnVarp()) str << " forceEnVarp=" << nodeAddr(forceEnVarp());
+    if (forceValVarp()) str << " forceValVarp=" << nodeAddr(forceValVarp());
 }
 void AstVar::dumpJson(std::ostream& str) const {
     if (libInoutId()) dumpJsonNumFunc(str, libInoutId);
