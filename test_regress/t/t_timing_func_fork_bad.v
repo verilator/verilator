@@ -68,4 +68,33 @@ module t;
     join_none
   endfunction
 
+  // Nested fork is killed, but the outer fork may outlive the task
+  task automatic t2(output int o2);
+    fork
+      begin
+        fork
+          begin
+            #1;
+            o2 = 0;
+          end
+        join_any
+        disable fork;
+      end
+    join_none
+  endtask
+
+  // Nested fork is not killed, so may outlive the task
+  task automatic t3(output int o3);
+    fork
+      begin
+        fork
+          begin
+            #1;
+            o3 = 0;
+          end
+        join_any
+      end
+    join
+  endtask
+
 endmodule

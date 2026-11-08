@@ -42,6 +42,7 @@ Verilator 5.055 devel
 * Fix unordered NBAs executing in wrong order (#5485) (#9030) (#7541) (#8214) (#8346). [Geza Lore, Testorrent USA, Inc.]
 * Fix `q[1:$]` when queue has only one item in it (#7355). [Bryan Murdock]
 * Fix inherited class member resolution in parameter overrides (#8539). [Artur Bieniek, Antmicro Ltd.]
+* Fix output write rejected in a fork whose children finish before the task returns (#8594). [Martin Velay]
 * Fix `std::randomize` changing variables when constraints fail (#8686) (#8880). [Steven Bellock]
 * Fix $fscanf/$sscanf into non-addressable destinations (#8860) (#8912). [Adrien Le Masle]
 * Fix class size constraints in randomize..with (#8861). [Ryszard Rozak, Antmicro Ltd.]

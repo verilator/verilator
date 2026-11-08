@@ -258,11 +258,13 @@ private:
 class DynScopeVisitor final : public VNVisitor {
     // NODE STATE
     // AstVar::user1()          -> uint64_t.  timing-control fork nesting level of that variable
+    // AstVar::user3()          -> uint64_t.  surviving fork nesting level of that variable
     // AstVarRef::user2()       -> bool. Node is a class handle reference. The handle gets
     //                                       modified in the context of this reference.
     // AstAssignDly::user2()    -> bool.  Already visited
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
 
     // STATE
     bool m_inFunc = false;  // True if in a function
@@ -272,6 +274,8 @@ class DynScopeVisitor final : public VNVisitor {
     std::map<AstNode*, ForkDynScopeFrame*> m_frames;  // Map nodes to related DynScopeFrames
     VMemberMap m_memberMap;  // Class member look-up
     uint64_t m_forkDepth = 0;  // Number of asynchronous forks we are currently under
+    uint64_t m_survivingForkDepth = 0;  // Number of those forks that may outlive the task,
+                                        // i.e. not immediately followed by 'disable fork'
     bool m_afterTimingControl = false;  // A timing control might've be executed in the current
                                         // process
     size_t m_id = 0;  // Unique ID for a frame
@@ -381,7 +385,13 @@ class DynScopeVisitor final : public VNVisitor {
     }
     void visit(AstFork* nodep) override {
         VL_RESTORER(m_forkDepth);
-        if (!nodep->joinType().join()) ++m_forkDepth;
+        VL_RESTORER(m_survivingForkDepth);
+        if (!nodep->joinType().join()) {
+            ++m_forkDepth;
+            // A following 'disable fork' kills the children before the enclosing process
+            // continues, so they cannot outlive the task
+            if (!VN_IS(nodep->nextp(), DisableFork)) ++m_survivingForkDepth;
+        }
 
         const bool oldAfterTimingControl = m_afterTimingControl;
 
@@ -417,6 +427,7 @@ class DynScopeVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         nodep->user1(m_forkDepth);
+        nodep->user3(m_survivingForkDepth);
         ForkDynScopeFrame* const framep = frameOf(m_procp);
         if (!framep) return;  // Cannot be legally referenced from a fork
         bindNodeToDynScope(nodep, framep);
@@ -431,8 +442,8 @@ class DynScopeVisitor final : public VNVisitor {
                 v3Global.setAssignsEvents();
                 isEvent = dtypep->isEvent();
             }
-            if (!isEvent && m_afterTimingControl && nodep->varp()->isWritable()
-                && nodep->access().isWriteOrRW()) {
+            if (!isEvent && m_afterTimingControl && m_survivingForkDepth > nodep->varp()->user3()
+                && nodep->varp()->isWritable() && nodep->access().isWriteOrRW()) {
                 // The output variable may not exist after a delay, so we can't just write to it
                 nodep->v3error(
                     "Writing to an "
