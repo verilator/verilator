@@ -104,8 +104,9 @@ class InstVisitor final : public VNVisitor {
             && !m_cellp->modp()->verilatorLib() && !VN_IS(m_cellp->modp(), Iface)
             && !modVarp->user3() && !modVarp->user4()) {
             modVarp->keepPort(true);
-            // The port of a single instance is aliased as usual; it is copied back from
-            // its alias if the module is not inlined
+            // A port connected to anything but a whole variable needs an assignment, and
+            // stays kept; the port of a module instantiated once is otherwise aliased as
+            // usual, as there is no other instance to share code with
             if (m_cellp->modp()->user2() > 1) return false;
         }
         // Only a whole variable can be aliased, anything else needs the assignment

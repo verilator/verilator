@@ -103,10 +103,7 @@ class CoalesceVisitor final : public VNVisitorConst {
         // A port V3Inst kept for an instance that remains a module stays a variable of its
         // own, so the module's instances can share code. With several threads, a clock is
         // coalesced instead, as it would otherwise add serial trigger work.
-        if (vscp->varp()->keepPort()) {
-            if (!v3Global.opt.mtasks() || !vscp->user3()) return nullptr;
-            vscp->varp()->keepPort(false);
-        }
+        if (vscp->varp()->keepPort() && !(v3Global.opt.mtasks() && vscp->user3())) return nullptr;
         return VN_AS(vscp->user1p(), VarScope);
     }
 
@@ -168,6 +165,8 @@ class CoalesceVisitor final : public VNVisitorConst {
                 && !(vscp->varp()->direction() == VDirection::INPUT && vscp->user3())) {
                 continue;
             }
+            // A kept clock is coalesced, so it is no longer kept
+            vscp->varp()->keepPort(false);
             // The sole write of a copy is the copy assignment itself, keep it
             if (refp->access().isWriteOrRW()) {
                 ++m_nCoalesced;

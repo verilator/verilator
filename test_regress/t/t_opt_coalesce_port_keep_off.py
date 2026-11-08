@@ -12,8 +12,11 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.top_filename = "t/t_opt_coalesce_port_keep.v"
 
-test.compile(verilator_flags2=["--binary", "-O0", "-fcoalesce"])
+test.compile(verilator_flags2=["--binary", "--stats", "-fno-coalesce"])
 
 test.execute()
+
+# Without coalescing the inputs are aliased as usual
+test.file_grep_not(test.stats, r'Optimizations, Coalesced references')
 
 test.passes()

@@ -172,7 +172,6 @@ public:
             if (vscp->varp()->keepPort()) {
                 // A kept port of a non-inlined module is read as itself by its instance
                 vVtxp->clearReducibleAndDedupable("KeepPort");
-                vVtxp->setConsumed("KeepPort");
             }
             if (vscp->varp()->isIO() && vscp->scopep()->isTop()) {
                 // We may need to convert to/from sysc/reg sigs

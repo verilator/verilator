@@ -10,10 +10,12 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
-test.top_filename = "t/t_opt_coalesce_port_keep.v"
 
-test.compile(verilator_flags2=["--binary", "-O0"])
+test.compile(verilator_flags2=['--binary', '--stats'])
 
 test.execute()
+
+# The port stays a variable, so the constant is not substituted into the instance
+test.file_grep(test.stats, r'Optimizations, Gate signals inlined\s+(\d+)', 1)
 
 test.passes()

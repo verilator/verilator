@@ -9,10 +9,14 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=["--binary"])
+test.compile(verilator_flags2=["--binary", "--stats"])
 
 test.execute()
+
+# The inputs are kept; with several threads the clock is coalesced
+test.file_grep(test.stats, r'Optimizations, Coalesced references\s+(\d+)', 2 if test.vltmt else 0)
+test.file_grep(test.stats, r'Optimizations, Coalesced variables\s+(\d+)', 3 if test.vltmt else 1)
 
 test.passes()
