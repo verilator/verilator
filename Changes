@@ -40,6 +40,7 @@ Verilator 5.055 devel
 * Fix writing a character of a string array element. [Geza Lore, Testorrent USA, Inc.]
 * Fix type check of associative array traversal arguments (#5439) (#8954). [Ethan Sifferman]
 * Fix unordered NBAs executing in wrong order (#5485) (#9030) (#7541) (#8214) (#8346). [Geza Lore, Testorrent USA, Inc.]
+* Fix `q[1:$]` when queue has only one item in it (#7355). [Bryan Murdock]
 * Fix inherited class member resolution in parameter overrides (#8539). [Artur Bieniek, Antmicro Ltd.]
 * Fix `std::randomize` changing variables when constraints fail (#8686) (#8880). [Steven Bellock]
 * Fix $fscanf/$sscanf into non-addressable destinations (#8860) (#8912). [Adrien Le Masle]
