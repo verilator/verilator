@@ -435,6 +435,10 @@ detailed descriptions of these arguments.
     --coverage-toggle           Enable toggle coverage
     --coverage-underscore       Enable coverage of _signals
     --coverage-user             Enable SVL user coverage
+    --cxx-module-backend <backend>  Set C++ module backend
+    --cxx-module-file <name=path>   Pass precompiled C++ module
+    --cxx-module-std <path>     Pass precompiled standard C++ module
+    --cxx-modules               Build C++ module interface units
      -D<var>[=<value>]          Set preprocessor define
     --debug                     Enable debugging
     --debug-check               Enable debugging assertions

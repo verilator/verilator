@@ -213,39 +213,9 @@ Summary:
    When make is run on the generated makefile, these will be passed to the
    C++ compiler (g++/clang++/msvc++).
 
-   C++ modules may be used in user-provided C++ files.  Verilator compiles
-   its generated code with modules disabled, so the precompiled header (PCH)
-   remains usable, and keeps the module flags for user files.  With GNU make,
-   Verilator does not build module interface units or module CMIs; imported
-   modules must be prebuilt before building the Verilated model.
-
-   With GCC, pass :command:`-CFLAGS -fmodules` and prebuild the standard
-   library module in the model object directory:
-
-   .. code-block:: bash
-
-      cd obj_dir
-      g++ -std=c++23 -fmodules --compile-std-module -c -x c++ /dev/null -o /dev/null
-
-   With Clang, precompile libc++'s ``std.cppm`` and pass
-   :command:`-CFLAGS -fmodule-file=std=std.pcm`.  Clang's
-   :command:`-fmodules` enables Clang modules, not C++20 modules.
-   The :command:`-fmodule-header` and :command:`-fmodule-only` options are not
-   supported.
-
-   For modules defined by the user, precompile the module interface unit and
-   pass the resulting object file to Verilator as a ``.o`` input.  Keep the
-   module CMI in the model object directory, or pass it with
-   :command:`-CFLAGS -fmodule-file` when using Clang.
-
-   User translation units that use modules do not use the PCH; include the
-   Verilator headers explicitly.  ``--compiler-include`` headers must also be
-   included explicitly in those translation units.
-
-   With MSVC, C++ modules are supported only through CMake.  Pass ``.ixx``
-   module interface files on the Verilator command line and build with CMake
-   3.28 or newer, which adds them as a ``CXX_MODULES`` file set.  GNU make with
-   MSVC is not supported.
+   For C++ modules, prefer :vlopt:`--cxx-modules` and its related options.
+   :command:`-CFLAGS` remains available as an escape hatch for passing
+   compiler flags directly, including module flags.
 
 .. option:: --clk <signal-name>
 
@@ -488,6 +458,55 @@ Summary:
 
    Enables adding user-inserted functional covergroup coverage. See
    :ref:`Covergroup Coverage`.
+
+.. option:: --cxx-module-backend <gcc|clang|msvc>
+
+   Override the C++ module backend detected from the C++ compiler.  ``msvc``
+   also allows ``.ixx`` module interface files.
+
+.. option:: --cxx-module-file <name=path>
+
+   Pass a precompiled C++ module to the compilation of user C++ files as
+   :command:`-fmodule-file=name=path`.  This is equivalent to passing the same
+   flag with :vlopt:`-CFLAGS <-CFLAGS>`.
+
+.. option:: --cxx-module-std <path>
+
+   Equivalent to :vlopt:`--cxx-module-file` with ``std=<path>``.  With GCC
+   the standard library module is normally precompiled into
+   ``gcm.cache/std.gcm`` in the model object directory instead.
+
+.. option:: --cxx-modules
+
+   Build C++ module interface units passed on the command line.  Interface
+   units may be ``.cppm`` or ``.ixx`` files.  Verilator generates make rules
+   that build the interface units and order the user C++ compilation after
+   them.  The generated model and runtime keep the precompiled header (PCH),
+   so user translation units that use modules must include the Verilator
+   headers explicitly.  ``--compiler-include`` headers must also be included
+   explicitly in those translation units.
+
+   The module backend is detected from the C++ compiler; see
+   :vlopt:`--cxx-module-backend` to override it.  GCC emits CMIs under
+   ``gcm.cache``.  Precompile the standard library module in the model object
+   directory:
+
+   .. code-block:: bash
+
+      cd obj_dir
+      g++ -std=c++23 -fmodules --compile-std-module -c -x c++ /dev/null -o /dev/null
+
+   Clang writes ``.pcm`` files.  Its :command:`-fmodules` option enables
+   Clang modules, not C++20 modules, so Verilator does not pass it.  Precompile
+   libc++'s ``std.cppm`` and pass it with :vlopt:`--cxx-module-std`.
+
+   With MSVC, C++ modules are supported only through CMake.  Pass ``.ixx``
+   interface files on the Verilator command line and build with CMake 3.28 or
+   newer, which adds them as a ``CXX_MODULES`` file set.  GNU make with MSVC is
+   not supported.
+
+   Existing :command:`-CFLAGS -fmodules` style flags remain supported.  The
+   :command:`-fmodule-header` and :command:`-fmodule-only` options are not.
 
 .. option:: -D<var>=<value>
 

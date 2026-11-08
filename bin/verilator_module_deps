@@ -13,11 +13,13 @@ import argparse
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import sys
+from typing import NoReturn
 
 
-def fatal(message: str) -> None:
+def fatal(message: str) -> NoReturn:
     sys.stderr.write("%Error: " + message + "\n")
     sys.exit(1)
 
@@ -48,12 +50,72 @@ def external_modules(flags: list[str]) -> set[str]:
     return modules
 
 
+def run_scan(command: list[str], abs_source: str, deps_file: str) -> None:
+    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if result.returncode != 0:
+        sys.stderr.write(result.stdout)
+        sys.stderr.write(result.stderr)
+        fatal("C++ module scan failed for '" + abs_source + "'")
+    if not os.path.exists(deps_file):
+        fatal("C++ module scan produced no dependency file for '" + abs_source + "'")
+
+
+def scan_gcc(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
+             abs_source: str, obj: str, deps_file: str) -> None:
+    module_flags = []
+    if '-fmodules' not in cxxflags and '-fmodules-ts' not in cxxflags:
+        module_flags = ['-fmodules']
+    run_scan((
+        shlex.split(args.cxx) + cppflags + cxxflags + module_flags + [
+            '-MM',
+            '-fdeps-format=p1689r5',
+            '-fdeps-file=' + deps_file,
+            '-fdeps-target=' + obj,
+            '-fsyntax-only',
+            abs_source,
+        ]), abs_source, deps_file)
+
+
+def scan_deps_path(cxx: str) -> str:
+    found = shutil.which('clang-scan-deps')
+    if found:
+        return found
+    candidate = os.path.join(os.path.dirname(os.path.abspath(shlex.split(cxx)[0])),
+                             'clang-scan-deps')
+    if os.path.exists(candidate):
+        return candidate
+    fatal("clang-scan-deps is required for the clang C++ module backend")
+
+
+def scan_clang(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
+               abs_source: str, deps_file: str) -> None:
+    compile_database = deps_file + '.compile_commands.json'
+    command = shlex.split(args.cxx) + cppflags + cxxflags + [
+        '-c', abs_source, '-o', abs_source + '.o'
+    ]
+    with open(compile_database, 'w', encoding='utf8') as fh:
+        json.dump([{
+            'directory': os.getcwd(),
+            'file': abs_source,
+            'command': subprocess.list2cmdline(command),
+        }], fh)
+    run_scan((
+        [
+            scan_deps_path(args.cxx),
+            '-compilation-database=' + compile_database,
+            '-format=p1689',
+            '-o',
+            deps_file,
+        ]), abs_source, deps_file)
+    os.remove(compile_database)
+
+
 def scan(args: argparse.Namespace) -> None:
     cppflags = parse_flags(args.cppflags)
     cxxflags = parse_flags(args.cxxflags)
     external = external_modules(cppflags + cxxflags)
 
-    if args.backend != 'gcc':
+    if args.backend not in ('gcc', 'clang'):
         fatal("Unsupported C++ module dependency backend '" + args.backend + "'")
 
     if args.objdir:
@@ -71,21 +133,10 @@ def scan(args: argparse.Namespace) -> None:
         objects[obj] = abs_source
 
         deps_file = os.path.join(args.objdir, stem + '.deps.json')
-        command = ([args.cxx] + cppflags + cxxflags + [
-            '-MM',
-            '-fdeps-format=p1689r5',
-            '-fdeps-file=' + deps_file,
-            '-fdeps-target=' + obj,
-            '-fsyntax-only',
-            abs_source,
-        ])
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if result.returncode != 0:
-            sys.stderr.write(result.stdout)
-            sys.stderr.write(result.stderr)
-            fatal("C++ module scan failed for '" + abs_source + "'")
-        if not os.path.exists(deps_file):
-            fatal("C++ module scan produced no dependency file for '" + abs_source + "'")
+        if args.backend == 'clang':
+            scan_clang(args, cppflags, cxxflags, abs_source, deps_file)
+        else:
+            scan_gcc(args, cppflags, cxxflags, abs_source, obj, deps_file)
 
         with open(deps_file, 'r', encoding='utf8') as fh:
             data = json.load(fh)
@@ -107,6 +158,7 @@ def scan(args: argparse.Namespace) -> None:
         modules.append({
             'source': abs_source,
             'obj': obj,
+            'pcm': stem + '.pcm',
             'provides': provides,
             'requires': requires,
         })
@@ -121,9 +173,18 @@ def scan(args: argparse.Namespace) -> None:
 
     for module in modules:
         deps = set()
-        for name in module['requires']:
+        dep_names = set()
+        pending = list(module['requires'])
+        seen = set()
+        while pending:
+            name = pending.pop()
+            if name in seen:
+                continue
+            seen.add(name)
             if name in providers:
                 deps.add(providers[name]['obj'])
+                dep_names.add(name)
+                pending.extend(providers[name]['requires'])
             elif name in external:
                 continue
             elif '/' in name:
@@ -137,10 +198,21 @@ def scan(args: argparse.Namespace) -> None:
                       + "' has no provider; precompile it and pass -fmodule-file=" + name
                       + "=<path>")
         module['deps'] = sorted(deps)
+        if args.backend == 'clang':
+            module['dep_flags'] = sorted(
+                '-fmodule-file=' + name + '=' + providers[name]['pcm'] for name in dep_names)
+        else:
+            module['dep_flags'] = []
 
     lines = []
     module_objs = sorted({module['obj'] for module in modules if module['provides']})
     lines.append('VK_MODULE_OBJS = ' + ' '.join(module_objs))
+    lines.append('')
+    lines.append('VK_MODULE_FLAGS = $(filter-out -fmodule-header% -fmodule-only,$(CXXFLAGS) '
+                 '$(CPPFLAGS))')
+    lines.append('ifeq ($(VK_MODULE_BACKEND),gcc)')
+    lines.append('  VK_MODULE_FLAGS += -fmodules')
+    lines.append('endif')
     lines.append('')
     lines.append('.PHONY: modules')
     lines.append('modules: $(VK_MODULE_OBJS)')
@@ -148,8 +220,14 @@ def scan(args: argparse.Namespace) -> None:
     for module in sorted(modules, key=lambda entry: entry['obj']):
         deps = ' '.join(['$(VM_PREFIX).mk'] + module['deps'])
         lines.append(module['obj'] + ': ' + module['source'] + ' ' + deps)
-        lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) -c '
-                     + module['source'] + ' -o ' + module['obj'])
+        command = [
+            '\t$(OBJCACHE)', '$(CXX)', '$(OPT_FAST)', '$(VK_MODULE_FLAGS)',
+            *module['dep_flags']
+        ]
+        if args.backend == 'clang' and module['provides']:
+            command.append('-fmodule-output=' + module['pcm'])
+        command += ['-c', module['source'], '-o', module['obj']]
+        lines.append(' '.join(command))
         lines.append('')
     content = '\n'.join(lines)
 

@@ -67,6 +67,7 @@ VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_repo
 
 VK_MODULE_DEPS = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_module_deps
 VK_MODULE_DIR = gcm.cache
+VK_MODULE_BACKEND ?= $(if $(findstring clang,$(shell $(CXX) --version 2>/dev/null)),clang,gcc)
 
 ######################################################################
 # CCACHE flags (via environment as no command line option available)

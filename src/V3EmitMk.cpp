@@ -724,6 +724,8 @@ public:
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
         const VStringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("  " + i + " \\\n");
+        for (const string& i : v3Global.opt.cxxModuleFiles())
+            of.puts("  -fmodule-file=" + i + " \\\n");
         of.puts("\n");
 
         of.puts("# User LDLIBS (from -LDFLAGS on Verilator command line)\n");
@@ -771,14 +773,15 @@ public:
                 of.puts("  " + modulefile + " \\\n");
             of.puts("\n");
 
-            of.puts("VM_USER_BACKEND = gcc\n");
+            const string backend = v3Global.opt.cxxModuleBackend();
+            if (!backend.empty()) of.puts("VK_MODULE_BACKEND = " + backend + "\n");
+            of.puts("VM_USER_BACKEND = "
+                    + (backend.empty() ? string{"$(VK_MODULE_BACKEND)"} : backend) + "\n");
             of.puts("\n");
             of.puts("$(VM_PREFIX)__modules.mk: $(VM_USER_SOURCES) $(VM_PREFIX).mk\n");
             of.puts("\t$(VK_MODULE_DEPS) --backend $(VM_USER_BACKEND) --cxx \"$(CXX)\" \\\n");
             of.puts("\t    --cxxflags '$(CXXFLAGS)' --cppflags '$(CPPFLAGS)' \\\n");
             of.puts("\t    --objdir . --output $@ $(addprefix --source ,$(VM_USER_SOURCES))\n");
-            of.puts("\n");
-            of.puts("-include $(VM_PREFIX)__modules.mk\n");
             of.puts("\n");
         }
 
@@ -791,6 +794,11 @@ public:
         }
         of.puts("# Include global rules\n");
         of.puts("include $(VERILATOR_ROOT)/include/verilated.mk\n");
+        if (v3Global.opt.cxxModules()) {
+            of.puts("# Include C++ module build rules\n");
+            of.puts("-include $(VM_PREFIX)__modules.mk\n");
+        }
+        of.puts("\n");
 
         if (v3Global.opt.exe()) {
             of.puts("\n### Executable rules... (from --exe)\n");

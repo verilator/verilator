@@ -19,4 +19,16 @@ test.lint(verilator_flags2=[
 ])
 test.file_grep_not(test.obj_dir + '/vlt_compile.log',
                    r'Unsupported: C\+\+ module interface files')
+test.compile(make_main=False,
+             verilator_make_gmake=False,
+             verilator_make_cmake=False,
+             verilator_flags2=[
+                 '--cc',
+                 '--exe',
+                 '--cxx-modules',
+                 '--cxx-module-backend',
+                 'msvc',
+                 test.t_dir + '/t_flag_cflags_modules_msvc.ixx',
+             ])
+test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'VM_USER_BACKEND = msvc')
 test.passes()

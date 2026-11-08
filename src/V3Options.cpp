@@ -379,7 +379,10 @@ bool V3Options::cxxModuleFlags() const {
     }
     return false;
 }
-bool V3Options::cxxModules() const { return !m_moduleFiles.empty() || cxxModuleFlags(); }
+bool V3Options::cxxModules() const {
+    return m_cxxModules || !m_moduleFiles.empty() || !m_cxxModuleFiles.empty()
+        || cxxModuleFlags();
+}
 bool V3Options::isFuture(const string& flag) const {
     return m_futures.find(flag) != m_futures.end();
 }
@@ -994,7 +997,9 @@ void V3Options::notify() VL_MT_DISABLED {
                 break;
             }
         }
-        if (hasIxx ? !m_compilerMsvc : !cxxModuleFlags()) {
+        const bool msvcBackend
+            = m_cxxModuleBackend.empty() ? m_compilerMsvc : m_cxxModuleBackend == "msvc";
+        if (hasIxx ? !msvcBackend : !cxxModules()) {
             cmdfl->v3error("Unsupported: C++ module interface files; precompile the interface "
                            "and pass the resulting object file");
         }
@@ -1454,6 +1459,24 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
     DECL_OPTION("-coverage-user", OnOff, &m_coverageUser);
+
+    DECL_OPTION("-cxx-module-backend", CbVal, [this, fl](const char* valp) {
+        const string val{valp};
+        if (val != "gcc" && val != "clang" && val != "msvc") {
+            fl->v3error("Unknown setting for --cxx-module-backend: '"
+                        << val << "'\n"
+                        << fl->warnMore() << "... Suggest 'gcc', 'clang', or 'msvc'");
+            return;
+        }
+        m_cxxModuleBackend = val;
+    });
+    DECL_OPTION("-cxx-module-file", CbVal, [this](const char* valp) {
+        m_cxxModuleFiles.push_back(valp);
+    });
+    DECL_OPTION("-cxx-module-std", CbVal, [this](const char* valp) {
+        m_cxxModuleFiles.push_back(string{"std="} + valp);
+    });
+    DECL_OPTION("-cxx-modules", OnOff, &m_cxxModules);
 
     DECL_OPTION("-D", CbPartialMatch, [this](const char* valp) VL_MT_DISABLED {
         addDefine(valp, false);
