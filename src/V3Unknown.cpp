@@ -90,7 +90,7 @@ class UnknownVisitor final : public VNVisitor {
 
         // Scan back to put the condlvalue above all selects (IE top of the lvalue)
         while (VN_IS(prep->backp(), NodeSel) || VN_IS(prep->backp(), Sel)
-               || VN_IS(prep->backp(), MemberSel) || VN_IS(prep->backp(), StructSel)) {
+               || VN_IS(prep->backp(), MemberRef) || VN_IS(prep->backp(), StructSel)) {
             prep = VN_AS(prep->backp(), NodeExpr);
         }
         if (VN_IS(prep->backp(), AssignForce) || VN_IS(prep->backp(), Release)) {
@@ -466,7 +466,7 @@ class UnknownVisitor final : public VNVisitor {
             } else if (VN_IS(basefromp, Const)) {
                 // If it's a PARAMETER[bit], then basefromp may be a constant instead of a varrefp
             } else {
-                // Normally one of above, but might have MEMBERSEL or otherwise
+                // Normally one of above, but might have MEMBERREF or otherwise
             }
             // Find range of dtype we are selecting from
             int declElements = -1;

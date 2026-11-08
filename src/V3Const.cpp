@@ -2984,7 +2984,7 @@ class ConstVisitor final : public VNVisitor {
         if (it != m_containsMemberAccess.end()) return it->second;
         ++m_statMemberAccessVisits;
         bool result = false;
-        if (VN_IS(nodep, MemberSel) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall)) {
+        if (VN_IS(nodep, MemberRef) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall)) {
             result = true;
         } else if (const AstNodeFTaskRef* const funcRefp = VN_CAST(nodep, NodeFTaskRef)) {
             if (containsMemberAccessRecurse(funcRefp->taskp())) result = true;

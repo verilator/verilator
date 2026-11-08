@@ -68,7 +68,7 @@ private:
     static bool isSimpleExpr(const AstNode* const exprp) {
         return exprp->forall([](const AstNode* const nodep) {
             return VN_IS(nodep, Const) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, Sel)
-                   || VN_IS(nodep, NodeSel) || VN_IS(nodep, MemberSel)
+                   || VN_IS(nodep, NodeSel) || VN_IS(nodep, MemberRef)
                    || VN_IS(nodep, CMethodHard);
         });
     }
@@ -85,8 +85,8 @@ private:
     // (e.g., accessing an event through a class reference that may not be initialized)
     static bool hasNullableMemberAccess(const AstNode* const exprp) {
         return exprp && exprp->exists([](const AstNode* const nodep) {
-            const AstMemberSel* const mselp = VN_CAST(nodep, MemberSel);
-            return mselp && isNullableRef(mselp->fromp());
+            const AstMemberRef* const memberRefp = VN_CAST(nodep, MemberRef);
+            return memberRefp && isNullableRef(memberRefp->fromp());
         });
     }
 
@@ -95,8 +95,8 @@ private:
     // Note: Returns a pointer into the original tree - caller must clone if needed
     static const AstNodeExpr* getBaseNullableRef(const AstNodeExpr* exprp) {
         while (exprp) {
-            if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
-                const AstNodeExpr* const fromp = mselp->fromp();
+            if (const AstMemberRef* const memberRefp = VN_CAST(exprp, MemberRef)) {
+                const AstNodeExpr* const fromp = memberRefp->fromp();
                 if (isNullableRef(fromp)) {
                     // Check if the base itself has a member access through a nullable reference
                     if (hasNullableMemberAccess(fromp)) {

@@ -338,7 +338,7 @@ class PortLValueVisitor final : public VNVisitor {
         default: break;
         }
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         // Static class properties have already been replaced with variable references.
         if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
             portError(nodep, "cannot write to a non-static class property"
@@ -386,7 +386,7 @@ class WidthVisitor final : public VNVisitor {
     bool m_underCast = false;  // Visiting the expression of a size or integral type cast
     bool m_underSExpr = false;  // Visiting under a sequence expression
     bool m_underPackedArray = false;  // Visiting under a AstPackArrayDType
-    bool m_underMemberSel = false;  // Viting under a MemberSel
+    bool m_underMemberRef = false;  // Viting under a MemberRef
     AstNodeExpr* m_fromParentp = nullptr;  // Method call or member select iterating its fromp()
     AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
     bool m_hasSExpr = false;  // Property has a sequence expression
@@ -4183,7 +4183,7 @@ class WidthVisitor final : public VNVisitor {
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isConst() && !m_paramsOnly
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
-                   && !m_underMemberSel) {
+                   && !m_underMemberRef) {
             // Too loose, but need to allow our generated first assignment
             // Move this to a property of the AstInitial block
             nodep->v3warn(E_CONSTWRITTEN, "Writing to 'const' data-typed variable "
@@ -4712,11 +4712,11 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstStructSel* nodep) override {
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
     }
-    void visit(AstMemberSel* nodep) override {
-        UINFO(5, "   MEMBERSEL " << nodep);
+    void visit(AstMemberRef* nodep) override {
+        UINFO(5, "   MEMBERREF " << nodep);
         if (nodep->didWidth()) return;
-        VL_RESTORER(m_underMemberSel);
-        m_underMemberSel = true;
+        VL_RESTORER(m_underMemberRef);
+        m_underMemberRef = true;
         UINFOTREE(9, nodep, "", "mbs-in");
         {
             VL_RESTORER(m_fromParentp);
@@ -4730,16 +4730,16 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Unlinked data type");
         AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         UINFO(9, "     from dt " << fromDtp);
-        const AstMemberSel* const fromSelp = VN_CAST(nodep->fromp(), MemberSel);
-        if (AstClocking* const clockingp = fromSelp && fromSelp->varp()
-                                               ? VN_CAST(fromSelp->varp()->firstAbovep(), Clocking)
+        const AstMemberRef* const fromRefp = VN_CAST(nodep->fromp(), MemberRef);
+        if (AstClocking* const clockingp = fromRefp && fromRefp->varp()
+                                               ? VN_CAST(fromRefp->varp()->firstAbovep(), Clocking)
                                                : nullptr) {
-            // In:  MEMBERSEL{MEMBERSEL{vifaceref, "cb", cb_event}, "clockvar", null}
-            // Out: MEMBERSEL{vifaceref, "clockvar", clockvar}
+            // In:  MEMBERREF{MEMBERREF{vifaceref, "cb", cb_event}, "clockvar", null}
+            // Out: MEMBERREF{vifaceref, "clockvar", clockvar}
             UINFO(9, "     from clocking " << clockingp);
-            if (AstVar* const varp = memberSelClocking(nodep, clockingp)) {
+            if (AstVar* const varp = memberRefClocking(nodep, clockingp)) {
                 if (!varp->didWidth()) userIterate(varp, nullptr);
-                AstMemberSel* fromp = VN_AS(nodep->fromp(), MemberSel);
+                AstMemberRef* fromp = VN_AS(nodep->fromp(), MemberRef);
                 fromp->replaceWith(fromp->fromp()->unlinkFrBack());
                 VL_DO_DANGLING(fromp->deleteTree(), fromp);
                 nodep->dtypep(varp->dtypep());
@@ -4756,11 +4756,11 @@ class WidthVisitor final : public VNVisitor {
                 return;
             }
         } else if (AstNodeUOrStructDType* const adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
-            if (memberSelStruct(nodep, adtypep)) return;
+            if (memberRefStruct(nodep, adtypep)) return;
         } else if (AstClassRefDType* const adtypep = VN_CAST(fromDtp, ClassRefDType)) {
-            if (memberSelClass(nodep, adtypep)) return;
+            if (memberRefClass(nodep, adtypep)) return;
         } else if (AstIfaceRefDType* const adtypep = VN_CAST(fromDtp, IfaceRefDType)) {
-            if (AstNode* foundp = memberSelIface(nodep, adtypep)) {
+            if (AstNode* foundp = memberRefIface(nodep, adtypep)) {
                 if (AstClocking* const clockingp = VN_CAST(foundp, Clocking))
                     foundp = clockingp->ensureEventp();
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
@@ -4786,7 +4786,7 @@ class WidthVisitor final : public VNVisitor {
                 }
                 if (AstModport* const modportp = VN_CAST(foundp, Modport)) {
                     // Modport selection (e.g. vif.passive_mp) is compile-time
-                    // type narrowing: replace MemberSel with fromp re-typed.
+                    // type narrowing: replace MemberRef with fromp re-typed.
                     AstIfaceRefDType* const newDtypep = new AstIfaceRefDType{
                         nodep->fileline(), nodep->fileline(), adtypep->cellName(),
                         adtypep->ifaceName(), modportp->name()};
@@ -4855,7 +4855,7 @@ class WidthVisitor final : public VNVisitor {
                     return;
                 }
                 UINFO(1, "found object " << foundp);
-                nodep->v3fatalSrc("MemberSel of non-variable\n"
+                nodep->v3fatalSrc("MemberRef of non-variable\n"
                                   << nodep->warnContextPrimary() << '\n'
                                   << foundp->warnOther() << "... Location of found object\n"
                                   << foundp->warnContextSecondary());
@@ -4885,7 +4885,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    bool memberSelClass(AstMemberSel* nodep, AstClassRefDType* adtypep) {
+    bool memberRefClass(AstMemberRef* nodep, AstClassRefDType* adtypep) {
         if (nodep->name() == "rand_mode" || nodep->name() == "randomize") {
             AstMethodCall* const newp = new AstMethodCall{
                 nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name()};
@@ -4898,7 +4898,7 @@ class WidthVisitor final : public VNVisitor {
         // No need to width-resolve the class, as it was done when we did the child
         AstClass* const first_classp = adtypep->classp();
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
-        if (first_classp->isCovergroup() && memberSelCoverItem(nodep, first_classp)) return true;
+        if (first_classp->isCovergroup() && memberRefCoverItem(nodep, first_classp)) return true;
         for (AstClass* classp = first_classp; classp;) {
             if (AstNode* const foundp = m_memberMap.findMember(classp, nodep->name())) {
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
@@ -4954,7 +4954,7 @@ class WidthVisitor final : public VNVisitor {
                     return true;
                 }
                 UINFO(1, "found object " << foundp);
-                nodep->v3fatalSrc("MemberSel of non-variable\n"
+                nodep->v3fatalSrc("MemberRef of non-variable\n"
                                   << nodep->warnContextPrimary() << '\n'
                                   << foundp->warnOther() << "... Location of found object\n"
                                   << foundp->warnContextSecondary());
@@ -5001,18 +5001,18 @@ class WidthVisitor final : public VNVisitor {
     // 'cg.item.method' calls the covergroup's method 'item.method'.  Of the item's methods and
     // options (19.8, 19.10), only get_inst_coverage() is such a method, made when first called
     // as a copy of the covergroup's, and implemented by V3Covergroup.
-    bool memberSelCoverItem(AstMemberSel* nodep, AstClass* classp) {
+    bool memberRefCoverItem(AstMemberRef* nodep, AstClass* classp) {
         AstNodeExpr* const parentp = m_fromParentp;
         const AstMethodCall* const callp = VN_CAST(parentp, MethodCall);
-        const AstMemberSel* const selp = VN_CAST(parentp, MemberSel);
-        if (!(callp && callp->fromp() == nodep) && !(selp && selp->fromp() == nodep)) {
+        const AstMemberRef* const memberRefp = VN_CAST(parentp, MemberRef);
+        if (!(callp && callp->fromp() == nodep) && !(memberRefp && memberRefp->fromp() == nodep)) {
             return false;
         }
         AstNodeFuncCovItem* const itemp = findCoverItem(classp, nodep->name());
         if (!itemp) return false;
         const string member = parentp->name();
         if (member == "option") {
-            const AstMemberSel* const weightp = VN_CAST(parentp->backp(), MemberSel);
+            const AstMemberRef* const weightp = VN_CAST(parentp->backp(), MemberRef);
             const bool isWeight
                 = weightp && weightp->fromp() == parentp && weightp->name() == "weight";
             // Reject unsupported lvalue forms before later passes assume a normal class member.
@@ -5028,13 +5028,13 @@ class WidthVisitor final : public VNVisitor {
             AstVar* const optionVarp = itemp->optionVarp();
             UASSERT_OBJ(optionVarp, itemp, "Coverage item missing option member");
             if (!optionVarp->didWidth()) userIterate(optionVarp, nullptr);
-            AstMemberSel* const optionSelp = VN_AS(parentp, MemberSel);
+            AstMemberRef* const optionRefp = VN_AS(parentp, MemberRef);
             AstNodeExpr* const basep = nodep->fromp()->unlinkFrBack();
             nodep->unlinkFrBack();
-            optionSelp->fromp(basep);
-            optionSelp->varp(optionVarp);
-            optionSelp->dtypep(optionVarp->dtypep());
-            optionSelp->didWidth(true);
+            optionRefp->fromp(basep);
+            optionRefp->varp(optionVarp);
+            optionRefp->dtypep(optionVarp->dtypep());
+            optionRefp->didWidth(true);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return true;
         }
@@ -5091,7 +5091,7 @@ class WidthVisitor final : public VNVisitor {
                                  << " (IEEE 1800-2023 25.5)");
         return false;
     }
-    AstNode* memberSelIface(AstMemberSel* nodep, AstIfaceRefDType* adtypep) {
+    AstNode* memberRefIface(AstMemberRef* nodep, AstIfaceRefDType* adtypep) {
         // Returns node if ok
         // No need to width-resolve the interface, as it was done when we did the child
         // ifaceViaCellp() handles dtypes with cellp-only (no ifacep), as produced
@@ -5117,7 +5117,7 @@ class WidthVisitor final : public VNVisitor {
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return nullptr;  // Caller handles error
     }
-    AstVar* memberSelClocking(AstMemberSel* nodep, AstClocking* clockingp) {
+    AstVar* memberRefClocking(AstMemberRef* nodep, AstClocking* clockingp) {
         // Returns node if ok
         VSpellCheck speller;
 
@@ -5134,13 +5134,13 @@ class WidthVisitor final : public VNVisitor {
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return nullptr;  // Caller handles error
     }
-    bool memberSelStruct(AstMemberSel* nodep, AstNodeUOrStructDType* adtypep) {
+    bool memberRefStruct(AstMemberRef* nodep, AstNodeUOrStructDType* adtypep) {
         // Returns true if ok
         if (AstMemberDType* const memberp
             = VN_CAST(m_memberMap.findMember(adtypep, nodep->name()), MemberDType)) {
             if (m_attrp) {  // Looking for the base of the attribute
                 nodep->dtypep(memberp);
-                UINFO(9, "   MEMBERSEL(attr) -> " << nodep);
+                UINFO(9, "   MEMBERREF(attr) -> " << nodep);
                 UINFO(9, "           dt-> " << nodep->dtypep());
             } else if (adtypep->packed()) {
                 AstSel* const newp = new AstSel{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
@@ -5148,7 +5148,7 @@ class WidthVisitor final : public VNVisitor {
                 // Must skip over the member to find the union; as the member may disappear later
                 newp->dtypep(memberp->subDTypep()->skipRefToEnump());
                 newp->didWidth(true);  // Don't replace dtype with basic type
-                UINFO(9, "   MEMBERSEL -> " << newp);
+                UINFO(9, "   MEMBERREF -> " << newp);
                 UINFO(9, "           dt-> " << newp->dtypep());
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -5160,7 +5160,7 @@ class WidthVisitor final : public VNVisitor {
                 // Must skip over the member to find the union; as the member may disappear later
                 newp->dtypep(memberp->subDTypep()->skipRefToEnump());
                 newp->didWidth(true);  // Don't replace dtype with basic type
-                UINFO(9, "   MEMBERSEL -> " << newp);
+                UINFO(9, "   MEMBERREF -> " << newp);
                 UINFO(9, "           dt-> " << newp->dtypep());
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -5656,7 +5656,7 @@ class WidthVisitor final : public VNVisitor {
         }
         if (AstNodeVarRef* const varrefp = VN_CAST(childp, NodeVarRef)) {
             varrefp->access(access);
-        } else if (const AstMemberSel* const ichildp = VN_CAST(childp, MemberSel)) {
+        } else if (const AstMemberRef* const ichildp = VN_CAST(childp, MemberRef)) {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
         } else if (const AstStructSel* const ichildp = VN_CAST(childp, StructSel)) {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
@@ -5970,22 +5970,22 @@ class WidthVisitor final : public VNVisitor {
                                          // of the dot hierarchy
             if (AstMethodCall* methodCallp = VN_CAST(nodep, MethodCall)) {
                 AstNodeExpr* fromp = methodCallp->fromp();
-                while (AstMemberSel* const memberSelp = VN_CAST(fromp, MemberSel)) {
-                    fromp = memberSelp->fromp();
+                while (AstMemberRef* const memberRefp = VN_CAST(fromp, MemberRef)) {
+                    fromp = memberRefp->fromp();
                 }
                 AstVarRef* const varrefp = VN_AS(fromp, VarRef);
                 fromVarp = varrefp->varp();
             }
-            if (!VN_IS(exprp, VarRef) && !VN_IS(exprp, MemberSel)) {
+            if (!VN_IS(exprp, VarRef) && !VN_IS(exprp, MemberRef)) {
                 argp->v3error("'randomize()' argument must be a variable contained in "
                               << (fromVarp ? fromVarp->prettyNameQ() : classp->prettyNameQ()));
                 VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                 continue;
             }
             while (exprp) {
-                if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-                    randVarp = memberSelp->varp();
-                    exprp = memberSelp->fromp();
+                if (AstMemberRef* const memberRefp = VN_CAST(exprp, MemberRef)) {
+                    randVarp = memberRefp->varp();
+                    exprp = memberRefp->fromp();
                 } else {
                     if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
                         randVarp = varrefp->varp();
@@ -6002,7 +6002,7 @@ class WidthVisitor final : public VNVisitor {
             }
             // randVarp is now the leftmost element from the dot hierarchy in argp->exprp()
             if (randVarp == fromVarp) {
-                // The passed in variable is MemberSel'ected from the MethodCall target
+                // The passed in variable is MemberRef'ected from the MethodCall target
             } else if (classp->existsMember([&](const AstClass*, const AstVar* memberVarp) {
                            return memberVarp == randVarp;
                        })) {
@@ -7399,7 +7399,7 @@ class WidthVisitor final : public VNVisitor {
         while (true) {
             AstVarRef* const vrefp = VN_CAST(nodep, VarRef);
             if (vrefp) return usesDynamicScheduler(vrefp);
-            if (VN_IS(nodep, MemberSel)) {
+            if (VN_IS(nodep, MemberRef)) {
                 return true;
             } else if (AstNodeSel* selp = VN_CAST(nodep, NodeSel)) {
                 nodep = selp->fromp();
@@ -9015,7 +9015,7 @@ class WidthVisitor final : public VNVisitor {
                     continue;
                 }
             }
-            if (VN_IS(exprp, MemberSel)) {
+            if (VN_IS(exprp, MemberRef)) {
                 // Non-standard usage: std::randomize() with class-scoped member
                 // IEEE 1800-2023 (18.12) limits args to current scope variables.
                 // Verilator accepts this for compatibility with other simulators.

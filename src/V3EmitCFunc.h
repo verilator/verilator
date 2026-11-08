@@ -655,10 +655,10 @@ public:
             // anything
             AstNode* fromp = nodep->lhsp();
             // Fork needs to use a member select.  Nothing else should be possible before VarRef.
-            if (AstMemberSel* const sfromp = VN_CAST(fromp, MemberSel)) {
+            if (AstMemberRef* const memberRefp = VN_CAST(fromp, MemberRef)) {
                 // Fork-DynScope generated pointer to previously automatic variable
-                AstVar* const memberVarp = sfromp->varp();
-                fromp = sfromp->fromp();
+                AstVar* const memberVarp = memberRefp->varp();
+                fromp = memberRefp->fromp();
                 if (AstNullCheck* const sfromp = VN_CAST(fromp, NullCheck)) fromp = sfromp->lhsp();
                 AstNodeVarRef* const fromVarRefp = VN_AS(fromp, NodeVarRef);
                 emitVarReset(
@@ -784,7 +784,7 @@ public:
                    && !VN_IS(nodep->rhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), ConsArray)  //
                    && !VN_IS(nodep->rhsp(), AssocSel)  //
-                   && !VN_IS(nodep->rhsp(), MemberSel)  //
+                   && !VN_IS(nodep->rhsp(), MemberRef)  //
                    && !VN_IS(nodep->rhsp(), StructSel)  //
                    && !VN_IS(nodep->rhsp(), ArraySel)  //
                    && !VN_IS(nodep->rhsp(), ExprStmt)) {
@@ -1723,7 +1723,7 @@ public:
     void visit(AstMatchMasked* nodep) override {
         emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->matchp(), nullptr);
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         const AstVar* const varp = nodep->varp();
         const bool dereferenceCovergroupRef
             = varp->covergroupRefMember() && nodep->access().isReadOrRW();
@@ -1732,7 +1732,7 @@ public:
         putnbs(nodep, "->");
         if (varp->isIfaceRef()) {
             // varp is the __Viftop companion (e.g. "tx__Viftop"); use the
-            // MemberSel name which matches the cell's C++ member (e.g. "tx").
+            // MemberRef name which matches the cell's C++ member (e.g. "tx").
             puts(nodep->nameProtect());
         } else {
             puts(varName(varp));

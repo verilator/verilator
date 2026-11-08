@@ -85,8 +85,8 @@ class CovergroupAssignValidVisitor final : public VNVisitorConst {
             const AstVar* varp = nullptr;
             if (const AstNodeVarRef* const refp = VN_CAST(nodep->lhsp(), NodeVarRef)) {
                 varp = refp->varp();
-            } else if (const AstMemberSel* const selp = VN_CAST(nodep->lhsp(), MemberSel)) {
-                varp = selp->varp();
+            } else if (const AstMemberRef* const memberRefp = VN_CAST(nodep->lhsp(), MemberRef)) {
+                varp = memberRefp->varp();
             }
             const auto it = m_constructors.find(varp);
             if (it != m_constructors.end() && (!m_ftaskp || m_ftaskp != it->second)) {
@@ -4250,10 +4250,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void rewriteVarRef(AstVarRef* refp, AstVar* handleVarp) {
         FileLine* const fl = refp->fileline();
         // As V3LinkLValue does, the handle of a written member select is marked written
-        AstMemberSel* const selp
-            = new AstMemberSel{fl, new AstVarRef{fl, handleVarp, refp->access()}, refp->varp()};
-        selp->access(refp->access());
-        refp->replaceWith(selp);
+        AstMemberRef* const memberRefp
+            = new AstMemberRef{fl, new AstVarRef{fl, handleVarp, refp->access()}, refp->varp()};
+        memberRefp->access(refp->access());
+        refp->replaceWith(memberRefp);
         VL_DO_DANGLING(pushDeletep(refp), refp);
     }
 
@@ -4334,12 +4334,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             memberVarp = nullptr;
             return true;
         }
-        AstMemberSel* const selp = VN_CAST(exprp, MemberSel);
-        if (!selp) return false;
-        AstVarRef* const baseRefp = VN_CAST(selp->fromp(), VarRef);
+        AstMemberRef* const memberRefp = VN_CAST(exprp, MemberRef);
+        if (!memberRefp) return false;
+        AstVarRef* const baseRefp = VN_CAST(memberRefp->fromp(), VarRef);
         if (!baseRefp) return false;
         baseVarp = baseRefp->varp();
-        memberVarp = selp->varp();
+        memberVarp = memberRefp->varp();
         return true;
     }
 
@@ -4354,9 +4354,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     AstNodeExpr* newEventRead(FileLine* fl, const EmbeddedEventTrigger& trigger) const {
         AstNodeExpr* const basep = new AstVarRef{fl, trigger.baseVarp, VAccess::READ};
         if (!trigger.memberVarp) return basep;
-        AstMemberSel* const selp = new AstMemberSel{fl, basep, trigger.memberVarp};
-        selp->access(VAccess::READ);
-        return selp;
+        AstMemberRef* const memberRefp = new AstMemberRef{fl, basep, trigger.memberVarp};
+        memberRefp->access(VAccess::READ);
+        return memberRefp;
     }
 
     string eventPrevName(const EmbeddedEventTrigger& trigger, size_t triggerIndex) const {

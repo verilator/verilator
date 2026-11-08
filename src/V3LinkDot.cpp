@@ -3932,8 +3932,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     static const AstNodeDType* getExprDTypep(const AstNodeExpr* selp) {
         while (const AstNodePreSel* const sp = VN_CAST(selp, NodePreSel)) selp = sp->fromp();
-        if (const AstMemberSel* const sp = VN_CAST(selp, MemberSel)) {
-            if (const AstNodeDType* dtypep = getExprDTypep(sp->fromp())) {
+        if (const AstMemberRef* const memberRefp = VN_CAST(selp, MemberRef)) {
+            if (const AstNodeDType* dtypep = getExprDTypep(memberRefp->fromp())) {
                 if (const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
                     const AstClass* const classp = classRefp->classp();
                     const bool found = classp->existsMember(
@@ -4556,7 +4556,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->unlinkFrBack();  // Avoid circular node loop on errors
             } else {
                 AstNodeExpr* const varEtcp = VN_AS(m_ds.m_dotp->lhsp()->unlinkFrBack(), NodeExpr);
-                AstNodeExpr* const newp = new AstMemberSel{nodep->fileline(), varEtcp,  //
+                AstNodeExpr* const newp = new AstMemberRef{nodep->fileline(), varEtcp,  //
                                                            VFlagChildDType{}, nodep->name()};
                 nodep->replaceWith(newp);
             }
@@ -4642,7 +4642,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         UASSERT_OBJ(VN_IS(m_randMethodCallp->fromp(), VarRef), m_randMethodCallp,
                                     "Expected simple randomize target");
                         // A ParseRef is used here so that the dot RHS gets resolved
-                        AstMemberSel* const newp = new AstMemberSel{
+                        AstMemberRef* const newp = new AstMemberRef{
                             nodep->fileline(), m_randMethodCallp->fromp()->cloneTree(false),
                             VFlagChildDType{}, nodep->name()};
                         nodep->replaceWith(newp);
@@ -4652,7 +4652,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     UINFO(9, indent() << "randomize-with fromSym " << foundp->nodep());
                     AstLambdaArgRef* const lambdaRefp
                         = new AstLambdaArgRef{nodep->fileline(), "__Vrandwith_obj", false};
-                    AstMemberSel* newp = new AstMemberSel{nodep->fileline(), lambdaRefp,
+                    AstMemberRef* newp = new AstMemberRef{nodep->fileline(), lambdaRefp,
                                                           VFlagChildDType{}, nodep->name()};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -5932,7 +5932,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
         if (packedArrayDtp) m_packedArrayDtp = packedArrayDtp;
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         // checkNoDot not appropriate, can be under a dot
         LINKDOT_VISIT_START();
         iterateChildren(nodep);

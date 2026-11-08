@@ -715,10 +715,10 @@ class CovergroupEventBindVisitor final : public VNVisitor {
     void visit(AstVarRef* nodep) override {
         if (!m_memberps.count(nodep->varp())) return;
         FileLine* const fl = nodep->fileline();
-        AstMemberSel* const selp
-            = new AstMemberSel{fl, new AstVarRef{fl, m_instancep, VAccess::READ}, nodep->varp()};
-        selp->access(nodep->access());
-        nodep->replaceWith(selp);
+        AstMemberRef* const memberRefp
+            = new AstMemberRef{fl, new AstVarRef{fl, m_instancep, VAccess::READ}, nodep->varp()};
+        memberRefp->access(nodep->access());
+        nodep->replaceWith(memberRefp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }

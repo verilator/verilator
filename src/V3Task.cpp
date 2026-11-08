@@ -674,7 +674,7 @@ class TaskVisitor final : public VNVisitor {
             }
             if (portp->isRef() || portp->isConstRef()) {
                 bool refArgOk = false;
-                if (VN_IS(pinp, VarRef) || VN_IS(pinp, MemberSel) || VN_IS(pinp, StructSel)
+                if (VN_IS(pinp, VarRef) || VN_IS(pinp, MemberRef) || VN_IS(pinp, StructSel)
                     || VN_IS(pinp, ArraySel)) {
                     refArgOk = true;
                 } else if (AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
@@ -847,7 +847,7 @@ class TaskVisitor final : public VNVisitor {
                 // Call the method of the dispatcher of the instance (see vifDispatchMethodp)
                 AstIface* const ifacep = VN_AS(m_statep->getScope(refp->taskp())->modp(), Iface);
                 VifDispatcher& dispatcher = vifDispatcher(ifacep);
-                fromp = new AstMemberSel{refp->fileline(), fromp, dispatcher.varp};
+                fromp = new AstMemberRef{refp->fileline(), fromp, dispatcher.varp};
                 funcp = vifDispatchMethodp(dispatcher, refp->taskp());
             }
             ccallp = new AstCMethodCall{refp->fileline(), fromp, funcp};
@@ -2092,7 +2092,7 @@ class TaskVisitor final : public VNVisitor {
             const AstClassRefDType* const dtp
                 = VN_CAST(mcallp->fromp()->dtypep()->skipRefp(), ClassRefDType);
             if (!dtp || dtp->classp() != readp->varScopep()->scopep()->modp()) return false;
-            newp = new AstMemberSel{nodep->fileline(), mcallp->fromp()->unlinkFrBack(),
+            newp = new AstMemberRef{nodep->fileline(), mcallp->fromp()->unlinkFrBack(),
                                     readp->varp()};
         } else {
             // Implicit 'this' call from another method of the class

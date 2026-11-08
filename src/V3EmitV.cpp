@@ -992,7 +992,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         emitVerilogFormat(nodep, nodep->emitVerilog(), nodep->lhsp(), nodep->rhsp(), nodep->thsp(),
                           nodep->fhsp());
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         iterateConst(nodep->fromp());
         puts(".");
         puts(nodep->prettyName());
@@ -1057,7 +1057,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstSel* nodep) override {
         const bool svSelectable = VN_IS(nodep->fromp(), VarRef) || VN_IS(nodep->fromp(), VarXRef)
-                                  || VN_IS(nodep->fromp(), MemberSel)
+                                  || VN_IS(nodep->fromp(), MemberRef)
                                   || VN_IS(nodep->fromp(), StructSel)
                                   || VN_IS(nodep->fromp(), ArraySel) || VN_IS(nodep->fromp(), Sel);
         if (!svSelectable) {

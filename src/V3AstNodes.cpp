@@ -566,8 +566,8 @@ bool AstNode::isDisableQueuePushSelfStmt() {
     if (!methodp || methodp->name() != "push_back") return false;
     AstNode* const basep = methodp->fromp()->baseFromp(false);
     if (AstVarRef* const refp = VN_CAST(basep, VarRef)) return refp->varp()->processQueue();
-    if (AstMemberSel* const selp = VN_CAST(basep, MemberSel)) {
-        return selp->varp() && selp->varp()->processQueue();
+    if (AstMemberRef* const memberRefp = VN_CAST(basep, MemberRef)) {
+        return memberRefp->varp() && memberRefp->varp()->processQueue();
     }
     return false;
 }
@@ -2231,14 +2231,14 @@ string AstMemberDType::prettyDTypeName(bool full) const {
     // Named as the member's type, as for $typename of a member (IEEE 1800-2023 20.6.1)
     return subDTypep()->prettyDTypeName(full);
 }
-AstMemberSel::AstMemberSel(FileLine* fl, AstNodeExpr* fromp, AstVar* varp)
-    : ASTGEN_SUPER_MemberSel(fl)
+AstMemberRef::AstMemberRef(FileLine* fl, AstNodeExpr* fromp, AstVar* varp)
+    : ASTGEN_SUPER_MemberRef(fl)
     , m_name{varp->name()} {
     this->fromp(fromp);
     this->varp(varp);
     dtypep(varp->dtypep());
 }
-void AstMemberSel::dump(std::ostream& str) const {
+void AstMemberRef::dump(std::ostream& str) const {
     Super::dump(str);
     str << " " << access().arrow() << " ";
     if (varp()) {
@@ -2247,12 +2247,12 @@ void AstMemberSel::dump(std::ostream& str) const {
         str << "%E:UNLINKED";
     }
 }
-void AstMemberSel::dumpJson(std::ostream& str) const {
+void AstMemberRef::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "access", access().ascii());
     dumpJsonGen(str);
 }
-bool AstMemberSel::sameNode(const AstNode* samep) const {
-    const AstMemberSel* const sp = VN_DBG_AS(samep, MemberSel);
+bool AstMemberRef::sameNode(const AstNode* samep) const {
+    const AstMemberRef* const sp = VN_DBG_AS(samep, MemberRef);
     return sp && access() == sp->access() && fromp()->isSame(sp->fromp()) && name() == sp->name()
            && (varp() == sp->varp() || (varp() && sp->varp() && varp()->sameNode(sp->varp())));
 }
@@ -3125,8 +3125,8 @@ AstNode* AstNodeExpr::baseFromp(bool overMembers) {
         } else if (VN_IS(nodep, CMethodHard)) {
             nodep = VN_AS(nodep, CMethodHard)->fromp();
             continue;
-        } else if (overMembers && VN_IS(nodep, MemberSel)) {
-            nodep = VN_AS(nodep, MemberSel)->fromp();
+        } else if (overMembers && VN_IS(nodep, MemberRef)) {
+            nodep = VN_AS(nodep, MemberRef)->fromp();
             continue;
         } else if (overMembers && VN_IS(nodep, StructSel)) {
             nodep = VN_AS(nodep, StructSel)->fromp();
@@ -3148,8 +3148,8 @@ VAccess AstNodeExpr::getVAccessRecurse() const {
     if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
         return varrefp->access();
     }
-    if (const AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-        return memberSelp->access();
+    if (const AstMemberRef* const memberRefp = VN_CAST(exprp, MemberRef)) {
+        return memberRefp->access();
     }
     if (const AstSelBit* const selpBitp = VN_CAST(exprp, SelBit)) return selpBitp->access();
     exprp->v3fatalSrc("Unexpected expression type");
@@ -3158,7 +3158,7 @@ VAccess AstNodeExpr::getVAccessRecurse() const {
 const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
     // Given an expression, recurse to find the expression which decides about VAccess etc.
     if (VN_IS(this, NodeVarRef)) return this;
-    if (VN_IS(this, MemberSel)) return this;
+    if (VN_IS(this, MemberRef)) return this;
     if (VN_IS(this, SelBit)) return this;
     if (const AstNodeSel* const anodep = VN_CAST(this, NodeSel)) {
         return anodep->fromp()->getVAccessTargetRecurse();

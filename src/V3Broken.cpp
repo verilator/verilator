@@ -339,7 +339,7 @@ private:
         }
         if (nodep->access().isWriteOrRW()) ++m_nWriteRefs;
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         processAndIterate(nodep);
         if (nodep->access().isWriteOrRW()) ++m_nWriteRefs;  // Writes the member
     }

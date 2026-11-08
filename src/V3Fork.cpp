@@ -18,7 +18,7 @@
 //
 // Each module:
 //      Look for FORKs [JOIN_NONE]/[JOIN_ANY]
-//          VARREF(var) -> MEMBERSEL(var->name, VARREF(dynscope)) (for write/RW refs)
+//          VARREF(var) -> MEMBERREF(var->name, VARREF(dynscope)) (for write/RW refs)
 //          FORK(stmts) -> TASK(stmts), FORK(TASKREF(inits))
 //
 // FORKs that spawn tasks which might outlive their parents require those
@@ -160,12 +160,12 @@ public:
             if (!varp->direction().isAny()) continue;
 
             if (varp->direction().isNonOutput()) {
-                AstMemberSel* const memberselp = new AstMemberSel{
+                AstMemberRef* const memberRefp = new AstMemberRef{
                     varp->fileline(),
                     new AstVarRef{varp->fileline(), m_instance.m_handlep, VAccess::WRITE},
                     VN_AS(memberMap.findMember(m_instance.m_classp, varp->name()), Var)};
                 AstNode* initAsgnp
-                    = new AstAssign{varp->fileline(), memberselp,
+                    = new AstAssign{varp->fileline(), memberRefp,
                                     new AstVarRef{varp->fileline(), varp, VAccess::READ}};
                 initsp = AstNode::addNext(initsp, initAsgnp);
             }
@@ -176,13 +176,13 @@ public:
             }
 
             if (varp->direction().isWritable()) {
-                AstMemberSel* const memberselp = new AstMemberSel{
+                AstMemberRef* const memberRefp = new AstMemberRef{
                     varp->fileline(),
                     new AstVarRef{varp->fileline(), m_instance.m_handlep, VAccess::READ},
                     VN_AS(memberMap.findMember(m_instance.m_classp, varp->name()), Var)};
                 AstNode* writebackAsgnp = new AstAssign{
                     varp->fileline(), new AstVarRef{varp->fileline(), varp, VAccess::WRITE},
-                    memberselp};
+                    memberRefp};
                 stmtp = AstNode::addNext(stmtp, writebackAsgnp);
             }
         }
@@ -304,19 +304,19 @@ class DynScopeVisitor final : public VNVisitor {
         return framep;
     }
 
-    void replaceWithMemberSel(AstVarRef* refp, const ForkDynScopeInstance& dynScope) {
+    void replaceWithMemberRef(AstVarRef* refp, const ForkDynScopeInstance& dynScope) {
         VNRelinker handle;
         refp->unlinkFrBack(&handle);
-        AstMemberSel* const memberselp = new AstMemberSel{
+        AstMemberRef* const memberRefp = new AstMemberRef{
             refp->fileline(), new AstVarRef{refp->fileline(), dynScope.m_handlep, refp->access()},
             refp->varp()};
         if (refp->varp()->direction().isAny()) {
-            memberselp->varp(
+            memberRefp->varp(
                 VN_AS(m_memberMap.findMember(dynScope.m_classp, refp->varp()->name()), Var));
         } else {
-            memberselp->varp(refp->varp());
+            memberRefp->varp(refp->varp());
         }
-        handle.relink(memberselp);
+        handle.relink(memberRefp);
         VL_DO_DANGLING(pushDeletep(refp), refp);
     }
 
@@ -498,7 +498,7 @@ public:
                 typesAdded = true;
             }
             if (AstVarRef* const refp = VN_CAST(frameIt->first, VarRef)) {
-                if (framep->captured(refp->varp())) replaceWithMemberSel(refp, framep->instance());
+                if (framep->captured(refp->varp())) replaceWithMemberRef(refp, framep->instance());
             }
         }
 

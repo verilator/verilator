@@ -343,7 +343,7 @@ class LinkLValueVisitor final : public VNVisitor {
     }
     void visit(AstCast* nodep) override { visitCast(nodep); }
     void visit(AstCastParse* nodep) override { visitCast(nodep); }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         if (m_setRefLvalue != VAccess::NOCHANGE) {
             nodep->access(m_setRefLvalue);
             if (nodep->varp() && nodep->access().isWriteOrRW()) {

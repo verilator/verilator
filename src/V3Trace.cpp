@@ -1287,7 +1287,7 @@ class TraceVisitor final : public VNVisitor {
             }
         }
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         if (m_cfuncp && m_finding && nodep->access().isWriteOrRW()) {
             AstIfaceRefDType* const dtypep
                 = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType);

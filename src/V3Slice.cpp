@@ -134,7 +134,7 @@ class SliceVisitor final : public VNVisitor {
                 return resultSelp;
             }
         } else if (VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel) || VN_IS(nodep, CMethodHard)
-                   || VN_IS(nodep, MemberSel) || VN_IS(nodep, StructSel)) {
+                   || VN_IS(nodep, MemberRef) || VN_IS(nodep, StructSel)) {
             UINFO(9, "  cloneSel(" << elements << "," << elemIdx << ") " << nodep);
             const int leOffset = !arrayp->rangep()->ascending()
                                      ? arrayp->rangep()->elementsConst() - 1 - elemIdx

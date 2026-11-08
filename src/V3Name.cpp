@@ -133,7 +133,7 @@ class NameVisitor final : public VNVisitorConst {
             iterateChildrenConst(nodep);
         }
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         if (!nodep->user1()) {
             rename(nodep, true);
             iterateChildrenConst(nodep);

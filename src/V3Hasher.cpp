@@ -254,7 +254,7 @@ class HasherVisitor final : public VNVisitorConst {
             m_hash += nodep->dotted();
         });
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
             m_hash += nodep->name();
         });

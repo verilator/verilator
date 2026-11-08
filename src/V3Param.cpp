@@ -1245,7 +1245,7 @@ class ParamProcessor final {
 
     // True for an expression produced while lowering a deferred struct-member chain.
     static bool isDeferredMemberBase(const AstNodeExpr* nodep) {
-        if (VN_IS(nodep, MemberSel)) return true;
+        if (VN_IS(nodep, MemberRef)) return true;
         if (const AstNodePreSel* const selp = VN_CAST(nodep, NodePreSel)) {
             const AstNodeDType* const fromDTypep = selp->fromp()->dtypep();
             const AstNodeArrayDType* const arrayDTypep
@@ -1265,7 +1265,7 @@ class ParamProcessor final {
         AstNodeExpr* const lhsp = VN_CAST(dotp->lhsp(), NodeExpr);
         AstParseRef* const memberRefp = memberParseRef(dotp->rhsp());
         if (!lhsp || !memberRefp || !isDeferredMemberBase(lhsp)) return;
-        AstMemberSel* const newp = new AstMemberSel{memberRefp->fileline(), lhsp->unlinkFrBack(),
+        AstMemberRef* const newp = new AstMemberRef{memberRefp->fileline(), lhsp->unlinkFrBack(),
                                                     VFlagChildDType{}, memberRefp->name()};
         replaceMemberDot(dotp, memberRefp, newp);
     }
@@ -1351,7 +1351,7 @@ class ParamProcessor final {
     }
 
     // Substitute a class param/lparam member's constant value for dotp. The
-    // reverse-order deferred-Dot walk lowers any outer fields to MemberSels.
+    // reverse-order deferred-Dot walk lowers any outer fields to MemberRefs.
     void substituteParamMember(AstDot* const dotp, AstParseRef* const memberRefp,
                                AstVar* const varp) {
         if (!varp->isParam() || !varp->valuep()) return;
