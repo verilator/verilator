@@ -196,12 +196,12 @@ ______________________________________________________________________
 
 - O(n^2) is never acceptable -- build maps for batch lookups; any quadratic loop
   needs explicit justification in a comment.
-- Prefer `std::map` for per-module structures (many small instances); use
-  `unordered_map` only for one-per-netlist data, and never let `unordered_*`
-  iteration order reach generated output.
+- Prefer `std::unordered_map` over `std::map`, `std::unordered_set` over `std::set`.
 - Prefer `emplace` over `insert` and check the returned `.second` instead of a
   separate `find()`. `reserve()` strings and vectors when the size is estimable.
-- Add no new static or global mutable data -- statics are being eliminated for
+- Beware of `std::map` keyed by a pointer without a sorting function, as iteration
+  order might make the output vary based on memory layout.  See e.g. `AstVarScopeComparator`.
+- Add minimal new static or global mutable data -- statics are being eliminated for
   future parallelism.
 - Use Verilator's fixed-width data types for model data (`CData`/`SData`/`IData`/
   `QData`/`VlWide`), not `size_t`. Process wide data word-by-word

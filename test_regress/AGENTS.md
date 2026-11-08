@@ -56,6 +56,8 @@ ______________________________________________________________________
 - Error tests use `test.lint(fails=True, expect_filename=test.golden_filename)`
   and must not call `test.execute()`.
 - Error tests should use `test.lint(fails=True, ...` instead of `test.compile(fails=True, ...)`.
+- Make multiple `.py` driver files instead of calling `test.compile` multiple
+  times in the same `.py`, unless there is lots of setup needed.
 - Use `.out` golden files with `expect_filename` instead of inline `expect`
   regex strings -- goldens are diffable and maintainable.
 - Use `test.glob_one()`/`test.glob_some()` and `test.timeout()` instead of raw
