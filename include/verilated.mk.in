@@ -38,6 +38,8 @@ CFG_CXXFLAGS_STD = @CFG_CXXFLAGS_STD@
 CFG_CXXFLAGS_STD_NEWEST = @CFG_CXXFLAGS_STD_NEWEST@
 # Compiler flags to use to turn off unused and generated code warnings, such as -Wno-div-by-zero
 CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
+# Compiler flag to disable C++ modules for generated code and the runtime
+CFG_CXXFLAGS_NO_MODULES = @CFG_CXXFLAGS_NO_MODULES@
 # Compiler flags that turn on extra warnings
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
 # Compiler flags that enable coroutine support
@@ -62,6 +64,9 @@ CFG_LDLIBS_DYNAMIC = @CFG_LDLIBS_DYNAMIC@
 VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
 VERILATOR_INCLUDER = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_includer
 VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
+
+VK_MODULE_DEPS = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_module_deps
+VK_MODULE_DIR = gcm.cache
 
 ######################################################################
 # CCACHE flags (via environment as no command line option available)
@@ -221,7 +226,7 @@ VK_MODEL_CXXFLAGS =
 VK_USER_PCH_FAST = $(VK_PCH_FAST)
 VK_USER_PCH_I_FAST = $(VK_PCH_I_FAST)
 ifneq ($(VK_MODULES),)
-  VK_MODEL_CXXFLAGS = -fno-modules
+  VK_MODEL_CXXFLAGS = $(CFG_CXXFLAGS_NO_MODULES)
   VK_USER_PCH_FAST =
   VK_USER_PCH_I_FAST =
 endif

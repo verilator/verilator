@@ -503,6 +503,7 @@ private:
     void addParameter(const string& paramline, bool allowPlus);
     void addLangExt(const string& langext, const V3LangCode& lc);
     void addLibExtV(const string& libext);
+    bool cxxModuleFlags() const;
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) {
@@ -768,6 +769,8 @@ public:
     string xInitial() const { return m_xInitial; }
 
     const VStringSet& cppFiles() const { return m_cppFiles; }
+    const VStringSet& moduleFiles() const { return m_moduleFiles; }
+    bool cxxModules() const;
     const VStringList& cFlags() const { return m_cFlags; }
     const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
     const VStringList& ldLibFiles() const { return m_ldLibFiles; }

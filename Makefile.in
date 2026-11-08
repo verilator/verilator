@@ -254,6 +254,7 @@ VL_INST_PUBLIC_BIN_FILES = \
 VL_INST_PRIVATE_SCRIPT_FILES = \
   verilator_ccache_report \
   verilator_includer \
+  verilator_module_deps \
 
 VL_INST_INC_BLDDIR_FILES = \
   include/verilated_config.h \
@@ -519,6 +520,7 @@ PY_PROGRAMS = \
   bin/verilator_difftree \
   bin/verilator_gantt \
   bin/verilator_includer \
+  bin/verilator_module_deps \
   bin/verilator_profcfunc \
   docs/bin/vl_sphinx_extract \
   docs/bin/vl_sphinx_fix \

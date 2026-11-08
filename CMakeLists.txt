@@ -208,6 +208,7 @@ foreach(
     verilator_difftree
     verilator_gantt
     verilator_includer
+    verilator_module_deps
     verilator_profcfunc
 )
     install(PROGRAMS bin/${program} TYPE BIN)

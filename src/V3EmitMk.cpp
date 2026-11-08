@@ -757,6 +757,29 @@ public:
         for (const auto& i : dirs) of.puts("  " + i + " \\\n");
         of.puts("\n");
 
+        if (v3Global.opt.cxxModules()) {
+            of.puts("# User C++ module sources\n");
+            of.puts("VM_USER_SOURCES = \\\n");
+            for (const auto& cppfile : cppFiles) of.puts("  " + cppfile + " \\\n");
+            of.puts("\n");
+
+            of.puts("# User C++ module interface files\n");
+            of.puts("VM_USER_MODULE_FILES = \\\n");
+            for (const auto& modulefile : v3Global.opt.moduleFiles())
+                of.puts("  " + modulefile + " \\\n");
+            of.puts("\n");
+
+            of.puts("VM_USER_BACKEND = gcc\n");
+            of.puts("\n");
+            of.puts("$(VM_PREFIX)__modules.mk: $(VM_USER_SOURCES) $(VM_PREFIX).mk\n");
+            of.puts("\t$(VK_MODULE_DEPS) --backend $(VM_USER_BACKEND) --cxx \"$(CXX)\" \\\n");
+            of.puts("\t    --cxxflags '$(CXXFLAGS)' --cppflags '$(CPPFLAGS)' \\\n");
+            of.puts("\t    --objdir . --output $@ $(addprefix --source ,$(VM_USER_SOURCES))\n");
+            of.puts("\n");
+            of.puts("-include $(VM_PREFIX)__modules.mk\n");
+            of.puts("\n");
+        }
+
         of.puts("### Default rules...\n");
         of.puts("# Include list of all generated classes\n");
         of.puts("include " + v3Global.opt.prefix() + "_classes.mk\n");
@@ -788,14 +811,16 @@ public:
             = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_USER_PCH_FAST)";
         const string compilerIncludeFlag
             = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_USER_PCH_I_FAST)";
-        for (const string& cppfile : cppFiles) {
-            const string basename = V3Os::filenameNonDirExt(cppfile);
-            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-            of.puts(basename + ".o: " + cppfile + " " + compilerIncludePch + "\n");
+        if (!v3Global.opt.cxxModules()) {
+            for (const string& cppfile : cppFiles) {
+                const string basename = V3Os::filenameNonDirExt(cppfile);
+                // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+                of.puts(basename + ".o: " + cppfile + " " + compilerIncludePch + "\n");
 
-            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) "
-                    + compilerIncludeFlag + " -c -o $@ $<\n");
+                // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+                of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) "
+                        + compilerIncludeFlag + " -c -o $@ $<\n");
+            }
         }
 
         if (v3Global.opt.exe()) {

@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+# mypy: disallow-untyped-defs
+# pylint: disable=C0114,C0116,C0209,R0914
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+######################################################################
+
+import argparse
+import json
+import os
+import shlex
+import subprocess
+import sys
+
+
+def fatal(message: str) -> None:
+    sys.stderr.write("%Error: " + message + "\n")
+    sys.exit(1)
+
+
+def parse_flags(flags: str) -> list[str]:
+    return [flag for flag in shlex.split(flags) if flag not in ('-MMD', '-MP')]
+
+
+def normalize_args(argv: list[str]) -> list[str]:
+    result = []
+    index = 0
+    while index < len(argv):
+        if argv[index] in ('--cxxflags', '--cppflags') and index + 1 < len(argv):
+            result.append(argv[index] + '=' + argv[index + 1])
+            index += 2
+        else:
+            result.append(argv[index])
+            index += 1
+    return result
+
+
+def external_modules(flags: list[str]) -> set[str]:
+    prefix = '-fmodule-file='
+    modules = set()
+    for flag in flags:
+        if flag.startswith(prefix):
+            modules.add(flag[len(prefix):].split('=', 1)[0])
+    return modules
+
+
+def scan(args: argparse.Namespace) -> None:
+    cppflags = parse_flags(args.cppflags)
+    cxxflags = parse_flags(args.cxxflags)
+    external = external_modules(cppflags + cxxflags)
+
+    if args.backend != 'gcc':
+        fatal("Unsupported C++ module dependency backend '" + args.backend + "'")
+
+    if args.objdir:
+        os.makedirs(args.objdir, exist_ok=True)
+
+    modules = []
+    objects = {}
+    for source in args.source:
+        abs_source = os.path.abspath(source)
+        stem = os.path.splitext(os.path.basename(abs_source))[0]
+        obj = stem + '.o'
+        if obj in objects:
+            fatal("Multiple C++ sources produce '" + obj + "': '" + objects[obj] + "' and '"
+                  + abs_source + "'")
+        objects[obj] = abs_source
+
+        deps_file = os.path.join(args.objdir, stem + '.deps.json')
+        command = ([args.cxx] + cppflags + cxxflags + [
+            '-MM',
+            '-fdeps-format=p1689r5',
+            '-fdeps-file=' + deps_file,
+            '-fdeps-target=' + obj,
+            '-fsyntax-only',
+            abs_source,
+        ])
+        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.returncode != 0:
+            sys.stderr.write(result.stdout)
+            sys.stderr.write(result.stderr)
+            fatal("C++ module scan failed for '" + abs_source + "'")
+        if not os.path.exists(deps_file):
+            fatal("C++ module scan produced no dependency file for '" + abs_source + "'")
+
+        with open(deps_file, 'r', encoding='utf8') as fh:
+            data = json.load(fh)
+        rules = data.get('rules', [])
+        rule = next((entry for entry in rules if entry.get('primary-output') == obj), None)
+        if rule is None and rules:
+            rule = rules[0]
+        if rule is None:
+            rule = {}
+
+        provides = []
+        for provide in rule.get('provides', []):
+            if provide.get('is-interface', False):
+                provides.append(provide['logical-name'])
+        requires = []
+        for require in rule.get('requires', []):
+            requires.append(require['logical-name'])
+
+        modules.append({
+            'source': abs_source,
+            'obj': obj,
+            'provides': provides,
+            'requires': requires,
+        })
+
+    providers = {}
+    for module in modules:
+        for name in module['provides']:
+            if name in providers:
+                fatal("Duplicate C++ module provider '" + name + "' in '"
+                      + providers[name]['source'] + "' and '" + module['source'] + "'")
+            providers[name] = module
+
+    for module in modules:
+        deps = set()
+        for name in module['requires']:
+            if name in providers:
+                deps.add(providers[name]['obj'])
+            elif name in external:
+                continue
+            elif '/' in name:
+                continue
+            elif name == 'std':
+                if not os.path.exists(os.path.join(args.objdir, 'gcm.cache', 'std.gcm')):
+                    fatal("C++ module 'std' is required, but gcm.cache/std.gcm was not found; "
+                          "precompile the std module before building")
+            else:
+                fatal("C++ module '" + name + "' required by '" + module['source']
+                      + "' has no provider; precompile it and pass -fmodule-file=" + name
+                      + "=<path>")
+        module['deps'] = sorted(deps)
+
+    lines = []
+    module_objs = sorted({module['obj'] for module in modules if module['provides']})
+    lines.append('VK_MODULE_OBJS = ' + ' '.join(module_objs))
+    lines.append('')
+    lines.append('.PHONY: modules')
+    lines.append('modules: $(VK_MODULE_OBJS)')
+    lines.append('')
+    for module in sorted(modules, key=lambda entry: entry['obj']):
+        deps = ' '.join(['$(VM_PREFIX).mk'] + module['deps'])
+        lines.append(module['obj'] + ': ' + module['source'] + ' ' + deps)
+        lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) -c '
+                     + module['source'] + ' -o ' + module['obj'])
+        lines.append('')
+    content = '\n'.join(lines)
+
+    old_content = None
+    if os.path.exists(args.output):
+        with open(args.output, 'r', encoding='utf8') as fh:
+            old_content = fh.read()
+    if content != old_content:
+        with open(args.output, 'w', encoding='utf8') as fh:
+            fh.write(content)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(allow_abbrev=False)
+    parser.add_argument('--backend', required=True, help='dependency backend')
+    parser.add_argument('--cxx', required=True, help='C++ compiler')
+    parser.add_argument('--cxxflags', default='', help='C++ compiler flags')
+    parser.add_argument('--cppflags', default='', help='C preprocessor flags')
+    parser.add_argument('--objdir', default='.', help='object directory')
+    parser.add_argument('--output', required=True, help='output make fragment')
+    parser.add_argument('--source', action='append', default=[], help='C++ source file')
+    args = parser.parse_args(normalize_args(sys.argv[1:]))
+    scan(args)
+
+
+if __name__ == '__main__':
+    main()
+
+######################################################################
+# Local Variables:
+# compile-command: "./verilator_module_deps --backend gcc --cxx c++ --output modules.mk --source m.cppm"
+# End:

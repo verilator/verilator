@@ -371,6 +371,15 @@ void V3Options::addMakeFlags(const string& filename) { m_makeFlags.push_back(fil
 void V3Options::addFuture(const string& flag) { m_futures.insert(flag); }
 void V3Options::addFuture0(const string& flag) { m_future0s.insert(flag); }
 void V3Options::addFuture1(const string& flag) { m_future1s.insert(flag); }
+bool V3Options::cxxModuleFlags() const {
+    for (const string& flag : m_cFlags) {
+        if (flag == "-fmodules" || flag == "-fmodules-ts"
+            || VString::startsWith(flag, "-fmodule-file"))
+            return true;
+    }
+    return false;
+}
+bool V3Options::cxxModules() const { return !m_moduleFiles.empty() || cxxModuleFlags(); }
 bool V3Options::isFuture(const string& flag) const {
     return m_futures.find(flag) != m_futures.end();
 }
@@ -978,8 +987,17 @@ void V3Options::notify() VL_MT_DISABLED {
     }
 
     if (!m_moduleFiles.empty()) {
-        cmdfl->v3error("Unsupported: C++ module interface files; precompile the interface "
-                       "and pass the resulting object file");
+        bool hasIxx = false;
+        for (const string& file : m_moduleFiles) {
+            if (suffixed(file, ".ixx")) {
+                hasIxx = true;
+                break;
+            }
+        }
+        if (hasIxx || !cxxModuleFlags()) {
+            cmdfl->v3error("Unsupported: C++ module interface files; precompile the interface "
+                           "and pass the resulting object file");
+        }
     }
 
     // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_jsonOnly are mutually
