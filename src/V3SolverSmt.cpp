@@ -1767,6 +1767,14 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         return elemsp.front();
     }
+    // True iff dtp's leaf elements are bit vectors the elementwise path can compare.
+    static bool arrayLeafComparable(const AstNodeDType* dtp) {
+        while (const AstUnpackArrayDType* const arrp = VN_CAST(dtp, UnpackArrayDType)) {
+            dtp = arrp->subDTypep()->skipRefp();
+        }
+        const AstNodeUOrStructDType* const sdtp = VN_CAST(dtp, NodeUOrStructDType);
+        return !VN_IS(dtp, ClassRefDType) && (!sdtp || sdtp->packed());
+    }
     // True iff equivalent-shape dtypes declare the same range direction at
     // every dimension -- storage-index comparison pairs the wrong elements
     // otherwise (arr[0:1] vs arr[1:0]).
@@ -1849,12 +1857,22 @@ class ConstraintExprVisitor final : public VNVisitor {
         // see arrayDirectionsMatch().
         const bool directionMismatch
             = lhsIsRand && rhsIsRand && !arrayDirectionsMatch(lhsDtp, rhsDtp);
-        if (isArrayShaped && (!lhsIsRand || !rhsIsRand || directionMismatch)) {
+        // SMT array (in)equality also covers indices outside the declared range.
+        const bool bothRandFixed = lhsIsRand && rhsIsRand && VN_IS(lhsDtp, UnpackArrayDType)
+                                   && arrayDTypeSupported(lhsDtp);
+        if (isArrayShaped && (!lhsIsRand || !rhsIsRand || directionMismatch || bothRandFixed)) {
             FileLine* const fl = nodep->fileline();
             if (!arrayDTypeSupported(lhsDtp)) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: array comparison in constraint on an array "
                               "shape containing a queue, dynamic, or associative array");
+                discardUnsupportedCompare(nodep);
+                return;
+            }
+            if (!arrayLeafComparable(lhsDtp)) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint on an array of "
+                              "unpacked structs or class handles");
                 discardUnsupportedCompare(nodep);
                 return;
             }

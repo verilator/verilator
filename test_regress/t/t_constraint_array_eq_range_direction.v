@@ -30,8 +30,7 @@ class both_rand_opp_dir_eq;
   constraint c { frame == target; }
 endclass
 
-// Both operands rand, same (descending) direction: must keep going
-// through the native SMT array-equality fast path, unaffected.
+// Both operands rand, same (descending) direction.
 class both_rand_same_dir;
   rand bit [3:0] frame[1:0];
   rand bit [3:0] target[1:0];
@@ -74,6 +73,17 @@ class nested_opp_dir;
   constraint c { cube == other; }
 endclass
 
+// Only the inner dimension's direction differs between the operands.
+class inner_only_opp_dir;
+  rand bit [3:0] cube[0:1][0:2];
+  bit [3:0] other[0:1][2:0];
+  constraint c { cube == other; }
+  function new();
+    other[0][2] = 4'd1; other[0][1] = 4'd2; other[0][0] = 4'd3;
+    other[1][2] = 4'd4; other[1][1] = 4'd5; other[1][0] = 4'd6;
+  endfunction
+endclass
+
 module t;
   initial begin
     both_rand_opp_dir opp_dir_obj;
@@ -82,6 +92,7 @@ module t;
     mixed_rand_opp_dir mixed_obj;
     mixed_rand_opp_dir_lhs_desc mixed_lhs_desc_obj;
     nested_opp_dir nested_obj;
+    inner_only_opp_dir inner_obj;
     int randomize_result;
 
     // Never satisfiable as procedurally equal, every draw.
@@ -134,6 +145,16 @@ module t;
     `checkd(nested_obj.other[1][0], 4'd2);
     `checkd(nested_obj.other[0][1], 4'd3);
     `checkd(nested_obj.other[0][0], 4'd4);
+
+    inner_obj = new;
+    randomize_result = inner_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(inner_obj.cube[0][0], 4'd1);
+    `checkd(inner_obj.cube[0][1], 4'd2);
+    `checkd(inner_obj.cube[0][2], 4'd3);
+    `checkd(inner_obj.cube[1][0], 4'd4);
+    `checkd(inner_obj.cube[1][1], 4'd5);
+    `checkd(inner_obj.cube[1][2], 4'd6);
 
     $write("*-* All Finished *-*\n");
     $finish;

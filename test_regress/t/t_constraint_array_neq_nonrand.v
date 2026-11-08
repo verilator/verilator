@@ -18,8 +18,8 @@ class frame_bothrand;
   constraint c { frame != other; }
 endclass
 
-// This still goes through native SMT array equality, not the elementwise
-// path, since nothing non-rand is being frozen at a rand index here.
+// Both sides rand, indexed by a rand value: expands elementwise like any
+// fixed rand pair, the index staying symbolic in each element.
 class frame_bothrand_randidx;
   rand int idx;
   rand bit [7:0] cube[4][2];
@@ -250,6 +250,110 @@ class frame_queue_element;
   endfunction
 endclass
 
+// Both sides rand, every in-range element forced equal: '!=' must be
+// unsatisfiable, not met by indices outside the declared range.
+class rr_neq_forced_equal;
+  rand bit frame[2];
+  rand bit other[2];
+  constraint c { frame != other; frame[0] == other[0]; frame[1] == other[1]; }
+endclass
+
+// Same, through a negated '==' instead of '!='.
+class rr_eq_negated;
+  rand bit [1:0] frame[3];
+  rand bit [1:0] other[3];
+  constraint c { frame[0] == other[0]; frame[1] == other[1]; !(frame == other); }
+endclass
+
+// Element types other than a plain bit vector.
+typedef enum bit [1:0] { EA, EB, EC } elem_e;
+typedef struct packed { bit [1:0] x; bit [1:0] y; } elem_ps;
+class elem_types;
+  rand int fi[2];
+  int ti[2];
+  rand byte fb[2];
+  byte tb[2];
+  rand elem_e fe[2];
+  elem_e te[2];
+  rand elem_ps fp[2];
+  elem_ps tp[2];
+  rand bit [99:0] fw[2];
+  bit [99:0] tw[2];
+  rand logic [1:0] fl[2];
+  logic [1:0] tl[2];
+  constraint c { fi == ti; fb == tb; fe == te; fp == tp; fw == tw; fl == tl; }
+  function new();
+    ti = '{-5, 100000};
+    tb = '{-1, -128};
+    te = '{EC, EB};
+    tp = '{4'h6, 4'h9};
+    tw = '{100'h1, {4'hF, 96'h0}};
+    tl = '{2'd3, 2'd1};
+  endfunction
+endclass
+
+// The comparison under else, a nested if, an implication, '||', soft, and a
+// foreach indexing both operands.
+class ctx_forms;
+  rand bit en;
+  rand bit z;
+  rand bit [1:0] fa[2];
+  rand bit [1:0] fb[2];
+  rand bit [1:0] fc[2];
+  rand bit [1:0] fd[2];
+  rand bit [1:0] fs[2];
+  rand bit [1:0] g[2][2];
+  bit [1:0] t[2];
+  bit [1:0] m[2][2];
+  constraint c_en { en == 0; z == 0; }
+  constraint c_else { if (en) fa[0] == 0; else fa == t; }
+  constraint c_nested { if (!en) { if (!z) fb == t; } }
+  constraint c_impl { !en -> fc == t; }
+  constraint c_or { (fd == t) || z; }
+  constraint c_soft { soft fs == t; }
+  constraint c_foreach { foreach (g[i]) g[i] == m[i]; }
+  function new();
+    t = '{2'd1, 2'd2};
+    m = '{'{2'd3, 2'd0}, '{2'd2, 2'd1}};
+  endfunction
+endclass
+
+// Same direction but different bounds, and a single-element array.
+class range_forms;
+  rand bit [1:0] fdb[0:2];
+  bit [1:0] tdb[5:7];
+  rand bit [1:0] f1[1];
+  bit [1:0] t1[1];
+  constraint c { fdb == tdb; f1 == t1; }
+  function new();
+    tdb = '{2'd1, 2'd2, 2'd3};
+    t1 = '{2'd2};
+  endfunction
+endclass
+
+// The non-rand operand as a localparam and as a package parameter.
+localparam bit [1:0] LP_TARGET[3] = '{2'd3, 2'd1, 2'd2};
+package array_eq_pkg;
+  localparam bit [1:0] PKG_TARGET[3] = '{2'd2, 2'd3, 2'd1};
+endpackage
+class const_operands;
+  rand bit [1:0] fl[3];
+  rand bit [1:0] fp[3];
+  constraint c { fl == LP_TARGET; fp == array_eq_pkg::PKG_TARGET; }
+endclass
+
+// A rand operand with rand_mode(0) compares as its current value.
+class rand_mode_side;
+  rand bit [1:0] frame[2];
+  bit [1:0] target[2];
+  constraint c { frame == target; }
+endclass
+
+// The non-rand operand as a randomize() with {} caller local.
+class inline_target;
+  rand bit [1:0] frame[3];
+endclass
+
 module t;
   initial begin
     frame_bothrand bothrand_obj;
@@ -270,12 +374,20 @@ module t;
     frame_nonrand_index nonrand_idx_obj;
     frame_large large_obj;
     frame_queue_element queue_elem_obj;
+    rr_neq_forced_equal rr_forced_obj;
+    rr_eq_negated rr_negated_obj;
+    elem_types elem_obj;
+    ctx_forms ctx_obj;
+    range_forms range_obj;
+    const_operands const_obj;
+    rand_mode_side rmode_obj;
+    inline_target inline_obj;
     bit [7:0] prev[4][4];
     bit [7:0] prev_cube1[2][2];
     int randomize_result;
     bit any_diff;
 
-    // rand-vs-rand comparison must keep working (native SMT array equality)
+    // rand-vs-rand comparison must keep working
     bothrand_obj = new;
     for (int t = 0; t < 20; t++) begin
       randomize_result = bothrand_obj.randomize();
@@ -283,7 +395,7 @@ module t;
       `checkd(bothrand_obj.frame != bothrand_obj.other, 1);
     end
 
-    // Both operand and index rand must keep solving correctly (native SMT),
+    // Both operand and index rand must keep solving correctly,
     // and the index must actually vary across draws, not just default to 0.
     randidx_bothrand_obj = new;
     any_diff = 0;
@@ -477,6 +589,85 @@ module t;
       `checkd(std_result, 1);
       `checkd(sa[0], 8'hAA);
       `checkd(sa[1], 8'hBB);
+    end
+
+    rr_forced_obj = new;
+    randomize_result = rr_forced_obj.randomize();
+    `checkd(randomize_result, 0);
+
+    rr_negated_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = rr_negated_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(rr_negated_obj.frame[2] != rr_negated_obj.other[2], 1);
+    end
+
+    elem_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = elem_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(elem_obj.fi == elem_obj.ti, 1);
+      `checkd(elem_obj.fb == elem_obj.tb, 1);
+      `checkd(elem_obj.fe == elem_obj.te, 1);
+      `checkd(elem_obj.fp == elem_obj.tp, 1);
+      `checkd(elem_obj.fw == elem_obj.tw, 1);
+      `checkd(elem_obj.fl == elem_obj.tl, 1);
+    end
+
+    ctx_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = ctx_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(ctx_obj.fa == ctx_obj.t, 1);
+      `checkd(ctx_obj.fb == ctx_obj.t, 1);
+      `checkd(ctx_obj.fc == ctx_obj.t, 1);
+      `checkd(ctx_obj.fd == ctx_obj.t, 1);
+      `checkd(ctx_obj.fs == ctx_obj.t, 1);
+      `checkd(ctx_obj.g == ctx_obj.m, 1);
+    end
+
+    range_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = range_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(range_obj.fdb[0], 2'd1);
+      `checkd(range_obj.fdb[1], 2'd2);
+      `checkd(range_obj.fdb[2], 2'd3);
+      `checkd(range_obj.f1[0], 2'd2);
+    end
+
+    const_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = const_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(const_obj.fl == LP_TARGET, 1);
+      `checkd(const_obj.fp == array_eq_pkg::PKG_TARGET, 1);
+    end
+
+    rmode_obj = new;
+    rmode_obj.target = '{2'd1, 2'd2};
+    rmode_obj.frame = '{2'd1, 2'd2};
+    rmode_obj.frame.rand_mode(0);
+    randomize_result = rmode_obj.randomize();
+    `checkd(randomize_result, 1);
+    rmode_obj.frame = '{2'd0, 2'd2};
+    randomize_result = rmode_obj.randomize();
+    `checkd(randomize_result, 0);
+
+    inline_obj = new;
+    begin
+      bit [1:0] local_target[3];
+      local_target = '{2'd2, 2'd0, 2'd3};
+      for (int i = 0; i < 20; i++) begin
+        randomize_result = inline_obj.randomize() with { frame == local_target; };
+        `checkd(randomize_result, 1);
+        `checkd(inline_obj.frame == local_target, 1);
+      end
+      randomize_result = inline_obj.randomize() with { frame != local_target;
+                                                       frame[0] == local_target[0];
+                                                       frame[1] == local_target[1];
+                                                       frame[2] == local_target[2]; };
+      `checkd(randomize_result, 0);
     end
 
     $write("*-* All Finished *-*\n");

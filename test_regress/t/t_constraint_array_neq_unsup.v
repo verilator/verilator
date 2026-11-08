@@ -240,6 +240,45 @@ class C18;
   endfunction
 endclass
 
+// Unpacked-struct elements, against a non-rand array and both rand, and
+// class-handle elements: no elementwise bit-vector compare exists for these.
+typedef struct {
+  rand bit [1:0] x;
+  rand bit [3:0] y;
+} unpacked_s;
+class C19;
+  rand unpacked_s frame[2];
+  unpacked_s target[2];
+  constraint c { frame != target; }
+endclass
+
+class C20;
+  rand unpacked_s frame[2];
+  rand unpacked_s target[2];
+  constraint c { frame == target; }
+endclass
+
+class Elem21;
+  rand bit [1:0] v;
+endclass
+class C21;
+  rand Elem21 frame[2];
+  Elem21 target[2];
+  constraint c { frame == target; }
+endclass
+
+// An array constructor and a slice as the non-rand operand.
+class C22;
+  rand bit [1:0] frame[3];
+  constraint c { frame == '{2'd1, 2'd2, 2'd3}; }
+endclass
+
+class C23;
+  rand bit [1:0] frame[2];
+  bit [1:0] target[4];
+  constraint c { frame == target[1:2]; }
+endclass
+
 module t;
   bit [7:0] hier_target[2][2];
 
@@ -264,6 +303,11 @@ module t;
     C16 obj16;
     C17 obj17;
     C18 obj18;
+    C19 obj19;
+    C20 obj20;
+    C21 obj21;
+    C22 obj22;
+    C23 obj23;
     obj1 = new;
     obj2 = new;
     obj3 = new;
@@ -284,6 +328,11 @@ module t;
     obj16 = new;
     obj17 = new;
     obj18 = new;
+    obj19 = new;
+    obj20 = new;
+    obj21 = new;
+    obj22 = new;
+    obj23 = new;
     if (obj1.randomize() == 0) $stop;
     if (obj2.randomize() == 0) $stop;
     if (obj3.randomize() == 0) $stop;
@@ -304,5 +353,10 @@ module t;
     if (obj16.randomize() == 0) $stop;
     if (obj17.randomize() == 0) $stop;
     if (obj18.randomize() == 0) $stop;
+    if (obj19.randomize() == 0) $stop;
+    if (obj20.randomize() == 0) $stop;
+    if (obj21.randomize() == 0) $stop;
+    if (obj22.randomize() == 0) $stop;
+    if (obj23.randomize() == 0) $stop;
   end
 endmodule

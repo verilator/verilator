@@ -79,4 +79,24 @@
                                                            : ... note: In instance 't'
   237 |   constraint c { probe == cube[getIdx()][0]; }
       |                        ^~
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:252:24: Unsupported: array comparison in constraint on an array of unpacked structs or class handles
+                                                           : ... note: In instance 't'
+  252 |   constraint c { frame != target; }
+      |                        ^~
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:258:24: Unsupported: array comparison in constraint on an array of unpacked structs or class handles
+                                                           : ... note: In instance 't'
+  258 |   constraint c { frame == target; }
+      |                        ^~
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:267:24: Unsupported: array comparison in constraint on an array of unpacked structs or class handles
+                                                           : ... note: In instance 't'
+  267 |   constraint c { frame == target; }
+      |                        ^~
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:273:24: Unsupported: array comparison in constraint with an operand shape Verilator can't resolve to a variable, member, or array-indexed element
+                                                           : ... note: In instance 't'
+  273 |   constraint c { frame == '{2'd1, 2'd2, 2'd3}; }
+      |                        ^~
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:279:24: Unsupported: array comparison in constraint with an operand shape Verilator can't resolve to a variable, member, or array-indexed element
+                                                           : ... note: In instance 't'
+  279 |   constraint c { frame == target[1:2]; }
+      |                        ^~
 %Error: Exiting due to
