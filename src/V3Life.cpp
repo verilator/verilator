@@ -180,6 +180,11 @@ public:
         if (entr.isNew()) entr.init(false);
         entr.complexAssign();
     }
+    AstConst* constNodep(AstVarScope* nodep) const {
+        // Known constant value of the variable, or nullptr
+        const auto it = m_map.find(nodep);
+        return it == m_map.end() ? nullptr : it->second.constNodep();
+    }
     void clearReplaced() { m_replacedVref = false; }
     bool replaced() const { return m_replacedVref; }
     void varUsageReplace(AstVarScope* nodep, AstVarRef* varrefp) {
@@ -343,6 +348,27 @@ class LifeVisitor final : public VNVisitor {
     void visit(AstSFormat* nodep) override {
         // AstSFormat is just a special form of assignment
         processAssignment(nodep, nodep->lhsp(), nodep->fmtp());
+    }
+    void visit(AstStmtExpr* nodep) override {
+        // Appending to a string of known constant value: assign the concatenation instead, which
+        // is then constant propagated like any other assignment
+        AstCFuncHard* const callp = VN_CAST(nodep->exprp(), CFuncHard);
+        if (callp && callp->function() == VCFunction::STRING_APPEND) {
+            AstVarRef* const refp = VN_CAST(callp->pinsp(), VarRef);
+            if (refp && m_lifep->constNodep(refp->varScopep())) {
+                FileLine* const flp = nodep->fileline();
+                AstVarScope* const vscp = refp->varScopep();
+                AstNodeExpr* const appendp = VN_AS(refp->nextp(), NodeExpr)->unlinkFrBack();
+                AstConcatN* const catp
+                    = new AstConcatN{flp, new AstVarRef{flp, vscp, VAccess::READ}, appendp};
+                // Iterated next (AstNode::iterateAndNext)
+                nodep->replaceWith(
+                    new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE}, catp});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+        }
+        iterateChildren(nodep);
     }
     void visit(AstAssignDly* nodep) override {
         // V3Life doesn't understand time sense
