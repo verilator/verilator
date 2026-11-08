@@ -768,7 +768,6 @@ public:
     string xInitial() const { return m_xInitial; }
 
     const VStringSet& cppFiles() const { return m_cppFiles; }
-    const VStringSet& moduleFiles() const { return m_moduleFiles; }
     const VStringList& cFlags() const { return m_cFlags; }
     const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
     const VStringList& ldLibFiles() const { return m_ldLibFiles; }
