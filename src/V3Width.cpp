@@ -1227,20 +1227,16 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
             const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
-            bool bad = true;
+            bool bad = false;
             if (!constp) {
                 nodep->v3error("Slice size isn't a constant or basic data type.");
+                bad = true;
             } else if (!constp->num().fitsInUInt() || constp->toUInt() == 0
                        || (constp->isSigned() && constp->num().isNegative())) {
-                const V3Number& num = constp->num();
                 nodep->v3error("Slice size must be a positive 32-bit value"
-                               " (IEEE 1800-2023 11.4.14.2), but is '"
-                               << (num.isFourState()    ? num.ascii()
-                                   : constp->isSigned() ? num.toDecimalS()
-                                                        : num.toDecimalU())
-                               << "'.");
-            } else {
-                bad = false;
+                               " (IEEE 1800-2023 11.4.14.2): "
+                               << constp->prettyNameQ());
+                bad = true;
             }
             if (bad) {
                 // Continue with a valid slice size

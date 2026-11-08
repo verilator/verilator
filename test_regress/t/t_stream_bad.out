@@ -15,19 +15,19 @@
                               : ... note: In instance 't'
    15 |     packed_data_32 = {<<x{byte_in}};
       |                       ^~
-%Error: t/t_stream_bad.v:16:23: Slice size must be a positive 32-bit value (IEEE 1800-2023 11.4.14.2), but is '0'.
+%Error: t/t_stream_bad.v:16:23: Slice size must be a positive 32-bit value (IEEE 1800-2023 11.4.14.2): '?32?sh0'
                               : ... note: In instance 't'
    16 |     packed_data_32 = {<<0{byte_in}};
       |                       ^~
-%Error: t/t_stream_bad.v:17:23: Slice size must be a positive 32-bit value (IEEE 1800-2023 11.4.14.2), but is '-1'.
+%Error: t/t_stream_bad.v:17:23: Slice size must be a positive 32-bit value (IEEE 1800-2023 11.4.14.2): '32'hffffffff'
                               : ... note: In instance 't'
    17 |     packed_data_32 = {<<-1{byte_in}};
       |                       ^~
-%Error: t/t_stream_bad.v:18:23: Slice size must be a positive 32-bit value (IEEE 1800-2023 11.4.14.2), but is '4294967296'.
+%Error: t/t_stream_bad.v:18:23: Slice size must be a positive 32-bit value (IEEE 1800-2023 11.4.14.2): '33'h100000000'
                               : ... note: In instance 't'
    18 |     packed_data_32 = {<<33'h1_0000_0000{byte_in}};
       |                       ^~
-%Error: t/t_stream_bad.v:19:23: Slice size must be a positive 32-bit value (IEEE 1800-2023 11.4.14.2), but is '4'bx'.
+%Error: t/t_stream_bad.v:19:23: Slice size must be a positive 32-bit value (IEEE 1800-2023 11.4.14.2): '4'bx'
                               : ... note: In instance 't'
    19 |     packed_data_32 = {<<4'bx{byte_in}};
       |                       ^~
