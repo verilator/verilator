@@ -41,6 +41,9 @@ The main flow of Verilator can be followed by reading the Verilator.cpp
    definitions.
 
 #. Parameters are resolved, and the design is elaborated.
+   Class instances share a clone per specialization, including default arguments.
+   Plain nested classes copied with an outer specialization remain members of that copy.
+   Nested generic classes are elaborated only when requested.
 
 #. Verilator then performs additional edits and optimizations on the
    hierarchical design. This includes coverage, assertions, X elimination,

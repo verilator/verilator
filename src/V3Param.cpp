@@ -280,10 +280,6 @@ class ParamProcessor final {
     //                          //        (0=not processed, 1=iterated, but no number,
     //                          //         65+ parameter numbered)
     // NODE STATE - Shared with ParamVisitor
-    //   AstNodeModule::user3p()  // AstNodeModule* Unaltered copy of the parameterized module.
-    //                               The module/class node may be modified according to parameter
-    //                               values and an unchanged copy is needed to instantiate
-    //                               modules/classes with different parameters.
     //   AstNodeModule::user2() // bool   True if processed
     //   AstGenFor::user2()     // bool   True if processed
     //   AstVar::user2()        // bool   True if constant propagated
@@ -316,9 +312,6 @@ class ParamProcessor final {
     // All module names that are loaded from source code
     // Generated modules by this visitor is not included
     VStringSet m_allModuleNames;
-
-    CloneMap m_originalParams;  // Map between parameters of copied parameteized classes and their
-                                // original nodes
 
     std::map<const std::string, std::string> m_valueNames;  // Parameter value text to its name
     std::set<std::string> m_valueSuffixes;  // Digest suffixes used by m_valueNames
@@ -600,7 +593,7 @@ class ParamProcessor final {
             return basicp->isString();
         return false;
     }
-    void collectPins(CloneMap* clonemapp, AstNodeModule* modp, bool originalIsCopy) {
+    void collectPins(CloneMap* clonemapp, AstNodeModule* modp) {
         // Grab all I/O so we can remap our pins later
         for (AstNode* const stmtp : modp->stmtspList()) {
             const AstNode* originalParamp = nullptr;
@@ -612,7 +605,6 @@ class ParamProcessor final {
             } else if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
                 if (ptp->isGParam()) originalParamp = ptp->clonep();
             }
-            if (originalIsCopy) originalParamp = m_originalParams[originalParamp];
             if (originalParamp) clonemapp->emplace(originalParamp, stmtp);
         }
     }
@@ -1022,12 +1014,7 @@ class ParamProcessor final {
         // Deep clone of new module
         // Note all module internal variables will be re-linked to the new modules by clone
         // However links outside the module (like on the upper cells) will not.
-        AstNodeModule* newModp;
-        if (srcModp->user3p()) {
-            newModp = VN_CAST(srcModp->user3p()->cloneTree(false), NodeModule);
-        } else {
-            newModp = srcModp->cloneTree(false);
-        }
+        AstNodeModule* const newModp = srcModp->cloneTree(false);
         // AstPin normally retains links to external module formals across cloning. For a cloned
         // interface, relink pins whose formals were cloned with the interface while clonep() is
         // still valid, so nested parameterized classes use the cloned interface parameters.
@@ -1062,6 +1049,9 @@ class ParamProcessor final {
         }
 
         if (AstClass* const newClassp = VN_CAST(newModp, Class)) {
+            // A fresh class definition must not inherit the source's default link.
+            newClassp->user4p(nullptr);
+            newClassp->foreach([](AstClass* nestedp) { nestedp->user4p(nullptr); });
             replaceRefsRecurse(newModp->stmtsp(), newClassp, VN_AS(srcModp, Class));
         }
 
@@ -1081,15 +1071,18 @@ class ParamProcessor final {
             insertp->addNextHere(newModp);
         }
 
-        m_modNameMap.emplace(newModp->name(), ModInfo{newModp});
-        const auto iter = m_modNameMap.find(newname);
+        const AstNodeModule* const ownerp = ownerOf(srcModp);
+        string key;
+        if (ownerp) key = ownerp->name() + "::" + newname;
+        m_modNameMap.emplace(ownerp ? key : newname, ModInfo{newModp});
+        const auto iter = m_modNameMap.find(ownerp ? key : newname);
         CloneMap* const clonemapp = &(iter->second.m_cloneMap);
         UINFO(4, "     De-parameterize to new: " << newModp);
 
         // Grab all I/O so we can remap our pins later
         // Note we allow multiple users of a parameterized model,
         // thus we need to stash this info.
-        collectPins(clonemapp, newModp, srcModp->user3p());
+        collectPins(clonemapp, newModp);
         // Relink parameter vars to the new module
         // For interface ports (e.g., l3_if #(W, L0A_W) l3), the parameter pins may
         // reference variables from the enclosing module rather than from the interface
@@ -1167,11 +1160,48 @@ class ParamProcessor final {
 
         return true;
     }
+    static AstNodeModule* ownerOf(const AstNodeModule* modp) {
+        return VN_CAST(modp->aboveLoopp(), NodeModule);
+    }
+    const ModInfo* findSpecialization(const string& key) const {
+        const auto it = m_modNameMap.find(key);
+        return it == m_modNameMap.end() ? nullptr : &(it->second);
+    }
+    // Nested class names repeat across owners, so nested keys include the owner's name.
+    const ModInfo* findSpecialization(const AstNodeModule* modp, const string& name) const {
+        if (const AstNodeModule* const ownerp = ownerOf(modp)) {
+            return findSpecialization(ownerp->name() + "::" + name);
+        }
+        return findSpecialization(name);
+    }
+public:
+    // True when this node sits inside an already selected clone body.
+    bool insideSelectedBody(const AstNodeModule* modp) const {
+        for (AstNode* ap = modp->aboveLoopp(); ap; ap = ap->aboveLoopp()) {
+            AstNodeModule* const ownerp = VN_CAST(ap, NodeModule);
+            if (!ownerp) continue;
+            if (isSpecialization(ownerp)) return true;
+            if (ownerp->hasGParam()) return false;
+        }
+        return false;
+    }
+    // Obtain the shared default specialization of a referenced class definition.
+    AstClass* classDefaultSpecialization(AstClass* defp, AstNode* ifErrorp) {
+        if (AstClass* const existingp = VN_CAST(defp->user4p(), Class)) return existingp;
+        const ModInfo* const modInfop = moduleFindOrClone(defp, ifErrorp, nullptr, defp->name(),
+                                                          IfaceRefRefs{}, true);
+        if (!modInfop) return nullptr;
+        AstClass* const newp = VN_AS(modInfop->m_modp, Class);
+        defp->user4p(newp);
+        if (!newp->user2()) m_specializedClassps.push_back(newp);
+        return newp;
+    }
     // Check whether this pass already created the clone.
     bool isSpecialization(const AstNodeModule* modp) const {
-        const auto it = m_modNameMap.find(modp->name());
-        return it != m_modNameMap.end() && it->second.m_modp == modp;
+        const ModInfo* const modInfop = findSpecialization(modp, modp->name());
+        return modInfop && modInfop->m_modp == modp;
     }
+private:
     // Default clones keep their template's name.
     static bool sameSpecialization(const AstNodeModule* lhs, const AstNodeModule* rhs) {
         return lhs == rhs || (lhs && rhs && lhs->name() == rhs->name());
@@ -1180,17 +1210,16 @@ class ParamProcessor final {
                                      const string& newname, const IfaceRefRefs& ifaceRefRefs,
                                      bool defaultClone = false) {
         // Already made this flavor?
-        auto it = m_modNameMap.find(newname);
-        if (it != m_modNameMap.end()) {
-            UINFO(4, "     De-parameterize to prev: " << it->second.m_modp);
+        const ModInfo* modInfop = findSpecialization(srcModp, newname);
+        if (modInfop) {
+            UINFO(4, "     De-parameterize to prev: " << modInfop->m_modp);
         } else {
             if (!deepCloneModule(srcModp, ifErrorp, paramsp, newname, ifaceRefRefs, defaultClone)) {
                 return nullptr;
             }
-            it = m_modNameMap.find(newname);
-            UASSERT(it != m_modNameMap.end(), "should find just-made module");
+            modInfop = findSpecialization(srcModp, newname);
+            UASSERT(modInfop, "should find just-made module");
         }
-        const ModInfo* const modInfop = &(it->second);
         return modInfop;
     }
 
@@ -1422,10 +1451,7 @@ class ParamProcessor final {
         return found;
     }
 
-    // Check if exprp's class matches origp's class after deparameterization.
-    // Handles both the simple case (user4p link from defaultsResolved) and the
-    // nested case where the default's inner class has non-default sub-parameters
-    // (e.g., uvm_sequence#(uvm_reg_item) where uvm_reg_item != default uvm_sequence_item).
+    // Compare class types through default clones and nested parameter values.
     bool classTypeMatchesDefaultClone(const AstNodeDType* exprp, const AstNodeDType* origp) {
         exprp = exprp->skipRefp();
         origp = origp->skipRefp();
@@ -1893,18 +1919,6 @@ class ParamProcessor final {
         }
     }
 
-    void storeOriginalParams(AstNodeModule* const classp) {
-        for (AstNode* const stmtp : classp->stmtspList()) {
-            AstNode* originalParamp = nullptr;
-            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
-                if (varp->isGParam()) originalParamp = varp->clonep();
-            } else if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
-                if (ptp->isGParam()) originalParamp = ptp->clonep();
-            }
-            if (originalParamp) m_originalParams[stmtp] = originalParamp;
-        }
-    }
-
     // Set interfaces types inside generic modules
     // to the corresponding values of implicit parameters
     void genericInterfaceVarSetup(const AstPin* const paramsp, const AstPin* const pinsp) {
@@ -2129,22 +2143,6 @@ class ParamProcessor final {
         cellInterfaceCleanup(pinsp, srcModp, longname /*ref*/, any_overrides /*ref*/,
                              ifaceRefRefs /*ref*/);
 
-        // Template classes with type parameters need specialization even when types match
-        // defaults. This is required for UVM parameterized classes. However, interfaces should NOT
-        // be specialized when type params match defaults (needed for nested interface ports).
-        // Already-specialized clones (hasGParam=false) must not be re-cloned, otherwise
-        // nested class type parameters cause unbounded re-deparameterization (Holder_ ->
-        // Holder__).
-        bool defaultsResolved = false;
-        if (!any_overrides && !VN_IS(srcModp, Iface) && srcModp->hasGParam()) {
-            for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-                if (pinp->modPTypep()) {
-                    any_overrides = true;
-                    defaultsResolved = true;
-                    break;
-                }
-            }
-        }
         if (!any_overrides && VN_IS(nodep, Cell) && hasDescendantDefparams(srcModp)) {
             longname += "__Vdefparam" + V3Hash{srcModp->someInstanceName()}.toString();
             any_overrides = true;
@@ -2163,29 +2161,20 @@ class ParamProcessor final {
             relinkPinsByName(pinsp, paramedModp);
             newModp = paramedModp;
             // any_overrides = true;  // Unused later, so not needed
-        } else if (!any_overrides && (VN_IS(srcModp, Module) || VN_IS(srcModp, Iface))
-                   && !srcModp->recursiveClone() && !srcModp->isTop()) {
+        } else if (!any_overrides
+                   && (VN_IS(srcModp, Module) || VN_IS(srcModp, Iface) || VN_IS(srcModp, Class))
+                   && !srcModp->recursiveClone()
+                   && (VN_IS(srcModp, Class) || !srcModp->isTop())) {
             // Default requests share a clone instead of using the definition itself.
             UINFO(9, "nodeDeparamCommon: default clone of " << srcModp);
             const ModInfo* const modInfop
                 = moduleFindOrClone(srcModp, nodep, nullptr, srcModp->name(), ifaceRefRefs, true);
             if (!modInfop) return nullptr;
             newModp = modInfop->m_modp;
+            if (VN_IS(srcModp, Class)) srcModp->user4p(newModp);
             relinkPinsByName(pinsp, newModp);
         } else if (!any_overrides) {
-            UINFO(9, "nodeDeparamCommon: no overrides, reusing " << srcModp);
-            UINFO(8, "Cell parameters all match original values, skipping expansion.");
-            // If it's the first use of the default instance, create a copy and store it in user3p.
-            // user3p will also be used to check if the default instance is used.
-            if (!srcModp->user3p() && (VN_IS(srcModp, Class) || VN_IS(srcModp, Iface))) {
-                AstNodeModule* nodeCopyp = srcModp->cloneTree(false);
-                // It is a temporary copy of the original class node, stored in order to create
-                // another instances. It is needed only during class instantiation.
-                UINFO(8, "    Created clone " << nodeCopyp);
-                m_deleter.pushDeletep(nodeCopyp);  // nodeCopyp used past here
-                srcModp->user3p(nodeCopyp);
-                storeOriginalParams(nodeCopyp);
-            }
+            // Packages and excluded roots are not specialized.
             newModp = srcModp;
         } else {
             const string newname
@@ -2209,9 +2198,6 @@ class ParamProcessor final {
         // user2() is set once processWorkQ has elaborated the body, which needs no re-queue.
         AstClass* const newClassp = VN_CAST(newModp, Class);
         if (newClassp && !newClassp->user2()) m_specializedClassps.push_back(newClassp);
-
-        // Link source class to its specialized version for later relinking of method references
-        if (defaultsResolved) srcModp->user4p(newModp);
 
         for (auto* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
@@ -2542,7 +2528,7 @@ public:
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->paramsp()) {
             if (AstClass* const classp = VN_CAST(nodep->classOrPackageSkipp(), Class)) {
-                if (!classp->user3p()) {
+                if (!classp->user4p()) {
                     // Check if this ClassOrPackageRef is the lhsp of a DOT node
                     AstDot* const dotp = VN_CAST(nodep->backp(), Dot);
                     if (dotp && dotp->lhsp() == nodep) {
@@ -2750,23 +2736,20 @@ public:
             const auto it = m_paramTypeClassMap.find(paramtypep);
             if (it != m_paramTypeClassMap.end()) {
                 AstClass* const origClassp = it->second;
-                if (origClassp->hasGParam() && !origClassp->user3p()) {
-                    if (AstClass* const parametrizedClassp
-                        = VN_CAST(origClassp->user4p(), Class)) {
-                        const string paramName = paramtypep->name();
-                        AstParamTypeDType* newParamTypep = nullptr;
-                        for (AstNode* const stmtp : parametrizedClassp->memberspList()) {
-                            if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
-                                if (ptp->name() == paramName) {
-                                    newParamTypep = ptp;
-                                    break;
-                                }
+                if (AstClass* const parametrizedClassp = VN_CAST(origClassp->user4p(), Class)) {
+                    const string paramName = paramtypep->name();
+                    AstParamTypeDType* newParamTypep = nullptr;
+                    for (AstNode* const stmtp : parametrizedClassp->memberspList()) {
+                        if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
+                            if (ptp->name() == paramName) {
+                                newParamTypep = ptp;
+                                break;
                             }
                         }
-                        if (newParamTypep) {
-                            nodep->refDTypep(newParamTypep);
-                            nodep->classOrPackagep(parametrizedClassp);
-                        }
+                    }
+                    if (newParamTypep) {
+                        nodep->refDTypep(newParamTypep);
+                        nodep->classOrPackagep(parametrizedClassp);
                     }
                 }
             }
@@ -2859,7 +2842,6 @@ class ParamVisitor final : public VNVisitor {
                              << modp->name() << "' orig='" << modp->origName() << "'"
                              << " someInstanceName='" << modp->someInstanceName() << "'"
                              << " hasGParam=" << (modp->hasGParam() ? "yes" : "no")
-                             << " user3p=" << (modp->user3p() ? "set" : "null")
                              << " dead=" << (modp->dead() ? "yes" : "no"));
 
                 // TODO: this really should be an assert, but classes and hier_blocks are
@@ -3232,12 +3214,12 @@ class ParamVisitor final : public VNVisitor {
                                                << nodep->origName() << "' someInstanceName='"
                                                << nodep->someInstanceName() << "' hasGParam="
                                                << (nodep->hasGParam() ? "yes" : "no")
-                                               << " user3p=" << (nodep->user3p() ? "set" : "null")
                                                << " dead=" << (nodep->dead() ? "yes" : "no"));
         if (AstClass* const classp = VN_CAST(nodep, Class)) {
-            if (classp->hasGParam()) {
-                // Don't enter into a definition.
-                // If a class is used, it will be visited through a reference and cloned
+            if (!m_processor.isSpecialization(classp)
+                && (classp->hasGParam() || !m_processor.insideSelectedBody(classp))) {
+                // A plain source root takes one default clone; generic nodes stay definitions.
+                if (!classp->hasGParam()) m_processor.classDefaultSpecialization(classp, classp);
                 m_state.m_paramClasses.push_back(classp);
                 return;
             }
@@ -3925,7 +3907,27 @@ public:
         // Mark classes which cannot be removed because they are still referenced
         const ClassRefUnlinkerVisitor classUnlinkerVisitor{netlistp};
 
-        netlistp->foreach([](AstNodeFTaskRef* ftaskrefp) {
+        netlistp->foreach([](AstNode* nodep) {
+            if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+                AstVar* const varp = refp->varp();
+                if (!varp) return;
+                AstClass* const classp = VN_CAST(varp->aboveLoopp(), Class);
+                // Plain class sources have one default clone.
+                if (!classp || classp->hasGParam()) return;
+                AstClass* const selectedp = VN_CAST(classp->user4p(), Class);
+                if (!selectedp) return;
+                for (AstNode* const stmtp : selectedp->memberspList()) {
+                    AstVar* const memberp = VN_CAST(stmtp, Var);
+                    if (memberp && memberp->name() == varp->name()) {
+                        refp->varp(memberp);
+                        refp->classOrPackagep(selectedp);
+                        return;
+                    }
+                }
+                return;
+            }
+            AstNodeFTaskRef* const ftaskrefp = VN_CAST(nodep, NodeFTaskRef);
+            if (!ftaskrefp) return;
             AstNodeFTask* ftaskp = ftaskrefp->taskp();
             if (!ftaskp || !ftaskp->classMethod()) return;
             const std::string funcName = ftaskp->name();
@@ -3950,7 +3952,6 @@ public:
                 ftaskrefp->classOrPackagep(refClassp);
                 return;
             }
-            if (classp->user3p()) return;  // will not get removed, no need to relink
             AstClass* const parametrizedClassp = VN_CAST(classp->user4p(), Class);
             if (!parametrizedClassp) return;
             AstNodeFTask* newFuncp = nullptr;
@@ -3981,18 +3982,10 @@ public:
         // Unlike modules, which we keep around and mark dead() for later V3Dead
         std::unordered_set<AstClass*> removedClassps;
         for (AstClass* const classp : m_state.m_paramClasses) {
-            if (!classp->user3p()) {
-                // If there was an error, don't remove classes as they might
-                // have remained referenced, and  will crash in V3Broken or
-                // other locations. This is fine, we will abort imminently.
-                if (V3Error::errorCount()) continue;
-                removedClassps.emplace(classp);
-                VL_DO_DANGLING(pushDeletep(classp->unlinkFrBack()), classp);
-            } else {
-                // Referenced. classp became a specialized class with the default
-                // values of parameters and is not a parameterized class anymore
-                classp->hasGParam(false);
-            }
+            // If there was an error, keep classes as they may still be referenced.
+            if (V3Error::errorCount()) continue;
+            removedClassps.emplace(classp);
+            VL_DO_DANGLING(pushDeletep(classp->unlinkFrBack()), classp);
         }
         // Remove references to defaulted classes
         // Reuse user3 to mark all nodes being deleted
