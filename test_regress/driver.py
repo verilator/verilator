@@ -3117,13 +3117,8 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
     # --debugi: see _parameter()
     parser.add_argument('--driver-clean',
-                        action='store_const',
-                        const=True,
-                        help='clean after test passes')
-    parser.add_argument('--no-driver-clean',
-                        action='store_const',
-                        const=False,
-                        help='don\'t clean after test passes')
+                        action=argparse.BooleanOptionalAction,
+                        help='clean after test passes, default set when running multiple tests')
     parser.add_argument('--driver-prune',
                         action='store_true',
                         help='clean after test passes, but keep files for test-snap/test-diff')
@@ -3245,7 +3240,7 @@ if __name__ == '__main__':
         jmsg = "== Many jobs"
         jmsg += ": redirecting STDIN"
         sys.stdin = open("/dev/null", 'r', encoding="utf8")  # pylint: disable=consider-using-with
-        if Args.driver_clean is None:
+        if Args.driver_clean is None and not Args.driver_prune:
             jmsg += "; implying --driver-clean"
             Args.driver_clean = True
         #
