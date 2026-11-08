@@ -752,16 +752,14 @@ class ParamProcessor final {
 
         std::map<string, AstNode*> pins;
 
-        AstPin* pinp = paramPinsp;
-        while (pinp) {
+        for (AstPin* const pinp : VNList<AstPin>{paramPinsp}) {
+            if (!pinp->exprp()) continue;  // An empty override keeps the default
             checkSupportedParam(modp, pinp);
             if (const AstVar* const varp = pinp->modVarp()) {
-                if (!pinp->exprp()) continue;
                 if (varp->isGParam()) pins.emplace(varp->name(), pinp->exprp());
             } else if (VN_IS(pinp->exprp(), BasicDType) || VN_IS(pinp->exprp(), NodeDType)) {
                 pins.emplace(pinp->name(), pinp->exprp());
             }
-            pinp = VN_AS(pinp->nextp(), Pin);
         }
 
         const auto pair = m_defaultParameterValues.emplace(
