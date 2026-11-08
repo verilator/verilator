@@ -333,6 +333,16 @@ class LinkLValueVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->rhsp());
         iterateAndNextNull(nodep->thsp());
     }
+    // A cast is not a variable, e.g. in a stream target or as an output argument
+    void visitCast(AstNodeExpr* const nodep) {
+        if (m_setRefLvalue.isWriteOrRW()) {
+            nodep->v3error("Cast is assigned, but a cast is not a variable"
+                           " (IEEE 1800-2023 11.4.14.3, A.8.5).");
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstCast* nodep) override { visitCast(nodep); }
+    void visit(AstCastParse* nodep) override { visitCast(nodep); }
     void visit(AstMemberSel* nodep) override {
         if (m_setRefLvalue != VAccess::NOCHANGE) {
             nodep->access(m_setRefLvalue);

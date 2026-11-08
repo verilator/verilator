@@ -16,6 +16,7 @@ module t;
     packed_data = {>>{stream}};
     stream = {>>{packed_data2}};
     {>>{packed_data2}} = stream;
+    packed_data = {>>{packed_data2}};
   end
 
 endmodule
