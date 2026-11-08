@@ -1,0 +1,3 @@
+%Error: Unsupported: C++ module interface files; precompile the interface and pass the resulting object file
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

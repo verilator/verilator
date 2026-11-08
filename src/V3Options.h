@@ -237,6 +237,7 @@ private:
 
     // clang-format off
     VStringSet m_cppFiles;     // argument: C++ files to link against
+    VStringSet m_moduleFiles;  // argument: C++ module interface files
     VStringList m_cFlags;      // argument: user CFLAGS
     VStringList m_ldLibs;      // argument: user LDFLAGS
     VStringList m_ldLibFiles;  // argument: library files, subset of m_ldLibs
@@ -767,6 +768,7 @@ public:
     string xInitial() const { return m_xInitial; }
 
     const VStringSet& cppFiles() const { return m_cppFiles; }
+    const VStringSet& moduleFiles() const { return m_moduleFiles; }
     const VStringList& cFlags() const { return m_cFlags; }
     const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
     const VStringList& ldLibFiles() const { return m_ldLibFiles; }

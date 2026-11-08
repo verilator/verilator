@@ -977,6 +977,11 @@ void V3Options::notify() VL_MT_DISABLED {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
+    if (!m_moduleFiles.empty()) {
+        cmdfl->v3error("Unsupported: C++ module interface files; precompile the interface "
+                       "and pass the resulting object file");
+    }
+
     // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_jsonOnly are mutually
     // exclusive
     std::vector<std::string> backendFlags;
@@ -2118,6 +2123,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             || suffixed(filename, ".c")  //
             || suffixed(filename, ".sp")) {
             V3Options::addCppFile(filename);
+        } else if (suffixed(filename, ".cppm")  //
+                   || suffixed(filename, ".ixx")) {
+            V3Options::addCppFile(filename);
+            m_moduleFiles.insert(filename);
         } else if (suffixed(filename, ".a")  //
                    || suffixed(filename, ".o")  //
                    || suffixed(filename, ".so")) {
