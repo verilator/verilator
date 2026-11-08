@@ -45,6 +45,8 @@ Tests = {}
 
 def read_sums():
     for filename in test.glob_some(test.root + "/bin/*"):
+        if filename.endswith("/verilator_module_deps"):
+            continue
         with open(filename, "r", encoding="latin-1") as fh:
             on = False
             lineno = 0
