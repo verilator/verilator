@@ -541,7 +541,7 @@ function(verilate TARGET)
             "set(${VERILATE_PREFIX}_DEPS ${JSOURCES_DEPS})\n"
             "# User .cpp files (from .cpp's on Verilator command line)\n"
             "set(${VERILATE_PREFIX}_USER_CLASSES ${JSOURCES_USER_CLASSES})\n"
-            "# User C++ module interface files (from .cppm's on Verilator command line)\n"
+            "# User C++ module interface files (from .cppm/.ixx files on Verilator command line)\n"
             "set(${VERILATE_PREFIX}_MODULE_INTERFACES ${JSOURCES_MODULE_INTERFACES})\n"
         )
 

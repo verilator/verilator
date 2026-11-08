@@ -409,6 +409,7 @@ private:
     int         m_constraintArrayLimit = 64;  // main switch: --constraint-array-limit
     int         m_verilateJobs = -1;  // main switch: --verilate-jobs
 
+    bool        m_compilerMsvc = false;  // compiler selection: --compiler msvc
     int         m_compLimitBlocks = 0;  // compiler selection; number of nested blocks
     int         m_compLimitMembers = 64;  // compiler selection; number of members in struct before make anon array
     int         m_compLimitParens = 240;  // compiler selection; number of nested parens

@@ -994,7 +994,7 @@ void V3Options::notify() VL_MT_DISABLED {
                 break;
             }
         }
-        if (hasIxx || !cxxModuleFlags()) {
+        if (hasIxx ? !m_compilerMsvc : !cxxModuleFlags()) {
             cmdfl->v3error("Unsupported: C++ module interface files; precompile the interface "
                            "and pass the resulting object file");
         }
@@ -1389,6 +1389,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-comp-limit-parens", Set, &m_compLimitParens).undocumented();
     DECL_OPTION("-comp-limit-syms", CbVal, [](int val) { VName::maxLength(val); }).undocumented();
     DECL_OPTION("-compiler", CbVal, [this, fl](const char* valp) {
+        m_compilerMsvc = !std::strcmp(valp, "msvc");
         if (!std::strcmp(valp, "clang")) {
             m_compLimitBlocks = 80;  // limit unknown
             m_compLimitMembers = 64;  // soft limit, has slowdown bug as of clang++ 3.8

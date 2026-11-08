@@ -215,9 +215,9 @@ Summary:
 
    C++ modules may be used in user-provided C++ files.  Verilator compiles
    its generated code with modules disabled, so the precompiled header (PCH)
-   remains usable, and keeps the module flags for user files.  Verilator does
-   not build module interface units or module CMIs; imported modules must be
-   prebuilt before building the Verilated model.
+   remains usable, and keeps the module flags for user files.  With GNU make,
+   Verilator does not build module interface units or module CMIs; imported
+   modules must be prebuilt before building the Verilated model.
 
    With GCC, pass :command:`-CFLAGS -fmodules` and prebuild the standard
    library module in the model object directory:
@@ -241,6 +241,11 @@ Summary:
    User translation units that use modules do not use the PCH; include the
    Verilator headers explicitly.  ``--compiler-include`` headers must also be
    included explicitly in those translation units.
+
+   With MSVC, C++ modules are supported only through CMake.  Pass ``.ixx``
+   module interface files on the Verilator command line and build with CMake
+   3.28 or newer, which adds them as a ``CXX_MODULES`` file set.  GNU make with
+   MSVC is not supported.
 
 .. option:: --clk <signal-name>
 
