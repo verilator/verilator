@@ -19,13 +19,13 @@
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
 #include "V3ExecGraph.h"
+#include "V3Hash.h"
 #include "V3LanguageWords.h"
 #include "V3StackCount.h"
 #include "V3Stats.h"
 
 #include <algorithm>
 #include <cstring>
-#include <functional>
 #include <limits>
 #include <map>
 #include <set>
@@ -109,8 +109,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     using ScopedVar = std::pair<const AstScope*, const AstVar*>;
     struct ScopedVarHash final {
         std::size_t operator()(const ScopedVar& pair) const {
-            return std::hash<const AstScope*>{}(pair.first)
-                   + std::hash<const AstVar*>{}(pair.second);
+            V3Hash hash;
+            hash += pair.first;
+            hash += pair.second;
+            return hash.value();
         }
     };
 
