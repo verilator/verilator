@@ -688,7 +688,7 @@ class AssertVisitor final : public VNVisitor {
         // Don't make this an AND term, as it's unlikely to need to test this.
         FileLine* const fl = bodyp->fileline();
         AstNodeExpr* const condp = assertPassOnCond(fl, type, directiveType, vacuous);
-        AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
+        AstIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
         newp->user2(true);  // Mark as an assertOn() check
@@ -700,7 +700,7 @@ class AssertVisitor final : public VNVisitor {
         // Don't make this an AND term, as it's unlikely to need to test this.
         FileLine* const fl = bodyp->fileline();
         AstNodeExpr* const condp = assertFailOnCond(fl, type, directiveType);
-        AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
+        AstIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
         newp->user2(true);  // Mark as an assertOn() check
@@ -1165,13 +1165,13 @@ class AssertVisitor final : public VNVisitor {
     void visit(AstIf* nodep) override {
         if (!nodep->user1SetOnce()) {
             if (nodep->uniquePragma() || nodep->unique0Pragma()) {
-                const AstNodeIf* ifp = nodep;
+                const AstIf* ifp = nodep;
                 AstNodeExpr* propp = nullptr;
                 bool hasDefaultElse = false;
                 do {
                     // If this statement ends with 'else if', then nextIf will point to the
                     // nextIf statement.  Otherwise it will be null.
-                    const AstNodeIf* const nextifp = dynamic_cast<AstNodeIf*>(ifp->elsesp());
+                    const AstIf* const nextifp = dynamic_cast<AstIf*>(ifp->elsesp());
                     iterateAndNextNull(ifp->condp());
 
                     // Recurse into the true case.

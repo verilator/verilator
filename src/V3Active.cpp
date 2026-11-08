@@ -331,7 +331,6 @@ class ActiveLatchCheckVisitor final : public VNVisitorConst {
             m_graph.addAssignment(nodep);
         }
     }
-    // This visitor only walks procedural always blocks, so AstNodeIf nodes here are always AstIf.
     void visit(AstIf* nodep) override {
         if (nodep->isBoundsCheck()) {
             iterateChildrenConst(nodep);

@@ -384,7 +384,7 @@ private:
                         "Local variable not in scope where referenced: " << pair.first);
         }
     }
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         // Each branch is a separate local variable scope
         pushLocalScope();
         processEnter(nodep);

@@ -37,7 +37,7 @@ class BranchVisitor final : public VNVisitorConst {
     int m_unlikely = 0;  // Excuses for branch likely not taken
 
     // VISITORS
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         UINFO(4, " IF: " << nodep);
         VL_RESTORER(m_unlikely);
         // Do then

@@ -179,7 +179,7 @@ class OutlineVisitor final : public VNVisitor {
     size_t reduce(AstNodeStmt* stmtp) {
         size_t size = m_info(stmtp).m_size;
         std::vector<AstNode*> listps;  // Statement lists directly under 'stmtp'
-        if (AstNodeIf* const ifp = VN_CAST(stmtp, NodeIf)) {
+        if (AstIf* const ifp = VN_CAST(stmtp, If)) {
             listps = {ifp->thensp(), ifp->elsesp()};
         } else if (AstLoop* const loopp = VN_CAST(stmtp, Loop)) {
             listps = {loopp->stmtsp()};

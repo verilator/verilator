@@ -3039,14 +3039,14 @@ class AstWithParse final : public AstNodeExpr {
     // Children: funcref, expr
     // @astgen op1 := funcrefp : AstNodeExpr
     // @astgen op3 := exprsp : List[AstNodeExpr]  // With's parenthesis part
-    // @astgen op4 := constraintsp : List[AstNode]  // With's braces part
+    // @astgen op4 := constraintsp : List[AstNodeConstraintItem]  // With's braces part
 private:
     // True for the 'with (identifier_list) {...}' form, including 'with () {...}'.
     bool m_restricted = false;
 
 public:
     AstWithParse(FileLine* fl, AstNodeExpr* funcrefp, AstNodeExpr* exprsp,
-                 AstNode* constraintsp = nullptr)
+                 AstNodeConstraintItem* constraintsp = nullptr)
         : ASTGEN_SUPER_WithParse(fl) {
         this->funcrefp(funcrefp);
         addExprsp(exprsp);

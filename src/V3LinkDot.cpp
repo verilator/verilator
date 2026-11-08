@@ -2221,7 +2221,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         // No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
 
-    void visit(AstNodeForeach* nodep) override {  // FindVisitor::
+    // Scope of a foreach loop or constraint, declaring the loop variables of 'headerp'
+    void visitForeach(AstNode* nodep, AstForeachHeader* headerp) {
         // Symbol table needs nodep->name() as the index variable's name
         VL_RESTORER(m_curSymp);
         {
@@ -2229,7 +2230,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_curSymp = m_statep->insertBlock(m_curSymp, "__Vforeach" + cvtToStr(m_modWithNum),
                                               nodep, m_classOrPackagep);
             m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
-            for (AstNode *nextp, *argp = nodep->headerp()->elementsp(); argp; argp = nextp) {
+            for (AstNode *nextp, *argp = headerp->elementsp(); argp; argp = nextp) {
                 nextp = argp->nextp();
                 AstVar* argrefp = nullptr;
                 if (AstParseRef* const parserefp = VN_CAST(argp, ParseRef)) {
@@ -2254,6 +2255,12 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
             iterateChildren(nodep);
         }
+    }
+    void visit(AstForeach* nodep) override {  // FindVisitor::
+        visitForeach(nodep, nodep->headerp());
+    }
+    void visit(AstConstraintForeach* nodep) override {  // FindVisitor::
+        visitForeach(nodep, nodep->headerp());
     }
 
     void visit(AstRandSequence* nodep) override {
@@ -2848,13 +2855,10 @@ private:
         symp->fallbackp(m_modSymp);
         iterateChildren(nodep);
     }
-    void visit(AstNodeForeach* nodep) override {  // ScopeVisitor::
+    void visit(AstForeach* nodep) override {  // ScopeVisitor::
         VSymEnt* const symp = m_statep->insertBlock(m_modSymp, nodep->name(), nodep, nullptr);
         symp->fallbackp(m_modSymp);
         // No recursion, we don't want to pick up variables
-    }
-    void visit(AstConstraintForeach* nodep) override {  // ScopeVisitor::
-        iterateChildren(nodep);
     }
     void visit(AstWith* nodep) override {  // ScopeVisitor::
         VSymEnt* const symp = m_statep->insertBlock(m_modSymp, nodep->name(), nodep, nullptr);
@@ -6052,7 +6056,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         symIterateChildren(nodep, m_curSymp);
     }
-    void visit(AstNodeForeach* nodep) override {
+    void visit(AstForeach* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep);
+        checkNoDot(nodep);
+        symIterateChildren(nodep, m_statep->getNodeSym(nodep));
+    }
+    void visit(AstConstraintForeach* nodep) override {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);

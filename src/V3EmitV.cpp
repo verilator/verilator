@@ -763,13 +763,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateAndNextConstNull(nodep->condp());
         puts(")) break;\n");
     }
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         putfs(nodep, "");
-        if (const AstIf* const ifp = VN_CAST(nodep, If)) {
-            if (ifp->priorityPragma()) puts("priority ");
-            if (ifp->uniquePragma()) puts("unique ");
-            if (ifp->unique0Pragma()) puts("unique0 ");
-        }
+        if (nodep->priorityPragma()) puts("priority ");
+        if (nodep->uniquePragma()) puts("unique ");
+        if (nodep->unique0Pragma()) puts("unique0 ");
         puts("if (");
         iterateAndNextConstNull(nodep->condp());
         puts(") begin\n");

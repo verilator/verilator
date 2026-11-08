@@ -1461,12 +1461,12 @@ The behavior of the visitor classes is achieved by overloading the
 ``visit`` function for the different ``AstNode`` derived classes. If a
 specific implementation is not found, the system will look in turn for
 overloaded implementations up the inheritance hierarchy. For example
-calling ``accept`` on ``AstIf`` will look in turn for:
+calling ``accept`` on ``AstAssignDly`` will look in turn for:
 
 ::
 
-   void visit(AstIf* nodep)
-   void visit(AstNodeIf* nodep)
+   void visit(AstAssignDly* nodep)
+   void visit(AstNodeAssign* nodep)
    void visit(AstNodeStmt* nodep)
    void visit(AstNode* nodep)
 
@@ -1599,22 +1599,22 @@ Identifying Derived Classes
 
 A common requirement is to identify the specific ``AstNode`` class we are
 dealing with. For example, a visitor might not implement separate ``visit``
-methods for ``AstIf`` and ``AstGenIf``, but just a single method for the
-base class:
+methods for ``AstAssign`` and ``AstAssignDly``, but just a single method
+for the base class:
 
 ::
 
-   void visit(AstNodeIf* nodep)
+   void visit(AstNodeAssign* nodep)
 
 However that method might want to specify additional code if it is called
-for ``AstGenIf``. Verilator does this by providing a ``VN_IS`` method for
-each possible node type, which returns true if the node is of that type (or
-derived from that type). So our ``visit`` method could use:
+for ``AstAssignDly``. Verilator does this by providing a ``VN_IS`` method
+for each possible node type, which returns true if the node is of that type
+(or derived from that type). So our ``visit`` method could use:
 
 ::
 
-   if (VN_IS(nodep, AstGenIf) {
-     <code specific to AstGenIf>
+   if (VN_IS(nodep, AssignDly)) {
+     <code specific to AstAssignDly>
    }
 
 Additionally the ``VN_CAST`` method converts pointers similar to C++

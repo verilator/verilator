@@ -1969,12 +1969,16 @@ void AstGenBlock::dumpJson(std::ostream& str) const {
 }
 void AstIf::dump(std::ostream& str) const {
     Super::dump(str);
+    if (isBoundsCheck()) str << " [BOUNDS]";
+    if (!branchPred().unknown()) str << " [" << branchPred().asciiShort() << "]";
     str << " " << verilogKwd();
     if (priorityPragma()) str << " [PRI]";
     if (uniquePragma()) str << " [UNQ]";
     if (unique0Pragma()) str << " [UNQ0]";
 }
 void AstIf::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "isBoundsCheck", isBoundsCheck());
+    if (!branchPred().unknown()) dumpJsonStr(str, "branchPred", branchPred().ascii());
     dumpJsonStr(str, "kwd", verilogKwd());
     dumpJsonBoolIf(str, "priority", priorityPragma());
     dumpJsonBoolIf(str, "unique", uniquePragma());
@@ -3353,16 +3357,6 @@ void AstNodeFuncCovItem::dump(std::ostream& str) const {
     if (instCoveragep()) str << " instCoverage=" << nodeAddr(instCoveragep());
 }
 void AstNodeFuncCovItem::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-void AstNodeIf::dump(std::ostream& str) const {
-    Super::dump(str);
-    if (isBoundsCheck()) str << " [BOUNDS]";
-    if (!branchPred().unknown()) str << " [" << branchPred().asciiShort() << "]";
-}
-void AstNodeIf::dumpJson(std::ostream& str) const {
-    dumpJsonBoolIf(str, "isBoundsCheck", isBoundsCheck());
-    dumpJsonStr(str, "branchPred", branchPred().ascii());
-    dumpJsonGen(str);
-}
 string AstNodeModule::dtypeNameInnerScope(const string& outer) const {
     if (const AstClass* const classp = VN_CAST(this, Class)) {
         return classp->dtypeNameIn(outer) + "::";

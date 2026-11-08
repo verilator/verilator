@@ -3923,6 +3923,17 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstConstraintExpr* nodep) override {
         userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
     }
+    void visit(AstConstraintForeach* nodep) override {
+        if (nodep->didWidth()) return;
+        nodep->didWidth(true);
+        if (!widthForeachHeader(nodep, nodep->headerp())) return;
+        userIterateAndNext(nodep->bodyp(), nullptr);
+    }
+    void visit(AstConstraintIf* nodep) override {
+        userIterateAndNext(nodep->thensp(), nullptr);
+        userIterateAndNext(nodep->elsesp(), nullptr);
+        iterateCheckBool(nodep, "If", nodep->condp(), BOTH);
+    }
     void visit(AstConstraintUnique* nodep) override {
         userIterateAndNext(nodep->rangesp(), WidthVP{SELF, BOTH}.p());
     }
@@ -7639,7 +7650,7 @@ class WidthVisitor final : public VNVisitor {
         iterateCheckBool(nodep, "Loop Condition", nodep->condp(), BOTH);
     }
     void visit(AstRepeat* nodep) override { nodep->v3fatalSrc("'repeat' missed in LinkJump"); }
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         assertAtStatement(nodep);
         // UINFOTREE(1, nodep, "", "IfPre");
         userIterateAndNext(nodep->thensp(), nullptr);
@@ -7653,10 +7664,8 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->resultp(), m_vup);
         nodep->dtypeFrom(nodep->resultp());
     }
-    void visit(AstNodeForeach* nodep) override {
-        if (nodep->didWidth()) return;
-        nodep->didWidth(true);
-        const AstForeachHeader* const headerp = nodep->headerp();
+    // Width the header of a foreach loop or constraint, returns false if 'nodep' was deleted
+    bool widthForeachHeader(AstNode* nodep, const AstForeachHeader* headerp) {
         // UINFOTREE(1, nodep, "", "foreach-old");
         userIterateAndNext(headerp->fromp(), WidthVP{SELF, BOTH}.p());
         AstNodeExpr* const fromp = headerp->fromp();
@@ -7672,7 +7681,7 @@ class WidthVisitor final : public VNVisitor {
             if (!fromDtp) {
                 argsp->v3error("foreach loop variables exceed number of indices of array");
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                return;
+                return false;
             }
             fromDtp = fromDtp->skipRefp();
             UINFO(9, "- foreachArg " << argsp);
@@ -7687,7 +7696,7 @@ class WidthVisitor final : public VNVisitor {
                     argsp->v3error("Illegal 'foreach' loop on " << fromDtp->prettyTypeName()
                                                                 << " data type");
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                    return;
+                    return false;
                 }
             } else if (const AstAssocArrayDType* const adtypep
                        = VN_CAST(fromDtp, AssocArrayDType)) {
@@ -7696,17 +7705,17 @@ class WidthVisitor final : public VNVisitor {
                 argsp->v3error("Illegal 'foreach' loop on " << fromDtp->prettyTypeName()
                                                             << " data type");
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                return;
+                return false;
             }
             fromDtp = fromDtp->subDTypep();
         }
+        return true;
+    }
+    void visit(AstForeach* nodep) override {
+        if (!widthForeachHeader(nodep, nodep->headerp())) return;
         // The parser validates we don't have "foreach (array[,,,])"
-        AstNode* const bodyp = nodep->bodyp();
-        userIterateAndNext(bodyp, nullptr);
-        if (AstForeach* const loopp = VN_CAST(nodep, Foreach)) {
-            VL_DO_DANGLING2(V3Begin::convertToWhile(loopp), loopp, nodep);
-            return;
-        }
+        userIterateAndNext(nodep->bodyp(), nullptr);
+        VL_DO_DANGLING(V3Begin::convertToWhile(nodep), nodep);
     }
 
     void visit(AstNodeAssign* nodep) override {

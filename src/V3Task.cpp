@@ -2310,7 +2310,7 @@ class TaskVisitor final : public VNVisitor {
             VL_DO_DANGLING(refp->deleteTree(), refp);
         }
     }
-    void visit(AstNodeForeach* nodep) override {  // LCOV_EXCL_LINE
+    void visit(AstForeach* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "Foreach statements should have been converted to while statements in V3Begin.cpp");
     }

@@ -163,7 +163,7 @@ private:
         iterateChildrenConst(nodep);
         markCost(nodep);
     }
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
         iterateAndNextConstNull(nodep->condp());

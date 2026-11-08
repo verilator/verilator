@@ -903,7 +903,7 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         if (jumpingOver()) return;
         UINFO(5, "   IF " << nodep);
         checkNodeInfo(nodep);

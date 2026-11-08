@@ -510,7 +510,7 @@ class LinkJumpVisitor final : public VNVisitor {
         // Move contsp into stmtsp, no longer needed to keep separately
         if (nodep->contsp()) nodep->addStmtsp(nodep->contsp()->unlinkFrBackWithNext());
     }
-    void visit(AstNodeForeach* nodep) override {
+    void visit(AstForeach* nodep) override {
         VL_RESTORER(m_loopp);
         m_loopp = nodep;
         iterateAndNextNull(nodep->bodyp());

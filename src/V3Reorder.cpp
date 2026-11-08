@@ -416,7 +416,7 @@ class ReorderVisitor final : public VNVisitor {
         m_stmtStackps.clear();
     }
 
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         if (!m_graphp || m_noReorderWhy) return;
         iterateAndNextNull(nodep->condp());
         processBlock(nodep->thensp());

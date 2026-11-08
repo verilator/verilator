@@ -769,7 +769,7 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    void visit(AstNodeForeach* nodep) override {
+    void visit(AstForeach* nodep) override {
         // FOREACH(array, loopvars, body)
         UINFO(9, "FOREACH " << nodep);
         cleanFileline(nodep);

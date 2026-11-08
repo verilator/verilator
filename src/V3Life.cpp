@@ -356,7 +356,7 @@ class LifeVisitor final : public VNVisitor {
     }
 
     //---- Track control flow changes
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         UINFO(4, "   IF " << nodep);
         // Condition is part of PREVIOUS block
         iterateAndNextNull(nodep->condp());

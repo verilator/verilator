@@ -723,12 +723,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
         if (classp && classp->user1() == IS_RANDOMIZED_INLINE) markMembers(classp);
     }
     void visit(AstConstraintUnique* nodep) override {
-        VL_RESTORER(m_stmtp);
         VL_RESTORER(m_constraintExprGenp);
-        m_stmtp = nodep;
         m_constraintExprGenp = nodep;
         iterateChildren(nodep);
-        if (!nodep->backp()) VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstConstraintExpr* nodep) override {
         VL_RESTORER(m_constraintExprGenp);
@@ -2399,9 +2396,9 @@ class RandomizeVisitor final : public VNVisitor {
         randVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         addTempVarsp(randVarp);
         AstNodeExpr* sump = new AstConst{fl, AstConst::WidthedValue{}, 64, 0};
-        AstNodeIf* const firstIfsp
+        AstIf* const firstIfsp
             = new AstIf{fl, new AstConst{fl, AstConst::BitFalse{}}, nullptr, nullptr};
-        AstNodeIf* ifsp = firstIfsp;
+        AstIf* ifsp = firstIfsp;
 
         for (AstCaseItem* const itemp : nodep->itemspList()) {
             AstNodeExpr* const condp = itemp->condsp()->unlinkFrBack();
@@ -2410,7 +2407,7 @@ class RandomizeVisitor final : public VNVisitor {
             AstNodeStmt* const stmtsp
                 = itemp->stmtsp() ? itemp->stmtsp()->unlinkFrBackWithNext() : nullptr;
             AstVarRef* const randVarRefp = new AstVarRef{fl, randVarp, VAccess::WRITE};
-            AstNodeIf* const newifp
+            AstIf* const newifp
                 = new AstIf{itemp->fileline(),
                             new AstLte{condp->fileline(), randVarRefp, sump->cloneTreePure(true)},
                             stmtsp, nullptr};

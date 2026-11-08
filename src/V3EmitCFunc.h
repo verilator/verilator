@@ -1434,7 +1434,7 @@ public:
         }
         puts("}\n");
     }
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         putns(nodep, "if (");
         if (!nodep->branchPred().unknown()) {
             puts(nodep->branchPred().ascii());
@@ -1451,7 +1451,7 @@ public:
         if (!nodep->elsesp()) {
             puts("\n");
         } else {
-            if (VN_IS(nodep->elsesp(), NodeIf) && !nodep->elsesp()->nextp()) {
+            if (VN_IS(nodep->elsesp(), If) && !nodep->elsesp()->nextp()) {
                 puts(" else ");
                 iterateAndNextConstNull(nodep->elsesp());
             } else {

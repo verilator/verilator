@@ -1268,7 +1268,7 @@ class ConstVisitor final : public VNVisitor {
             if (!replaced) falsesp.pop_back();
         }
     }
-    void matchIfCondCond(const AstNodeIf* nodep) {
+    void matchIfCondCond(const AstIf* nodep) {
         // Same condition on either leg of a condition means that
         // expression is either always true or always false
         if (VN_IS(nodep->backp(), If)) return;  // Was checked when visited parent
@@ -1277,13 +1277,13 @@ class ConstVisitor final : public VNVisitor {
         std::vector<AstNodeExpr*> falsesp;
         matchIfCondCondRecurse(nodep, truesp /*ref*/, falsesp /*ref*/);
     }
-    void matchIfCondCondRecurse(const AstNodeIf* nodep, std::vector<AstNodeExpr*>& truesp,
+    void matchIfCondCondRecurse(const AstIf* nodep, std::vector<AstNodeExpr*>& truesp,
                                 std::vector<AstNodeExpr*>& falsesp) {
         // Avoid O(n^2) compares
         // Could reduce cost with hash table, but seems unlikely to be worth cost
         if (truesp.size() > 4 || falsesp.size() > 4) return;
         if (!nodep->condp()->isPure()) return;
-        // A constant condition is folded by visit(AstNodeIf), once statements can be deleted
+        // A constant condition is folded by visit(AstIf), once statements can be deleted
         if (VN_IS(nodep->condp(), Const)) return;
         bool replaced = false;
         for (const AstNodeExpr* condp : truesp) {
@@ -1305,19 +1305,19 @@ class ConstVisitor final : public VNVisitor {
         // We only check the first statement of parent IF is an If
         // So we don't need to check for effects in the executing thensp/elsesp
         // altering the child't condition.  e.g. 'if (x) begin x=1; if (x) end'
-        if (const AstNodeIf* subIfp = VN_CAST(nodep->thensp(), NodeIf)) {
+        if (const AstIf* subIfp = VN_CAST(nodep->thensp(), If)) {
             if (!replaced) truesp.emplace_back(nodep->condp());
             matchIfCondCondRecurse(subIfp, truesp /*ref*/, falsesp /*ref*/);
             if (!replaced) truesp.pop_back();
         }
-        if (const AstNodeIf* subIfp = VN_CAST(nodep->elsesp(), NodeIf)) {
+        if (const AstIf* subIfp = VN_CAST(nodep->elsesp(), If)) {
             if (!replaced) falsesp.emplace_back(nodep->condp());
             matchIfCondCondRecurse(subIfp, truesp /*ref*/, falsesp /*ref*/);
             if (!replaced) falsesp.pop_back();
         }
     }
 
-    void matchIfSameLast(AstNodeIf* nodep) {
+    void matchIfSameLast(AstIf* nodep) {
         if (!nodep->thensp()) return;
         if (!nodep->elsesp()) return;
         if (!canDeleteStatements()) return;
@@ -1803,7 +1803,7 @@ class ConstVisitor final : public VNVisitor {
                || (!node1p->isLargerThan(SAME_TREE_MAX_NODES) && node1p->sameGateTree(node2p)
                    && node1p->isPure());
     }
-    bool ifSameAssign(const AstNodeIf* nodep) {
+    bool ifSameAssign(const AstIf* nodep) {
         const AstNodeAssign* const thensp = VN_CAST(nodep->thensp(), NodeAssign);
         const AstNodeAssign* const elsesp = VN_CAST(nodep->elsesp(), NodeAssign);
         if (!thensp || thensp->nextp()) return false;  // Must be SINGLE statement
@@ -1825,9 +1825,9 @@ class ConstVisitor final : public VNVisitor {
                && thensp->rhsp()->isPure()  //
                && elsesp->rhsp()->isPure();
     }
-    bool operandIfIf(const AstNodeIf* nodep) {
+    bool operandIfIf(const AstIf* nodep) {
         if (nodep->elsesp()) return false;
-        const AstNodeIf* const lowerIfp = VN_CAST(nodep->thensp(), NodeIf);
+        const AstIf* const lowerIfp = VN_CAST(nodep->thensp(), If);
         if (!lowerIfp || lowerIfp->nextp()) return false;
         if (nodep->type() != lowerIfp->type()) return false;
         if (AstNode::afterCommentp(lowerIfp->elsesp())) return false;
@@ -3808,7 +3808,7 @@ class ConstVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         iterateChildren(nodep);
         if (m_doNConst) {
             if (const AstConst* const constp = VN_CAST(nodep->condp(), Const)) {
@@ -3906,7 +3906,7 @@ class ConstVisitor final : public VNVisitor {
                               // without due to short-circuiting
                        && operandIfIf(nodep)) {
                 UINFO(9, "IF({a}) IF({b}) => IF({a} && {b})");
-                AstNodeIf* const lowerIfp = VN_AS(nodep->thensp(), NodeIf);
+                AstIf* const lowerIfp = VN_AS(nodep->thensp(), If);
                 AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
                 AstNode* const lowerThensp = lowerIfp->thensp()->unlinkFrBackWithNext();
                 AstNodeExpr* const lowerCondp = lowerIfp->condp()->unlinkFrBackWithNext();
