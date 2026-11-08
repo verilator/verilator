@@ -137,18 +137,18 @@ module t;
 `endif
 
   initial begin
-    // Test 1: Basic void member
+    // Test: Basic void member
     vi1 = tagged Invalid;
     vi2 = tagged Invalid;
 
-    // Test 2: Basic value member
+    // Test: Basic value member
     vi1 = tagged Valid (42);
     `checkh(vi1.Valid, 42);
 
     vi2 = tagged Valid (23 + 34);
     `checkh(vi2.Valid, 57);
 
-    // Test 3: MultiType with various data types
+    // Test: MultiType with various data types
     mt = tagged Invalid;
 
     mt = tagged IntVal (32'h12345678);
@@ -163,21 +163,21 @@ module t;
     mt = tagged BitVal (1'b1);
     `checkh(mt.BitVal, 1'b1);
 
-    // Test 4: Non-zero LSB types
+    // Test: Non-zero LSB types
     mt = tagged Byte8NonZeroLSB (8'hA5);
     `checkh(mt.Byte8NonZeroLSB, 8'hA5);
 
     mt = tagged Word16NonZeroLSB (16'h1234);
     `checkh(mt.Word16NonZeroLSB, 16'h1234);
 
-    // Test 5: Opposite endianness (little-endian style ranges)
+    // Test: Opposite endianness (little-endian style ranges)
     mt = tagged Word32LittleEndian (32'hDEADBEEF);
     `checkh(mt.Word32LittleEndian, 32'hDEADBEEF);
 
     mt = tagged Word16LittleEndian (16'hCAFE);
     `checkh(mt.Word16LittleEndian, 16'hCAFE);
 
-    // Test 6: Wide types (60-bit, in 33-64 range)
+    // Test: Wide types (60-bit, in 33-64 range)
     mt = tagged Wide60 (60'hFEDCBA987654321);
     `checkh(mt.Wide60, 60'hFEDCBA987654321);
 
@@ -187,7 +187,7 @@ module t;
     mt = tagged Wide60LittleEndian (60'hABCDEF012345678);
     `checkh(mt.Wide60LittleEndian, 60'hABCDEF012345678);
 
-    // Test 7: Wide types (90-bit, in 64+ range)
+    // Test: Wide types (90-bit, in 64+ range)
     mt = tagged Wide90 (90'hFF_FFFFFFFF_FFFFFFFF_FFFF);
     `checkh(mt.Wide90, 90'hFF_FFFFFFFF_FFFFFFFF_FFFF);
 
@@ -197,7 +197,7 @@ module t;
     mt = tagged Wide90LittleEndian (90'h11_11111122_22222233_3333);
     `checkh(mt.Wide90LittleEndian, 90'h11_11111122_22222233_3333);
 
-    // Test 8: Unpacked array members
+    // Test: Unpacked array members
     at = tagged Invalid;
 
     at = tagged Scalar (999);
@@ -217,7 +217,7 @@ module t;
     `checkh(at.UnpackedArr2D[1][1], 32'hE);
     `checkh(at.UnpackedArr2D[1][2], 32'hF);
 
-    // Test 9: Nested tagged union (Instr example from IEEE)
+    // Test: Nested tagged union (Instr example from IEEE)
     instr = tagged Add '{5'd1, 5'd2, 5'd3};
     `checkh(instr.Add.reg1, 5'd1);
     `checkh(instr.Add.reg2, 5'd2);
@@ -229,53 +229,53 @@ module t;
     `checkh(instr.Add.reg2, 5'd10);
     `checkh(instr.Add.regd, 5'd20);
 
-    // Test 10: Nested tagged union - unconditional jump
+    // Test: Nested tagged union - unconditional jump
     instr = tagged Jmp (tagged JmpU 10'd512);
     `checkh(instr.Jmp.JmpU, 10'd512);
 
-    // Test 11: Nested tagged union - conditional jump
+    // Test: Nested tagged union - conditional jump
     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
     `checkh(instr.Jmp.JmpC.cc, 2'd1);
     `checkh(instr.Jmp.JmpC.addr, 10'd256);
 
-    // Test 12: Nested tagged union - conditional jump with named fields
+    // Test: Nested tagged union - conditional jump with named fields
     instr = tagged Jmp (tagged JmpC '{cc:2'd3, addr:10'd100});
     `checkh(instr.Jmp.JmpC.cc, 2'd3);
     `checkh(instr.Jmp.JmpC.addr, 10'd100);
 
 `ifndef QUESTA
-    // Test 13: Chandle member
+    // Test: Chandle member
     cht = tagged Invalid;
     cht = tagged Handle (null);
 `endif
 
-    // Test 14: Class reference member
+    // Test: Class reference member
     obj = new(42);
     clt = tagged Invalid;
     clt = tagged Obj (obj);
     `checkh(clt.Obj.value, 42);
 
-    // Test 15: Real member
+    // Test: Real member
     rt = tagged Invalid;
     rt = tagged RealVal (3.14159);
     if (rt.RealVal != 3.14159) $stop;
 
-    // Test 16: Shortreal member
+    // Test: Shortreal member
     rt = tagged ShortRealVal (2.5);
     if (rt.ShortRealVal != 2.5) $stop;
 
-    // Test 17: String member
+    // Test: String member
     st = tagged Invalid;
     st = tagged StrVal ("hello");
     if (st.StrVal != "hello") $stop;
 
-    // Test 18: Enum member
+    // Test: Enum member
     et = tagged Invalid;
     et = tagged ColorVal (GREEN);
     if (et.ColorVal != GREEN) $stop;
 
 `ifndef VCS
-    // Test 19: Event member
+    // Test: Event member
     evt = tagged Invalid;
 `endif
 

@@ -143,3 +143,5 @@ ______________________________________________________________________
   typedef-wrapped variants.
 - Assert non-blocking-assignment results in the cycle immediately after they take
   effect, before later overwrites, using indices that change post-NBA.
+- Do not number tests e.g. `Test 1: ` just use `Test: `, to make it easier
+  to resolve conflicts and later add tests in the middle.

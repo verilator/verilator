@@ -177,7 +177,7 @@ module t;
     mixed31.run();
     mixed65.run();
     equal7.run();
-    // Test 1: Variable shift amount with mixed widths
+    // Test: Variable shift amount with mixed widths
     pkt1 = new;
     pkt1.size = 6;
     ok = pkt1.randomize() with {size == 6;};
@@ -191,7 +191,7 @@ module t;
       $stop;
     end
 
-    // Test 2: Unconstrained randomize (variable shift)
+    // Test: Unconstrained randomize (variable shift)
     pkt1 = new;
     ok = pkt1.randomize();
     if (ok != 1) begin
@@ -205,7 +205,7 @@ module t;
       $stop;
     end
 
-    // Test 3: Constant shift amount with wide address
+    // Test: Constant shift amount with wide address
     pkt2 = new;
     ok = pkt2.randomize();
     if (ok != 1) begin
@@ -218,7 +218,7 @@ module t;
       $stop;
     end
 
-    // Test 4: Implication with mixed-width shift
+    // Test: Implication with mixed-width shift
     pkt3 = new;
     ok = pkt3.randomize() with {
       txn_type == ImplicationShift::TXN_READ;

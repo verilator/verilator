@@ -40,7 +40,7 @@ module t;
     int first_seq, all_same, this_seq;
     int randomize_result;
 
-    // Test 1: randc enum with exclusion constraint
+    // Test: randc enum with exclusion constraint
     // Values must be valid enum members (0-4) and not BLACK (4)
     c = new;
     repeat (40) begin
@@ -50,7 +50,7 @@ module t;
       `checkd(c.color == BLACK, 0);
     end
 
-    // Test 2: randc enum with range constraint - run multiple trials,
+    // Test: randc enum with range constraint - run multiple trials,
     // verify only valid enum members produced and sequence varies
     all_same = 1;
     first_seq = 0;

@@ -47,17 +47,17 @@ module t;
   driver drv (.port(bif.provider));
 
   initial begin
-    // Test 1: send -- multiple statements in task body
+    // Test: send -- multiple statements in task body
     bif.consumer.send(8'hAB);
     `checkh(bif.data, 8'hAB);
     `checkh(bif.result, 8'hAC);
 
-    // Test 2: send again with different value
+    // Test: send again with different value
     bif.consumer.send(8'h42);
     `checkh(bif.data, 8'h42);
     `checkh(bif.result, 8'h43);
 
-    // Test 3: accumulate -- multiple statements + two arguments
+    // Test: accumulate -- multiple statements + two arguments
     bif.consumer.accumulate(8'h10, 8'h20);
     `checkh(bif.data, 8'h10);
     `checkh(bif.result, 8'h30);
