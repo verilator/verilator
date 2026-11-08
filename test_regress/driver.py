@@ -1217,6 +1217,8 @@ class VlTest:
             verilator_flags += ["-CFLAGS -ggdb -LDFLAGS -ggdb"]
         if self.tsan:
             verilator_flags += ["-CFLAGS -fsanitize=thread -CFLAGS -g -LDFLAGS -fsanitize=thread"]
+        if not re.search(r'-unlimited-stack', checkflags):
+            verilator_flags += ["--no-unlimited-stack"]  # Speed up bin/verilator harness
         verilator_flags += ["--x-assign unique"]  # More likely to be buggy
 
         if param['vltmt']:
