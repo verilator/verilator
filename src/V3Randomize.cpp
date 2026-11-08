@@ -2533,7 +2533,7 @@ class RandomizeVisitor final : public VNVisitor {
             // the random variables retain their previous values." Save every argument before
             // any basic randomization, and restore them if the solver fails.
             AstNodeStmt* restoreStmtsp = nullptr;
-            AstNode* basicStmtsp = nullptr;
+            AstNodeStmt* basicStmtsp = nullptr;
             for (const AstArg* const argp : nodep->argspList()) {
                 AstNodeExpr* const exprp = argp->exprp();
                 AstCMethodHard* const basicMethodp = new AstCMethodHard{
@@ -2586,7 +2586,7 @@ class RandomizeVisitor final : public VNVisitor {
                     new AstConst{nodep->fileline(), AstConst::Unsized64{}, width});
                 basicMethodp->dtypeSetBit();
 
-                basicStmtsp = AstNode::addNextNull<AstNode, AstNode>(
+                basicStmtsp = AstNode::addNextNull(
                     basicStmtsp,
                     new AstAssign{
                         nodep->fileline(),

@@ -1690,9 +1690,9 @@ class LinkDotFindVisitor final : public VNVisitor {
             rewriteIfacePortRefsSingle(newDeclp, portName);
             protoTaskp->addDeclsp(newDeclp);
         }
-        for (AstNode* const stmtp : nodep->stmtspList()) {
+        for (AstNodeStmt* const stmtp : nodep->stmtspList()) {
             // Clone this statement and rewrite port references
-            AstNode* const newStmtp = stmtp->cloneTree(false);
+            AstNodeStmt* const newStmtp = stmtp->cloneTree(false);
             rewriteIfacePortRefsSingle(newStmtp, portName);
             protoTaskp->addStmtsp(newStmtp);
         }

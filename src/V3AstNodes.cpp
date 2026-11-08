@@ -3266,7 +3266,7 @@ bool AstNodeFTask::getPurityRecurse() const {
     if (this->dpiImport()) return this->dpiPure();
     // Check the declarations and statements if they contain any impure node
     // or any write reference to a variable that isn't an automatic function local.
-    for (AstNode* const listp : {this->declsp(), this->stmtsp()}) {
+    for (AstNode* const listp : std::initializer_list<AstNode*>{this->declsp(), this->stmtsp()}) {
         for (AstNode* itemp = listp; itemp; itemp = itemp->nextp()) {
             if (const AstVar* const varp = VN_CAST(itemp, Var)) {
                 if (varp->isInoutOrRef()) return false;

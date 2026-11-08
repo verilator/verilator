@@ -106,14 +106,10 @@ public:
     AstNodeCoverDecl* dataDeclThisp() { return dataDeclNullp() ? dataDeclNullp() : this; }
 };
 class AstNodeFTask VL_NOT_FINAL : public AstNode {
-    // Class/package scope
-    // @astgen op1 := classOrPackagep : Optional[AstNode]
-    // Ports/Vars/other declarations
-    // @astgen op2 := declsp : List[AstNode]
-    // Statements
-    // @astgen op3 := stmtsp : List[AstNode]
-    // Scope name
-    // @astgen op4 := scopeNamep : Optional[AstScopeName]
+    // @astgen op1 := classOrPackagep : Optional[AstNode]  // Class/package scope
+    // @astgen op2 := declsp : List[AstNode]  // Ports/Vars/other declarations
+    // @astgen op3 := stmtsp : List[AstNodeStmt]  // Statements
+    // @astgen op4 := scopeNamep : Optional[AstScopeName]  // DPI export scope
     // @astgen ptr := m_fvarp : Optional[AstVar]  // Output variable in functions, under declsp
     string m_name;  // Name of task
     string m_cname;  // Name of task if DPI import
@@ -152,7 +148,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     VIsCached m_purity;  // Pure state
 
 protected:
-    AstNodeFTask(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
+    AstNodeFTask(VNType t, FileLine* fl, const string& name)
         : AstNode{t, fl}
         , m_name{name}
         , m_taskPublic{false}
@@ -181,7 +177,6 @@ protected:
         , m_virtual{false}
         , m_needsVlProcess{false}
         , m_isCovergroupSample{false} {
-        addStmtsp(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
     void fvarp(AstVar* varp) { m_fvarp = varp; }
@@ -3051,12 +3046,12 @@ class AstFunc final : public AstNodeFTask {
 public:
     // Returning a value of child data type
     AstFunc(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtypep)
-        : ASTGEN_SUPER_Func(fl, name, nullptr) {
+        : ASTGEN_SUPER_Func(fl, name) {
         initFvarp(new AstVar{fl, VVarType::VAR, name, VFlagChildDType{}, dtypep});
     }
     // Returning a value of resolved data type, or void if nullptr
     AstFunc(FileLine* fl, const string& name, AstNodeDType* dtypep = nullptr)
-        : ASTGEN_SUPER_Func(fl, name, nullptr) {
+        : ASTGEN_SUPER_Func(fl, name) {
         if (!dtypep) {
             dtypeSetVoid();
             return;
@@ -3072,7 +3067,7 @@ class AstTask final : public AstNodeFTask {
     // A task inside a module
 public:
     AstTask(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_Task(fl, name, nullptr) {}
+        : ASTGEN_SUPER_Task(fl, name) {}
     ASTGEN_MEMBERS_AstTask;
     string verilogKwd() const override { return "task"; }
 };

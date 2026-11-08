@@ -3904,7 +3904,7 @@ class SolverSmtLowering final : public V3SolverLowering {
     }
 
     static void copyVariableRegistrations(AstFunc* const sourcep, AstFunc* const targetp) {
-        for (AstNode* const stmtp : sourcep->stmtspList()) {
+        for (AstNodeStmt* const stmtp : sourcep->stmtspList()) {
             bool hasRegistration = false;
             bool foundClearConstraints = false;
             // stmtp is possibly begin containing a few statements
@@ -3953,7 +3953,7 @@ class SolverSmtLowering final : public V3SolverLowering {
     // Rebuild constraints after resize
     void addConstraintRebuild(AstFunc* const randomizep, AstVar* const setupGenp,
                               AstVar* const solveGenp, const VInsertionSet<AstVar*>& sizeArrayVars,
-                              AstNode* const setupStmtsp) {
+                              AstNodeStmt* const setupStmtsp) {
         FileLine* const fl = randomizep->fileline();
         for (AstVar* const arrVarp : sizeArrayVars) {
             addArrayElemRefresh(fl, arrVarp, randomizep, setupGenp);

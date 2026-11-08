@@ -340,9 +340,9 @@ private:
             iterateChildren(nodep);
         }
         UASSERT_OBJ(m_ctorp, nodep, "class constructor missing");  // LinkDot always makes it
-        AstNode* insertp = nullptr;
+        AstNodeStmt* insertp = nullptr;
         for (AstInitialAutomatic* initialp : m_initialps) {
-            if (AstNode* const movep = initialp->stmtsp()) {
+            if (AstNodeStmt* const movep = initialp->stmtsp()) {
                 movep->unlinkFrBackWithNext();
                 // Next InitialAutomatic must go in order after what we inserted
                 insertp = AstNode::addNextNull(insertp, movep);
@@ -1776,9 +1776,9 @@ class TaskVisitor final : public VNVisitor {
         if (rtnvarp) cfuncp->addArgsp(rtnvarp);
 
         // Move body
-        if (AstNode* const bodysp = nodep->stmtsp()) {
+        if (AstNodeStmt* const bodysp = nodep->stmtsp()) {
             unlinkAndClone(nodep, bodysp, true);
-            cfuncp->addStmtsp(VN_AS(bodysp, NodeStmt));
+            cfuncp->addStmtsp(bodysp);
         }
         if (nodep->dpiImport()) bodyDpiImportFunc(nodep, rtnvscp, cfuncp, dpiFuncp);
 
@@ -2594,7 +2594,7 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
 
     AstNodeFTask* newTaskp = nullptr;
     AstNodeFTaskRef* newCallp = nullptr;
-    AstNode* newCallInsertp = nullptr;
+    AstNodeStmt* newCallInsertp = nullptr;
     if (AstFunc* const funcp = VN_CAST(taskp, Func)) {
         AstVar* const fvarp = funcp->fvarp();
         UASSERT_OBJ(fvarp, taskp, "FuncRef without fvar");

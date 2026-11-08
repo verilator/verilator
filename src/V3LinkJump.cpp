@@ -120,25 +120,12 @@ class LinkJumpVisitor final : public VNVisitor {
             nodep->v3fatalSrc("Unknown jump point for break/disable/continue");
             return nullptr;
         }
-        // Skip over non-statements as we'll just move them in a moment
-        // Also this would otherwise prevent us from using a label twice
-        // see t_func_return test.
-        while (underp && !VN_IS(underp, NodeStmt)) underp = underp->nextp();
         UASSERT_OBJ(underp, nodep, "Break/disable/continue not under expected statement");
         UINFO(5, "  Underpoint is " << underp);
 
         // If already wrapped, we are done ...
         if (!underp->nextp() || !under_and_next) {
             if (AstJumpBlock* const blockp = VN_CAST(underp, JumpBlock)) return blockp;
-        }
-
-        // Keep any non-statements (variables, prototype attributes) under the function, not
-        // under the new JumpLabel
-        if (under_and_next) {
-            for (AstNode *nextp, *itemp = underp->nextp(); itemp; itemp = nextp) {
-                nextp = itemp->nextp();
-                if (!VN_IS(itemp, NodeStmt)) underp->addHereThisAsNext(itemp->unlinkFrBack());
-            }
         }
 
         // Move underp stuff to be under a new AstJumpBlock
@@ -267,11 +254,8 @@ class LinkJumpVisitor final : public VNVisitor {
         taskBodyp->setNeedsVlProcess();
         taskBodyp->setDisableWrapper();
         requireTiming(fl);
-        // Variables stay in the task, ports so calls see them, locals as they live for the call
-        for (AstNode* const stmtp : taskp->stmtspList()) {
-            if (AstNodeStmt* const sp = VN_CAST(stmtp, NodeStmt)) {
-                taskBodyp->addStmtsp(sp->unlinkFrBack());
-            }
+        if (AstNodeStmt* const stmtsp = taskp->stmtsp()) {
+            taskBodyp->addStmtsp(stmtsp->unlinkFrBackWithNext());
         }
 
         AstFork* const forkp = new AstFork{fl, VJoinType::JOIN};

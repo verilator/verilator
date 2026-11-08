@@ -233,7 +233,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
         lscopep->addStmtsp(bodyp);
 
         // Retarget local variable references to the cloned locals
-        // Rename locals defined in the body, TODO: there should be none after #6280
+        // Rename locals declared inside the body
         // Reset vertex pointers on calls
         bodyp->foreachAndNext([&](AstNode* nodep) {
             if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
