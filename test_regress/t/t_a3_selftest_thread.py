@@ -27,10 +27,11 @@ if test.have_dev_asan:
     flags += ["-fsanitize=address"]
 if test.have_dev_gcov:
     flags += ["--coverage", "-DVL_GCOV"]
+query = (os.environ['MAKE'] + " -s -C " + test.root + "/src/obj_dbg -f ../Makefile_obj ")
+compiler = test.run_capture(query + "--eval 'print_static_cxx:;@echo $(CXX)' print_static_cxx")
 libraries = test.run_capture(
-    os.environ['MAKE'] + " -s -C " + test.root + "/src/obj_dbg -f ../Makefile_obj "
-    "--eval 'print_static_libs:;@echo $(LIBS)' print_static_libs").split()
-test.run(cmd=[os.environ['CXX'], "-std=c++17", "-pthread", "-DVL_DEBUG", "-D_GLIBCXX_DEBUG",
+    query + "--eval 'print_static_libs:;@echo $(LIBS)' print_static_libs").split()
+test.run(cmd=[compiler, "-std=c++17", "-pthread", "-DVL_DEBUG", "-D_GLIBCXX_DEBUG",
               *flags, "-I" + test.root + "/include", "-I" + test.root + "/src",
               "-I" + test.root + "/src/obj_dbg", "t/t_a3_selftest_thread.cpp",
               *objects, *libraries, "-o", executable])
