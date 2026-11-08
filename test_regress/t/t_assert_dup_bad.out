@@ -1,4 +1,5 @@
-%Error: t/t_assert_dup_bad.v:15:3: Duplicate declaration of block: 'covlabel'
+%Error: t/t_assert_dup_bad.v:15:3: Duplicate declaration of generate block: 'covlabel'
+                                 : ... note: In instance 't'
    15 |   covlabel :   
       |   ^~~~~~~~
         t/t_assert_dup_bad.v:13:3: ... Location of original declaration

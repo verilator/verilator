@@ -21,6 +21,7 @@
 #include "V3EmitCBase.h"
 #include "V3HierBlock.h"
 #include "V3Os.h"
+#include "V3SolverBackend.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -716,14 +717,10 @@ public:
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
-        const std::string solver = V3Options::getenvVERILATOR_SOLVER();
-        if (v3Global.useRandomizeMethods() && solver != "")
-            of.puts("\t-DVM_SOLVER_DEFAULT='\"" + V3OutFormatter::quoteNameControls(solver)
-                    + "\"' \\\n");
-        const std::string sampler = V3Options::getenvVERILATOR_RAND_SAMPLER();
-        if (v3Global.useRandomizeMethods() && sampler != "")
-            of.puts("\t-DVM_RAND_SAMPLER_DEFAULT='\"" + V3OutFormatter::quoteNameControls(sampler)
-                    + "\"' \\\n");
+        if (v3Global.useRandomizeMethods()) {
+            for (const string& flag : v3Global.solverBackendp()->runtimeCFlags())
+                of.puts("\t" + flag + " \\\n");
+        }
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
         const VStringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("  " + i + " \\\n");

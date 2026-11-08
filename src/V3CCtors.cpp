@@ -83,7 +83,7 @@ class V3CCtorsBuilder final {
     }
 
 public:
-    void add(AstNode* nodep) {
+    void add(AstNodeStmt* nodep) {
         if (m_newFunctions.empty()) m_newFunctions.push_back(makeNewFunc());
         if (v3Global.opt.outputSplitCFuncs() && m_numStmts > v3Global.opt.outputSplitCFuncs()) {
             m_newFunctions.push_back(makeNewFunc());
@@ -149,6 +149,11 @@ class CCtorsVisitor final : public VNVisitor {
         cstmtp->add(txtAndFlp.first);
         cfuncp->addStmtsp(cstmtp);
     }
+    static AstAssign* newResetp(AstVar* varp) {
+        FileLine* const flp = varp->fileline();
+        return new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE},
+                             new AstCReset{flp, varp, true}};
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -173,7 +178,7 @@ class CCtorsVisitor final : public VNVisitor {
                     // ... else we don't have a static VlSym to be able to coverage insert
                     UASSERT_OBJ(!VN_IS(nodep, Class), coverp,
                                 "NodeCoverDecl should be in class's package, not class itself");
-                    configure_coverage.add(coverp->unlinkFrBack());
+                    configure_coverage.add(new AstCoverInsert{coverp->fileline(), coverp});
                 }
             }
         }
@@ -194,8 +199,23 @@ class CCtorsVisitor final : public VNVisitor {
         VL_RESTORER(m_cfuncp);
         m_varResetp = nullptr;
         m_cfuncp = nodep;
-        iterateChildren(nodep);
+        // Arguments are not reset, locals are reset at the start of the body
+        AstAssign* resetsp = nullptr;
+        for (AstVar* const varp : nodep->varspList()) {
+            if (varp->needsCReset()) resetsp = AstNode::addNext(resetsp, newResetp(varp));
+        }
+        if (resetsp) nodep->prependStmtsp(resetsp);
+        iterateAndNextNull(nodep->stmtsp());
         if (nodep->name() == "new") insertSc(nodep, m_modp, VSystemCSectionType::CTOR);
+    }
+    void visit(AstCLocalScope* nodep) override {
+        // Locals are reset at the start of the scope
+        AstAssign* resetsp = nullptr;
+        for (AstVar* const varp : nodep->varspList()) {
+            if (varp->needsCReset()) resetsp = AstNode::addNext(resetsp, newResetp(varp));
+        }
+        if (resetsp) nodep->prependStmtsp(resetsp);
+        iterateAndNextNull(nodep->stmtsp());
     }
     void visit(AstCStmt* nodep) override {
         if (nodep->stmtType() == VCStmtType::CTOR_VAR_RESET_CALL) {
@@ -206,9 +226,7 @@ class CCtorsVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         if (nodep->needsCReset()) {
-            AstNode* const crstp = new AstAssign{
-                nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
-                new AstCReset{nodep->fileline(), nodep, true}};
+            AstAssign* const crstp = newResetp(nodep);
             if (m_varResetp) {
                 m_varResetp->add(crstp);
             } else if (m_cfuncp) {

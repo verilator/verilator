@@ -449,6 +449,9 @@ class PackThreads final {
             ThreadSchedule& schedule = result.back();
             for (uint32_t threadId = 0; threadId < schedule.m_threads.size(); ++threadId) {
                 for (ExecMTask* const mtaskp : readyMTasks) {
+                    if (mtaskp->fixedThread() >= 0
+                        && static_cast<uint32_t>(mtaskp->fixedThread()) != threadId)
+                        continue;
                     if (mode != SchedulingMode::WIDE_TASK_SCHEDULING && mtaskp->threads() > 1) {
                         mode = SchedulingMode::WIDE_TASK_DISCOVERED;
                         continue;
@@ -989,10 +992,16 @@ createThreadFunctions(const ThreadSchedule& schedule, const string& tag) {
 
     std::vector<std::pair<AstCFunc*, uint32_t>> funcps;
 
-    // For each thread, create a function representing its entry point
+    // With a pinned task, keep empty threads, so that each runs on its own worker
+    bool keepEmpty = false;
     for (const std::vector<const ExecMTask*>& thread : schedule.m_threads) {
-        if (thread.empty()) continue;
-        const uint32_t threadId = schedule.threadId(thread.front());
+        for (const ExecMTask* const mtaskp : thread) keepEmpty |= mtaskp->fixedThread() >= 0;
+    }
+
+    // For each thread, create a function representing its entry point
+    for (uint32_t threadId = 0; threadId < schedule.m_threads.size(); ++threadId) {
+        const std::vector<const ExecMTask*>& thread = schedule.m_threads[threadId];
+        if (thread.empty() && !keepEmpty) continue;
         const string name{"__Vthread__" + tag + "__s" + cvtToStr(schedule.id()) + "__t"
                           + cvtToStr(threadId)};
         AstCFunc* const funcp = new AstCFunc{fl, name, nullptr, "void"};
@@ -1117,7 +1126,7 @@ void processMTaskBodies(AstExecGraph* const execGraphp) {
         ExecMTask* const mtaskp = vtxp->as<ExecMTask>();
         AstCFunc* const funcp = mtaskp->funcp();
         // Temporarily unlink function body so we can add more statemetns
-        AstNode* stmtsp = funcp->stmtsp()->unlinkFrBackWithNext();
+        AstNodeStmt* stmtsp = funcp->stmtsp()->unlinkFrBackWithNext();
 
         // Helper function to make the code a bit more legible
         const auto addCStmt = [=](const string& stmt) -> void {  //

@@ -276,6 +276,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(nodep->joinType().verilogKwd());
         puts("\n");
     }
+    void visit(AstForkItem* nodep) override {
+        putbs("begin\n");
+        iterateChildrenConst(nodep);
+        puts("end\n");
+    }
     void visit(AstFinal* nodep) override {
         putfs(nodep, "final begin\n");
         iterateChildrenConst(nodep);
@@ -411,7 +416,14 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstNodeCoverDecl*) override {}  // N/A
     void visit(AstCoverInc*) override {}  // N/A
-    void visit(AstCoverToggle*) override {}  // N/A
+    void visit(AstCoverInsert*) override {}  // N/A
+    void visit(AstCoverToggle* nodep) override {
+        putfs(nodep, "$_COVERTOGGLE(");
+        iterateConst(nodep->origp());
+        putbs(", ");
+        iterateConst(nodep->changep());
+        puts(");\n");
+    }
 
     void visit(AstCovergroup* nodep) override {
         // AstCovergroup appears as a member inside the lowered AstClass body.
@@ -1558,7 +1570,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstActive* nodep) override {
         VL_RESTORER(m_sentreep);
         m_sentreep = nodep->sentreep();
-        iterateAndNextConstNull(nodep->stmtsp());
+        iterateAndNextConstNull(nodep->procsp());
     }
     void visit(AstDelay* nodep) override {
         puts("");  // this is for proper alignment

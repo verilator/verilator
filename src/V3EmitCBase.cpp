@@ -30,7 +30,6 @@ EmitCParentModule::EmitCParentModule() {
                 nodep->user4p(modp);
             }
         }
-        modp->foreach([&](AstNodeCoverDecl* nodep) { nodep->user4p(modp); });
     };
     for (AstNode* const modp : v3Global.rootp()->modulespList()) {
         setAll(VN_AS(modp, NodeModule));
@@ -106,7 +105,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
             args += "* vlSelf";
         }
     }
-    if (nodep->needProcess()) {
+    if (nodep->needsVlProcess()) {
         if (!args.empty()) args += ", ";
         args += "VlProcessRef vlProcess";
     }
@@ -115,21 +114,19 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
         args += nodep->argTypes();
     }
     // Might be a user function with argument list.
-    for (const AstNode* const stmtp : nodep->argspList()) {
-        if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
-            if (portp->isIO() && !portp->isFuncReturn()) {
-                if (!args.empty()) args += ", ";
-                if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
-                    args += portp->dpiArgType(true, false, cpp);
-                } else if (closureDTypep(portp)) {
-                    // Bound to the closure in the body, see EmitCFunc::visit(AstCFunc*)
-                    args += "VlClosure<" + EmitCUtil::symClassName() + ">* " + portp->nameProtect()
-                            + "p";
-                } else if (nodep->funcPublic()) {
-                    args += portp->cPubArgType(true, false);
-                } else {
-                    args += portp->vlArgType(true, false, true);
-                }
+    for (const AstVar* const portp : nodep->argspList()) {
+        if (portp->isIO() && !portp->isFuncReturn()) {
+            if (!args.empty()) args += ", ";
+            if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
+                args += portp->dpiArgType(true, false, cpp);
+            } else if (closureDTypep(portp)) {
+                // Bound to the closure in the body, see EmitCFunc::visit(AstCFunc*)
+                args += "VlClosure<" + EmitCUtil::symClassName() + ">* " + portp->nameProtect()
+                        + "p";
+            } else if (nodep->funcPublic()) {
+                args += portp->cPubArgType(true, false);
+            } else {
+                args += portp->vlArgType(true, false, true);
             }
         }
     }

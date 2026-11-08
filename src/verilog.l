@@ -129,6 +129,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <VLT>{
   {ws}                  { FL_FWD; FL_BRK; }  /* otherwise ignore white-space */
   {crnl}                { FL_FWD; FL_BRK; }  /* Count line numbers */
+  "->"                  { FL; return yP_MINUSGT; }
 
   "clock_enable"        { FL; return yVLT_CLOCK_ENABLE; }
   "clocker"             { FL; return yVLT_CLOCKER; }

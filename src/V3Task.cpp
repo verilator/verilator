@@ -468,7 +468,6 @@ class TaskVisitor final : public VNVisitor {
     AstScope* m_scopep = nullptr;  // Current scope
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_inSensesp = false;  // Are we under a senitem?
-    bool m_inNew = false;  // Are we under a constructor?
     // Variables created by createVarScope, shared by instances
     V3SharedTmps m_funcTmps{"__Vfunc", VVarType::BLOCKTEMP};  // For function calls
     V3SharedTmps m_taskTmps{"__Vtask", VVarType::BLOCKTEMP};  // For task calls
@@ -756,14 +755,14 @@ class TaskVisitor final : public VNVisitor {
         return false;
     }
 
-    AstNode* createInlinedFTask(AstNodeFTaskRef* refp, AstVarScope* outvscp) {
+    AstNodeStmt* createInlinedFTask(AstNodeFTaskRef* refp, AstVarScope* outvscp) {
         // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstNode* const newbodysp
             = refp->taskp()->stmtsp() ? refp->taskp()->stmtsp()->cloneTree(true) : nullptr;
-        AstNode* const beginp
+        AstNodeStmt* const beginp
             = new AstComment{refp->fileline(), "Function: "s + refp->name(), true};
-        if (newbodysp) beginp->addNext(newbodysp);
+        if (newbodysp) AstNode::addNext<AstNode, AstNode>(beginp, newbodysp);
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  newbegi: ");
         //
         // Create input variables
@@ -816,13 +815,14 @@ class TaskVisitor final : public VNVisitor {
         return beginp;
     }
 
-    AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, AstVarScope* outvscp, AstCNew*& cnewpr) {
+    AstNodeStmt* createNonInlinedFTask(AstNodeFTaskRef* refp, AstVarScope* outvscp,
+                                       AstCNew*& cnewpr) {
         // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstCFunc* const cfuncp = m_statep->ftaskCFuncp(refp->taskp());
         UASSERT_OBJ(cfuncp, refp, "No non-inline task associated with this task call?");
         //
-        AstNode* const beginp
+        AstNodeStmt* const beginp
             = new AstComment{refp->fileline(), "Function: "s + refp->name(), true};
         AstNodeCCall* ccallp;
         if (VN_IS(refp, New)) {
@@ -943,7 +943,7 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    static AstNode* createDpiTemp(AstVar* portp, const string& suffix) {
+    static AstNodeStmt* createDpiTemp(AstVar* portp, const string& suffix) {
         const string stmt = portp->dpiTmpVarType(portp->name() + suffix) + ";";
         return new AstCStmt{portp->fileline(), stmt};
     }
@@ -972,8 +972,8 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    static AstNode* createAssignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
-                                              const string& toSuffix) {
+    static AstNodeStmt* createAssignInternalToDpi(AstVar* portp, bool isPtr,
+                                                  const string& frSuffix, const string& toSuffix) {
         const string stmt = V3Task::assignInternalToDpi(portp, isPtr, frSuffix, toSuffix);
         return new AstCStmt{portp->fileline(), stmt};
     }
@@ -1195,7 +1195,7 @@ class TaskVisitor final : public VNVisitor {
         // First argument is the Syms
         callp->add("(" + EmitCUtil::symClassName() + "*)(__Vscopep->symsp())");
         // Add function arguments
-        AstNode* outCvtsp = nullptr;  // Conversions of output/inout arguments, after the call
+        AstNodeStmt* outCvtsp = nullptr;  // Conversions of output/inout arguments, after the call
         for (AstNode* const stmtp : nodep->stmtspList()) {
             AstVar* const portp = VN_CAST(stmtp, Var);
             if (!portp) continue;
@@ -1438,7 +1438,7 @@ class TaskVisitor final : public VNVisitor {
 
         // Convert input/inout arguments to DPI types
         string args;
-        AstNode* copyBacksp = nullptr;  // Statements copying back open array copies
+        AstNodeStmt* copyBacksp = nullptr;  // Statements copying back open array copies
         for (AstNode* const stmtp : cfuncp->argspList()) {
             AstVar* const portp = VN_CAST(stmtp, Var);
             if (!portp) continue;
@@ -1730,7 +1730,7 @@ class TaskVisitor final : public VNVisitor {
             cfuncp->scopeNamep(snp);
         }
 
-        // Create list of arguments and move to function
+        // Move arguments and local variables to function
         for (AstNode* const stmtp : nodep->stmtspList()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isParam() && VN_IS(portp->valuep(), ConsArray)) {
@@ -1739,10 +1739,9 @@ class TaskVisitor final : public VNVisitor {
                     pushDeletep(portp);
                     portp->user2p(constPoolTable(portp));
                 } else {
+                    unlinkAndClone(nodep, portp, false);
+                    portp->funcLocal(true);
                     if (portp->isIO()) {
-                        // Move it to new function
-                        unlinkAndClone(nodep, portp, false);
-                        portp->funcLocal(true);
                         if (portp->valuep()) pushDeletep(portp->valuep()->unlinkFrBack());
                         cfuncp->addArgsp(portp);
                         // Pass inputs to DPI import wrappers by reference, unless fits in register
@@ -1753,8 +1752,7 @@ class TaskVisitor final : public VNVisitor {
                             }
                         }
                     } else {
-                        // "Normal" variable, mark inside function
-                        portp->funcLocal(true);
+                        cfuncp->addVarsp(portp);
                     }
                     AstVarScope* const newvscp
                         = new AstVarScope{portp->fileline(), m_scopep, portp};
@@ -1775,16 +1773,18 @@ class TaskVisitor final : public VNVisitor {
         if (bodysp) {
             unlinkAndClone(nodep, bodysp, true);
             AstBegin* const tempp
-                = new AstBegin{nodep->fileline(), "[EditWrapper]", bodysp, false};
+                = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false};
+            tempp->addDeclsp(bodysp);
             VL_DANGLING(bodysp);
-            // If we cloned due to recursion, now need to rip out the ports
+            // If we cloned due to recursion, now need to rip out the variables
             // (that remained in place) then got cloned
-            for (AstNode* const stmtp : tempp->stmtspList()) {
-                if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                    if (portp->isIO()) VL_DO_DANGLING(pushDeletep(portp->unlinkFrBack()), portp);
+            for (AstNode* const stmtp : tempp->declspList()) {
+                if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                    VL_DO_DANGLING(pushDeletep(varp->unlinkFrBack()), varp);
                 }
             }
-            if (tempp->stmtsp()) cfuncp->addStmtsp(tempp->stmtsp()->unlinkFrBackWithNext());
+            if (tempp->declsp())
+                cfuncp->addStmtsp(VN_AS(tempp->declsp()->unlinkFrBackWithNext(), NodeStmt));
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
         if (nodep->dpiImport()) bodyDpiImportFunc(nodep, rtnvscp, cfuncp, dpiFuncp);
@@ -1846,7 +1846,7 @@ class TaskVisitor final : public VNVisitor {
         }
 
         // Mark the fact that this function allocates std::process
-        if (nodep->needProcess()) cfuncp->setNeedProcess();
+        if (nodep->needsVlProcess()) cfuncp->setNeedsVlProcess();
 
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -2052,11 +2052,6 @@ class TaskVisitor final : public VNVisitor {
         iterateChildren(nodep);
         UASSERT_OBJ(!m_insStmtp, nodep, "Didn't finish out last statement");
     }
-    void visit(AstCNew* nodep) override {
-        VL_RESTORER(m_inNew);
-        m_inNew = true;
-        iterateChildren(nodep);
-    }
     // If taskp is a getter, return the reference to the member variable it returns
     static AstVarRef* getterVarRefp(AstNodeFTask* taskp) {
         AstNode* stmtp = taskp->stmtsp();
@@ -2165,7 +2160,7 @@ class TaskVisitor final : public VNVisitor {
             if (!outvscp) outvscp = createVarScope(nodep, fvarp, "__Vfuncout");
         }
         // Create cloned statements
-        AstNode* beginp;
+        AstNodeStmt* beginp;
         AstCNew* cnewp = nullptr;
         if (m_statep->ftaskNoInline(nodep->taskp())
             || TaskStateVisitor::isVirtualIfaceMethodCall(nodep)) {
@@ -2193,41 +2188,9 @@ class TaskVisitor final : public VNVisitor {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep,
                         "funcref-like expression to non-function");
             AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
-            AstExprStmt* lambdap = new AstExprStmt{nodep->fileline(), beginp, outrefp};
-
-            if (m_inNew) {
-                AstVar* varp = outvscp->varp();
-
-                // Create a new var that will be inside the lambda
-                AstVar* newvarp = varp->cloneTree(false);
-                newvarp->funcLocal(true);
-
-                // Create a new VarScope for the new variable
-                AstVarScope* const newvscp
-                    = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
-                m_scopep->addVarsp(newvscp);
-
-                // Replace all references so they point to the new var and varscope
-                lambdap->stmtsp()->foreachAndNext([outvscp, newvscp](AstVarRef* refp) {
-                    if (refp->varScopep() == outvscp) {
-                        refp->varScopep(newvscp);
-                        refp->varp(newvscp->varp());
-                    }
-                });
-
-                // Add variable initialization
-                lambdap->prependStmtsp(newvarp);
-                lambdap->hasResult(false);
-
-                // Add return statement - TODO: Why not VarRef(outvscp)?
-                AstCExpr* const exprp = new AstCExpr{nodep->fileline(), varp->name()};
-                exprp->dtypeSetString();
-                lambdap->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
-            }
-
             // AstExprStmt is currently treated as impure, so clear the cached purity of its
             // parents
-            nodep->replaceWith(lambdap);
+            nodep->replaceWith(new AstExprStmt{nodep->fileline(), beginp, outrefp});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             VIsCached::clearCacheTree();
         } else {  // VN_IS(nodep->backp(), StmtExpr)
@@ -2351,7 +2314,7 @@ class TaskVisitor final : public VNVisitor {
             AstActive* const activep
                 = new AstActive{nodep->fileline(), "force-func-update", senTreep};
             activep->senTreeStorep(activep->sentreep());
-            activep->addStmtsp(
+            activep->addProcsp(
                 new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, nullptr, assignp});
             m_scopep->addBlocksp(activep);
 

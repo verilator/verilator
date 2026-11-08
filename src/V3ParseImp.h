@@ -263,7 +263,7 @@ public:
 
     // For 'unique if' cannot have empty else statements as then assertion
     // would misfire
-    AstNode* newBlock(FileLine* fl, AstNode* nodep) {
+    AstNodeStmt* newBlock(FileLine* fl, AstNodeStmt* nodep) {
         if (nodep) return nodep;
         return new AstBegin{fl, "", nullptr, true};
     }

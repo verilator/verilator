@@ -1904,10 +1904,8 @@ void EmitCSyms::emitDpiHdr() {
     // Unpacked structures passed as C structures (IEEE 1800-2023 H.7.8)
     std::set<std::string> structNames;
     for (const AstCFunc* const nodep : m_dpis) {
-        for (const AstNode* const argp : nodep->argspList()) {
-            if (const AstVar* const portp = VN_CAST(argp, Var)) {
-                emitDpiStruct(portp->dtypep(), structNames);
-            }
+        for (const AstVar* const portp : nodep->argspList()) {
+            emitDpiStruct(portp->dtypep(), structNames);
         }
     }
     if (!structNames.empty()) puts("\n");
@@ -2003,13 +2001,11 @@ void EmitCSyms::emitDpiImp() {
         puts("// DPI export" + sourceLoc + "\n");
         putns(nodep, "return " + topClassName() + "::" + name + "(");
         std::string comma;
-        for (const AstNode* const stmtp : nodep->argspList()) {
-            if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
-                if (portp->isIO() && !portp->isFuncReturn()) {
-                    puts(comma);
-                    comma = ", ";
-                    putns(portp, portp->name());
-                }
+        for (const AstVar* const portp : nodep->argspList()) {
+            if (portp->isIO() && !portp->isFuncReturn()) {
+                puts(comma);
+                comma = ", ";
+                putns(portp, portp->name());
             }
         }
         puts(");\n");

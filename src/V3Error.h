@@ -277,7 +277,7 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
-                || m_e == BLKLOOPINIT || m_e == COMBDLY || m_e == COMBDLYCALL || m_e == CONTASSREG
+                || m_e == BLKLOOPINIT || m_e == COMBDLYCALL || m_e == CONTASSREG
                 || m_e == ENCAPSULATED || m_e == ENDLABEL || m_e == ENUMITEMWIDTH
                 || m_e == ENUMVALUE || m_e == FINALDLY || m_e == HIERPARAM || m_e == FUNCTIMECTL
                 || m_e == IMPURE || m_e == MODMISSING || m_e == NOTREDOP || m_e == PARAMNODEFAULT

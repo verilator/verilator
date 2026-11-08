@@ -26,6 +26,7 @@
 #include "V3Scope.h"
 
 #include "V3ConstPool.h"
+#include "V3Control.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -137,6 +138,7 @@ class ScopeVisitor final : public VNVisitor {
         // Defer attachment until all instances are visited so cell collection and child
         // iteration do not rescan a growing list of completed scopes.
         for (AstScope* const scopep : m_scopes) scopep->modp()->addStmtsp(scopep);
+        if (v3Global.opt.mtasks()) V3Control::applyThreadsGroupWorkers(m_scopes);
         cleanupVarRefs();
     }
     void visit(AstNodeModule* nodep) override {
@@ -269,12 +271,6 @@ class ScopeVisitor final : public VNVisitor {
         // We iterate under the *clone*
         iterateChildren(cloneOrMove(nodep));
     }
-    void visit(AstCoverToggle* nodep) override {
-        // Add to list of blocks under this scope
-        UINFO(4, "    Move " << nodep);
-        // We iterate under the *clone*
-        iterateChildren(cloneOrMove(nodep));
-    }
     void visit(AstCFunc* nodep) override {
         // Add to list of blocks under this scope
         UINFO(4, "    CFUNC " << nodep);
@@ -379,7 +375,6 @@ class ScopeCleanupVisitor final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstAlias* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstAliasScope* nodep) override { movedDeleteOrIterate(nodep); }
-    void visit(AstCoverToggle* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstNodeFTask* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstCFunc* nodep) override { movedDeleteOrIterate(nodep); }
 

@@ -18,7 +18,7 @@ interface class interface_base #(
 );
 endclass
 
-virtual class implemented_type implements interface_base #(int);
+virtual class implemented_type implements interface_base#(int);
   T value;
 endclass
 

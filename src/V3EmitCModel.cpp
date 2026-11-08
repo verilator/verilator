@@ -50,9 +50,8 @@ class EmitCModel final : public EmitCFunc {
     // Whether 'funcp' is a DPI function with arguments of unpacked structures
     static bool isDpiPassingStructs(const AstCFunc* funcp) {
         if (!funcp->dpiImportPrototype() && !funcp->dpiExportDispatcher()) return false;
-        for (const AstNode* const argp : funcp->argspList()) {
-            const AstVar* const varp = VN_CAST(argp, Var);
-            if (varp && varp->dtypep()->containsUnpackedStruct()) return true;
+        for (const AstVar* const varp : funcp->argspList()) {
+            if (varp->dtypep()->containsUnpackedStruct()) return true;
         }
         return false;
     }

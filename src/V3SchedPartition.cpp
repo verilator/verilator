@@ -74,21 +74,22 @@ class SchedLogicVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(SchedLogicVertex, V3GraphVertex)
     AstScope* const m_scopep;  // Scope of the logic
     AstSenTree* const m_senTreep;  // Sensitivity of the logic
-    AstNode* const m_logicp;  // Logic this vertex represents
+    AstNodeProcedure* const m_procp;  // The process this vertex represents
 
 public:
-    SchedLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* senTreep, AstNode* logicp)
+    SchedLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* senTreep,
+                     AstNodeProcedure* procp)
         : V3GraphVertex{graphp}
         , m_scopep{scopep}
         , m_senTreep{senTreep}
-        , m_logicp{logicp} {}
+        , m_procp{procp} {}
     AstScope* scopep() const { return m_scopep; }
     AstSenTree* senTreep() const { return m_senTreep; }
-    AstNode* logicp() const { return m_logicp; }
+    AstNodeProcedure* procp() const { return m_procp; }
 
     // LCOV_EXCL_START // Debug code
     string name() const override VL_MT_STABLE {
-        return m_logicp->typeName() + ("\n" + m_logicp->fileline()->ascii());
+        return m_procp->typeName() + ("\n" + m_procp->fileline()->ascii());
     };
     string dotShape() const override { return "rectangle"; }
     // LCOV_EXCL_STOP
@@ -180,7 +181,7 @@ class SchedGraphBuilder final : public VNVisitor {
         return senItemp->user1u().to<SchedSenVertex*>();
     }
 
-    void visitLogic(AstNode* nodep) {
+    void visitLogic(AstNodeProcedure* nodep) {
         UASSERT_OBJ(m_senTreep, nodep, "Should be under AstActive");
 
         SchedLogicVertex* const logicVtxp
@@ -241,8 +242,6 @@ class SchedGraphBuilder final : public VNVisitor {
     }
 
     void visit(AstNodeProcedure* nodep) override { visitLogic(nodep); }
-    void visit(AstNodeAssign* nodep) override { visitLogic(nodep); }
-    void visit(AstCoverToggle* nodep) override { visitLogic(nodep); }
 
     // Pre and Post logic are handled separately
     void visit(AstAlwaysPre* nodep) override {}
@@ -363,11 +362,11 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
             // in which case **EVERYTHING** that is not a Post block needs to go to 'act'.
             // This severely limits downstream optimizations (e.g. V3LifePost), and severely
             // reduces available parallelism in 'nba' for multi-threaded execution.
-            if (v3Global.usesZeroDelay() && !VN_IS(lvtxp->logicp(), AlwaysPost)) toAct = true;
+            if (v3Global.usesZeroDelay() && !VN_IS(lvtxp->procp(), AlwaysPost)) toAct = true;
             LogicByScope& lbs = toAct ? result.m_act : result.m_nba;
-            AstNode* const logicp = lvtxp->logicp();
-            logicp->unlinkFrBack();
-            lbs.add(lvtxp->scopep(), lvtxp->senTreep(), logicp);
+            AstNodeProcedure* const procp = lvtxp->procp();
+            procp->unlinkFrBack();
+            lbs.add(lvtxp->scopep(), lvtxp->senTreep(), procp);
         }
     }
 
@@ -396,7 +395,7 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
         for (const auto& entry : clockedLogic) {
             AstScope* const scopep = entry.m_scopep;
             AstActive* const activep = entry.m_activep;
-            for (AstNode* const nodep : activep->stmtspList()) {
+            for (AstNodeProcedure* const nodep : activep->procspList()) {
                 if (AstAlwaysPre* const logicp = VN_CAST(nodep, AlwaysPre)) {
                     bool toActiveRegion = false;
                     logicp->foreach([&](const AstNodeVarRef* vrefp) {

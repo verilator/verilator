@@ -400,8 +400,8 @@ class TraceVisitor final : public VNVisitor {
                 curSize = 0;
             };
 
-            for (AstNode *stmtp = funcp->stmtsp(), *nextp; stmtp; stmtp = nextp) {
-                nextp = stmtp->nextp();
+            for (AstNodeStmt *stmtp = funcp->stmtsp(), *nextp; stmtp; stmtp = nextp) {
+                nextp = VN_AS(stmtp->nextp(), NodeStmt);
                 curSize += stmtp->nodeCount();
 
                 if (curFuncp != funcp) {
@@ -587,7 +587,7 @@ class TraceVisitor final : public VNVisitor {
         return new AstArraySel(flp, new AstVarRef{flp, m_activityVscp, access}, acode);
     }
 
-    AstNode* newActivitySetter(AstNode* insertp, uint32_t code) {
+    AstNodeStmt* newActivitySetter(AstNode* insertp, uint32_t code) {
         ++m_statSetters;
         FileLine* const fl = insertp->fileline();
         AstAssign* const setterp = new AstAssign{fl, selectActivity(fl, code, VAccess::WRITE),
@@ -595,7 +595,7 @@ class TraceVisitor final : public VNVisitor {
         return setterp;
     }
 
-    AstNode* newActivityAll(AstNode* insertp) {
+    AstNodeStmt* newActivityAll(AstNode* insertp) {
         ++m_statSettersSlow;
         if (!m_actAllFuncp) {
             FileLine* const flp = m_topScopep->fileline();
@@ -605,7 +605,7 @@ class TraceVisitor final : public VNVisitor {
             funcp->isLoose(true);
             m_topScopep->addBlocksp(funcp);
             for (uint32_t code = 0; code < m_activityNumber; ++code) {
-                AstNode* const setterp = newActivitySetter(insertp, code);
+                AstNodeStmt* const setterp = newActivitySetter(insertp, code);
                 funcp->addStmtsp(setterp);
             }
             m_actAllFuncp = funcp;
@@ -635,7 +635,7 @@ class TraceVisitor final : public VNVisitor {
         // Insert activity setters
         for (const V3GraphVertex& vtx : m_graph.vertices()) {
             if (const TraceActivityVertex* const vtxp = vtx.cast<const TraceActivityVertex>()) {
-                AstNode* setterp = nullptr;
+                AstNodeStmt* setterp = nullptr;
                 if (vtxp->activitySlow()) {
                     setterp = newActivityAll(vtxp->insertp());
                     // Just set all flags in slow code as it should be rare.
@@ -1048,8 +1048,8 @@ class TraceVisitor final : public VNVisitor {
 
         // Clear fine grained activity flags
         for (uint32_t i = 0; i < m_activityNumber; ++i) {
-            AstNode* const clrp = new AstAssign{fl, selectActivity(fl, i, VAccess::WRITE),
-                                                new AstConst{fl, AstConst::BitFalse{}}};
+            AstNodeStmt* const clrp = new AstAssign{fl, selectActivity(fl, i, VAccess::WRITE),
+                                                    new AstConst{fl, AstConst::BitFalse{}}};
             cleanupFuncp->addStmtsp(clrp);
         }
     }
