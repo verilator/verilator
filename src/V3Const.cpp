@@ -1059,6 +1059,52 @@ class ConstVisitor final : public VNVisitor {
     }
 
     bool operandConst(const AstNode* nodep) { return VN_IS(nodep, Const); }
+    bool operandLiteralFormat(const AstNode* nodep) {
+        const AstSFormatF* const fmtp = VN_CAST(nodep, SFormatF);
+        return fmtp && !fmtp->exprFormat();
+    }
+    bool operandsMergeableFormats(const AstNode* lhsp, const AstNode* rhsp) {
+        // Literal formats with the same context for formatting. Every format code has its own
+        // argument (see V3LinkResolve::expectFormat), so the formats can be concatenated.
+        if (!operandLiteralFormat(lhsp) || !operandLiteralFormat(rhsp)) return false;
+        const AstSFormatF* const lhsFmtp = VN_AS(lhsp, SFormatF);
+        const AstSFormatF* const rhsFmtp = VN_AS(rhsp, SFormatF);
+        return lhsFmtp->timeunit() == rhsFmtp->timeunit()
+               && lhsFmtp->missingArgChar() == rhsFmtp->missingArgChar() && !lhsFmtp->scopeNamep()
+               && !rhsFmtp->scopeNamep();
+    }
+    static AstNodeExpr* formattedStringp(const AstSFormatF* nodep) {
+        // The string argument which is all that the format 'nodep' formats, or nullptr
+        if (nodep->text() != "%s" || !nodep->exprsp() || nodep->exprsp()->nextp()) return nullptr;
+        AstNodeExpr* const argp = nodep->exprsp();
+        const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+        AstNodeExpr* const exprp = fargp ? fargp->exprp() : argp;
+        if (!AstSFormatArg::formatAttrDefauled(fargp, exprp->dtypep()).isString()) return nullptr;
+        return exprp;
+    }
+    std::string spliceString(AstSFormatF* nodep, AstNodeExpr* argp, AstNode* beforep) {
+        // Format for a plain %s of the argument 'argp', or of a part of it: constants become
+        // text, and formats and concatenations are spliced in, with the arguments they need moved
+        // before 'beforep'. Other expressions remain arguments.
+        const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+        AstNodeExpr* const exprp = fargp ? fargp->exprp() : argp;
+        std::string fmt;
+        if (const AstConst* const constp = VN_CAST(exprp, Const)) {
+            fmt = VString::quotePercent(constp->num().toString());
+        } else if (AstConcatN* const catp = VN_CAST(exprp, ConcatN)) {
+            fmt = spliceString(nodep, catp->lhsp(), beforep);
+            fmt += spliceString(nodep, catp->rhsp(), beforep);
+        } else if (operandsMergeableFormats(nodep, exprp)) {
+            AstSFormatF* const fmtp = VN_AS(exprp, SFormatF);
+            if (fmtp->exprsp()) beforep->addHereThisAsNext(fmtp->exprsp()->unlinkFrBackWithNext());
+            fmt = fmtp->text();
+        } else {
+            if (argp != beforep) beforep->addHereThisAsNext(argp->unlinkFrBack());
+            return "%s";
+        }
+        VL_DO_DANGLING(pushDeletep(argp->unlinkFrBack()), argp);
+        return fmt;
+    }
     bool operandAsvConst(const AstNode* nodep) {
         // BIASV(CONST, BIASV(CONST,...)) -> BIASV( BIASV_CONSTED(a,b), ...)
         const AstNodeBiComAsv* const bnodep = VN_CAST(nodep, NodeBiComAsv);
@@ -2061,6 +2107,28 @@ class ConstVisitor final : public VNVisitor {
     void replaceWRhs(AstNodeBiop* nodep) {
         // Keep RHS, remove LHS
         replaceWChild(nodep, nodep->rhsp());
+    }
+    void replaceConcatNFormat(AstConcatN* nodep) {
+        // CONCATN(CONST, SFORMATF) or CONCATN(SFORMATF, CONST) -> SFORMATF with the constant's
+        // text in its format
+        if (AstSFormatF* const fmtp = VN_CAST(nodep->rhsp(), SFormatF)) {
+            const std::string text = VN_AS(nodep->lhsp(), Const)->num().toString();
+            fmtp->text(VString::quotePercent(text) + fmtp->text());
+            replaceWChild(nodep, fmtp);
+        } else {
+            AstSFormatF* const lhsFmtp = VN_AS(nodep->lhsp(), SFormatF);
+            const std::string text = VN_AS(nodep->rhsp(), Const)->num().toString();
+            lhsFmtp->text(lhsFmtp->text() + VString::quotePercent(text));
+            replaceWChild(nodep, lhsFmtp);
+        }
+    }
+    void replaceConcatNFormats(AstConcatN* nodep) {
+        // CONCATN(SFORMATF(fa, aargs), SFORMATF(fb, bargs)) -> SFORMATF(fa fb, aargs bargs)
+        AstSFormatF* const lhsFmtp = VN_AS(nodep->lhsp(), SFormatF);
+        AstSFormatF* const rhsFmtp = VN_AS(nodep->rhsp(), SFormatF);
+        lhsFmtp->text(lhsFmtp->text() + rhsFmtp->text());
+        if (rhsFmtp->exprsp()) lhsFmtp->addExprsp(rhsFmtp->exprsp()->unlinkFrBackWithNext());
+        replaceWChild(nodep, lhsFmtp);
     }
     void replaceWLhsBool(AstNodeBiop* nodep) { replaceWChildBool(nodep, nodep->lhsp()); }
     void replaceWRhsBool(AstNodeBiop* nodep) { replaceWChildBool(nodep, nodep->rhsp()); }
@@ -4004,16 +4072,16 @@ class ConstVisitor final : public VNVisitor {
             }
         }
         if (nodep->exprFormat()) return;  // Runtime, unfortunately  (unless constify format later)
-        bool anyconst = false;
+        bool foldable = false;  // Some argument is constant, a format, or a concatenation
         for (AstNode* const argp : nodep->exprspList()) {
             AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
             AstNode* const subargp = fargp ? fargp->exprp() : argp;
-            if (VN_IS(subargp, Const)) {
-                anyconst = true;
+            if (VN_IS(subargp, Const) || VN_IS(subargp, SFormatF) || VN_IS(subargp, ConcatN)) {
+                foldable = true;
                 break;
             }
         }
-        if (m_doNConst && anyconst) {
+        if (m_doNConst && foldable) {
             UINFO(9, "  Display in  " << nodep->text());
             string newFormat;
             string fmt;
@@ -4057,6 +4125,9 @@ class ConstVisitor final : public VNVisitor {
                                 // used as a format output as literal.
                                 fmt = VString::quotePercent(out);
                                 VL_DO_DANGLING(pushDeletep(argp->unlinkFrBack()), argp);
+                            } else if (ch == 's' && fmt.size() == 2) {
+                                UINFO(9, "     DispSplice: " << fmt << " -> " << subargp);
+                                fmt = spliceString(nodep, VN_AS(argp, NodeExpr), argp);
                             }
                             argp = nextp;
                         }
@@ -4078,14 +4149,13 @@ class ConstVisitor final : public VNVisitor {
             VL_DO_DANGLING(replaceConstString(nodep, nodep->text()), nodep);
             return;
         }
-        if (VN_IS(nodep->backp(), NodeAssign)  // Can't remove under Display etc
-            && nodep->text() == "%s" && VN_IS(nodep->exprsp(), SFormatArg)
-            && VN_AS(nodep->exprsp(), SFormatArg)->formatAttr().isString()
-            && !nodep->exprsp()->nextp()) {
-            UINFO(9, "  Display(%p, expr) -> constant expr " << nodep);
-            nodep->replaceWith(VN_AS(nodep->exprsp(), SFormatArg)->exprp()->unlinkFrBack());
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            return;
+        if (!nodep->hidden()) {  // Can't remove under Display etc
+            if (AstNodeExpr* const exprp = formattedStringp(nodep)) {
+                UINFO(9, "  Display(%s, expr) -> expr " << nodep);
+                nodep->replaceWith(exprp->unlinkFrBack());
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
         }
     }
     void visit(AstSFormat* nodep) override {
@@ -4102,6 +4172,14 @@ class ConstVisitor final : public VNVisitor {
                     = new AstConst{fmtp->fileline(), AstConst::String{}, fmtp->text()};
                 lhsp->unlinkFrBack();
                 nodep->replaceWith(new AstAssign{nodep->fileline(), lhsp, strp});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+            // Likewise if it is a string formatted as is
+            AstNodeExpr* const exprp = formattedStringp(fmtp);
+            if (basicp && basicp->isString() && exprp) {
+                lhsp->unlinkFrBack();
+                nodep->replaceWith(new AstAssign{nodep->fileline(), lhsp, exprp->unlinkFrBack()});
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
@@ -4374,6 +4452,12 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstShiftRSOvr{$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
     TREEOP ("AstSub   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
     TREEOP ("AstXor   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
+    // String concatenation
+    TREEOP ("AstConcatN {$lhsp.isZero, $rhsp}", "replaceWRhs(nodep)");  // Empty string
+    TREEOP ("AstConcatN {$lhsp, $rhsp.isZero}", "replaceWLhs(nodep)");  // Empty string
+    TREEOP ("AstConcatN {$lhsp.castConst, operandLiteralFormat($rhsp)}", "replaceConcatNFormat(nodep)");
+    TREEOP ("AstConcatN {operandLiteralFormat($lhsp), $rhsp.castConst}", "replaceConcatNFormat(nodep)");
+    TREEOP ("AstConcatN {operandsMergeableFormats($lhsp,,$rhsp)}", "replaceConcatNFormats(nodep)");
     // Non-zero on one side or the other
     TREEOP ("AstAnd   {$lhsp.isAllOnes, $rhsp}",        "replaceWRhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isTrue, $rhsp}",        "replaceWRhsBool(nodep)");
