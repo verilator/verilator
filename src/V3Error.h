@@ -786,8 +786,7 @@ void v3errorEndFatal(std::ostringstream& sstr)
         if (VL_UNCOVERABLE(!(condition))) { \
             std::cerr << "Internal Error: " << __FILE__ << ":" << std::dec << __LINE__ << ":" \
                       << (stmsg) << std::endl; \
-            VL_GCOV_DUMP(); \
-            std::abort(); \
+            V3Error::vlAbort(); \
         } \
     } while (false)
 /// Check self test values for expected value.  Safe from side-effects.
