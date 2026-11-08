@@ -414,8 +414,9 @@ public:
     // CONSTRUCTORS
     explicit TimingSuspendableVisitor(AstNetlist* nodep) {
         iterate(nodep);
-        m_suspGraph.removeTransitiveEdges();
-        m_procGraph.removeTransitiveEdges();
+        // Propagation is linear in the graph size. Do not remove transitive edges: process
+        // flags stop at T_ALLOCS_PROC vertices, so a direct call edge is not implied by
+        // another path through a fork branch.
         // Propagate suspendability
         for (V3GraphVertex& vtx : m_suspGraph.vertices()) {
             DepVtx& depVtx = static_cast<DepVtx&>(vtx);
