@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # mypy: disallow-untyped-defs
-# pylint: disable=C0114,C0116,C0209,R0914
+# pylint: disable=C0114,C0116,C0209,R0912,R0913,R0914,R0915,R0917
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -16,7 +16,7 @@ import shlex
 import shutil
 import subprocess
 import sys
-from typing import NoReturn
+from typing import Any, NoReturn
 
 
 def fatal(message: str) -> NoReturn:
@@ -51,7 +51,7 @@ def external_modules(flags: list[str]) -> set[str]:
 
 
 def run_scan(command: list[str], abs_source: str, deps_file: str) -> None:
-    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         sys.stderr.write(result.stdout)
         sys.stderr.write(result.stderr)
@@ -122,7 +122,7 @@ def scan(args: argparse.Namespace) -> None:
         os.makedirs(args.objdir, exist_ok=True)
 
     modules = []
-    objects = {}
+    objects: dict[str, str] = {}
     for source in args.source:
         abs_source = os.path.abspath(source)
         stem = os.path.splitext(os.path.basename(abs_source))[0]
@@ -163,7 +163,7 @@ def scan(args: argparse.Namespace) -> None:
             'requires': requires,
         })
 
-    providers = {}
+    providers: dict[str, dict[str, Any]] = {}
     for module in modules:
         for name in module['provides']:
             if name in providers:
@@ -185,9 +185,7 @@ def scan(args: argparse.Namespace) -> None:
                 deps.add(providers[name]['obj'])
                 dep_names.add(name)
                 pending.extend(providers[name]['requires'])
-            elif name in external:
-                continue
-            elif '/' in name:
+            elif name in external or '/' in name:
                 continue
             elif name == 'std':
                 if not os.path.exists(os.path.join(args.objdir, 'gcm.cache', 'std.gcm')):
@@ -218,8 +216,8 @@ def scan(args: argparse.Namespace) -> None:
     lines.append('modules: $(VK_MODULE_OBJS)')
     lines.append('')
     for module in sorted(modules, key=lambda entry: entry['obj']):
-        deps = ' '.join(['$(VM_PREFIX).mk'] + module['deps'])
-        lines.append(module['obj'] + ': ' + module['source'] + ' ' + deps)
+        dep_str = ' '.join(['$(VM_PREFIX).mk'] + module['deps'])
+        lines.append(module['obj'] + ': ' + module['source'] + ' ' + dep_str)
         command = [
             '\t$(OBJCACHE)', '$(CXX)', '$(OPT_FAST)', '$(VK_MODULE_FLAGS)',
             *module['dep_flags']
@@ -258,5 +256,5 @@ if __name__ == '__main__':
 
 ######################################################################
 # Local Variables:
-# compile-command: "./verilator_module_deps --backend gcc --cxx c++ --output modules.mk --source m.cppm"
+# compile-command: "./verilator_module_deps --backend gcc --cxx c++ --source m.cppm"
 # End:
