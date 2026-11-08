@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: FSM coverage with a compound reset and line and expression coverage
+// DESCRIPTION: Verilator: FSM coverage with a compound reset under other coverage types
 //
 // This file ONLY is placed under the Creative Commons Public Domain
 // SPDX-FileCopyrightText: 2026 David Harris
@@ -31,7 +31,7 @@ module t (
     else state <= state_next;
   end
 
-  // The same reset as a conditional, which expression coverage instruments
+  // The same reset as a conditional, which expression and branch coverage instrument
   always_ff @(posedge clk) begin
     state2 <= (rst | flush) ? IDLE : state2_next;
   end
