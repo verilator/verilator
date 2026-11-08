@@ -1412,7 +1412,11 @@ private:
         iterateChildrenConst(nodep);
         if (const AstConsArray* const consp = VN_CAST(fetchValueNull(nodep->fromp()), ConsArray)) {
             const AstConst* const indexp = fetchConst(nodep->bitp());
-            if (indexp->num().isFourState()) {
+            const int elements
+                = VN_AS(consp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
+            // An invalid index reads the default value (IEEE 1800-2023 7.4.6)
+            if (indexp->num().isFourState()
+                || indexp->toUInt() >= static_cast<uint32_t>(elements)) {
                 AstNodeExpr* const valuep = defaultOf(nodep->fileline(), nodep->dtypep());
                 if (!valuep) {
                     clearOptimizable(nodep, "Unsupported array element type");

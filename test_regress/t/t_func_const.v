@@ -20,6 +20,7 @@ module t;
   localparam P6 = f_return(P4);
   localparam P128 = f_package();
   localparam [15:0] PSEL = f_concat_sel(16'h4321);
+  localparam P0 = f_out_of_bounds(3);
 
   typedef struct packed {logic [7:0] data;} type_t;
   typedef type_t [1:0] flist;
@@ -50,12 +51,19 @@ module t;
     if (bigparam.data != 32'hfff12fff) $stop;
     if (P128 != 128) $stop;
     if (PSEL != 16'h1234) $stop;
+    if (P0 !== 0) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
 
   function integer f_package();
     return PARAM;
+  endfunction
+
+  // Array read out of bounds gives the default value of the element type
+  function automatic integer f_out_of_bounds(input [31:0] i);
+    int a[3] = '{default: 7};
+    return a[i];
   endfunction
 
   function integer f_add(input [31:0] a, input [31:0] b);
