@@ -36,7 +36,7 @@
 //  AstClass::user3p()      -> AstVar*.  Constrained randomizer variable
 //  AstConstraint::user2p() -> AstTask*. Pointer to constraint setup procedure
 //  AstConstraint::user3p() -> AstTask*. Pointer to resize procedure
-//  AstConstraintForeach::user3p() -> AstNode*. Dist bucket preamble stmts (foreach case)
+//  AstConstraintForeach::user3p() -> AstNodeStmt*. Dist bucket preamble stmts (foreach case)
 //  AstVar::user4p()        -> AstVar*.  Size variable for constrained queues
 //
 //*************************************************************************
@@ -79,7 +79,7 @@ public:
         static const char* const name = "__Vsetup_constraints";
         AstTask* setupAllTaskp = VN_AS(memberMap.findMember(classp, name), Task);
         if (setupAllTaskp) return setupAllTaskp;
-        setupAllTaskp = new AstTask{classp->fileline(), "__Vsetup_constraints", nullptr};
+        setupAllTaskp = new AstTask{classp->fileline(), "__Vsetup_constraints"};
         setupAllTaskp->classMethod(true);
         setupAllTaskp->isVirtual(true);
         classp->addMembersp(setupAllTaskp);
@@ -257,7 +257,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         constraint += "))";
         AstCMethodHard* const callp = new AstCMethodHard{
             fl, new AstVarRef{fl, genModp, genVarp, VAccess::READWRITE}, VCMethod::RANDOMIZER_HARD,
-            new AstCExpr{fl, AstCExpr::Pure{}, "\"" + constraint + "\""}};
+            new AstConst{fl, AstConst::String{}, constraint}};
         // hard() pin layout is asserted in EmitCFunc: the variable list is always pin 2
         callp->addPinsp(new AstCExpr{fl, AstCExpr::Pure{}, "{\"" + smtName + "\"}"});
         callp->dtypeSetVoid();
@@ -359,70 +359,48 @@ class ConstraintExprVisitor final : public VNVisitor {
         return "";
     }
 
-    static void buildNamePrefix(AstCExpr* exprp, const AstNodeExpr* const nodep) {
+    // Solver name of the element at index 'idxp' of the array named 'namep'
+    static AstNodeExpr* newElementNamep(FileLine* fl, AstNodeExpr* namep, AstNodeExpr* idxp) {
+        AstCFuncHard* const hexp = new AstCFuncHard{fl, VCFunction::RANDOMIZER_TO_SOLVER_HEX,
+                                                    idxp->cloneTreePure(false)};
+        hexp->dtypeSetString();
+        AstNodeExpr* const prefixp
+            = new AstConcatN{fl, namep, new AstConst{fl, AstConst::String{}, "."}};
+        return new AstConcatN{fl, prefixp, hexp};
+    }
+
+    // Solver name of the variable referenced by the selects and array elements in 'nodep'
+    static AstNodeExpr* buildNamePrefix(FileLine* fl, const AstNodeExpr* const nodep) {
         if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
-            exprp->add("(\""s + refp->name());
-            return;
+            return new AstConst{fl, AstConst::String{}, refp->name()};
         }
 
+        // Empty if not rooted in a variable, as under an unsupported MemberSel reported below
         const AstNodeExpr* const fromp = getFromp(nodep);
-        if (fromp) buildNamePrefix(exprp, fromp);
+        AstNodeExpr* const namep
+            = fromp ? buildNamePrefix(fl, fromp) : new AstConst{fl, AstConst::String{}, ""};
 
         if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
-            exprp->add("." + selp->name());
+            return new AstConcatN{fl, namep,
+                                  new AstConst{fl, AstConst::String{}, "." + selp->name()}};
         } else if (VN_IS(nodep, MemberSel)) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Nested array element access in global constraint");
-            return;
         } else if (const AstCMethodHard* const cmethp = VN_CAST(nodep, CMethodHard)) {
-            if (cmethp->method() == VCMethod::ARRAY_AT) {
-                AstNodeExpr* const argp = cmethp->pinsp();
-                exprp->add(".\" + ");
-                AstCFuncHard* const solverHexFuncp
-                    = new AstCFuncHard{nodep->fileline(), VCFunction::RANDOMIZER_TO_SOLVER_HEX};
-                solverHexFuncp->addPinsp(argp->cloneTreePure(false));
-                solverHexFuncp->dtypeSetString();
-                exprp->add(solverHexFuncp);
-                exprp->add(" + \"");
-            } else {
-                cmethp->v3fatalSrc("Unexpected CMethodHard: " << cmethp->prettyTypeName());
-                return;
-            }
+            UASSERT_OBJ(cmethp->method() == VCMethod::ARRAY_AT, cmethp,
+                        "Unexpected CMethodHard: " << cmethp->prettyTypeName());
+            return newElementNamep(fl, namep, cmethp->pinsp());
         }
+        return namep;
     }
 
-    // Build a C++ expression (as AstNodeExpr) that evaluates to a const char*
-    // containing the SMT variable name for a solve-before variable reference.
+    // Solver name of a solve-before variable reference, as a string expression.
     // Handles simple vars, struct selects, and array element selects (for foreach).
-    static AstCExpr* buildPathExpr(FileLine* const fl, const AstNodeExpr* nodep,
-                                   const std::string selName) {
-        AstCExpr* const exprp = new AstCExpr{fl, ""};
-        buildNamePrefix(exprp, nodep);
-        if (selName != "") {
-            exprp->add(".");
-            exprp->add(selName);
-        }
-        exprp->add("\")");
-        return exprp;
-    }
-    // Build a C++ expression (as AstNodeExpr) that evaluates to a const char*
-    // containing the SMT variable name for a solve-before variable reference.
-    // Handles simple vars, member selects, and array element selects (for foreach).
-    // Returns nullptr for unsupported expression types.
-    // Helper: build a dynamic AstCExpr for "baseName[idx]" pattern
-    AstCExpr* buildArraySelNameExpr(FileLine* fl, const std::string& baseName,
-                                    const AstNodeSel* selp) {
-        AstCExpr* const p = new AstCExpr{fl, ""};
-        p->add("(\""s + baseName + ".\"");
-        p->add("+");
-        AstCFuncHard* const solverHexFuncp
-            = new AstCFuncHard{fl, VCFunction::RANDOMIZER_TO_SOLVER_HEX};
-        solverHexFuncp->addPinsp(selp->bitp()->cloneTreePure(false));
-        solverHexFuncp->dtypeSetString();
-        p->add(solverHexFuncp);
-        p->add(")");
-        p->dtypeSetString();
-        return p;
+    static AstNodeExpr* buildPathExpr(FileLine* const fl, const AstNodeExpr* nodep,
+                                      const std::string selName) {
+        AstNodeExpr* const namep = buildNamePrefix(fl, nodep);
+        if (selName.empty()) return namep;
+        return new AstConcatN{fl, namep, new AstConst{fl, AstConst::String{}, "." + selName}};
     }
 
     // Helper: get fromp from MemberSel or StructSel
@@ -432,11 +410,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         return nullptr;
     }
 
+    // Solver name of a solve-before variable reference, as a string expression.
+    // Returns nullptr for unsupported expression types.
     AstNodeExpr* buildSolveBeforeNameExpr(FileLine* fl, AstNodeExpr* exprp) {
         if (const AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
-            AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + varrefp->name() + "\"s"};
-            p->dtypeSetString();
-            return p;
+            return new AstConst{fl, AstConst::String{}, varrefp->name()};
         }
         // Handle MemberSel or StructSel (V3Width converts MemberSel -> StructSel for structs)
         if (AstNodeExpr* const selFromp = getSelFromp(exprp)) {
@@ -450,38 +428,20 @@ class ConstraintExprVisitor final : public VNVisitor {
                     baseName = buildMemberPath(mp);
                 }
                 if (baseName.empty()) return nullptr;
-                AstCExpr* const p = new AstCExpr{fl, ""};
-                p->add("(\""s + baseName + ".\"");
-                p->add("+");
-                AstCFuncHard* const solverHexFuncp
-                    = new AstCFuncHard{fl, VCFunction::RANDOMIZER_TO_SOLVER_HEX};
-                solverHexFuncp->addPinsp(arrSelp->bitp()->cloneTreePure(false));
-                solverHexFuncp->dtypeSetString();
-                p->add(solverHexFuncp);
-                p->add(")");
-                p->dtypeSetString();
-                return p;
+                return newElementNamep(fl, new AstConst{fl, AstConst::String{}, baseName},
+                                       arrSelp->bitp());
             }
             // Static member path (obj.field)
             if (const AstVarRef* const vp = VN_CAST(selFromp, VarRef)) {
-                const std::string path = vp->name() + "." + selName;
-                AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + path + "\"s"};
-                p->dtypeSetString();
-                return p;
+                return new AstConst{fl, AstConst::String{}, vp->name() + "." + selName};
             }
             if (VN_IS(selFromp, MemberSel) || VN_IS(selFromp, StructSel)
                 || VN_IS(selFromp, CMethodHard)) {
-                AstCExpr* const p = buildPathExpr(fl, selFromp, selName);
-                p->dtypeSetString();
-                return p;
+                return buildPathExpr(fl, selFromp, selName);
             }
             return nullptr;
         }
-        if (VN_IS(exprp, CMethodHard)) {
-            AstCExpr* const p = buildPathExpr(fl, exprp, "");
-            p->dtypeSetString();
-            return p;
-        }
+        if (VN_IS(exprp, CMethodHard)) return buildPathExpr(fl, exprp, "");
         const AstNodeSel* selp = VN_CAST(exprp, ArraySel);
         if (!selp) selp = VN_CAST(exprp, AssocSel);
         if (selp) {
@@ -493,7 +453,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 baseName = buildMemberPath(mp);
             }
             if (baseName.empty()) return nullptr;
-            return buildArraySelNameExpr(fl, baseName, selp);
+            return newElementNamep(fl, new AstConst{fl, AstConst::String{}, baseName},
+                                   selp->bitp());
         }
         // Packed struct member: SEL(ARRAYSEL(...)) -- bit select on array element.
         // Solver registers the whole element, so promote to array element level.
@@ -608,10 +569,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         m_wantSingle = true;
 
         {
-            AstBegin* const tempp
-                = new AstBegin{fl, "[EditWrapper]", itemsp->unlinkFrBackWithNext(), false};
-            VL_DO_DANGLING(iterateAndNextNull(tempp->stmtsp()), itemsp);
-            itemsp = tempp->stmtsp();
+            AstBegin* const tempp = new AstBegin{fl, "[EditWrapper]", nullptr, false};
+            tempp->addDeclsp(itemsp->unlinkFrBackWithNext());
+            VL_DO_DANGLING(iterateAndNextNull(tempp->declsp()), itemsp);
+            itemsp = tempp->declsp();
             if (itemsp) itemsp->unlinkFrBackWithNext();
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
@@ -670,7 +631,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Uses foreach to walk all assigns regardless of body organization (JumpBlock nesting etc.).
     // Takes the last assignment to the return variable -- the first is the initializer.
     AstNodeExpr* extractReturnExpr(AstFunc* funcp) {
-        AstVar* const retVarp = VN_CAST(funcp->fvarp(), Var);
+        AstVar* const retVarp = funcp->fvarp();
         if (!retVarp) return nullptr;
         AstNodeExpr* retExprp = nullptr;
         int assignCount = 0;
@@ -717,13 +678,61 @@ class ConstraintExprVisitor final : public VNVisitor {
 
     // Prepend the bucket preamble stmts stored on user3p by lowerDistConstraints to the
     // statements that will become the body of the generated AstForeach, so the per-element
-    // bucket draw is declared and evaluated in the same scope as its references.
-    static AstNode* prependDistPreamble(AstConstraintForeach* nodep, AstNode* bodyp) {
-        AstNode* const preamblep = nodep->user3p();
+    // bucket draw is evaluated in the same scope as its references.
+    static AstNodeStmt* prependDistPreamble(AstConstraintForeach* nodep, AstNodeStmt* bodyp) {
+        AstNodeStmt* const preamblep = VN_AS(nodep->user3p(), NodeStmt);
         if (!preamblep) return bodyp;
         nodep->user3p(nullptr);
         preamblep->addNext(bodyp);
         return preamblep;
+    }
+
+    // Constraint text over the elements of an array is built at run time, by a loop
+    // appending to a string variable.
+
+    // Variable the text is built in
+    static AstVar* newTextVarp(AstNode* nodep) {
+        AstVar* const varp = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, "__Vtext",
+                                        nodep->findStringDType()};
+        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        return varp;
+    }
+    // Statement appending 'exprp' to the text in 'varp'
+    static AstStmtExpr* newTextAppendp(FileLine* flp, AstVar* varp, AstNodeExpr* exprp) {
+        AstCFuncHard* const callp = new AstCFuncHard{flp, VCFunction::STRING_APPEND,
+                                                     new AstVarRef{flp, varp, VAccess::READWRITE}};
+        callp->addPinsp(exprp);
+        callp->dtypeSetVoid();
+        return callp->makeStmt();
+    }
+    // Statement appending a space and the term 'termp' to the text in 'varp'
+    static AstStmtExpr* newTermAppendp(FileLine* flp, AstVar* varp, AstNodeExpr* termp) {
+        return newTextAppendp(
+            flp, varp, new AstConcatN{flp, new AstConst{flp, AstConst::String{}, " "}, termp});
+    }
+    // The SMT operator 'op' applied to the terms in 'varp', or 'identity' if there are none
+    static AstCond* newTextApplyp(FileLine* flp, AstVar* varp, const std::string& op,
+                                  const std::string& identity) {
+        AstNodeExpr* const isEmptyp = new AstEqN{flp, new AstVarRef{flp, varp, VAccess::READ},
+                                                 new AstConst{flp, AstConst::String{}, ""}};
+        AstNodeExpr* const openp
+            = new AstConcatN{flp, new AstConst{flp, AstConst::String{}, "(" + op},
+                             new AstVarRef{flp, varp, VAccess::READ}};
+        AstNodeExpr* const appliedp
+            = new AstConcatN{flp, openp, new AstConst{flp, AstConst::String{}, ")"}};
+        return new AstCond{flp, isEmptyp, new AstConst{flp, AstConst::String{}, identity},
+                           appliedp};
+    }
+    // The text 'resultp', after 'foreachp' built it in 'varp', starting from 'init'
+    AstSFormatF* newTextBuildp(FileLine* flp, AstVar* varp, const std::string& init,
+                               AstForeach* foreachp, AstNodeExpr* resultp) {
+        AstBegin* const blockp
+            = new AstBegin{flp, m_uniqueNames.get("__VrandBlock"), nullptr, true};
+        blockp->addDeclsp(varp);
+        blockp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE},
+                                        new AstConst{flp, AstConst::String{}, init}});
+        blockp->addStmtsp(foreachp);
+        return new AstSFormatF{flp, "%s", false, new AstExprStmt{flp, blockp, resultp}};
     }
 
     // True if the statement references an index variable of an enclosing
@@ -745,7 +754,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Place a solver-registration statement: into the enclosing foreach body when it
     // references an enclosing foreach index (so it is not hoisted out of the index's
     // scope), otherwise into the init block.
-    void addRegistrationStmt(AstNode* const stmtp, AstBegin* const initp) {
+    void addRegistrationStmt(AstNodeStmt* const stmtp, AstBegin* const initp) {
         if (m_foreachp && referencesForeachIdx(stmtp)) {
             // Appending to the body mid-iteration is safe: visit(AstStmtExpr) is a
             // no-op so the appended node is not re-processed, and prependDistPreamble()
@@ -926,7 +935,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                                  m_uniqueNames.get("__Vk"), assocDtp->keyDTypep()}
                                     : iterVarp;
 
-        AstNode* const stmtsp
+        AstNodeStmt* const stmtsp
             = new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE}, new AstConst{fl, 0}};
 
         AstNodeExpr* sizep;
@@ -2109,20 +2118,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->unlinkFrBack();
         } else if (m_wantSingle) {
             AstNodeExpr* const itemp = editSingle(fl, nodep->bodyp());
-            AstCStmt* const cstmtp = new AstCStmt{fl};
-            cstmtp->add("ret += \" \";\n");
-            cstmtp->add("ret += ");
-            cstmtp->add(itemp);
-            cstmtp->add(";");
-            AstNode* const bodyp = prependDistPreamble(nodep, cstmtp);
-            AstCExpr* const cexprp = new AstCExpr{fl};
-            cexprp->dtypeSetString();
-            cexprp->add("([&]{\nstd::string ret;\n");
-            cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
-                                     new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
-                                     true});
-            cexprp->add("return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";\n})()");
-            nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
+            AstVar* const textVarp = newTextVarp(nodep);
+            AstNodeStmt* const bodyp
+                = prependDistPreamble(nodep, newTermAppendp(fl, textVarp, itemp));
+            nodep->replaceWith(newTextBuildp(
+                fl, textVarp, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
+                newTextApplyp(fl, textVarp, "bvand", "#b1")));
         } else {
             VL_RESTORER(m_foreachp);
             VL_RESTORER_COPY(m_foreachIdxVars);
@@ -2131,7 +2132,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 if (const AstVar* const varp = VN_CAST(elemp, Var)) m_foreachIdxVars.insert(varp);
             }
             iterateAndNextNull(nodep->bodyp());
-            AstNode* const bodyp
+            AstNodeStmt* const bodyp
                 = prependDistPreamble(nodep, nodep->bodyp()->unlinkFrBackWithNext());
             nodep->replaceWith(
                 new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
@@ -2539,18 +2540,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNode* const itemp = new AstEq{fl, selp, nodep->pinsp()->unlinkFrBack()};
             itemp->user1(true);
 
-            AstCStmt* const cstmtp = new AstCStmt{fl};
-            cstmtp->add("ret += \" \";\n");
-            cstmtp->add("ret += ");
-            cstmtp->add(iterateSubtreeReturnEdits(itemp));
-            cstmtp->add(";");
-            AstCExpr* const cexprp = new AstCExpr{fl};
-            cexprp->dtypeSetString();
-            cexprp->add("([&]{\nstd::string ret;\n");
-            cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
-                                     new AstForeach{fl, headerp, cstmtp}, true});
-            cexprp->add("return ret.empty() ? \"#b0\" : \"(bvor\" + ret + \")\";\n})()");
-            nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
+            AstVar* const textVarp = newTextVarp(nodep);
+            AstStmtExpr* const appendp
+                = newTermAppendp(fl, textVarp, VN_AS(iterateSubtreeReturnEdits(itemp), NodeExpr));
+            nodep->replaceWith(newTextBuildp(fl, textVarp, "",
+                                             new AstForeach{fl, headerp, appendp},
+                                             newTextApplyp(fl, textVarp, "bvor", "#b0")));
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
@@ -2661,7 +2656,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
 
             // Build loop body based on whether we have a 'with' clause
-            AstCStmt* const cstmtp = new AstCStmt{fl};
+            AstVar* const textVarp = newTextVarp(nodep);
+            AstNodeStmt* bodyp;
             if (withp) {
                 // With 'with' clause: evaluate expression for each element
                 const bool randArr = nodep->fromp()->user1();
@@ -2715,11 +2711,17 @@ class ConstraintExprVisitor final : public VNVisitor {
                     }
                 });
 
-                cstmtp->add("ret = \"(" + std::string(smtOp) + " \" + ret + \" \";\n");
-                cstmtp->add("ret += ");
-                cstmtp->add(iterateSubtreeReturnEdits(perElemExprp));
-                cstmtp->add(";\n");
-                cstmtp->add("ret += \")\";\n");
+                // Apply the operator to the text so far and the element's term
+                AstNodeExpr* const openp = new AstConcatN{
+                    fl, new AstConst{fl, AstConst::String{}, "(" + std::string{smtOp} + " "},
+                    new AstVarRef{fl, textVarp, VAccess::READ}};
+                bodyp = new AstAssign{
+                    fl, new AstVarRef{fl, textVarp, VAccess::WRITE},
+                    new AstConcatN{fl, openp, new AstConst{fl, AstConst::String{}, " "}}};
+                bodyp->addNext(newTextAppendp(
+                    fl, textVarp, VN_AS(iterateSubtreeReturnEdits(perElemExprp), NodeExpr)));
+                bodyp->addNext(
+                    newTextAppendp(fl, textVarp, new AstConst{fl, AstConst::String{}, ")"}));
             } else {
                 // Without 'with' clause: register each element as solver variable
                 AstVarRef* const arrRefp = VN_CAST(nodep->fromp(), VarRef);
@@ -2767,32 +2769,19 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstSFormatF* const varNamep
                     = createSolverArrDerefp(fl, nodep->fromp()->unlinkFrBack(), idxFormatp);
 
-                cstmtp->add("ret += \" \";\n");
-                cstmtp->add("ret += ");
-                cstmtp->add(varNamep);
-                cstmtp->add(";\n");
+                bodyp = newTermAppendp(fl, textVarp, varNamep);
             }
 
             // Build final expression
+            AstForeach* const foreachp = new AstForeach{fl, headerp, bodyp};
             if (withp) {
-                // For 'with' clause: use lambda expression with AstCExpr
-                AstCExpr* const cexprp = new AstCExpr{fl};
-                cexprp->dtypeSetString();
-                cexprp->add("([&]{\nstd::string ret = \"" + identity + "\";\n");
-                cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
-                                         new AstForeach{fl, headerp, cstmtp}, true});
-                cexprp->add("return ret;\n})()");
-                nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
+                // For 'with' clause: the nested operator terms, built from the identity
+                nodep->replaceWith(newTextBuildp(fl, textVarp, identity, foreachp,
+                                                 new AstVarRef{fl, textVarp, VAccess::READ}));
             } else {
-                // For without 'with' clause: use AstCExpr with conditional
-                AstCExpr* const cexprp = new AstCExpr{fl};
-                cexprp->dtypeSetString();
-                cexprp->add("([&]{\nstd::string ret;\n");
-                cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
-                                         new AstForeach{fl, headerp, cstmtp}, true});
-                cexprp->add("return ret.empty() ? \"" + identity + "\" : \"(" + smtOp
-                            + "\" + ret + \")\";\n})()");
-                nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
+                // For without 'with' clause: the operator applied to the element terms
+                nodep->replaceWith(newTextBuildp(fl, textVarp, "", foreachp,
+                                                 newTextApplyp(fl, textVarp, smtOp, identity)));
             }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
@@ -2842,7 +2831,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         // Map formal parameters to actual arguments using V3Task infrastructure
         const V3TaskConnects tconnects
-            = V3Task::taskConnects(nodep, funcp->stmtsp(), nullptr, false);
+            = V3Task::taskConnects(nodep, funcp->declsp(), nullptr, false);
 
         // Clone return expression, substitute params with args.
         // Track the root via a local pointer: when the root itself is a VarRef to a port
@@ -2890,7 +2879,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Build the runtime statement that calls RANDOMIZER_DISABLE_SOFT on the
     // variable referenced by the given AstConstraintExpr.  Parser enforces
     // constraint_primary operand (verilog.y, IEEE 1800-2023 18.5.13).
-    AstNode* buildDisableSoftCallStmt(AstConstraintExpr* nodep) {
+    AstNodeStmt* buildDisableSoftCallStmt(AstConstraintExpr* nodep) {
         std::string varName;
         if (const AstNodeVarRef* const vrefp = VN_CAST(nodep->exprp(), NodeVarRef)) {
             varName = vrefp->name();
@@ -3106,7 +3095,7 @@ class SolverSmtLowering final : public V3SolverLowering {
     }
     AstTask* createPrepareConstrainedArraysTask(AstClass* const classp) {
         static const char* const name = "__Vprepare_constrained_arrays";
-        AstTask* const taskp = new AstTask{classp->fileline(), name, nullptr};
+        AstTask* const taskp = new AstTask{classp->fileline(), name};
         taskp->classMethod(true);
         classp->addMembersp(taskp);
         m_memberMap.insert(classp, taskp);
@@ -3116,7 +3105,7 @@ class SolverSmtLowering final : public V3SolverLowering {
         static constexpr const char* const name = "__Vresize_constrained_arrays";
         AstTask* resizeTaskp = VN_AS(m_memberMap.findMember(classp, name), Task);
         if (resizeTaskp) return resizeTaskp;
-        resizeTaskp = new AstTask{classp->fileline(), name, nullptr};
+        resizeTaskp = new AstTask{classp->fileline(), name};
         resizeTaskp->classMethod(true);
         resizeTaskp->isVirtual(true);
         classp->addMembersp(resizeTaskp);
@@ -3145,21 +3134,21 @@ class SolverSmtLowering final : public V3SolverLowering {
         setp->dtypeSetVoid();
         ftaskp->addStmtsp(setp->makeStmt());
     }
-    AstNode* wrapIfConstraintMode(AstClass* classp, AstConstraint* const constrp, AstNode* stmtp) {
+    AstNodeStmt* wrapIfConstraintMode(AstClass* classp, AstConstraint* const constrp,
+                                      AstNodeStmt* stmtp) {
         const RandomizeMode rmode = {.asUQuad = constrp->user1()};
         AstVar* const modeVarp = constrp->isStatic() ? getStaticConstraintModeVar(classp)
                                                      : getConstraintModeVar(classp);
         return RandModeVars::wrapIfMode(rmode, modeVarp, stmtp);
     }
     AstTask* newSetupConstraintTask(AstClass* const nodep, const std::string& name) {
-        AstTask* const taskp = new AstTask{nodep->fileline(), name + "_setup_constraint", nullptr};
+        AstTask* const taskp = new AstTask{nodep->fileline(), name + "_setup_constraint"};
         taskp->classMethod(true);
         nodep->addMembersp(taskp);
         return taskp;
     }
     AstTask* newResizeConstrainedArrayTask(AstClass* const nodep, const std::string& name) {
-        AstTask* const taskp
-            = new AstTask{nodep->fileline(), name + "_resize_constrained_array", nullptr};
+        AstTask* const taskp = new AstTask{nodep->fileline(), name + "_resize_constrained_array"};
         taskp->classMethod(true);
         nodep->addMembersp(taskp);
         return taskp;
@@ -3263,8 +3252,7 @@ class SolverSmtLowering final : public V3SolverLowering {
 
     void addUpdateRandVarsBody(AstClass* const nodep, AstFunc* const randomizep) {
         UASSERT_OBJ(!nodep->hasRandVarsUpdate(), nodep, "__VupdateRandVars already exists");
-        AstFunc* const updatep
-            = new AstFunc{nodep->fileline(), "__VupdateRandVars", nullptr, nullptr};
+        AstFunc* const updatep = new AstFunc{nodep->fileline(), "__VupdateRandVars"};
         updatep->classMethod(true);
         updatep->isVirtual(true);
         updatep->keepAlive(true);
@@ -3286,7 +3274,7 @@ class SolverSmtLowering final : public V3SolverLowering {
         FileLine* const fl = logIfp->fileline();
         AstNodeExpr* const condp = logIfp->lhsp()->unlinkFrBack();
         AstNodeExpr* const rhsp = logIfp->rhsp()->unlinkFrBack();
-        AstNode* thenBodyp;
+        AstNodeStmt* thenBodyp;
         if (AstLogIf* const innerLogIfp = VN_CAST(rhsp, LogIf)) {
             thenBodyp = liftLogIfChainToConstraintIf(innerLogIfp);
             VL_DO_DANGLING(pushDeletep(innerLogIfp), innerLogIfp);
@@ -3570,8 +3558,8 @@ class SolverSmtLowering final : public V3SolverLowering {
 
     // Weighted chain while the dist value can still be freshly drawn, membership
     // once it is frozen; membership only when it can never be re-drawn.
-    AstNode* gateFrozenDist(AstNode* chainp, AstDist* distp,
-                            const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
+    AstNodeStmt* gateFrozenDist(AstNodeStmt* chainp, AstDist* distp,
+                                const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
         FileLine* const fl = distp->fileline();
         AstNodeExpr* gatep = newDistGate(distp->exprp(), randModeVarp, fl);
         if (VN_IS(gatep, Const)) {
@@ -3621,9 +3609,10 @@ class SolverSmtLowering final : public V3SolverLowering {
     }
 
     // Soft weighted bucket chain: select a bucket by bucketVar against cumulative weights.
-    AstNode* buildWeightedBucketChain(AstDist* distp, const std::vector<DistBucket>& buckets,
-                                      AstVar* bucketVarp,
-                                      const std::vector<AstNodeExpr*>& cumSums) {
+    AstConstraintExpr* buildWeightedBucketChain(AstDist* distp,
+                                                const std::vector<DistBucket>& buckets,
+                                                AstVar* bucketVarp,
+                                                const std::vector<AstNodeExpr*>& cumSums) {
         FileLine* const fl = distp->fileline();
         AstNodeExpr* chainp = nullptr;
         for (int i = static_cast<int>(buckets.size()) - 1; i >= 0; --i) {
@@ -3661,9 +3650,10 @@ class SolverSmtLowering final : public V3SolverLowering {
                               AstConstraintForeach* foreachp = nullptr) {
         // When inside a foreach, bucket preamble stmts are stored in foreachp->user3p()
         // (as a linked list) so visit(AstConstraintForeach*) can inject them into the
-        // real AstForeach body. Outside a foreach, they go directly into taskp.
-        AstNode* foreachTailp = nullptr;
-        auto addStmt = [&](AstNode* nodep) {
+        // real AstForeach body. Outside a foreach, they go directly into taskp. The
+        // variables are always declared in taskp, assigned before use in each iteration.
+        AstNodeStmt* foreachTailp = nullptr;
+        auto addStmt = [&](AstNodeStmt* nodep) {
             if (foreachp) {
                 if (!foreachTailp) {
                     foreachp->user3p(nodep);
@@ -3755,7 +3745,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             totalVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             totalVarp->funcLocal(true);
             totalVarp->isInternal(true);
-            addStmt(totalVarp);
+            taskp->addDeclsp(totalVarp);
             addStmt(
                 new AstAssign{fl, new AstVarRef{fl, totalVarp, VAccess::WRITE}, totalWeightExprp});
 
@@ -3767,7 +3757,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             bucketVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             bucketVarp->funcLocal(true);
             bucketVarp->isInternal(true);
-            addStmt(bucketVarp);
+            taskp->addDeclsp(bucketVarp);
 
             AstNodeExpr* const randp = new AstRand{fl, nullptr, false};
             randp->dtypeSetUInt64();
@@ -3791,7 +3781,7 @@ class SolverSmtLowering final : public V3SolverLowering {
                 cumSums.push_back(runningSump->cloneTreePure(true));
             }
 
-            AstNode* chainp = buildWeightedBucketChain(distp, buckets, bucketVarp, cumSums);
+            AstNodeStmt* chainp = buildWeightedBucketChain(distp, buckets, bucketVarp, cumSums);
 
             chainp = gateFrozenDist(chainp, distp, buckets, randModeVarp);
 
@@ -3949,7 +3939,7 @@ class SolverSmtLowering final : public V3SolverLowering {
         AstVar* const sizeOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vsize_ok",
                                               randomizep->findBasicDType(VBasicDTypeKwd::BIT)};
         sizeOkVarp->funcLocal(true);
-        randomizep->addStmtsp(sizeOkVarp);
+        randomizep->addDeclsp(sizeOkVarp);
         // A disabled array keeps its current size. Pin its size proxy before solving so
         // an incompatible size constraint fails instead of resizing the frozen array.
         for (AstVar* const arrVarp : sizeArrayVars) {
@@ -4068,7 +4058,8 @@ public:
                     m_uniqueNames, randomizep,   &sizeArrays,       prepareArraysTaskp};
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
-                        nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
+                        nodep, constrp,
+                        VN_AS(constrp->itemsp()->unlinkFrBackWithNext(), NodeStmt)));
                 }
             });
 
@@ -4159,7 +4150,7 @@ public:
                 AstVar* const finalOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vfinal_ok",
                                                        nodep->findBasicDType(VBasicDTypeKwd::BIT)};
                 finalOkVarp->funcLocal(true);
-                randomizep->addStmtsp(finalOkVarp);
+                randomizep->addDeclsp(finalOkVarp);
                 randomizep->addStmtsp(new AstAssign{
                     fl, new AstVarRef{fl, finalOkVarp, VAccess::WRITE}, newSolverCallp(genp)});
 
@@ -4220,7 +4211,7 @@ public:
                 implementConstraintsClear(randomizeFuncp->fileline(), classGenp));
         }
 
-        randomizeFuncp->addStmtsp(localGenp);
+        randomizeFuncp->addDeclsp(localGenp);
 
         // Copy (derive) class constraints if present
         if (classGenp) {
@@ -4244,8 +4235,8 @@ public:
         }
 
         // Generate constraint setup code and a hardcoded call to the solver
-        AstBegin* const setupBlockp
-            = new AstBegin{nodep->fileline(), "__Vsetup_constraints", capturedTreep, true};
+        AstBegin* const setupBlockp = new AstBegin{nodep->fileline(), "__Vsetup_constraints",
+                                                   VN_AS(capturedTreep, NodeStmt), true};
         randomizeFuncp->addStmtsp(setupBlockp);
 
         // Pre-scan captured tree for .size on dynamic/assoc arrays and replace
@@ -4254,7 +4245,7 @@ public:
         // so extract the underlying variable from the MemberSel chain.
         // Collect the class-wide resize call and the with-block's own resize
         // statements to run after a successful solver call.
-        AstNode* resizeStmtsp = nullptr;
+        AstNodeStmt* resizeStmtsp = nullptr;
         if (AstTask* const resizeAllTaskp
             = VN_AS(m_memberMap.findMember(classp, "__Vresize_constrained_arrays"), Task)) {
             resizeStmtsp = (new AstTaskRef{nodep->fileline(), resizeAllTaskp})->makeStmt();
@@ -4343,7 +4334,7 @@ public:
         FileLine* const fl = nodep->fileline();
         collectSizeConstrainedArrays(classp, allSizeArrays);
         const bool needsSizePhase = !allSizeArrays.empty();
-        AstVar* const retVarp = VN_AS(randomizeFuncp->fvarp(), Var);
+        AstVar* const retVarp = randomizeFuncp->fvarp();
 
         if (needsSizePhase) {
             // Call __VBasicRand and stash its result FIRST, as its own statement,
@@ -4358,14 +4349,14 @@ public:
             AstVar* const basicOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vbasic_ok",
                                                    classp->findBasicDType(VBasicDTypeKwd::BIT)};
             basicOkVarp->funcLocal(true);
-            randomizeFuncp->addStmtsp(basicOkVarp);
+            randomizeFuncp->addDeclsp(basicOkVarp);
             randomizeFuncp->addStmtsp(new AstAssign{
                 fl, new AstVarRef{fl, basicOkVarp, VAccess::WRITE}, basicRandomizeFuncCallp});
 
             AstVar* const finalOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vfinal_ok",
                                                    classp->findBasicDType(VBasicDTypeKwd::BIT)};
             finalOkVarp->funcLocal(true);
-            randomizeFuncp->addStmtsp(finalOkVarp);
+            randomizeFuncp->addDeclsp(finalOkVarp);
 
             // First pass: solve to determine sizes
             AstVar* const sizeOkVarp
@@ -4483,7 +4474,7 @@ public:
 
             expandUniqueElementList(capturedClonep);
             AstBegin* const elementSetupBlockp
-                = new AstBegin{fl, "__Vsetup_constraints", capturedClonep, true};
+                = new AstBegin{fl, "__Vsetup_constraints", VN_AS(capturedClonep, NodeStmt), true};
             randomizeFuncp->addStmtsp(elementSetupBlockp);
             ConstraintExprVisitor{
                 classp,       m_memberMap,   capturedClonep,        elementSetupBlockp, localGenp,
@@ -4529,7 +4520,7 @@ public:
         randomizeFuncp->addStmtsp(
             implementConstraintsClearAll(randomizeFuncp->fileline(), stdrandp));
         AstBegin* const setupBlockp
-            = new AstBegin{fl, "__Vsetup_constraints", capturedTreep, true};
+            = new AstBegin{fl, "__Vsetup_constraints", VN_AS(capturedTreep, NodeStmt), true};
         randomizeFuncp->addStmtsp(setupBlockp);
         {
             expandUniqueElementList(capturedTreep);

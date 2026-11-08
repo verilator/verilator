@@ -746,10 +746,10 @@ class MergeCondVisitor final : public VNVisitor {
                     AstNodeIf* const ifp = VN_AS(currp, NodeIf);
                     UASSERT_OBJ(ifp, currp, "Must be AstNodeIf");
                     // Move branch contents under new if
-                    if (AstNode* const listp = ifp->thensp()) {
+                    if (AstNodeStmt* const listp = ifp->thensp()) {
                         resultp->addThensp(listp->unlinkFrBackWithNext());
                     }
-                    if (AstNode* const listp = ifp->elsesp()) {
+                    if (AstNodeStmt* const listp = ifp->elsesp()) {
                         resultp->addElsesp(listp->unlinkFrBackWithNext());
                     }
                     // Record branch prediction

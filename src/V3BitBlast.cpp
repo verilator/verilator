@@ -471,7 +471,7 @@ class BitBlastVisitor final : public VNVisitorConst, public VNDeleter {
                 const int width = fragment.msb - fragment.lsb + 1;
                 AstSel* const lhsp = new AstSel{flp, lhsRefp, fragment.lsb, width};
                 AstVarRef* const rhsp = new AstVarRef{flp, fragment.vscp, VAccess::READ};
-                activep->addStmtsp(new AstAlways{new AstAssignW{flp, lhsp, rhsp}});
+                activep->addProcsp(new AstAlways{new AstAssignW{flp, lhsp, rhsp}});
             }
         }
 

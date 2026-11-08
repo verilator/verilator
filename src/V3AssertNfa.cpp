@@ -292,7 +292,7 @@ static AstNodeExpr* assertFailOnCond(FileLine* flp, VAssertType type,
         1};
 }
 
-static AstIf* newPassOnIf(FileLine* flp, AstNodeExpr* firep, AstNode* bodyp, VAssertType type,
+static AstIf* newPassOnIf(FileLine* flp, AstNodeExpr* firep, AstNodeStmt* bodyp, VAssertType type,
                           VAssertDirectiveType directiveType, bool vacuous) {
     AstNodeExpr* const condp
         = new AstLogAnd{flp, firep, assertPassOnCond(flp, type, directiveType, vacuous)};
@@ -302,7 +302,7 @@ static AstIf* newPassOnIf(FileLine* flp, AstNodeExpr* firep, AstNode* bodyp, VAs
     return ifp;
 }
 
-static AstNodeStmt* newIfAssertFailOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+static AstNodeStmt* newIfAssertFailOn(AstNodeStmt* bodyp, VAssertDirectiveType directiveType,
                                       VAssertType type) {
     FileLine* const flp = bodyp->fileline();
     AstNodeExpr* const condp = assertFailOnCond(flp, type, directiveType);
@@ -1943,7 +1943,7 @@ class SvaNfaLowering final {
     // would advance the attempts as if the clock had ticked. Blocks that hold no attempt
     // state, such as the $assertkill acknowledge in emitKillAckNba, do not go through here.
     // Callers pass a null clearp when the disable cannot rise between clock events.
-    void addStateAlways(LowerCtx& c, AstNode* bodyp, AstNode* clearp) {
+    void addStateAlways(LowerCtx& c, AstNodeStmt* bodyp, AstNodeStmt* clearp) {
         m_modp->addStmtsp(
             new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), bodyp});
         if (!clearp) return;
@@ -1959,8 +1959,8 @@ class SvaNfaLowering final {
     // latches the OR of its incoming contributions.
     void emitStateRegisterNba(LowerCtx& c) {
         const bool asyncDisable = isAsyncDisable(c.disableExprp);
-        AstNode* bodyp = nullptr;
-        AstNode* clearp = nullptr;
+        AstNodeStmt* bodyp = nullptr;
+        AstNodeStmt* clearp = nullptr;
         for (const V3GraphVertex& vtxr : c.graph.m_graph.vertices()) {
             const SvaStateVertex* const vtxp = static_cast<const SvaStateVertex*>(&vtxr);
             if (!vtxp->datap()->stateVarp) continue;
@@ -2074,7 +2074,7 @@ class SvaNfaLowering final {
                 delayRingSlot(c.flp, vtxp, new AstVarRef{c.flp, idxp, VAccess::READ},
                               VAccess::WRITE),
                 storedIncomingp};
-            AstNode* updateBodyp = writeIncomingp;
+            AstNodeStmt* updateBodyp = writeIncomingp;
             // live_count <= live_count - outgoing_count + incoming_count;
             AstNodeExpr* const outgoingp = delayRingOutputCount(c.flp, vtxp);
             AstNodeExpr* const afterOutgoingp
@@ -2949,9 +2949,7 @@ class AssertNfaVisitor final : public VNVisitor {
     }
 
     static AstNodeExpr* getSequenceBodyExprp(const AstSequence* seqp) {
-        AstNode* bodyp = seqp->stmtsp();
-        while (bodyp && VN_IS(bodyp, Var)) bodyp = bodyp->nextp();
-        return VN_CAST(bodyp, NodeExpr);
+        return VN_CAST(seqp->stmtsp(), NodeExpr);
     }
 
     static AstPropSpec* getPropertySpecp(const AstProperty* propp) {
@@ -2960,7 +2958,7 @@ class AssertNfaVisitor final : public VNVisitor {
         // initialisers; the InitialAutomaticStmt variant only appears for
         // task/function-scope automatic lifetime, not properties.
         while (stmtp
-               && (VN_IS(stmtp, Var) || VN_IS(stmtp, InitialStaticStmt)
+               && (VN_IS(stmtp, InitialStaticStmt)
                    || VN_IS(stmtp, InitialAutomaticStmt))) {  // LCOV_EXCL_LINE
             stmtp = stmtp->nextp();
         }
@@ -2979,7 +2977,7 @@ class AssertNfaVisitor final : public VNVisitor {
         UASSERT_OBJ(propSpecp, funcrefp, "Property has no body PropSpec");
         propSpecp = propSpecp->cloneTree(false);
 
-        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propyp->stmtsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propyp->declsp());
         std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
         for (const auto& tconnect : tconnects) {
             portMap[tconnect.first] = tconnect.second->exprp();
@@ -2987,8 +2985,8 @@ class AssertNfaVisitor final : public VNVisitor {
 
         // Promote property-local variables to module-level temps (IEEE 16.10).
         std::unordered_map<const AstVar*, AstVar*> localVarMap;
-        for (AstNode* const stmtp : propyp->stmtspList()) {
-            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+        for (AstNode* const declp : propyp->declspList()) {
+            if (AstVar* const varp = VN_CAST(declp, Var)) {
                 if (!varp->isIO()) {
                     const string newName = m_propVarNames.get(varp);
                     AstVar* const newVarp = new AstVar{varp->fileline(), VVarType::MODULETEMP,
@@ -3070,7 +3068,7 @@ class AssertNfaVisitor final : public VNVisitor {
         UASSERT_OBJ(bodyExprp, funcrefp, "Sequence has no body expression");
         AstNodeExpr* const clonedp = bodyExprp->cloneTree(false);
 
-        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, seqp->stmtsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, seqp->declsp());
         std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
         for (const auto& tconnect : tconnects) {
             portMap[tconnect.first] = tconnect.second->exprp();
@@ -3177,13 +3175,13 @@ class AssertNfaVisitor final : public VNVisitor {
                                             AstNodeExpr* nonvacuousMatchp) {
         FileLine* const flp = assertp->fileline();
 
-        AstNode* const passsp = assertp->passsp()->unlinkFrBackWithNext();
-        AstNode* splitsp = nullptr;
+        AstNodeStmt* const passsp = assertp->passsp()->unlinkFrBackWithNext();
+        AstNodeStmt* splitsp = nullptr;
 
         if (!parts.isFollowedBy) {
             AstNodeExpr* const vacuousp
                 = new AstLogNot{flp, sampled(parts.triggerExprp->cloneTreePure(false))};
-            AstNode* const vacuousBodyp = passsp->cloneTree(false);
+            AstNodeStmt* const vacuousBodyp = passsp->cloneTree(false);
             splitsp = newPassOnIf(flp, vacuousp, vacuousBodyp, assertp->userType(),
                                   assertp->directive(), /*vacuous=*/true);
         }
@@ -3191,8 +3189,7 @@ class AssertNfaVisitor final : public VNVisitor {
         AstIf* const nonvacuousp
             = newPassOnIf(flp, nonvacuousMatchp, passsp, assertp->userType(), assertp->directive(),
                           /*vacuous=*/false);
-        splitsp = splitsp ? AstNode::addNext<AstNode, AstNode>(splitsp, nonvacuousp)
-                          : static_cast<AstNode*>(nonvacuousp);
+        splitsp = AstNode::addNextNull<AstNodeStmt>(splitsp, nonvacuousp);
         assertp->addPasssp(splitsp);
     }
 
@@ -3265,7 +3262,7 @@ class AssertNfaVisitor final : public VNVisitor {
             // needMatch implies passsp() was non-null when evaluated above;
             // lowering does not mutate the assert's pass-action between the
             // two reads, so passsp() is still non-null here.
-            AstNode* passsp = assertp->passsp();
+            AstNodeStmt* passsp = assertp->passsp();
             UASSERT_OBJ(passsp, assertp, "needMatch set but passsp is null");
             passsp->unlinkFrBackWithNext();
             FileLine* const flp = assertp->fileline();
@@ -3279,7 +3276,7 @@ class AssertNfaVisitor final : public VNVisitor {
         if (threadFailCountp) {
             UASSERT_OBJ(threadFailReplaySenTreep, assertp,
                         "Thread fail count missing sensitivity tree");
-            AstNode* const failsp = assertp->failsp();
+            AstNodeStmt* const failsp = assertp->failsp();
             FileLine* const flp = assertp->fileline();
             // IEEE 1800-2023 16.12 requires one action-block evaluation per failed
             // thread. AstAssert handles the first, so replay the rest here.
@@ -3288,7 +3285,7 @@ class AssertNfaVisitor final : public VNVisitor {
                              m_modp->findBasicDType(VBasicDTypeKwd::UINT32)};
             remainingFailCountVarp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(remainingFailCountVarp);
-            AstNode* const replayStmtsp = new AstAssign{
+            AstNodeStmt* const replayStmtsp = new AstAssign{
                 flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE}, threadFailCountp};
             AstLoop* const replayLoopp = new AstLoop{flp};
             replayLoopp->addStmtsp(new AstLoopTest{

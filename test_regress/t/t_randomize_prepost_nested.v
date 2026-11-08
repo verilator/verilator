@@ -164,12 +164,45 @@ class Level1;
   endfunction
 endclass
 
+// --- Cycles of rand class handles (#9063) ---
+
+typedef class CycB;
+
+class CycA;
+  rand CycB b;
+  int pre_count;
+  function void pre_randomize;
+    pre_count++;
+  endfunction
+endclass
+
+class CycB;
+  rand CycA a;
+  int pre_count;
+  function void pre_randomize;
+    pre_count++;
+  endfunction
+endclass
+
+typedef class CycDerivedA;
+
+class CycBase;
+  rand CycDerivedA a;
+endclass
+
+class CycDerived extends CycBase;
+endclass
+
+class CycDerivedA;
+  rand CycDerived b;
+endclass
+
 module t;
 
   initial begin
     automatic int r;
 
-    // Test 1: Inherited callbacks (no override)
+    // Test: Inherited callbacks (no override)
     begin
       automatic DerivedNoOverride obj = new;
       r = obj.randomize();
@@ -178,7 +211,7 @@ module t;
       `checkd(obj.post_count, 1);
     end
 
-    // Test 2: Partial override (pre overridden, post inherited)
+    // Test: Partial override (pre overridden, post inherited)
     begin
       automatic DerivedPartialOverride obj = new;
       r = obj.randomize();
@@ -188,7 +221,7 @@ module t;
       `checkd(obj.post_count, 1);  // inherited post_randomize
     end
 
-    // Test 3: Override both without super - base counts stay 0
+    // Test: Override both without super - base counts stay 0
     begin
       automatic DerivedOverrideBoth obj = new;
       r = obj.randomize();
@@ -199,7 +232,7 @@ module t;
       `checkd(obj.post_count, 0);  // base NOT called (no super)
     end
 
-    // Test 4: Override only post, inherit pre
+    // Test: Override only post, inherit pre
     begin
       automatic DerivedOverridePostOnly obj = new;
       r = obj.randomize();
@@ -209,7 +242,7 @@ module t;
       `checkd(obj.post_count, 0);  // base post NOT called (no super)
     end
 
-    // Test 5: Nested callbacks (3-level)
+    // Test: Nested callbacks (3-level)
     begin
       automatic Level1 l1 = new;
       r = l1.randomize();
@@ -222,7 +255,7 @@ module t;
       `checkd(l1.l2.l3.post_count, 1);
     end
 
-    // Test 6: Multiple randomizations
+    // Test: Multiple randomizations
     begin
       automatic Level1 l1 = new;
       repeat (5) begin
@@ -235,6 +268,21 @@ module t;
       `checkd(l1.l2.post_count, 5);
       `checkd(l1.l2.l3.pre_count, 5);
       `checkd(l1.l2.l3.post_count, 5);
+    end
+
+    // Test: Cycle of rand class handles
+    begin
+      automatic CycA a = new;
+      r = a.randomize();
+      `checkd(r, 1);
+      `checkd(a.pre_count, 1);
+    end
+
+    // Test: Cycle of rand class handles through a base class
+    begin
+      automatic CycDerivedA a = new;
+      r = a.randomize();
+      `checkd(r, 1);
     end
 
     $write("*-* All Finished *-*\n");

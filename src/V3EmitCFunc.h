@@ -146,7 +146,7 @@ protected:
         const AstCFunc* const ctorp = VN_CAST(newp, CFunc);
         if (!ctorp) return false;
         UASSERT_OBJ(ctorp->isConstructor(), ctorp, "`new` is not a constructor!");
-        return ctorp->needProcess();
+        return ctorp->needsVlProcess();
     }
 
     bool constructorNeedsProcess(const AstNodeDType* const dtypep) {
@@ -218,6 +218,39 @@ protected:
         putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTo(), nodep->protect()));
         puts(", ");
         putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTag(), nodep->protect()));
+        puts(");\n");
+    }
+    void emitCoverToggleDeclInsert(AstCoverToggleDecl* nodep) {
+        putns(nodep, "vlSelf->__vlCoverToggleInsert(");  // As Declared in emitCoverageDecl
+        puts(cvtToStr(nodep->range().right()));
+        puts(", ");
+        puts(cvtToStr(nodep->range().left()));
+        puts(", ");
+        puts(cvtToStr(nodep->range().ranged()));
+        puts(", ");
+        putCoverageArray(nodep);
+        puts(" + ");
+        puts(cvtToStr(coverageBinNum(nodep)));
+        // first controls whether duplicate module instances are collapsed in
+        // the default coverage view. The following flag says whether countp
+        // points to an object-local counter; only those counters must be kept
+        // real for later instances so forcePerInstance can split hierarchy.
+        puts(", first");  // Enable, passed from __Vconfigure parameter
+        puts(", ");
+        puts(coverageUsesLocalCounter(nodep) ? "true" : "false");
+        puts(", ");
+        putsQuoted(protect(nodep->fileline()->filename()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->firstColumn()));
+        puts(", ");
+        putsQuoted((!nodep->hier().empty() ? "." : "")
+                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
         puts(");\n");
     }
 
@@ -420,10 +453,6 @@ public:
         emitCFuncHeader(nodep, m_modp, /* withScope: */ true);
 
         puts(" {\n");
-        if (nodep->isConstructor()) {
-            const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
-            if (classp && classp->extendsp()) putConstructorSubinit(classp, nodep);
-        }
 
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
@@ -451,9 +480,9 @@ public:
 
         // Instantiate a process class if it's going to be needed somewhere later
         nodep->forall([&](const AstNodeCCall* ccallp) -> bool {
-            if (ccallp->funcp()->needProcess()
+            if (ccallp->funcp()->needsVlProcess()
                 && (ccallp->funcp()->isCoroutine() == VN_IS(ccallp->backp(), CAwait))) {
-                if (!nodep->needProcess() && !m_instantiatesOwnProcess) {
+                if (!nodep->needsVlProcess() && !m_instantiatesOwnProcess) {
                     m_instantiatesOwnProcess = true;
                     return false;
                 }
@@ -465,22 +494,20 @@ public:
             vlprocp->add("VlProcessRef vlProcess = std::make_shared<VlProcess>();\n");
             vlprocp->add("VlProcess::currentp(vlProcess.get());");
             nodep->prependStmtsp(vlprocp);
-        } else if (nodep->needProcess() && nodep->stmtsp()) {
+        } else if (nodep->needsVlProcess() && nodep->stmtsp()) {
             // Set current process so VlRNG() constructors in this function seed from it
             AstCStmt* const setProcessp = new AstCStmt{nodep->fileline()};
             setProcessp->add("VlProcess::currentp(vlProcess.get());");
             nodep->prependStmtsp(setProcessp);
         }
 
-        for (AstNode* const subnodep : nodep->argspList()) {
-            if (AstVar* const varp = VN_CAST(subnodep, Var)) {
-                if (varp->isFuncReturn()) emitVarDecl(varp);
-                // Bind the closure argument to the closure passed (see cFuncArgs)
-                if (const AstStructDType* const dtypep = closureDTypep(varp)) {
-                    const std::string type = EmitCUtil::prefixNameProtect(dtypep);
-                    puts(type + "& " + varp->nameProtect() + " = *static_cast<" + type + "*>("
-                         + varp->nameProtect() + "p);\n");
-                }
+        for (AstVar* const varp : nodep->argspList()) {
+            if (varp->isFuncReturn()) emitVarDecl(varp);
+            // Bind the closure argument to the closure passed (see cFuncArgs)
+            if (const AstStructDType* const dtypep = closureDTypep(varp)) {
+                const std::string type = EmitCUtil::prefixNameProtect(dtypep);
+                puts(type + "& " + varp->nameProtect() + " = *static_cast<" + type + "*>("
+                     + varp->nameProtect() + "p);\n");
             }
         }
 
@@ -499,6 +526,15 @@ public:
         if (nodep->varsp()) {
             putsDecoration(nodep, "// Locals\n");
             iterateAndNextConstNull(nodep->varsp());
+        }
+
+        // After the locals, as the super.new arguments might use them
+        if (nodep->isConstructor()) {
+            const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
+            if (classp && classp->extendsp()) {
+                putsDecoration(nodep, "// Super\n");
+                putConstructorSubinit(classp, nodep);
+            }
         }
 
         if (nodep->stmtsp()) {
@@ -739,7 +775,7 @@ public:
             puts(cvtToStr(castp->srcElementBits()));
             puts(", ");
             puts(cvtToStr(castp->dstElementBits()));
-        } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
+        } else if (nodep->isWide() && !unpackDtp && VN_IS(nodep->lhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //
                    // Although not here currently, note putting !VN_IS(Const) works,
@@ -833,7 +869,8 @@ public:
             }
             putns(nodep, funcp->nameProtect());
         }
-        emitCCallArgs(nodep, nodep->selfPointerProtect(m_useSelfForThis), m_cfuncp->needProcess());
+        emitCCallArgs(nodep, nodep->selfPointerProtect(m_useSelfForThis),
+                      m_cfuncp->needsVlProcess());
     }
     void visit(AstCMethodCall* nodep) override {
         const AstCFunc* const funcp = nodep->funcp();
@@ -846,7 +883,7 @@ public:
             putns(funcModp, EmitCUtil::prefixNameProtect(funcModp) + "::");
         }
         putns(funcp, funcp->nameProtect());
-        emitCCallArgs(nodep, "", m_cfuncp->needProcess());
+        emitCCallArgs(nodep, "", m_cfuncp->needsVlProcess());
     }
     void visit(AstCAwait* nodep) override {
         putns(nodep, "co_await ");
@@ -1002,47 +1039,18 @@ public:
         }
         iterateChildrenConst(nodep);
     }
-    void visit(AstCoverOtherDecl* nodep) override {
-        emitCoverOtherDeclInsert(nodep);
-        if (coverageUsesLocalCounter(nodep)) {
-            // Some task bodies are cloned into a caller module where the
-            // original instance-local counter is not addressable. Those clones
-            // fall back to the global bin number, so register that slot too.
-            emitCoverOtherDeclInsert(nodep, true);
+    void visit(AstCoverInsert* nodep) override {
+        if (AstCoverOtherDecl* const declp = VN_CAST(nodep->declp(), CoverOtherDecl)) {
+            emitCoverOtherDeclInsert(declp);
+            if (coverageUsesLocalCounter(declp)) {
+                // Some task bodies are cloned into a caller module where the
+                // original instance-local counter is not addressable. Those clones
+                // fall back to the global bin number, so register that slot too.
+                emitCoverOtherDeclInsert(declp, true);
+            }
+        } else {
+            emitCoverToggleDeclInsert(VN_AS(nodep->declp(), CoverToggleDecl));
         }
-    }
-    void visit(AstCoverToggleDecl* nodep) override {
-        putns(nodep, "vlSelf->__vlCoverToggleInsert(");  // As Declared in emitCoverageDecl
-        puts(cvtToStr(nodep->range().right()));
-        puts(", ");
-        puts(cvtToStr(nodep->range().left()));
-        puts(", ");
-        puts(cvtToStr(nodep->range().ranged()));
-        puts(", ");
-        putCoverageArray(nodep);
-        puts(" + ");
-        puts(cvtToStr(coverageBinNum(nodep)));
-        // first controls whether duplicate module instances are collapsed in
-        // the default coverage view. The following flag says whether countp
-        // points to an object-local counter; only those counters must be kept
-        // real for later instances so forcePerInstance can split hierarchy.
-        puts(", first");  // Enable, passed from __Vconfigure parameter
-        puts(", ");
-        puts(coverageUsesLocalCounter(nodep) ? "true" : "false");
-        puts(", ");
-        putsQuoted(protect(nodep->fileline()->filename()));
-        puts(", ");
-        puts(cvtToStr(nodep->fileline()->lineno()));
-        puts(", ");
-        puts(cvtToStr(nodep->fileline()->firstColumn()));
-        puts(", ");
-        putsQuoted((!nodep->hier().empty() ? "." : "")
-                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
-        puts(");\n");
     }
     void visit(AstCoverInc* nodep) override {
         if (VN_IS(nodep->declp(), CoverOtherDecl)) {
@@ -1416,7 +1424,14 @@ public:
     void visit(AstCLocalScope* nodep) override {
         putns(nodep, "{\n");
         VL_RESTORER(m_createdScopeHash);
-        iterateAndNextConstNull(nodep->stmtsp());
+        if (nodep->varsp()) {
+            putsDecoration(nodep, "// Locals\n");
+            iterateAndNextConstNull(nodep->varsp());
+        }
+        if (nodep->stmtsp()) {
+            putsDecoration(nodep, "// Body\n");
+            iterateAndNextConstNull(nodep->stmtsp());
+        }
         puts("}\n");
     }
     void visit(AstNodeIf* nodep) override {
@@ -1456,10 +1471,6 @@ public:
             putnbs(nodep, "(co_await ([&]() -> VlCoroutine {\n");
             iterateAndNextConstNull(nodep->stmtsp());
             puts("co_return;\n");
-            if (!nodep->hasResult()) {
-                puts("}()))");
-                return;
-            }
             puts("}()), ");
             iterateAndNextConstNull(nodep->resultp());
             puts(")");
@@ -1468,11 +1479,6 @@ public:
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
         putnbs(nodep, "([&]() {\n");
-        if (!nodep->hasResult()) {
-            iterateAndNextConstNull(nodep->stmtsp());
-            puts("}())");
-            return;
-        }
         iterateAndNextConstNull(nodep->stmtsp());
         puts("}(), ");
         iterateAndNextConstNull(nodep->resultp());
@@ -1489,7 +1495,7 @@ public:
     }
     void visit(AstFinish* nodep) override {
         // Disable all the forks so they don't operate after simulation is finished.
-        if (m_cfuncp && m_cfuncp->needProcess()) putns(nodep, "vlProcess->disableFork();\n");
+        if (m_cfuncp && m_cfuncp->needsVlProcess()) putns(nodep, "vlProcess->disableFork();\n");
         putns(nodep, "VL_FINISH_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
@@ -1498,7 +1504,7 @@ public:
     }
     void visit(AstFinishFork* nodep) override {
         // Disable all the forks so they don't operate after simulation is finished.
-        if (m_cfuncp && m_cfuncp->needProcess()) putns(nodep, "vlProcess->disableFork();\n");
+        if (m_cfuncp && m_cfuncp->needsVlProcess()) putns(nodep, "vlProcess->disableFork();\n");
         putns(nodep, "VL_FINISH_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");

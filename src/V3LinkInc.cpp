@@ -70,7 +70,7 @@ class LinkIncVisitor final : public VNVisitor {
             varp->lifetime(m_staticTemps ? VLifetime::STATIC_EXPLICIT
                                          : VLifetime::AUTOMATIC_EXPLICIT);
             varp->funcLocal(true);
-            ftaskp->prependStmtsp(varp);
+            ftaskp->prependDeclsp(varp);
         } else if (AstClass* const classp = VN_CAST(m_containerp, Class)) {
             varp->varType(VVarType::MEMBER);
             if (m_staticTemps) varp->lifetime(VLifetime::STATIC_EXPLICIT);
@@ -155,7 +155,7 @@ class LinkIncVisitor final : public VNVisitor {
                            << m_illegalReasonp);
             return;
         }
-        AstNode* const hoistedp = hoistIndices(nodep->lhsp());
+        AstNodeStmt* const hoistedp = hoistIndices(nodep->lhsp());
         AstNodeExpr* const readp = nodep->lhsp();
         AstNodeExpr* const writep = readp->cloneTreePure(true);
         V3LinkLValue::linkLValueSet(writep);
@@ -171,7 +171,7 @@ class LinkIncVisitor final : public VNVisitor {
         AstAssignCompound* const incp = newIncAssignp(nodep, writep);
         AstAssign* const savep
             = new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, readp->unlinkFrBack()};
-        AstNode* stmtsp;
+        AstNodeStmt* stmtsp;
         if (VN_IS(nodep, PreInc) || VN_IS(nodep, PreDec)) {
             stmtsp = incp;
             stmtsp->addNext(savep);
@@ -205,8 +205,8 @@ class LinkIncVisitor final : public VNVisitor {
             // 'this', so use static temporaries there
             VL_RESTORER(m_staticTemps);
             m_staticTemps = true;
-            for (AstNode* const stmtp : nodep->stmtspList()) {
-                AstVar* const varp = VN_CAST(stmtp, Var);
+            for (AstNode* const declp : nodep->declspList()) {
+                AstVar* const varp = VN_CAST(declp, Var);
                 if (varp && varp->isIO()) iterateAndNextNull(varp->valuep());
             }
         }

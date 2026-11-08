@@ -1358,7 +1358,7 @@ class DecomposeRewrite final : public VNDeleter, public DecomposeBase {
             AstNodeExpr* const rhsp = new AstVarRef{flp, childp->vscp, VAccess::READ};
             AstNodeExpr* const lhsRefp = new AstVarRef{flp, vscp, VAccess::WRITE};
             AstNodeExpr* const lhsp = newSelect(lhsRefp, placep->dtypep, i);
-            activep->addStmtsp(new AstAlways{new AstAssignW{flp, lhsp, rhsp}});
+            activep->addProcsp(new AstAlways{new AstAssignW{flp, lhsp, rhsp}});
         }
     }
 

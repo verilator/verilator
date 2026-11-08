@@ -109,7 +109,7 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 2) not b)
   else count_fail6 <= count_fail6 + 1;
 
-  // Test 7: nested instance inside another property's body, compared with test 2
+  // Test: nested instance inside another property's body, compared with test 2
   assert property (@(posedge clk) disable iff (cyc < 2) p_outer)
   else count_fail7 <= count_fail7 + 1;
 
@@ -120,7 +120,7 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 2) a |-> (b == c))
   else count_fail9 <= count_fail9 + 1;
 
-  // Test 10: same property as test 3 with a different argument, compared with test 2
+  // Test: same property as test 3 with a different argument, compared with test 2
   assert property (@(posedge clk) disable iff (cyc < 2) a |-> p_arg(b))
   else count_fail10 <= count_fail10 + 1;
 

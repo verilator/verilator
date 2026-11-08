@@ -311,6 +311,13 @@ class LinkLValueVisitor final : public VNVisitor {
         m_setRefLvalue = VAccess::NOCHANGE;
         iterateAndNextNull(nodep->bitp());
     }
+    void visit(AstNodeStream* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        // Only set lvalues on the streamed value, not on the slice size
+        iterateAndNextNull(nodep->lhsp());
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->rhsp());
+    }
     void visit(AstCellArrayRef* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         // selp is not an lvalue
@@ -348,7 +355,7 @@ class LinkLValueVisitor final : public VNVisitor {
         // We'll deal with mismatching pins later
         if (!taskp) return;
         const V3TaskConnects tconnects
-            = V3Task::taskConnects(nodep, taskp->stmtsp(), nullptr, false);
+            = V3Task::taskConnects(nodep, taskp->declsp(), nullptr, false);
         for (const auto& tconnect : tconnects) {
             const AstVar* const portp = tconnect.first;
             const AstArg* const argp = tconnect.second;

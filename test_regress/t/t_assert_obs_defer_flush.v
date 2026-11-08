@@ -96,6 +96,54 @@ module t;
     disable inner_disable_owner.inner_disable_victim;
   end
 
+  // Likewise inside a block that is disabled by name from elsewhere
+  int wrapped_disable_count;
+  event wrapped_disable_ready;
+
+  // Ahead of the block, so V3LinkJump handles this disable first
+  initial begin
+    #5;  // After the checks
+    disable wrapped_disable_owner;
+  end
+
+  initial
+    if ($time == 0) begin : wrapped_disable_owner
+      #1;
+      begin : wrapped_disable_victim
+        assert #0 (0)
+        else record_wrapped_disable();
+        ->wrapped_disable_ready;
+        #10;
+      end
+    end
+
+  initial begin
+    @wrapped_disable_ready;
+    disable wrapped_disable_owner.wrapped_disable_victim;
+  end
+
+  // Disabling a block that is a fork branch flushes, also when the branch can disable its fork
+  int jumped_disable_count;
+  event jumped_disable_ready;
+
+  initial begin : jumped_disable_owner
+    fork : jumped_disable_fork
+      begin : jumped_disable_victim
+        #1;
+        assert #0 (0)
+        else record_jumped_disable();
+        if ($time > 1) disable jumped_disable_fork;
+        ->jumped_disable_ready;
+        #10;
+      end
+    join
+  end
+
+  initial begin
+    @jumped_disable_ready;
+    disable jumped_disable_owner.jumped_disable_fork.jumped_disable_victim;
+  end
+
   initial begin
     #3;
     `checkd(fork_isolation_count, 1);
@@ -104,6 +152,8 @@ module t;
     `checkd(u_sub.count, 0);
     `checkd(nested_disable_count, 0);
     `checkd(inner_disable_count, 1);
+    `checkd(wrapped_disable_count, 1);
+    `checkd(jumped_disable_count, 0);
     $write("*-* All Finished *-*\n");
     $finish;
   end
@@ -128,6 +178,14 @@ module t;
 
   function void record_inner_disable();
     inner_disable_count++;
+  endfunction
+
+  function void record_wrapped_disable();
+    wrapped_disable_count++;
+  endfunction
+
+  function void record_jumped_disable();
+    jumped_disable_count++;
   endfunction
 endmodule
 

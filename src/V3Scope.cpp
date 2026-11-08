@@ -271,12 +271,6 @@ class ScopeVisitor final : public VNVisitor {
         // We iterate under the *clone*
         iterateChildren(cloneOrMove(nodep));
     }
-    void visit(AstCoverToggle* nodep) override {
-        // Add to list of blocks under this scope
-        UINFO(4, "    Move " << nodep);
-        // We iterate under the *clone*
-        iterateChildren(cloneOrMove(nodep));
-    }
     void visit(AstCFunc* nodep) override {
         // Add to list of blocks under this scope
         UINFO(4, "    CFUNC " << nodep);
@@ -381,7 +375,6 @@ class ScopeCleanupVisitor final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstAlias* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstAliasScope* nodep) override { movedDeleteOrIterate(nodep); }
-    void visit(AstCoverToggle* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstNodeFTask* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstCFunc* nodep) override { movedDeleteOrIterate(nodep); }
 

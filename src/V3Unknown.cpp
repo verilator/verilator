@@ -77,7 +77,7 @@ class UnknownVisitor final : public VNVisitor {
         if (m_ftaskp) {
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            m_ftaskp->prependStmtsp(varp);
+            m_ftaskp->prependDeclsp(varp);
         } else {
             m_modp->prependStmtsp(varp);
         }
@@ -112,11 +112,13 @@ class UnknownVisitor final : public VNVisitor {
             UINFO(4, "Edit BOUNDLVALUE " << newp);
             replaceHandle.relink(newp);
         } else {
-            AstNode* stmtp = prep->backp();  // Grab above point before we replace 'prep'
-            while (!VN_IS(stmtp, NodeStmt)) stmtp = stmtp->backp();
+            AstNodeStmt* stmtp = nullptr;  // Grab above point before we replace 'prep'
+            for (AstNode* abovep = prep->backp(); !stmtp; abovep = abovep->backp()) {
+                stmtp = VN_CAST(abovep, NodeStmt);
+            }
             VNRelinker replaceHandle;
-            AstNode* const origStmtp = stmtp->unlinkFrBack(&replaceHandle);
-            AstNode* elseStmtp = nullptr;
+            AstNodeStmt* const origStmtp = stmtp->unlinkFrBack(&replaceHandle);
+            AstNodeStmt* elseStmtp = nullptr;
             const bool hasSideEffects = origStmtp->exists(
                 [](AstNode* const np) { return !np->isPure() || np->isTimingControl(); });
             if (hasSideEffects) {
@@ -655,8 +657,7 @@ class KnownVisitor final : public VNVisitor {
     }
     void visit(AstFunc* const nodep) override {
         iterateChildren(nodep);
-        // VN_AS on purpose since fvarp should be either var or nullptr
-        if (const AstVar* const varp = VN_AS(nodep->fvarp(), Var)) nodep->dtypeFrom(varp);
+        if (const AstVar* const varp = nodep->fvarp()) nodep->dtypeFrom(varp);
     }
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 

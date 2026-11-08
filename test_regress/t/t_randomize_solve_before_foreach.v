@@ -81,7 +81,7 @@ module t;
     static Packet pkt = new;
     int randomize_result;
 
-    // Test 1: solve...before with conditional constraints
+    // Test: solve...before with conditional constraints
     repeat (20) begin
       randomize_result = it.randomize();
       `checkd(randomize_result, 1);
@@ -92,7 +92,7 @@ module t;
       end
     end
 
-    // Test 2: solve...before with unpacked/packed struct array members
+    // Test: solve...before with unpacked/packed struct array members
     repeat (20) begin
       randomize_result = pkt.randomize();
       `checkd(randomize_result, 1);
@@ -101,7 +101,7 @@ module t;
       end
     end
 
-    // Test 3: solve...before with static array index (non-foreach)
+    // Test: solve...before with static array index (non-foreach)
     repeat (20) begin
       randomize_result = it.randomize();
       `checkd(randomize_result, 1);

@@ -1461,13 +1461,10 @@ class AstExprStmt final : public AstNodeExpr {
     // Perform a statement, often assignment inside an expression node,
     // the parent gets passed the 'resultp()'.
     // resultp is evaluated AFTER the statement(s).
-    // @astgen op1 := stmtsp : List[AstNode]
+    // @astgen op1 := stmtsp : List[AstNodeStmt]
     // @astgen op2 := resultp : AstNodeExpr
-private:
-    bool m_hasResult = true;  // Returns result via resultp()
-
 public:
-    AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNodeExpr* resultp)
+    AstExprStmt(FileLine* fl, AstNodeStmt* stmtsp, AstNodeExpr* resultp)
         : ASTGEN_SUPER_ExprStmt(fl) {
         addStmtsp(stmtsp);
         this->resultp(resultp);
@@ -1475,18 +1472,11 @@ public:
     }
     ASTGEN_MEMBERS_AstExprStmt;
     // METHODS
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
-    bool isPure() override {
-        if (AstNode::afterCommentp(stmtsp())) return false;
-        return resultp()->isPure();
-    }
+    bool isPure() override;
     bool sameNode(const AstNode*) const override { return true; }
-    bool hasResult() const { return m_hasResult; }
-    void hasResult(bool flag) { m_hasResult = flag; }
 };
 class AstFError final : public AstNodeExpr {
     // @astgen op1 := filep : AstNodeExpr

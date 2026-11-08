@@ -106,16 +106,16 @@ class RandSequenceVisitor final : public VNVisitor {
         }
     }
 
-    AstVar* newBreakVar(FileLine* fl, bool asOutput) {
+    // Add to taskp a cleared break variable, and the arguments after it
+    AstVar* newBreakVar(AstNodeFTask* taskp, FileLine* fl, bool asOutput) {
         AstVar* const varp = new AstVar{fl, VVarType::PORT, "__VrsBreak", VFlagBitPacked{}, 1};
         varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         varp->funcLocal(true);
         if (asOutput) varp->direction(VDirection::OUTPUT);
-        AstNode* outp = varp;
-        outp->addNext(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
-                                    new AstConst{fl, AstConst::BitFalse{}}});
+        taskp->addDeclsp(varp);
+        taskp->addStmtsp(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                       new AstConst{fl, AstConst::BitFalse{}}});
 
-        // Also add arguments as next's
         for (const auto& itr : m_localizeNames) {
             const AstVar* const lvarp = itr.second;
             AstVar* const iovarp
@@ -123,7 +123,7 @@ class RandSequenceVisitor final : public VNVisitor {
             iovarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             iovarp->funcLocal(true);
             iovarp->direction(VDirection::REF);
-            varp->addNext(iovarp);
+            taskp->addDeclsp(iovarp);
             m_localizeRemaps.emplace(lvarp, iovarp);
         }
         return varp;
@@ -131,14 +131,13 @@ class RandSequenceVisitor final : public VNVisitor {
 
     AstTask* newStartFunc(AstRandSequence* nodep) {
         // Create wrapper that is called by the sequence
-        AstTask* const taskp = new AstTask{m_startProdp->fileline(), m_rsp->name(), nullptr};
+        AstTask* const taskp = new AstTask{m_startProdp->fileline(), m_rsp->name()};
         taskp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         m_modp->addStmtsp(taskp);
 
         // Create local (not output) break variable
         VL_RESTORER_COPY(m_localizeRemaps);
-        AstVar* breakVarp = newBreakVar(nodep->fileline(), false);
-        taskp->addStmtsp(breakVarp);
+        AstVar* const breakVarp = newBreakVar(taskp, nodep->fileline(), false);
 
         // Call the start production's task
         taskp->addStmtsp(newProdFuncRef(nodep, m_startProdp, breakVarp, nullptr));
@@ -147,8 +146,8 @@ class RandSequenceVisitor final : public VNVisitor {
         return taskp;
     }
 
-    AstNode* newProdFuncRef(AstNode* nodep, AstRSProd* prodp, AstVar* breakVarp,
-                            AstArg* userArgsp) {
+    AstNodeStmt* newProdFuncRef(AstNode* nodep, AstRSProd* prodp, AstVar* breakVarp,
+                                AstArg* userArgsp) {
         auto it = m_prodFuncps.find(prodp);
         UASSERT_OBJ(it != m_prodFuncps.end(), nodep, "No production function made");
         AstNodeFTask* const prodFuncp = it->second;
@@ -167,21 +166,34 @@ class RandSequenceVisitor final : public VNVisitor {
             argsp->addNext(new AstArg{nodep->fileline(), "__Vrsarg_" + lvarp->name(), refp});
         }
         if (userArgsp) argsp->addNext(userArgsp);
-        AstNode* const newp
+        AstNodeStmt* const newp
             = new AstStmtExpr{fl, new AstTaskRef{fl, VN_AS(prodFuncp, Task), argsp}};
         return newp;
     }
 
     void newProdFunc(AstRSProd* nodep) {
         // Task, as time may pass
-        AstTask* const newp
-            = new AstTask{nodep->fileline(), m_rsp->name() + "_" + nodep->name(), nullptr};
+        AstTask* const newp = new AstTask{nodep->fileline(), m_rsp->name() + "_" + nodep->name()};
         m_modp->addStmtsp(newp);
         m_prodFuncps.emplace(nodep, newp);
         UINFOTREE(9, newp, "newProd", "");
     }
 
-    AstNode* newProdRandJoin(AstRSProd* /*prodp*/, AstRSProdList* prodlistp) {
+    // Statements of a rule, its code block followed by its productions
+    static AstNodeStmt* ruleStmtsp(const AstRSRule* rulep) {
+        AstNodeStmt* stmtsp = nullptr;
+        if (rulep->weightStmtsp()) stmtsp = rulep->weightStmtsp()->unlinkFrBackWithNext();
+        for (const AstRSProdList* const listp : rulep->prodlistspList()) {
+            UASSERT_OBJ(!listp->randJoin(), listp,
+                        "rand join should have been handled in visit(RSRule)");
+            if (listp->prodsp()) {
+                stmtsp = AstNode::addNext(stmtsp, listp->prodsp()->unlinkFrBackWithNext());
+            }
+        }
+        return stmtsp;
+    }
+
+    AstNodeStmt* newProdRandJoin(AstRSProd* /*prodp*/, AstRSProdList* prodlistp) {
         // For weight == 1.0 longer sequence (favor stay in a)
         // For weight == 0.0 shorter squence (favor change a/b)
         UASSERT_OBJ(prodlistp->weightp(), prodlistp, "Weight should have default CONST(0.5)");
@@ -198,9 +210,7 @@ class RandSequenceVisitor final : public VNVisitor {
             if (!subProdp) continue;
             if (!subProdp->rulesp()) continue;
             if (!subProdp->rulesp()->prodlistsp()) continue;
-            for (AstNodeStmt* subStmtp
-                 = VN_AS(subProdp->rulesp()->prodlistsp()->prodsp(), NodeStmt);
-                 subStmtp; subStmtp = VN_AS(subStmtp->nextp(), NodeStmt)) {
+            for (AstNodeStmt* const subStmtp : subProdp->rulesp()->prodlistsp()->prodspList()) {
                 listStmts[proditemp].push_back(subStmtp);
             }
         }
@@ -215,7 +225,7 @@ class RandSequenceVisitor final : public VNVisitor {
         // Need to clone all nodes used
 
         FileLine* fl = prodlistp->fileline();
-        AstNode* newp = nullptr;
+        AstNodeStmt* newp = nullptr;
 
         // "bool _Vjoin_repick = true;"  // Pick a new longer sequence
         AstVar* repickVarp = new AstVar{fl, VVarType::VAR, "_Vjoin_repick", VFlagBitPacked{}, 1};
@@ -481,15 +491,14 @@ class RandSequenceVisitor final : public VNVisitor {
         // but as-is we'll optimize it away in most cases anyways
         VL_RESTORER(m_breakVarp);
         VL_RESTORER_COPY(m_localizeRemaps);
-        m_breakVarp = newBreakVar(nodep->fileline(), true);
-        m_prodFuncp->addStmtsp(m_breakVarp);
+        m_breakVarp = newBreakVar(m_prodFuncp, nodep->fileline(), true);
 
         // Production formal ports become real input ports on the generated task.
         // Must be added after m_breakVarp / localize ports so positional argument
         // order in newProdFuncRef stays consistent: [break, localize..., user...].
         if (AstNode* const portsp = nodep->portsp()) {
             portsp->unlinkFrBackWithNext();
-            m_prodFuncp->addStmtsp(portsp);
+            m_prodFuncp->addDeclsp(portsp);
             for (AstNode* itp = portsp; itp; itp = itp->nextp()) {
                 AstVar* const portVarp = VN_AS(itp, Var);
                 portVarp->funcLocal(true);
@@ -511,16 +520,13 @@ class RandSequenceVisitor final : public VNVisitor {
         if (!nodep->rulesp()) {  // Nothing to do
         } else if (nodep->rulesp()->prodlistsp() && nodep->rulesp()->prodlistsp()->randJoin()) {
             AstRSProdList* const prodlistp = nodep->rulesp()->prodlistsp();
-            AstNode* const itemsp = newProdRandJoin(nodep, prodlistp);
+            AstNodeStmt* const itemsp = newProdRandJoin(nodep, prodlistp);
             m_jumpBlockp->addStmtsp(itemsp);
             iterateAndNextNull(itemsp);
         } else if (!nodep->rulesp()->nextp()) {  // Single rule/list, can just do it
             // RSPROD(RSRULE(weight, stmt)) -> IF(weight != 0, stmt)
             const AstRSRule* const rulep = nodep->rulesp();
-            AstNode* itemsp = nullptr;
-            if (rulep->weightStmtsp()) itemsp = rulep->weightStmtsp()->unlinkFrBackWithNext();
-            if (rulep->prodlistsp())
-                itemsp = AstNode::addNext(itemsp, rulep->prodlistsp()->unlinkFrBackWithNext());
+            AstNodeStmt* itemsp = ruleStmtsp(rulep);
             // Can ignore rulep->weightp() unless is zero, in which case noop, add if
             if (rulep->weightp())
                 itemsp = new AstIf{rulep->weightp()->fileline(),
@@ -541,11 +547,7 @@ class RandSequenceVisitor final : public VNVisitor {
             //   -> RANDCASE(CASEITEM(weight1, stmt1), CASEITEM(weight2, stmt2))
             AstRandCase* const randcasep = new AstRandCase{nodep->fileline(), nullptr};
             for (AstRSRule* const rulep : nodep->rulespList()) {
-                AstNode* itemsp = nullptr;
-                if (rulep->weightStmtsp()) itemsp = rulep->weightStmtsp()->unlinkFrBackWithNext();
-                if (rulep->prodlistsp())
-                    itemsp = AstNode::addNext(itemsp, rulep->prodlistsp()->unlinkFrBackWithNext());
-                if (itemsp) {
+                if (AstNodeStmt* const itemsp = ruleStmtsp(rulep)) {
                     AstNodeExpr* const weightp = rulep->weightp()
                                                      ? rulep->weightp()->unlinkFrBack()
                                                      : new AstConst{rulep->fileline(), 1};
@@ -569,23 +571,6 @@ class RandSequenceVisitor final : public VNVisitor {
         // Rule of what to produce (as a list) under a production
         nodep->v3fatalSrc("randsequence rule should be iterated and deleted by AstRSProd");
     }
-    void visit(AstRSProdList* nodep) override {
-        // List of productions to call, potentially with a weight
-        UINFO(9, "visit " << nodep);
-        UASSERT_OBJ(m_prodFuncp, nodep, "RSProdList not under production");
-
-        // Move prodlist to parent (m_prodFunc) and process
-        if (AstNode* const itemsp = nodep->prodsp()) {
-            UASSERT_OBJ(!nodep->randJoin(), nodep,
-                        "rand join should have been handled in visit(RSRule)");
-            nodep->replaceWith(itemsp->unlinkFrBackWithNext());
-            // Will soon iterate itemsp as part of normal visit process
-            // These will become sequential in the generated task
-        } else {
-            nodep->unlinkFrBack();
-        }
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
     void visit(AstRSProdItem* nodep) override {
         // "call" to generate using another production
         UINFO(9, "visit " << nodep);
@@ -596,7 +581,7 @@ class RandSequenceVisitor final : public VNVisitor {
         AstArg* const userArgsp
             = nodep->argsp() ? nodep->argsp()->unlinkFrBackWithNext() : nullptr;
         // Convert to task call
-        AstNode* const newp = newProdFuncRef(nodep, foundp, m_breakVarp, userArgsp);
+        AstNodeStmt* const newp = newProdFuncRef(nodep, foundp, m_breakVarp, userArgsp);
         // The production might have done a "break;", skip other steps if so
         newp->addNext(new AstIf{nodep->fileline(),
                                 new AstVarRef{nodep->fileline(), m_breakVarp, VAccess::READ},

@@ -15,6 +15,7 @@
 //*************************************************************************
 // COVERAGEJOIN TRANSFORMATIONS:
 //      If two COVERTOGGLEs have same VARSCOPE, combine them
+//      Lower the remaining COVERTOGGLEs to IFs
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
@@ -80,11 +81,47 @@ class CoverageJoinVisitor final : public VNVisitor {
                 UINFO(8, "   new " << removep->incp()->declp());
                 // Mark the found node as a duplicate of the first node
                 // (Not vice-versa as we have the iterator for the found node)
+                // Remove its process too, which holds nothing else
+                AstAlways* const alwaysp = VN_AS(removep->backp(), Always);
+                UASSERT_OBJ(!removep->nextp(), removep, "Toggle process should hold only it");
                 removep->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(removep), removep);
+                VL_DO_DANGLING(pushDeletep(alwaysp->unlinkFrBack()), alwaysp);
                 ++m_statToggleJoins;
             }
         }
+    }
+
+    static void lower(AstCoverToggle* nodep) {
+        // COVERTOGGLE(INC, ORIG, CHANGE) ->
+        //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
+        AstCoverInc* const incp = nodep->incp()->unlinkFrBack();
+        AstNodeExpr* const origp = nodep->origp()->unlinkFrBack();
+        AstNodeExpr* const changeWrp = nodep->changep()->unlinkFrBack();
+        AstNodeExpr* const changeRdp = changeWrp->cloneTree(false);
+        changeRdp->foreach([](AstVarRef* refp) { refp->access(VAccess::READ); });
+        changeWrp->foreach([](AstVarRef* refp) { refp->varp()->setIgnoreSchedWrite(); });
+        AstNodeExpr* comparedp = nullptr;
+        incp->toggleExprp(origp->cloneTree(false));
+        incp->toggleCovExprp(changeRdp->cloneTree(false));
+        FileLine* const flp = nodep->fileline();
+        // Xor will optimize better than Eq, when CoverToggle has bit selects,
+        // but can only use Xor with non-opaque types
+        if (const AstBasicDType* const bdtypep
+            = VN_CAST(origp->dtypep()->skipRefp(), BasicDType)) {
+            if (!bdtypep->isOpaque()) {
+                AstNodeExpr* const zp = new AstConst{flp, AstConst::DTyped{}, origp->dtypep()};
+                comparedp = new AstNeq{flp, zp, new AstXor{flp, origp, changeRdp}};
+            }
+        }
+        if (!comparedp) comparedp = AstNeq::newTyped(flp, origp, changeRdp);
+        AstIf* const newp = new AstIf{flp, comparedp, incp};
+        // We could add another IF to detect posedges, and only increment if so.
+        // It's another whole branch though versus a potential memory miss.
+        // We'll go with the miss.
+        newp->addThensp(new AstAssign{flp, changeWrp, origp->cloneTree(false)});
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
     // VISITORS
@@ -94,6 +131,10 @@ class CoverageJoinVisitor final : public VNVisitor {
         iterateChildren(nodep);
         // Simplify
         detectDuplicates();
+        // Lower those remaining
+        for (AstCoverToggle* const togglep : m_toggleps) {
+            if (togglep->backp()) lower(togglep);
+        }
     }
     void visit(AstCoverToggle* nodep) override {
         m_toggleps.push_back(nodep);
