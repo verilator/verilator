@@ -13,7 +13,11 @@ test.scenarios('vlt')
 
 test.compile(fails=True,
              make_main=False,
-             verilator_flags2=['--exe', test.t_dir + '/t_flag_cflags_modules_cppm_unsup.cppm'],
+             verilator_flags2=[
+                 '--exe',
+                 test.t_dir + '/t_flag_cflags_modules_cppm_unsup.cppm',
+                 test.t_dir + '/t_flag_cflags_modules_cppm_unsup.ixx',
+             ],
              expect_filename=test.golden_filename)
 
 test.passes()
