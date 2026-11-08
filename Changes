@@ -79,7 +79,9 @@ Verilator 5.055 devel
 * Fix FSM coverage with a compound reset under line or expression coverage (#9071) (#9073). [David Harris]
 * Fix parameters as the slice size of a stream target (#9072). [Marco Bartoli]
 * Fix wide unpacked array copy between opposite directions (#9074) (#9075). [Graeme Smecher]
+* Fix sampled-value functions with a variable index (#9084). [Steven Bellock]
 * Fix process not found after a covergroup or randomize() (#9085). [Steven Bellock]
+
 
 
 Verilator 5.054 2026-11-01

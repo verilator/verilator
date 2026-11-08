@@ -340,13 +340,34 @@ public:
 
 // Prepare one default sampled expression.
 class DefaultSampledValueVisitor final : public VNVisitor {
+    // STATE
+    bool m_defaulted = false;  // A reference below was replaced by its default
+
     // METHODS
-    static AstConst* newTypeDefault(AstNodeExpr* nodep) {
+    AstConst* newTypeDefault(AstNodeExpr* nodep) {
+        m_defaulted = true;
         AstConst* const constp
             = new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()};
         if (nodep->dtypep()->isFourstate()) constp->num().setAllBitsX();
         constp->dtypeFrom(nodep);
         return constp;
+    }
+
+    void visitSelect(AstNodeExpr* nodep) {
+        // A select of a replaced value or index is itself the default of its type
+        bool setDefaulted;
+        {
+            VL_RESTORER(m_defaulted);
+            m_defaulted = false;
+            iterateChildren(nodep);
+            setDefaulted = m_defaulted;
+        }
+        if (setDefaulted) {
+            m_defaulted = true;  // Propagate up that replacement was made
+            nodep->replaceWith(newTypeDefault(nodep));
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
     }
 
     // VISITORS
@@ -367,13 +388,8 @@ class DefaultSampledValueVisitor final : public VNVisitor {
         nodep->replaceWith(newTypeDefault(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstArraySel* nodep) override {
-        iterateChildren(nodep);
-        // The default of an element of an array replaced by its default above
-        if (!VN_IS(nodep->fromp(), Const)) return;
-        nodep->replaceWith(newTypeDefault(nodep));
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
+    void visit(AstArraySel* nodep) override { visitSelect(nodep); }
+    void visit(AstSel* nodep) override { visitSelect(nodep); }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
