@@ -70,6 +70,7 @@ Verilator 5.055 devel
 * Fix type checking of queue and dynamic array concatenation items (#9029). [Michael Wrighton]
 * Fix duplicate foreach temporaries in out-of-block class methods (#9042). [Michael Wrighton]
 * Fix shallow copy assigned to a base class handle (#9045). [Michael Wrighton]
+* Fix cycle of rand class handles (#9063). [Steven Bellock]
 
 
 Verilator 5.054 2026-11-01

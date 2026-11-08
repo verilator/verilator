@@ -47,10 +47,18 @@
 #include "V3UniqueNames.h"
 
 #include <queue>
+#include <set>
 #include <tuple>
 #include <utility>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+// ######################################################################
+// General file-level definitions
+
+static constexpr const char* BASIC_RANDOMIZE_FUNC_NAME = "__VBasicRand";
+
+using ActiveSet = std::unordered_set<const AstClass*>;
 
 // ######################################################################
 // Determines if a class is used with randomization
@@ -62,8 +70,6 @@ enum ClassRandom : uint8_t {
     IS_RANDOMIZED_INLINE,  // randomize() with args is called
     IS_STD_RANDOMIZED,  // std::randomize() is called
 };
-
-static constexpr const char* BASIC_RANDOMIZE_FUNC_NAME = "__VBasicRand";
 
 // ######################################################################
 // Establishes the target of a rand_mode() call
@@ -399,10 +405,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
         iterateConst(cloneConstrp);
     }
 
-    // Clone constraints from nested rand class members
+    // Clone constraints from nested rand class members.
     void cloneNestedConstraintsRecurse(AstVarRef* rootVarRefp, AstClass* classp,
                                        const std::vector<AstVar*>& pathToClass,
-                                       AstClass* targetClassp) {
+                                       AstClass* targetClassp, ActiveSet& activeClasses) {
         for (AstNode* const memberNodep : classp->memberspList()) {
             AstVar* const memberVarp = VN_CAST(memberNodep, Var);
             if (!memberVarp) continue;
@@ -412,6 +418,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             if (!memberClassRefp || !memberClassRefp->classp()) continue;
 
             AstClass* nestedClassp = memberClassRefp->classp();
+            if (!activeClasses.insert(nestedClassp).second) continue;
 
             std::vector<AstVar*> newPath = pathToClass;
             newPath.push_back(memberVarp);
@@ -421,7 +428,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 [&](AstClass* const containingClassp, AstConstraint* const constrp) {
                     processNestedConstraint(constrp, rootVarRefp, newPath, targetClassp);
                 });
-            cloneNestedConstraintsRecurse(rootVarRefp, nestedClassp, newPath, targetClassp);
+            cloneNestedConstraintsRecurse(rootVarRefp, nestedClassp, newPath, targetClassp,
+                                          activeClasses);
+            activeClasses.erase(nestedClassp);
         }
     }
 
@@ -660,7 +669,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 memberClassp->foreachMember([&](AstClass* const, AstConstraint* const constrp) {
                     processNestedConstraint(constrp, rootVarRefp, emptyPath, classp);
                 });
-                cloneNestedConstraintsRecurse(rootVarRefp, memberClassp, emptyPath, classp);
+                // The owning class is seeded so a cycle back to it is not cloned again
+                ActiveSet activeClasses{classp, memberClassp};
+                cloneNestedConstraintsRecurse(rootVarRefp, memberClassp, emptyPath, classp,
+                                              activeClasses);
                 // Delete the temporary VarRef created for constraint cloning
                 VL_DO_DANGLING(rootVarRefp->deleteTree(), rootVarRefp);
             });
@@ -1120,8 +1132,9 @@ class RandomizeVisitor final : public VNVisitor {
     int m_randCaseNum = 0;  // Randcase number within a module for var naming
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
     AstConstraint* m_constraintp = nullptr;  // Current constraint
-    std::map<AstClass*, std::pair<bool, bool>>
-        m_prePostWrap;  // Per-handle-type pre/post virtual wrapper presence
+    // Per-handle-type pre/post virtual wrapper presence
+    std::map<AstClass*, std::pair<bool, bool>> m_prePostWrap;
+    ActiveSet m_activeClasses;  // Classes currently building randomize()
     RandModeVars m_modeVars;  // Static rand_mode/constraint_mode state vars per class
     const std::unique_ptr<V3SolverLowering> m_solverp;  // Constraint solver lowering
 
@@ -1859,6 +1872,8 @@ class RandomizeVisitor final : public VNVisitor {
             if (classHasRandClassMembers(memberClassp)) {
                 const string suffix = (cbName == "pre_randomize") ? "pre" : "post";
                 AstTask* const nestedTaskp = getCreateNestedCallbackTask(memberClassp, suffix);
+                // A cycle of rand class handles makes the callbacks recursive
+                if (m_activeClasses.count(memberClassp)) nestedTaskp->recursive(true);
                 AstMethodCall* const recurseCallp = new AstMethodCall{
                     fl, new AstVarRef{fl, ownerClassp, memberVarp, VAccess::WRITE},
                     nestedTaskp->name()};
@@ -2015,6 +2030,8 @@ class RandomizeVisitor final : public VNVisitor {
                           ? V3Randomize::newRandomizeFunc(m_memberMap, classRefp->classp(),
                                                           BASIC_RANDOMIZE_FUNC_NAME)
                           : V3Randomize::newRandomizeFunc(m_memberMap, classRefp->classp());
+                // A cycle of rand class handles makes the randomize functions recursive
+                if (m_activeClasses.count(classRefp->classp())) memberFuncp->recursive(true);
                 AstMethodCall* const callp
                     = memberVarp->globalConstrained()
                           ? new AstMethodCall{fl,
@@ -2301,6 +2318,9 @@ class RandomizeVisitor final : public VNVisitor {
 
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
+        // Clear now so a cycle of rand class handles does not revisit this class
+        nodep->user1(false);
+        m_activeClasses.insert(nodep);
         UINFO(9, "Define randomize() for " << nodep);
         nodep->baseMostClassp()->needRNG(true);
 
@@ -2358,7 +2378,7 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         addPrePostCall(nodep, randomizep, "post_randomize");
-        nodep->user1(false);
+        m_activeClasses.erase(nodep);
     }
     void visit(AstRandCase* nodep) override {
         // RANDCASE
