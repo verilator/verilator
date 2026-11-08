@@ -760,7 +760,9 @@ public:
         if (v3Global.opt.cxxModules()) {
             of.puts("# User C++ module sources\n");
             of.puts("VM_USER_SOURCES = \\\n");
-            for (const auto& cppfile : cppFiles) of.puts("  " + cppfile + " \\\n");
+            for (const auto& cppfile : cppFiles)
+                of.puts("  " + V3Os::filenameRelativePath(cppfile, v3Global.opt.makeDir())
+                        + " \\\n");
             of.puts("\n");
 
             of.puts("# User C++ module interface files\n");

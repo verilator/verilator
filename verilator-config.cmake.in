@@ -488,6 +488,7 @@ function(verilate TARGET)
         json_get_list(JSOURCES_SUPPORT_SLOW "${MANIFEST}" sources support_slow)
         json_get_list(JSOURCES_SUPPORT_FAST "${MANIFEST}" sources support_fast)
         json_get_list(JSOURCES_USER_CLASSES "${MANIFEST}" sources user_classes)
+        json_get_list(JSOURCES_MODULE_INTERFACES "${MANIFEST}" sources module_interfaces)
         json_get_list(JSOURCES_DEPS "${MANIFEST}" sources deps)
 
         file(
@@ -540,6 +541,8 @@ function(verilate TARGET)
             "set(${VERILATE_PREFIX}_DEPS ${JSOURCES_DEPS})\n"
             "# User .cpp files (from .cpp's on Verilator command line)\n"
             "set(${VERILATE_PREFIX}_USER_CLASSES ${JSOURCES_USER_CLASSES})\n"
+            "# User C++ module interface files (from .cppm's on Verilator command line)\n"
+            "set(${VERILATE_PREFIX}_MODULE_INTERFACES ${JSOURCES_MODULE_INTERFACES})\n"
         )
 
         json_get_submodules(JSUBMODULES JNSUBMODULES "${MANIFEST}")
@@ -621,6 +624,34 @@ function(verilate TARGET)
     file(WRITE "${VARGS_FILE}" "${VERILATOR_COMMAND}")
 
     include("${VCMAKE_COPY}")
+
+    if(NOT "${${VERILATE_PREFIX}_MODULE_INTERFACES}" STREQUAL "")
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.28)
+            set(MODULE_INTERFACE_DIRS "")
+            foreach(MODULE_INTERFACE ${${VERILATE_PREFIX}_MODULE_INTERFACES})
+                get_filename_component(MODULE_INTERFACE_DIR "${MODULE_INTERFACE}" DIRECTORY)
+                list(APPEND MODULE_INTERFACE_DIRS "${MODULE_INTERFACE_DIR}")
+            endforeach()
+            list(REMOVE_DUPLICATES MODULE_INTERFACE_DIRS)
+            target_sources(
+                ${TARGET}
+                PRIVATE
+                    FILE_SET CXX_MODULES
+                    BASE_DIRS ${MODULE_INTERFACE_DIRS}
+                    FILES ${${VERILATE_PREFIX}_MODULE_INTERFACES}
+            )
+            list(
+                REMOVE_ITEM
+                ${VERILATE_PREFIX}_USER_CLASSES
+                ${${VERILATE_PREFIX}_MODULE_INTERFACES}
+            )
+        else()
+            message(
+                WARNING
+                "C++ module interface files require CMake 3.28 or newer; they are added as ordinary sources"
+            )
+        endif()
+    endif()
 
     set(GENERATED_C_SOURCES
         ${${VERILATE_PREFIX}_CLASSES_FAST}

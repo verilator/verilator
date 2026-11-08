@@ -402,6 +402,13 @@ ifneq ($(VK_MODULES),)
 endif
 
 ######################################################################
+### Clean
+
+clean::
+	-rm -rf $(VK_MODULE_DIR)
+	-rm -f *.pcm *.ifc $(VK_MODULE_OBJS)
+
+######################################################################
 ### Detect out of date files and rebuild.
 
 DEPS := $(wildcard *.d)
