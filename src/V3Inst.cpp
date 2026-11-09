@@ -99,10 +99,11 @@ class InstVisitor final : public VNVisitor {
         // instances can share their code; V3Inline and V3Coalesce remove the rest. A
         // --lib-create wrapper calls into the library and an interface has no code of its
         // own, so neither has code to share. Inputs written by the design or read at time
-        // zero are not kept, as initial blocks run before continuous assignments settle.
-        if (v3Global.opt.fCoalesce() && modVarp->direction() == VDirection::INPUT
-            && !m_cellp->modp()->verilatorLib() && !VN_IS(m_cellp->modp(), Iface)
-            && !modVarp->user3() && !modVarp->user4()) {
+        // zero are not kept, as initial blocks run before continuous assignments settle; a
+        // read in any function or task counts, conservatively, as one might be called from
+        // an initial block.
+        if (modVarp->direction() == VDirection::INPUT && !m_cellp->modp()->verilatorLib()
+            && !VN_IS(m_cellp->modp(), Iface) && !modVarp->user3() && !modVarp->user4()) {
             modVarp->keepPort(true);
             // A port connected to anything but a whole variable needs an assignment, and
             // stays kept; the port of a module instantiated once is otherwise aliased as

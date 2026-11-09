@@ -9,6 +9,7 @@ module t (
   output logic o
   );
 
+  // verilator lint_off UNOPTFLAT
   // A one long cycle
   logic a;
   assign a = a;
@@ -26,6 +27,7 @@ module t (
   assign f = d;
   assign g = d;
   assign h = g;
+  // verilator lint_on UNOPTFLAT
 
   assign o = i ^ a ^ b ^ c ^ d ^ e ^ f ^ g ^ h;
 

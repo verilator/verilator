@@ -16,7 +16,7 @@ test.compile(verilator_flags2=["--binary", "--stats", "-fno-coalesce"])
 
 test.execute()
 
-# Without coalescing the inputs are aliased as usual
+# Without coalescing the inputs are kept, and their copies remain
 test.file_grep_not(test.stats, r'Optimizations, Coalesced references')
 
 test.passes()
