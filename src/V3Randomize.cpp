@@ -2082,9 +2082,13 @@ class RandomizeVisitor final : public VNVisitor {
     // random variables retain their previous values." Return statements copying each random
     // variable of the object that fromp refers to (nullptr: 'this') into a new temporary of
     // funcp, also through its rand class members, and add the statements copying them back
-    // to restoresp
+    // to restoresp. A class on visitingr is being saved already, and is reached again through
+    // a cycle of rand class members. A rand array of class handles is copied as handles only,
+    // so the objects in it keep any change __VBasicRand makes.
     AstNodeStmt* newSaveRandVarsp(AstFunc* const funcp, AstClass* const classp,
-                                  AstNodeExpr* const fromp, AstNodeStmt*& restoresp) {
+                                  AstNodeExpr* const fromp, AstNodeStmt*& restoresp,
+                                  std::set<const AstClass*>& visitingr) {
+        if (!visitingr.insert(classp).second) return nullptr;
         FileLine* const fl = funcp->fileline();
         AstNodeStmt* savesp = nullptr;
         classp->foreachMember([&](AstClass* const declClassp, AstVar* const varp) {
@@ -2097,13 +2101,11 @@ class RandomizeVisitor final : public VNVisitor {
             };
             if (const AstClassRefDType* const classRefp
                 = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType)) {
-                // A member of the class's own type is unsupported, see addBasicRandomizeBody
-                if (classRefp->classp() == classp) return;
                 // __VBasicRand also changes the object that a rand class member refers to
                 AstNodeExpr* const objp = newRefp(VAccess::READ);
                 AstNodeStmt* objRestoresp = nullptr;
                 AstNodeStmt* const objSavesp
-                    = newSaveRandVarsp(funcp, classRefp->classp(), objp, objRestoresp);
+                    = newSaveRandVarsp(funcp, classRefp->classp(), objp, objRestoresp, visitingr);
                 if (objSavesp) {
                     const auto newIfNotNullp = [&](AstNodeStmt* const stmtsp) {
                         return new AstIf{fl,
@@ -2129,13 +2131,16 @@ class RandomizeVisitor final : public VNVisitor {
                 restoresp, new AstAssign{fl, newRefp(VAccess::WRITE),
                                          new AstVarRef{fl, prevVarp, VAccess::READ}});
         });
+        visitingr.erase(classp);
         return savesp;
     }
     // Add to funcp the statements saving the random variables of 'this', of class classp,
     // and return the statements restoring them if randomize() fails
     AstNodeStmt* addSaveRandVars(AstFunc* const funcp, AstClass* const classp) {
         AstNodeStmt* restoresp = nullptr;
-        if (AstNodeStmt* const savesp = newSaveRandVarsp(funcp, classp, nullptr, restoresp)) {
+        std::set<const AstClass*> visiting;
+        if (AstNodeStmt* const savesp
+            = newSaveRandVarsp(funcp, classp, nullptr, restoresp, visiting)) {
             funcp->addStmtsp(savesp);
         }
         return restoresp;
