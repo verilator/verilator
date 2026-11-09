@@ -27,6 +27,8 @@ if test.vlt:
     test.file_grep(solver_log, r'\(get-value \(with_n \)\)')
     test.file_grep(solver_log, r'\(get-value \(first \)\)')
     test.file_grep(solver_log, r'\(get-value \(__Vd_size \)\)')
+    # The size belongs to another object, not paths.path_d.
+    test.file_grep_not(solver_log, r'\(get-value \(__Vpath_d_size \)\)')
 else:
     test.execute()
 

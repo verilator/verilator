@@ -92,6 +92,18 @@ public:
         return "__V" + varp->name() + "_size";
     }
 
+    // A solve-before item orders variables; it does not constrain container size.
+    static bool isSolveBeforeItem(const AstNode* nodep) {
+        while (nodep->backp()) {
+            while (nodep->backp() && nodep->backp()->nextp() == nodep) nodep = nodep->backp();
+            nodep = nodep->backp();
+            if (!nodep) break;
+            if (VN_IS(nodep, ConstraintBefore)) return true;
+            if (VN_IS(nodep, ConstraintExpr)) return false;
+        }
+        return false;
+    }
+
     // Look through unpacked array dimensions to the element type
     static AstNodeDType* arrayElementDTypep(AstNodeDType* dtypep) {
         dtypep = dtypep->skipRefp();
@@ -470,7 +482,10 @@ class ConstraintExprVisitor final : public VNVisitor {
                     varp = varrefp->varp();
                 } else if (m_inlineInitBlockp) {
                     if (const AstMemberRef* const memberp = VN_CAST(methodp->fromp(), MemberRef)) {
-                        varp = memberp->varp();
+                        const std::string path = buildMemberPath(memberp);
+                        return new AstConst{fl, AstConst::String{},
+                                            path.substr(0, path.size() - memberp->name().size())
+                                                + SmtUtil::sizeVarName(memberp->varp())};
                     }
                 }
                 if (varp) {
@@ -2181,6 +2196,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeModule* const genModp = VN_AS(m_genp->user2p(), NodeModule);
 
         for (AstNodeExpr* const lhsp : nodep->lhsspList()) {
+            if (const AstCMethodHard* const methodp = VN_CAST(lhsp, CMethodHard)) {
+                if (methodp->method() == VCMethod::ASSOC_SIZE) continue;
+            }
             AstNodeExpr* const lhsTestp = buildSolveBeforeNameExpr(fl, lhsp);
             if (!lhsTestp) {
                 lhsp->v3fatalSrc("Unexpected expression type in solve...before lhs");
@@ -2188,6 +2206,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
             VL_DO_DANGLING(lhsTestp->deleteTree(), lhsTestp);
             for (AstNodeExpr* const rhsp : nodep->rhsspList()) {
+                if (const AstCMethodHard* const methodp = VN_CAST(rhsp, CMethodHard)) {
+                    if (methodp->method() == VCMethod::ASSOC_SIZE) continue;
+                }
                 AstNodeExpr* const rhsNamep = buildSolveBeforeNameExpr(fl, rhsp);
                 if (!rhsNamep) {
                     rhsp->v3fatalSrc("Unexpected expression type in solve...before rhs");
@@ -4006,7 +4027,7 @@ public:
                                AstCMethodHard* nodep) override {
         // Replace '.size()' of a constrained array with a solver size variable
         FileLine* const fl = nodep->fileline();
-        if (nodep->fromp()->user1()
+        if (nodep->fromp()->user1() && !SmtUtil::isSolveBeforeItem(nodep)
             && (nodep->method() == VCMethod::ASSOC_SIZE
                 || nodep->method() == VCMethod::DYN_SIZE)) {
             AstClass* const classp = VN_AS(modp, Class);
@@ -4277,15 +4298,11 @@ public:
             resizeStmtsp = (new AstTaskRef{nodep->fileline(), resizeAllTaskp})->makeStmt();
         }
         {
-            std::set<AstCMethodHard*> beforeMethods;
-            capturedTreep->foreachAndNext([&](AstConstraintBefore* beforep) {
-                beforep->foreach([&](AstCMethodHard* methodp) { beforeMethods.insert(methodp); });
-            });
             std::vector<AstCMethodHard*> sizeMethodps;
             capturedTreep->foreachAndNext([&](AstCMethodHard* methodp) {
                 if ((methodp->method() == VCMethod::DYN_SIZE
                      || methodp->method() == VCMethod::ASSOC_SIZE)
-                    && !beforeMethods.count(methodp)) {
+                    && !SmtUtil::isSolveBeforeItem(methodp)) {
                     sizeMethodps.push_back(methodp);
                 }
             });

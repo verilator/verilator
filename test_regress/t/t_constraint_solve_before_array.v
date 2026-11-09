@@ -144,6 +144,29 @@ class SizeWith;
   rand bit [7:0] with_q[$];
 endclass
 
+class SizeAssoc;
+  rand int unsigned assoc_n;
+  rand bit [7:0] assoc[int];
+  constraint c {
+    assoc_n inside {[1:4]};
+    solve assoc_n before assoc.size;
+    solve assoc.size before assoc_n;
+  }
+endclass
+
+class SizeOther;
+  rand bit [7:0] path_d[];
+endclass
+
+class SizePath;
+  rand int unsigned path_n;
+  rand bit [7:0] path_d[];
+  constraint c {
+    path_n inside {[1:4]};
+    path_d.size inside {[1:4]};
+  }
+endclass
+
 class SizeIndependent;
   rand int unsigned first;
   rand int unsigned last;
@@ -165,6 +188,9 @@ module t;
     SizeFixed fixeds;
     SizeInline inliner;
     SizeWith withs;
+    SizeAssoc assocs;
+    SizeOther other;
+    SizePath paths;
     SizeIndependent independent;
     int ok;
     original = new;
@@ -179,6 +205,11 @@ module t;
     withs.with_d = new[3];
     withs.with_q.push_back(1);
     withs.with_q.push_back(2);
+    assocs = new;
+    assocs.assoc[7] = 1;
+    other = new;
+    other.path_d = new[2];
+    paths = new;
     independent = new;
     repeat (10) begin
       ok = original.randomize();
@@ -215,6 +246,18 @@ module t;
       };
       `checkd(ok, 1);
       `checkd(withs.with_d.size(), withs.with_n);
+      ok = assocs.randomize();
+      `checkd(ok, 1);
+      `checkd(assocs.assoc.num(), 1);
+      ok = assocs.randomize() with {
+        solve assoc_n before assoc.size;
+        solve assoc.size before assoc_n;
+      };
+      `checkd(ok, 1);
+      `checkd(assocs.assoc.num(), 1);
+      ok = paths.randomize() with { solve other.path_d.size before path_n; };
+      `checkd(ok, 1);
+      `checkd(other.path_d.size(), 2);
       ok = independent.randomize();
       `checkd(ok, 1);
       if (independent.d.size() < 1 || independent.d.size() > 3) `stop;
