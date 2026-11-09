@@ -414,9 +414,9 @@ public:
     // CONSTRUCTORS
     explicit TimingSuspendableVisitor(AstNetlist* nodep) {
         iterate(nodep);
-        // Propagation is linear in the graph size. Do not remove transitive edges: process
-        // flags stop at T_ALLOCS_PROC vertices, so a direct call edge is not implied by
-        // another path through a fork branch.
+        // Process pruning is incorrect: flags stop at T_ALLOCS_PROC, so a direct call edge is
+        // not implied through a fork. Suspendability pruning is correct but unnecessary:
+        // propagation is linear, while transitive reduction dominates this pass's cost.
         // Propagate suspendability
         for (V3GraphVertex& vtx : m_suspGraph.vertices()) {
             DepVtx& depVtx = static_cast<DepVtx&>(vtx);

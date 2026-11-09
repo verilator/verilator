@@ -39,8 +39,7 @@ class Bar extends Foo;
 endclass
 
 module t;
-  bit legacy_done, identity_done, kill_done;
-
+  bit legacy_done;
   initial begin
     process p;
     Foo foo;
@@ -84,11 +83,15 @@ module t;
     endtask
   endclass
 
+  bit identity_done;
   initial begin
     process p;
     p = process::self();
     Cls::recordTwice();
+    // The join_none child cannot run until this parent suspends.
     `checkd(Cls::last == p, 1);
+    #1;
+    `checkd(Cls::last != p, 1);
     identity_done = 1;
   end
 
@@ -104,6 +107,7 @@ module t;
     endtask
   endclass
 
+  bit kill_done;
   initial begin
     int finished;
     finished = 0;
