@@ -38,7 +38,7 @@ else
   # Clear any mark left by an earlier review
   gh pr edit "${PR_NUMBER}" --remove-label "pr: claude-pass"
   # Add comments on files, not on the review as a whole
-  jq '.[0].body |= "Consider the following AI review, which may be inaccurate. Click \"Resolve conversation\" on each item in GitHub and avoid commentary that only describes how it was resolved. Once you think the pull request is ready request a re-review from @wsnyder and @gezalore.\n\n" + .
+  jq '.[0].body |= "Consider the following AI review, which may be inaccurate. Click \"Resolve conversation\" on each item in GitHub and avoid commentary that only describes how it was resolved. Once you think the pull request is ready, request a re-review from `@wsnyder` and `@gezalore`.\n\n" + .
       | {event: "COMMENT", comments: .}' "${COMMENTS_FILE}" \
     | gh api --method POST "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" --input -
 fi
