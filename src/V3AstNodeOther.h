@@ -2057,6 +2057,25 @@ public:
     bool hasCombo() const;  // Includes a COMBO SenItem
     bool hasHybrid() const;  // Includes a HYBRID SenItem
 };
+class AstSetuphold final : public AstNode {
+    // Verilog $setuphold
+    // Parents: MODULE
+    // @astgen op1 := refevp : AstNodeExpr
+    // @astgen op2 := dataevp : AstNodeExpr
+    // @astgen op3 := delrefp : Optional[AstNodeExpr]
+    // @astgen op4 := deldatap : Optional[AstNodeExpr]
+public:
+    AstSetuphold(FileLine* fl, AstNodeExpr* refevp, AstNodeExpr* dataevp,
+                 AstNodeExpr* delrefp = nullptr, AstNodeExpr* deldatap = nullptr)
+        : ASTGEN_SUPER_Setuphold(fl) {
+        this->refevp(refevp);
+        this->dataevp(dataevp);
+        this->delrefp(delrefp);
+        this->deldatap(deldatap);
+    }
+    ASTGEN_MEMBERS_AstSetuphold;
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
 class AstStrengthSpec final : public AstNode {
     VStrength m_s0;  // Drive 0 strength
     VStrength m_s1;  // Drive 1 strength
