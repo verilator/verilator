@@ -37,6 +37,24 @@ class TwoScalarsAndArray;
 endclass
 
 typedef bit [4:0] row3_t[3];
+class QueueRows;
+  rand bit [2:0] q[$][4];
+  constraint c_size {q.size() == 2;}
+  constraint c1 {foreach (q[i]) unique {q[i]};}
+endclass
+
+class DynRows;
+  rand bit [2:0] d[][4];
+  constraint c_size {d.size() == 2;}
+  constraint c1 {foreach (d[i]) unique {d[i]};}
+endclass
+
+typedef struct {rand bit [2:0] r[4];} row_s;
+class StructRows;
+  rand row_s s[2];
+  constraint c1 {foreach (s[i]) unique {s[i].r};}
+endclass
+
 class FuncItem;
   rand bit [4:0] grid[3][3];
   function row3_t get_row();
@@ -52,6 +70,9 @@ module t;
     automatic ScalarAndArray sa = new;
     automatic TwoScalarsAndArray tsa = new;
     automatic FuncItem fi = new;
+    automatic QueueRows qr = new;
+    automatic DynRows dr = new;
+    automatic StructRows sr = new;
     int ok;
     repeat (20) begin
       ok = cb.randomize();
@@ -69,6 +90,12 @@ module t;
         end
       end
       ok = fi.randomize();
+      `checkd(ok, 1)
+      ok = qr.randomize();
+      `checkd(ok, 1)
+      ok = dr.randomize();
+      `checkd(ok, 1)
+      ok = sr.randomize();
       `checkd(ok, 1)
     end
 

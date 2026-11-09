@@ -135,6 +135,77 @@ class StateRows;
   constraint c {foreach (grid[i]) unique {grid[i]};}
 endclass
 
+typedef enum bit [2:0] {RE0, RE1, RE2, RE3, RE4} row_e;
+typedef struct packed { bit [1:0] x; bit y; } row_ps;
+class ElemRows;
+  rand int gi[2][4];
+  rand byte gb[2][4];
+  rand row_e ge[2][4];
+  rand row_ps gp[2][4];
+  rand bit [70:0] gw[2][4];
+  rand logic [2:0] gl[2][4];
+  constraint c {
+    foreach (gi[i]) unique {gi[i]};
+    foreach (gb[i]) unique {gb[i]};
+    foreach (ge[i]) unique {ge[i]};
+    foreach (gp[i]) unique {gp[i]};
+    foreach (gw[i]) unique {gw[i]};
+    foreach (gl[i]) unique {gl[i]};
+  }
+endclass
+
+class PigeonRows;
+  rand bit [1:0] grid[2][5];
+  constraint c {foreach (grid[i]) unique {grid[i]};}
+endclass
+
+class RangeRows;
+  rand bit [2:0] gd[1:0][3:0];
+  rand bit [2:0] gn[2:3][5:8];
+  constraint c {foreach (gd[i]) unique {gd[i]}; foreach (gn[i]) unique {gn[i]};}
+endclass
+
+class ConstRowAndParts;
+  rand bit [2:0] grid[3][4];
+  rand bit [2:0] a[8];
+  rand bit [2:0] b[8];
+  constraint c {unique {grid[1]}; unique {a[2+:4]}; unique {b[5-:4]};}
+endclass
+
+class Rows3d;
+  rand bit [2:0] cube[2][2][4];
+  constraint c {foreach (cube[i, j]) unique {cube[i][j]};}
+endclass
+
+class CtxRows;
+  rand bit en;
+  rand bit z;
+  rand bit [2:0] ge[2][4];
+  rand bit [2:0] gn[2][4];
+  rand bit [2:0] go[2][4];
+  rand bit [2:0] gp[2][4];
+  constraint c_en {en == 0; z == 1;}
+  constraint c_else {foreach (ge[i]) if (en) ge[i][0] == 0; else unique {ge[i]};}
+  constraint c_nested {foreach (gn[i]) if (!en) { if (z) unique {gn[i]}; }}
+  constraint c_outer {if (!en) { foreach (go[i]) unique {go[i]}; }}
+  constraint c_pinned {foreach (gp[i]) unique {gp[i]}; gp[0][0] == 7; gp[1][3] == 0;
+                       unique {gp[0][1], gp[1][1]};}
+endclass
+
+class ModeRows;
+  rand bit [1:0] grid[2][5];
+  constraint u {foreach (grid[i]) unique {grid[i]};}
+endclass
+
+class InlineRows;
+  rand bit [2:0] grid[2][4];
+endclass
+
+class ModeStateRows;
+  rand bit [2:0] grid[2][3];
+  constraint c {foreach (grid[i]) unique {grid[i]};}
+endclass
+
 module t;
   initial begin
     Grid g;
@@ -147,6 +218,16 @@ module t;
     GuardedRow gr;
     ImpliedRow ir;
     StateRows st;
+    ElemRows er;
+    PigeonRows pr;
+    RangeRows rr;
+    ConstRowAndParts cp;
+    Rows3d r3;
+    CtxRows cr;
+    ModeRows mr2;
+    InlineRows inr;
+    ModeStateRows msr;
+    bit [2:0] sgrid[2][4];
     int i;
     g = new();
     rsi = new();
@@ -201,6 +282,123 @@ module t;
         end
       end
     end
+
+    er = new;
+    rr = new;
+    cp = new;
+    r3 = new;
+    cr = new;
+    repeat (20) begin
+      i = er.randomize();
+      `checkd(i, 1)
+      for (int r = 0; r < 2; r++) begin
+        for (int x = 0; x < 4; x++) begin
+          for (int y = x + 1; y < 4; y++) begin
+            `checkd(er.gi[r][x] == er.gi[r][y], 0)
+            `checkd(er.gb[r][x] == er.gb[r][y], 0)
+            `checkd(er.ge[r][x] == er.ge[r][y], 0)
+            `checkd(er.gp[r][x] == er.gp[r][y], 0)
+            `checkd(er.gw[r][x] == er.gw[r][y], 0)
+            `checkd(er.gl[r][x] == er.gl[r][y], 0)
+          end
+        end
+      end
+
+      i = rr.randomize();
+      `checkd(i, 1)
+      for (int r = 0; r < 2; r++) begin
+        for (int x = 0; x < 4; x++) begin
+          for (int y = x + 1; y < 4; y++) begin
+            `checkd(rr.gd[r][x] == rr.gd[r][y], 0)
+            `checkd(rr.gn[r + 2][x + 5] == rr.gn[r + 2][y + 5], 0)
+          end
+        end
+      end
+
+      i = cp.randomize();
+      `checkd(i, 1)
+      for (int x = 0; x < 4; x++) begin
+        for (int y = x + 1; y < 4; y++) begin
+          `checkd(cp.grid[1][x] == cp.grid[1][y], 0)
+          `checkd(cp.a[2 + x] == cp.a[2 + y], 0)
+          `checkd(cp.b[2 + x] == cp.b[2 + y], 0)
+        end
+      end
+
+      i = r3.randomize();
+      `checkd(i, 1)
+      for (int p = 0; p < 2; p++) begin
+        for (int q = 0; q < 2; q++) begin
+          for (int x = 0; x < 4; x++) begin
+            for (int y = x + 1; y < 4; y++) begin
+              `checkd(r3.cube[p][q][x] == r3.cube[p][q][y], 0)
+            end
+          end
+        end
+      end
+
+      i = cr.randomize();
+      `checkd(i, 1)
+      `checkd(cr.gp[0][0], 7)
+      `checkd(cr.gp[1][3], 0)
+      `checkd(cr.gp[0][1] == cr.gp[1][1], 0)
+      for (int r = 0; r < 2; r++) begin
+        for (int x = 0; x < 4; x++) begin
+          for (int y = x + 1; y < 4; y++) begin
+            `checkd(cr.ge[r][x] == cr.ge[r][y], 0)
+            `checkd(cr.gn[r][x] == cr.gn[r][y], 0)
+            `checkd(cr.go[r][x] == cr.go[r][y], 0)
+            `checkd(cr.gp[r][x] == cr.gp[r][y], 0)
+          end
+        end
+      end
+    end
+
+    pr = new;
+    i = pr.randomize();
+    `checkd(i, 0)
+
+    mr2 = new;
+    mr2.u.constraint_mode(0);
+    i = mr2.randomize();
+    `checkd(i, 1)
+    mr2.u.constraint_mode(1);
+    i = mr2.randomize();
+    `checkd(i, 0)
+
+    inr = new;
+    repeat (20) begin
+      i = inr.randomize() with {foreach (grid[r]) unique {grid[r]};};
+      `checkd(i, 1)
+      for (int r = 0; r < 2; r++) begin
+        for (int x = 0; x < 4; x++) begin
+          for (int y = x + 1; y < 4; y++) begin
+            `checkd(inr.grid[r][x] == inr.grid[r][y], 0)
+          end
+        end
+      end
+    end
+
+    repeat (20) begin
+      i = std::randomize(sgrid) with {foreach (sgrid[r]) unique {sgrid[r]};};
+      `checkd(i, 1)
+      for (int r = 0; r < 2; r++) begin
+        for (int x = 0; x < 4; x++) begin
+          for (int y = x + 1; y < 4; y++) begin
+            `checkd(sgrid[r][x] == sgrid[r][y], 0)
+          end
+        end
+      end
+    end
+
+    msr = new;
+    msr.grid = '{'{0, 1, 2}, '{3, 4, 5}};
+    msr.grid.rand_mode(0);
+    i = msr.randomize();
+    `checkd(i, 1)
+    msr.grid[1][2] = 4;
+    i = msr.randomize();
+    `checkd(i, 0)
 
     st.grid = '{'{0, 1, 2}, '{3, 1, 2}};
     i = st.randomize();

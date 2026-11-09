@@ -112,6 +112,7 @@ public:
         const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType);
         return basicp && basicp->isDouble();
     }
+    // True iff dtp holds exactly one leaf element, through fixed-size dimensions only
     static bool isSingleLeafIfStatic(const AstNodeDType* dtp) {
         if (const AstUnpackArrayDType* const unpackp = VN_CAST(dtp, UnpackArrayDType)) {
             return unpackp->elementsConst() == 1
@@ -123,6 +124,13 @@ public:
         }
         return true;
     }
+    // True iff dtypep's leaf elements may be unique group members (IEEE 1800-2023 18.5.4)
+    static bool uniqueLeafTypeLegal(AstNodeDType* dtypep) {
+        const AstNodeDType* const leafp = arrayElementDTypep(dtypep);
+        const AstBasicDType* const basicp = VN_CAST(leafp, BasicDType);
+        return leafp->isIntegralOrPacked() || (basicp && basicp->isDouble());
+    }
+    // Variable an array-slice operand is rooted at, or null for any other operand
     static const AstVar* uniqueSliceRootVarp(AstNodeExpr* exprp) {
         if (const AstVarRef* const refp = VN_CAST(exprp, VarRef)) return refp->varp();
         if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
@@ -3212,6 +3220,9 @@ class SolverSmtLowering final : public V3SolverLowering {
                     // through as trivially unique.
                     uniquep->v3error("No randc variable shall appear in a unique group (IEEE "
                                      "1800-2023 18.5.4)");
+                } else if (!SmtUtil::uniqueLeafTypeLegal(dtypep)) {
+                    uniquep->v3error("Unique group members shall be integral or real, or arrays "
+                                     "of them (IEEE 1800-2023 18.5.4)");
                 } else if (!SmtUtil::isSingleLeafIfStatic(dtypep)) {
                     if (!rootVarp) {
                         // Function call, ternary, etc. -- can't be safely
