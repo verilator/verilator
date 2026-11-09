@@ -16,12 +16,14 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_EXAMPLE.v"
 
-binary = os.path.join(test.root, "bin", os.environ.get("VERILATOR_BIN", "verilator_bin"))
+binary = os.path.join(os.environ['VERILATOR_ROOT'], "bin",
+                      os.environ.get("VERILATOR_BIN", "verilator_bin"))
 cmd = [binary, "--lint-only", "-Mdir", test.obj_dir, "--debugi", "3", "--verilate-jobs", "2",
        "--debug-self-test", "--debug-fatalsrc-worker", test.top_filename]
 with open(test.compile_log_filename, 'w', encoding='utf8') as output:
     try:
-        result = subprocess.run(cmd, stdout=output, stderr=subprocess.STDOUT, timeout=30, check=False)
+        result = subprocess.run(cmd, stdout=output, stderr=subprocess.STDOUT, timeout=30,
+                                check=False)
     except subprocess.TimeoutExpired:
         test.error("Worker fatal did not terminate within 30 seconds")
     else:
