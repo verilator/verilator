@@ -126,7 +126,10 @@ public:
     }
     // True iff dtypep's leaf elements may be unique group members (IEEE 1800-2023 18.5.4)
     static bool uniqueLeafTypeLegal(AstNodeDType* dtypep) {
-        const AstNodeDType* const leafp = arrayElementDTypep(dtypep);
+        const AstNodeDType* leafp = dtypep->skipRefp();
+        while (leafp->isNonPackedArray() || VN_IS(leafp, WildcardArrayDType)) {
+            leafp = leafp->subDTypep()->skipRefp();
+        }
         const AstBasicDType* const basicp = VN_CAST(leafp, BasicDType);
         return leafp->isIntegralOrPacked() || (basicp && basicp->isDouble());
     }

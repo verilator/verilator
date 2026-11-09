@@ -46,6 +46,12 @@ class HandleRows;
   constraint c {foreach (grid[i]) unique {grid[i]};}
 endclass
 
+class StringRows;
+  rand bit unused;
+  string grid[2][3];
+  constraint c {foreach (grid[i]) unique {grid[i]};}
+endclass
+
 module t;
   initial begin
     automatic RandcGrid rg = new;
@@ -54,11 +60,13 @@ module t;
     automatic RandcBareScalar rbs = new;
     automatic UnpackedStructRows usr = new;
     automatic HandleRows hr = new;
+    automatic StringRows sr = new;
     void'(rg.randomize());
     void'(rol.randomize());
     void'(rms.randomize());
     void'(rbs.randomize());
     void'(usr.randomize());
     void'(hr.randomize());
+    void'(sr.randomize());
   end
 endmodule

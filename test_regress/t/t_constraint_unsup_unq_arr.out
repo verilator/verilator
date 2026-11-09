@@ -32,4 +32,8 @@
                                                             : ... note: In instance 't'
    33 |   constraint unique_c {foreach (wide[i]) unique {wide[i]};}
       |                                          ^~~~~~
+%Error-UNSUPPORTED: t/t_constraint_unsup_unq_arr.v:38:50: Unsupported: real value in this constraint expression
+   38 |   constraint unique_c {foreach (grid[i]) unique {grid[i]};}
+      |                                                  ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

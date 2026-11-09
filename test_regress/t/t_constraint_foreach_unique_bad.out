@@ -23,4 +23,8 @@
                                                  : ... note: In instance 't'
    46 |   constraint c {foreach (grid[i]) unique {grid[i]};}
       |                                   ^~~~~~
+%Error: t/t_constraint_foreach_unique_bad.v:52:35: Unique group members shall be integral or real, or arrays of them (IEEE 1800-2023 18.5.4)
+                                                 : ... note: In instance 't'
+   52 |   constraint c {foreach (grid[i]) unique {grid[i]};}
+      |                                   ^~~~~~
 %Error: Exiting due to
