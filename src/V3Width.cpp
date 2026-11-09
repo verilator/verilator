@@ -3943,7 +3943,6 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {  // First stage evaluation
             userIterate(nodep->weightp(), WidthVP{SELF, BOTH}.p());
         }
-        nodep->dtypep(nodep->rangep()->dtypep());
     }
     void visit(AstVar* nodep) override {
         VL_RESTORER(m_underCast);
@@ -4366,10 +4365,11 @@ class WidthVisitor final : public VNVisitor {
             int width = nodep->exprp()->width();
             int mwidth = nodep->exprp()->widthMin();
             bool isFourstate = nodep->exprp()->dtypep()->isFourstate();
-            for (const AstNode* const itemp : nodep->itemspList()) {
-                width = std::max(width, itemp->width());
-                mwidth = std::max(mwidth, itemp->widthMin());
-                isFourstate |= itemp->dtypep()->isFourstate();
+            for (const AstDistItem* const itemp : nodep->itemspList()) {
+                const AstNodeExpr* const rangep = itemp->rangep();
+                width = std::max(width, rangep->width());
+                mwidth = std::max(mwidth, rangep->widthMin());
+                isFourstate |= rangep->dtypep()->isFourstate();
             }
             subDTypep = nodep->findBitOrLogicDType(
                 width, mwidth, nodep->exprp()->dtypep()->numeric(), isFourstate);
