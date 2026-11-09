@@ -135,7 +135,8 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
             // constructor/destructor calls for them. They are managed explicitly in ctor/dtor.
             // While 'union { singleVar; }' for each variable would be simpler, it blows up
             // clang's compile time when using pre-compiled headers, joy.
-            UASSERT_OBJ(modp->user3() == nNont, modp, "Nontrivial member count mismatch.");
+            UASSERT_OBJ(EmitCParentModule::data(modp).count == nNont, modp,
+                        "Nontrivial member count mismatch.");
             puts("union {\nstruct {\n");
             emitGroupedVarDecls(nontp, nNont, true);
             puts("} __Vnontrivs;\n};\n");
@@ -166,8 +167,8 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
                 for (size_t l1 = 0; l1 < groups.l1s() && nEmitted < n; ++l1) {
                     if (groups.l1s() != 1) puts("struct {\n");
                     for (size_t l0 = 0; l0 < lim && nEmitted < n; ++l0, ++nEmitted) {
-                        UASSERT_OBJ(!named || varp->user3() == nEmitted, varp,
-                                    "Nontrivial member index mismatch.");
+                        UASSERT_OBJ(!named || EmitCParentModule::data(varp).index == nEmitted,
+                                    varp, "Nontrivial member index mismatch.");
                         emitVarDecl(varp);
                         varp = VN_CAST(varp->nextp(), Var);
                     }

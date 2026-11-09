@@ -183,7 +183,7 @@ public:
         UASSERT_STATIC(upp, "AstNode user() slot written as uint64_t, read as pointer");
         return reinterpret_cast<T>(*upp);
     }
-    uint64_t toUQuad() const VL_MT_SAFE {
+    uint64_t toUQuad() const {
         if (std::holds_alternative<std::monostate>(m_u)) return 0;
         const uint64_t* const uip = std::get_if<uint64_t>(&m_u);
         UASSERT_STATIC(uip, "AstNode user() slot written as pointer, read as uint64_t");
@@ -204,7 +204,7 @@ public:
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
         return reinterpret_cast<T>(m_u.up);
     }
-    uint64_t toUQuad() const VL_MT_SAFE { return m_u.uq; }
+    uint64_t toUQuad() const { return m_u.uq; }
 #endif
     VSymEnt* toSymEnt() const { return to<VSymEnt*>(); }
     AstNode* toNodep() const VL_MT_SAFE { return to<AstNode*>(); }
@@ -761,7 +761,7 @@ public:
     void user3u(const VNUser& user) { m_user3u = user; m_user3Cnt = VNUser3InUse::s_userCntGbl; }
     void user3p(void* userp) { user3u(VNUser{userp}); }
     void user3(uint64_t val) { user3u(VNUser{val}); }
-    uint64_t user3() const VL_MT_STABLE { return user3u().toUQuad(); }
+    uint64_t user3() const { return user3u().toUQuad(); }
     uint64_t user3Inc(uint64_t val = 1) { const uint64_t v = user3(); user3(v + val); return v; }
     uint64_t user3Or(uint64_t val) { const uint64_t v = user3(); user3(v | val); return v; }
     uint64_t user3SetOnce() { const uint64_t v = user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()

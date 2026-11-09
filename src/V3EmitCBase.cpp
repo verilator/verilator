@@ -24,7 +24,8 @@
 // EmitCParentModule implementation
 
 EmitCParentModule::EmitCParentModule() {
-    const auto setAll = [](AstNodeModule* modp) -> void {
+    const auto setAll = [this](AstNodeModule* modp) -> void {
+        MemberData& moduleData = m_members(modp);
         for (AstNode* const nodep : modp->stmtspList()) {
             if (VN_IS(nodep, CFunc) || VN_IS(nodep, Var) || VN_IS(nodep, NodeCoverDecl)) {
                 nodep->user4p(modp);
@@ -32,7 +33,7 @@ EmitCParentModule::EmitCParentModule() {
             AstVar* const varp = VN_CAST(nodep, Var);
             if (varp && !varp->isPrimaryIO()
                 && EmitCBaseVisitorConst::isExplicitlyConstructed(varp)) {
-                varp->user3(modp->user3Inc());
+                m_members(varp).index = moduleData.count++;
             }
         }
     };

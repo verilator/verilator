@@ -21,6 +21,7 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
+#include "V3AstUserAllocator.h"
 #include "V3File.h"
 
 #include <cmath>
@@ -31,18 +32,32 @@
 // containing AstNodeModule, and number the explicitly constructed members
 
 class EmitCParentModule final {
+public:
+    struct MemberData final {
+        size_t index = 0;  // Index of an explicitly constructed member
+        size_t count = 0;  // Number of explicitly constructed members in a module
+    };
+
+private:
     // NODE STATE
     //   AstCFunc::user4p()          AstNodeModule* Parent module pointer
     //   AstVar::user4p()            AstNodeModule* Parent module pointer
     //   AstNodeCoverDecl::user4p()  AstNodeModule* Parent module pointer
-    //   AstVar::user3()             Index of explicitly constructed member in '__Vnontrivs'
-    //   AstNodeModule::user3()      Number of explicitly constructed members in '__Vnontrivs'
+    //   AstVar::user3u()            MemberData* with serial member index
+    //   AstNodeModule::user3u()     MemberData* with serial member count
     const VNUser4InUse user4InUse;
     const VNUser3InUse user3InUse;
+    AstUser3Allocator<AstNode, MemberData> m_members;  // Immutable after serial setup
 
 public:
     EmitCParentModule();
     VL_UNCOPYABLE(EmitCParentModule);
+
+    static const MemberData& data(const AstNode* nodep) VL_MT_STABLE {
+        const MemberData* const datap = nodep->user3u().to<const MemberData*>();
+        UASSERT_OBJ(datap, nodep, "Missing member grouping data.");
+        return *datap;
+    }
 
     static const AstNodeModule* get(const AstNode* nodep) VL_MT_STABLE {
         return VN_AS(nodep->user4p(), NodeModule);
@@ -301,8 +316,8 @@ public:
         // possibly in nested named structs
         if (isExplicitlyConstructed(varp)) {
             const EmitCMemberGroups groups{
-                static_cast<size_t>(EmitCParentModule::get(varp)->user3())};
-            return "__Vnontrivs." + groups.namedPath(varp->user3()) + name;
+                EmitCParentModule::data(EmitCParentModule::get(varp)).count};
+            return "__Vnontrivs." + groups.namedPath(EmitCParentModule::data(varp).index) + name;
         }
         // Otherwise they should be available in the local scope where emitted
         return name;
