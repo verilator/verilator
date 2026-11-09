@@ -21,6 +21,7 @@ interface l0_if #(
 );
   logic [W-1:0] tb_in;
   logic [W-1:0] dut_out;
+  modport rd(input dut_out);
 endinterface
 
 interface l1_if #(
@@ -60,6 +61,13 @@ interface l4_if #(
   logic [W-1:0] dut_out;
   l3_if #(W * 2, L0A_W) l3 ();  // derived
 endinterface
+
+module l0_reader (
+    l0_if.rd l0,
+    output logic [7:0] dout
+);
+  assign dout = l0.dut_out;
+endmodule
 
 // Handlers use unparameterized interface ports with parameterized output widths
 
@@ -279,6 +287,13 @@ module t;
       .l0b_2b_dout(l0b_2b_dout)
   );
 
+  // Modport of a nested interface instance
+  logic [7:0] l0b_2a_rd;
+  l0_reader m_rd (
+      .l0(inst.l3.l2a.l1.l0b.rd),
+      .dout(l0b_2a_rd)
+  );
+
   always #5 clk = ~clk;
 
   always_ff @(posedge clk) begin
@@ -344,6 +359,10 @@ module t;
       end
       if (l0b_2a_dout !== exp_l0b_2a) begin
         $display("FAIL cyc=%0d: l0b_2a_dout=%h expected %h", cyc, l0b_2a_dout, exp_l0b_2a);
+        $stop;
+      end
+      if (l0b_2a_rd !== exp_l0b_2a) begin
+        $display("FAIL cyc=%0d: l0b_2a_rd=%h expected %h", cyc, l0b_2a_rd, exp_l0b_2a);
         $stop;
       end
       if (l2b_dout !== exp_l2b) begin

@@ -4955,14 +4955,23 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     AstVar* const ifaceRefVarp
                         = findIfaceTopVarp(nodep, parentEntp, cellp->name());
                     //
+                    // Nested cell (e.g. 'o.l.mp'): reference ifaceRefVarp via the prefix
+                    const size_t cellPos = m_ds.m_dotText.rfind('.');
+                    const string cellScope
+                        = cellPos == string::npos ? "" : m_ds.m_dotText.substr(0, cellPos);
                     ok = true;
                     m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
                     m_ds.m_dotSymp = foundp;
                     m_ds.m_dotPos = DP_SCOPE;
                     UINFO(9, indent() << "modport -> iface varref " << foundp->nodep());
                     // We lose the modport name here, so we cannot detect mismatched modports.
-                    AstNodeExpr* newp
-                        = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                    AstNodeExpr* newp;
+                    if (cellScope.empty()) {
+                        newp = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                    } else {
+                        newp = new AstVarXRef{nodep->fileline(), ifaceRefVarp, cellScope,
+                                              VAccess::READ};
+                    }
 
                     AstCellArrayRef* const cellarrayrefp
                         = VN_CAST(m_ds.m_unlinkedScopep, CellArrayRef);
