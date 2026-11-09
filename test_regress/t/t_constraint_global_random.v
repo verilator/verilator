@@ -78,7 +78,7 @@ module t_constraint_global_random;
   initial begin
     t = new();
 
-    // Test 1: Regular randomize() with global constraints
+    // Test: Regular randomize() with global constraints
     success = t.randomize();
     if (success != 1) $stop;
 
@@ -93,7 +93,7 @@ module t_constraint_global_random;
     if (t.m_m1.m_inner.nested_obj.nested_val != 1) $stop;
     if (t.m_m2.m_inner.nested_obj.nested_val != 3) $stop;
 
-    // Test 2: randomize() with inline constraint on global-constrained members
+    // Test: randomize() with inline constraint on global-constrained members
     success = 0;
     success = t.randomize() with {
       m_m1.m_inner.m_val == 2;
@@ -111,7 +111,7 @@ module t_constraint_global_random;
     if (t.m_y <= t.m_m1.m_x || t.m_y >= t.m_m2.m_x) $stop;
     if (t.m_m1.m_inner.m_val + t.m_m2.m_inner.m_val >= 8) $stop;
 
-    // Test 3: Second independent class (tests m_clonedConstraints.clear() bug)
+    // Test: Second independent class (tests m_clonedConstraints.clear() bug)
     t2 = new();
     success = t2.randomize();
     if (success != 1) $stop;

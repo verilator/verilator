@@ -33,39 +33,39 @@ module t (
   int count_fail8 = 0;
   int count_fail9 = 0;
 
-  // Test 1: a[->2] |-> b (overlapping implication, 2 non-consecutive occurrences)
+  // Test: a[->2] |-> b (overlapping implication, 2 non-consecutive occurrences)
   assert property (@(posedge clk) a [-> 2] |-> b)
   else count_fail1 <= count_fail1 + 1;
 
-  // Test 2: a[->1] |-> c (single occurrence, overlapping)
+  // Test: a[->1] |-> c (single occurrence, overlapping)
   assert property (@(posedge clk) a [-> 1] |-> c)
   else count_fail2 <= count_fail2 + 1;
 
-  // Test 3: a[->3] |=> d (3 occurrences, non-overlapping implication)
+  // Test: a[->3] |=> d (3 occurrences, non-overlapping implication)
   assert property (@(posedge clk) a [-> 3] |=> d)
   else count_fail3 <= count_fail3 + 1;
 
-  // Test 4: standalone goto rep (no implication) -- exercises standalone visitor
+  // Test: standalone goto rep (no implication) -- exercises standalone visitor
   assert property (@(posedge clk) b [-> 2])
   else count_fail4 <= count_fail4 + 1;
 
-  // Test 5: a[->1:2] |-> b -- basic range, NFA merge fan-out (M=1, N=2).
+  // Test: a[->1:2] |-> b -- basic range, NFA merge fan-out (M=1, N=2).
   assert property (@(posedge clk) a [-> 1: 2] |-> b)
   else count_fail5 <= count_fail5 + 1;
 
-  // Test 6: a[->1:3] |-> c -- wider range.
+  // Test: a[->1:3] |-> c -- wider range.
   assert property (@(posedge clk) a [-> 1: 3] |-> c)
   else count_fail6 <= count_fail6 + 1;
 
-  // Test 7: a[->2:5] |=> d -- non-overlapping implication, min > 1.
+  // Test: a[->2:5] |=> d -- non-overlapping implication, min > 1.
   assert property (@(posedge clk) a [-> 2: 5] |=> d)
   else count_fail7 <= count_fail7 + 1;
 
-  // Test 8: a[->1:4] |-> b -- wider overlapping range.
+  // Test: a[->1:4] |-> b -- wider overlapping range.
   assert property (@(posedge clk) a [-> 1: 4] |-> b)
   else count_fail8 <= count_fail8 + 1;
 
-  // Test 9: a[->2:2] is equivalent to a[->2].
+  // Test: a[->2:2] is equivalent to a[->2].
   assert property (@(posedge clk) a [-> 2: 2] |-> b)
   else count_fail9 <= count_fail9 + 1;
 

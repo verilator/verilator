@@ -10,7 +10,7 @@
 // verilog_format: on
 
 // Test that item.index in array reduction constraints is supported
-// Test 1: Basic item.index usage with sum
+// Test: Basic item.index usage with sum
 class Test1_BasicIndex;
   rand bit [3:0] data[5];
 
@@ -21,7 +21,7 @@ class Test1_BasicIndex;
   }
 endclass
 
-// Test 2: item.index with item in expression
+// Test: item.index with item in expression
 class Test2_IndexPlusItem;
   rand bit [3:0] data[5];
 
@@ -31,7 +31,7 @@ class Test2_IndexPlusItem;
   }
 endclass
 
-// Test 3: Conditional based on index
+// Test: Conditional based on index
 class Test3_ConditionalOnIndex;
   rand bit [3:0] data[5];
 
@@ -41,7 +41,7 @@ class Test3_ConditionalOnIndex;
   }
 endclass
 
-// Test 4: item.index with product
+// Test: item.index with product
 class Test4_ProductWithIndex;
   rand bit [2:0] data[4];
 
@@ -51,7 +51,7 @@ class Test4_ProductWithIndex;
   }
 endclass
 
-// Test 5: item.index with xor (using 32-bit result)
+// Test: item.index with xor (using 32-bit result)
 class Test5_XorWithIndex;
   rand int data[4];
 
@@ -61,21 +61,21 @@ class Test5_XorWithIndex;
   }
 endclass
 
-// Test 6: item.index with and (using 32-bit result)
+// Test: item.index with and (using 32-bit result)
 class Test6_AndWithIndex;
   rand int data[4];
 
   constraint c {data.and() with (item | item.index) != 0;}
 endclass
 
-// Test 7: item.index with or (using 32-bit result)
+// Test: item.index with or (using 32-bit result)
 class Test7_OrWithIndex;
   rand int data[4];
 
   constraint c {data.or() with (item & item.index) >= 0;}
 endclass
 
-// Test 8: Complex expression with multiple uses
+// Test: Complex expression with multiple uses
 class Test8_ComplexExpression;
   rand bit [3:0] data[6];
 
@@ -85,7 +85,7 @@ class Test8_ComplexExpression;
   }
 endclass
 
-// Test 9: Just item.index (no item reference)
+// Test: Just item.index (no item reference)
 class Test9_JustIndex;
   rand bit [3:0] data[5];
 
@@ -95,7 +95,7 @@ class Test9_JustIndex;
   }
 endclass
 
-// Test 10: Dynamic array with item.index
+// Test: Dynamic array with item.index
 class Test10_DynamicArray;
   rand bit [3:0] dyn_data[];
 
@@ -111,7 +111,7 @@ class Test10_DynamicArray;
   }
 endclass
 
-// Test 11: Larger array (16 elements)
+// Test: Larger array (16 elements)
 class Test11_LargerArray;
   rand bit [3:0] data[16];
 
@@ -121,7 +121,7 @@ class Test11_LargerArray;
   }
 endclass
 
-// Test 12: Large array with complex expression
+// Test: Large array with complex expression
 class Test12_LargeComplex;
   rand int data[20];
 
@@ -132,7 +132,7 @@ class Test12_LargeComplex;
   }
 endclass
 
-// Test 13: Very large array (stress test)
+// Test: Very large array (stress test)
 class Test13_VeryLargeArray;
   rand int data[50];
 
@@ -142,7 +142,7 @@ class Test13_VeryLargeArray;
   }
 endclass
 
-// Test 14: Foreach on empty array
+// Test: Foreach on empty array
 class Test14_EmptyArray;
   rand int empty[];
 
@@ -157,7 +157,7 @@ class Test14_EmptyArray;
   }
 endclass
 
-// Test 15: Foreach on empty and not empty array
+// Test: Foreach on empty and not empty array
 class Test15_EmptyAndNotEmptyArray;
   rand int empty[];
   rand int notEmpty[];
@@ -196,77 +196,77 @@ module t;
     Test15_EmptyAndNotEmptyArray t15;
     int i;
 
-    // Test 1: Basic index
+    // Test: Basic index
     t1 = new;
     i = t1.randomize();
     `checkd(i, 1)
 
-    // Test 2: Index plus item
+    // Test: Index plus item
     t2 = new;
     i = t2.randomize();
     `checkd(i, 1)
 
-    // Test 3: Conditional on index
+    // Test: Conditional on index
     t3 = new;
     i = t3.randomize();
     `checkd(i, 1)
 
-    // Test 4: Product with index
+    // Test: Product with index
     t4 = new;
     i = t4.randomize();
     `checkd(i, 1)
 
-    // Test 5: XOR with index
+    // Test: XOR with index
     t5 = new;
     i = t5.randomize();
     `checkd(i, 1)
 
-    // Test 6: AND with index
+    // Test: AND with index
     t6 = new;
     i = t6.randomize();
     `checkd(i, 1)
 
-    // Test 7: OR with index
+    // Test: OR with index
     t7 = new;
     i = t7.randomize();
     `checkd(i, 1)
 
-    // Test 8: Complex expression
+    // Test: Complex expression
     t8 = new;
     i = t8.randomize();
     `checkd(i, 1)
 
-    // Test 9: Just index
+    // Test: Just index
     t9 = new;
     i = t9.randomize();
     `checkd(i, 1)
 
-    // Test 10: Dynamic array
+    // Test: Dynamic array
     t10 = new;
     i = t10.randomize();
     `checkd(i, 1)
 
-    // Test 11: Larger array (16 elements)
+    // Test: Larger array (16 elements)
     t11 = new;
     i = t11.randomize();
     `checkd(i, 1)
 
-    // Test 12: Large complex
+    // Test: Large complex
     t12 = new;
     i = t12.randomize();
     `checkd(i, 1)
 
-    // Test 13: Very large array (50 elements)
+    // Test: Very large array (50 elements)
     t13 = new;
     i = t13.randomize();
     `checkd(i, 1)
 
-    // Test 14: Foreach on empty array
+    // Test: Foreach on empty array
     t14 = new;
     i = t14.randomize();
     `checkd(i, 1)
 
-    // Test 15: Foreach on empty and not empty array
+    // Test: Foreach on empty and not empty array
     t15 = new;
     i = t15.randomize();
     `checkd(i, 1)

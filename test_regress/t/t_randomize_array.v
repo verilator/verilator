@@ -240,25 +240,25 @@ module t_randomize_array;
   unconstrained_queue_test queue_class;
 
   initial begin
-    // Test 1: Packed Array Unconstrained Constrained Test
+    // Test: Packed Array Unconstrained Constrained Test
     packed_class = new();
     repeat (2) begin
       packed_class.check_randomization();
     end
 
-    // Test 2: Unpacked Array Unconstrained Constrained Test
+    // Test: Unpacked Array Unconstrained Constrained Test
     unpacked_class = new();
     repeat (2) begin
       unpacked_class.check_randomization();
     end
 
-    // Test 3: Dynamic Array Unconstrained Constrained Test
+    // Test: Dynamic Array Unconstrained Constrained Test
     dynamic_class = new();
     repeat (2) begin
       dynamic_class.check_randomization();
     end
 
-    // Test 4: Struct Containing Array Test
+    // Test: Struct Containing Array Test
     struct_with_array_class = new();
     repeat (2) begin
       struct_with_array_class.check_randomization();
@@ -269,13 +269,13 @@ module t_randomize_array;
       struct_array_class.check_randomization();
     end
 
-    // Test 5: Associative Array Unconstrained Test
+    // Test: Associative Array Unconstrained Test
     associative_array_class = new();
     repeat (2) begin
       associative_array_class.check_randomization();
     end
 
-    // Test 6: Queue Unconstrained Test
+    // Test: Queue Unconstrained Test
     queue_class = new();
     repeat (2) begin
       queue_class.check_randomization();

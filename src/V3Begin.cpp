@@ -182,8 +182,8 @@ class BeginVisitor final : public VNVisitor {
             initp->unlinkFrBack();
             m_ftaskp->addHereThisAsNext(initp);
         });
-        // Place lifted nodes at beginning of stmtsp, so Var nodes appear before referenced
-        nodep->prependStmtsp(m_liftedp);
+        // Place lifted nodes at beginning of declsp, so Var nodes appear before referenced
+        nodep->prependDeclsp(m_liftedp);
     }
     void visit(AstGenBlock* nodep) override {
         // GenBlocks were only useful in variable creation, change names and delete
@@ -202,13 +202,14 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstFork* nodep) override {
         dotNames(nodep->name(), nodep->fileline(), "__FORK__");
-        iterateAndNextNull(nodep->stmtsp());
-        iterateAndNextNull(nodep->forksp());
-        AstNode* addsp = nullptr;
+        iterateChildren(nodep);
         if (AstNode* const declsp = nodep->declsp()) {
-            declsp->unlinkFrBackWithNext();
-            addsp = AstNode::addNext(addsp, declsp);
+            // Only blocks made after V3LinkDot keep declarations to here, in functions; lift them
+            // to the function
+            UASSERT_OBJ(m_ftaskp, nodep, "Unlifted declarations outside a function");
+            m_liftedp = AstNode::addNextNull(m_liftedp, declsp->unlinkFrBackWithNext());
         }
+        AstNode* addsp = nullptr;
         if (AstNode* const stmtsp = nodep->stmtsp()) {
             stmtsp->unlinkFrBackWithNext();
             addsp = AstNode::addNext(addsp, stmtsp);
@@ -234,11 +235,13 @@ class BeginVisitor final : public VNVisitor {
             nodep->name("");
             return;
         }
-        AstNode* addsp = nullptr;
         if (AstNode* const declsp = nodep->declsp()) {
-            declsp->unlinkFrBackWithNext();
-            addsp = AstNode::addNext(addsp, declsp);
+            // Only blocks made after V3LinkDot keep declarations to here, in functions; lift them
+            // to the function
+            UASSERT_OBJ(m_ftaskp, nodep, "Unlifted declarations outside a function");
+            m_liftedp = AstNode::addNextNull(m_liftedp, declsp->unlinkFrBackWithNext());
         }
+        AstNode* addsp = nullptr;
         if (AstNode* const stmtsp = nodep->stmtsp()) {
             stmtsp->unlinkFrBackWithNext();
             addsp = AstNode::addNext(addsp, stmtsp);
@@ -271,7 +274,7 @@ class BeginVisitor final : public VNVisitor {
                     AstAssign* const initAssignp = new AstAssign{
                         nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
                         new AstVarRef{portp->fileline(), portp, VAccess::READ}};
-                    portp->addNextHere(initAssignp);
+                    m_ftaskp->prependStmtsp(initAssignp);
                 }
 
                 if (nodep->isWritable()) {
@@ -374,7 +377,7 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstCase* nodep) override { iterateChildren(nodep); }
     // VISITORS - LINT CHECK
-    void visit(AstIf* nodep) override {  // not AstNodeIf; other types not covered
+    void visit(AstIf* nodep) override {
         VL_RESTORER(m_keepBegins);
         m_keepBegins = false;
         // Check IFDEPTH warning - could be in other transform files if desire
@@ -459,10 +462,9 @@ void V3Begin::debeginAll(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("begin", 0, dumpTreeEitherLevel() >= 3);
 }
 
-static AstNodeStmt* createForeachLoop(AstNodeForeach* /*nodep*/, AstBegin* blockp,
-                                      AstNodeStmt* bodysp, bool arrayMayResize,
-                                      AstNodeExpr* subfromp, AstVar* varp, AstNodeExpr* leftp,
-                                      AstNodeExpr* rightp, VNType nodeType) {
+static AstNodeStmt* createForeachLoop(AstForeach* /*nodep*/, AstBegin* blockp, AstNodeStmt* bodysp,
+                                      bool arrayMayResize, AstNodeExpr* subfromp, AstVar* varp,
+                                      AstNodeExpr* leftp, AstNodeExpr* rightp, VNType nodeType) {
     FileLine* const fl = varp->fileline();
     AstNodeExpr* varRefp = new AstVarRef{fl, varp, VAccess::READ};
     AstNodeExpr* condp;
@@ -512,7 +514,7 @@ static AstNodeStmt* createForeachLoop(AstNodeForeach* /*nodep*/, AstBegin* block
     stmtsp->addNext(loopp);
     return stmtsp;
 }
-static AstNodeStmt* createForeachLoopRanged(AstNodeForeach* nodep, AstBegin* blockp,
+static AstNodeStmt* createForeachLoopRanged(AstForeach* nodep, AstBegin* blockp,
                                             AstNodeStmt* bodysp, AstNodeExpr* subfromp,
                                             AstVar* varp, const VNumRange& declRange) {
     FileLine* const fl = varp->fileline();
@@ -619,8 +621,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     // dyn-arr and associative-arr)
     AstNodeExpr* subfromp = fromp->cloneTreePure(false);
     // Major dimension first
-    for (AstNode *argsp = headerp->elementsp(), *next_argsp; argsp; argsp = next_argsp) {
-        next_argsp = argsp->nextp();
+    for (AstNode* const argsp : headerp->elementspList()) {
         const bool empty = VN_IS(argsp, Empty);
         AstVar* const varp = VN_CAST(argsp, Var);
         UASSERT_OBJ(varp || empty, argsp, "Missing foreach loop variable");

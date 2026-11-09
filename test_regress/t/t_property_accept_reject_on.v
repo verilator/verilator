@@ -36,38 +36,38 @@ module t (
   int count_fail9 = 0;
   int count_fail10 = 0;
 
-  // Test 1: accept_on (async) -- property succeeds when cnd_a fires
+  // Test: accept_on (async) -- property succeeds when cnd_a fires
   assert property (@(posedge clk) disable iff (cyc < 2) accept_on (cnd_a) body)
   else count_fail1 <= count_fail1 + 1;
 
-  // Test 2: reject_on (async) -- property fails when cnd_r fires
+  // Test: reject_on (async) -- property fails when cnd_r fires
   assert property (@(posedge clk) disable iff (cyc < 2) reject_on (cnd_r) body)
   else count_fail2 <= count_fail2 + 1;
 
-  // Test 3: sync_accept_on -- sampled at matured clocking event
+  // Test: sync_accept_on -- sampled at matured clocking event
   assert property (@(posedge clk) disable iff (cyc < 2) sync_accept_on (cnd_a) body)
   else count_fail3 <= count_fail3 + 1;
 
-  // Test 4: sync_reject_on
+  // Test: sync_reject_on
   assert property (@(posedge clk) disable iff (cyc < 2) sync_reject_on (cnd_r) body)
   else count_fail4 <= count_fail4 + 1;
 
-  // Test 5: outer accept_on wraps inner reject_on -- outer wins per 16.12.14
+  // Test: outer accept_on wraps inner reject_on -- outer wins per 16.12.14
   assert property (@(posedge clk) disable iff (cyc < 2) accept_on (cnd_a) reject_on (cnd_r) body)
   else count_fail5 <= count_fail5 + 1;
 
-  // Test 6: outer reject_on wraps inner accept_on
+  // Test: outer reject_on wraps inner accept_on
   assert property (@(posedge clk) disable iff (cyc < 2) reject_on (cnd_r) accept_on (cnd_a) body)
   else count_fail6 <= count_fail6 + 1;
 
-  // Test 7: named property form with accept_on inside
+  // Test: named property form with accept_on inside
   property p_named;
     accept_on (cnd_a) body;
   endproperty
   assert property (@(posedge clk) disable iff (cyc < 2) p_named)
   else count_fail7 <= count_fail7 + 1;
 
-  // Test 8: disable iff over a sync_accept_on with a second disabled window
+  // Test: disable iff over a sync_accept_on with a second disabled window
   assert property (@(posedge clk) disable iff (cyc < 2 || (cyc >= 50 && cyc < 60))
                    sync_accept_on (cnd) body)
   else count_fail8 <= count_fail8 + 1;

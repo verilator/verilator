@@ -416,7 +416,7 @@ class ReorderVisitor final : public VNVisitor {
         m_stmtStackps.clear();
     }
 
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         if (!m_graphp || m_noReorderWhy) return;
         iterateAndNextNull(nodep->condp());
         processBlock(nodep->thensp());
@@ -456,7 +456,7 @@ class ReorderVisitor final : public VNVisitor {
         iterate(nodep->lhsp());
     }
 
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         // A variable selected through a handle can be the same as one accessed otherwise, which
         // is not known here, so the accesses must be kept in order
         if (m_graphp) m_noReorderWhy = "Handle";

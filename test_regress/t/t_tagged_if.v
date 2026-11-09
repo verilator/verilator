@@ -126,7 +126,7 @@ module t;
   bit [89:0] wide90_result;
 
   initial begin
-    // Test 1: Basic if matches - void tag
+    // Test: Basic if matches - void tag
     v = tagged Invalid;
     result = 0;
     if (v matches tagged Invalid)
@@ -135,7 +135,7 @@ module t;
       result = 2;
     `checkh(result, 1);
 
-    // Test 2: Basic if matches - value with binding
+    // Test: Basic if matches - value with binding
     v = tagged Valid (42);
     result = 0;
     if (v matches tagged Valid .n)
@@ -144,7 +144,7 @@ module t;
       result = -1;
     `checkh(result, 42);
 
-    // Test 3: if-else chain
+    // Test: if-else chain
     v = tagged Valid (100);
     result = 0;
     if (v matches tagged Invalid)
@@ -153,7 +153,7 @@ module t;
       result = n;
     `checkh(result, 100);
 
-    // Test 4: Wide type if matching - 60-bit
+    // Test: Wide type if matching - 60-bit
     wt = tagged Wide60 (60'hFEDCBA987654321);
     wide60_result = 0;
     if (wt matches tagged Wide60 .w)
@@ -164,7 +164,7 @@ module t;
     `checkh(wide60_result, 60'hFEDCBA987654321);
 `endif
 
-    // Test 5: Wide type if matching - 90-bit
+    // Test: Wide type if matching - 90-bit
     wt = tagged Wide90 (90'hDE_ADBEEFCA_FEBABE12_3456);
     wide90_result = 0;
     if (wt matches tagged Wide90 .w)
@@ -175,7 +175,7 @@ module t;
     `checkh(wide90_result, 90'hDE_ADBEEFCA_FEBABE12_3456);
 `endif
 
-    // Test 6: Non-zero LSB if match
+    // Test: Non-zero LSB if match
     wt = tagged Byte8NonZeroLSB (8'hA5);
     result = 0;
     if (wt matches tagged Byte8NonZeroLSB .b)
@@ -184,7 +184,7 @@ module t;
       result = -1;
     `checkh(result, 8'hA5);
 
-    // Test 7: Opposite endianness if match
+    // Test: Opposite endianness if match
     wt = tagged Word32LittleEndian (32'hDEADBEEF);
     result = 0;
     if (wt matches tagged Word32LittleEndian .w)
@@ -193,7 +193,7 @@ module t;
       result = -1;
     `checkh(result, 32'hDEADBEEF);
 
-    // Test 8: Array type if matching
+    // Test: Array type if matching
     at = tagged Arr '{10, 20, 30, 40};
     result = 0;
     if (at matches tagged Arr .a)
@@ -202,7 +202,7 @@ module t;
       result = -1;
     `checkh(result, 100);
 
-    // Test 9: Array type scalar if match
+    // Test: Array type scalar if match
     at = tagged Scalar (999);
     result = 0;
     if (at matches tagged Scalar .s)
@@ -211,7 +211,7 @@ module t;
       result = -1;
     `checkh(result, 999);
 
-    // Test 10: Nested pattern matching (IEEE example)
+    // Test: Nested pattern matching (IEEE example)
     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
     result = 0;
     if (instr matches tagged Jmp (tagged JmpC '{cc:.c, addr:.a}))
@@ -220,7 +220,7 @@ module t;
       result = -1;
     `checkh(result, 256);
 
-    // Test 11: Chained matches with &&& (IEEE example)
+    // Test: Chained matches with &&& (IEEE example)
     instr = tagged Jmp (tagged JmpC '{2'd2, 10'd128});
     result = 0;
     if (instr matches tagged Jmp .j &&&
@@ -230,7 +230,7 @@ module t;
       result = -1;
     `checkh(result, 128);
 
-    // Test 12: Pattern with boolean filter expression
+    // Test: Pattern with boolean filter expression
     v = tagged Valid (75);
     result = 0;
     if (v matches tagged Valid .n &&& (n > 50))
@@ -239,7 +239,7 @@ module t;
       result = 2;
     `checkh(result, 1);
 
-    // Test 13: Pattern with boolean filter - no match
+    // Test: Pattern with boolean filter - no match
     v = tagged Valid (25);
     result = 0;
     if (v matches tagged Valid .n &&& (n > 50))
@@ -248,7 +248,7 @@ module t;
       result = 2;
     `checkh(result, 2);
 
-    // Test 14: Scope test - bound variable only in true branch
+    // Test: Scope test - bound variable only in true branch
     v = tagged Valid (99);
     result = 0;
     if (v matches tagged Valid .x) begin
@@ -257,7 +257,7 @@ module t;
     // x is NOT in scope here (else branch / after)
     `checkh(result, 99);
 
-    // Test 15: Add instruction matching
+    // Test: Add instruction matching
     instr = tagged Add '{5'd10, 5'd20, 5'd30};
     result = 0;
     if (instr matches tagged Add '{.r1, .r2, .rd})
@@ -266,7 +266,7 @@ module t;
       result = -1;
     `checkh(result, 60);
 
-    // Test 16: Complex filter with register file simulation
+    // Test: Complex filter with register file simulation
     instr = tagged Jmp (tagged JmpC '{2'd3, 10'd100});
     result = 0;
     // If conditional jump and condition register is non-zero
@@ -281,7 +281,7 @@ module t;
       result = -1;
     `checkh(result, 100);
 
-    // Test 17: Unconditional jump matching
+    // Test: Unconditional jump matching
     instr = tagged Jmp (tagged JmpU 10'd512);
     result = 0;
     if (instr matches tagged Jmp (tagged JmpU .a))
@@ -290,7 +290,7 @@ module t;
       result = -1;
     `checkh(result, 512);
 
-    // Test 18: Wildcard pattern in if
+    // Test: Wildcard pattern in if
     instr = tagged Add '{5'd1, 5'd2, 5'd3};
     result = 0;
     if (instr matches tagged Add .*)
@@ -300,7 +300,7 @@ module t;
     `checkh(result, 1);
 
 `ifndef QUESTA
-    // Test 19: Chandle member if matching
+    // Test: Chandle member if matching
     cht = tagged Invalid;
     result = 0;
     if (cht matches tagged Invalid)
@@ -318,7 +318,7 @@ module t;
     `checkh(result, 1);
 `endif
 
-    // Test 20: Class reference member if matching
+    // Test: Class reference member if matching
     obj = new(42);
     clt = tagged Invalid;
     result = 0;
@@ -336,7 +336,7 @@ module t;
       result = -1;
     `checkh(result, 42);
 
-    // Test 21: Real member if matching
+    // Test: Real member if matching
     rt = tagged Invalid;
     result = 0;
     if (rt matches tagged Invalid)
@@ -356,7 +356,7 @@ module t;
       result = -1;
     `checkh(result, 1);
 
-    // Test 22: Shortreal member if matching
+    // Test: Shortreal member if matching
     rt = tagged ShortRealVal (2.5);
     result = 0;
     if (rt matches tagged ShortRealVal .r) begin
@@ -368,7 +368,7 @@ module t;
       result = -1;
     `checkh(result, 1);
 
-    // Test 23: String member if matching
+    // Test: String member if matching
     st = tagged Invalid;
     result = 0;
     if (st matches tagged Invalid)
@@ -388,7 +388,7 @@ module t;
       result = -1;
     `checkh(result, 1);
 
-    // Test 24: Enum member if matching
+    // Test: Enum member if matching
     et = tagged Invalid;
     result = 0;
     if (et matches tagged Invalid)
@@ -409,7 +409,7 @@ module t;
     `checkh(result, 1);
 
 `ifndef VCS
-    // Test 25: Event member if matching
+    // Test: Event member if matching
     evt = tagged Invalid;
     result = 0;
     if (evt matches tagged Invalid)

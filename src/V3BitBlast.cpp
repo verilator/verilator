@@ -428,7 +428,7 @@ class BitBlastVisitor final : public VNVisitorConst, public VNDeleter {
         // Record whole access
         record(nodep, nodep, 0, nodep->varp()->width() - 1);
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         iterateChildrenConst(nodep);
         // The AstVarScope is not known, so all of them are blocked, by making it ineligible
         AstVar* const varp = nodep->varp();

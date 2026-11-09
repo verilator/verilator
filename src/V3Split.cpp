@@ -370,7 +370,7 @@ class SplitVisitor final : public VNVisitor {
         iterate(nodep->lhsp());
     }
 
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         // A variable selected through a handle can be the same as one accessed otherwise, which
         // is not known here, so the accesses must be kept in order
         if (m_graphp) m_noSplitWhy = "Handle";

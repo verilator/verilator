@@ -85,8 +85,8 @@ class CovergroupAssignValidVisitor final : public VNVisitorConst {
             const AstVar* varp = nullptr;
             if (const AstNodeVarRef* const refp = VN_CAST(nodep->lhsp(), NodeVarRef)) {
                 varp = refp->varp();
-            } else if (const AstMemberSel* const selp = VN_CAST(nodep->lhsp(), MemberSel)) {
-                varp = selp->varp();
+            } else if (const AstMemberRef* const memberRefp = VN_CAST(nodep->lhsp(), MemberRef)) {
+                varp = memberRefp->varp();
             }
             const auto it = m_constructors.find(varp);
             if (it != m_constructors.end() && (!m_ftaskp || m_ftaskp != it->second)) {
@@ -195,9 +195,9 @@ class CovergroupExprValidVisitor final : public VNVisitor {
     void visit(AstNodeFTaskRef* nodep) override {
         if (m_inCoverageExpression && nodep->taskp()) {
             bool invalidDirection = false;
-            for (AstNode* const stmtp : nodep->taskp()->stmtspList()) {
-                const AstVar* const varp = VN_CAST(stmtp, Var);
-                if (varp && varp->isIO() && varp->isWritable()) {
+            for (AstNode* const declp : nodep->taskp()->declspList()) {
+                const AstVar* const varp = VN_CAST(declp, Var);
+                if (varp && varp->isIO() && varp->isWritable() && !varp->isFuncReturn()) {
                     invalidDirection = true;
                     break;
                 }
@@ -431,8 +431,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 m_covergroupp->addMembersp(new AstInitialStatic{fl, assignp});
                 VL_DO_DANGLING(pushDeletep(optp->unlinkFrBack()), optp);
             } else {
-                optp->replaceWith(assignp);
-                VL_DO_DANGLING(pushDeletep(optp), optp);
+                m_constructorp->addStmtsp(assignp);
+                VL_DO_DANGLING(pushDeletep(optp->unlinkFrBack()), optp);
             }
         }
         m_cgOptions.clear();
@@ -978,7 +978,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstVar* const iffVarp
             = new AstVar{fl, VVarType::BLOCKTEMP, tempName, iffp->findBitDType()};
         iffVarp->funcLocal(true);
-        m_sampleFuncp->addStmtsp(iffVarp);
+        m_sampleFuncp->addDeclsp(iffVarp);
         iffp->unlinkFrBack();
         m_sampleFuncp->addStmtsp(
             new AstAssign{fl, new AstVarRef{fl, iffVarp, VAccess::WRITE}, iffp});
@@ -1038,7 +1038,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             coverpointp->fileline(), VVarType::BLOCKTEMP,
             "__VcpValue_" + sanitizeGeneratedName(coverpointp->name()), exprp->dtypep()};
         valueVarp->funcLocal(true);
-        m_sampleFuncp->addStmtsp(valueVarp);
+        m_sampleFuncp->addDeclsp(valueVarp);
         exprp->unlinkFrBack();
         addSampleStmt(new AstAssign{
             coverpointp->fileline(),
@@ -1844,7 +1844,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                  + cvtToStr(sized),
                              binp->findBitDType()};
             varp->funcLocal(true);
-            m_sampleFuncp->addStmtsp(varp);
+            m_sampleFuncp->addDeclsp(varp);
             addSampleStmt(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, enabledp});
             enabledp = new AstVarRef{fl, varp, VAccess::READ};
         }
@@ -1872,7 +1872,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     AstVar* constructorTemp(FileLine* fl, const string& name, AstNodeDType* dtypep) {
         AstVar* const varp = new AstVar{fl, VVarType::BLOCKTEMP, name, dtypep};
         varp->funcLocal(true);
-        m_constructorp->addStmtsp(varp);
+        m_constructorp->addDeclsp(varp);
         return varp;
     }
 
@@ -2045,7 +2045,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstVar* const morep = constructorTemp(fl, prefix + "_more", binp->findBitDType());
         AstVar* const itemp = withp->itemp()->unlinkFrBack();
         itemp->name(prefix + "_item");
-        m_constructorp->addStmtsp(itemp);
+        m_constructorp->addDeclsp(itemp);
         const auto ref = [&](AstVar* varp) { return new AstVarRef{fl, varp, VAccess::READ}; };
         const auto assign = [&](AstVar* varp, AstNodeExpr* rhsp) -> AstNodeStmt* {
             return new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, rhsp};
@@ -2283,7 +2283,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                              + cvtToStr(tgt.idx),
                          binp->findBitDType()};
         hitVarp->funcLocal(true);
-        m_sampleFuncp->addStmtsp(hitVarp);
+        m_sampleFuncp->addDeclsp(hitVarp);
         addSampleStmt(new AstAssign{fl, new AstVarRef{fl, hitVarp, VAccess::WRITE},
                                     new AstConst{fl, AstConst::BitFalse{}}});
         for (AstNode* const setp : binp->transpList()) {
@@ -2337,7 +2337,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                              "__VcpExcluded_" + sanitizeGeneratedName(coverpointp->name()),
                              coverpointp->findBitDType()};
             excludedp->funcLocal(true);
-            m_sampleFuncp->addStmtsp(excludedp);
+            m_sampleFuncp->addDeclsp(excludedp);
             AstCMethodHard* const callp
                 = itemCall(fl, cpVarp,
                            exprp->isWide() ? VCMethod::COVERGROUP_VALUE_EXCLUDED_W
@@ -2469,7 +2469,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                        "__VcpSized_" + sanitizeGeneratedName(coverpointp->name()),
                                        coverpointp->findBitDType()};
             sizedMatchedp->funcLocal(true);
-            m_sampleFuncp->addStmtsp(sizedMatchedp);
+            m_sampleFuncp->addDeclsp(sizedMatchedp);
             addSampleStmt(new AstAssign{fl, new AstVarRef{fl, sizedMatchedp, VAccess::WRITE},
                                         new AstConst{fl, AstConst::BitFalse{}}});
         }
@@ -3521,7 +3521,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             const uint32_t dim = dimIt->second;
             if (!counting) dims += (dims.empty() ? "" : ", ") + cvtToStr(dim) + "U";
             varp->name(prefix + "_" + sanitizeGeneratedName(varp->name()));
-            m_constructorp->addStmtsp(varp);
+            m_constructorp->addDeclsp(varp);
             if (varp->isWide()) {
                 loopp->addStmtsp(itemCall(fl, cxp, VCMethod::COVERGROUP_CROSS_WITH_VALUE_W,
                                           {cnum(fl, dim), new AstVarRef{fl, varp, VAccess::WRITE}})
@@ -3650,7 +3650,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             FileLine* const fl = binp->fileline();
             // Generate the selection apart, so that an unsupported one leaves no code, which
             // could leave its state for the next bin
-            AstFunc* const selectionp = new AstFunc{fl, "", nullptr, nullptr};
+            AstFunc* const selectionp = new AstFunc{fl, ""};
             bool supported;
             {
                 VL_RESTORER(m_constructorp);
@@ -3658,8 +3658,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 supported = generateRuntimeSelection(binp->selectp(), binp, crossp, cxp, cpVars,
                                                      dimensions);
             }
-            // A supported selection has code
-            if (supported) m_constructorp->addStmtsp(selectionp->stmtsp()->unlinkFrBackWithNext());
+            // A supported selection has code, maybe with temporaries
+            if (supported) {
+                if (AstNode* const declsp = selectionp->declsp()) {
+                    m_constructorp->addDeclsp(declsp->unlinkFrBackWithNext());
+                }
+                m_constructorp->addStmtsp(selectionp->stmtsp()->unlinkFrBackWithNext());
+            }
             VL_DO_DANGLING(pushDeletep(selectionp), selectionp);
             if (!supported) continue;
             const bool protect = v3Global.opt.protectIds();
@@ -4168,9 +4173,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstFunc* const getCoveragep
             = VN_AS(m_memberMap.findMember(m_covergroupp, "get_coverage"), Func);
         FileLine* const typeFl = getCoveragep->fileline();
-        getCoveragep->addStmtsp(new AstAssign{
-            typeFl, new AstVarRef{typeFl, VN_AS(getCoveragep->fvarp(), Var), VAccess::WRITE},
-            typeCoverageCall(typeFl)});
+        getCoveragep->addStmtsp(
+            new AstAssign{typeFl, new AstVarRef{typeFl, getCoveragep->fvarp(), VAccess::WRITE},
+                          typeCoverageCall(typeFl)});
     }
 
     // The registry call computing the covergroup's type coverage, per its type options
@@ -4201,8 +4206,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     fl, newOptionSel(fl, optionVar(false), "get_inst_coverage", VAccess::READ)}};
             valuep = new AstCond{fl, condp, mergedp, instp};
         }
-        funcp->addStmtsp(new AstAssign{
-            fl, new AstVarRef{fl, VN_AS(funcp->fvarp(), Var), VAccess::WRITE}, valuep});
+        funcp->addStmtsp(
+            new AstAssign{fl, new AstVarRef{fl, funcp->fvarp(), VAccess::WRITE}, valuep});
     }
 
     // The get_inst_coverage() of a coverpoint or cross, which V3Width added if called (IEEE
@@ -4245,10 +4250,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void rewriteVarRef(AstVarRef* refp, AstVar* handleVarp) {
         FileLine* const fl = refp->fileline();
         // As V3LinkLValue does, the handle of a written member select is marked written
-        AstMemberSel* const selp
-            = new AstMemberSel{fl, new AstVarRef{fl, handleVarp, refp->access()}, refp->varp()};
-        selp->access(refp->access());
-        refp->replaceWith(selp);
+        AstMemberRef* const memberRefp
+            = new AstMemberRef{fl, new AstVarRef{fl, handleVarp, refp->access()}, refp->varp()};
+        memberRefp->access(refp->access());
+        refp->replaceWith(memberRefp);
         VL_DO_DANGLING(pushDeletep(refp), refp);
     }
 
@@ -4329,12 +4334,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             memberVarp = nullptr;
             return true;
         }
-        AstMemberSel* const selp = VN_CAST(exprp, MemberSel);
-        if (!selp) return false;
-        AstVarRef* const baseRefp = VN_CAST(selp->fromp(), VarRef);
+        AstMemberRef* const memberRefp = VN_CAST(exprp, MemberRef);
+        if (!memberRefp) return false;
+        AstVarRef* const baseRefp = VN_CAST(memberRefp->fromp(), VarRef);
         if (!baseRefp) return false;
         baseVarp = baseRefp->varp();
-        memberVarp = selp->varp();
+        memberVarp = memberRefp->varp();
         return true;
     }
 
@@ -4349,9 +4354,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     AstNodeExpr* newEventRead(FileLine* fl, const EmbeddedEventTrigger& trigger) const {
         AstNodeExpr* const basep = new AstVarRef{fl, trigger.baseVarp, VAccess::READ};
         if (!trigger.memberVarp) return basep;
-        AstMemberSel* const selp = new AstMemberSel{fl, basep, trigger.memberVarp};
-        selp->access(VAccess::READ);
-        return selp;
+        AstMemberRef* const memberRefp = new AstMemberRef{fl, basep, trigger.memberVarp};
+        memberRefp->access(VAccess::READ);
+        return memberRefp;
     }
 
     string eventPrevName(const EmbeddedEventTrigger& trigger, size_t triggerIndex) const {
@@ -4495,8 +4500,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void validateCovergroupExpressions() {
         std::set<const AstVar*> sampleMembers;
         std::set<const AstVar*> constructorRefMembers;
-        for (AstNode* const stmtp : m_constructorp->stmtspList()) {
-            const AstVar* const varp = VN_CAST(stmtp, Var);
+        for (AstNode* const declp : m_constructorp->declspList()) {
+            const AstVar* const varp = VN_CAST(declp, Var);
             if (!varp || !varp->isIO() || (!varp->isRef() && !varp->isConstRef())) continue;
             const AstVar* const memberp
                 = VN_CAST(m_memberMap.findMember(m_covergroupp, varp->name()), Var);
@@ -4505,8 +4510,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             constructorRefMembers.insert(varp);
             constructorRefMembers.insert(memberp);
         }
-        for (AstNode* const stmtp : m_sampleFuncp->stmtspList()) {
-            const AstVar* const varp = VN_CAST(stmtp, Var);
+        for (AstNode* const declp : m_sampleFuncp->declspList()) {
+            const AstVar* const varp = VN_CAST(declp, Var);
             if (!varp || !varp->isIO()) continue;
             const AstVar* const memberp
                 = VN_CAST(m_memberMap.findMember(m_covergroupp, varp->name()), Var);
@@ -4519,8 +4524,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     void rebindFormalRefs() {
         std::map<const AstVar*, AstVar*> replacements;
-        for (AstNode* const stmtp : m_constructorp->stmtspList()) {
-            if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
+        for (AstNode* const declp : m_constructorp->declspList()) {
+            if (const AstVar* const varp = VN_CAST(declp, Var)) {
                 if (!varp->isIO()) continue;
                 AstVar* const memberp
                     = VN_CAST(m_memberMap.findMember(m_covergroupp, varp->name()), Var);
@@ -4629,7 +4634,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         argumentp->funcLocal(true);
         argumentp->noReset(true);
         argumentp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-        m_constructorp->addStmtsp(argumentp);
+        m_constructorp->addDeclsp(argumentp);
         m_constructorp->prependStmtsp(new AstAssign{fl, memberRef(fl, handleVarp, VAccess::WRITE),
                                                     new AstVarRef{fl, argumentp, VAccess::READ}});
 

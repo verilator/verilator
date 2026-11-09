@@ -29,7 +29,38 @@
  `define verbose 1'b0
 `endif
 
-module t;
+module t (
+    output logic [6:0] obs `PUBLIC_FORCEABLE
+);
+
+`ifdef VERILATOR
+  logic [6:0] keep;
+  assign obs = keep;
+
+  initial begin
+    int status;
+    keep = 7'h2d;
+    #1;
+    status = `CPP_CALL1(checkTopPort, 32'h2d);
+    `checkh(status, 0);
+    status = `CPP_CALL2(forceTopPort, 32'h23, 0);
+    `checkh(status, 0);
+    #1;
+    status = `CPP_CALL1(checkTopPort, 32'h23);
+    `checkh(status, 0);
+    keep = 7'h31;
+    status = `CPP_CALL2(forceTopPort, 32'h4a, 0);
+    `checkh(status, 0);
+    #1;
+    status = `CPP_CALL1(checkTopPort, 32'h4a);
+    `checkh(status, 0);
+    status = `CPP_CALL2(forceTopPort, 0, 1);
+    `checkh(status, 0);
+    #1;
+    status = `CPP_CALL1(checkTopPort, 32'h31);
+    `checkh(status, 0);
+  end
+`endif
 
   reg clk;
 

@@ -22,7 +22,7 @@ module t_randomize_module_var;
   initial begin
     tr = new;
 
-    // Test 1: Empty queue - deq must be 0
+    // Test: Empty queue - deq must be 0
     if (tr.randomize() == 0) begin
       $stop;
     end
@@ -31,7 +31,7 @@ module t_randomize_module_var;
       $stop;
     end
 
-    // Test 2: Non-empty queue - deq can be 0 or 1
+    // Test: Non-empty queue - deq can be 0 or 1
     golden_queue.push_back(42);
     if (tr.randomize() == 0) begin
       $stop;

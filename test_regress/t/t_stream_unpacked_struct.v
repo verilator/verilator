@@ -278,6 +278,30 @@ module t;
     `checkh(descending_out.data[1], 8'h12);
     `checkh(descending_out.data[0], 8'h34);
 
+    repeat (16) begin
+      // Arrays not starting at index 0, descending and ascending
+      typedef struct {byte data[3:1];} offset_array_t;
+      typedef struct {byte data[1:3];} asc_offset_array_t;
+      automatic logic [23:0] v = 24'($urandom);
+      offset_array_t offset;
+      offset_array_t offset_out;
+      asc_offset_array_t asc_offset;
+      asc_offset_array_t asc_offset_out;
+      logic [23:0] offset_bits;
+      offset = '{data: '{v[23:16], v[15:8], v[7:0]}};
+      offset_bits = {>>{offset}};
+      `checkh(offset_bits, v);
+      {>>{offset_out}} = v;
+      `checkh(offset_out.data[3], v[23:16]);
+      `checkh(offset_out.data[1], v[7:0]);
+      asc_offset = '{data: '{v[23:16], v[15:8], v[7:0]}};
+      offset_bits = {>>{asc_offset}};
+      `checkh(offset_bits, v);
+      {>>{asc_offset_out}} = v;
+      `checkh(asc_offset_out.data[1], v[23:16]);
+      `checkh(asc_offset_out.data[3], v[7:0]);
+    end
+
     matrix_array.matrix[0][0] = 8'h11;
     matrix_array.matrix[0][1] = 8'h22;
     matrix_array.matrix[0][2] = 8'h33;

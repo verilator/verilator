@@ -507,12 +507,15 @@ public:
             helperVars.m_rdVarp
                 = new AstVar{flp, VVarType::WIRE, varp->name() + "__VforceRd", varp->dtypep()};
             helperVars.m_rdVarp->sigPublic(true);
+            varp->forceRdVarp(helperVars.m_rdVarp);
             helperVars.m_enVarp
                 = new AstVar{flp, enValType, varp->name() + "__VforceEn", enDtypep};
             helperVars.m_enVarp->sigUserRWPublic(true);
+            varp->forceEnVarp(helperVars.m_enVarp);
             helperVars.m_valVarp
                 = new AstVar{flp, enValType, varp->name() + "__VforceVal", varp->dtypep()};
             helperVars.m_valVarp->sigUserRWPublic(true);
+            varp->forceValVarp(helperVars.m_valVarp);
             varp->addNextHere(helperVars.m_rdVarp);
             varp->addNextHere(helperVars.m_enVarp);
             varp->addNextHere(helperVars.m_valVarp);

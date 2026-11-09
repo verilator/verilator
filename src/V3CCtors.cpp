@@ -287,7 +287,7 @@ void V3CCtors::evalAsserts() {
                         newp = new AstAnd{varp->fileline(), newp,
                                           new AstConst(varp->fileline(), AstConst::WidthedValue{},
                                                        storedWidth, value)};
-                        AstNodeIf* const ifp = new AstIf{
+                        AstIf* const ifp = new AstIf{
                             varp->fileline(), newp,
                             new AstCStmt{varp->fileline(), "Verilated::overWidthError(\""
                                                                + varp->prettyName() + "\");"}};

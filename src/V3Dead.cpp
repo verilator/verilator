@@ -25,7 +25,7 @@
 // The following nodes have package pointers and are cleaned up here:
 // AstRefDType, AstEnumItemRef, AstNodeVarRef, AstNodeFTask
 // These have packagep but will not exist at this stage
-// AstPackageImport, AstDot, AstClassOrPackageRef
+// AstPackageImport, AstDot, AstClassOrPackageRef, AstSchemaRef
 //
 // Note on packagep: After the V3Scope/V3LinkDotScoped stage, package links
 // are no longer used, but their presence prevents us from removing empty
@@ -416,6 +416,12 @@ class DeadVisitor final : public VNVisitor {
             }
         }
     }
+    void visit(AstSchemaRef* nodep) override {
+        if (!m_sideEffect && !nodep->isPure()) m_sideEffect = true;
+        iterateChildren(nodep);
+        checkAll(nodep);
+        if (nodep->classOrPackagep()) nodep->classOrPackagep()->user1Inc();
+    }
     void visit(AstModportFTaskRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
@@ -485,7 +491,7 @@ class DeadVisitor final : public VNVisitor {
         }
         checkAll(nodep);
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         iterateChildren(nodep);
         if (nodep->varp()) nodep->varp()->user1Inc();
         if (nodep->fromp()->dtypep()) nodep->fromp()->dtypep()->user1Inc();  // classref

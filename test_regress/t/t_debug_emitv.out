@@ -564,13 +564,13 @@ module t;
     sequence s_clocked;
     @(posedge clk) in
     endsequence
-    /* generate */ begin : assert_seq_clocked
+    begin : assert_seq_clocked
         assert property ( s_clocked()
         ) begin
         end
         else begin
         end
-    end : assert_seq_clocked
+    end
     property p;
     @(posedge clk) ##1 sum[0]
     endproperty
@@ -783,30 +783,30 @@ module t;
     property prop;
     @(posedge clk) 1'h0
     endproperty
-    /* generate */ begin : assert_concurrent
+    begin : assert_concurrent
         assert property ( prop
         ) begin
         end
         else begin
         end
-    end : assert_concurrent
-    /* generate */ begin : assert_concurrent_else
+    end
+    begin : assert_concurrent_else
         assert property ( prop
         ) begin
         end
         else begin
             $display("fail");
         end
-    end : assert_concurrent_else
-    /* generate */ begin : assert_concurrent_stmt
+    end
+    begin : assert_concurrent_stmt
         assert property ( prop
         ) begin
             $display("pass");
         end
         else begin
         end
-    end : assert_concurrent_stmt
-    /* generate */ begin : assert_concurrent_stmt_else
+    end
+    begin : assert_concurrent_stmt_else
         assert property ( prop
         ) begin
             $display("pass");
@@ -814,31 +814,31 @@ module t;
         else begin
             $display("fail");
         end
-    end : assert_concurrent_stmt_else
-    /* generate */ begin : assume_concurrent
+    end
+    begin : assume_concurrent
         assume property ( prop
         ) begin
         end
         else begin
         end
-    end : assume_concurrent
-    /* generate */ begin : assume_concurrent_else
+    end
+    begin : assume_concurrent_else
         assume property ( prop
         ) begin
         end
         else begin
             $display("fail");
         end
-    end : assume_concurrent_else
-    /* generate */ begin : assume_concurrent_stmt
+    end
+    begin : assume_concurrent_stmt
         assume property ( prop
         ) begin
             $display("pass");
         end
         else begin
         end
-    end : assume_concurrent_stmt
-    /* generate */ begin : assume_concurrent_stmt_else
+    end
+    begin : assume_concurrent_stmt_else
         assume property ( prop
         ) begin
             $display("pass");
@@ -846,40 +846,40 @@ module t;
         else begin
             $display("fail");
         end
-    end : assume_concurrent_stmt_else
-    /* generate */ begin : cover_concurrent
+    end
+    begin : cover_concurrent
         cover property ( prop
         ) begin
         end
-    end : cover_concurrent
-    /* generate */ begin : cover_concurrent_stmt
+    end
+    begin : cover_concurrent_stmt
         cover property ( prop
         ) begin
             $display("pass");
         end
-    end : cover_concurrent_stmt
-    /* generate */ begin : cover_sequence_concurrent
+    end
+    begin : cover_sequence_concurrent
         cover property (@(posedge clk) in##1 in
         ) begin
         end
-    end : cover_sequence_concurrent
-    /* generate */ begin : assert_prop_always
+    end
+    begin : assert_prop_always
         assert property (@(posedge clk) always [32'sh0:
                          32'sh3] in
         ) begin
         end
         else begin
         end
-    end : assert_prop_always
-    /* generate */ begin : assert_prop_s_always
+    end
+    begin : assert_prop_s_always
         assert property (@(posedge clk) s_always [32'sh1:
                          32'sh2] in
         ) begin
         end
         else begin
         end
-    end : assert_prop_s_always
-    /* generate */ begin : assert_prop_overlap_impl
+    end
+    begin : assert_prop_overlap_impl
         assert property (@(posedge clk) 
             ???? // IMPLICATION
             inin
@@ -887,8 +887,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_overlap_impl
-    /* generate */ begin : assert_prop_nonoverlap_impl
+    end
+    begin : assert_prop_nonoverlap_impl
         assert property (@(posedge clk) 
             ???? // IMPLICATION
             inin
@@ -896,8 +896,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_nonoverlap_impl
-    /* generate */ begin : assert_prop_overlap_fb
+    end
+    begin : assert_prop_overlap_fb
         assert property (@(posedge clk) 
             ???? // IMPLICATION
             inin
@@ -905,8 +905,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_overlap_fb
-    /* generate */ begin : assert_prop_nonoverlap_fb
+    end
+    begin : assert_prop_nonoverlap_fb
         assert property (@(posedge clk) 
             ???? // IMPLICATION
             inin
@@ -914,8 +914,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_nonoverlap_fb
-    /* generate */ begin : assert_prop_accept_on
+    end
+    begin : assert_prop_accept_on
         assert property (@(posedge clk) accept_on (
                                                    in) 
                          in
@@ -923,8 +923,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_accept_on
-    /* generate */ begin : assert_prop_reject_on
+    end
+    begin : assert_prop_reject_on
         assert property (@(posedge clk) reject_on (
                                                    in) 
                          in
@@ -932,8 +932,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_reject_on
-    /* generate */ begin : assert_prop_sync_accept_on
+    end
+    begin : assert_prop_sync_accept_on
         assert property (@(posedge clk) sync_accept_on (
                                                         in) 
                          in
@@ -941,8 +941,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_sync_accept_on
-    /* generate */ begin : assert_prop_sync_reject_on
+    end
+    begin : assert_prop_sync_reject_on
         assert property (@(posedge clk) sync_reject_on (
                                                         in) 
                          in
@@ -950,19 +950,19 @@ module t;
         end
         else begin
         end
-    end : assert_prop_sync_reject_on
-    /* generate */ begin : assert_prop_weak
+    end
+    begin : assert_prop_weak
         assert property (@(posedge clk) weak(in)
         ) begin
         end
         else begin
         end
-    end : assert_prop_weak
-    /* generate */ begin : cover_prop_strong
+    end
+    begin : cover_prop_strong
         cover property (@(posedge clk) strong(in)
         ) begin
         end
-    end : cover_prop_strong
+    end
     int a;
     int ao;
     initial begin
@@ -1037,14 +1037,14 @@ module t;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_coverage = /*CRESET*/;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_inst_coverage = /*CRESET*/;
     endfunction
     function set_inst_name;
         input string name;
@@ -1100,14 +1100,14 @@ module t;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_coverage = /*CRESET*/;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_inst_coverage = /*CRESET*/;
     endfunction
     function set_inst_name;
         input string name;
@@ -1162,14 +1162,14 @@ module t;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_coverage = /*CRESET*/;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_inst_coverage = /*CRESET*/;
     endfunction
     function set_inst_name;
         input string name;
@@ -1222,14 +1222,14 @@ module t;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_coverage = /*CRESET*/;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_inst_coverage = /*CRESET*/;
     endfunction
     function set_inst_name;
         input string name;
@@ -1303,14 +1303,14 @@ module t;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_coverage = /*CRESET*/;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_inst_coverage = /*CRESET*/;
     endfunction
     function set_inst_name;
         input string name;
@@ -1400,14 +1400,14 @@ module t;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_coverage = /*CRESET*/;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_inst_coverage = /*CRESET*/;
     endfunction
     function set_inst_name;
         input string name;
@@ -1485,14 +1485,14 @@ module t;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_coverage = /*CRESET*/;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_inst_coverage = /*CRESET*/;
     endfunction
     function set_inst_name;
         input string name;
@@ -1603,14 +1603,14 @@ class Cls;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_coverage = /*CRESET*/;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_inst_coverage = /*CRESET*/;
     endfunction
     function set_inst_name;
         input string name;
@@ -1629,8 +1629,8 @@ class Cls;
     int value;
     function new;
         const ref int value;
-        value = value;
         cp_ref: coverpoint value;
+        value = value;
     endfunction
     static int __Vint;
     struct {
@@ -1662,14 +1662,14 @@ class Cls;
     function stop;
     endfunction
     function get_coverage;
-        get_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_coverage = /*CRESET*/;
     endfunction
     function get_inst_coverage;
-        get_inst_coverage = /*CRESET*/;
         input string covered_bins;
         input string total_bins;
+        get_inst_coverage = /*CRESET*/;
     endfunction
     function set_inst_name;
         input string name;
@@ -1765,6 +1765,68 @@ endclass
 package __Vconstpool;
     const string CONSARRAY_0[1:0] = '{0:"ZERO", 1:"ONE"};
 endpackage
+interface Iface;
+    input logic clk;
+    logic ifsig;
+    modport mp (
+        input logic ifsig
+    );
+endinterface
+module sub;
+    input logic clk;
+    logic [7:0]  xr_vec;
+    /* generate */ begin : sub_gen
+        typedef enum logic [1:0] {
+            SUB_A = 2'h0,
+            SUB_B = 2'h1
+        } sub_e;
+    end : sub_gen
+    task inc;
+        input int i;
+        output int o;
+        o = /*CRESET*/;
+        o = ({32'h1{{1'h0, i[31:1]}}} + 32'h1);
+    endtask
+    function f;
+        input int v;
+        begin : label9
+            if ((v == 32'sh0)) begin
+                f = 32'sh21;
+                disable label9;
+            end
+            f = ({32'h1{{31'h0, v[2]}}} + 32'h1);
+            disable label9;
+        end
+    endfunction
+    real r;
+endmodule
+module seq_event;
+    input logic clk;
+    bit a;
+    bit b;
+    bit c;
+    sequence sq;
+    @(posedge clk) a##1 b##1 c
+    endsequence
+    initial begin
+        begin
+
+            ???? // EVENTCONTROL
+            @( sq())end
+    end
+endmodule
+package p;
+    logic pkgvar;
+endpackage
+module param_mod__Tzc7cce3e0_P3;
+    parameter int PW = 32'sh3;
+    input byte pin;
+    output logic [2:0]  pout;
+    typedef byte pt_alias_t;
+    byte pt_var;
+    assign pt_var = pin;
+    assign pout = pt_var[2:0];
+endmodule
 package std;
     class process;
         typedef enum int{
@@ -1777,7 +1839,7 @@ package std;
         protected chandle m_process;
         function self;
             process p;
-            begin : label9
+            begin : label10
                 self = /*CRESET*/;
                 p = /*CRESET*/;
                 $c(vlProcess->initFromSelf(p););
@@ -1789,7 +1851,7 @@ package std;
                     end
                 end
                 self = p;
-                disable label9;
+                disable label10;
             end
         endfunction
         task set_status;
@@ -1797,10 +1859,10 @@ package std;
             $c(m_process->state(s););
         endtask
         function status;
-            begin : label10
+            begin : label11
                 status = /*CRESET*/;
                 status = $c(m_process->state());
-                disable label10;
+                disable label11;
             end
         endfunction
         task kill;
@@ -1836,12 +1898,12 @@ package std;
         endtask
         function get_randstate;
             string s;
-            begin : label11
+            begin : label12
                 get_randstate = /*CRESET*/;
                 s = string'($c(0));
                 $c(s = m_process->randstate(););
                 get_randstate = s;
-                disable label11;
+                disable label12;
             end
         endfunction
         task set_randstate;
@@ -1880,7 +1942,7 @@ package std;
         endtask
         task get;
             input int keyCount;
-            begin : label12
+            begin : label13
                 dropKilled();
                 if (((m_keyCount >= keyCount) && ((
                                                    m_queue.size() 
@@ -1893,7 +1955,7 @@ package std;
                     begin
                         m_keyCount = (m_keyCount - 
                                       keyCount);
-                        disable label12;
+                        disable label13;
                     end
                 end
                 m_queue.push_back(
@@ -1920,15 +1982,15 @@ package std;
         endtask
         function try_get;
             input int keyCount;
-            begin : label13
+            begin : label14
                 try_get = /*CRESET*/;
                 if ((m_keyCount < keyCount)) begin
                     try_get = 32'sh0;
-                    disable label13;
+                    disable label14;
                 end
                 m_keyCount = (m_keyCount - keyCount);
                 try_get = 32'sh1;
-                disable label13;
+                disable label14;
             end
         endfunction
     endclass
@@ -1985,68 +2047,6 @@ package std;
         string comment;
     } vl_cross_type_options_t;
 endpackage
-interface Iface;
-    input logic clk;
-    logic ifsig;
-    modport mp (
-        input logic ifsig
-    );
-endinterface
-module sub;
-    input logic clk;
-    logic [7:0]  xr_vec;
-    /* generate */ begin : sub_gen
-        typedef enum logic [1:0] {
-            SUB_A = 2'h0,
-            SUB_B = 2'h1
-        } sub_e;
-    end : sub_gen
-    task inc;
-        input int i;
-        output int o;
-        o = /*CRESET*/;
-        o = ({32'h1{{1'h0, i[31:1]}}} + 32'h1);
-    endtask
-    function f;
-        input int v;
-        begin : label14
-            if ((v == 32'sh0)) begin
-                f = 32'sh21;
-                disable label14;
-            end
-            f = ({32'h1{{31'h0, v[2]}}} + 32'h1);
-            disable label14;
-        end
-    endfunction
-    real r;
-endmodule
-module seq_event;
-    input logic clk;
-    bit a;
-    bit b;
-    bit c;
-    sequence sq;
-    @(posedge clk) a##1 b##1 c
-    endsequence
-    initial begin
-        begin
-
-            ???? // EVENTCONTROL
-            @( sq())end
-    end
-endmodule
-package p;
-    logic pkgvar;
-endpackage
-module param_mod__Tzc7cce3e0_P3;
-    parameter int PW = 32'sh3;
-    input byte pin;
-    output logic [2:0]  pout;
-    typedef byte pt_alias_t;
-    byte pt_var;
-    assign pt_var = pin;
-    assign pout = pt_var[2:0];
-endmodule
 package Pkg;
     localparam bit signed [31:0]  PKG_PARAM = 32'sh1;
     typedef enum int{

@@ -30,28 +30,28 @@ module t (
   int count_fail5 = 0;
   int count_fail6 = 0;
 
-  // Test 1: a ##1 !b -- boolean ! as consequent of cycle delay.
+  // Test: a ##1 !b -- boolean ! as consequent of cycle delay.
   assert property (@(posedge clk) a ##1 !b)
   else count_fail1 <= count_fail1 + 1;
 
-  // Test 2: a ##1 (!b && !c) -- conjunction of two bangs in seq.
+  // Test: a ##1 (!b && !c) -- conjunction of two bangs in seq.
   assert property (@(posedge clk) a ##1 (!b && !c))
   else count_fail2 <= count_fail2 + 1;
 
-  // Test 3: a |-> ##1 !b -- bang on consequent of overlapping implication
+  // Test: a |-> ##1 !b -- bang on consequent of overlapping implication
   // (mirrors core-v-verif `|-> ##1 !irq_enabled`).
   assert property (@(posedge clk) a |-> ##1 !b)
   else count_fail3 <= count_fail3 + 1;
 
-  // Test 4: a ##1 !$past(b) -- bang applied to sampled value function.
+  // Test: a ##1 !$past(b) -- bang applied to sampled value function.
   assert property (@(posedge clk) a ##1 !$past(b))
   else count_fail4 <= count_fail4 + 1;
 
-  // Test 5: a ##0 !b ##1 c -- bang interleaved between cycle delays.
+  // Test: a ##0 !b ##1 c -- bang interleaved between cycle delays.
   assert property (@(posedge clk) a ##0 !b ##1 c)
   else count_fail5 <= count_fail5 + 1;
 
-  // Test 6: a |=> !d -- bang on consequent of non-overlapping implication.
+  // Test: a |=> !d -- bang on consequent of non-overlapping implication.
   assert property (@(posedge clk) a |=> !d)
   else count_fail6 <= count_fail6 + 1;
 

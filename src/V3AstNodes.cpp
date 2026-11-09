@@ -566,8 +566,8 @@ bool AstNode::isDisableQueuePushSelfStmt() {
     if (!methodp || methodp->name() != "push_back") return false;
     AstNode* const basep = methodp->fromp()->baseFromp(false);
     if (AstVarRef* const refp = VN_CAST(basep, VarRef)) return refp->varp()->processQueue();
-    if (AstMemberSel* const selp = VN_CAST(basep, MemberSel)) {
-        return selp->varp() && selp->varp()->processQueue();
+    if (AstMemberRef* const memberRefp = VN_CAST(basep, MemberRef)) {
+        return memberRefp->varp() && memberRefp->varp()->processQueue();
     }
     return false;
 }
@@ -1942,6 +1942,15 @@ void AstForkItem::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, disableWrapper);
     dumpJsonGen(str);
 }
+void AstFunc::initFvarp(AstVar* varp) {
+    // The function implicitly declares a variable with its name (IEEE 1800-2023 13.4.1)
+    varp->direction(VDirection::OUTPUT);
+    varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+    varp->funcLocal(true);
+    varp->funcReturn(true);
+    addDeclsp(varp);
+    fvarp(varp);
+}
 string AstGenBlock::dtypeNameInnerScope(const string& outer) const {
     // A named generate block is a scope (IEEE 1800-2023 27.6), so the types of distinct blocks,
     // as of the iterations of a loop, are named apart; an unnamed block, as around the 'if' of an
@@ -1960,12 +1969,16 @@ void AstGenBlock::dumpJson(std::ostream& str) const {
 }
 void AstIf::dump(std::ostream& str) const {
     Super::dump(str);
+    if (isBoundsCheck()) str << " [BOUNDS]";
+    if (!branchPred().unknown()) str << " [" << branchPred().asciiShort() << "]";
     str << " " << verilogKwd();
     if (priorityPragma()) str << " [PRI]";
     if (uniquePragma()) str << " [UNQ]";
     if (unique0Pragma()) str << " [UNQ0]";
 }
 void AstIf::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "isBoundsCheck", isBoundsCheck());
+    if (!branchPred().unknown()) dumpJsonStr(str, "branchPred", branchPred().ascii());
     dumpJsonStr(str, "kwd", verilogKwd());
     dumpJsonBoolIf(str, "priority", priorityPragma());
     dumpJsonBoolIf(str, "unique", uniquePragma());
@@ -2218,14 +2231,14 @@ string AstMemberDType::prettyDTypeName(bool full) const {
     // Named as the member's type, as for $typename of a member (IEEE 1800-2023 20.6.1)
     return subDTypep()->prettyDTypeName(full);
 }
-AstMemberSel::AstMemberSel(FileLine* fl, AstNodeExpr* fromp, AstVar* varp)
-    : ASTGEN_SUPER_MemberSel(fl)
+AstMemberRef::AstMemberRef(FileLine* fl, AstNodeExpr* fromp, AstVar* varp)
+    : ASTGEN_SUPER_MemberRef(fl)
     , m_name{varp->name()} {
     this->fromp(fromp);
     this->varp(varp);
     dtypep(varp->dtypep());
 }
-void AstMemberSel::dump(std::ostream& str) const {
+void AstMemberRef::dump(std::ostream& str) const {
     Super::dump(str);
     str << " " << access().arrow() << " ";
     if (varp()) {
@@ -2234,12 +2247,12 @@ void AstMemberSel::dump(std::ostream& str) const {
         str << "%E:UNLINKED";
     }
 }
-void AstMemberSel::dumpJson(std::ostream& str) const {
+void AstMemberRef::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "access", access().ascii());
     dumpJsonGen(str);
 }
-bool AstMemberSel::sameNode(const AstNode* samep) const {
-    const AstMemberSel* const sp = VN_DBG_AS(samep, MemberSel);
+bool AstMemberRef::sameNode(const AstNode* samep) const {
+    const AstMemberRef* const sp = VN_DBG_AS(samep, MemberRef);
     return sp && access() == sp->access() && fromp()->isSame(sp->fromp()) && name() == sp->name()
            && (varp() == sp->varp() || (varp() && sp->varp() && varp()->sameNode(sp->varp())));
 }
@@ -3112,8 +3125,8 @@ AstNode* AstNodeExpr::baseFromp(bool overMembers) {
         } else if (VN_IS(nodep, CMethodHard)) {
             nodep = VN_AS(nodep, CMethodHard)->fromp();
             continue;
-        } else if (overMembers && VN_IS(nodep, MemberSel)) {
-            nodep = VN_AS(nodep, MemberSel)->fromp();
+        } else if (overMembers && VN_IS(nodep, MemberRef)) {
+            nodep = VN_AS(nodep, MemberRef)->fromp();
             continue;
         } else if (overMembers && VN_IS(nodep, StructSel)) {
             nodep = VN_AS(nodep, StructSel)->fromp();
@@ -3135,8 +3148,8 @@ VAccess AstNodeExpr::getVAccessRecurse() const {
     if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
         return varrefp->access();
     }
-    if (const AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-        return memberSelp->access();
+    if (const AstMemberRef* const memberRefp = VN_CAST(exprp, MemberRef)) {
+        return memberRefp->access();
     }
     if (const AstSelBit* const selpBitp = VN_CAST(exprp, SelBit)) return selpBitp->access();
     exprp->v3fatalSrc("Unexpected expression type");
@@ -3145,7 +3158,7 @@ VAccess AstNodeExpr::getVAccessRecurse() const {
 const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
     // Given an expression, recurse to find the expression which decides about VAccess etc.
     if (VN_IS(this, NodeVarRef)) return this;
-    if (VN_IS(this, MemberSel)) return this;
+    if (VN_IS(this, MemberRef)) return this;
     if (VN_IS(this, SelBit)) return this;
     if (const AstNodeSel* const anodep = VN_CAST(this, NodeSel)) {
         return anodep->fromp()->getVAccessTargetRecurse();
@@ -3255,22 +3268,24 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
 }
 bool AstNodeFTask::getPurityRecurse() const {
     if (this->dpiImport()) return this->dpiPure();
-    // Check the list of statements if it contains any impure statement
+    // Check the declarations and statements if they contain any impure node
     // or any write reference to a variable that isn't an automatic function local.
-    for (AstNode* const stmtp : this->stmtspList()) {
-        if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
-            if (varp->isInoutOrRef()) return false;
+    for (AstNode* const listp : std::initializer_list<AstNode*>{this->declsp(), this->stmtsp()}) {
+        for (AstNode* itemp = listp; itemp; itemp = itemp->nextp()) {
+            if (const AstVar* const varp = VN_CAST(itemp, Var)) {
+                if (varp->isInoutOrRef()) return false;
+            }
+            if (!itemp->isPure()) return false;
+            if (itemp->exists([](AstNode* const nodep) {
+                    if (AstNodeVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
+                        return (!varrefp->varp()->isFuncLocal()
+                                || varrefp->varp()->lifetime().isStatic())
+                               && varrefp->access().isWriteOrRW();
+                    }
+                    return !nodep->isPure();
+                }))
+                return false;
         }
-        if (!stmtp->isPure()) return false;
-        if (stmtp->exists([](AstNode* const nodep) {
-                if (AstNodeVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
-                    return (!varrefp->varp()->isFuncLocal()
-                            || varrefp->varp()->lifetime().isStatic())
-                           && varrefp->access().isWriteOrRW();
-                }
-                return !nodep->isPure();
-            }))
-            return false;
     }
     return true;
 }
@@ -3342,16 +3357,6 @@ void AstNodeFuncCovItem::dump(std::ostream& str) const {
     if (instCoveragep()) str << " instCoverage=" << nodeAddr(instCoveragep());
 }
 void AstNodeFuncCovItem::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-void AstNodeIf::dump(std::ostream& str) const {
-    Super::dump(str);
-    if (isBoundsCheck()) str << " [BOUNDS]";
-    if (!branchPred().unknown()) str << " [" << branchPred().asciiShort() << "]";
-}
-void AstNodeIf::dumpJson(std::ostream& str) const {
-    dumpJsonBoolIf(str, "isBoundsCheck", isBoundsCheck());
-    dumpJsonStr(str, "branchPred", branchPred().ascii());
-    dumpJsonGen(str);
-}
 string AstNodeModule::dtypeNameInnerScope(const string& outer) const {
     if (const AstClass* const classp = VN_CAST(this, Class)) {
         return classp->dtypeNameIn(outer) + "::";
@@ -3629,12 +3634,12 @@ void AstPast::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, propertyTiming);
     dumpJsonGen(str);
 }
-void AstPatMember::dump(std::ostream& str) const {
+void AstPatternItem::dump(std::ostream& str) const {
     Super::dump(str);
     if (isConcat()) str << " [CONCAT]";
     if (isDefault()) str << " [DEFAULT]";
 }
-void AstPatMember::dumpJson(std::ostream& str) const {
+void AstPatternItem::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isConcat);
     dumpJsonBoolFuncIf(str, isDefault);
     dumpJsonGen(str);
@@ -3854,6 +3859,7 @@ void AstSampled::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, internal);
     dumpJsonGen(str);
 }
+std::string AstSchemaRef::name() const { return schemap()->name(); }
 AstActive* AstScope::comboActivep(bool create) {
     // Use an existing one, but not the active of an AlwaysPostponed, which must stay alone
     for (AstNode* const nodep : blockspList()) {
@@ -4655,6 +4661,9 @@ void AstVar::dump(std::ostream& str) const {
     if (isStdRandomizeArg()) str << " [STDRANDARG]";
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
+    if (forceRdVarp()) str << " forceRdVarp=" << nodeAddr(forceRdVarp());
+    if (forceEnVarp()) str << " forceEnVarp=" << nodeAddr(forceEnVarp());
+    if (forceValVarp()) str << " forceValVarp=" << nodeAddr(forceValVarp());
 }
 void AstVar::dumpJson(std::ostream& str) const {
     if (libInoutId()) dumpJsonNumFunc(str, libInoutId);
