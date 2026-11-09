@@ -85,6 +85,10 @@ class V3EmitMkJsonEmitter final {
             moduleInterfaces.emplace_back(
                 V3Os::filenameSlashPath(V3Os::filenameAbsolutePath(moduleFile)));
 
+        VStringList cflags = v3Global.opt.cFlags();
+        for (const string& moduleFile : v3Global.opt.cxxModuleFiles())
+            cflags.push_back("-fmodule-file=" + moduleFile);
+
         of.put("version", 1)
             .begin("system")
             .put("perl", V3Options::getenvPERL())
@@ -93,7 +97,7 @@ class V3EmitMkJsonEmitter final {
             .put("verilator_solver", V3Options::getenvVERILATOR_SOLVER())
             .end()
             .begin("options")
-            .putList("cflags", v3Global.opt.cFlags())
+            .putList("cflags", cflags)
             .putList("ldflags", v3Global.opt.ldLibs())
             .put("system_c", v3Global.opt.systemC())
             .put("coverage", v3Global.opt.coverage())

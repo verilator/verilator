@@ -15,7 +15,7 @@ test.scenarios('simulator')
 if not re.search(r'\(GCC\)', test.cxx_version):
     test.skip('Requires GCC for -fmodules')
 
-test.compile(verilator_flags2=['-CFLAGS', '-fmodules'])
+test.compile(verilator_flags2=['-CFLAGS "-std=c++23 -fmodules"'])
 
 test.execute()
 

@@ -34,19 +34,6 @@ def is_module_control_flag(flag: str) -> bool:
             or flag.startswith('-fmodule-header='))
 
 
-def normalize_args(argv: list[str]) -> list[str]:
-    result = []
-    index = 0
-    while index < len(argv):
-        if argv[index] in ('--cxxflags', '--cppflags') and index + 1 < len(argv):
-            result.append(argv[index] + '=' + argv[index + 1])
-            index += 2
-        else:
-            result.append(argv[index])
-            index += 1
-    return result
-
-
 def external_modules(flags: list[str]) -> set[str]:
     prefix = '-fmodule-file='
     modules = set()
@@ -387,8 +374,8 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
 
 
 def scan(args: argparse.Namespace) -> None:
-    cppflags = parse_flags(os.environ.get('VK_SCAN_CPPFLAGS', args.cppflags))
-    cxxflags = parse_flags(os.environ.get('VK_SCAN_CXXFLAGS', args.cxxflags))
+    cppflags = parse_flags(os.environ.get('VK_SCAN_CPPFLAGS', ''))
+    cxxflags = parse_flags(os.environ.get('VK_SCAN_CXXFLAGS', ''))
     external = external_modules(cppflags + cxxflags)
 
     if args.backend not in ('gcc', 'clang'):
@@ -472,12 +459,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument('--backend', required=True, help='dependency backend')
     parser.add_argument('--cxx', required=True, help='C++ compiler')
-    parser.add_argument('--cxxflags', default='', help='C++ compiler flags')
-    parser.add_argument('--cppflags', default='', help='C preprocessor flags')
     parser.add_argument('--objdir', default='.', help='object directory')
     parser.add_argument('--output', required=True, help='output make fragment')
     parser.add_argument('--source', action='append', default=[], help='C++ source file')
-    args = parser.parse_args(normalize_args(sys.argv[1:]))
+    args = parser.parse_args()
     scan(args)
 
 

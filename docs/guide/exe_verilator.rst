@@ -468,13 +468,16 @@ Summary:
 
    Pass a precompiled C++ module to the compilation of user C++ files as
    :command:`-fmodule-file=name=path`.  This is equivalent to passing the same
-   flag with :vlopt:`-CFLAGS <-CFLAGS>`.
+   flag with :vlopt:`-CFLAGS <-CFLAGS>`.  This option is supported with Clang;
+   with GCC, keep the CMI in ``gcm.cache`` in the model object directory
+   instead.
 
 .. option:: --cxx-module-std <path>
 
-   Equivalent to :vlopt:`--cxx-module-file` with ``std=<path>``.  With GCC
-   the standard library module is normally precompiled into
-   ``gcm.cache/std.gcm`` in the model object directory instead.
+   Equivalent to :vlopt:`--cxx-module-file` with ``std=<path>``.  This option
+   is supported with Clang.  With GCC the standard library module is normally
+   precompiled into ``gcm.cache/std.gcm`` in the model object directory
+   instead.
 
 .. option:: --cxx-modules
 

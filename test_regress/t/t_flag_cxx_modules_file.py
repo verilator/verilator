@@ -41,4 +41,15 @@ test.compile(make_main=False,
                  'clang',
              ])
 test.file_grep(clang_dir + '/' + test.vm_prefix + '.mk', r'VK_MODULE_BACKEND = clang')
+json_dir = test.obj_dir + '/json'
+test.compile(make_main=False,
+             verilator_make_gmake=False,
+             verilator_make_cmake=False,
+             verilator_flags2=['--Mdir', json_dir, '--make', 'json'] + common + [
+                 '--cxx-module-backend',
+                 'clang',
+                 '--cxx-module-file',
+                 'foo=/tmp/foo.gcm',
+             ])
+test.file_grep(json_dir + '/' + test.vm_prefix + '.json', r'-fmodule-file=foo=/tmp/foo\.gcm')
 test.passes()

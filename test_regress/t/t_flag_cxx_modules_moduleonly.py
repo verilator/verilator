@@ -30,19 +30,4 @@ test.compile(make_main=False, verilator_flags2=flags, make_flags=['VM_PARALLEL_B
 test.glob_some(test.obj_dir + '/gcm.cache/*.gcm')
 if os.path.exists(test.obj_dir + '/t_flag_cxx_modules_moduleonly.o'):
     test.error('-fmodule-only generated a module interface object file')
-test.compile(fails=True,
-             make_main=False,
-             verilator_flags2=[
-                 '--exe',
-                 '--main',
-                 '--cxx-modules',
-                 '--cxx-module-backend',
-                 'clang',
-                 '-CFLAGS',
-                 '-std=c++23',
-                 '-CFLAGS',
-                 '-fmodule-only',
-                 test.t_dir + '/t_flag_cxx_modules_moduleonly.cppm',
-             ],
-             expect_filename=test.golden_filename)
 test.passes()

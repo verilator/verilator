@@ -372,16 +372,19 @@ void V3Options::addFuture(const string& flag) { m_futures.insert(flag); }
 void V3Options::addFuture0(const string& flag) { m_future0s.insert(flag); }
 void V3Options::addFuture1(const string& flag) { m_future1s.insert(flag); }
 bool V3Options::cxxModuleFlags() const {
-    for (const string& flag : m_cFlags) {
-        if (flag == "-fmodules" || flag == "-fmodules-ts"
-            || VString::startsWith(flag, "-fmodule-file"))
-            return true;
+    for (const string& flagGroup : m_cFlags) {
+        std::istringstream stream{flagGroup};
+        string flag;
+        while (stream >> flag) {
+            if (flag == "-fmodules" || flag == "-fmodules-ts"
+                || VString::startsWith(flag, "-fmodule-file"))
+                return true;
+        }
     }
     return false;
 }
 bool V3Options::cxxModules() const {
-    return m_cxxModules || !m_moduleFiles.empty() || !m_cxxModuleFiles.empty()
-        || cxxModuleFlags();
+    return m_cxxModules || !m_moduleFiles.empty() || !m_cxxModuleFiles.empty() || cxxModuleFlags();
 }
 bool V3Options::isFuture(const string& flag) const {
     return m_futures.find(flag) != m_futures.end();
@@ -1002,14 +1005,6 @@ void V3Options::notify() VL_MT_DISABLED {
         cmdfl->v3error("Unsupported: .ixx C++ module interface files require the MSVC backend, "
                        "e.g. --compiler msvc or --cxx-module-backend msvc");
     }
-    if (m_cxxModuleBackend == "clang") {
-        for (const string& flag : m_cFlags) {
-            if (flag == "-fmodule-only") {
-                cmdfl->v3error("-fmodule-only is only supported with the GCC C++ module backend");
-                break;
-            }
-        }
-    }
 
     // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_jsonOnly are mutually
     // exclusive
@@ -1482,12 +1477,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
         m_cxxModuleBackend = val;
     });
-    DECL_OPTION("-cxx-module-file", CbVal, [this](const char* valp) {
-        m_cxxModuleFiles.push_back(valp);
-    });
-    DECL_OPTION("-cxx-module-std", CbVal, [this](const char* valp) {
-        m_cxxModuleFiles.push_back(string{"std="} + valp);
-    });
+    DECL_OPTION("-cxx-module-file", CbVal,
+                [this](const char* valp) { m_cxxModuleFiles.push_back(valp); });
+    DECL_OPTION("-cxx-module-std", CbVal,
+                [this](const char* valp) { m_cxxModuleFiles.push_back(string{"std="} + valp); });
     DECL_OPTION("-cxx-modules", OnOff, &m_cxxModules);
 
     DECL_OPTION("-D", CbPartialMatch, [this](const char* valp) VL_MT_DISABLED {
