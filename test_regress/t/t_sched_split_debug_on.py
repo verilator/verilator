@@ -11,6 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 test.top_filename = "t/t_sched_split_debug.v"
+
 test.compile(verilator_flags2=["--binary", "--output-split-cfuncs", "1", "-CFLAGS", "-DVL_DEBUG"])
+
 test.execute()
+
 test.passes()
