@@ -3382,7 +3382,7 @@ class AssertNfaVisitor final : public VNVisitor {
     // implication. Report any other shape of a clocked property, which this pass would
     // otherwise build, as unsupported.
     void checkEventuallyProp(AstPropSpec* propp) {
-        AstNodeExpr* const topp = VN_AS(propp->propp(), NodeExpr);
+        AstNodeExpr* const topp = propp->propp();
         AstNodeExpr* bodyp = topp;
         while (AstImplication* const implp = VN_CAST(bodyp, Implication)) {
             if (implp->isFollowedBy()) return unsupportedOperatorEventually(propp, implp);
