@@ -12,8 +12,10 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_emit_memb_limit_nontriv.v"
 
+# Exercise member access paths in split constructor/destructor helpers.
 test.compile(verilator_flags2=[
-    "--comp-limit-members", "0", "--vpi", "--output-split-cfuncs", "16"
+    "--comp-limit-members", "1", "--vpi", "--output-split-cfuncs", "16"
 ])
 test.execute()
+test.file_grep_count(test.obj_dir + "/" + test.vm_prefix + "___024root.h", r'\} __Vg\d+;', 42)
 test.passes()

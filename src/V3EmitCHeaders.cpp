@@ -160,7 +160,7 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
         const size_t lim = groups.lim() ? groups.lim() : n;
         const AstVar* varp = firstp;
         size_t nEmitted = 0;
-        for (size_t l3 = 0; l3 < groups.l3s(); ++l3) {
+        for (size_t l3 = 0; nEmitted < n; ++l3) {
             if (groups.l3s() != 1) puts("struct {\n");
             for (size_t l2 = 0; l2 < groups.l2s() && nEmitted < n; ++l2) {
                 if (groups.l2s() != 1) puts("struct {\n");
