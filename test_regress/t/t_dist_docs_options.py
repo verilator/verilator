@@ -43,9 +43,32 @@ Srcs = {}
 Tests = {}
 
 
+def private_scripts():
+    # Scripts installed privately are not user-facing and have no documented options
+    result = set()
+    on = False
+    with open(test.root + "/Makefile.in", "r", encoding="latin-1") as fh:
+        for line in fh:
+            if re.match(r'^VL_INST_PRIVATE_SCRIPT_FILES\s*=', line):
+                on = True
+                continue
+            if not on:
+                continue
+            stripped = line.strip()
+            if not stripped:
+                on = False
+                continue
+            for name in stripped.rstrip('\\').split():
+                result.add(name)
+            if not stripped.endswith('\\'):
+                on = False
+    return result
+
+
 def read_sums():
+    private = private_scripts()
     for filename in test.glob_some(test.root + "/bin/*"):
-        if filename.endswith("/verilator_module_deps"):
+        if os.path.basename(filename) in private:
             continue
         with open(filename, "r", encoding="latin-1") as fh:
             on = False

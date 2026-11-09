@@ -30,7 +30,7 @@ test.compile(make_main=False,
                  '--cxx-module-std',
                  '/tmp/std.pcm',
              ])
-test.file_grep(gcc_dir + '/' + test.vm_prefix + '.mk', r'VM_USER_BACKEND = gcc')
+test.file_grep(gcc_dir + '/' + test.vm_prefix + '.mk', r'VK_MODULE_BACKEND = gcc')
 test.file_grep(gcc_dir + '/' + test.vm_prefix + '.mk', r'-fmodule-file=foo=/tmp/foo\.gcm')
 test.file_grep(gcc_dir + '/' + test.vm_prefix + '.mk', r'-fmodule-file=std=/tmp/std\.pcm')
 test.compile(make_main=False,
@@ -40,5 +40,5 @@ test.compile(make_main=False,
                  '--cxx-module-backend',
                  'clang',
              ])
-test.file_grep(clang_dir + '/' + test.vm_prefix + '.mk', r'VM_USER_BACKEND = clang')
+test.file_grep(clang_dir + '/' + test.vm_prefix + '.mk', r'VK_MODULE_BACKEND = clang')
 test.passes()

@@ -169,6 +169,15 @@ else()
     set(CFG_GCH_IF_CLANG "")
 endif()
 
+# C++ module dependency backend, matching configure.ac
+if(MSVC)
+    set(CFG_CXX_MODULE_BACKEND msvc)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CFG_CXX_MODULE_BACKEND clang)
+else()
+    set(CFG_CXX_MODULE_BACKEND gcc)
+endif()
+
 configure_file(include/verilated_config.h.in include/verilated_config.h @ONLY)
 configure_file(include/verilated.mk.in include/verilated.mk @ONLY)
 

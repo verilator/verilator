@@ -40,6 +40,8 @@ CFG_CXXFLAGS_STD_NEWEST = @CFG_CXXFLAGS_STD_NEWEST@
 CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
 # Compiler flag to disable C++ modules for generated code and the runtime
 CFG_CXXFLAGS_NO_MODULES = @CFG_CXXFLAGS_NO_MODULES@
+# C++ module dependency backend detected at configure time (gcc, clang, or msvc)
+CFG_CXX_MODULE_BACKEND = @CFG_CXX_MODULE_BACKEND@
 # Compiler flags that turn on extra warnings
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
 # Compiler flags that enable coroutine support
@@ -66,8 +68,7 @@ VERILATOR_INCLUDER = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_includer
 VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
 
 VK_MODULE_DEPS = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_module_deps
-VK_MODULE_DIR = gcm.cache
-VK_MODULE_BACKEND ?= $(if $(findstring clang,$(shell $(CXX) --version 2>/dev/null)),clang,gcc)
+VK_MODULE_BACKEND ?= $(CFG_CXX_MODULE_BACKEND)
 
 ######################################################################
 # CCACHE flags (via environment as no command line option available)
@@ -303,6 +304,9 @@ endif
 %.verilator_deplist.tmp:
 	@echo "" > $@
 
+# Module-only builds have no object rules, so this is what builds their CMIs.
+# Otherwise module objects are built by __modules.mk; the model objects above
+# are compiled with modules disabled.
 $(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS) | $(VK_MODULE_CMIS)
 
 ######################################################################
@@ -395,7 +399,8 @@ debug-make::
 	@echo VM_SUPPORT_SLOW: $(VM_SUPPORT_SLOW)
 	@echo
 
-ifneq ($(VK_MODULES),)
+# GCC module dependencies refer to '.c++-module' prerequisites
+ifneq ($(VK_MODULES)$(VK_MODULE_CMIS)$(VK_MODULE_OBJS),)
 %.c++-module:
 	@:
 endif
@@ -404,8 +409,8 @@ endif
 ### Clean
 
 clean::
-	-rm -rf $(VK_MODULE_DIR)
-	-rm -f *.pcm *.ifc $(VK_MODULE_OBJS)
+	-rm -f $(VK_MODULE_CMIS) $(VK_MODULE_OBJS) $(VK_MODULE_PCMS) $(VK_MODULE_GCMS)
+	-rm -f $(VK_MODULE_DEPS_FILES) $(VM_PREFIX)__modules.mk
 
 ######################################################################
 ### Detect out of date files and rebuild.

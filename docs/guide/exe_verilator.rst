@@ -513,6 +513,9 @@ Summary:
 
    Existing :command:`-CFLAGS -fmodules` style flags remain supported,
    including :command:`-fmodule-header` and :command:`-fmodule-only` for GCC.
+   They also enable the same C++ module scanning and make rules as
+   :vlopt:`--cxx-modules`, so a build that passes :command:`-fmodules` but no
+   module interface files still runs the dependency scanner.
 
 .. option:: -D<var>=<value>
 

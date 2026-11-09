@@ -17,7 +17,7 @@ import shlex
 import shutil
 import subprocess
 import sys
-from typing import Any, NoReturn
+from typing import Any, NoReturn, Optional
 
 
 def fatal(message: str) -> NoReturn:
@@ -56,6 +56,12 @@ def external_modules(flags: list[str]) -> set[str]:
     return modules
 
 
+def gcc_module_flags(cxxflags: list[str]) -> list[str]:
+    if '-fmodules' in cxxflags or '-fmodules-ts' in cxxflags:
+        return []
+    return ['-fmodules']
+
+
 def run_scan(command: list[str], abs_source: str, deps_file: str) -> None:
     result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode != 0:
@@ -66,20 +72,16 @@ def run_scan(command: list[str], abs_source: str, deps_file: str) -> None:
         fatal("C++ module scan produced no dependency file for '" + abs_source + "'")
 
 
-def scan_gcc(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
-             abs_source: str, obj: str, deps_file: str) -> None:
-    module_flags = []
-    if '-fmodules' not in cxxflags and '-fmodules-ts' not in cxxflags:
-        module_flags = ['-fmodules']
-    run_scan((
-        shlex.split(args.cxx) + cppflags + cxxflags + module_flags + [
-            '-MM',
-            '-fdeps-format=p1689r5',
-            '-fdeps-file=' + deps_file,
-            '-fdeps-target=' + obj,
-            '-fsyntax-only',
-            abs_source,
-        ]), abs_source, deps_file)
+def scan_gcc(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str], abs_source: str,
+             obj: str, deps_file: str) -> None:
+    run_scan((shlex.split(args.cxx) + cppflags + cxxflags + gcc_module_flags(cxxflags) + [
+        '-MM',
+        '-fdeps-format=p1689r5',
+        '-fdeps-file=' + deps_file,
+        '-fdeps-target=' + obj,
+        '-fsyntax-only',
+        abs_source,
+    ]), abs_source, deps_file)
 
 
 def scan_deps_path(cxx: str) -> str:
@@ -93,27 +95,28 @@ def scan_deps_path(cxx: str) -> str:
     fatal("clang-scan-deps is required for the clang C++ module backend")
 
 
-def scan_clang(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
-               abs_source: str, deps_file: str) -> None:
+def scan_clang(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str], abs_source: str,
+               deps_file: str) -> None:
     compile_database = deps_file + '.compile_commands.json'
-    command = shlex.split(args.cxx) + cppflags + cxxflags + [
-        '-c', abs_source, '-o', abs_source + '.o'
-    ]
-    with open(compile_database, 'w', encoding='utf8') as fh:
-        json.dump([{
-            'directory': os.getcwd(),
-            'file': abs_source,
-            'command': subprocess.list2cmdline(command),
-        }], fh)
-    run_scan((
-        [
+    command = shlex.split(
+        args.cxx) + cppflags + cxxflags + ['-c', abs_source, '-o', abs_source + '.o']
+    try:
+        with open(compile_database, 'w', encoding='utf8') as fh:
+            json.dump([{
+                'directory': os.getcwd(),
+                'file': abs_source,
+                'command': subprocess.list2cmdline(command),
+            }], fh)
+        run_scan(([
             scan_deps_path(args.cxx),
             '-compilation-database=' + compile_database,
             '-format=p1689',
             '-o',
             deps_file,
         ]), abs_source, deps_file)
-    os.remove(compile_database)
+    finally:
+        if os.path.exists(compile_database):
+            os.remove(compile_database)
 
 
 HEADER_IMPORT_RE = re.compile(r'^\s*(?:export\s+)?import\s+"([^"]+)"\s*;', re.MULTILINE)
@@ -143,7 +146,8 @@ def include_directories(flags: list[str]) -> list[str]:
     return dirs
 
 
-def resolve_header(name: str, importer: str, include_dirs: list[str]) -> str | None:
+def resolve_header(name: str, importer: str,
+                   include_dirs: list[str]) -> Optional[str]:  # noqa: UP045
     if os.path.isabs(name):
         return name if os.path.isfile(name) else None
     candidate = os.path.join(os.path.dirname(importer), name)
@@ -166,11 +170,8 @@ def gcc_header_cmi(path: str) -> str:
 
 def compile_header(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
                    header: dict[str, Any]) -> None:
-    module_flags = []
-    if '-fmodules' not in cxxflags and '-fmodules-ts' not in cxxflags:
-        module_flags = ['-fmodules']
-    command = (shlex.split(args.cxx) + cppflags + cxxflags + module_flags
-               + ['-fmodule-header', '-x', 'c++-header', header['path']])
+    command = (shlex.split(args.cxx) + cppflags + cxxflags + gcc_module_flags(cxxflags) +
+               ['-fmodule-header', '-x', 'c++-header', header['path']])
     result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         sys.stderr.write(result.stdout)
@@ -182,6 +183,9 @@ def compile_header(args: argparse.Namespace, cppflags: list[str], cxxflags: list
 
 def prepare_gcc_headers(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
                         modules: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    # GCC's P1689 scanner refuses to parse 'import "header.h";' unless the
+    # header unit CMI already exists, so build missing CMIs before scanning.
+    # The generated make rules still rebuild them when the header changes.
     include_dirs = include_directories(cppflags + cxxflags)
     headers: dict[str, dict[str, Any]] = {}
 
@@ -203,8 +207,8 @@ def prepare_gcc_headers(args: argparse.Namespace, cppflags: list[str], cxxflags:
         for name in header_imports(module['source']):
             dep = resolve_header(name, module['source'], include_dirs)
             if dep is None:
-                fatal("Can not find C++ header unit '" + name + "' imported by '"
-                      + module['source'] + "'")
+                fatal("Can not find C++ header unit '" + name + "' imported by '" +
+                      module['source'] + "'")
             module['headers'].append(add(dep))
 
     built: set[str] = set()
@@ -223,14 +227,14 @@ def prepare_gcc_headers(args: argparse.Namespace, cppflags: list[str], cxxflags:
     return headers
 
 
-def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]],
-                    external: set[str], headers: dict[str, dict[str, Any]]) -> None:
+def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]], external: set[str],
+                    headers: dict[str, dict[str, Any]]) -> None:
     providers: dict[str, dict[str, Any]] = {}
     for module in modules:
         for name in module['provides']:
             if name in providers:
-                fatal("Duplicate C++ module provider '" + name + "' in '"
-                      + providers[name]['source'] + "' and '" + module['source'] + "'")
+                fatal("Duplicate C++ module provider '" + name + "' in '" +
+                      providers[name]['source'] + "' and '" + module['source'] + "'")
             providers[name] = module
 
     for module in modules:
@@ -266,15 +270,15 @@ def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]],
                     fatal("C++ module 'std' is required, but gcm.cache/std.gcm was not found; "
                           "precompile the std module before building")
             else:
-                fatal("C++ module '" + name + "' required by '" + module['source']
-                      + "' has no provider; precompile it and pass -fmodule-file=" + name
-                      + "=<path>")
+                fatal("C++ module '" + name + "' required by '" + module['source'] +
+                      "' has no provider; precompile it and pass -fmodule-file=" + name +
+                      "=<path>")
         module['direct_deps'] = direct
         module['header_deps'] = header_deps
         module['deps'] = sorted(deps)
         if args.backend == 'clang':
-            module['dep_flags'] = sorted(
-                '-fmodule-file=' + name + '=' + providers[name]['pcm'] for name in dep_names)
+            module['dep_flags'] = sorted('-fmodule-file=' + name + '=' + providers[name]['pcm']
+                                         for name in dep_names)
         else:
             module['dep_flags'] = []
 
@@ -293,17 +297,39 @@ def gcc_module_target(module: dict[str, Any], module_only: bool) -> str:
     return str(module['obj'])
 
 
+def module_artifact_lines(modules: list[dict[str, Any]], pcms: list[str],
+                          gcms: list[str]) -> list[str]:
+    return [
+        'VK_MODULE_PCMS = ' + ' '.join(sorted(pcms)),
+        'VK_MODULE_GCMS = ' + ' '.join(sorted(gcms)),
+        'VK_MODULE_DEPS_FILES = ' + ' '.join(sorted({m['deps_file']
+                                                     for m in modules})),
+    ]
+
+
 def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any]],
                  module_only: bool) -> str:
     lines: list[str] = []
-    module_objs = sorted({module['obj'] for module in modules
-                          if module['provides'] and not module_only})
+    module_objs = sorted(
+        {module['obj']
+         for module in modules if module['provides'] and not module_only})
     module_cmis = {header['cmi'] for header in headers.values()}
     if module_only:
-        module_cmis.update(gcc_module_target(module, module_only) for module in modules
-                           if module['provides'])
+        module_cmis.update(
+            gcc_module_target(module, module_only) for module in modules if module['provides'])
     lines.append('VK_MODULE_OBJS = ' + ' '.join(module_objs))
     lines.append('VK_MODULE_CMIS = ' + ' '.join(sorted(module_cmis)))
+    lines.extend(
+        module_artifact_lines(
+            modules, [],
+            [gcc_module_target(module, True) for module in modules if module['provides']]))
+    if module_only:
+        # -fmodule-only does not produce objects, so do not ask make to link them.
+        stems = sorted({
+            os.path.splitext(os.path.basename(module['source']))[0]
+            for module in modules if module['provides']
+        })
+        lines.append('VM_USER_CLASSES := $(filter-out ' + ' '.join(stems) + ',$(VM_USER_CLASSES))')
     lines.extend(module_flags_lines())
     lines.append('')
     lines.append('.PHONY: modules')
@@ -322,12 +348,12 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
         prereqs = module['source'] + ' ' + ' '.join(sorted(set(deps)))
         if module_only and module['provides']:
             lines.append(gcc_module_target(module, module_only) + ': ' + prereqs)
-            lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -fmodule-only -c '
-                         + module['source'])
+            lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -fmodule-only -c ' +
+                         module['source'])
         else:
             lines.append(module['obj'] + ': ' + prereqs)
-            lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -c '
-                         + module['source'] + ' -o ' + module['obj'])
+            lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -c ' +
+                         module['source'] + ' -o ' + module['obj'])
         lines.append('')
     return '\n'.join(lines)
 
@@ -337,6 +363,10 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
     module_objs = sorted({module['obj'] for module in modules if module['provides']})
     lines.append('VK_MODULE_OBJS = ' + ' '.join(module_objs))
     lines.append('VK_MODULE_CMIS =')
+    lines.extend(
+        module_artifact_lines(modules,
+                              [str(module['pcm']) for module in modules if module['provides']],
+                              []))
     lines.extend(module_flags_lines())
     lines.append('')
     lines.append('.PHONY: modules')
@@ -357,8 +387,8 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
 
 
 def scan(args: argparse.Namespace) -> None:
-    cppflags = parse_flags(args.cppflags)
-    cxxflags = parse_flags(args.cxxflags)
+    cppflags = parse_flags(os.environ.get('VK_SCAN_CPPFLAGS', args.cppflags))
+    cxxflags = parse_flags(os.environ.get('VK_SCAN_CXXFLAGS', args.cxxflags))
     external = external_modules(cppflags + cxxflags)
 
     if args.backend not in ('gcc', 'clang'):
@@ -381,8 +411,8 @@ def scan(args: argparse.Namespace) -> None:
         stem = os.path.splitext(os.path.basename(abs_source))[0]
         obj = stem + '.o'
         if obj in objects:
-            fatal("Multiple C++ sources produce '" + obj + "': '" + objects[obj] + "' and '"
-                  + abs_source + "'")
+            fatal("Multiple C++ sources produce '" + obj + "': '" + objects[obj] + "' and '" +
+                  abs_source + "'")
         objects[obj] = abs_source
 
         modules.append({
@@ -405,8 +435,8 @@ def scan(args: argparse.Namespace) -> None:
         with open(module['deps_file'], 'r', encoding='utf8') as fh:
             data = json.load(fh)
         rules = data.get('rules', [])
-        rule = next((entry for entry in rules
-                     if entry.get('primary-output') == module['obj']), None)
+        rule = next((entry for entry in rules if entry.get('primary-output') == module['obj']),
+                    None)
         if rule is None and rules:
             rule = rules[0]
         if rule is None:

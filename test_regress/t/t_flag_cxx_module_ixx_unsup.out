@@ -1,0 +1,3 @@
+%Error: Unsupported: .ixx C++ module interface files require the MSVC backend, e.g. --compiler msvc or --cxx-module-backend msvc
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

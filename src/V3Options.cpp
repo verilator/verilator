@@ -989,19 +989,25 @@ void V3Options::notify() VL_MT_DISABLED {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
-    if (!m_moduleFiles.empty()) {
-        bool hasIxx = false;
-        for (const string& file : m_moduleFiles) {
-            if (suffixed(file, ".ixx")) {
-                hasIxx = true;
+    bool hasIxx = false;
+    for (const string& file : m_moduleFiles) {
+        if (suffixed(file, ".ixx")) {
+            hasIxx = true;
+            break;
+        }
+    }
+    const bool msvcBackend
+        = m_cxxModuleBackend.empty() ? m_compilerMsvc : m_cxxModuleBackend == "msvc";
+    if (hasIxx && !msvcBackend) {
+        cmdfl->v3error("Unsupported: .ixx C++ module interface files require the MSVC backend, "
+                       "e.g. --compiler msvc or --cxx-module-backend msvc");
+    }
+    if (m_cxxModuleBackend == "clang") {
+        for (const string& flag : m_cFlags) {
+            if (flag == "-fmodule-only") {
+                cmdfl->v3error("-fmodule-only is only supported with the GCC C++ module backend");
                 break;
             }
-        }
-        const bool msvcBackend
-            = m_cxxModuleBackend.empty() ? m_compilerMsvc : m_cxxModuleBackend == "msvc";
-        if (hasIxx ? !msvcBackend : !cxxModules()) {
-            cmdfl->v3error("Unsupported: C++ module interface files; precompile the interface "
-                           "and pass the resulting object file");
         }
     }
 
@@ -1036,6 +1042,12 @@ void V3Options::notify() VL_MT_DISABLED {
 
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_makeJson) m_gmake = true;
+
+    if (cxxModules() && msvcBackend && !m_makeJson && !lintOnly() && !preprocOnly()
+        && !dpiHdrOnly() && !jsonOnly()) {
+        cmdfl->v3error("Unsupported: the MSVC C++ module backend requires CMake; "
+                       "use --make json and build with CMake");
+    }
 
     if (m_hierarchical && (m_hierChild || !m_hierBlocks.empty())) {
         cmdfl->v3error(

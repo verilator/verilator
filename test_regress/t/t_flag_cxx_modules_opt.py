@@ -18,13 +18,7 @@ cxx_version = test.cxx_version
 gcc_match = re.search(r'\(GCC\) (\d+)', cxx_version)
 is_clang = re.search(r'clang', cxx_version)
 if gcc_match:
-    with open(test.obj_dir + '/empty.cpp', 'w', encoding='utf8'):
-        pass
-    test.run_capture('cd ' + test.obj_dir + ' && ' + cxx + ' -std=c++23 -fmodules -MM'
-                     ' -fdeps-format=p1689r5 -fdeps-file=empty.deps.json'
-                     ' -fdeps-target=empty.o -fsyntax-only empty.cpp',
-                     check=False)
-    if not os.path.exists(test.obj_dir + '/empty.deps.json'):
+    if not test.have_cxx_module_scan:
         test.skip('Requires a compiler with P1689 C++ module dependency scanning')
 elif is_clang:
     if not shutil.which('clang-scan-deps'):
@@ -46,9 +40,7 @@ flags = [
     '-std=c++23',
     test.t_dir + '/t_flag_cxx_modules_opt.cppm',
 ]
-test.compile(make_main=False,
-             verilator_flags2=flags,
-             make_flags=['VM_PARALLEL_BUILDS=1'])
+test.compile(make_main=False, verilator_flags2=flags, make_flags=['VM_PARALLEL_BUILDS=1'])
 if gcc_match:
     test.glob_some(test.obj_dir + '/gcm.cache/cxx_opt_mod.gcm')
 else:
