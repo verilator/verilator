@@ -1,0 +1,18 @@
+%Error-UNSUPPORTED: t/t_wire_net_unsup.v:12:15: Unsupported: Non-constant bit or part select of a wired net
+                                              : ... note: In instance 't'
+   12 |   assign a[i] = 1'b1;
+      |               ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_wire_net_unsup.v:14:15: Unsupported: Non-constant bit or part select of a wired net
+                                              : ... note: In instance 't'
+   14 |   assign b[i] = 1'b1;
+      |               ^
+%Error-UNSUPPORTED: t/t_wire_net_unsup.v:15:15: Unsupported: Non-constant bit or part select of a wired net
+                                              : ... note: In instance 't'
+   15 |   assign b[j] = 1'b1;
+      |               ^
+%Error-UNSUPPORTED: t/t_wire_net_unsup.v:18:15: Unsupported: Non-constant bit or part select of a wired net
+                                              : ... note: In instance 't'
+   18 |   assign c[i] = 1'b1;
+      |               ^
+%Error: Exiting due to
