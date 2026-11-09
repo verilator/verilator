@@ -1363,15 +1363,14 @@ class AstDefParam final : public AstNode {
     // Parents: MODULE
     // @astgen op1 := rhsp : AstNodeExpr
     // @astgen op2 := pathp : AstNodeExpr
-    string m_name;  // Name of variable getting set
+    // @astgen op3 := targetp : AstNodeExpr
 public:
-    AstDefParam(FileLine* fl, AstNodeExpr* pathp, const string& name, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_DefParam(fl)
-        , m_name{name} {
+    AstDefParam(FileLine* fl, AstNodeExpr* pathp, AstNodeExpr* targetp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_DefParam(fl) {
         this->rhsp(rhsp);
         this->pathp(pathp);
+        this->targetp(targetp);
     }
-    string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     ASTGEN_MEMBERS_AstDefParam;
     bool sameNode(const AstNode*) const override { return true; }
 };

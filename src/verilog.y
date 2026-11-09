@@ -3247,34 +3247,24 @@ list_of_defparam_assignments<nodep>:    //== IEEE: list_of_defparam_assignments
         ;
 
 defparam_assignment<nodep>:     // ==IEEE: defparam_assignment
-                defparamIdRangeList '.' defparamIdRange '=' expr
-                        { $$ = new AstDefParam{$4, $1, *$3, $5}; }
-        |       defparamIdRange '=' expr
+                defparamIdRangeList '.' idAnyAsParseRef '=' expr
+                        { $$ = new AstDefParam{$4, $1, $3, $5}; }
+        |       idAnyAsParseRef '=' expr
                         { $$ = nullptr; BBUNSUP($2, "Unsupported: defparam with no dot");
                           DEL($3); }
         ;
 
 defparamIdRangeList<nodeExprp>:  // IEEE: part of defparam_assignment
-                defparamIdRangeExpr                     { $$ = $1; }
-        |       defparamIdRangeList '.' defparamIdRangeExpr
+                defparamIdRange                     { $$ = $1; }
+        |       defparamIdRangeList '.' defparamIdRange
                         { $$ = new AstDot{$2, false, $1, $3}; }
         ;
 
-defparamIdRangeExpr<nodeExprp>:  // IEEE: part of defparam_assignment
-                idAny
-                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
-        |       idAny part_select_rangeList
-                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr};
-                          BBUNSUP($2, "Unsupported: defparam with arrayed instance");
-                          DEL($2); }
-        ;
-
-defparamIdRange<strp>:  // IEEE: part of defparam_assignment
-                idAny
+defparamIdRange<nodeExprp>:  // IEEE: part of defparam_assignment
+                idAnyAsParseRef
                         { $$ = $1; }
-        |       idAny part_select_rangeList
-                        { $$ = $1; BBUNSUP($2, "Unsupported: defparam with arrayed instance");
-                          DEL($2); }
+        |       idAnyAsParseRef part_select_rangeList
+                        { $$ = GRAMMARP->scrubSel($1, $2); }
         ;
 
 //************************************************
