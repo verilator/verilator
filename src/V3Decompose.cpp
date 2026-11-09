@@ -423,7 +423,7 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
                 // Eligible if no refusal reason returned
                 return !reasonp;
             }();
-            varp->user1(2 | eligible);
+            varp->user1(2 | (eligible ? 1 : 0));
         }
         // Return the cached result
         return varp->user1() & 1;
