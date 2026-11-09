@@ -1240,7 +1240,7 @@ private:
             if (const AstArraySel* const aselp = VN_CAST(selp, ArraySel)) {
                 AstConsArray* const consp = VN_AS(itemp, ConsArray);
                 const AstConst* const indexp = fetchConst(aselp->bitp());
-                if (indexp->num().isFourState()) return;
+                if (!indexp->num().fitsInUInt()) return;  // X/Z, or out of bounds
                 const uint32_t index = indexp->toUInt();
                 const int elements
                     = VN_AS(consp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
@@ -1414,8 +1414,9 @@ private:
             const AstConst* const indexp = fetchConst(nodep->bitp());
             const int elements
                 = VN_AS(consp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
-            // An invalid index reads the default value (IEEE 1800-2023 7.4.6)
-            if (indexp->num().isFourState()
+            // An invalid index, out of bounds or with X/Z bits, reads the default value
+            // (IEEE 1800-2023 7.4.6)
+            if (!indexp->num().fitsInUInt()
                 || indexp->toUInt() >= static_cast<uint32_t>(elements)) {
                 AstNodeExpr* const valuep = defaultOf(nodep->fileline(), nodep->dtypep());
                 if (!valuep) {
@@ -1426,13 +1427,9 @@ private:
                 VL_DO_DANGLING(valuep->deleteTree(), valuep);
                 return;
             }
-            const uint32_t offset = indexp->num().toUInt();
-            AstNodeExpr* const itemp = consp->valuep(offset);
-            if (!itemp) {
-                clearOptimizable(nodep, "Array select out of range: " + std::to_string(offset));
-            } else {
-                setValue(nodep, itemp);
-            }
+            AstNodeExpr* const itemp = consp->valuep(indexp->toUInt());
+            UASSERT_OBJ(itemp, nodep, "Array value has neither the element nor a default");
+            setValue(nodep, itemp);
         } else {
             clearOptimizable(nodep, "Array select of non-array");
         }
