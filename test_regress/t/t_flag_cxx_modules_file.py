@@ -25,22 +25,19 @@ test.compile(make_main=False,
              verilator_flags2=['--Mdir', gcc_dir] + common + [
                  '--cxx-module-backend',
                  'gcc',
-                 '--cxx-module-file',
-                 'foo=/tmp/foo.gcm',
-                 '--cxx-module-std',
-                 '/tmp/std.pcm',
              ])
 test.file_grep(gcc_dir + '/' + test.vm_prefix + '.mk', r'VK_MODULE_BACKEND = gcc')
-test.file_grep(gcc_dir + '/' + test.vm_prefix + '.mk', r'-fmodule-file=foo=/tmp/foo\.gcm')
-test.file_grep(gcc_dir + '/' + test.vm_prefix + '.mk', r'-fmodule-file=std=/tmp/std\.pcm')
 test.compile(make_main=False,
              verilator_make_gmake=False,
              verilator_make_cmake=False,
              verilator_flags2=['--Mdir', clang_dir] + common + [
                  '--cxx-module-backend',
                  'clang',
+                 '--cxx-module-std',
+                 '/tmp/std.pcm',
              ])
 test.file_grep(clang_dir + '/' + test.vm_prefix + '.mk', r'VK_MODULE_BACKEND = clang')
+test.file_grep(clang_dir + '/' + test.vm_prefix + '.mk', r'-fmodule-file=std=/tmp/std\.pcm')
 json_dir = test.obj_dir + '/json'
 test.compile(make_main=False,
              verilator_make_gmake=False,

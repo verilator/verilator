@@ -157,8 +157,10 @@ def gcc_header_cmi(path: str) -> str:
 
 def compile_header(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
                    header: dict[str, Any]) -> None:
-    command = (shlex.split(args.cxx) + cppflags + cxxflags + gcc_module_flags(cxxflags) +
-               ['-fmodule-header', '-x', 'c++-header', header['path']])
+    opt_flags = parse_flags(os.environ.get('VK_SCAN_OPT_FAST', ''))
+    command = (shlex.split(args.cxx) + opt_flags + cppflags + cxxflags
+               + gcc_module_flags(cxxflags)
+               + ['-fmodule-header', '-x', 'c++-header', header['path']])
     result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         sys.stderr.write(result.stdout)

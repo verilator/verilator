@@ -507,7 +507,6 @@ private:
     void addParameter(const string& paramline, bool allowPlus);
     void addLangExt(const string& langext, const V3LangCode& lc);
     void addLibExtV(const string& libext);
-    bool cxxModuleFlags() const;
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) {

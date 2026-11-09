@@ -371,20 +371,8 @@ void V3Options::addMakeFlags(const string& filename) { m_makeFlags.push_back(fil
 void V3Options::addFuture(const string& flag) { m_futures.insert(flag); }
 void V3Options::addFuture0(const string& flag) { m_future0s.insert(flag); }
 void V3Options::addFuture1(const string& flag) { m_future1s.insert(flag); }
-bool V3Options::cxxModuleFlags() const {
-    for (const string& flagGroup : m_cFlags) {
-        std::istringstream stream{flagGroup};
-        string flag;
-        while (stream >> flag) {
-            if (flag == "-fmodules" || flag == "-fmodules-ts"
-                || VString::startsWith(flag, "-fmodule-file"))
-                return true;
-        }
-    }
-    return false;
-}
 bool V3Options::cxxModules() const {
-    return m_cxxModules || !m_moduleFiles.empty() || !m_cxxModuleFiles.empty() || cxxModuleFlags();
+    return m_cxxModules || !m_moduleFiles.empty() || !m_cxxModuleFiles.empty();
 }
 bool V3Options::isFuture(const string& flag) const {
     return m_futures.find(flag) != m_futures.end();
@@ -1004,6 +992,10 @@ void V3Options::notify() VL_MT_DISABLED {
     if (hasIxx && !msvcBackend) {
         cmdfl->v3error("Unsupported: .ixx C++ module interface files require the MSVC backend, "
                        "e.g. --compiler msvc or --cxx-module-backend msvc");
+    }
+    if (m_cxxModuleBackend == "gcc" && !m_cxxModuleFiles.empty()) {
+        cmdfl->v3error("Unsupported: --cxx-module-file and --cxx-module-std require the "
+                       "Clang backend; with GCC keep CMIs in gcm.cache");
     }
 
     // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_jsonOnly are mutually

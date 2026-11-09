@@ -514,11 +514,11 @@ Summary:
    newer, which adds them as a ``CXX_MODULES`` file set.  GNU make with MSVC is
    not supported.
 
-   Existing :command:`-CFLAGS -fmodules` style flags remain supported,
-   including :command:`-fmodule-header` and :command:`-fmodule-only` for GCC.
-   They also enable the same C++ module scanning and make rules as
-   :vlopt:`--cxx-modules`, so a build that passes :command:`-fmodules` but no
-   module interface files still runs the dependency scanner.
+   Existing :command:`-CFLAGS -fmodules` style flags remain supported as an
+   escape hatch, including :command:`-fmodule-header` and
+   :command:`-fmodule-only` for GCC.  They do not by themselves enable module
+   scanning; pass :vlopt:`--cxx-modules` or module interface files to enable
+   the generated module rules.
 
 .. option:: -D<var>=<value>
 

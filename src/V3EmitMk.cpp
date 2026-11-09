@@ -771,6 +771,7 @@ public:
             if (!backend.empty()) of.puts("VK_MODULE_BACKEND = " + backend + "\n");
             of.puts("export VK_SCAN_CXXFLAGS = $(CXXFLAGS)\n");
             of.puts("export VK_SCAN_CPPFLAGS = $(CPPFLAGS)\n");
+            of.puts("export VK_SCAN_OPT_FAST = $(OPT_FAST)\n");
             of.puts("\n");
             of.puts("$(VM_PREFIX)__modules.mk: $(VM_USER_SOURCES) $(VM_PREFIX).mk\n");
             of.puts("\t$(VK_MODULE_DEPS) --backend $(VK_MODULE_BACKEND) --cxx \"$(CXX)\" \\\n");
