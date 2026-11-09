@@ -311,17 +311,20 @@ class VlRandomizer VL_NOT_FINAL {
     // Registered randc variables this randomize() may write, fixed for the call; nextFlat
     // and nextPhased compute them once and pass them as randcNames
     void activeRandcVars(std::vector<std::string>& namesr) const;
-    // True if every solver variable the n'th hard constraint names is randc or frozen
-    bool constraintIsRandcOnly(size_t n) const;
+    // True if the n'th hard constraint filters the randc draw: every solver variable it
+    // names is randc or frozen, or its names cannot tell, being merged (see hard()) or
+    // including one that matches no registered variable, as a path through an object
+    // array element does
+    bool constraintFiltersDraw(size_t n) const;
     // When exactly one randc variable is active, draw its next cyclic value blind
     // to rand feasibility (IEEE 1800-2023 18.4.2: randc variables are solved
     // before rand ones). Limitations, which do not follow 18.4.2: nothing is drawn,
     // and the randc variables are solved jointly with the rand variables, with two or
     // more active randc variables, a randc array, or in a randomize() that resizes
     // arrays (next_sized(): its size solve sees the elements from before the resize).
-    // A constraint whose names are merged (see hard()) filters the draw with its rand
-    // variables free, as the joint solve would, where 18.4.2 would draw blind to it if
-    // the text the state chose also involves rand variables.
+    // A constraint whose names cannot tell (see constraintFiltersDraw()) filters the draw
+    // with its rand variables free, as the joint solve would, where 18.4.2 would draw
+    // blind to it if its text also involves rand variables.
     bool drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
                          const std::vector<std::string>& randcNames,
                          const std::vector<std::string>& uniqueExprs,

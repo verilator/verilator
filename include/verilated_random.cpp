@@ -934,17 +934,20 @@ void VlRandomizer::activeRandcVars(std::vector<std::string>& namesr) const {
     }
 }
 
-bool VlRandomizer::constraintIsRandcOnly(size_t n) const {
+bool VlRandomizer::constraintFiltersDraw(size_t n) const {
+    if (m_constraintNamesMerged[n]) return true;
     const size_t begin = n ? m_constraintVarEnds[n - 1] : 0;
     const size_t end = m_constraintVarEnds[n];
     if (begin == end) return false;
+    bool randcOnly = true;
     for (size_t i = begin; i < end; ++i) {
         const std::string name = m_constraintVarNames[i];
         if (m_randcVarNames.count(name)) continue;
         const auto it = m_vars.find(name);
-        if (it == m_vars.end() || !isFrozenVar(name, *it->second)) return false;
+        if (it == m_vars.end()) return true;
+        if (!isFrozenVar(name, *it->second)) randcOnly = false;
     }
-    return true;
+    return randcOnly;
 }
 
 void VlRandomizer::recordRandcValues(const std::vector<std::string>& randcNames) {
@@ -989,11 +992,10 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
             var.second->emitConcreteValue(os);
             os << "))\n";
         }
-        // Only constraints evaluable at randc-solve time filter the cycle domain. One whose
-        // names are merged may hold a randc-only part its names cannot show, so it filters
-        // too, with its rand variables free (see hard())
+        // Only constraints evaluable at randc-solve time, and those whose names cannot tell,
+        // filter the cycle domain (see constraintFiltersDraw())
         for (size_t n = 0; n < m_constraints.size(); ++n) {
-            if (!constraintIsRandcOnly(n) && !m_constraintNamesMerged[n]) continue;
+            if (!constraintFiltersDraw(n)) continue;
             os << "(assert (= #b1 " << m_constraints[n] << "))\n";
         }
         emitRandcExclusions(os, randcNames);

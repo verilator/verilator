@@ -552,6 +552,26 @@ class RandcBranchThroughHandle;
   }
 endclass
 
+// Its randc reached through an object array element, under a constant or a foreach
+// index. The constraint names a path matching no registered variable, so it filters
+// the draw, which otherwise takes c == 3 within a cycle and fails that call.
+class ElementHolder;
+  rand RandcBranchSub elems[1];
+  function new();
+    elems[0] = new;
+  endfunction
+endclass
+
+class RandcThroughElement;
+  rand ElementHolder h = new;
+  constraint k {h.elems[0].c < 3;}
+endclass
+
+class RandcThroughForeach;
+  rand ElementHolder h = new;
+  constraint k {foreach (h.elems[i]) h.elems[i].c < 3;}
+endclass
+
 // Sized without element constraints, so a single solve: c == 3 admits no size
 class SizeOnly;
   randc bit [1:0] c;
@@ -819,6 +839,28 @@ module t;
         res = obj.randomize();
         `checkd(res, 1);
         `checkd(obj.s.c != 0, 1'b1);
+      end
+    end
+
+    begin
+      automatic RandcThroughElement obj = new;
+      automatic int res;
+      $display("Test randc through an object array element");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.h.elems[0].c < 3, 1'b1);
+      end
+    end
+
+    begin
+      automatic RandcThroughForeach obj = new;
+      automatic int res;
+      $display("Test randc through an object array element under a foreach");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.h.elems[0].c < 3, 1'b1);
       end
     end
 
