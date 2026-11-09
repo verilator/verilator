@@ -32,6 +32,10 @@
 #ifndef VERILATOR_VERILATEDOS_H_
 #define VERILATOR_VERILATEDOS_H_
 
+//=========================================================================
+// Placeholder source location used when compiling with --protect-ids.
+#define VL_UNKNOWN_FILENAME "<unknown>"
+
 // Current clang-format versions botch #ifdef inclusion, so
 // clang-format off
 //=========================================================================
