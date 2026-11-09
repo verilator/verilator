@@ -159,7 +159,6 @@
 
 #include "V3Delayed.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3CallTargets.h"
 #include "V3Const.h"
 #include "V3EmitCBase.h"
@@ -167,6 +166,7 @@
 #include "V3LinkLValue.h"
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
+#include "V3VNUserAllocator.h"
 
 #include <unordered_set>
 
@@ -365,7 +365,7 @@ public:
         const VNUser1InUse m_user1InUse;
 
     public:
-        AstUser1Allocator<AstNode, TargetInfo> targetInfo;  // See TargetInfo
+        VNUser1Allocator<AstNode, TargetInfo> targetInfo;  // See TargetInfo
         std::vector<AstVarScope*> nbaVscps;  // Variables updated by NBAs
         std::vector<AstVar*> nbaVarps;  // Members updated by NBAs via a handle, in any instance
         // Variables of each member of an interface, in all instances

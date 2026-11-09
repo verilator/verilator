@@ -18,11 +18,11 @@
 
 #include "V3Assert.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3Const.h"
 #include "V3Stats.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
+#include "V3VNUserAllocator.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -412,7 +412,7 @@ class AssertVisitor final : public VNVisitor {
     //  AstIf::user2()           -> bool.  True for assertOn() checks inserted in this pass
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
-    AstUser2Allocator<AstAlways, std::vector<AstVar*>> m_delayed;
+    VNUser2Allocator<AstAlways, std::vector<AstVar*>> m_delayed;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Last module

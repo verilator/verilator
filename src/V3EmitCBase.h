@@ -21,8 +21,8 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
-#include "V3AstUserAllocator.h"
 #include "V3File.h"
+#include "V3VNUserAllocator.h"
 
 #include <cmath>
 #include <cstdarg>
@@ -47,7 +47,7 @@ private:
     //   AstNodeModule::user3u()     MemberData* with serial member count
     const VNUser4InUse user4InUse;
     const VNUser3InUse user3InUse;
-    AstUser3Allocator<AstNode, MemberData> m_members;  // Immutable after serial setup
+    VNUser3Allocator<AstNode, MemberData> m_members;  // Immutable after serial setup
 
 public:
     EmitCParentModule();

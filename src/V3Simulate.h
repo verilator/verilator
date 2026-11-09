@@ -36,10 +36,10 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
-#include "V3AstUserAllocator.h"
 #include "V3Const.h"
 #include "V3Error.h"
 #include "V3Task.h"
+#include "V3VNUserAllocator.h"
 #include "V3Width.h"
 
 #include <deque>
@@ -98,7 +98,7 @@ private:
         AstNodeExpr* valuep = nullptr;
     };
 
-    AstUser1Allocator<AstNode, AuxVariable> m_varAux;
+    VNUser1Allocator<AstNode, AuxVariable> m_varAux;
 
     // We want to re-use allocated constants across calls to clear(), but we want to be able
     // to 'clear()' fast, so we use a generation number based allocator.
