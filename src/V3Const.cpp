@@ -3877,7 +3877,36 @@ class ConstVisitor final : public VNVisitor {
     }
 
     void visit(AstIf* nodep) override {
-        iterateChildren(nodep);
+        // Walk an else-if chain in a loop rather than recursing into each elsesp,
+        // so stack use does not grow with the chain length
+        std::vector<AstIf*> ifps;
+        for (AstIf* ifp = nodep; ifp;) {
+            ifps.push_back(ifp);
+            iterateAndNextNull(ifp->condp());
+            iterateAndNextNull(ifp->thensp());
+            AstIf* const elsep = VN_CAST(ifp->elsesp(), If);
+            if (elsep && !elsep->nextp()) {
+                ifp = elsep;
+            } else {
+                iterateAndNextNull(ifp->elsesp());
+                ifp = nullptr;
+            }
+        }
+        // Optimize innermost first, so each if sees its already optimized else-if
+        for (size_t i = ifps.size() - 1; i > 0; --i) {
+            AstIf* const parentp = ifps[i - 1];
+            optimizeIf(ifps[i]);
+            // Visit what replaced the else-if, or was added after it, like iterateAndNext
+            if (parentp->elsesp() != ifps[i]) {
+                iterateAndNextNull(parentp->elsesp());
+            } else {
+                iterateAndNextNull(ifps[i]->nextp());
+            }
+        }
+        optimizeIf(nodep);
+    }
+
+    void optimizeIf(AstIf* nodep) {
         if (m_doNConst) {
             if (const AstConst* const constp = VN_CAST(nodep->condp(), Const)) {
                 AstNode* keepp = nullptr;
