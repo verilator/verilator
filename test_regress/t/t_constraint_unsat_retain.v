@@ -10,6 +10,7 @@
 // verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define check_range(gotv,minv,maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
 // verilog_format: on
 
 class Inner;
@@ -47,6 +48,7 @@ endclass
 class Global;
   rand bit [6:0] c;
   rand Inner inner;
+  rand Inner items[2];
   constraint g {
     inner.p == 15'(c);
     c > 100;
@@ -54,6 +56,7 @@ class Global;
   }
   function new();
     inner = new;
+    foreach (items[i]) items[i] = new;
   endfunction
 endclass
 
@@ -112,11 +115,32 @@ class CycB;
   rand CycA a;  // Left null
 endclass
 
-class ArrayOwner;
-  rand bit [6:0] c;
+class ArrayElem;
+  rand bit [6:0] e;
+  rand bit [6:0] vals[2];
   rand Inner items[2];
   function new();
     foreach (items[i]) items[i] = new;
+  endfunction
+endclass
+
+class ArrayOwner;
+  rand bit [6:0] c;
+  rand Inner items[2];
+  rand Inner dyn[];
+  rand Inner que[$];
+  rand Inner byKey[int];
+  rand ArrayElem elems[1];
+  function new();
+    Inner inner;
+    foreach (items[i]) items[i] = new;
+    dyn = new[2];
+    dyn[1] = new;  // dyn[0] is left null
+    inner = new;
+    que.push_back(inner);
+    inner = new;
+    byKey[-3] = inner;
+    elems[0] = new;
   endfunction
 endclass
 
@@ -149,7 +173,7 @@ module t;
       `checkd(sa.u, 12);
       randomize_result = sa.randomize() with {c > 40;};
       `checkd(randomize_result, 1);
-      if (sa.c <= 40 || sa.c >= 50) `stop;
+      `check_range(sa.c, 41, 49);
     end
 
     // A rand class member keeps its values
@@ -167,7 +191,8 @@ module t;
       `checkd(ne.inner.q, 15);
     end
 
-    // A global constraint: the constrained and unconstrained members of the sub-object
+    // A global constraint: the constrained and unconstrained members of the sub-object, and
+    // the objects in a rand array of class handles
     begin
       Global gl;
       int randomize_result;
@@ -175,11 +200,13 @@ module t;
       gl.c = 15;
       gl.inner.p = 16;
       gl.inner.q = 17;
+      gl.items[1].q = 18;
       randomize_result = gl.randomize();
       `checkd(randomize_result, 0);
       `checkd(gl.c, 15);
       `checkd(gl.inner.p, 16);
       `checkd(gl.inner.q, 17);
+      `checkd(gl.items[1].q, 18);
     end
 
     // randomize() with on members without class constraints: an inherited member, an own
@@ -274,13 +301,21 @@ module t;
       `checkd(ca.b.z, 42);
     end
 
-    // A rand array of class handles keeps its handles
+    // Rand arrays of class handles keep their handles, and the objects keep their values
     begin
       ArrayOwner ao;
       Inner first;
       int randomize_result;
       ao = new;
       ao.c = 51;
+      ao.items[0].p = 52;
+      ao.items[1].q = 53;
+      ao.dyn[1].p = 54;
+      ao.que[0].p = 55;
+      ao.byKey[-3].q = 56;
+      ao.elems[0].e = 57;
+      ao.elems[0].vals[1] = 58;
+      ao.elems[0].items[1].p = 59;
       first = ao.items[0];
       randomize_result = ao.randomize() with {
         c > 100;
@@ -288,7 +323,16 @@ module t;
       };
       `checkd(randomize_result, 0);
       `checkd(ao.c, 51);
-      if (ao.items[0] != first) `stop;
+      `checkd(ao.items[0] == first, 1);
+      `checkd(ao.items[0].p, 52);
+      `checkd(ao.items[1].q, 53);
+      `checkd(ao.dyn[0] == null, 1);
+      `checkd(ao.dyn[1].p, 54);
+      `checkd(ao.que[0].p, 55);
+      `checkd(ao.byKey[-3].q, 56);
+      `checkd(ao.elems[0].e, 57);
+      `checkd(ao.elems[0].vals[1], 58);
+      `checkd(ao.elems[0].items[1].p, 59);
     end
 
     $write("*-* All Finished *-*\n");
