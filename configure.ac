@@ -255,14 +255,6 @@ CFG_CXX_VERSION=`$CXX --version | head -1`
 AC_MSG_RESULT([compiler version... $CXX --version = $CFG_CXX_VERSION])
 AC_SUBST(CFG_CXX_VERSION)
 
-# C++ module dependency backend. This avoids re-detecting the compiler in
-# verilated.mk for every build.
-case "$CFG_CXX_VERSION" in
-  *clang*|*Clang*) CFG_CXX_MODULE_BACKEND=clang ;;
-  *) CFG_CXX_MODULE_BACKEND=gcc ;;
-esac
-AC_SUBST(CFG_CXX_MODULE_BACKEND)
-
 AC_MSG_CHECKING([that C++ compiler can compile simple program])
 AC_RUN_IFELSE(
    [AC_LANG_SOURCE([int main() { return 0; }])],

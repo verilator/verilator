@@ -41,7 +41,6 @@ CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
 # Compiler flag to disable C++ modules for generated code and the runtime
 CFG_CXXFLAGS_NO_MODULES = @CFG_CXXFLAGS_NO_MODULES@
 # C++ module dependency backend detected at configure time (gcc, clang, or msvc)
-CFG_CXX_MODULE_BACKEND = @CFG_CXX_MODULE_BACKEND@
 # Compiler flags that turn on extra warnings
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
 # Compiler flags that enable coroutine support
@@ -68,7 +67,14 @@ VERILATOR_INCLUDER = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_includer
 VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
 
 VK_MODULE_DEPS = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_module_deps
-VK_MODULE_BACKEND ?= $(CFG_CXX_MODULE_BACKEND)
+ifeq ($(origin VK_MODULE_BACKEND),undefined)
+  VK_CXX_VERSION := $(shell $(CXX) --version 2>/dev/null)
+  ifneq ($(findstring clang,$(VK_CXX_VERSION)),)
+    VK_MODULE_BACKEND := clang
+  else
+    VK_MODULE_BACKEND := $(if $(findstring cl.exe,$(CXX)),msvc,gcc)
+  endif
+endif
 
 ######################################################################
 # CCACHE flags (via environment as no command line option available)
