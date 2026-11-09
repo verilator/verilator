@@ -15,11 +15,42 @@
 module t (
     input clk
 );
-  // Library models: a0, a1, a2, m0 and the acc instance inside it, s0, and s1
-  localparam int LIBRARY_MODELS = 7;
+  // Library models: a0, a1, a2, m0 and the acc instance inside it, s0, s1, x0, x1, x2, z0,
+  // wx0, wx1, wx2, wz0, wx3, and wz1
+  localparam int LIBRARY_MODELS = 17;
   int cyc = 0;
   longint data[6], out[6];
   longint expected[6] = '{default: 0};
+  logic x0_is_x;
+  logic x0_is_z;
+  logic x1_is_x;
+  logic x1_is_z;
+  logic x2_is_x;
+  logic x2_is_z;
+  logic z0_is_x;
+  logic z0_is_z;
+  logic wx0_is_default;
+  logic wx0_is_x;
+  logic wx0_is_z;
+  logic wx1_is_default;
+  logic wx1_is_x;
+  logic wx1_is_z;
+  logic wx2_is_default;
+  logic wx2_is_x;
+  logic wx2_is_z;
+  logic wz0_is_default;
+  logic wz0_is_x;
+  logic wz0_is_z;
+  logic wx3_is_default;
+  logic wx3_is_x;
+  logic wx3_is_z;
+  logic wx3_is_top_x;
+  logic wx3_is_top_z;
+  logic wz1_is_default;
+  logic wz1_is_x;
+  logic wz1_is_z;
+  logic wz1_is_top_x;
+  logic wz1_is_top_z;
   for (genvar i = 0; i < 6; ++i) begin : stim
     assign data[i] = longint'(cyc * (i + 3) + i * 7);
   end
@@ -70,6 +101,80 @@ module t (
       .data(data[5]),
       .out(out[5])
   );
+  fourstate_blk x0 (
+      .is_x(x0_is_x),
+      .is_z(x0_is_z)
+  );
+  fourstate_blk #(
+      .P(3'b0x1)
+  ) x1 (
+      .is_x(x1_is_x),
+      .is_z(x1_is_z)
+  );
+  fourstate_blk #(
+      .P(2'bx1)
+  ) x2 (
+      .is_x(x2_is_x),
+      .is_z(x2_is_z)
+  );
+  fourstate_blk #(
+      .P(3'b0z1)
+  ) z0 (
+      .is_x(z0_is_x),
+      .is_z(z0_is_z)
+  );
+  fourstate_wide_blk wx0 (
+      .is_default(wx0_is_default),
+      .is_x(wx0_is_x),
+      .is_z(wx0_is_z),
+      .is_top_x(),
+      .is_top_z()
+  );
+  fourstate_wide_blk #(
+      .P(7'b000x001)
+  ) wx1 (
+      .is_default(wx1_is_default),
+      .is_x(wx1_is_x),
+      .is_z(wx1_is_z),
+      .is_top_x(),
+      .is_top_z()
+  );
+  fourstate_wide_blk #(
+      .P(7'b000x010)
+  ) wx2 (
+      .is_default(wx2_is_default),
+      .is_x(wx2_is_x),
+      .is_z(wx2_is_z),
+      .is_top_x(),
+      .is_top_z()
+  );
+  fourstate_wide_blk #(
+      .P(7'b000z010)
+  ) wz0 (
+      .is_default(wz0_is_default),
+      .is_x(wz0_is_x),
+      .is_z(wz0_is_z),
+      .is_top_x(),
+      .is_top_z()
+  );
+  fourstate_wide_blk #(
+      .P(7'bxxx0010)
+  ) wx3 (
+      .is_default(wx3_is_default),
+      .is_x(wx3_is_x),
+      .is_z(wx3_is_z),
+      .is_top_x(wx3_is_top_x),
+      .is_top_z(wx3_is_top_z)
+  );
+  fourstate_wide_blk #(
+      .P(7'bzzz0010)
+  ) wz1 (
+      .is_default(wz1_is_default),
+      .is_x(wz1_is_x),
+      .is_z(wz1_is_z),
+      .is_top_x(wz1_is_top_x),
+      .is_top_z(wz1_is_top_z)
+  );
 
   function automatic longint str_hash(string s);
     str_hash = 0;
@@ -87,6 +192,16 @@ module t (
   end
   always @(negedge clk) begin
     foreach (out[i]) `checkd(out[i], expected[i]);
+    `checkd({x0_is_x, x0_is_z}, 2'b10);
+    `checkd({x1_is_x, x1_is_z}, 2'b10);
+    `checkd({x2_is_x, x2_is_z}, 2'b10);
+    `checkd({z0_is_x, z0_is_z}, 2'b01);
+    `checkd({wx0_is_default, wx0_is_x, wx0_is_z}, 3'b100);
+    `checkd({wx1_is_default, wx1_is_x, wx1_is_z}, 3'b100);
+    `checkd({wx2_is_default, wx2_is_x, wx2_is_z}, 3'b010);
+    `checkd({wz0_is_default, wz0_is_x, wz0_is_z}, 3'b001);
+    `checkd({wx3_is_default, wx3_is_x, wx3_is_z, wx3_is_top_x, wx3_is_top_z}, 5'b00010);
+    `checkd({wz1_is_default, wz1_is_x, wz1_is_z, wz1_is_top_x, wz1_is_top_z}, 5'b00001);
     cyc <= cyc + 1;
     if (cyc == 60) begin
 `ifdef VERILATOR
@@ -146,3 +261,33 @@ module str_blk #(
   always @(posedge clk) state <= state + data + str_hash();
   assign out = state;
 endmodule
+
+/* verilator lint_off WIDTHEXPAND */
+module fourstate_blk #(
+    parameter logic [2:0] P = 3'b0x1
+) (
+    output logic is_x,
+    output logic is_z
+);
+  /*verilator hier_block*/
+  assign is_x = P === 3'b0x1;
+  assign is_z = P === 3'b0z1;
+endmodule
+
+module fourstate_wide_blk #(
+    parameter logic [6:0] P = 7'b000x001
+) (
+    output logic is_default,
+    output logic is_x,
+    output logic is_z,
+    output logic is_top_x,
+    output logic is_top_z
+);
+  /*verilator hier_block*/
+  assign is_default = P === 7'b000x001;
+  assign is_x = P === 7'b000x010;
+  assign is_z = P === 7'b000z010;
+  assign is_top_x = P === 7'bxxx0010;
+  assign is_top_z = P === 7'bzzz0010;
+endmodule
+/* verilator lint_on WIDTHEXPAND */

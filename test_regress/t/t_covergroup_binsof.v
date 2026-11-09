@@ -59,9 +59,14 @@ module t (
     cp_a: coverpoint a {
       bins seq = (0 => 1);
       bins two = {2};
+      bins part = (200 => 1), (1 => 2);  // 200 is no 7-bit value, so only 1 => 2 can match
     }
     cp_b: coverpoint b;
     transitions: cross cp_a, cp_b{bins selected = binsof (cp_a.seq);}
+    // Selecting by values reads the last value of each sequence that can match: not part's 1
+    intersected: cross cp_a, cp_b{
+      bins selected = binsof (cp_a) intersect {1};
+    }
   endgroup
 
   covergroup cg_empty with function sample (bit a, bit b);

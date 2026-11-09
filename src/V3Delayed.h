@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Pre C-Emit stage changes
+// DESCRIPTION: Verilator: Lower non-blocking assignments (NBAs)
 //
 // Code available from: https://verilator.org
 //

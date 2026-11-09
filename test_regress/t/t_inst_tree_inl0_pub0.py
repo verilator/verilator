@@ -18,14 +18,14 @@ test.compile(v_flags2=["--no-json-edit-nums", test.t_dir + "/" + test.name + ".v
 
 if test.vlt_all:
     test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l1",.*"loc":"\w,56:[^"]*",.*"origName":"l1"')
+                   r'{"type":"MODULE","name":"l1",.*"loc":"\w,58:[^"]*",.*"origName":"l1"')
     test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l2",.*"loc":"\w,62:[^"]*",.*"origName":"l2"')
+                   r'{"type":"MODULE","name":"l2",.*"loc":"\w,64:[^"]*",.*"origName":"l2"')
     test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l3",.*"loc":"\w,69:[^"]*",.*"origName":"l3"')
+                   r'{"type":"MODULE","name":"l3",.*"loc":"\w,71:[^"]*",.*"origName":"l3"')
     # l4 keeps its output port variable, which is aliased to the net it connects to
     test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l4",.*"loc":"\w,76:[^"]*",.*"origName":"l4"')
+                   r'{"type":"MODULE","name":"l4",.*"loc":"\w,78:[^"]*",.*"origName":"l4"')
     # l5 holds nothing but combinational logic feeding its single reader,
     # so it is optimized away entirely, even though it is marked no_inline
     test.file_grep_not(out_filename, r'{"type":"MODULE","name":"l5__P')

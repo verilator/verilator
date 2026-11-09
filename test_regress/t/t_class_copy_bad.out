@@ -1,6 +1,14 @@
-%Error: t/t_class_copy_bad.v:22:14: New-as-copier passed different data type 'CLASSREFDTYPE 'Cls'' than expected 'CLASSREFDTYPE 'Other''
-                                  : ... note: In instance 't'
+%Error: t/t_class_copy_bad.v:22:8: Assign RHS expects a CLASSREFDTYPE 'Cls', got CLASSREFDTYPE 'Other'
+                                 : ... note: In instance 't'
    22 |     c1 = new co;   
-      |              ^~
+      |        ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_copy_bad.v:23:8: Assign RHS expects a CLASSREFDTYPE 'Cls', got BASICDTYPE 'bit'
+                                 : ... note: In instance 't'
+   23 |     c1 = new 5;   
+      |        ^
+%Error: t/t_class_copy_bad.v:24:8: Assign RHS expects a CLASSREFDTYPE 'Cls', got BASICDTYPE 'null'
+                                 : ... note: In instance 't'
+   24 |     c1 = new null;   
+      |        ^
 %Error: Exiting due to

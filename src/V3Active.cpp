@@ -122,7 +122,7 @@ public:
     ~LatchDetectGraph() override { clear(); }
     // ACCESSORS
     LatchDetectGraphVertex* currentp() { return m_curVertexp; }
-    void currentp(LatchDetectGraphVertex* vertex) { m_curVertexp = vertex; }
+    void currentp(LatchDetectGraphVertex* vertexp) { m_curVertexp = vertexp; }
     // METHODS
     void begin() {
         // Start a new if/else tracking graph
@@ -138,13 +138,22 @@ public:
         m_curVertexp = nullptr;
     }
     // Add a new control path and connect it to its parent
-    LatchDetectGraphVertex* addPathVertex(LatchDetectGraphVertex* parent, const string& name,
+    LatchDetectGraphVertex* addPathVertex(LatchDetectGraphVertex* parentp, const string& name,
                                           bool branch = false) {
         m_curVertexp = new LatchDetectGraphVertex{this, name,
                                                   branch ? LatchDetectGraphVertex::VT_BRANCH
                                                          : LatchDetectGraphVertex::VT_BLOCK};
-        new V3GraphEdge{this, parent, m_curVertexp, 1};
+        new V3GraphEdge{this, parentp, m_curVertexp, 1};
         return m_curVertexp;
+    }
+    // Add an infeasible control path (e.g. the absent else of a 'unique if' chain).  An output
+    // vertex with user() set represents a path that assigns every output, which is what an
+    // unreachable path must do.
+    void addUnreachableVertex(LatchDetectGraphVertex* parentp) {
+        LatchDetectGraphVertex* const vertexp
+            = new LatchDetectGraphVertex{this, "UNREACHABLE", LatchDetectGraphVertex::VT_OUTPUT};
+        vertexp->user(true);
+        new V3GraphEdge{this, parentp, vertexp, 1};
     }
     // Add a new output variable vertex and store a pointer to it in the user1 field of the
     // variables AstNode
@@ -313,6 +322,7 @@ class ActiveLatchCheckVisitor final : public VNVisitorConst {
     const VNUser1InUse m_inuser1;
     // STATE
     LatchDetectGraph m_graph;  // Graph used to detect latches in combo always
+    bool m_uniqueIfChain = false;  // Traversing the else-if chain of a 'unique if'
     // VISITORS
     void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
@@ -321,18 +331,39 @@ class ActiveLatchCheckVisitor final : public VNVisitorConst {
             m_graph.addAssignment(nodep);
         }
     }
-    void visit(AstNodeIf* nodep) override {
-        if (!nodep->isBoundsCheck()) {
-            LatchDetectGraphVertex* const parentp = m_graph.currentp();
-            LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
-            m_graph.addPathVertex(branchp, "IF");
-            iterateAndNextConstNull(nodep->thensp());
-            m_graph.addPathVertex(branchp, "ELSE");
-            iterateAndNextConstNull(nodep->elsesp());
-            m_graph.currentp(parentp);
-        } else {
+    void visit(AstIf* nodep) override {
+        if (nodep->isBoundsCheck()) {
             iterateChildrenConst(nodep);
+            return;
         }
+
+        // IEEE 1800-2023 12.4.2 requires a violation report if a 'unique if' has no matching
+        // condition and no explicit else.  Treat that missing else as unreachable for latch
+        // detection, consistent with the V3Assert check; 'unique0 if' permits no match and
+        // therefore still has a potentially latching path.
+        // Note: 'priority if' is omitted because V3Assert does not currently lower it to a
+        // runtime check, so suppressing LATCH would hide a latch without a diagnostic.
+        const bool exhaustive = m_uniqueIfChain || nodep->uniquePragma();
+
+        LatchDetectGraphVertex* const parentp = m_graph.currentp();
+        LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
+
+        m_graph.addPathVertex(branchp, "IF");
+        {
+            VL_RESTORER(m_uniqueIfChain);
+            m_uniqueIfChain = false;
+            iterateAndNextConstNull(nodep->thensp());
+        }
+
+        if (exhaustive && !nodep->elsesp()) {
+            m_graph.addUnreachableVertex(branchp);
+        } else {
+            m_graph.addPathVertex(branchp, "ELSE");
+            VL_RESTORER(m_uniqueIfChain);
+            m_uniqueIfChain = exhaustive && VN_IS(nodep->elsesp(), If);
+            iterateAndNextConstNull(nodep->elsesp());
+        }
+        m_graph.currentp(parentp);
     }
     //--------------------
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -358,17 +389,20 @@ private:
     // MEMBERS
     const CheckType m_check;  // Process type we are checking
 
+    // METHODS
+    void warnNonBlocking(AstNode* nodep, const char* what, const char* nbOp, const char* bOp) {
+        const bool inFinal = m_check == CT_FINAL;
+        nodep->v3warnCode(inFinal ? V3ErrorCode::FINALDLY : V3ErrorCode::COMBDLY,
+                          "Non-blocking "
+                              << what << " '" << nbOp << "' in "
+                              << (inFinal ? "final block" : "combinational logic") << '\n'
+                              << nodep->warnMore() << "... This will be executed as a blocking "
+                              << what << " '" << bOp << "'!");
+    }
+
     // VISITORS
     void visit(AstAssignDly* nodep) override {
-        // Issue appropriate warning
-        if (m_check == CT_FINAL) {
-            nodep->v3warn(FINALDLY, "Non-blocking assignment '<=' in final block");
-        } else {
-            nodep->v3warn(COMBDLY,
-                          "Non-blocking assignment '<=' in combinational logic process\n"
-                              << nodep->warnMore()
-                              << "... This will be executed as a blocking assignment '='!");
-        }
+        warnNonBlocking(nodep, "assignment", "<=", "=");
 
         // Convert to blocking assignment
         nodep->replaceWith(new AstAssign{
@@ -376,6 +410,15 @@ private:
             nodep->lhsp()->unlinkFrBack(),  //
             nodep->rhsp()->unlinkFrBack(),  //
             nodep->timingControlp() ? nodep->timingControlp()->unlinkFrBack() : nullptr});
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+    void visit(AstFireEvent* nodep) override {
+        if (!nodep->isDelayed()) return;
+        warnNonBlocking(nodep, "event trigger", "->>", "->");
+
+        // Convert to blocking event trigger
+        nodep->replaceWith(
+            new AstFireEvent{nodep->fileline(), nodep->operandp()->unlinkFrBack(), false});
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
@@ -410,22 +453,14 @@ class ActiveVisitor final : public VNVisitor {
 
     // METHODS
     template <typename T>
-    void moveUnderSpecial(AstNode* nodep) {
+    void moveUnderSpecial(AstNodeProcedure* nodep) {
         AstActive* const wantactivep = m_namer.getSpecialActive<T>(nodep->fileline());
         nodep->unlinkFrBack();
-        wantactivep->addStmtsp(nodep);
+        wantactivep->addProcsp(nodep);
     }
 
-    void visitAlways(AstNode* nodep, AstSenTree* oldsentreep, VAlwaysKwd kwd) {
+    void visitAlways(AstNodeProcedure* nodep, AstSenTree* oldsentreep, VAlwaysKwd kwd) {
         // Move always to appropriate ACTIVE based on its sense list
-        if (oldsentreep && oldsentreep->sensesp() && oldsentreep->sensesp()->isNever()) {
-            // Never executing.  Kill it.
-            UASSERT_OBJ(!oldsentreep->sensesp()->nextp(), nodep,
-                        "Never senitem should be alone, else the never should be eliminated.");
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            return;
-        }
-
         {
             const VNUser1InUse user1InUse;
 
@@ -457,7 +492,7 @@ class ActiveVisitor final : public VNVisitor {
 
         // Move node to new active
         nodep->unlinkFrBack();
-        wantactivep->addStmtsp(nodep);
+        wantactivep->addProcsp(nodep);
 
         // Warn and convert any delayed assignments
         if (!m_clockedProcess) ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMB};
@@ -478,8 +513,7 @@ class ActiveVisitor final : public VNVisitor {
     }
 
     static void markEventEdges(AstSenTree* sentreep) {
-        for (AstSenItem* senip = sentreep->sensesp(); senip;
-             senip = VN_AS(senip->nextp(), SenItem)) {
+        for (AstSenItem* const senip : sentreep->sensespList()) {
             if (!senip->sensp()) continue;
             if (const AstNodeDType* const dtypep = senip->sensp()->dtypep()) {
                 if (const AstBasicDType* const basicp = dtypep->basicp()) {
@@ -507,13 +541,13 @@ class ActiveVisitor final : public VNVisitor {
         const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_FINAL};
         moveUnderSpecial<AstSenItem::Final>(nodep);
     }
-    void visit(AstCoverToggle* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
     void visit(AstAlways* nodep) override {
         if (!nodep->stmtsp()) {  // Empty always. Remove it now.
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
+        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN
+            || nodep->keyword() == VAlwaysKwd::COVER_TOGGLE) {
             moveUnderSpecial<AstSenItem::Combo>(nodep);
             return;
         }
@@ -526,7 +560,7 @@ class ActiveVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->stmtsp(), nodep, "Should not be empty");
         // Make a new active for it, needs to be the only item under the active for V3Sched
         AstActive* const activep = m_namer.makeSpecialActive<AstSenItem::Combo>(nodep->fileline());
-        activep->addStmtsp(nodep->unlinkFrBack());
+        activep->addProcsp(nodep->unlinkFrBack());
     }
     void visit(AstAlwaysObserved* nodep) override {
         UASSERT_OBJ(nodep->sentreep(), nodep, "Should have a sentree");
@@ -535,7 +569,7 @@ class ActiveVisitor final : public VNVisitor {
         sentreep->unlinkFrBack();
         // Make a new active for it, needs to be the only item under the active for V3Sched
         AstActive* const activep = m_namer.makeActive(nodep->fileline(), sentreep);
-        activep->addStmtsp(nodep->unlinkFrBack());
+        activep->addProcsp(nodep->unlinkFrBack());
     }
     void visit(AstAlwaysReactive* nodep) override {
         UASSERT_OBJ(nodep->sentreep(), nodep, "Should have a sentree");
@@ -544,7 +578,7 @@ class ActiveVisitor final : public VNVisitor {
         sentreep->unlinkFrBack();
         // Make a new active for it, needs to be the only item under the active for V3Sched
         AstActive* const activep = m_namer.makeActive(nodep->fileline(), sentreep);
-        activep->addStmtsp(nodep->unlinkFrBack());
+        activep->addProcsp(nodep->unlinkFrBack());
     }
     void visit(AstCFunc* nodep) override { visitSenItems(nodep); }
     void visit(AstSenItem* nodep) override {
@@ -681,10 +715,10 @@ class CovergroupEventBindVisitor final : public VNVisitor {
     void visit(AstVarRef* nodep) override {
         if (!m_memberps.count(nodep->varp())) return;
         FileLine* const fl = nodep->fileline();
-        AstMemberSel* const selp
-            = new AstMemberSel{fl, new AstVarRef{fl, m_instancep, VAccess::READ}, nodep->varp()};
-        selp->access(nodep->access());
-        nodep->replaceWith(selp);
+        AstMemberRef* const memberRefp
+            = new AstMemberRef{fl, new AstVarRef{fl, m_instancep, VAccess::READ}, nodep->varp()};
+        memberRefp->access(nodep->access());
+        nodep->replaceWith(memberRefp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -763,7 +797,7 @@ class CovergroupInjectVisitor final : public VNVisitor {
 
         // Wrap the sample() call in an AstAlways so SchedPartition handles it
         // via visit(AstNodeProcedure*) like any other clocked always block.
-        activep->addStmtsp(
+        activep->addProcsp(
             new AstAlways{fl, VAlwaysKwd::ALWAYS_FF, nullptr, cmethodCallp->makeStmt()});
     }
 

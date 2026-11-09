@@ -28,6 +28,7 @@
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3AstNodeExpr.h"
+#include "V3CallTargets.h"
 #include "V3Sched.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -49,24 +50,27 @@ private:
     std::set<std::pair<IfaceMember, AstVarScope*>> m_seenCandidateVscps;
     // VarScope index and callable worklist for VIF method-body writes.
     std::map<const AstVar*, std::vector<AstVarScope*>> m_vscpsByVar;
+    // Worklist of reachable interface callables
     std::vector<IfaceCallable> m_reachableIfaceCallables;
+    // Callables already added to the worklist
     std::set<IfaceCallable> m_seenReachableIfaceCallables;
-    VirtIfaceTriggers m_triggers;
+    VirtIfaceTriggers m_triggers;  // Triggers found for virtual interface writes
+    const std::unique_ptr<V3CallTargets> m_callTargetsp;  // For the methods a call may run
 
     // METHODS
     // Returns true if statement writes across a virtual interface boundary
     static bool writesToVirtIface(const AstNode* const nodep) {
-        return nodep->exists([](const AstMemberSel* const memberSelp) {
-            if (!memberSelp->access().isWriteOrRW()) return false;
+        return nodep->exists([](const AstMemberRef* const memberRefp) {
+            if (!memberRefp->access().isWriteOrRW()) return false;
             AstIfaceRefDType* const dtypep
-                = VN_CAST(memberSelp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+                = VN_CAST(memberRefp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
             return dtypep && dtypep->isVirtual();
         });
     }
 
     // VISITORS
-    void visit(AstMemberSel* nodep) override {
-        // Detect writes through VIF: the MemberSel's fromp resolves to a virtual interface type.
+    void visit(AstMemberRef* nodep) override {
+        // Detect writes through VIF: the MemberRef's fromp resolves to a virtual interface type.
         // Handles both direct VIF access (vif.member) and class chain (obj.vif.member).
         if (nodep->access().isWriteOrRW()) {
             AstIfaceRefDType* const dtypep
@@ -78,19 +82,22 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstCMethodCall* nodep) override {
-        if (const AstIfaceRefDType* const dtypep
-            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType)) {
-            if (VL_UNCOVERABLE(!dtypep->isVirtual())) {
-                // Concrete interface method calls are lowered before this pass.
-            } else {
-                addReachableIfaceCallable(dtypep->ifaceViaCellp(), nodep->funcp());
+        // A method call on a member selected through a virtual interface. This includes the
+        // calls through a virtual interface, which call a method of its dispatcher (V3Task)
+        if (const AstMemberRef* const memberRefp = VN_CAST(nodep->fromp(), MemberRef)) {
+            const AstIfaceRefDType* const dtypep
+                = VN_CAST(memberRefp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+            if (dtypep && dtypep->isVirtual()) {
+                for (AstCFunc* const funcp : m_callTargetsp->getTargets(nodep)) {
+                    addReachableIfaceCallable(dtypep->ifaceViaCellp(), funcp);
+                }
             }
         }
         iterateChildren(nodep);
     }
     void visit(AstVarScope* nodep) override {
         // Collect candidate VarScopes. sensIfacep() is set on interface members
-        // accessed via any MemberSel (virtual or non-virtual).
+        // accessed via any MemberRef (virtual or non-virtual).
         AstVar* const varp = nodep->varp();
         if (varp->isTemp()) return;
         m_vscpsByVar[varp].push_back(nodep);
@@ -133,7 +140,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit VirtIfaceVisitor(AstNetlist* nodep) {
+    explicit VirtIfaceVisitor(AstNetlist* nodep)
+        : m_callTargetsp{V3CallTargets::build()} {
         iterate(nodep);
         for (size_t i = 0; i < m_reachableIfaceCallables.size(); ++i) {
             const IfaceCallable callable = m_reachableIfaceCallables[i];

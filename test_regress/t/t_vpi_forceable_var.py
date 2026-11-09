@@ -20,8 +20,8 @@ test.compile(make_top_shell=False,
              iv_flags2=["-DT_VPI_FORCEABLE_VAR"],
              v_flags2=["+define+USE_VPI_NOT_DPI", "+define+T_VPI_FORCEABLE_VAR"],
              verilator_flags2=[
-                 "-Wno-SYMRSVDWORD --exe --timing --vpi --no-l2name", test.pli_filename,
-                 test.t_dir + "/t_vpi_forceable_var.vlt"
+                 "-fno-inline -Wno-SYMRSVDWORD --exe --timing --vpi --no-l2name",
+                 test.pli_filename, test.t_dir + "/t_vpi_forceable_var.vlt"
              ])
 
 test.execute(use_libvpi=True, all_run_flags=['+PLUS +INT=1234 +STRSTR'])

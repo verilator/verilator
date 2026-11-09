@@ -21,6 +21,7 @@
 #include "V3EmitCBase.h"
 #include "V3HierBlock.h"
 #include "V3Os.h"
+#include "V3SolverBackend.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -538,8 +539,7 @@ public:
             // Generated headers are part of every translation unit through the precompiled header
             uint64_t headerBytes = 0;
 
-            for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
-                 nodep = VN_AS(nodep->nextp(), NodeFile)) {
+            for (AstNodeFile* const nodep : v3Global.rootp()->filespList()) {
                 const AstCFile* const cfilep = VN_CAST(nodep, CFile);
                 if (cfilep && VString::endsWith(cfilep->name(), ".h")) {
                     headerBytes += fileSize(cfilep);
@@ -634,8 +634,7 @@ public:
                         putMakeClassEntry(of, entry.m_filename);
                     }
                 } else {
-                    for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
-                         nodep = VN_AS(nodep->nextp(), NodeFile)) {
+                    for (AstNodeFile* const nodep : v3Global.rootp()->filespList()) {
                         const AstCFile* const cfilep = VN_CAST(nodep, CFile);
                         if (cfilep && cfilep->source() && cfilep->slow() == (slow != 0)
                             && cfilep->support() == (support != 0)) {
@@ -718,10 +717,10 @@ public:
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
-        const std::string solver = V3Options::getenvVERILATOR_SOLVER();
-        if (v3Global.useRandomizeMethods() && solver != "")
-            of.puts("\t-DVM_SOLVER_DEFAULT='\"" + V3OutFormatter::quoteNameControls(solver)
-                    + "\"' \\\n");
+        if (v3Global.useRandomizeMethods()) {
+            for (const string& flag : v3Global.solverBackendp()->runtimeCFlags())
+                of.puts("\t" + flag + " \\\n");
+        }
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
         const VStringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("  " + i + " \\\n");
@@ -731,6 +730,12 @@ public:
         of.puts("VM_USER_LDLIBS = \\\n");
         const VStringList& ldLibs = v3Global.opt.ldLibs();
         for (const string& i : ldLibs) of.puts("  " + i + " \\\n");
+        of.puts("\n");
+
+        of.puts("# User library files (from .a/.o/.so on Verilator command line)\n");
+        of.puts("# These are also in VM_USER_LDLIBS, and are link dependencies\n");
+        of.puts("VM_USER_LDLIBS_FILES = \\\n");
+        for (const string& i : v3Global.opt.ldLibFiles()) of.puts("  " + i + " \\\n");
         of.puts("\n");
 
         VStringSet dirs;
@@ -780,9 +785,9 @@ public:
         }
 
         const string compilerIncludePch
-            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_PCH_H).fast.gch";
+            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_USER_PCH_FAST)";
         const string compilerIncludeFlag
-            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_PCH_I_FAST)";
+            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_USER_PCH_I_FAST)";
         for (const string& cppfile : cppFiles) {
             const string basename = V3Os::filenameNonDirExt(cppfile);
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
@@ -797,8 +802,11 @@ public:
             of.puts("\n### Link rules... (from --exe)\n");
             // '{prefix}__ALL.a', contains all hierarchical libraries
             of.puts(v3Global.opt.exeName()
-                    + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a\n");
-            of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) $(LIBS) $(SC_LIBS) -o $@\n");
+                    + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a"
+                      " $(VM_USER_LDLIBS_FILES)\n");
+            // User library files are in LDLIBS, so do not also link them from $^
+            of.puts("\t$(LINK) $(LDFLAGS) $(filter-out $(VM_USER_LDLIBS_FILES),$^) $(LOADLIBES) "
+                    "$(LDLIBS) $(LIBS) $(SC_LIBS) -o $@\n");
             of.puts("\n");
         } else if (!v3Global.opt.libCreate().empty()) {
             const string libCreateDeps = "$(VK_OBJS) $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) "
@@ -852,7 +860,7 @@ public:
 //######################################################################
 
 class EmitMkHierVerilation final {
-    const V3HierGraph* const m_graphp;
+    const V3HierGraph* const m_graphp;  // Hierarchical blocks graph
     const string m_makefile;  // path of this makefile
     void emitCommonOpts(V3OutMkFile& of) const {
         of.puts("# Verilation of hierarchical blocks are executed in this directory\n");
@@ -931,7 +939,7 @@ class EmitMkHierVerilation final {
             const V3HierBlock* const blockp = vtx.as<V3HierBlock>();
             const string prefix = blockp->hierPrefix();
             const string argsFilename = blockp->commandArgsFilename(false);
-            of.puts(blockp->hierGeneratedFilenames(true));
+            of.puts(blockp->hierMkFilename(true));
             of.puts(": $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
             of.puts(V3Os::filenameNonDir(argsFilename) + " ");
             for (const V3GraphEdge& edge : blockp->outEdges()) {
@@ -940,7 +948,11 @@ class EmitMkHierVerilation final {
             }
             of.puts("\n");
             emitLaunchVerilator(of, argsFilename);
-
+            // Rule for the *.sv stub. The same Verilation writes it. It is not
+            // a second target of the rule above, as 'make -j' would then run
+            // the recipe once per target.
+            of.puts(blockp->hierWrapperFilename(true) + ": " + blockp->hierMkFilename(true)
+                    + "\n\t@:\n");
             // Rule to build lib*.a
             of.puts(blockp->hierLibFilename(true));
             of.puts(": ");

@@ -108,6 +108,7 @@ class OrderGraphBuilder final : public VNVisitor {
     bool m_inPre = false;  // Underneath AlwaysPre
     bool m_inPost = false;  // Underneath AstAlwaysPost
     std::function<bool(const AstVarScope*)> m_readTriggersCombLogic;
+    // Variables whose force read edges are ignored
     V3Sched::util::VarScopeSet m_forceReadEdgeIgnores;
     const bool m_parallel;  // Ordering for multi-threaded execution (record variable accesses)
 
@@ -118,7 +119,7 @@ class OrderGraphBuilder final : public VNVisitor {
 
     // METHODS
 
-    void iterateLogic(AstNode* nodep) {
+    void iterateLogic(AstNodeProcedure* nodep) {
         UASSERT_OBJ(!m_logicVxp, nodep, "Should not nest");
         // Reset VarUsage and VarAccess
         AstNode::user2ClearTree();
@@ -241,7 +242,7 @@ class OrderGraphBuilder final : public VNVisitor {
         bool con = false;
         if (!prevCon && access.isReadOrRW()) {
             con = true;
-            if (prevGen && !m_inClocked) {
+            if ((prevGen || gen) && !m_inClocked) {
                 // Dangerous assumption:
                 // If a variable is consumed in the same combinational process that produced it
                 // earlier, consider it something like:
@@ -343,10 +344,22 @@ class OrderGraphBuilder final : public VNVisitor {
             }
         }
     }
+    // A call enqueuing an NBA in the function called accesses the global queue of NBAs (see
+    // V3Delayed), ordering it before its commit, and serializing it with the others
+    void accountEnqueuingCall(AstNodeCCall* nodep) {
+        if (!nodep->mayEnqueueGlobalNBA()) return;
+        accountVarAccess(v3Global.rootp()->nbaQueuep(), VAccess::READWRITE, nodep);
+    }
+
+    void visit(AstNodeCCall* nodep) override {
+        iterateChildren(nodep);
+        accountEnqueuingCall(nodep);
+    }
     // A covergroup sample() is not inlined and may read design signals through cross-scope
     // references held by the covergroup. This attributes those references to the calling block.
     void visit(AstCMethodCall* nodep) override {
         iterateChildren(nodep);
+        accountEnqueuingCall(nodep);
         AstCFunc* const funcp = nodep->funcp();
         if (!funcp->isCovergroupSample()) return;
         // Since sample is a built-in, we never expect recursion.
@@ -400,8 +413,17 @@ class OrderGraphBuilder final : public VNVisitor {
     }  // LCOV_EXCL_STOP
 
     //--- Verilator concoctions
-    void visit(AstCoverToggle* nodep) override {  //
-        iterateLogic(nodep);
+    void visit(AstNbaCommit* nodep) override {
+        UASSERT_OBJ(m_inPost, nodep, "AstNbaCommit should be in AstAlwaysPost");
+        // Commit the NBAs enqueued by clocked logic in the same pass, with the other NBAs. Like
+        // any clocked reader, that logic is ordered before the post vertex of the queue. The
+        // writes of the queue are ignored so V3SchedPartition does not pull every referencing
+        // block into the 'act' region, so add the edge writing it would have here.
+        OrderVarVertex* const postVxp
+            = getVarVertex(nodep->queuep()->varScopep(), VarVertexType::POST);
+        m_graphp->addHardEdge(postVxp, m_logicVxp, WEIGHT_POST);
+        // Record edges for the variables that the commit might update
+        iterateAndNextNull(nodep->targetsp());
     }
 
     //--- Ignored nodes

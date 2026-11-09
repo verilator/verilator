@@ -7,6 +7,7 @@
 // verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=\"%s\" exp=\"%s\"\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
@@ -76,6 +77,73 @@ module t (
 `endif
 `endif
 `endif
+  end
+
+  // String as a condition is true when non-empty
+  initial begin
+    // Values known at compile time
+    string full;
+    string empty;
+    int n;
+    full = "abc";
+    empty = "";
+    if (full) n += 1;
+    if (empty) n += 2;
+    `checkd(n, 1);
+  end
+
+  typedef string str_t;
+  class StrCond;
+    str_t str;
+    function int count();
+      int n = 0;
+      if (str) n += 1;
+      n += str ? 2 : 0;
+      for (str_t rest = str; rest; rest = rest.substr(1, rest.len() - 1)) n += 4;
+      return n;
+    endfunction
+  endclass
+
+  always @(posedge clk) begin
+    // Values known only at runtime
+    StrCond c;
+    c = new;
+    if (cyc[0]) c.str = "ab";
+    `checkd(c.count(), cyc[0] ? 11 : 0);
+  end
+
+  // Concatenations with formatted strings
+  always @(posedge clk) begin
+    string fmt;
+    if (cyc == 5) begin
+      // Empty string
+      `checks({"", $sformatf("%0d", cyc)}, "5");
+      `checks({$sformatf("%0d", cyc), ""}, "5");
+      `checks({"", {" ", $sformatf("%0d", cyc)}}, " 5");
+      // Constant text in the format, where '%' is not a format code
+      `checks({"%d", $sformatf("%0d", cyc)}, "%d5");
+      `checks({$sformatf("%0d", cyc), "%%"}, "5%%");
+      // Two formats with their arguments
+      `checks({$sformatf("%0d", cyc), $sformatf("-%0h", cyc + 10)}, "5-f");
+      // Format of a format
+      `checks($sformatf("<%s|%0d>", $sformatf("%0d-%0h", cyc, cyc + 10), cyc), "<5-f|5>");
+      `checks($sformatf("[%3s]", $sformatf("%0d", cyc)), "[  5]");
+      // Format of a concatenation
+      fmt = cyc[0] ? "y" : "n";
+      `checks($sformatf("<%s>", {"%", $sformatf("%0d", cyc), fmt}), "<%5y>");
+      // Format of only a string
+      `checks({$sformatf("%s", fmt), "!"}, "y!");
+      $sformat(vstr, "%s", fmt);
+      `checks(vstr, "y");
+      begin
+        string copy;
+        $sformat(copy, "%s", fmt);
+        `checks(copy, "y");
+      end
+      // Format only known at runtime
+      fmt = cyc[0] ? "<%0d>" : "[%0d]";
+      `checks({"x", $sformatf(fmt, cyc)}, "x<5>");
+    end
   end
 
   // Test loop

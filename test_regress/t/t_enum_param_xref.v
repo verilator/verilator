@@ -18,6 +18,7 @@ interface ifc #(
     I_IDLE = 1,
     I_WORK = 4'(W)
   } state_t;
+  logic [W-1:0] data;
 endinterface
 
 module child #(
@@ -28,6 +29,12 @@ module child #(
     S_WORK = 5'(W)
   } state_t;
   state_t fsm = S_WORK;
+  typedef enum logic [1:0] {
+    P_IDLE = 0,
+    P_BEAT = 1
+  } beat_t;
+  ifc #(.W(W + 1)) beats[2] ();
+  initial beats[P_BEAT].data = '1;
   if (1) begin : blk
     typedef enum logic [4:0] {
       B_IDLE = 0,
@@ -63,10 +70,14 @@ module t;
   sub s (.i(i6));
 
   wire working = a.fsm == a.S_WORK;
+  wire beat = |a.beats[a.P_BEAT].data;
 
   initial begin
     #1;
     `checkd(working, 1'b1);
+    `checkd(beat, 1'b1);
+    `checkd(a.beats[a.P_BEAT].data, 3'b111);
+    `checkd(b.beats[b.P_BEAT].data, 4'b1111);
     `checkd(a.S_IDLE, 0);
     `checkd(a.S_WORK, 2);
     `checkd(b.S_WORK, 3);

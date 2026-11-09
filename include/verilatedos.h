@@ -69,6 +69,15 @@
 # define VL_PREFETCH_RW(p) __builtin_prefetch((p), 1)
 #endif
 
+#if defined(__clang__) && defined(__has_feature)
+# if __has_feature(thread_sanitizer)  // Cannot be part of above &&; upsets gcc
+#  define VL_ATTR_NO_SANITIZE_THREAD __attribute__((no_sanitize("thread")))
+# endif
+#endif
+#ifndef VL_ATTR_NO_SANITIZE_THREAD
+# define VL_ATTR_NO_SANITIZE_THREAD
+#endif
+
 #ifdef __cpp_lib_unreachable
 /// Statement that may never be reached (for coverage etc)
 # define VL_UNREACHABLE std::unreachable()  // C++23
@@ -217,6 +226,8 @@
     VL_EXCLUDES(VlOs::MtScopeMutex::s_haveThreadScope)
 // Comment tag that function is threadsafe
 #define VL_MT_SAFE VL_CLANG_ATTR(annotate("MT_SAFE"))
+// Comment tag that function is pretending to be threadsafe due to very special usage
+#define VL_MT_SAFE_PRETEND VL_CLANG_ATTR(annotate("MT_SAFE"))
 // Comment tag that function is threadsafe, only if
 // other threads doesn't change tree topology
 #define VL_MT_STABLE VL_CLANG_ATTR(annotate("MT_STABLE"))
@@ -241,7 +252,8 @@
 // This is not necessarily the same as "#UL", depending on what the IData typedef is.
 #define VL_UL(c) (static_cast<IData>(c##UL))
 
-#if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
+#if defined(VL_CPPCHECK) || defined(__clang_analyzer__) \
+    || (__cplusplus < 201103L && (!defined(_MSVC_LANG) || _MSVC_LANG < 201103L))
 # define VL_DANGLING(var)
 #else
 /// After e.g. delete, set variable to nullptr to indicate must not use later
@@ -789,5 +801,92 @@ inline constexpr size_t roundUpToMultipleOf(size_t value) {
 };  // namespace vlstd
 
 //=========================================================================
+// Restorer
+
+// For all flavours, 'var' must be a named scalar variable (simple identifier).
+
+// Copy given variable's value on the stack, copy saved value back at end-of-scope.
+// Only usable for trivially copyable types; use VL_RESTORER_COPY/VL_RESTORER_CLEAR for
+// non-trivially copyable types, which are more efficient.
+#define VL_RESTORER(var) \
+    const VRestorerTrivial<typename std::decay_t<decltype(var)>> restorer_##var(var);
+
+// This is the equivalent of VL_RESTORER for non-trivially copyable types. Still more efficient
+// than VL_RESTORER as uses move to restore.
+#define VL_RESTORER_COPY(var) \
+    const VRestorerCopy<typename std::decay_t<decltype(var)>> restorer_##var(var);
+
+// Swap 'var' with a no-args constructed object of the same type, effectively clearing it, then
+// swap back at end-of-scope. No copying involved. Use this e.g. for std containers where they
+// would be .clear()'d right after the VL_RESTORER instance.
+#define VL_RESTORER_CLEAR(var) \
+    const VRestorerClear<typename std::decay_t<decltype(var)>> restorer_##var(var);
+
+// Get const reference to the saved copy
+#define VL_RESTORER_PREV(var) restorer_##var.saved()
+
+// Implementation of VL_RESTORER
+template <typename T>
+class VRestorerTrivial final {
+    static_assert(std::is_trivially_copyable<T>::value,
+                  "Use VL_RESTORER_{COPY,CLEAR} for non trivially copyable types");
+    T& m_ref;  // Reference to object we're saving and restoring
+    const T m_saved;  // Value saved, for later restore
+
+public:
+    explicit VRestorerTrivial(T& val)
+        : m_ref{val}
+        , m_saved{val} {}
+    ~VRestorerTrivial() { m_ref = m_saved; }
+    VL_UNCOPYABLE(VRestorerTrivial);
+    // Must be stack allocated
+    void* operator new(size_t) = delete;
+    void operator delete(void*) = delete;
+
+    const T& saved() const { return m_saved; }
+};
+
+// Implementation of VL_RESTORER_COPY
+template <typename T>
+class VRestorerCopy final {
+    static_assert(!std::is_trivially_copyable<T>::value,
+                  "Use VL_RESTORER for trivially copyable types");
+    T& m_ref;  // Reference to object we're saving and restoring
+    T m_saved;  // Value saved, for later restore
+
+public:
+    explicit VRestorerCopy(T& val)
+        : m_ref{val}
+        , m_saved{val} {}
+    ~VRestorerCopy() { m_ref = std::move(m_saved); }
+    VL_UNCOPYABLE(VRestorerCopy);
+    // Must be stack allocated
+    void* operator new(size_t) = delete;
+    void operator delete(void*) = delete;
+
+    const T& saved() const { return m_saved; }
+};
+
+// Implementation of VL_RESTORER_CLEAR.
+template <typename T>
+class VRestorerClear final {
+    static_assert(!std::is_trivially_copyable<T>::value,
+                  "Use VL_RESTORER for trivially copyable types");
+    T& m_ref;  // Reference to object we're saving and restoring
+    T m_saved{};  // Owns the swapped-out value; starts empty
+
+public:
+    explicit VRestorerClear(T& val)
+        : m_ref{val} {
+        std::swap(m_ref, m_saved);
+    }
+    ~VRestorerClear() { std::swap(m_ref, m_saved); }
+    VL_UNCOPYABLE(VRestorerClear);
+    // Must be stack allocated
+    void* operator new(size_t) = delete;
+    void operator delete(void*) = delete;
+
+    const T& saved() const { return m_saved; }
+};
 
 #endif  // Guard

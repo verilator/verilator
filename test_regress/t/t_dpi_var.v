@@ -81,11 +81,6 @@ module sub (/*AUTOARG*/
   in, in_a, in_b
   );
 
-`systemc_imp_header
-  void mon_class_name(const char* namep);
-  void mon_register_a(const char* namep, void* sigp, bool isOut, int n, int addend);
-`verilog
-
   /* verilator lint_off ASSIGNIN */
 `ifdef ATTRIBUTES // Sensitivity list accepted for backward compatibility but ignored
   input int in  /*verilator public_flat_rd*/;
@@ -111,13 +106,14 @@ module sub (/*AUTOARG*/
 
   initial begin
     // Test the naming
-    $c("mon_class_name(this->vlNamep);");
+    $c("{ void mon_class_name(const char* namep); mon_class_name(this->vlNamep); }");
     mon_scope_name("%m");
     // Scheme A - pass pointer directly
-    $c("mon_register_a(\"in\", &", in, ", false, 0, 1);");
-    $c("mon_register_a(\"fr_a\", &", fr_a, ", true, 0, 1);");
-    $c("mon_register_a(\"in\", &", in, ", false, 1, 0);");
-    $c("mon_register_a(\"in_a\", &", in_a, ", true, 1, 0);");
+    $c("{ void mon_register_a(const char* namep, void* sigp, bool isOut, int n, int addend);",
+       " mon_register_a(\"in\", &", in, ", false, 0, 1);",
+       " mon_register_a(\"fr_a\", &", fr_a, ", true, 0, 1);",
+       " mon_register_a(\"in\", &", in, ", false, 1, 0);",
+       " mon_register_a(\"in_a\", &", in_a, ", true, 1, 0); }");
     // Scheme B - use VPIish callbacks to see what signals exist
     mon_register_b("in", 0, 2, 1);
     mon_register_b("fr_b", 1, 2, 1);

@@ -14,16 +14,16 @@ module t (
   reg [63:0] sum;
 
   // verilog_format: off
-  wire         r1_en /*verilator public*/ = crc[12];
-  wire [1:0]   r1_ad /*verilator public*/ = crc[9:8];
-  wire         r2_en /*verilator public*/ = 1'b1;
-  wire [1:0]   r2_ad /*verilator public*/ = crc[11:10];
-  wire         w1_en /*verilator public*/ = crc[5];
-  wire [1:0]   w1_a  /*verilator public*/ = crc[1:0];
-  wire [63:0]  w1_d  /*verilator public*/ = {2{crc[63:32]}};
-  wire         w2_en /*verilator public*/ = crc[4];
-  wire [1:0]   w2_a  /*verilator public*/ = crc[3:2];
-  wire [63:0]  w2_d  /*verilator public*/ = {2{~crc[63:32]}};
+  wire         r1_en /*verilator public_flat_rw*/ = crc[12];
+  wire [1:0]   r1_ad /*verilator public_flat_rw*/ = crc[9:8];
+  wire         r2_en /*verilator public_flat_rw*/ = 1'b1;
+  wire [1:0]   r2_ad /*verilator public_flat_rw*/ = crc[11:10];
+  wire         w1_en /*verilator public_flat_rw*/ = crc[5];
+  wire [1:0]   w1_a  /*verilator public_flat_rw*/ = crc[1:0];
+  wire [63:0]  w1_d  /*verilator public_flat_rw*/ = {2{crc[63:32]}};
+  wire         w2_en /*verilator public_flat_rw*/ = crc[4];
+  wire [1:0]   w2_a  /*verilator public_flat_rw*/ = crc[3:2];
+  wire [63:0]  w2_d  /*verilator public_flat_rw*/ = {2{~crc[63:32]}};
 
   /*AUTOWIRE*/
   // Beginning of automatic wires (for undeclared instantiated-module outputs)

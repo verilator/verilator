@@ -42,16 +42,16 @@ class StackCountVisitor final : public VNVisitorConst {
         // MEMBERS
         uint64_t m_savedCount;  // Count before visit applied
         AstNode* const m_nodep;  // Node this RAII helper is visiting
-        StackCountVisitor* const m_visitor;  // Visitor whose start/endVisitBase are called
+        StackCountVisitor* const m_visitorp;  // Visitor whose start/endVisitBase are called
 
     public:
         // CONSTRUCTORS
-        VisitBase(StackCountVisitor* visitor, AstNode* nodep)
+        VisitBase(StackCountVisitor* visitorp, AstNode* nodep)
             : m_nodep{nodep}
-            , m_visitor{visitor} {
-            m_savedCount = m_visitor->startVisitBase(nodep);
+            , m_visitorp{visitorp} {
+            m_savedCount = m_visitorp->startVisitBase(nodep);
         }
-        ~VisitBase() { m_visitor->endVisitBase(m_savedCount, m_nodep); }
+        ~VisitBase() { m_visitorp->endVisitBase(m_savedCount, m_nodep); }
 
     private:
         VL_UNCOPYABLE(VisitBase);
@@ -86,7 +86,7 @@ private:
     }
 
     // VISITORS
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
         iterateAndNextConstNull(nodep->condp());

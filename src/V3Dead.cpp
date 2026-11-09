@@ -25,7 +25,7 @@
 // The following nodes have package pointers and are cleaned up here:
 // AstRefDType, AstEnumItemRef, AstNodeVarRef, AstNodeFTask
 // These have packagep but will not exist at this stage
-// AstPackageImport, AstDot, AstClassOrPackageRef
+// AstPackageImport, AstDot, AstClassOrPackageRef, AstSchemaRef
 //
 // Note on packagep: After the V3Scope/V3LinkDotScoped stage, package links
 // are no longer used, but their presence prevents us from removing empty
@@ -267,11 +267,11 @@ class DeadVisitor final : public VNVisitor {
     std::vector<AstVar*> m_varsp;
     std::vector<AstNode*> m_dtypeElimsp;  // Data types might eliminate
     std::map<AstNodeDType*, AstNodeModule*> m_dtypePkgsp;  // Data type's containing package
-    std::vector<AstVarScope*> m_vscsp;
-    std::vector<AstScope*> m_scopesp;
-    std::vector<AstCell*> m_cellsp;
-    std::vector<AstClass*> m_classesp;
-    std::vector<AstTypedef*> m_typedefsp;
+    std::vector<AstVarScope*> m_vscsp;  // All variable scopes
+    std::vector<AstScope*> m_scopesp;  // All scopes
+    std::vector<AstCell*> m_cellsp;  // All cells
+    std::vector<AstClass*> m_classesp;  // All classes
+    std::vector<AstTypedef*> m_typedefsp;  // All typedefs
     AssignMap m_assignMap;  // List of all simple assignments for each variable
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
 
@@ -285,9 +285,9 @@ class DeadVisitor final : public VNVisitor {
 
     // STATE - Statistic tracking
     VDouble0 m_statFTasksDemoted;
-    VDouble0 m_statFTasksMDeadified;
-    VDouble0 m_statFTasksNMDeadified;
-    VDouble0 m_statFTasksVirtDeadified;
+    VDouble0 m_statFTasksMDeadified;  // Statistic, module function/tasks removed as dead
+    VDouble0 m_statFTasksNMDeadified;  // Statistic, non-module function/tasks removed as dead
+    VDouble0 m_statFTasksVirtDeadified;  // Statistic, virtual function/tasks removed as dead
 
     // METHODS
 
@@ -361,7 +361,7 @@ class DeadVisitor final : public VNVisitor {
         checkAll(nodep);
         if (nodep->scopep()) nodep->scopep()->user1Inc();
         // Keep formal arguments
-        for (AstVar* varp = nodep->argsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
+        for (AstVar* const varp : nodep->argspList()) {
             varp->user1Inc();
             varp->user2(1);
         }
@@ -415,6 +415,12 @@ class DeadVisitor final : public VNVisitor {
                 nodep->classOrPackagep()->user1Inc();
             }
         }
+    }
+    void visit(AstSchemaRef* nodep) override {
+        if (!m_sideEffect && !nodep->isPure()) m_sideEffect = true;
+        iterateChildren(nodep);
+        checkAll(nodep);
+        if (nodep->classOrPackagep()) nodep->classOrPackagep()->user1Inc();
     }
     void visit(AstModportFTaskRef* nodep) override {
         iterateChildren(nodep);
@@ -485,7 +491,7 @@ class DeadVisitor final : public VNVisitor {
         }
         checkAll(nodep);
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         iterateChildren(nodep);
         if (nodep->varp()) nodep->varp()->user1Inc();
         if (nodep->fromp()->dtypep()) nodep->fromp()->dtypep()->user1Inc();  // classref
@@ -788,8 +794,7 @@ class DeadVisitor final : public VNVisitor {
                 if (const AstNodeUOrStructDType* const classp
                     = VN_CAST((*it), NodeUOrStructDType)) {
                     bool cont = true;
-                    for (AstMemberDType* memberp = classp->membersp(); memberp;
-                         memberp = VN_AS(memberp->nextp(), MemberDType)) {
+                    for (AstMemberDType* const memberp : classp->memberspList()) {
                         if (memberp->user1() != 0) {
                             cont = false;
                             break;

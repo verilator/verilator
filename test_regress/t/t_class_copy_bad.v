@@ -20,5 +20,7 @@ module t;
     Cls c1;
     Other co;
     c1 = new co;  // Bad, incompatible types
+    c1 = new 5;  // Bad, non-class source
+    c1 = new null;  // Bad, literal-null source
   end
 endmodule

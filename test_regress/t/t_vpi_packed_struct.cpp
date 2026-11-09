@@ -264,6 +264,29 @@ static void checkProperties() {
     TestVpiHandle pshih = handle("PS.hi");
     TEST_CHECK_EQ(vpi_get(vpiSize, pshih), 4);
     TEST_CHECK_HEX_EQ(getInt(pshih), 0x3);
+    // Nested parameter members
+    TestVpiHandle pnh = handle("PN");
+    TEST_CHECK_HEX_EQ(getInt(pnh), 0x57c3c6);
+    TestVpiHandle pninnerhih = handle("PN.inner.hi");
+    TEST_CHECK_HEX_EQ(getInt(pninnerhih), 0x7);
+    TestVpiHandle pninnerloh = handle("PN.inner.lo");
+    TEST_CHECK_HEX_EQ(getInt(pninnerloh), 0x3);
+    TestVpiHandle pnpah = handle("PN.pa");
+    TEST_CHECK_HEX_EQ(getInt(pnpah), 0xc6);
+    // Wide parameter array, elements entSize apart
+    TestVpiHandle pw0b8h = handle("PW[0].b8");
+    TEST_CHECK_HEX_EQ(getInt(pw0b8h), 0x11);
+    TestVpiHandle pw1b8h = handle("PW[1].b8");
+    TEST_CHECK_HEX_EQ(getInt(pw1b8h), 0x5a);
+    TestVpiHandle pw1lowh = handle("PW[1].low");
+    TEST_CHECK_HEX_EQ(getInt(pw1lowh), 0x12345);
+    // Two unpacked and two packed dims
+    TestVpiHandle p4dhih = handle("P4D[1][0][1].hi");
+    TEST_CHECK_HEX_EQ(getInt(p4dhih), 0x9);
+    TestVpiHandle p4deh = handle("P4D[1][0][1].e");
+    TEST_CHECK_HEX_EQ(getInt(p4deh), 0x3);
+    TestVpiHandle p4dloh = handle("P4D[0][1][0].lo");
+    TEST_CHECK_HEX_EQ(getInt(p4dloh), 0x04);
 
     // vpiPacked is only supported on struct/union variables and parameters. IEEE 1800-2023 38.6
     // does not define the result elsewhere, Verilator flags an error
@@ -432,6 +455,15 @@ static void checkWide() {
                   true);
     TEST_CHECK_EQ(getStr(midh, vpiHexStrVal), "abcde");
     TEST_CHECK_HEX_EQ(getInt(lowh), 0);
+
+    // Wide unpacked array, elements entSize apart
+    TestVpiHandle uwh = handle("uw");
+    TestVpiHandle uw1b8h = handle("uw[1].b8");
+    putInt(uw1b8h, 0x5a);
+    TestVpiHandle uw0h = vpi_handle_by_index(uwh, 0);
+    TestVpiHandle uw1h = vpi_handle_by_index(uwh, 1);
+    TEST_CHECK_EQ(getVec(uw0h) == (std::vector<PLI_UINT32>{0, 0, 0, 0}), true);
+    TEST_CHECK_EQ(getVec(uw1h) == (std::vector<PLI_UINT32>{0x05a00000, 0, 0, 0}), true);
 }
 
 static void checkArrays() {
@@ -558,6 +590,10 @@ extern "C" int mon_check_cbs() {
     checkCbs();
     return errors;
 }
+
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp() { return mon_check(); }
+int mon_check_cbs_cpp() { return mon_check_cbs(); }
 
 #ifdef IS_VPI
 static int mon_check_vpi(PLI_BYTE8*) {

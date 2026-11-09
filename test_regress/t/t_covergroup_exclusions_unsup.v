@@ -70,6 +70,18 @@ module t;
     }
   endgroup
 
+  // A non-integral transition value, in a sequence of more values than generated matching takes
+  // verilog_format: off
+`define SEQ8 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1
+`define SEQ64 `SEQ8 => `SEQ8 => `SEQ8 => `SEQ8 => `SEQ8 => `SEQ8 => `SEQ8 => `SEQ8
+  covergroup cg_long_transition;
+    cp: coverpoint value {
+      bins text = (`SEQ64
+                   => TEXT);
+    }
+  endgroup
+  // verilog_format: on
+
   cg_values values_cov = new;
   cg_sized sized_cov = new(1.0);
   cg_wild_runs wild_runs_cov = new;
@@ -77,6 +89,31 @@ module t;
   cg_transition transition_cov = new;
   cg_cross cross_cov = new;
   cg_wild_runs_illegal wild_runs_illegal_cov = new;
+  cg_long_transition long_transition_cov = new;
+
+  // A covergroup elaborated twice (two parameterizations).  Each of its values is reported once,
+  // for the elaboration processed first; the other's identical reports are suppressed as
+  // repeats, and must be handled without an internal error or another report.
+  sub #(.P(0)) sub0 ();
+  sub #(.P(1)) sub1 ();
 
   initial $finish;
+endmodule
+
+module sub #(
+    parameter int P = 0
+);
+  localparam string TEXT = "a";
+  bit [3:0] value;
+  int variable;
+
+  covergroup cg;
+    cp: coverpoint value {
+      bins text = (1 => TEXT);
+      bins nonconst = (1 => variable);
+      ignore_bins ignored = {0};
+    }
+  endgroup
+
+  cg cov = new;
 endmodule

@@ -108,8 +108,7 @@ AstAssignW* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& n
 
 AstRange* V3ParseGrammar::scrubRangeMulti(AstNodeRange* nrangep) {
     // Remove any UnsizedRange's from list; preserves multi-dim chain via nextp().
-    for (AstNodeRange *nodep = nrangep, *nextp; nodep; nodep = nextp) {
-        nextp = VN_AS(nodep->nextp(), NodeRange);
+    for (AstNodeRange* const nodep : VNList<AstNodeRange>{nrangep}) {
         if (!VN_IS(nodep, Range)) {
             nodep->v3error(
                 "Unsupported or syntax error: Unsized range in instance or other declaration");
@@ -191,7 +190,7 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
 }
 
 AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
-                                       AstNodeRange* arrayp, AstNode* attrsp) {
+                                       AstNodeRange* arrayp, AstAttrOf* attrsp) {
     UINFO(5, "  creVar " << name << "  decl=" << GRAMMARP->m_varDecl << "  io="
                          << GRAMMARP->m_varIO << "  dt=" << (GRAMMARP->m_varDTypep ? "set" : ""));
     if (GRAMMARP->m_varIO == VDirection::NONE  // In non-ANSI port list

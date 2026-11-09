@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+// Call the C++-linkage wrapper of a test function, as $c cannot declare an extern "C" function
+`define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
+
 `ifdef USE_VPI_NOT_DPI
 //We call it via $c so we can verify DPI isn't required - see bug572
 `else
@@ -20,12 +23,6 @@ module t (/*AUTOARG*/
   struct_array_port, struct_matrix_port, struct_with_packed_arrays_port,
   wire_unpacked_struct_port, wire_struct_array_port
   );
-
-`ifdef VERILATOR
-`systemc_header
-extern "C" int mon_check();
-`verilog
-`endif
 
   input clk;
 
@@ -180,9 +177,7 @@ extern "C" int mon_check();
   longint        long1          /*verilator public_flat_rw */;
   real           real1          /*verilator public_flat_rw */;
   string         str1           /*verilator public_flat_rw */;
-  // specifically public and not public_flat_rw here so as to induce the C++
-  // keyword collision
-  localparam int nullptr        /*verilator public */ = 123;
+  localparam int nullptr        /*verilator public_flat */ = 123;
 
   logic [31:0] some_mem [4] /* verilator public_flat_rd */ = {0, 0, 0, 432};
 
@@ -252,7 +247,7 @@ extern "C" int mon_check();
 `endif
 
 `ifdef VERILATOR
-    status = $c32("mon_check()");
+    status = `CPP_CALL(mon_check);
 `endif
 `ifdef IVERILOG
     status = $mon_check();
@@ -260,7 +255,7 @@ extern "C" int mon_check();
 `ifndef USE_VPI_NOT_DPI
     status = mon_check();
 `endif
-    if (status!=0) begin
+    if (status !=0 ) begin
       $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);
       $stop;
     end

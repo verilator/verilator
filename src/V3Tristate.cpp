@@ -140,7 +140,7 @@ public:
 
 class TristateVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(TristateVertex, V3GraphVertex)
-    AstNode* const m_nodep;
+    AstNode* const m_nodep;  // Node this vertex represents
     bool m_isTristate = false;  // Logic indicates a tristate
     bool m_feedsTri = false;  // Propagates to a tristate node (on RHS)
     bool m_processed = false;  // Tristating was cleaned up
@@ -349,7 +349,7 @@ public:
 // See also V3LinkLValue::linkLValueSet
 
 class TristatePinVisitor final : public TristateBaseVisitor {
-    TristateGraph& m_tgraph;
+    TristateGraph& m_tgraph;  // Tristate graph being updated
     const bool m_lvalue;  // Flip to be an LVALUE
     // VISITORS
     // AstNodeVarRef, not just AstVarRef: a cross-hierarchy pin expression into an
@@ -525,7 +525,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstModport* findModportForDotted(AstNodeModule* modp, const string& dottedPath) {
         if (dottedPath.empty()) return nullptr;
         const string firstComp = dottedPath.substr(0, dottedPath.find('.'));
-        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : modp->stmtspList()) {
             AstVar* const ivarp = VN_CAST(stmtp, Var);
             if (!ivarp || ivarp->name() != firstComp) continue;
             const AstIfaceRefDType* const ifaceDtp
@@ -554,7 +554,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
     // Add a ModportVarRef for varp to modportp if not already present
     void addModportVarRefIfMissing(AstModport* modportp, AstVar* varp, VDirection dir) {
-        for (AstNode* mrp = modportp->varsp(); mrp; mrp = mrp->nextp()) {
+        for (AstNode* const mrp : modportp->varspList()) {
             AstModportVarRef* const mvrp = VN_CAST(mrp, ModportVarRef);
             if (mvrp && mvrp->varp() == varp) return;  // Already present
         }
@@ -577,10 +577,10 @@ class TristateVisitor final : public TristateBaseVisitor {
                 ownerModp->addStmtsp(newp);
                 // Add __en to any modports that reference the original var,
                 // so VarXRefs through modport paths can resolve it.
-                for (AstNode* stmtp = ownerModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                for (AstNode* const stmtp : ownerModp->stmtspList()) {
                     AstModport* const modportp = VN_CAST(stmtp, Modport);
                     if (!modportp) continue;
-                    for (AstNode* mrp = modportp->varsp(); mrp; mrp = mrp->nextp()) {
+                    for (AstNode* const mrp : modportp->varspList()) {
                         AstModportVarRef* const mvrp = VN_CAST(mrp, ModportVarRef);
                         if (mvrp && mvrp->varp() == invarp) {
                             addModportVarRefIfMissing(modportp, newp, VDirection::INPUT);
@@ -676,8 +676,8 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     void mapInsertLhsVarRef(AstNodeVarRef* nodep) {
         UINFO(9, "    mapInsertLhsVarRef " << nodep);
-        AstVar* const key = nodep->varp();
-        const auto pair = m_lhsmap.emplace(key, nullptr);
+        AstVar* const keyp = nodep->varp();
+        const auto pair = m_lhsmap.emplace(keyp, nullptr);
         if (pair.second) pair.first->second = new RefStrengthVec;
         AstNodeExpr* enLhsp = nullptr;
         AstNodeVarRef* enVarrefp = nullptr;
@@ -686,7 +686,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Struct and union resolver expressions require member-wise lowering. Keep their
         // established per-assignment path until procedural coalescing provides that
         // representation.
-        const bool canCombineProcedural = !VN_IS(key->dtypep()->skipRefp(), NodeUOrStructDType);
+        const bool canCombineProcedural = !VN_IS(keyp->dtypep()->skipRefp(), NodeUOrStructDType);
         const AstNodeProcedure* const procedurep
             = enIt != m_assignEnps.end() && canCombineProcedural ? m_procedurep : nullptr;
         if (procedurep) {
@@ -736,14 +736,16 @@ class TristateVisitor final : public TristateBaseVisitor {
         bitPulls[bitIndex] = direction;
     }
 
-    AstConst* createPerBitPullConst(AstVar* varp) {
+    AstConst* createPerBitPullConst(AstVar* const varp) {
         // Create a constant with per-bit pull values.
-        // Bits without explicit pull default to pulldown (0).
+        // Bits without explicit pull retain the whole-variable pull direction.
         // V3Number::setBit silently no-ops if bitIndex exceeds the variable width.
         const auto& bitPulls = m_varAux(varp).bitPulls;
-        V3Number num{varp, varp->width(), 0};  // Start with all zeros
+        const AstPull* const pullp = m_varAux(varp).pullp;
+        V3Number num{varp, varp->width(), 0};
+        if (pullp && pullp->direction() == 1) num.setAllBits1();
         for (const auto& pair : bitPulls) {
-            if (pair.second == 1) num.setBit(pair.first, 1);
+            num.setBit(pair.first, pair.second);
         }  // LCOV_EXCL_LINE
         return new AstConst{varp->fileline(), num};
     }
@@ -1085,15 +1087,16 @@ class TristateVisitor final : public TristateBaseVisitor {
         AstNodeExpr* orp = nullptr;
         AstNodeExpr* enp = nullptr;
 
-        std::sort(refsp->begin(), refsp->end(),
-                  [](RefStrength a, RefStrength b) { return a.m_strength > b.m_strength; });
+        std::sort(refsp->begin(), refsp->end(), [](const RefStrength& a, const RefStrength& b) {
+            return a.m_strength > b.m_strength;
+        });
 
         RefStrengthVec::iterator beginStrength = refsp->begin();
         while (beginStrength != refsp->end()) {
             RefStrengthVec::iterator endStrength = beginStrength + 1;
             while (endStrength != refsp->end()
                    && endStrength->m_strength == beginStrength->m_strength)
-                endStrength++;
+                ++endStrength;
 
             FileLine* const fl = beginStrength->m_varrefp->fileline();
             // For interface tristate vars, uniquify strength var names by including the
@@ -1227,14 +1230,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 undrivenp = newAllZerosOrOnes(invarp, true);  // LCOV_EXCL_LINE
             }
 
-            AstConst* pullConstp;
-            if (hasPerBitPulls(lhsp)) {
-                pullConstp = createPerBitPullConst(lhsp);
-            } else {
-                const AstPull* const pullp = m_varAux(lhsp).pullp;
-                const bool pull1 = pullp && pullp->direction() == 1;
-                pullConstp = newAllZerosOrOnes(invarp, pull1);
-            }
+            AstConst* const pullConstp = createPerBitPullConst(lhsp);
 
             undrivenp = new AstAnd{invarp->fileline(), undrivenp, pullConstp};
             orp = orp ? new AstOr{invarp->fileline(), orp, undrivenp} : undrivenp;
@@ -1305,8 +1301,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     uint8_t getStrength(const AstAssignW* const nodep, bool value) {
-        if (AstStrengthSpec* const strengthSpec = nodep->strengthSpecp()) {
-            return value ? strengthSpec->strength1() : strengthSpec->strength0();
+        if (AstStrengthSpec* const strengthSpecp = nodep->strengthSpecp()) {
+            return value ? strengthSpecp->strength1() : strengthSpecp->strength0();
         }
         return VStrength::STRONG;  // default strength is strong
     }
@@ -1346,12 +1342,12 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     AstNodeExpr* newMergeExpr(AstNodeExpr* const lhsp, AstNodeExpr* const rhsp, FileLine* const fl,
                               bool isWor) {
-        AstNodeExpr* expr = nullptr;
+        AstNodeExpr* exprp = nullptr;
         if (isWor)
-            expr = new AstOr{fl, lhsp, rhsp};
+            exprp = new AstOr{fl, lhsp, rhsp};
         else
-            expr = new AstAnd{fl, lhsp, rhsp};
-        return expr;
+            exprp = new AstAnd{fl, lhsp, rhsp};
+        return exprp;
     }
 
     void mergeWiredNetsAssignments() {
@@ -1367,19 +1363,19 @@ class TristateVisitor final : public TristateBaseVisitor {
             FileLine* const fl = assignWp0->fileline();
             AstNodeExpr* wExp = nullptr;
             while (++it != assigns.end()) {
-                AstAssignW* assignWpi = *it;
+                AstAssignW* assignWpip = *it;
                 if (!wExp) {
-                    wExp
-                        = newMergeExpr(assignWp0->rhsp()->cloneTreePure(false),
-                                       assignWpi->rhsp()->cloneTreePure(false), fl, varp->isWor());
+                    wExp = newMergeExpr(assignWp0->rhsp()->cloneTreePure(false),
+                                        assignWpip->rhsp()->cloneTreePure(false), fl,
+                                        varp->isWor());
                 } else {
-                    wExp = newMergeExpr(wExp, assignWpi->rhsp()->cloneTreePure(false), fl,
+                    wExp = newMergeExpr(wExp, assignWpip->rhsp()->cloneTreePure(false), fl,
                                         varp->isWor());
                 }
-                VL_DO_DANGLING((assignWpi->unlinkFrBack()->deleteTree()), assignWpi);
+                VL_DO_DANGLING((assignWpip->unlinkFrBack()->deleteTree()), assignWpip);
             }
-            AstVarRef* const wVarRef = new AstVarRef{fl, varp, VAccess::WRITE};
-            AstAssignW* const wAssignp = new AstAssignW{fl, wVarRef, wExp};
+            AstVarRef* const wVarRefp = new AstVarRef{fl, varp, VAccess::WRITE};
+            AstAssignW* const wAssignp = new AstAssignW{fl, wVarRefp, wExp};
             assignWp0->replaceWith(wAssignp);
             VL_DO_DANGLING(pushDeletep(assignWp0), assignWp0);
             assigns.clear();
@@ -1542,9 +1538,13 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     void visit(AstExprStmt* nodep) override {
-        iterateChildren(nodep);
+        {
+            // Not an lvalue, so on an LHS only as an index, which is read
+            VL_RESTORER(m_alhs);
+            m_alhs = false;
+            iterateChildren(nodep);
+        }
         if (m_graphing) {
-            UASSERT_OBJ(!m_alhs, nodep, "AstExprStmt node on the LHS of assignment");
             associateLogic(nodep->resultp(), nodep);
         } else if (nodep->resultp()->user1p()) {
             nodep->user1p(getEnp(nodep->resultp()));
@@ -1636,6 +1636,17 @@ class TristateVisitor final : public TristateBaseVisitor {
                     expr2p->user1p(nullptr);
                 }
             }
+        }
+    }
+
+    void visit(AstNodeConsItem* nodep) override {
+        iterateChildren(nodep);
+        // Unpacked aggregates have no enables, so Z bits of an item read as 0,
+        // as they do for a Z assigned to a non-tristate variable
+        if (m_graphing) return;
+        if (AstNode* const enp = nodep->valuep()->user1p()) {
+            nodep->valuep()->user1p(nullptr);
+            VL_DO_DANGLING(pushDeletep(enp), enp);
         }
     }
 
@@ -1808,7 +1819,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     }
                 } else {
                     // Don't set user1p here as there are no handlers for many LHS node types
-                    // (ArraySel, MemberSel, StructSel, etc.) and checkUnhandled() would error.
+                    // (ArraySel, MemberRef, StructSel, etc.) and checkUnhandled() would error.
                     m_tgraph.didProcess(nodep, true);
                 }
             }
@@ -1852,7 +1863,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (nodep->user2() & U2_GRAPHING) return;
             m_alhs = true;  // In AstAlias all operands should be considered as lhs
             iterateChildren(nodep);
-            for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+            for (AstNode* const itemp : nodep->itemspList()) {
                 associateLogic(itemp, nodep);
                 associateLogic(nodep, itemp);
             }
@@ -2298,13 +2309,13 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (m_graphing) {
             if (nodep->access().isWriteOrRW()) associateLogic(nodep, nodep->varp());
             if (nodep->access().isReadOrRW()) associateLogic(nodep->varp(), nodep);
-            // Only interface tristate nets need this: a plain (non-Z) cross-hierarchy
-            // driver has no Z in its own module's graph, so mark the net tristate here to
-            // collect the driver as a contribution. The ifaceTristate flag is only set for
-            // interface nets; a non-interface cross-module tri driver does nothing here and
-            // is instead rejected (E_UNSUPPORTED) later in insertTristates.
+            // A plain (non-Z) cross-hierarchy driver has no Z in its own module's graph, so
+            // mark a net already known tristate (interface net, or a net whose module already
+            // created its __en) tristate here. Interface nets collect the driver as a
+            // contribution; a non-interface cross-module tri driver is rejected
+            // (E_UNSUPPORTED) later in insertTristates.
             if (nodep->access().isWriteOrRW() && VN_IS(nodep, VarXRef)
-                && m_varAux(nodep->varp()).ifaceTristate) {
+                && (m_varAux(nodep->varp()).ifaceTristate || nodep->varp()->user1p())) {
                 m_tgraph.setTristate(nodep->varp());
             }
         } else {
@@ -2538,7 +2549,7 @@ public:
         // own graph to mark the net tristate, so without this its driver would be dropped.
         // Collect only the interfaces (reverse declaration order to match the pass below).
         std::vector<AstNodeModule*> ifacesp;
-        for (AstNode* modp = netlistp->modulesp(); modp; modp = modp->nextp()) {
+        for (AstNode* const modp : netlistp->modulespList()) {
             if (VN_IS(modp, Iface)) ifacesp.push_back(VN_AS(modp, NodeModule));
         }
         for (auto it = ifacesp.rbegin(); it != ifacesp.rend(); ++it) iterate(*it);

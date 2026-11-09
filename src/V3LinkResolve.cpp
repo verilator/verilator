@@ -28,6 +28,7 @@
 
 #include "V3LinkResolve.h"
 
+#include "V3Control.h"
 #include "V3String.h"
 #include "V3Task.h"
 
@@ -40,7 +41,7 @@ class LinkResolveVisitor final : public VNVisitor {
     // NODE STATE
     //  Entire netlist:
     //   AstCaseItem::user2()   // bool     Moved default caseitems
-    //   AstNodeFTaskRef::user2()  // bool  Processing - to check for recursion
+    //   AstLet::user2()        // bool     Processing - to check for recursion
     const VNUser2InUse m_inuser2;
 
     // STATE
@@ -51,6 +52,13 @@ class LinkResolveVisitor final : public VNVisitor {
     int m_senitemCvtNum = 0;  // Temporary signal counter
     std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
+
+    // METHODS
+    void warnUnoptPublic(AstNode* nodep, const std::string& what, const std::string& instead) {
+        nodep->v3warn(UNOPTPUBLIC, what << " prevents optimization\n"
+                                        << nodep->warnMore() << "... Suggest use " << instead
+                                        << " instead");
+    }
 
     // VISITORS
     // TODO: Most of these visitors are here for historical reasons.
@@ -70,7 +78,7 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
         m_classp = nodep;
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->memberspList()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (!varp->isParam()) varp->varType(VVarType::MEMBER);
             }
@@ -93,6 +101,7 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->isSigModPublic()) {
             nodep->sigModPublic(false);  // We're done with this attribute
             m_modp->modPublic(true);  // Avoid flattening if signals are exposed
+            warnUnoptPublic(nodep, "Public signal " + nodep->prettyNameQ(), "'public_flat_rw'");
         }
     }
 
@@ -120,7 +129,6 @@ class LinkResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeFTask* nodep) override {
-        // Note AstLet is handled specifically elsewhere
         // NodeTask: Remember its name for later resolution
         if (m_underGenerate) nodep->underGenerate(true);
         // Remember the existing symbol table scope
@@ -137,8 +145,8 @@ class LinkResolveVisitor final : public VNVisitor {
 
         if (nodep->lifetime().isAutomatic() && nodep->fvarp()) {
             // Must clear automatic function output variable on function invocation
-            AstVar* const fvarp = VN_AS(nodep->fvarp(), Var);
-            AstNode* const crstp = new AstAssign{
+            AstVar* const fvarp = nodep->fvarp();
+            AstAssign* const crstp = new AstAssign{
                 fvarp->fileline(), new AstVarRef{fvarp->fileline(), fvarp, VAccess::WRITE},
                 new AstCReset{fvarp->fileline(), fvarp, false}};
             fvarp->noCReset(true);
@@ -147,9 +155,9 @@ class LinkResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
-    void visit(AstNodeFTaskRef* nodep) override {
+    void visit(AstSchemaRef* nodep) override {
         iterateChildren(nodep);
-        if (AstLet* letp = VN_CAST(nodep->taskp(), Let)) {
+        if (AstLet* letp = VN_CAST(nodep->schemap(), Let)) {
             UINFO(7, "letSubstitute() " << nodep << " <- " << letp);
             if (letp->user2()) {
                 nodep->v3error("Recursive let substitution " << letp->prettyNameQ());
@@ -163,10 +171,8 @@ class LinkResolveVisitor final : public VNVisitor {
             }
             // UINFOTREE(9, letp, "", "let-let");
             // UINFOTREE(9, nodep, "", "let-ref");
-            // cppcheck-suppress constVariablePointer
-            AstStmtExpr* const letStmtp = VN_AS(letp->stmtsp(), StmtExpr);
-            AstNodeExpr* const newp = letStmtp->exprp()->cloneTree(false);
-            const V3TaskConnects tconnects = V3Task::taskConnects(nodep, letp->stmtsp());
+            AstNodeExpr* const newp = letp->exprp()->cloneTree(false);
+            const V3TaskConnects tconnects = V3Task::taskConnects(nodep);
             std::map<const AstVar*, AstNodeExpr*> portToExprs;
             for (const auto& tconnect : tconnects) {
                 const AstVar* const portp = tconnect.first;
@@ -224,20 +230,28 @@ class LinkResolveVisitor final : public VNVisitor {
             m_modp->hierBlock(v3Global.opt.hierarchical());
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (nodep->pragType() == VPragmaType::THREADS_GROUP) {
+            UASSERT_OBJ(m_modp, nodep, "THREADS_GROUP not under a module");
+            // The top module is the whole model, not a group within it. With --hierarchical, this
+            // is the case for a hier_block in its own Verilation. A library stub, such as a
+            // hier_block in its parent's Verilation, holds no logic to group.
+            m_modp->threadsGroup(!m_modp->isTop() && !m_modp->verilatorLib()
+                                 && V3Control::isThreadsGroupAtThreads(m_modp));
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (nodep->pragType() == VPragmaType::PUBLIC_MODULE) {
             UASSERT_OBJ(m_modp, nodep, "PUBLIC_MODULE not under a module");
             m_modp->modPublic(true);
+            warnUnoptPublic(nodep, "Public module " + m_modp->prettyNameQ(),
+                            "'public_flat_rw' on only the needed signals");
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (nodep->pragType() == VPragmaType::PUBLIC_TASK) {
             UASSERT_OBJ(m_ftaskp, nodep, "PUBLIC_TASK not under a task");
             m_ftaskp->taskPublic(true);
             m_modp->modPublic(true);  // Need to get to the task...
-            nodep->unlinkFrBack();
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (nodep->pragType() == VPragmaType::VERILATOR_LIB) {
-            UASSERT_OBJ(m_modp, nodep, "VERILATOR_LIB not under a module");
-            m_modp->verilatorLib(true);
+            warnUnoptPublic(nodep, "Public task/function " + m_ftaskp->prettyNameQ(),
+                            "DPI export");
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {
@@ -393,7 +407,7 @@ class LinkResolveVisitor final : public VNVisitor {
         } else {
             // Massive hack, just tie off all outputs so our analysis can proceed
             const AstVar* varoutp = nullptr;
-            for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            for (AstNode* const stmtp : m_modp->stmtspList()) {
                 if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                     if (varp->isReadOnly()) {
                     } else if (varp->isWritable()) {

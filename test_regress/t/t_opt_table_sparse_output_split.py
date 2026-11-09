@@ -27,7 +27,7 @@ test.compile(verilator_flags2=["--stats", "--output-split 1"])
 
 if test.vlt_all:
     test.file_grep(test.stats, r'Optimizations, Tables created\s+(\d+)', 1)
-    test.file_grep(test.stats, r'ConstPool, Tables emitted\s+(\d+)', 2)
+    test.file_grep(test.stats, r'ConstPool, CONSARRAY emitted\s+(\d+)', 2)
 
 # Splitting should set VM_PARALLEL_BUILDS to 1 by default
 test.file_grep(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", r'VM_PARALLEL_BUILDS\s*=\s*1')

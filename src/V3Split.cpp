@@ -78,7 +78,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class SplitNodeVertex VL_NOT_FINAL : public V3GraphVertex {
     VL_RTTI_IMPL(SplitNodeVertex, V3GraphVertex)
-    AstNode* const m_nodep;
+    AstNode* const m_nodep;  // Node this vertex represents
 
 protected:
     SplitNodeVertex(V3Graph* graphp, AstNode* nodep)
@@ -162,7 +162,7 @@ class SplitVisitor final : public VNVisitor {
     // Iterate the given list of statements, building the dependency graph
     void scanBlock(AstNode* stmtsp) {
         if (m_noSplitWhy) return;
-        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : VNList<AstNode>{stmtsp}) {
             // Skip comments. They have no dependencies at all, so would always
             // form an independent component, and hence a split block, of their
             // own, which would be subsequently deleted as it does nothing.
@@ -223,11 +223,9 @@ class SplitVisitor final : public VNVisitor {
     }
 
     // Take the statements of the given list, and return them distributed into one list per color.
-    static std::vector<AstNode*> splitStatements(AstNode* stmtsp, uint32_t numColors) {
-        std::vector<AstNode*> result{numColors, nullptr};
-        for (AstNode *stmtp = stmtsp, *nextp = nullptr; stmtp; stmtp = nextp) {
-            nextp = stmtp->nextp();  // 'stmtp' is unlinked below
-
+    static std::vector<AstNodeStmt*> splitStatements(AstNode* stmtsp, uint32_t numColors) {
+        std::vector<AstNodeStmt*> result{numColors, nullptr};
+        for (AstNode* const stmtp : VNList<AstNode>{stmtsp}) {
             // Comments are dropped if the block is split
             if (VN_IS(stmtp, Comment)) continue;
 
@@ -271,7 +269,8 @@ class SplitVisitor final : public VNVisitor {
 
             // Move the leaf into its color's list
             const uint32_t color = vtxp->color();
-            result[color] = AstNode::addNext(result[color], stmtp->unlinkFrBack());
+            result[color]
+                = AstNode::addNext(result[color], VN_AS(stmtp, NodeStmt)->unlinkFrBack());
         }
         return result;
     }
@@ -331,7 +330,7 @@ class SplitVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
         const VAlwaysKwd kwd = nodep->keyword();
         for (size_t i = 1; i < numColors; ++i) {
-            AstNode* const stmtsp = lists[i];
+            AstNodeStmt* const stmtsp = lists[i];
             UASSERT_OBJ(stmtsp, nodep, "Color with no statements");
             AstAlways* const newp = new AstAlways{flp, kwd, nullptr, stmtsp};
             newp->user3(1);  // Do not split again
@@ -369,7 +368,7 @@ class SplitVisitor final : public VNVisitor {
         iterate(nodep->lhsp());
     }
 
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         // A variable selected through a handle can be the same as one accessed otherwise, which
         // is not known here, so the accesses must be kept in order
         if (m_graphp) m_noSplitWhy = "Handle";
@@ -379,6 +378,11 @@ class SplitVisitor final : public VNVisitor {
     void visit(AstJumpGo*) override {
         if (!m_graphp || m_noSplitWhy) return;
         m_noSplitWhy = "JumpGo";
+    }
+
+    void visit(AstNodeCCall*) override {
+        if (!m_graphp || m_noSplitWhy) return;
+        m_noSplitWhy = "CCall";
     }
 
     void visit(AstVarRef* nodep) override {

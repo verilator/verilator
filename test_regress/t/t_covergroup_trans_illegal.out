@@ -1,0 +1,4 @@
+No illegal transition completed.
+[0] %Error: t_covergroup_trans_illegal.v:18: Assertion failed in top.t.cg.sample: Illegal transition bin 'bad_long' hit in coverpoint 'cp'
+%Error: t/t_covergroup_trans_illegal.v:18: Verilog $stop
+Aborting...

@@ -56,15 +56,15 @@ class TableVisitor;
 
 class TableSimulateVisitor final : public SimulateVisitor {
     // MEMBERS
-    TableVisitor* const m_cbthis;  ///< Class for callback
+    TableVisitor* const m_cbthisp;  ///< Class for callback
 
 public:
     ///< Call other-this function on all new var references
     void varRefCb(AstVarRef* nodep) override;
 
     // CONSTRUCTORS
-    explicit TableSimulateVisitor(TableVisitor* cbthis)
-        : m_cbthis{cbthis} {}
+    explicit TableSimulateVisitor(TableVisitor* cbthisp)
+        : m_cbthisp{cbthisp} {}
     ~TableSimulateVisitor() override = default;
 };
 
@@ -73,7 +73,7 @@ public:
 
 class TableBuilder final {
     FileLine* const m_fl;  // FileLine used during construction
-    AstInitArray* m_initp = nullptr;  // The lookup table initializer values
+    AstConsArray* m_consp = nullptr;  // The lookup table initializer values
     AstVarScope* m_varScopep = nullptr;  // The scoped variable holding the table
 
 public:
@@ -81,40 +81,40 @@ public:
         : m_fl{fl} {}
 
     ~TableBuilder() {
-        if (m_initp) VL_DO_DANGLING(m_initp->deleteTree(), m_initp);
+        if (m_consp) VL_DO_DANGLING(m_consp->deleteTree(), m_consp);
     }
 
-    void setTableSize(AstNodeDType* elemDType, unsigned size) {
-        UASSERT_OBJ(!m_initp, m_fl, "Table size already set");
+    void setTableSize(AstNodeDType* elemDTypep, unsigned size) {
+        UASSERT_OBJ(!m_consp, m_fl, "Table size already set");
         UASSERT_OBJ(size > 0, m_fl, "Size zero");
         // TODO: Assert elemDType is a packed type
         // Create data type
-        const int width = elemDType->width();
+        const int width = elemDTypep->width();
         AstNodeDType* const subDTypep
-            = elemDType->isString() || elemDType->isDouble()
-                  ? elemDType
+            = elemDTypep->isString() || elemDTypep->isDouble()
+                  ? elemDTypep
                   : v3Global.rootp()->findBitDType(width, width, VSigning::UNSIGNED);
         AstUnpackArrayDType* const tableDTypep = new AstUnpackArrayDType{
             m_fl, subDTypep, new AstRange{m_fl, static_cast<int>(size), 0}};
         v3Global.rootp()->typeTablep()->addTypesp(tableDTypep);
         // Create table initializer (with default value 0)
         AstConst* const defaultp
-            = elemDType->isString()   ? new AstConst{m_fl, AstConst::String{}, ""}
-              : elemDType->isDouble() ? new AstConst{m_fl, AstConst::RealDouble{}, 0.0}
-                                      : new AstConst{m_fl, AstConst::WidthedValue{}, width, 0};
-        m_initp = new AstInitArray{m_fl, tableDTypep, defaultp};
+            = elemDTypep->isString()   ? new AstConst{m_fl, AstConst::String{}, ""}
+              : elemDTypep->isDouble() ? new AstConst{m_fl, AstConst::RealDouble{}, 0.0}
+                                       : new AstConst{m_fl, AstConst::WidthedValue{}, width, 0};
+        m_consp = new AstConsArray{m_fl, tableDTypep, defaultp};
     }
 
     void addValue(unsigned index, const V3Number& value) {
         UASSERT_OBJ(!m_varScopep, m_fl, "Table variable already created");
         // Default value is zero/empty string so don't add it
         if (value.isString() ? value.toString().empty() : value.isEqZero()) return;
-        m_initp->addIndexValuep(index, new AstConst{m_fl, value});
+        m_consp->valuep(index, new AstConst{m_fl, value});
     }
 
     AstVarScope* varScopep() {
         if (!m_varScopep) {
-            AstVarRef* const refp = V3ConstPool::findTable(m_initp);
+            AstVarRef* const refp = V3ConstPool::find(m_consp);
             m_varScopep = refp->varScopep();
             VL_DO_DANGLING(refp->deleteTree(), refp);
         }
@@ -266,7 +266,7 @@ private:
         // Populate the tables
         createTables(nodep, outputAssignedTableBuilder);
 
-        AstNode* const stmtsp = createLookupInput(fl, indexVscp);
+        AstNodeStmt* const stmtsp = createLookupInput(fl, indexVscp);
         createOutputAssigns(nodep, stmtsp, indexVscp, outputAssignedTableBuilder.varScopep());
 
         // Link it in.
@@ -330,7 +330,7 @@ private:
         }  // each value
     }
 
-    AstNode* createLookupInput(FileLine* fl, AstVarScope* indexVscp) {
+    AstNodeStmt* createLookupInput(FileLine* fl, AstVarScope* indexVscp) {
         // Concat inputs into a single temp variable (inside always)
         // First var in inVars becomes the LSB of the concat
         AstNodeExpr* concatp = nullptr;
@@ -358,9 +358,9 @@ private:
         for (TableOutputVar& tov : m_outVarps) {
             AstNodeExpr* const alhsp = new AstVarRef{fl, tov.varScopep(), VAccess::WRITE};
             AstNodeExpr* const arhsp = select(fl, tov.tabeVarScopep(), indexVscp);
-            AstNode* outsetp = m_assignDly
-                                   ? static_cast<AstNode*>(new AstAssignDly{fl, alhsp, arhsp})
-                                   : static_cast<AstNode*>(new AstAssign{fl, alhsp, arhsp});
+            AstNodeStmt* outsetp
+                = m_assignDly ? static_cast<AstNodeStmt*>(new AstAssignDly{fl, alhsp, arhsp})
+                              : static_cast<AstNodeStmt*>(new AstAssign{fl, alhsp, arhsp});
 
             // If this output is unassigned on some code paths, wrap the assignment in an If
             if (tov.mayBeUnassigned()) {
@@ -413,7 +413,7 @@ public:
 void TableSimulateVisitor::varRefCb(AstVarRef* nodep) {
     // Called by checking on each new varref encountered
     // We cross-call into a TableVisitor function.
-    m_cbthis->simulateVarRefCb(nodep);
+    m_cbthisp->simulateVarRefCb(nodep);
 }
 
 //######################################################################

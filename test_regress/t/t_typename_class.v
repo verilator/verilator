@@ -199,6 +199,25 @@ class Others #(
 );
 endclass
 
+class PackedLogic #(
+    logic [2:1][4:1] P = 8'h5a
+);
+endclass
+// verilator lint_off ASCRANGE
+class PackedNested #(
+    bit [1:2][3:2][1:0] P = 8'b10_01_11_00
+);
+endclass
+// verilator lint_on ASCRANGE
+class PackedEnums #(
+    color_e [1:0] P = {BLUE, RED}
+);
+endclass
+class PackedStructs #(
+    ps_t [1:0] P = {5'h1f, 5'h02}
+);
+endclass
+
 // Classes within a class are named within its specialization
 class Outer #(
     int P = 1
@@ -547,6 +566,10 @@ module t;
   Aggregates aggregates;
   Reals reals;
   Others others;
+  PackedLogic packed_logic;
+  PackedNested packed_nested;
+  PackedEnums packed_enums;
+  PackedStructs packed_structs;
   Outer #(7)::Inner inner;
   Outer #(7)::Sub sub;
   pkg::Po::Pi pkg_inner;
@@ -614,12 +637,16 @@ module t;
     `checks($typename(bar_wrap2),
             "class $unit::Bar#(class $unit::Wrap2#(class $unit::Derived2#(4)))");
     `checks($typename(values_default),
-            "class $unit::Values#(1,15,4'b10xz,\"hi\",1.5,RED,3,5,-128)");
+            "class $unit::Values#(1,8'hf,4'b10xz,\"hi\",1.5,RED,3,5,-128)");
     `checks($typename(values),
-            "class $unit::Values#(-5,165,4'b1x0z,\"hello\",0.1,BLUE,7,4294967296,127)");
+            "class $unit::Values#(-5,8'ha5,4'b1x0z,\"hello\",0.1,BLUE,7,4294967296,127)");
     `checks($typename(aggregates), "class $unit::Aggregates#('{1,2},'{3,4},'{1:5,default:0})");
     `checks($typename(reals), "class $unit::Reals#(0.30000000000000004,1e+20,2.0)");
-    `checks($typename(others), "class $unit::Others#(3,L1,7,null)");
+    `checks($typename(others), "class $unit::Others#(3,L1,'{4'h3,1'h1},null)");
+    `checks($typename(packed_logic), "class $unit::PackedLogic#({4'h5,4'ha})");
+    `checks($typename(packed_nested), "class $unit::PackedNested#({{2'h2,2'h1},{2'h3,2'h0}})");
+    `checks($typename(packed_enums), "class $unit::PackedEnums#({BLUE,RED})");
+    `checks($typename(packed_structs), "class $unit::PackedStructs#({'{4'hf,1'h1},'{4'h1,1'h0}})");
     `checks($typename(inner), "class $unit::Outer#(7)::Inner");
     // Classes within a class (within a class)
     inner = new;

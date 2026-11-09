@@ -51,12 +51,13 @@ class LinkParseVisitor final : public VNVisitor {
     // If set, move AstVar->valuep() initial values to this module
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     AstVar* m_varp = nullptr;  // Variable we're under
-    AstNodeModule* m_valueModp = nullptr;
+    AstNodeModule* m_valueModp = nullptr;  // Module to move initial values into
     AstNodeModule* m_modp = nullptr;  // Current module
     bool m_inInterface = false;  // True when inside interface declaration
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
     AstRSProd* m_rsProdp = nullptr;  // Current randsequence production
+    AstNodeSchema* m_schemap = nullptr;  // Current let, sequence or property
     AstNodeBlock* m_blockp = nullptr;  // Current AstNodeBlock
     AstNodeStmt* m_blockAddAutomaticStmtp = nullptr;  // Initial statements to add to block
     AstNodeStmt* m_blockAddStaticStmtp = nullptr;  // Initial statements to add to block
@@ -146,8 +147,15 @@ class LinkParseVisitor final : public VNVisitor {
         // Try very hard to avoid false positives
         AstNode* nextp = nodep->nextp();
         if (!childp) return;
-        if (!nextp && VN_IS(nodep, Loop) && VN_IS(nodep->backp(), Begin))
-            nextp = nodep->backp()->nextp();
+        if (!nextp && VN_IS(nodep, Loop)) {
+            // Compare with what follows the begin ending with the loop, or with the next fork item
+            AstNode* abovep = nodep->backp();
+            if (VN_IS(abovep, Begin)) {
+                nextp = abovep->nextp();
+                abovep = abovep->backp();
+            }
+            if (!nextp && VN_IS(abovep, ForkItem)) nextp = abovep->nextp();
+        }
         if (!nextp) return;
         if (VN_IS(childp, Begin) || VN_IS(childp, GenBlock)) return;
         FileLine* const nodeFlp = nodep->fileline();
@@ -198,12 +206,12 @@ class LinkParseVisitor final : public VNVisitor {
         // V3LinkDot hasn't run yet, so have VAR for pre-IEEE 'input' and
         // separate var for pre-IEEE 'integer'.
         std::unordered_map<std::string, AstVar*> portNames;
-        for (AstNode* nodep = nodeListp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{nodeListp}) {
             if (AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (varp->isIO()) portNames.emplace(varp->name(), varp);
+                if (varp->isIO() && !varp->isFuncReturn()) portNames.emplace(varp->name(), varp);
             }
         }
-        for (AstNode* nodep = nodeListp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{nodeListp}) {
             if (AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isIO()) continue;
                 const auto it = portNames.find(varp->name());
@@ -217,14 +225,6 @@ class LinkParseVisitor final : public VNVisitor {
         }
     }
 
-    AstNode* getVarsAndUnlink(AstNode* stmtsp) {
-        AstNode* varsp = nullptr;
-        for (AstNode *nextp, *itemp = stmtsp; itemp; itemp = nextp) {
-            nextp = itemp->nextp();
-            if (VN_IS(itemp, Var)) varsp = AstNode::addNext(varsp, itemp->unlinkFrBack());
-        }
-        return varsp;
-    }
     AstNodeStmt* getBlockAdds() {
         AstNodeStmt* addsp = nullptr;
         // Add a single AstInitial...Stmt as the statements within may
@@ -268,8 +268,8 @@ class LinkParseVisitor final : public VNVisitor {
             if (nodep->classMethod()) {
                 // Class methods are automatic by default
                 m_lifetime = VLifetime::AUTOMATIC_IMPLICIT;
-            } else if (nodep->dpiImport() || VN_IS(nodep, Property)) {
-                // DPI-imported functions and properties don't have lifetime specifiers
+            } else if (nodep->dpiImport()) {
+                // DPI-imported functions don't have lifetime specifiers
                 m_lifetime = VLifetime::NONE;
             }
             nodep->lifetime(m_lifetime);
@@ -282,18 +282,18 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         VL_RESTORER_COPY(m_portDups);
-        collectPorts(nodep->stmtsp());
+        collectPorts(nodep->declsp());
 
         iterateChildren(nodep);
 
-        // If let, the statement must go first
-        AstNode* stmtsp = nullptr;
-        if (VN_IS(nodep, Let) && nodep->stmtsp()) stmtsp = nodep->stmtsp()->unlinkFrBack();
-        // Move all Vars to front of function
-        stmtsp = AstNode::addNextNull(stmtsp, getVarsAndUnlink(nodep->stmtsp()));
-        // Follow vars by m_blockAddp's (if any)
-        stmtsp = AstNode::addNextNull(stmtsp, getBlockAdds());
-        nodep->prependStmtsp(stmtsp);
+        // Variable initializations precede the statements
+        nodep->prependStmtsp(getBlockAdds());
+    }
+    void visit(AstNodeSchema* nodep) override {
+        cleanFileline(nodep);
+        VL_RESTORER(m_schemap);
+        m_schemap = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
     void visit(AstConstraint* nodep) override {
@@ -402,7 +402,7 @@ class LinkParseVisitor final : public VNVisitor {
                     nodep->lifetime(VLifetime::STATIC_IMPLICIT);
                 }
             }
-        } else if (m_ftaskp) {
+        } else if (m_ftaskp && !nodep->isFuncReturn()) {  // Return variables are created automatic
             // Variables in static tasks with timing control can be used after the task has ended
             // with use of join..fork_none, so they need to be static
             if (m_ftaskp->lifetime().isStatic() && m_hasTimingControl) {
@@ -454,15 +454,15 @@ class LinkParseVisitor final : public VNVisitor {
                         if (!rhsDotp) break;
                         FileLine* const fl = dotp->fileline();
                         const bool colon = dotp->colon();
-                        AstNodeExpr* const lhs = VN_AS(dotp->lhsp()->unlinkFrBack(), NodeExpr);
-                        AstNodeExpr* const rhsLhs
+                        AstNodeExpr* const lhsp = VN_AS(dotp->lhsp()->unlinkFrBack(), NodeExpr);
+                        AstNodeExpr* const rhsLhsp
                             = VN_AS(rhsDotp->lhsp()->unlinkFrBack(), NodeExpr);
-                        AstNodeExpr* const rhsRhs
+                        AstNodeExpr* const rhsRhsp
                             = VN_AS(rhsDotp->rhsp()->unlinkFrBack(), NodeExpr);
                         FileLine* const rhsFl = rhsDotp->fileline();
                         const bool rhsColon = rhsDotp->colon();
-                        AstDot* const newLhs = new AstDot{fl, colon, lhs, rhsLhs};
-                        exprp = new AstDot{rhsFl, rhsColon, newLhs, rhsRhs};
+                        AstDot* const newLhsp = new AstDot{fl, colon, lhsp, rhsLhsp};
+                        exprp = new AstDot{rhsFl, rhsColon, newLhsp, rhsRhsp};
                         VL_DO_DANGLING(dotp->deleteTree(), dotp);
                         dotp = VN_CAST(exprp, Dot);
                     }
@@ -486,7 +486,9 @@ class LinkParseVisitor final : public VNVisitor {
         // Maybe this variable has a signal attribute
         V3Control::applyVarAttr(m_modp, m_ftaskp, nodep);
 
-        if (v3Global.opt.anyPublicFlat() && nodep->varType().isVPIAccessible()) {
+        // The function return variable is not user visible
+        if (v3Global.opt.anyPublicFlat() && nodep->varType().isVPIAccessible()
+            && !nodep->isFuncReturn()) {
             if (v3Global.opt.publicFlatRW()) {
                 nodep->sigUserRWPublic(true);
             } else if (v3Global.opt.publicParams() && nodep->isParam()) {
@@ -531,9 +533,10 @@ class LinkParseVisitor final : public VNVisitor {
                 UINFO(9, "VarInit case0 " << nodep);
             } else if (nodep->isParam() || nodep->isGenVar()
                        || (m_ftaskp && (nodep->isNonOutput() || nodep->isFuncReturn()))
-                       || (m_rsProdp && nodep->isNonOutput())) {
-                // 1. Parameters, function inputs, and randsequence production formal
-                // ports (IEEE 1800-2023 18.17.7): default to use if not overridden
+                       || (m_rsProdp && nodep->isNonOutput()) || m_schemap) {
+                // 1. Parameters, function inputs, randsequence production formal
+                // ports (IEEE 1800-2023 18.17.7): default to use if not overridden.
+                // Variables of a let, sequence or property keep it too.
                 UINFO(9, "VarInit case1 " << nodep);
             } else if (!m_ftaskp && !VN_IS(m_modp, Class) && nodep->isNonOutput()
                        && !nodep->isInput()) {
@@ -588,6 +591,27 @@ class LinkParseVisitor final : public VNVisitor {
                 nodep->v3fatalSrc("Variable with initializer in unexpected position");
             }
         }
+    }
+    static bool isNegative(const AstConst* constp) {
+        return constp->isSigned() && constp->num().bitIs1(constp->width() - 1);
+    }
+    void visit(AstRange* nodep) override {
+        static constexpr uint64_t MAX_RANGE_ELEMENTS = 1 << 28;  // Same limit as V3Width
+        // Literal bounds are checked here as V3Width sees only int-wrapped values; a literal
+        // 32'hFFFF_FFFF reads there as -1, indistinguishable from a legitimate negative bound
+        const AstConst* const leftp = VN_CAST(nodep->leftp(), Const);
+        const AstConst* const rightp = VN_CAST(nodep->rightp(), Const);
+        if (leftp && rightp && leftp->width() <= 64 && rightp->width() <= 64 && !isNegative(leftp)
+            && !isNegative(rightp)) {
+            const uint64_t left = leftp->toUQuad();
+            const uint64_t right = rightp->toUQuad();
+            const uint64_t span = std::max(left, right) - std::min(left, right);
+            if (span >= MAX_RANGE_ELEMENTS) {
+                nodep->v3error("Width of bit range is huge; vector of over 1 billion bits: 0x"
+                               << std::hex << span + 1 << std::dec);
+            }
+        }
+        iterateChildren(nodep);
     }
     void visit(AstConst* nodep) override {
         if (nodep->num().autoExtend() && nodep->fileline()->language() < V3LangCode::L1800_2005) {
@@ -704,11 +728,13 @@ class LinkParseVisitor final : public VNVisitor {
             UINFO(9, "Reused impltypedef " << nodep << "  -->  " << defp);
         } else {
             // Definition must be inserted right after the variable (etc) that needed it
-            // AstVar, AstTypedef, AstNodeFTask, AstParamTypeDType are common containers
+            // AstVar, AstTypedef, AstNodeFTask, AstParamTypeDType are common containers.
+            // A function return variable is not in a list, so after its function instead.
             AstNode* backp = nodep->backp();
             for (; backp; backp = backp->backp()) {
-                if (VN_IS(backp, Var) || VN_IS(backp, Typedef) || VN_IS(backp, NodeFTask)
-                    || VN_IS(backp, ParamTypeDType))
+                const AstVar* const varp = VN_CAST(backp, Var);
+                if ((varp && !varp->isFuncReturn()) || VN_IS(backp, Typedef)
+                    || VN_IS(backp, NodeFTask) || VN_IS(backp, ParamTypeDType))
                     break;
             }
             UASSERT_OBJ(backp, nodep,
@@ -743,7 +769,7 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    void visit(AstNodeForeach* nodep) override {
+    void visit(AstForeach* nodep) override {
         // FOREACH(array, loopvars, body)
         UINFO(9, "FOREACH " << nodep);
         cleanFileline(nodep);
@@ -794,7 +820,6 @@ class LinkParseVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeModule* nodep) override {
-        V3Control::applyModule(nodep);
         ++m_statModules;
         if (VN_IS(nodep, Class) && VN_CAST(nodep, Class)->isInterfaceClass()
             && VN_IS(m_modp, Class) && VN_CAST(m_modp, Class)->isInterfaceClass()) {
@@ -968,12 +993,7 @@ class LinkParseVisitor final : public VNVisitor {
         if (AstFork* const forkp = VN_CAST(nodep, Fork)) iterateAndNextNull(forkp->forksp());
         // Add statements created by AstVar vistor; can't do as-go because iteration
         // would then get confused, additionally we did already iterate the contents
-        AstNode* stmtsp = nullptr;
-        // Move all Vars to front of function
-        stmtsp = AstNode::addNextNull(stmtsp, getVarsAndUnlink(nodep->stmtsp()));
-        // Follow vars by m_blockAddp's (if any)
-        stmtsp = AstNode::addNextNull(stmtsp, getBlockAdds());
-        nodep->prependStmtsp(stmtsp);
+        nodep->prependStmtsp(getBlockAdds());
     }
     void visit(AstCase* nodep) override {
         V3Control::applyCase(nodep);
@@ -1092,8 +1112,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_defaultInSkewp);
         VL_RESTORER(m_defaultOutSkewp);
         // Find default input and output skews
-        for (AstNode *nextp, *itemp = nodep->itemsp(); itemp; itemp = nextp) {
-            nextp = itemp->nextp();
+        for (AstNode* const itemp : nodep->itemspList()) {
             if (AstClockingItem* citemp = VN_CAST(itemp, ClockingItem)) {
                 if (citemp->exprp() || citemp->assignp()) continue;
                 if (citemp->skewp()) {
@@ -1184,14 +1203,14 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    // Return, for each arg in argsp, a parameter plus a "this.<member> = <param>"
-    // assignment.  The parameter is a clone of the covergroup member and so shares its
-    // name; 'this.' on the LHS targets the member, otherwise the same-named local parameter
-    // shadows it and the assignment self-assigns the parameter, leaving the member unwritten.
-    // argsp may be null (returns nullptr).
-    static AstNode* makeArgMemberCopies(AstNode* argsp, bool readOnlyRefs) {
-        AstNode* resultp = nullptr;
-        for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
+    // Add to funcp, for each arg in argsp, a parameter plus a "this.<member> = <param>"
+    // assignment before its statements.  The parameter is a clone of the covergroup member and
+    // so shares its name; 'this.' on the LHS targets the member, otherwise the same-named local
+    // parameter shadows it and the assignment self-assigns the parameter, leaving the member
+    // unwritten.
+    static void addArgMemberCopies(AstFunc* funcp, AstNode* argsp, bool readOnlyRefs) {
+        AstNodeStmt* copiesp = nullptr;
+        for (AstNode* const argp : VNList<AstNode>{argsp}) {
             AstVar* const origVarp = VN_AS(argp, Var);
             AstVar* const paramp = origVarp->cloneTree(false);
             FileLine* const fl = new FileLine{paramp->fileline()};
@@ -1200,14 +1219,14 @@ class LinkParseVisitor final : public VNVisitor {
             paramp->funcLocal(true);
             paramp->direction(origVarp->direction());
             if (readOnlyRefs && origVarp->isRef()) paramp->direction(VDirection::CONSTREF);
-            resultp = AstNode::addNextNull(resultp, paramp);
+            funcp->addDeclsp(paramp);
             AstNodeExpr* const lhsp = new AstDot{
                 origVarp->fileline(), false, new AstParseRef{origVarp->fileline(), "this"},
                 new AstParseRef{origVarp->fileline(), origVarp->name()}};
             AstNodeExpr* const rhsp = new AstParseRef{paramp->fileline(), paramp->name()};
-            resultp->addNext(new AstAssign{origVarp->fileline(), lhsp, rhsp});
+            copiesp = AstNode::addNext(copiesp, new AstAssign{origVarp->fileline(), lhsp, rhsp});
         }
-        return resultp;
+        funcp->prependStmtsp(copiesp);
     }
 
     // Create boilerplate covergroup methods on the given AstClass.
@@ -1219,18 +1238,18 @@ class LinkParseVisitor final : public VNVisitor {
         AstVar* const defaultVarp
             = new AstVar{nodep->fileline(), VVarType::MEMBER, "__Vint", nodep->findIntDType()};
         defaultVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        nodep->addStmtsp(defaultVarp);
+        nodep->addMembersp(defaultVarp);
 
         // Handle constructor arguments - add function parameters and assignments
         if (argsp) {
             UASSERT_OBJ(newFuncp, nodep,
                         "Covergroup class must have a 'new' constructor function");
             // The arg assignments run before the coverage body
-            newFuncp->prependStmtsp(makeArgMemberCopies(argsp, true));
+            addArgMemberCopies(newFuncp, argsp, true);
         }
 
         // IEEE: option / type_option members allow external access (cg_inst.option.X)
-        // and require std:: types; std:: is kept because setUsesStdPackage() is called
+        // and require std:: types; std:: is kept because importIfInStd() is called
         // at parse time for every covergroup declaration.
         {
             AstVar* const varp
@@ -1255,40 +1274,28 @@ class LinkParseVisitor final : public VNVisitor {
 
         // IEEE: function void sample([arguments])
         {
-            AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
-            funcp->addStmtsp(makeArgMemberCopies(sampleArgsp, false));
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample"};
+            addArgMemberCopies(funcp, sampleArgsp, false);
             funcp->classMethod(true);
-            funcp->dtypep(funcp->findVoidDType());
             funcp->keepAlive(true);  // TODO create AstFuncRef and hold until findMethod("sample")
             nodep->addMembersp(funcp);
         }
 
         // IEEE: function void start(), void stop()
         for (const string& name : {"start"s, "stop"s}) {
-            AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), name};
             funcp->classMethod(true);
-            funcp->dtypep(funcp->findVoidDType());
             nodep->addMembersp(funcp);
         }
 
         // IEEE: static function real get_coverage(optional ref int, optional ref int)
         // IEEE: function real get_inst_coverage(optional ref int, optional ref int)
         for (const string& name : {"get_coverage"s, "get_inst_coverage"s}) {
-            AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nodep->findDoubleDType()};
             funcp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
             funcp->isStatic(name == "get_coverage");
             funcp->classMethod(true);
-            funcp->dtypep(funcp->findVoidDType());
             nodep->addMembersp(funcp);
-            {
-                AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, name,
-                                                nodep->findDoubleDType()};
-                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                varp->funcLocal(true);
-                varp->direction(VDirection::OUTPUT);
-                varp->funcReturn(true);
-                funcp->fvarp(varp);
-            }
             for (const string& varname : {"covered_bins"s, "total_bins"s}) {
                 AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, varname,
                                                 nodep->findStringDType()};
@@ -1296,23 +1303,21 @@ class LinkParseVisitor final : public VNVisitor {
                 varp->funcLocal(true);
                 varp->direction(VDirection::INPUT);
                 varp->valuep(new AstVarRef{nodep->fileline(), defaultVarp, VAccess::READ});
-                funcp->addStmtsp(varp);
+                funcp->addDeclsp(varp);
             }
         }
 
         // IEEE: function void set_inst_name(string)
         {
-            AstFunc* const funcp
-                = new AstFunc{nodep->fileline(), "set_inst_name", nullptr, nullptr};
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), "set_inst_name"};
             funcp->classMethod(true);
-            funcp->dtypep(funcp->findVoidDType());
             nodep->addMembersp(funcp);
             AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, "name",
                                             nodep->findStringDType()};
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             varp->funcLocal(true);
             varp->direction(VDirection::INPUT);
-            funcp->addStmtsp(varp);
+            funcp->addDeclsp(varp);
         }
     }
 
@@ -1362,7 +1367,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // Convert constructor args to member variables
-        for (AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
+        for (AstNode* const argp : nodep->argspList()) {
             AstVar* const origVarp = VN_AS(argp, Var);
             if (origVarp->direction() == VDirection::OUTPUT
                 || origVarp->direction() == VDirection::INOUT) {
@@ -1384,7 +1389,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // Convert sample args to member variables
-        for (AstNode* argp = nodep->sampleArgsp(); argp; argp = argp->nextp()) {
+        for (AstNode* const argp : nodep->sampleArgspList()) {
             AstVar* const origVarp = VN_AS(argp, Var);
             if (!origVarp->isInput()) {
                 origVarp->v3error("Covergroup sample formal argument must have input direction "
@@ -1398,20 +1403,23 @@ class LinkParseVisitor final : public VNVisitor {
             cgClassp->addMembersp(memberp);
         }
 
-        // Create the constructor; detach membersp (coverage body) and use as its body
-        AstFunc* const newFuncp = new AstFunc{nodep->fileline(), "new", nullptr, nullptr};
+        // Create the constructor
+        AstFunc* const newFuncp = new AstFunc{nodep->fileline(), "new"};
         newFuncp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
         newFuncp->classMethod(true);
         newFuncp->isConstructor(true);
         newFuncp->dtypep(cgClassp->dtypep());
-        if (AstNode* const bodyp = nodep->membersp()) {
-            bodyp->unlinkFrBackWithNext();
-            newFuncp->addStmtsp(bodyp);
-        }
         cgClassp->addMembersp(newFuncp);
 
         // Add all boilerplate covergroup methods (reads argsp/sampleArgsp from nodep)
         createCovergroupMethods(cgClassp, newFuncp, nodep->argsp(), nodep->sampleArgsp());
+
+        // Detach membersp (coverage body) and use as declarations of the constructor, after its
+        // arguments
+        if (AstNode* const bodyp = nodep->membersp()) {
+            bodyp->unlinkFrBackWithNext();
+            newFuncp->addDeclsp(bodyp);
+        }
 
         // Replace AstCovergroup with AstClass and process the new class normally.
         // Reset the unnamed-coverpoint counter so synthesized names are stable and
@@ -1419,8 +1427,8 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_coverpointNum);
         VL_RESTORER_CLEAR(m_coverpoints);
         m_coverpointNum = 0;
-        for (const AstNode* stmtp = newFuncp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (const AstCoverpoint* const pointp = VN_CAST(stmtp, Coverpoint)) {
+        for (const AstNode* const declp : newFuncp->declspList()) {
+            if (const AstCoverpoint* const pointp = VN_CAST(declp, Coverpoint)) {
                 m_coverpoints.emplace(coverpointName(pointp), pointp);
             }
         }
@@ -1439,6 +1447,20 @@ class LinkParseVisitor final : public VNVisitor {
         // AstParseRef (e.g. a member-select).
         const AstParseRef* const refp = VN_CAST(nodep->exprp(), ParseRef);
         return refp ? refp->name() : "";
+    }
+
+    AstVar* createCoverItemOption(AstNodeFuncCovItem* itemp, const string& typeName) {
+        AstClass* const cgClassp = VN_AS(m_modp, Class);
+        AstVar* const optionp = new AstVar{
+            cgClassp->fileline(), VVarType::MEMBER, "__Vcg_" + itemp->name() + "__option",
+            VFlagChildDType{},
+            new AstRefDType{itemp->fileline(), typeName,
+                            new AstClassOrPackageRef{itemp->fileline(), "std", nullptr, nullptr},
+                            nullptr}};
+        optionp->isInternal(true);
+        cgClassp->addMembersp(optionp);
+        itemp->optionVarp(optionp);
+        return optionp;
     }
 
     // The coverpoint of the current covergroup a cross item names, or null
@@ -1461,12 +1483,12 @@ class LinkParseVisitor final : public VNVisitor {
             const string name = coverpointName(nodep);
             nodep->name(name.empty() ? "__Vcoverpoint" + cvtToStr(m_coverpointNum++) : name);
         }
+        createCoverItemOption(nodep, "vl_coverpoint_options_t");
         // Re-sort the parse-time mixed bins list (AstCoverBin + AstCgOptionAssign)
         // into the typed binsp and optionsp slots.  The grammar attaches both node types
         // to binsp (op2) as a raw List[AstNode]; now that they are properly parented we
         // can iterate and split them without any temporary-parent tricks.
-        for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
-            nextp = itemp->nextp();
+        for (AstNode* const itemp : nodep->binspList()) {
             if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
                 if (dropDeprecatedCoverageOption(optp)) continue;
                 optp->unlinkFrBack();
@@ -1490,11 +1512,14 @@ class LinkParseVisitor final : public VNVisitor {
 
     void visit(AstCoverBin* nodep) override {
         cleanFileline(nodep);
-        if (!m_coverpointp && VN_IS(nodep->rangesp(), CoverWith)) {
-            // A 'with' filter's candidates are of its coverpoint's type
-            nodep->rangesp()->v3warn(COVERIGN, "Unsupported: 'with' in cover bin outside a "
-                                               "coverpoint; bin "
-                                                   << nodep->prettyNameQ() << " ignored");
+        // Outside a coverpoint, as of a bare '{ bins ... }' item, there is nothing to bin
+        if (!m_coverpointp) {
+            if (VN_IS(nodep->rangesp(), CoverWith)) {
+                // A 'with' filter's candidates are of its coverpoint's type
+                nodep->rangesp()->v3warn(COVERIGN, "Unsupported: 'with' in cover bin outside a "
+                                                   "coverpoint; bin "
+                                                       << nodep->prettyNameQ() << " ignored");
+            }
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
@@ -1570,15 +1595,15 @@ class LinkParseVisitor final : public VNVisitor {
 
     void visit(AstCoverCross* nodep) override {
         cleanFileline(nodep);
+        createCoverItemOption(nodep, "vl_cross_options_t");
         // Move options out of the mixed parse-time body, leaving only cross bins.
-        for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
-            nextp = itemp->nextp();
+        for (AstNode* const itemp : nodep->binspList()) {
             if (VN_IS(itemp, CoverCrossBin)) continue;
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
             if (dropDeprecatedCoverageOption(optp)) continue;
             itemp->unlinkFrBack();
             const VCoverOptionType optType = optp->optType();
-            if (!(optType == VCoverOptionType::WEIGHT)) {
+            if (!(optType == VCoverOptionType::AT_LEAST || optType == VCoverOptionType::WEIGHT)) {
                 optp->v3warn(COVERIGN,
                              "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             }
@@ -1605,7 +1630,7 @@ class LinkParseVisitor final : public VNVisitor {
             flNoWarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
             flNoWarn->modifyWarnOff(V3ErrorCode::VARHIDDEN, true);
             std::set<string> names;
-            for (const AstNode* itemp = m_crossp->itemsp(); itemp; itemp = itemp->nextp()) {
+            for (const AstNode* const itemp : m_crossp->itemspList()) {
                 const AstCoverpointRef* const refp = VN_AS(itemp, CoverpointRef);
                 const AstCoverpoint* const pointp = findCoverpoint(refp);
                 if (!pointp || !names.insert(refp->name()).second) continue;

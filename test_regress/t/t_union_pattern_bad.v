@@ -25,7 +25,7 @@ module t;
     u = '{i: 32'h12345678};
     u = '{default: 5};
     u = '{32'h12345678};
-    u = '{int: 7};
+    u = '{int : 7};
     u = u_t'{i: 1};
     p = '{a: 8'h12};
     p = '{default: 8'h34};

@@ -62,9 +62,8 @@ void ValueChangeData::keepOnlyTheLatestValue() {
 void Writer::open(const string_view_pair name) {
 	FST_CHECK(!m_main_fst_file_.is_open());
 	m_main_fst_file_.open(std::string(name.m_data, name.m_size), std::ios::binary);
-	// reserve space for header, we will write it at Close(), append geometry and hierarchy at the
-	// end wave data will be flushed in between
-	m_main_fst_file_.seekp(kSharedBlockHeaderSize + HeaderInfo::total_size, std::ios_base::beg);
+	// Materialize the header so appending metadata cannot overwrite its reserved space.
+	writeHeader_(m_header_, m_main_fst_file_);
 }
 
 void Writer::close() {
@@ -77,9 +76,8 @@ void Writer::close() {
 	if (m_header_.m_start_time == kInvalidTime) {
 		m_header_.m_start_time = 0;
 	}
+	finalizeHierarchy_();
 	flushValueChangeData_(m_value_change_data_, m_main_fst_file_);
-	appendGeometry_(m_main_fst_file_);
-	appendHierarchy_(m_main_fst_file_);
 	appendBlackout_(m_main_fst_file_);
 	// Note: write header seek to 0, so we need to do
 	// this after all append operations

@@ -1,0 +1,36 @@
+%Warning-UNSIGNED: t/t_const_cmp_impure.v:25:13: Comparison is constant due to unsigned arithmetic
+                                               : ... note: In instance 't'
+   25 |     r = f() < 8'd0;
+      |             ^
+                   ... For warning description see https://verilator.org/warn/UNSIGNED?v=latest
+                   ... Use "/* verilator lint_off UNSIGNED */" and lint_on around source to disable this message.
+%Warning-UNSIGNED: t/t_const_cmp_impure.v:28:13: Comparison is constant due to unsigned arithmetic
+                                               : ... note: In instance 't'
+   28 |     r = f() >= 8'd0;
+      |             ^~
+%Warning-UNSIGNED: t/t_const_cmp_impure.v:31:14: Comparison is constant due to unsigned arithmetic
+                                               : ... note: In instance 't'
+   31 |     r = 8'd0 > f();
+      |              ^
+%Warning-UNSIGNED: t/t_const_cmp_impure.v:34:14: Comparison is constant due to unsigned arithmetic
+                                               : ... note: In instance 't'
+   34 |     r = 8'd0 <= f();
+      |              ^~
+%Warning-CMPCONST: t/t_const_cmp_impure.v:38:13: Comparison is constant due to limited range
+                                               : ... note: In instance 't'
+   38 |     r = f() > 8'hff;
+      |             ^
+                   ... For warning description see https://verilator.org/warn/CMPCONST?v=latest
+                   ... Use "/* verilator lint_off CMPCONST */" and lint_on around source to disable this message.
+%Warning-CMPCONST: t/t_const_cmp_impure.v:41:13: Comparison is constant due to limited range
+                                               : ... note: In instance 't'
+   41 |     r = f() <= 8'hff;
+      |             ^~
+%Warning-CMPCONST: t/t_const_cmp_impure.v:44:15: Comparison is constant due to limited range
+                                               : ... note: In instance 't'
+   44 |     r = 8'hff < f();
+      |               ^
+%Warning-CMPCONST: t/t_const_cmp_impure.v:47:15: Comparison is constant due to limited range
+                                               : ... note: In instance 't'
+   47 |     r = 8'hff >= f();
+      |               ^~

@@ -24,6 +24,5 @@ test.vcd_identical(test.obj_dir + "/simall.vcd", test.golden_filename)
 
 test.file_grep_not(test.obj_dir + "/simrollover_cat0000.vcd", r'^#')
 test.file_grep(test.obj_dir + "/simrollover_cat0001.vcd", r'^#')
-test.file_grep(test.obj_dir + "/simrollover_cat0002.vcd", r'^#')
 
 test.passes()

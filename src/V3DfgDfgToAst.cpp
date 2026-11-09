@@ -52,39 +52,39 @@ T_Node* makeNode(const T_Vertex* vtxp, Ops... ops) {
 
 template <>
 AstCountOnes* makeNode<AstCountOnes, DfgCountOnes, AstNodeExpr*>(  //
-    const DfgCountOnes* vtxp, AstNodeExpr* op1) {
-    AstCountOnes* const nodep = new AstCountOnes{vtxp->fileline(), op1};
+    const DfgCountOnes* vtxp, AstNodeExpr* op1p) {
+    AstCountOnes* const nodep = new AstCountOnes{vtxp->fileline(), op1p};
     return nodep;
 }
 
 template <>
 AstExtend* makeNode<AstExtend, DfgExtend, AstNodeExpr*>(  //
-    const DfgExtend* vtxp, AstNodeExpr* op1) {
-    return new AstExtend{vtxp->fileline(), op1, static_cast<int>(vtxp->width())};
+    const DfgExtend* vtxp, AstNodeExpr* op1p) {
+    return new AstExtend{vtxp->fileline(), op1p, static_cast<int>(vtxp->width())};
 }
 
 template <>
 AstExtendS* makeNode<AstExtendS, DfgExtendS, AstNodeExpr*>(  //
-    const DfgExtendS* vtxp, AstNodeExpr* op1) {
-    return new AstExtendS{vtxp->fileline(), op1, static_cast<int>(vtxp->width())};
+    const DfgExtendS* vtxp, AstNodeExpr* op1p) {
+    return new AstExtendS{vtxp->fileline(), op1p, static_cast<int>(vtxp->width())};
 }
 
 template <>
 AstShiftL* makeNode<AstShiftL, DfgShiftL, AstNodeExpr*, AstNodeExpr*>(  //
-    const DfgShiftL* vtxp, AstNodeExpr* op1, AstNodeExpr* op2) {
-    return new AstShiftL{vtxp->fileline(), op1, op2, static_cast<int>(vtxp->width())};
+    const DfgShiftL* vtxp, AstNodeExpr* op1p, AstNodeExpr* op2p) {
+    return new AstShiftL{vtxp->fileline(), op1p, op2p, static_cast<int>(vtxp->width())};
 }
 
 template <>
 AstShiftR* makeNode<AstShiftR, DfgShiftR, AstNodeExpr*, AstNodeExpr*>(  //
-    const DfgShiftR* vtxp, AstNodeExpr* op1, AstNodeExpr* op2) {
-    return new AstShiftR{vtxp->fileline(), op1, op2, static_cast<int>(vtxp->width())};
+    const DfgShiftR* vtxp, AstNodeExpr* op1p, AstNodeExpr* op2p) {
+    return new AstShiftR{vtxp->fileline(), op1p, op2p, static_cast<int>(vtxp->width())};
 }
 
 template <>
 AstShiftRS* makeNode<AstShiftRS, DfgShiftRS, AstNodeExpr*, AstNodeExpr*>(  //
-    const DfgShiftRS* vtxp, AstNodeExpr* op1, AstNodeExpr* op2) {
-    return new AstShiftRS{vtxp->fileline(), op1, op2, static_cast<int>(vtxp->width())};
+    const DfgShiftRS* vtxp, AstNodeExpr* op1p, AstNodeExpr* op2p) {
+    return new AstShiftRS{vtxp->fileline(), op1p, op2p, static_cast<int>(vtxp->width())};
 }
 
 }  // namespace
@@ -103,27 +103,7 @@ class DfgToAstVisitor final : DfgVisitor {
 
     // METHODS
     static AstActive* getCombActive(AstScope* scopep) {
-        if (!scopep->user2p()) {
-            // Try to find the existing combinational AstActive
-            for (AstNode* nodep = scopep->blocksp(); nodep; nodep = nodep->nextp()) {
-                AstActive* const activep = VN_CAST(nodep, Active);
-                if (!activep) continue;
-                if (activep->hasCombo()) {
-                    scopep->user2p(activep);
-                    break;
-                }
-            }
-            // If there isn't one, create a new one
-            if (!scopep->user2p()) {
-                FileLine* const flp = scopep->fileline();
-                AstSenTree* const senTreep
-                    = new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}};
-                AstActive* const activep = new AstActive{flp, "", senTreep};
-                activep->senTreeStorep(senTreep);
-                scopep->addBlocksp(activep);
-                scopep->user2p(activep);
-            }
-        }
+        if (!scopep->user2p()) scopep->user2p(scopep->comboActivep(true));
         return VN_AS(scopep->user2p(), Active);
     }
 
@@ -155,7 +135,7 @@ class DfgToAstVisitor final : DfgVisitor {
 
         // Otherwise create an AssignW
         AstAssignW* const ap = new AstAssignW{flp, lhsp, rhsp};
-        m_activep->addStmtsp(new AstAlways{ap});
+        m_activep->addProcsp(new AstAlways{ap});
     }
 
     void convertDriver(FileLine* flp, AstNodeExpr* lhsp, DfgVertex* driverp) {
@@ -298,7 +278,7 @@ class DfgToAstVisitor final : DfgVisitor {
             if (DfgVertex* const defaultp = vtx.defaultp()) {
                 ++m_ctx.m_outputVariablesWithDefault;
                 m_alwaysp = new AstAlways{vtx.fileline(), VAlwaysKwd::ALWAYS_COMB, nullptr};
-                m_activep->addStmtsp(m_alwaysp);
+                m_activep->addProcsp(m_alwaysp);
                 // The default assignment needs to go first
                 createAssignment(vtx.fileline(), lhsp->cloneTreePure(false), defaultp);
             }
@@ -315,6 +295,7 @@ class DfgToAstVisitor final : DfgVisitor {
             if (DfgAstRd* const rVtxp = vtx.cast<DfgAstRd>()) {
                 // Render the driver
                 AstNodeExpr* const exprp = convertDfgVertexToAstNodeExpr(rVtxp->srcp());
+                exprp->dtypeFrom(rVtxp->exprp());
                 // If it's the same as the reference, do not replace it so FileLines are preserved
                 if (exprp->sameTree(rVtxp->exprp())) {
                     VL_DO_DANGLING(exprp->deleteTree(), exprp);

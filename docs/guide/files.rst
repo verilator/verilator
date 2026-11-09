@@ -65,6 +65,8 @@ For --cc/--sc, it creates:
      - Wave file generation code (from --trace-\*)
    - - *{prefix}*\ ___024root__Trace__Slow\ *{__n}*.cpp
      - Wave file generation code (from --trace-\*)
+   - - *{prefix}*\ __Classes\_\ *{index}{__n}*.cpp
+     - Internal C++ files of classes
    - - *{prefix}*\ __Dpi.h
      - DPI import and export declarations (from --dpi)
    - - *{prefix}*\ __Dpi.cpp

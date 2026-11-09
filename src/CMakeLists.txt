@@ -59,13 +59,12 @@ set(HEADERS
     V3Broken.h
     V3CCtors.h
     V3CUse.h
+    V3CallTargets.h
     V3Case.h
     V3Cast.h
     V3Cfg.h
     V3Class.h
-    V3ClassGraph.h
     V3Clean.h
-    V3Clock.h
     V3Combine.h
     V3Common.h
     V3Const.h
@@ -156,6 +155,7 @@ set(HEADERS
     V3OrderMoveGraph.h
     V3OrderMTaskGraph.h
     V3Os.h
+    V3Outline.h
     V3PairingHeap.h
     V3Param.h
     V3Parse.h
@@ -182,6 +182,8 @@ set(HEADERS
     V3SharedTmps.h
     V3Simulate.h
     V3Slice.h
+    V3SolverBackend.h
+    V3SolverSmt.h
     V3Split.h
     V3StackCount.h
     V3Stats.h
@@ -230,15 +232,14 @@ set(COMMON_SOURCES
     V3Broken.cpp
     V3CCtors.cpp
     V3CUse.cpp
+    V3CallTargets.cpp
     V3Case.cpp
     V3Cast.cpp
     V3Cfg.cpp
     V3CfgBuilder.cpp
     V3CfgLiveVariables.cpp
     V3Class.cpp
-    V3ClassGraph.cpp
     V3Clean.cpp
-    V3Clock.cpp
     V3Combine.cpp
     V3Common.cpp
     V3ConstPool.cpp
@@ -338,6 +339,7 @@ set(COMMON_SOURCES
     V3OrderProcessDomains.cpp
     V3OrderSerial.cpp
     V3Os.cpp
+    V3Outline.cpp
     V3Param.cpp
     V3ParseGrammar.cpp
     V3ParseImp.cpp
@@ -358,11 +360,14 @@ set(COMMON_SOURCES
     V3SchedPartition.cpp
     V3SchedReplicate.cpp
     V3SchedTiming.cpp
+    V3SchedTimingPrep.cpp
     V3SchedTrigger.cpp
     V3SchedUtil.cpp
     V3SchedVirtIface.cpp
     V3Scope.cpp
     V3Slice.cpp
+    V3SolverBackend.cpp
+    V3SolverSmt.cpp
     V3Split.cpp
     V3StackCount.cpp
     V3Stats.cpp

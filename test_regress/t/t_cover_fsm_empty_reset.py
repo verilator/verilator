@@ -12,7 +12,6 @@ import os
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_cover_fsm_empty_reset.v"
 
 test.compile(verilator_flags2=["--cc --coverage-line --coverage-branch --coverage-fsm"])
 

@@ -68,4 +68,80 @@ module t;
     $display("%x %x %x %x %x", arr[idx], arr_fork[idx], arr_clk[idx], arr_elem[idx], arr_src[idx]);
   end
 
+  // Same-process NBAs commit in the order they ran (IEEE 1800-2023 10.4.2): one call's
+  // trailing '<= 0' and the next call's leading '<= 1' share a time step
+  typedef struct {
+    int a;
+    real b;
+  } ord_t;
+  logic ord_v = 0;
+  logic [7:0] ord_pk = 0;
+  real ord_r = 0;
+  string ord_s = "";
+  ord_t ord_st = '{0, 0};
+  logic [7:0] ord_arr[4] = '{default: 0};
+  int ord_idx;
+  task automatic ord_pulse(int i);
+    ord_v <= 1'b1;
+    ord_pk[3] <= 1'b1;
+    ord_r <= 1.0;
+    ord_s <= "on";
+    ord_st.a <= 1;
+    ord_arr[i] <= 8'h1;
+    ord_arr[i+1][3:0] <= 4'h1;
+    #1;
+    if (ord_v !== 1'b1 || ord_pk[3] !== 1'b1 || ord_r != 1.0 || ord_s != "on") $stop;
+    if (ord_st.a != 1 || ord_arr[i] !== 8'h1 || ord_arr[i+1][3:0] !== 4'h1) $stop;
+    ord_v <= 1'b0;
+    ord_pk[3] <= 1'b0;
+    ord_r <= 0.0;
+    ord_s <= "off";
+    ord_st.a <= 0;
+    ord_arr[i] <= 8'h0;
+    ord_arr[i+1][3:0] <= 4'h0;
+  endtask
+  initial begin
+    ord_idx = $urandom_range(1, 1);
+    repeat (3) ord_pulse(ord_idx);
+  end
+
+  // From an always process (#5485): 'ord_b' should match 'ord_a', also when 'ord_delay' does
+  // not delay, so the last NBA of an iteration shares a time step with the first of the next
+  // verilator lint_off ZERODLY
+  task automatic ord_delay;
+    if ($time >= 4) #($time / 4);
+  endtask
+  // verilator lint_on ZERODLY
+  logic ord_a = 0;
+  always begin
+    ord_a <= 1'b1;
+    ord_delay();
+    ord_a <= 1'b0;
+    #1;
+  end
+  logic ord_b = 0;
+  always begin
+    ord_b <= 1'b1;
+    ord_delay();
+    ord_b <= 1'b0;
+    #1;
+    ord_b <= 1'b1;
+  end
+  always #1 if (ord_a !== ord_b) $stop;
+
+  // From a loop of a process waiting on a clock (#8346): the last NBA of an iteration shares a
+  // time step with the first of the next
+  logic loop_clk = 0;
+  always #1 loop_clk = ~loop_clk;
+  logic loop_x = 1'b1;
+  initial begin
+    @(posedge loop_clk);
+    repeat (2) begin
+      loop_x <= 1'b0;
+      @(posedge loop_clk);
+      loop_x <= 1'b1;
+    end
+  end
+  initial #4 if (loop_x !== 1'b0) $stop;
+
 endmodule

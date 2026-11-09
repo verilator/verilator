@@ -123,18 +123,12 @@ public:
     void emitLogic(const OrderLogicVertex* lVtxp) {
         // Sensitivity domain of logic we are emitting
         const OrderDomain* const domainp = lVtxp->domainp();
-        // We are move the logic into a CFunc
-        AstNode* const logicp = lVtxp->nodep();
-        // If the logic is a procedure, we need to do a few special things
-        AstNodeProcedure* const procp = VN_CAST(logicp, NodeProcedure);
+        // We move the logic (process) into a CFunc
+        AstNodeProcedure* const procp = lVtxp->nodep();
 
         // Some properties to consider
-        const bool suspendable = procp && procp->isSuspendable();
-        const bool needProcess = procp && procp->needProcess();
-        // TODO: This is a bit muddy: 'initial forever @(posedge clk) begin ... end' is a fancy
-        //       way of saying always @(posedge clk), so it might be quite hot...
-        //       Also, if m_funcp is slow, but this one isn't we should force a new function
-        const bool slow = m_slow && !(suspendable && VN_IS(procp, Always));
+        const bool suspendable = procp->isSuspendable();
+        const bool needsVlProcess = procp->needsVlProcess();
 
         // Put suspendable processes into individual functions on their own
         if (suspendable) forceNewFunction();
@@ -144,21 +138,16 @@ public:
         // be called under different trigger conditions
         if (!m_result.empty() && m_result.back().second != domainp) forceNewFunction();
 
-        // Process procedures per statement, so we can split CFuncs within procedures.
-        // Everything else is handled as a unit.
-        AstNode* const headp = [&]() -> AstNode* {
-            if (!procp) return logicp->unlinkFrBack();  // Not a procedure, handle as a unit
-            AstNode* const stmtsp = procp->stmtsp();
-            UASSERT_OBJ(stmtsp, procp, "Empty process should have been deleted earlier");
-            stmtsp->unlinkFrBackWithNext();
-            // 'procp' is no longer needed but the OrderGraph still references
-            // it (for debug dump). It will get deleted when deleting the
-            // AstActives in V3Order.
-            return stmtsp;
-        }();
+        // Process the procedure per statement, so we can split CFuncs within it
+        AstNodeStmt* const headp = procp->stmtsp();
+        UASSERT_OBJ(headp, procp, "Empty process should have been deleted earlier");
+        headp->unlinkFrBackWithNext();
+        // 'procp' is no longer needed but the OrderGraph still references
+        // it (for debug dump). It will get deleted when deleting the
+        // AstActives in V3Order.
         // Process each statement in the list starting at headp
-        for (AstNode *currp = headp, *nextp; currp; currp = nextp) {
-            nextp = currp->nextp();
+        for (AstNodeStmt *currp = headp, *nextp; currp; currp = nextp) {
+            nextp = VN_AS(currp->nextp(), NodeStmt);
             // Unlink the current statement from the next statement (if any)
             if (nextp) nextp->unlinkFrBackWithNext();
             // Split the function if too large, but don't split suspendable processes
@@ -171,10 +160,10 @@ public:
                 AstNodeModule* const modp = scopep->modp();
                 const std::string name = cfuncName(flp, scopep, modp, lVtxp);
                 m_funcp = new AstCFunc{flp, name, scopep, suspendable ? "VlCoroutine" : ""};
-                if (needProcess) m_funcp->setNeedProcess();
+                if (needsVlProcess) m_funcp->setNeedsVlProcess();
                 m_funcp->isStatic(false);
                 m_funcp->isLoose(true);
-                m_funcp->slow(slow);
+                m_funcp->slow(m_slow);
                 scopep->addBlocksp(m_funcp);
                 // Record function and sensitivity to call it with
                 m_result.emplace_back(m_funcp, domainp);

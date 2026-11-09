@@ -22,6 +22,26 @@ module t;
     a = 11;
     #10;
     b = 22;
+    #10;
+    // Changes in both the active and NBA regions, displays once with the final values
+    a = 12;
+    a <= 13;
+    #10;
+    $monitoroff;
+    #10;
+    // Displays immediately, without a value change
+    $monitoron;
+    #10;
+    // Displays when invoked, without a value change
+    $monitor("[%0t] second b=%0d", $time, b);
+    #10;
+    // Nothing to monitor, displays only when invoked
+    $monitor("[%0t] no args", $time);
+    #10;
+    $monitoroff;
+    #10;
+    // Displays immediately, also with nothing to monitor
+    $monitoron;
     #100;
     #10;
     $monitoroff;

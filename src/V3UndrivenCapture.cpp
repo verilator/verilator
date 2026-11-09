@@ -32,7 +32,7 @@ public:
 };
 
 class CaptureVisitor final : public VNVisitorConst {
-    V3UndrivenCapture& m_cap;
+    V3UndrivenCapture& m_cap;  // Capture results being built
     const AstNodeFTask* m_curTaskp = nullptr;  // Current task
     bool m_inInitialSetup = false;  // In InitialAutomatic*/InitialStatic* assignment LHS
 
@@ -49,6 +49,7 @@ private:
         m_curTaskp = nodep;
         UINFO(9, "undriven capture enter ftask " << nodep << " " << nodep->prettyNameQ());
         m_cap.noteTask(nodep);
+        iterateAndNextConstNull(nodep->declsp());
         iterateAndNextConstNull(nodep->stmtsp());
     }
 
@@ -152,18 +153,18 @@ const std::vector<AstVar*>& V3UndrivenCapture::computeWriteSummary(const AstNode
     std::unordered_set<AstVar*> seen;
 
     // Simple lambda for filtering duplicates
-    auto addVar = [&](AstVar* v) {
-        if (seen.insert(v).second) info.writeSummary.push_back(v);
+    auto addVar = [&](AstVar* vp) {
+        if (seen.insert(vp).second) info.writeSummary.push_back(vp);
     };
 
     // Start with direct writes
-    for (AstVar* v : info.directWrites) addVar(v);
+    for (AstVar* vp : info.directWrites) addVar(vp);
 
     // Add callee summaries
     for (const AstNodeFTask* calleep : info.callees) {
         if (m_info.find(calleep) == m_info.end()) continue;
         const std::vector<AstVar*>& sub = computeWriteSummary(calleep);
-        for (AstVar* v : sub) addVar(v);
+        for (AstVar* vp : sub) addVar(vp);
     }
 
     UINFO(9, "undriven capture writeSummary computed size=" << info.writeSummary.size() << " for "
@@ -180,7 +181,7 @@ void V3UndrivenCapture::noteDirectWrite(const AstNodeFTask* taskp, AstVar* varp)
     FTaskInfo& info = m_info[taskp];
 
     // Exclude function return variable (not an externally visible side-effect)
-    AstVar* const retVarp = VN_CAST(taskp->fvarp(), Var);
+    AstVar* const retVarp = taskp->fvarp();
     if (retVarp && varp == retVarp) return;
 
     // Filter out duplicates.

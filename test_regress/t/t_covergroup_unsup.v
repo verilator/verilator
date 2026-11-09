@@ -156,6 +156,15 @@ module t (
     { illegal_bins lib_def_seq = default sequence; }
     // Explicit array size of transition bins
     { bins trans_sized[2] = ( 1 => 2 ); }
+    // A wildcard transition list long enough to be matched from a table is no different
+    // verilog_format: off
+    { wildcard bins wb_long_trans = (
+        0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 =>
+        0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 =>
+        0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 =>
+        0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 0 => 1 => 2'b1?
+      ); }
+    // verilog_format: on
   endgroup
 
   covergroup cg_cross_bins;

@@ -486,7 +486,11 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
 
             const uint64_t pointnum = points().findAddPoint(point, hits);
             if (opt.rank()) {  // Only if ranking - uses a lot of memory
-                if (hits >= VlcBuckets::sufficient()) {
+                // A test covers a point with a threshold (option.at_least) when its own hits
+                // reach it
+                const uint64_t needed = std::max(
+                    VlcBuckets::sufficient(), keyNumber(points().pointNumber(pointnum).thresh()));
+                if (hits >= needed) {
                     points().pointNumber(pointnum).testsCoveringInc();
                     testp->buckets().addData(pointnum, hits);
                 }
@@ -560,23 +564,23 @@ void VlcTop::writeInfo(const string& filename) {
             if (infoPoints.size() <= 1) continue;
             branchesFound += static_cast<int>(infoPoints.size());
             int point_num = 0;
-            for (const VlcPoint* point : infoPoints) {
+            for (const VlcPoint* pointp : infoPoints) {
                 os << "BRDA:" << sc.lineno() << ",";
-                if (point->isFsmArc()) {
+                if (pointp->isFsmArc()) {
                     os << "2,";
-                    os << point->fsmFromState() << "->" << point->fsmToState();
-                } else if (point->comment().empty()) {
+                    os << pointp->fsmFromState() << "->" << pointp->fsmToState();
+                } else if (pointp->comment().empty()) {
                     os << "0,";
                     os << point_num;
                 } else {
-                    os << (point->isFsmState() ? '1' : '0') << ',';
-                    std::string comment(point->comment());
+                    os << (pointp->isFsmState() ? '1' : '0') << ',';
+                    std::string comment(pointp->comment());
                     std::replace(comment.begin(), comment.end(), ',', '_');
                     os << comment;
                 }
-                os << "," << point->count() << "\n";
+                os << "," << pointp->count() << "\n";
 
-                branchesHit += opt.countOk(point->count());
+                branchesHit += opt.countOk(pointp->count());
                 ++point_num;
             }
         }

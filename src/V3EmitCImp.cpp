@@ -16,6 +16,7 @@
 
 #include "V3PchAstMT.h"
 
+#include "V3AstUserAllocator.h"
 #include "V3EmitC.h"
 #include "V3EmitCFunc.h"
 #include "V3ThreadPool.h"
@@ -33,16 +34,23 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Internal EmitC implementation
 
 class EmitCImp final : public EmitCFunc {
+    // TYPES
+    struct CtorDtor final {
+        TextStmts m_ctorStmts;  // Statements constructing members in 'ctor'
+        TextStmts m_dtorStmts;  // Statements destroying members in 'dtor'
+        std::string m_ctorSplitDecl;  // Declaration of sub-function 'ctor' was split into, if any
+        std::string m_dtorSplitDecl;  // Declaration of sub-function 'dtor' was split into, if any
+    };
+
+    // NODE STATE
+    //   AstNodeModule::user1()  -> CtorDtor. Constructor/destructor statements (slow only)
+    AstUser1Allocator<AstNodeModule, CtorDtor> m_ctorDtors;
+
     // MEMBERS
-    // Base module (For non-classes, same as m_modp. For classes, it's the ClassPackage.)
-    const AstNodeModule* const m_fileModp;
+    const std::vector<AstNodeModule*>& m_modps;  // Modules emitted into the same output files
     const bool m_slow;  // Creating __Slow file
     V3UniqueNames m_uniqueNames;  // Generates unique file names
-    const std::string m_fileBaseName = EmitCUtil::prefixNameProtect(m_fileModp);
-    TextStmts m_ctorStmts;  // Statements constructing members in 'ctor'
-    TextStmts m_dtorStmts;  // Statements destroying members in 'dtor'
-    std::string m_ctorSplitDecl;  // Declaration of sub-function 'ctor' was split into, if any
-    std::string m_dtorSplitDecl;  // Declaration of sub-function 'dtor' was split into, if any
+    const std::string m_fileBaseName;  // Base name of the output files
 
     // METHODS
     void openNextOutputFile(const std::string& fileName) {
@@ -53,29 +61,37 @@ class EmitCImp final : public EmitCFunc {
         puts("// See " + EmitCUtil::topClassName() + ".h for the primary calling header\n");
         puts("\n");
         puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
-        emitSystemCSection(m_fileModp, VSystemCSectionType::IMP_HDR);
+        for (const AstNodeModule* const modp : m_modps) {
+            emitSystemCSection(modp, VSystemCSectionType::IMP_HDR);
+        }
         // Need to emit new lazy declarations
         m_lazyDecls.reset();
     }
 
+    // Open the first common implementation file, or split it if needed
+    void openCommonImpFile() {
+        if (!ofp()) {
+            openNextOutputFile(m_fileBaseName);
+        } else if (splitNeeded()) {
+            splitOutputFile();
+        }
+    }
+
     void emitParamDefns(const AstNodeModule* modp) {
-        const string modName = EmitCUtil::prefixNameProtect(modp);
         bool first = true;
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isParam()) {
                     if (first) {
+                        openCommonImpFile();
                         puts("\n");
+                        const string modName = EmitCUtil::prefixNameProtect(modp);
                         putsDecoration(modp, "// Parameter definitions for " + modName + "\n");
                         first = false;
                     }
-                    UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
-                    // Only C++ LiteralTypes can be constexpr
-                    const bool canBeConstexpr = varp->dtypep()->isLiteralType();
-                    putns(varp, canBeConstexpr ? "constexpr " : "const ");
-                    const string scopedName = modName + "::" + varp->nameProtect();
-                    putns(varp, varp->dtypep()->cType(scopedName, false, false));
-                    if (!canBeConstexpr) emitDirectInit(varp->valuep());
+                    if (varp->dtypep()->isLiteralType()) putns(varp, "VL_CONSTINIT_CXX20 ");
+                    putns(varp, "const ");
+                    emitVarDefn(varp);
                     puts(";\n");
                 }
             }
@@ -118,9 +134,6 @@ class EmitCImp final : public EmitCFunc {
         if (varp->isSc()) {
             // SystemC ports need their name
             args = ", \"" + V3OutFormatter::quoteNameControls(varp->nameProtect()) + "\"";
-        } else if (basicp && basicp->keyword().isMTaskState()) {
-            // MTask state needs the number of upstream dependencies to wait for
-            args = ", " + VN_AS(varp->valuep(), Const)->num().emitC();
         } else if (basicp && basicp->isDelayScheduler()) {
             // Delay scheduler needs the context pointer
             args = ", *vlSelf->vlSymsp->_vm_contextp__";
@@ -129,12 +142,14 @@ class EmitCImp final : public EmitCFunc {
     }
     // Gather the statements constructing/destroying members in anonymous unions, and split
     // them into sub-functions if needed. As this emits files, no output file can be open.
-    void createCtorDtorStmts(const AstNodeModule* modp) {
+    void createCtorDtorStmts(AstNodeModule* modp) {
+        CtorDtor& ctorDtor = m_ctorDtors(modp);
+
         // Construct member variables
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             const AstVar* const varp = VN_CAST(nodep, Var);
             if (varp && isExplicitlyConstructed(varp)) {
-                addVarCtorDtorStmts(m_ctorStmts, varp, false);
+                addVarCtorDtorStmts(ctorDtor.m_ctorStmts, varp, false);
             }
         }
 
@@ -143,18 +158,22 @@ class EmitCImp final : public EmitCFunc {
         for (const AstNode* nodep = lastp; nodep; nodep = nodep->prevp()) {
             const AstVar* const varp = VN_CAST(nodep, Var);
             if (varp && isExplicitlyConstructed(varp)) {
-                addVarCtorDtorStmts(m_dtorStmts, varp, true);
+                addVarCtorDtorStmts(ctorDtor.m_dtorStmts, varp, true);
             }
         }
 
         // Split into sub-functions if needed
         const std::string modName = EmitCUtil::prefixNameProtect(modp);
-        std::tie(m_ctorSplitDecl, m_dtorSplitDecl) = emitSplitCtorDtor(
-            m_ctorStmts, m_dtorStmts, 0, modName, modName + "* vlSelf", "vlSelf", false,
-            "Design implementation internals", [this]() { emitFileHeader(); });
+        std::tie(ctorDtor.m_ctorSplitDecl, ctorDtor.m_dtorSplitDecl) = emitSplitCtorDtor(
+            ctorDtor.m_ctorStmts, ctorDtor.m_dtorStmts, 0, modName, modName + "* vlSelf", "vlSelf",
+            false, "Design implementation internals", [this]() { emitFileHeader(); });
     }
     void emitCtorDtorImp(const AstNodeModule* modp) {
         const std::string modName = EmitCUtil::prefixNameProtect(modp);
+        const CtorDtor& ctorDtor = m_ctorDtors(modp);
+        openCommonImpFile();
+        // Cost of the 'ctor'/'dtor' functions and their C++ wrappers, plus the statements below
+        splitSizeInc(4 * AstNode::INSTR_COUNT_CTOR_DTOR);
 
         // ctor
         if (modp->ctorVarReset()) {
@@ -162,17 +181,16 @@ class EmitCImp final : public EmitCFunc {
                              "(" + modName + "* vlSelf);\n");
         }
 
-        if (!m_ctorSplitDecl.empty()) puts("\n" + m_ctorSplitDecl + "\n");
+        if (!ctorDtor.m_ctorSplitDecl.empty()) puts("\n" + ctorDtor.m_ctorSplitDecl + "\n");
         puts("\nvoid " + modName + "__ctor(" + modName + "* vlSelf, " + EmitCUtil::symClassName()
              + "* symsp, const char* namep) {\n");
         puts("vlSelf->vlSymsp = symsp;\n");
-        if (modp->isTop()) {
-            puts("vlSelf->vlNamep = strdup(namep);\n");
-        } else {
-            puts("vlSelf->vlNamep = strdup(Verilated::catName(symsp->name(), namep));\n");
-        }
+        puts("vlSelf->vlNamep = strdup(namep);\n");
         putsDecoration(modp, "// Construct members\n");
-        for (const TextStmts::Stmt& stmt : m_ctorStmts) puts(stmt.m_text + "\n");
+        for (const TextStmts::Stmt& stmt : ctorDtor.m_ctorStmts) {
+            puts(stmt.m_text + "\n");
+            splitSizeInc(stmt.m_cost);
+        }
 
         putsDecoration(modp, "// Reset structure values\n");
         if (modp->ctorVarReset()) {
@@ -188,10 +206,13 @@ class EmitCImp final : public EmitCFunc {
         puts("}\n");
 
         // dtor
-        if (!m_dtorSplitDecl.empty()) puts("\n" + m_dtorSplitDecl + "\n");
+        if (!ctorDtor.m_dtorSplitDecl.empty()) puts("\n" + ctorDtor.m_dtorSplitDecl + "\n");
         puts("\nvoid " + modName + "__dtor(" + modName + "* vlSelf) {\n");
         putsDecoration(modp, "// Destroy members\n");
-        for (const TextStmts::Stmt& stmt : m_dtorStmts) puts(stmt.m_text + "\n");
+        for (const TextStmts::Stmt& stmt : ctorDtor.m_dtorStmts) {
+            puts(stmt.m_text + "\n");
+            splitSizeInc(stmt.m_cost);
+        }
         puts("VL_DO_DANGLING(std::free(const_cast<char*>(vlSelf->vlNamep)), "
              "vlSelf->vlNamep);\n");
         puts("}\n");
@@ -207,6 +228,7 @@ class EmitCImp final : public EmitCFunc {
         const string modName = EmitCUtil::prefixNameProtect(modp);
 
         if (v3Global.opt.coverage()) {
+            openCommonImpFile();
             puts("\n");
             m_lazyDecls.emit("void " + modName + "__", protect("_configure_coverage"),
                              "(" + modName + "* vlSelf, bool first);");
@@ -224,6 +246,7 @@ class EmitCImp final : public EmitCFunc {
         // function. This gets around gcc slowness constructing all of the template
         // arguments.
         if (v3Global.opt.coverage()) {
+            openCommonImpFile();
             puts("\n// Coverage\n");
             puts("void " + EmitCUtil::prefixNameProtect(m_modp) + "::__vlCoverInsert(");
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
@@ -264,6 +287,7 @@ class EmitCImp final : public EmitCFunc {
             puts("}\n");
         }
         if (v3Global.opt.coverageToggle()) {
+            openCommonImpFile();
             puts("\n// Toggle Coverage\n");
             puts("void " + EmitCUtil::prefixNameProtect(m_modp) + "::__vlCoverToggleInsert(");
             puts("int begin, int end, bool ranged, ");
@@ -313,6 +337,7 @@ class EmitCImp final : public EmitCFunc {
     }
     void emitSavableImp(const AstNodeModule* modp) {
         if (v3Global.opt.savable()) {
+            openCommonImpFile();
             puts("\n// Savable\n");
             for (int de = 0; de < 2; ++de) {
                 const string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
@@ -325,7 +350,7 @@ class EmitCImp final : public EmitCFunc {
                 // OK if this hash includes some things we won't dump, since
                 // just looking for loading the wrong model
                 VHashSha512 hash;
-                for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                for (AstNode* const nodep : modp->stmtspList()) {
                     if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                         hash.insert(varp->name());
                         hash.insert(varp->dtypep()->width());
@@ -346,13 +371,17 @@ class EmitCImp final : public EmitCFunc {
                 puts("os " + op + " vlSymsp->_vm_contextp__;\n");
 
                 // Save all members
-                for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                for (AstNode* const nodep : modp->stmtspList()) {
                     if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                         if (varp->isIO() && modp->isTop() && optSystemC()) {
                             // System C top I/O doesn't need loading, as the
                             // lower level subinst code does it.
                         } else if (varp->isParam()) {
-                        } else if (VN_IS(varp->dtypep(), NBACommitQueueDType)) {
+                        } else if (VN_IS(varp->dtypep(), ClosurePoolDType)) {
+                            // Closure pools are not saved, they are simply memory pools
+                        } else if (varp->basicp() && varp->basicp()->isNbaGenericQueue()) {
+                            // NBAs enqueued in an eval are committed by its end. Those made by
+                            // a DPI export called between evals are pending, so a save drops them
                         } else {
                             int vects = 0;
                             AstNodeDType* elementp = varp->dtypeSkipRefp();
@@ -368,8 +397,6 @@ class EmitCImp final : public EmitCFunc {
                                 elementp = arrayp->subDTypep()->skipRefp();
                             }
                             const AstBasicDType* const basicp = elementp->basicp();
-                            // Do not save MTask state, only matters within an evaluation
-                            if (basicp && basicp->keyword().isMTaskState()) continue;
                             // Want to detect types that are represented as arrays
                             // (i.e. packed types of more than 64 bits).
                             if (elementp->isWide()
@@ -392,23 +419,16 @@ class EmitCImp final : public EmitCFunc {
             }
         }
     }
-    // Predicate to check if we actually need to emit anything into the common implementation file.
-    // Used to avoid creating empty output files.
-    bool hasCommonImp(const AstNodeModule* modp) const {
-        // Nothing to emit if no module!
-        if (!modp) return false;
-        // We always need the slow file
-        if (m_slow) return true;
-        // The fast file is only required when we have `systemc_implementation nodes
-        for (const AstSystemCSection* scSectionp = modp->scSectionsp(); scSectionp;
-             scSectionp = VN_AS(scSectionp->nextp(), SystemCSection)) {
-            if (scSectionp->sectionType() == VSystemCSectionType::IMP) return true;
+    void emitCommonImpSlow() {
+        // Create ctor/dtor statements. If these need splitting, they will be emitted
+        // during construction so do this before opening the output file.
+        for (AstNodeModule* const modp : m_modps) {
+            if (!VN_IS(modp, Class)) createCtorDtorStmts(modp);
         }
-        return false;
-    }
-    // Actually emit common implementation contents for given AstNodeModule
-    void doCommonImp(const AstNodeModule* modp) {
-        if (m_slow) {
+
+        for (const AstNodeModule* const modp : m_modps) {
+            VL_RESTORER(m_modp);
+            m_modp = modp;
             if (!VN_IS(modp, Class)) {
                 emitParamDefns(modp);
                 emitCtorDtorImp(modp);
@@ -416,108 +436,78 @@ class EmitCImp final : public EmitCFunc {
                 emitCoverageImp();
             }
             emitSavableImp(modp);
-        } else {
-            // From `systemc_implementation
+        }
+
+        if (ofp()) closeOutputFile();
+    }
+    void emitCommonImpFast() {
+        for (const AstNodeModule* const modp : m_modps) {
+            // Avoid creating empty output files, only needed for `systemc_implementation
+            if (!scSection(modp, VSystemCSectionType::IMP).second) continue;
+            openCommonImpFile();
             emitSystemCSection(modp, VSystemCSectionType::IMP);
         }
+
+        if (ofp()) closeOutputFile();
     }
-    void emitCommonImp(const AstNodeModule* modp) {
-        const AstClass* const classp
-            = VN_IS(modp, ClassPackage) ? VN_AS(modp, ClassPackage)->classp() : nullptr;
-
-        if (hasCommonImp(modp) || hasCommonImp(classp)) {
-            // Create ctor/dtor statements. If these need splitting, they will be emitted
-            // during construction so do this before opening the output file.
-            if (m_slow && !VN_IS(modp, Class)) createCtorDtorStmts(modp);
-
-            openNextOutputFile(m_fileBaseName);
-
-            doCommonImp(modp);
-            if (classp) {
-                VL_RESTORER(m_modp);
-                m_modp = classp;
-                doCommonImp(classp);
-            }
-
-            closeOutputFile();
-        }
-    }
-    void emitCFuncImp(const AstNodeModule* modp) {
-        // Functions to be emitted here
-        std::vector<AstCFunc*> funcps;
-
-        const auto gather = [this, &funcps](const AstNodeModule* modp) {
-            for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                AstCFunc* const funcp = VN_CAST(nodep, CFunc);
-                if (!funcp) continue;
-                // TRACE_* and DPI handled elsewhere
-                if (funcp->isTrace()) continue;
-                if (funcp->dpiImportPrototype()) continue;
-                if (funcp->dpiExportDispatcher()) continue;
-                if (funcp->slow() != m_slow) continue;
-                funcps.push_back(funcp);
-            }
-        };
-
-        gather(modp);
-        VL_RESTORER(m_classOrPackage);
-        if (const AstClassPackage* const packagep = VN_CAST(modp, ClassPackage)) {
-            m_classOrPackage = packagep;
-            gather(packagep->classp());
-        }
-
-        // Do not create empty files
-        if (funcps.empty()) return;
-
-        // Open output file
-        openNextOutputFile(m_uniqueNames.get(m_fileBaseName));
-        // Emit all functions
-        for (AstCFunc* const funcp : funcps) {
+    void emitCFuncImp() {
+        for (const AstNodeModule* const modp : m_modps) {
             VL_RESTORER(m_modp);
-            m_modp = EmitCParentModule::get(funcp);
-            iterateConst(funcp);
+            VL_RESTORER(m_classOrPackagep);
+            m_modp = modp;
+            const AstClass* const classp = VN_CAST(modp, Class);
+            m_classOrPackagep = classp ? classp->classOrPackagep() : VN_CAST(modp, ClassPackage);
+            for (AstNode* const nodep : modp->stmtspList()) {
+                AstCFunc* const funcp = VN_CAST(nodep, CFunc);
+                if (!funcp || !isImpFunc(funcp)) continue;
+                if (funcp->slow() != m_slow) continue;
+                // Open output file only when needed, so not to create empty files
+                if (!ofp()) openNextOutputFile(m_uniqueNames.get(m_fileBaseName));
+                iterateConst(funcp);
+            }
         }
-        // Close output file
+        if (ofp()) closeOutputFile();
+    }
+    void splitOutputFile() {
+        // Splitting file, so using parallel build.
+        v3Global.useParallelBuild(true);
         closeOutputFile();
+        openNextOutputFile(m_uniqueNames.get(m_fileBaseName));
     }
 
     // VISITORS
     void visit(AstCFunc* nodep) override {
-        if (splitNeeded()) {
-            // Splitting file, so using parallel build.
-            v3Global.useParallelBuild(true);
-            // Close old file
-            closeOutputFile();
-            // Open a new file
-            openNextOutputFile(m_uniqueNames.get(m_fileBaseName));
-        }
-
+        if (splitNeeded()) splitOutputFile();
         EmitCFunc::visit(nodep);
     }
 
-    explicit EmitCImp(const AstNodeModule* modp, bool slow)
-        : m_fileModp{modp}
-        , m_slow{slow} {
-        UINFO(5, "  Emitting implementation of " << EmitCUtil::prefixNameProtect(modp));
-
-        m_modp = modp;
-
-        // Emit implementation of this module, if this is an AstClassPackage, then put the
-        // corresponding AstClass implementation in the same file as often optimizations are
-        // possible when both are seen by the compiler
-        // TODO: is the above comment still true?
+    EmitCImp(const std::vector<AstNodeModule*>& modps, const std::string& fileBaseName, bool slow)
+        : m_modps{modps}
+        , m_slow{slow}
+        , m_fileBaseName{fileBaseName} {
+        UINFO(5, "  Emitting implementation of " << fileBaseName);
 
         // Emit implementations of common parts
-        emitCommonImp(modp);
+        if (m_slow) {
+            emitCommonImpSlow();
+        } else {
+            emitCommonImpFast();
+        }
 
         // Emit implementations of all AstCFunc
-        emitCFuncImp(modp);
+        emitCFuncImp();
     }
     ~EmitCImp() override = default;
 
 public:
-    static std::vector<AstCFile*> main(const AstNodeModule* modp, bool slow) VL_MT_STABLE {
-        EmitCImp emitCImp{modp, slow};
+    // Whether the function is emitted by this visitor
+    static bool isImpFunc(const AstCFunc* funcp) {
+        return !funcp->isTrace() && !funcp->dpiImportPrototype() && !funcp->dpiExportDispatcher();
+    }
+
+    static std::vector<AstCFile*> main(const std::vector<AstNodeModule*>& modps,
+                                       const std::string& fileBaseName, bool slow) VL_MT_STABLE {
+        EmitCImp emitCImp{modps, fileBaseName, slow};
         return emitCImp.getAndClearCfileps();
     }
 };
@@ -536,6 +526,7 @@ class EmitCTraceTypes final : public EmitCFunc {
     std::unordered_map<AstNode*, int> m_enumNumMap;  // EnumDType to enumeration number
     int m_traceTypeSubs = 0;  // Number of trace type declaration sub-functions
     V3UniqueNames m_uniqueNames;  // Generates unique file names
+    // Base name of the output files
     const std::string m_fileBaseName = EmitCUtil::topClassName() + "_" + protect("_TraceDecls");
     // This one uses CSplitTrace for file splitting, which is incorrect but historically accurates
     const size_t m_splitLimit = v3Global.opt.outputSplitCTrace()
@@ -573,8 +564,7 @@ public:
             puts("{\n");
             putns(nodep, "const char* " + protect("__VenumItemNames") + "[]\n");
             puts("= {");
-            for (AstEnumItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), EnumItem)) {
+            for (AstEnumItem* const itemp : nodep->itemspList()) {
                 if (++nvals > 1) puts(", ");
                 putbs("\"" + itemp->prettyName() + "\"");
             }
@@ -582,8 +572,7 @@ public:
             nvals = 0;
             puts("const char* " + protect("__VenumItemValues") + "[]\n");
             puts("= {");
-            for (AstEnumItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), EnumItem)) {
+            for (AstEnumItem* const itemp : nodep->itemspList()) {
                 AstConst* const constp = VN_AS(itemp->valuep(), Const);
                 if (++nvals > 1) puts(", ");
                 putbs("\"" + constp->num().displayed(nodep, "%0b") + "\"");
@@ -636,8 +625,10 @@ class EmitCTrace final : public EmitCFunc {
 
     // MEMBERS
     const bool m_slow;  // Making slow file
+    // Emits trace types, only when making slow file
     const std::unique_ptr<EmitCTraceTypes> m_emitTypesp{m_slow ? new EmitCTraceTypes{} : nullptr};
     V3UniqueNames m_uniqueNames;  // Generates unique file names
+    // Base name of the output files
     const std::string m_fileBaseName = EmitCUtil::topClassName() + "_" + protect("_Trace");
 
     // METHODS
@@ -919,7 +910,7 @@ class EmitCTrace final : public EmitCFunc {
         // Open output file
         openNextOutputFile();
         // Emit functions
-        for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : m_modp->stmtspList()) {
             if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) iterateConst(funcp);
         }
         // Close output file
@@ -968,19 +959,75 @@ void V3EmitC::emitcImp() {
     {
         // Make parent module pointers available.
         const EmitCParentModule emitCParentModule;
+        // Used by EmitCImp
+        const VNUser1InUse user1InUse;
+
+        // Groups of modules emitted into the same files, with the base name of the files
+        std::vector<std::pair<std::vector<AstNodeModule*>, std::string>> groups;
+
+        // Process each module in turn, gathering classes to be emitted below
+        std::vector<AstClassPackage*> clspkgps;  // Class packages, emitted with their class
+        for (AstNode* const nodep : v3Global.rootp()->modulespList()) {
+            AstNodeModule* const modp = VN_AS(nodep, NodeModule);
+            if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
+            if (VN_IS(modp, Class)) continue;  // Emitted with its package
+            if (AstClassPackage* const clspkgp = VN_CAST(modp, ClassPackage)) {
+                clspkgps.push_back(clspkgp);
+                continue;
+            }
+            groups.emplace_back(std::vector<AstNodeModule*>{modp},
+                                EmitCUtil::prefixNameProtect(modp));
+        }
+
+        // Cut the classes, in netlist order, into chunks of about one --output-split worth of
+        // slow or fast code, each emitted into its own files, in parallel. Netlist order keeps
+        // classes that use each other close, so the templates instantiated for a class (e.g.
+        // VlClassRef) are compiled in fewer files. A class goes right after its package, so the
+        // compiler sees them together.
+        const size_t splitLimit = v3Global.opt.outputSplit();
+        std::vector<std::vector<AstNodeModule*>> chunks;
+        // Size of the slow and fast code of the current chunk, as measured for --output-split
+        size_t slowCost = 0;
+        size_t fastCost = 0;
+        for (AstClassPackage* const clspkgp : clspkgps) {
+            if (chunks.empty() || (splitLimit && std::max(slowCost, fastCost) >= splitLimit)) {
+                chunks.emplace_back();
+                slowCost = 0;
+                fastCost = 0;
+            }
+            AstNodeModule* const pkgp = clspkgp;
+            AstNodeModule* const clsp = clspkgp->classp();
+            chunks.back().push_back(pkgp);
+            chunks.back().push_back(clsp);
+            for (const AstNodeModule* const implp : {pkgp, clsp}) {
+                for (const AstNode* const stmtp : implp->stmtspList()) {
+                    const AstCFunc* const funcp = VN_CAST(stmtp, CFunc);
+                    if (!funcp || !EmitCImp::isImpFunc(funcp)) continue;
+                    (funcp->slow() ? slowCost : fastCost) += funcp->nodeCount();
+                }
+            }
+        }
+        // Class code is split into multiple files, so use parallel build
+        if (chunks.size() > 1) v3Global.useParallelBuild(true);
+
+        // Emit all classes in the same chunk into the same files
+        for (size_t i = 0; i < chunks.size(); ++i) {
+            const std::string suffix = "_Classes_" + std::to_string(i);
+            groups.emplace_back(std::move(chunks[i]),
+                                EmitCUtil::topClassName() + "_" + VIdProtect::protect(suffix));
+        }
+
         V3ThreadScope threadScope;
 
-        // Process each module in turn
-        for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
-            if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
-            const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
-            if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
-            cfiles.emplace_back();
-            std::vector<AstCFile*>& slow = cfiles.back();
-            threadScope.enqueue([modp, &slow] { slow = EmitCImp::main(modp, /* slow: */ true); });
-            cfiles.emplace_back();
-            std::vector<AstCFile*>& fast = cfiles.back();
-            threadScope.enqueue([modp, &fast] { fast = EmitCImp::main(modp, /* slow: */ false); });
+        // Emit each group
+        for (const auto& group : groups) {
+            for (const bool slow : {true, false}) {
+                cfiles.emplace_back();
+                std::vector<AstCFile*>& cfileps = cfiles.back();
+                threadScope.enqueue([&group, slow, &cfileps] {
+                    cfileps = EmitCImp::main(group.first, group.second, slow);
+                });
+            }
         }
 
         // Emit trace routines (currently they can only exist in the top module)
@@ -1001,8 +1048,7 @@ void V3EmitC::emitcImp() {
 
 void V3EmitC::emitcFiles() {
     UINFO(2, __FUNCTION__ << ":");
-    for (AstNodeFile *filep = v3Global.rootp()->filesp(), *nextp; filep; filep = nextp) {
-        nextp = VN_AS(filep->nextp(), NodeFile);
+    for (AstNodeFile* const filep : v3Global.rootp()->filespList()) {
         if (AstCFile* const cfilep = VN_CAST(filep, CFile)) EmitCFile::main(cfilep);
     }
 }

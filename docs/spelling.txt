@@ -60,6 +60,7 @@ Cai
 Cavium
 Cfuncs
 Chandan
+Cheng
 Chentai
 Cherkasov
 Chih
@@ -187,6 +188,7 @@ Hammoud
 Hao
 Haojin
 Harboe
+Haroosh
 Hashimoto
 Hayenga
 Heng
@@ -337,6 +339,7 @@ Mora
 Muhlestein
 Multithreaded
 Multithreading
+Murdock
 Mykyta
 NFA
 NOUNOPTFLAT
@@ -444,6 +447,7 @@ Shankar
 Shanshan
 Sharad
 Shareef
+Sheehan
 Shen
 Sheng
 Shi
@@ -549,6 +553,7 @@ VlRNG
 VlWide
 Vlip
 Vm
+Vour
 Vukobratovic
 Wai
 Wajahat
@@ -996,6 +1001,7 @@ muzafferkal
 myftptoyman
 mysignal
 namespace
+namespaces
 nand
 nanduraj
 nasties
@@ -1026,6 +1032,7 @@ oversubscription
 parallelized
 param
 parameterization
+parameterizations
 parameterized
 parameterized
 parameterless
@@ -1055,7 +1062,10 @@ postincrement
 pragma
 pragmas
 pre
+prebuild
+prebuilt
 precisions
+precompile
 precompiled
 predefines
 prefetch
@@ -1252,6 +1262,7 @@ unoptimizable
 unparenthesized
 unroller
 unsatisfiable
+unselected
 unsized
 unsup
 untyped
@@ -1263,6 +1274,7 @@ uvm
 uwire
 uwires
 valgrind
+variadic
 vc
 vcd
 vcddiff
@@ -1307,12 +1319,15 @@ vpm
 vpp
 warmup
 wavealloca
+wavecat
 wavediff
 waveforms
+wavetools
 whitespace
 widthed
 wor
 wreal
+writablility
 writeb
 writeme
 writemem

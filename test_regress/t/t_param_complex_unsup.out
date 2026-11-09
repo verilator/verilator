@@ -1,0 +1,15 @@
+%Error: t/t_param_complex_unsup.v:13:26: Expecting expression to be constant, but can't determine constant for FUNCREF 'eval_case_inside_range_string'
+                                       : ... note: In instance 't'
+        t/t_param_complex_unsup.v:18:7: ... Location of non-constant INSIDERANGE: Unsupported: string range item
+        t/t_param_complex_unsup.v:13:26: ... Called from 'eval_case_inside_range_string()' with parameters:
+           value = "c"
+   13 |   localparam bit MATCH = eval_case_inside_range_string("c") == 1;
+      |                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_complex_unsup.v:14:39: Expecting expression to be constant, but can't determine constant for FUNCREF 'evaluate_array_union'
+                                       : ... note: In instance 't'
+        t/t_param_complex_unsup.v:25:5: ... Location of non-constant VARREF 'values': Assigned variable has unsupported data type
+        t/t_param_complex_unsup.v:14:39: ... Called from 'evaluate_array_union()' with parameters:
+   14 |   localparam int ARRAY_UNION_RESULT = evaluate_array_union();
+      |                                       ^~~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to

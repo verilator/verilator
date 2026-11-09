@@ -384,9 +384,8 @@ void V3FuncOpt::funcOptAll(AstNetlist* nodep) {
         //  AstNode::user1()     -> bool.  Processed
         const VNUser1InUse user1InUse;
         FuncOptStats stats;
-        for (AstNodeModule* modp = nodep->modulesp(); modp;
-             modp = VN_AS(modp->nextp(), NodeModule)) {
-            for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNodeModule* const modp : nodep->modulespList()) {
+            for (AstNode* const stmtp : modp->stmtspList()) {
                 if (AstCFunc* const cfuncp = VN_CAST(stmtp, CFunc)) {
                     FuncOptVisitor::apply(stats, cfuncp);
                 }

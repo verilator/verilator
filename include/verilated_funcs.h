@@ -127,8 +127,8 @@ extern WDataOutP VL_SCOPED_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint6
 /// Random reset a signal of given width (init time only)
 extern IData VL_RAND_RESET_I(int obits) VL_MT_SAFE;
 
-/// Zero reset a signal (slow - else use VL_ZERO_W)
-extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
+/// Fill a nonempty integral or packed unpacked array from its already initialized first element.
+extern void VL_UNPACKED_FILL(void* arrayp, size_t elementBytes, size_t count) VL_MT_SAFE;
 
 extern void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
                               const VerilatedContext* contextp) VL_MT_SAFE;
@@ -281,6 +281,46 @@ inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_PURE {
     VlQueue<T> ret;
     for (size_t i = 0; i < N_Depth; ++i) ret.push_back(q[i]);
     return ret;
+}
+
+// Return queue from a descending unpacked array, left index first
+template <typename T, std::size_t N_Depth>
+inline VlQueue<T> VL_CVT_UNPACK_TO_Q_REVERSED(const VlUnpacked<T, N_Depth>& q) VL_PURE {
+    VlQueue<T> ret;
+    for (size_t i = 0; i < N_Depth; ++i) ret.push_back(q[N_Depth - 1 - i]);
+    return ret;
+}
+
+// Copy dynamic array or queue to a fixed-size unpacked array, reversing each dimension whose
+// template argument is non-zero, outermost dimension is first
+template <typename T_To, typename T_From>
+inline void _vl_cvt_q_to_unpack(T_To& to, const T_From& from) VL_MT_SAFE {
+    to = from;
+}
+template <int T_Reverse, int... T_Inner, typename T_To, std::size_t N_Depth, typename T_From,
+          std::size_t N_MaxSize>
+inline void _vl_cvt_q_to_unpack(VlUnpacked<T_To, N_Depth>& to,
+                                const VlQueue<T_From, N_MaxSize>& from) VL_MT_SAFE {
+    if (VL_UNLIKELY(from.size() != static_cast<int>(N_Depth))) Verilated::sizeMismatchError();
+    for (std::size_t i = 0; i < N_Depth; ++i) {
+        _vl_cvt_q_to_unpack<T_Inner...>(to[T_Reverse ? N_Depth - 1 - i : i],
+                                        from.at(static_cast<int32_t>(i)));
+    }
+}
+template <int T_Reverse, int... T_Inner, typename T, std::size_t N_Depth>
+inline void _vl_cvt_q_to_unpack(VlUnpacked<T, N_Depth>& to,
+                                const VlUnpacked<T, N_Depth>& from) VL_MT_SAFE {
+    for (std::size_t i = 0; i < N_Depth; ++i) {
+        _vl_cvt_q_to_unpack<T_Inner...>(to[T_Reverse ? N_Depth - 1 - i : i], from[i]);
+    }
+}
+
+// Return unpacked array copied from a dynamic array or queue
+template <typename T_To, int... T_Reverse, typename T_From>
+inline T_To VL_CVT_Q_TO_UNPACK(const T_From& from) VL_MT_SAFE {
+    T_To to;
+    _vl_cvt_q_to_unpack<T_Reverse...>(to, from);
+    return to;
 }
 
 template <typename T>
@@ -1894,7 +1934,7 @@ inline VlQueue<T> VL_STREAMR_RRI(int lbits, const VlQueue<T> q, IData rd) VL_MT_
     return q;
 }
 
-inline VlQueue<std::string> VL_STREAMR_NRI(int lbits, const VlQueue<std::string> q,
+inline VlQueue<std::string> VL_STREAMR_NRI(int lbits, const VlQueue<std::string>& q,
                                            IData rd) VL_MT_SAFE {
     return q;
 }
@@ -2125,6 +2165,7 @@ inline void VL_STREAML_RII(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q
     q.clear();
     VlWide<N_Words> value;
     value[0] = ret;
+    VL_MEMSET_ZERO_W(value + 1, N_Words - 1);
     q.push_back(value);
 }
 
@@ -2166,6 +2207,8 @@ inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<T>& q, WDataInP con
     VL_CONSTEXPR_CXX17 int numBitsInT = 8 * sizeof(T);
     VL_CONSTEXPR_CXX17 int mask = VL_MASK_I(numBitsInT * needsMask);
     q.renew(lbits / numBitsInT);
+    // Bits are OR-ed in below, but renew() fills with the possibly randomized default
+    for (int i = 0; i < lbits / numBitsInT; ++i) q.atWrite(i) = 0;
     const int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
     for (int istart = 0; istart < lbits; istart += rd) {
         int ostart = lbits - rd - istart;
@@ -2193,14 +2236,19 @@ template <std::size_t N_Words>
 inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q,
                            WDataInP const lwp, IData rd) VL_MT_SAFE {
     VL_CONSTEXPR_CXX17 int numBitsInT = 4 * N_Words * 8;
+    const int ibits = lbits;  // Padding the destination must not extend source reads
     if (lbits < queueBits) lbits = queueBits;  // If queue is larger than the rhs
     const int leftOver = (lbits % numBitsInT) > 0;
     q.renew(lbits / numBitsInT + leftOver);
+    // Bits are OR-ed in below, but renew() fills with the possibly randomized default
+    for (int i = 0; i < lbits / numBitsInT + leftOver; ++i) {
+        for (int w = 0; w < N_Words; ++w) q.atWrite(i).at(w) = 0;
+    }
     const int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
-    for (int istart = 0; istart < lbits; istart += rd) {
+    for (int istart = 0; istart < ibits; istart += rd) {
         int ostart = lbits - rd - istart;
         ostart = ostart > 0 ? ostart : 0;
-        for (int sbit = 0; sbit < ssize && sbit < lbits - istart; ++sbit) {
+        for (int sbit = 0; sbit < ssize && sbit < ibits - istart; ++sbit) {
             const EData bit = (VL_BITRSHIFT_W(lwp, (istart + sbit)) & 1)
                               << VL_BITBIT_E(ostart + sbit);
             int qIndex = istart / numBitsInT;
@@ -3724,6 +3772,8 @@ inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
 inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs) VL_PURE {
     return lhs + rhs;
 }
+// Append in place, unlike 'lhs = VL_CONCATN_NNN(lhs, rhs)', which copies 'lhs'
+inline void VL_APPENDN_NN(std::string& lhsr, const std::string& rhs) VL_PURE { lhsr += rhs; }
 inline std::string VL_REPLICATEN_NNQ(const std::string& lhs, IData rep) VL_PURE {
     std::string result;
     result.reserve(lhs.length() * rep);

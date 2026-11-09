@@ -16,7 +16,7 @@ if test.nc:
     test.compile(nc_flags2=["+ncdpiimpheader+" + test.obj_dir + "/dpi-imp.h"])
 
 test.compile(
-    v_flags2=["t/t_dpi_open_query.cpp"],
+    v_flags2=[test.pli_filename],
     verilator_flags2=["-Wall -Wno-DECLFILENAME"],
     # NC: Gdd the obj_dir to the C include path
     nc_flags2=["+ncscargs+-I" + test.obj_dir],

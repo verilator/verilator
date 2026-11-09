@@ -1,4 +1,4 @@
-{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","resolvedTopModuleName":"top","typeTablep":"(C)","constPoolPkgp":"(D)","dollarUnitPkgp":"(E)","topScopep":"(F)",
+{"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","resolvedTopModuleName":"top","l2Names":"top","typeTablep":"(C)","constPoolPkgp":"(D)","dollarUnitPkgp":"(E)","topScopep":"(F)",
  "modulesp": [
   {"type":"MODULE","name":"$root","addr":"(G)","loc":"d,11:8,11:11","origName":"$root","verilogName":"$root","level":1,"depth":1,"modPublic":true,"unconnectedDrive":"DEFAULT_FALSE","lifetime":"NONE","timeunit":"1ps",
    "stmtsp": [

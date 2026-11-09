@@ -83,6 +83,12 @@ module t (
       .state(state[31:0])
   );
 
+  Test9 test9 (  /*AUTOINST*/
+      // Inputs
+      .clk(clk),
+      .state(state[31:0])
+  );
+
   always @(posedge clk) begin
     state <= state + 1;
 `ifdef TEST_VERBOSE
@@ -280,6 +286,41 @@ module Test8 (
     end
     else if (state == 4) begin
       `checkb(bothdir, 3'b111);
+    end
+  end
+endmodule
+
+module Test9 (
+    input clk,
+    input [31:0] state
+);
+  // Z constants in unpacked aggregate patterns
+  typedef struct packed {
+    bit [1:0] x;
+    bit s;
+    logic [1:0] q;
+  } entry_t;
+  entry_t arr[4] = '{
+      '{0, 0, 2'b0Z},
+      '{1, 1, 2'bZ1},
+      '{2, 0, 2'b1Z},
+      '{3, 1, 2'bZ0}
+  };
+  struct {
+    logic [1:0] q;
+    int i;
+  } ustr = '{2'bZ1, 5};
+
+  always_ff @(posedge clk) begin
+    if (state == 1) begin
+      `checkb(arr[0].q[1], 1'b0);
+      `checkb(arr[1].x, 2'd1);
+      `checkb(arr[1].q[0], 1'b1);
+      `checkb(arr[2].q[1], 1'b1);
+      `checkb(arr[3].s, 1'b1);
+      `checkb(arr[3].q[0], 1'b0);
+      `checkb(ustr.q[0], 1'b1);
+      `checkb(ustr.i, 5);
     end
   end
 endmodule

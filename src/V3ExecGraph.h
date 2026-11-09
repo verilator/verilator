@@ -47,6 +47,7 @@ private:
     uint32_t m_cost = 0;
     uint64_t m_predictStart = 0;  // Predicted start time of task
     int m_threads = 1;  // Threads used by this mtask
+    int m_fixedThread = -1;  // Thread this mtask must run on, or -1 for any
     VL_UNCOPYABLE(ExecMTask);
 
     static AstCFunc* createCFunc(AstExecGraph* execGraphp, AstScope* scopep, AstNodeStmt* stmtsp,
@@ -66,6 +67,8 @@ public:
     string hashName() const { return m_hashName; }
     void threads(int threads) { m_threads = threads; }
     int threads() const { return m_threads; }
+    int fixedThread() const { return m_fixedThread; }
+    void fixedThread(int thread) { m_fixedThread = thread; }
     void dump(std::ostream& str) const;
 
     static uint32_t numUsedIds() VL_MT_SAFE { return s_nextId; }

@@ -27,6 +27,9 @@ t.cg_auto_default.data.auto[0]: 1
 t.cg_auto_default.data.auto[1]: 1
 t.cg_auto_default.data.one: 1
 t.cg_auto_default.data.other [default]: 0
+t.cg_auto_iff.data.auto[0]: 1
+t.cg_auto_iff.data.auto[1]: 1
+t.cg_auto_iff.data.auto[2]: 2
 t.cg_cross_auto.cp_a.auto_0: 0
 t.cg_cross_auto.cp_a.auto_1: 0
 t.cg_cross_auto.cp_a.auto_2: 1

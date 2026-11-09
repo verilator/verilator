@@ -35,6 +35,12 @@ module t (
       .in(in[31:0])
   );
 
+  Test4 test4 (  /*AUTOINST*/
+      // Inputs
+      .clk(clk),
+      .in(in[31:0])
+  );
+
   always @(posedge clk) begin
     if (cyc != 0) begin
       cyc <= cyc + 1;
@@ -184,4 +190,82 @@ module Test3 (  /*AUTOARG*/
   global clocking gck @(posedge clk);
   endclocking
 
+endmodule
+
+module Test4 (  /*AUTOARG*/
+    // Inputs
+    clk,
+    in
+);
+
+  input clk;
+  input [31:0] in;
+
+  // Elements of unpacked arrays without an initializer
+  bit [3:0] arr[2];
+  bit m[2][2];
+  bit [3:0] dly;
+  bit mdly;
+  // With an initializer, which is the default
+  bit [3:0] ai[2] = '{4'd1, 4'd2};
+  bit [3:0] aidly;
+  bit [3:0] vdly;
+  // Bit and part selects of a packed vector with a variable index
+  bit [6:0] vec;
+  bit bsdly;
+  bit [1:0] psdly;
+  // Select of a parameter or a variable with an initializer, and of a 4-state vector
+  localparam bit [6:0] P = 7'h2a;
+  bit [6:0] iv = 7'h33;
+  logic [6:0] lv;
+  bit pdly;
+  bit ivdly;
+  logic lvdly;
+  // Index beyond the vector
+  bit odly;
+
+  always @(posedge clk) begin
+    vec <= in[6:0] ^ 7'h55;
+    bsdly <= vec[{1'b0, in[1:0]}];
+    psdly <= vec[{1'b0, in[1:0]}+:2];
+    lv <= in[6:0];
+    pdly <= P[{1'b0, in[1:0]}];
+    ivdly <= iv[{1'b0, in[1:0]}];
+    lvdly <= lv[{1'b0, in[1:0]}];
+    odly <= vec[in[2:0]];
+    arr[0] <= in[3:0];
+    arr[1] <= ~in[3:0];
+    m[1][0] <= in[0];
+    dly <= arr[0];
+    mdly <= m[1][0];
+    ai[1] <= in[3:0];
+    aidly <= ai[1];
+    vdly <= arr[in[1]];
+    if (in == 1) begin
+      // Before the first tick, the default of the element type
+      `checkd($past(arr[0]), 0);
+      `checkd($past(m[1][0]), 0);
+      `checkd($past(ai[1]), 2);
+      `checkd($past(vec[{1'b0, in[1:0]}]), 0);
+      `checkd($past(P[{1'b0, in[1:0]}]), 0);
+      `checkd($past(P[1]), 1);
+      `checkd($past(iv[{1'b0, in[1:0]}]), 0);
+    end
+    if (in > 2) begin
+      `checkd($past(arr[0]), dly);
+      `checkd($past(arr[1]), ~dly);
+      `checkd($past(m[1][0]), mdly);
+      `checkd($stable(arr[0]), arr[0] == dly);
+      `checkd($past(ai[1]), aidly);
+      // Variable index
+      `checkd($past(arr[in[1]]), vdly);
+      `checkd($past(vec[{1'b0, in[1:0]}]), bsdly);
+      `checkd($stable(vec[{1'b0, in[1:0]}]), vec[{1'b0, in[1:0]}] == bsdly);
+      `checkd($past(vec[{1'b0, in[1:0]}+:2]), psdly);
+      `checkd($past(P[{1'b0, in[1:0]}]), pdly);
+      `checkd($past(iv[{1'b0, in[1:0]}]), ivdly);
+      `checkd($past(lv[{1'b0, in[1:0]}]), lvdly);
+      `checkd($past(vec[in[2:0]]), odly);
+    end
+  end
 endmodule

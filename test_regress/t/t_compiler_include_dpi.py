@@ -10,9 +10,8 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_compiler_include_dpi.v"
 
-test.compile(v_flags2=["t/t_compiler_include_dpi.cpp"],
+test.compile(v_flags2=[test.pli_filename],
              verilator_flags2=[
                  "-Wall -Wno-DECLFILENAME --compiler-include",
                  test.t_dir + "/t_compiler_include_dpi.h", "--output-split 0"

@@ -11,7 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=["--output-groups", "2"])
+# Split output so there are enough files to group
+test.compile(verilator_flags2=["--output-groups", "2", "--output-split", "1"])
 
 test.execute()
 

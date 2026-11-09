@@ -73,7 +73,7 @@ NOTIFICATION_DIR=notification
 mkdir -p ${NOTIFICATION_DIR}
 
 cat > ${NOTIFICATION_DIR}/body.txt <<NOTIFICATION_TEMPLATE
-Patch coverage from PR workflow [#${RUN_NUM}](${RUN_URL}) (code coverage of lines changed relative to ${COVERAGE_BASE}):
+Patch coverage report [${RUN_ID}](${REPORT_URL}) from PR workflow [#${RUN_NUM}](${RUN_URL}) (code coverage of lines changed relative to ${COVERAGE_BASE}):
 NOTIFICATION_TEMPLATE
 
 if [ -f ${COVERAGE_DIR}/empty-patch ]; then
@@ -91,8 +91,6 @@ else
 <pre>
 $(grep -E "(lines|branches)\.*:" ${MAKE_LOG} | sed "s/\.*:/:/" || true)
 </pre>
-Report: [${RUN_ID}](${REPORT_URL})
-
 Please get to 100% line coverage, and understand all branches; see the [developer docs](https://github.com/verilator/verilator/blob/master/docs/internals.rst#code-coverage-results)
 SUMMARY_TEMPLATE
 
@@ -103,13 +101,15 @@ fi
 # Create the coverage status
 ###############################################################################
 
-# 'pr-automation.yml' labels the pull request from this. Note it is only
-# written when the coverage could actually be determined, so that a report we
-# could not read leaves the labels of the pull request alone.
+# 'pr-automation.yml' labels the pull request from this. It holds whether
+# every line the patch touches is covered, and the number of lines it touches.
+# Note it is only written when the coverage could actually be determined, so
+# that a report we could not read leaves the labels of the pull request alone.
 
 if [ -f ${COVERAGE_DIR}/empty-patch ]; then
   # Nothing to cover, so count it as covered
   COVERED=true
+  TOTAL=0
 else
   # Take the counts, and not the percentage, which is rounded. The line reads
   # for example "  lines......: 100.00% (60 of 60 lines)"
@@ -128,6 +128,6 @@ else
 fi
 
 if [ -n "${COVERED}" ]; then
-  echo "Line coverage complete: ${COVERED}"
-  echo "${COVERED}" > coverage-status.txt
+  echo "Line coverage complete: ${COVERED} (${TOTAL} lines)"
+  echo "${COVERED} ${TOTAL}" > coverage-status.txt
 fi

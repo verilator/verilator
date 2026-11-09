@@ -30,27 +30,27 @@ module t (
   int count_fail5 = 0;
   int count_fail6 = 0;
 
-  // Test 1: first_match with simple boolean
+  // Test: first_match with simple boolean
   assert property (@(posedge clk) first_match(a) |-> a)
     else count_fail1 <= count_fail1 + 1;
 
-  // Test 2: first_match with boolean OR
+  // Test: first_match with boolean OR
   assert property (@(posedge clk) first_match(a or b) |-> (a | b))
     else count_fail2 <= count_fail2 + 1;
 
-  // Test 3: first_match with boolean AND
+  // Test: first_match with boolean AND
   assert property (@(posedge clk) first_match(a and b) |-> (a & b))
     else count_fail3 <= count_fail3 + 1;
 
-  // Test 4: nested first_match
+  // Test: nested first_match
   assert property (@(posedge clk) first_match(first_match(a)) |-> a)
     else count_fail4 <= count_fail4 + 1;
 
-  // Test 5: first_match with boolean intersect
+  // Test: first_match with boolean intersect
   assert property (@(posedge clk) first_match(a intersect b) |-> (a & b))
     else count_fail5 <= count_fail5 + 1;
 
-  // Test 6: first_match in named sequence
+  // Test: first_match in named sequence
   sequence s_fm;
     first_match(a and c);
   endsequence

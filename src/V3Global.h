@@ -41,96 +41,8 @@ class AstNetlist;
 class V3ConstPool;
 class V3HierGraph;
 class V3LibMap;
+class V3SolverBackend;
 class V3ThreadPool;
-
-//======================================================================
-// Restorer
-
-// For all flavours, 'var' must be a named scalar variable (simple identifier).
-
-// Copy given variable's value on the stack, copy saved value back at end-of-scope.
-// Only usable for trivially copyable types; use VL_RESTORER_COPY/VL_RESTORER_CLEAR for
-// non-trivially copyable types, which are more efficient.
-#define VL_RESTORER(var) \
-    const VRestorerTrivial<typename std::decay_t<decltype(var)>> restorer_##var(var);
-
-// This is the equivalent of VL_RESTORER for non-trivially copyable types. Still more efficient
-// than VL_RESTORER as uses move to restore.
-#define VL_RESTORER_COPY(var) \
-    const VRestorerCopy<typename std::decay_t<decltype(var)>> restorer_##var(var);
-
-// Swap 'var' with a no-args constructed object of the same type, effectively clearing it, then
-// swap back at end-of-scope. No copying involved. Use this e.g. for std containers where they
-// would be .clear()'d right after the VL_RESTORER instance.
-#define VL_RESTORER_CLEAR(var) \
-    const VRestorerClear<typename std::decay_t<decltype(var)>> restorer_##var(var);
-
-// Get const reference to the saved copy
-#define VL_RESTORER_PREV(var) restorer_##var.saved()
-
-// Implementation of VL_RESTORER
-template <typename T>
-class VRestorerTrivial final {
-    static_assert(std::is_trivially_copyable<T>::value,
-                  "Use VL_RESTORER_{COPY,CLEAR} for non trivially copyable types");
-    T& m_ref;  // Reference to object we're saving and restoring
-    const T m_saved;  // Value saved, for later restore
-
-public:
-    explicit VRestorerTrivial(T& val)
-        : m_ref{val}
-        , m_saved{val} {}
-    ~VRestorerTrivial() { m_ref = m_saved; }
-    VL_UNCOPYABLE(VRestorerTrivial);
-    // Must be stack allocated
-    void* operator new(size_t) = delete;
-    void operator delete(void*) = delete;
-
-    const T& saved() const { return m_saved; }
-};
-
-// Implementation of VL_RESTORER_COPY
-template <typename T>
-class VRestorerCopy final {
-    static_assert(!std::is_trivially_copyable<T>::value,
-                  "Use VL_RESTORER for trivially copyable types");
-    T& m_ref;  // Reference to object we're saving and restoring
-    T m_saved;  // Value saved, for later restore
-
-public:
-    explicit VRestorerCopy(T& val)
-        : m_ref{val}
-        , m_saved{val} {}
-    ~VRestorerCopy() { m_ref = std::move(m_saved); }
-    VL_UNCOPYABLE(VRestorerCopy);
-    // Must be stack allocated
-    void* operator new(size_t) = delete;
-    void operator delete(void*) = delete;
-
-    const T& saved() const { return m_saved; }
-};
-
-// Implementation of VL_RESTORER_CLEAR.
-template <typename T>
-class VRestorerClear final {
-    static_assert(!std::is_trivially_copyable<T>::value,
-                  "Use VL_RESTORER for trivially copyable types");
-    T& m_ref;  // Reference to object we're saving and restoring
-    T m_saved{};  // Owns the swapped-out value; starts empty
-
-public:
-    explicit VRestorerClear(T& val)
-        : m_ref{val} {
-        std::swap(m_ref, m_saved);
-    }
-    ~VRestorerClear() { std::swap(m_ref, m_saved); }
-    VL_UNCOPYABLE(VRestorerClear);
-    // Must be stack allocated
-    void* operator new(size_t) = delete;
-    void operator delete(void*) = delete;
-
-    const T& saved() const { return m_saved; }
-};
 
 //######################################################################
 
@@ -173,6 +85,8 @@ class V3Global final {
     V3ThreadPool* m_threadPoolp = nullptr;
     // Library Mapping, nullptr unless --libmap is used
     V3LibMap* m_libMapp = nullptr;
+    // Constraint solver back-end, see V3SolverBackend.h, set via solverBackendp(V3SolverBackend*)
+    V3SolverBackend* m_solverBackendp = nullptr;
     VWidthMinUsage m_widthMinUsage
         = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
 
@@ -185,6 +99,7 @@ class V3Global final {
     // Experimenting with always requiring heavy, see issue #2701
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
+    bool m_fourstateResolved = false;  // No four-state types should be present in AST
     bool m_hasEvents = false;  // Design uses SystemVerilog named events
     bool m_hasClasses = false;  // Design uses SystemVerilog classes
     bool m_hasSampled = false;  // Design uses SAMPLED expresions
@@ -258,6 +173,8 @@ public:
     void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
     bool dpi() const VL_MT_SAFE { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
+    bool fourstateResolved() const { return m_fourstateResolved; }
+    void fourstateResolved(bool flag) { m_fourstateResolved = flag; }
     bool assignsEvents() const { return m_assignsEvents; }
     void setAssignsEvents() { m_assignsEvents = true; }
     bool hasEvents() const { return m_hasEvents; }
@@ -286,6 +203,11 @@ public:
     void setUsesForce() { m_usesForce = true; }
     V3HierGraph* hierGraphp() const { return m_hierGraphp; }
     void hierGraphp(V3HierGraph* graphp) { m_hierGraphp = graphp; }
+    V3SolverBackend* solverBackendp() const { return m_solverBackendp; }
+    void solverBackendp(V3SolverBackend* backendp) {
+        UASSERT(!m_solverBackendp, "attempted to create multiple solver back-ends");
+        m_solverBackendp = backendp;
+    }
     bool useParallelBuild() const { return m_useParallelBuild; }
     void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useRandSequence() const { return m_useRandSequence; }

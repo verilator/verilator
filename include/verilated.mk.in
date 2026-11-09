@@ -207,9 +207,24 @@ VM_SLOW += $(VM_CLASSES_SLOW) $(VM_SUPPORT_SLOW)
 
 # Precompiled header filename
 VK_PCH_H = $(VM_PREFIX)__pch.h
+VK_PCH_FAST = $(VK_PCH_H).fast.gch
+VK_PCH_SLOW = $(VK_PCH_H).slow.gch
 # Compiler read-a-precompiled-header option for precompiled header filename
 VK_PCH_I_FAST = $(CFG_CXXFLAGS_PCH_I) $(VM_PREFIX)__pch.h.fast$(CFG_GCH_IF_CLANG)
 VK_PCH_I_SLOW = $(CFG_CXXFLAGS_PCH_I) $(VM_PREFIX)__pch.h.slow$(CFG_GCH_IF_CLANG)
+
+ifneq ($(filter -fmodule-header% -fmodule-only,$(CPPFLAGS) $(CXXFLAGS)),)
+  $(error Unsupported: -fmodule-header/-fmodule-only; use -fmodules, -fmodules-ts, or -fmodule-file for user C++ files)
+endif
+VK_MODULES = $(filter -fmodules -fmodules-ts -fmodule-file%,$(CPPFLAGS) $(CXXFLAGS))
+VK_MODEL_CXXFLAGS =
+VK_USER_PCH_FAST = $(VK_PCH_FAST)
+VK_USER_PCH_I_FAST = $(VK_PCH_I_FAST)
+ifneq ($(VK_MODULES),)
+  VK_MODEL_CXXFLAGS = -fno-modules
+  VK_USER_PCH_FAST =
+  VK_USER_PCH_I_FAST =
+endif
 
 #######################################################################
 ### Overall Objects Linking
@@ -297,24 +312,24 @@ ifneq ($(VM_DEFAULT_RULES),0)
 # These rules put OPT_FAST/OPT_SLOW/OPT_GLOBAL before the other flags to
 # allow USER_CPPFLAGS to override them
   %.o: %.cpp
-	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) -c -o $@ $<
 
-  $(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_H).fast.gch
-	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_FAST) -c $<
+  $(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_FAST)
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(VK_PCH_I_FAST) -c $<
 
-  $(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_H).slow.gch
-	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_SLOW) -c $<
+  $(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_SLOW)
+	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(VK_PCH_I_SLOW) -c $<
 
   $(VK_GLOBAL_OBJS): %.o: %.cpp
-	$(OBJCACHE) $(CXX) $(OPT_GLOBAL) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+	$(OBJCACHE) $(CXX) $(OPT_GLOBAL) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) -c -o $@ $<
 
 # Precompile a header file
 # PCH's compiler flags must match exactly the rules' above FAST/SLOW
 # arguments used for the .cpp files, or the PCH file won't be used.
   %.fast.gch: %
-	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
   %.slow.gch: %
-	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
+	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
 
 endif
 
@@ -375,6 +390,11 @@ debug-make::
 	@echo VM_SUPPORT_FAST: $(VM_SUPPORT_FAST)
 	@echo VM_SUPPORT_SLOW: $(VM_SUPPORT_SLOW)
 	@echo
+
+ifneq ($(VK_MODULES),)
+%.c++-module:
+	@:
+endif
 
 ######################################################################
 ### Detect out of date files and rebuild.

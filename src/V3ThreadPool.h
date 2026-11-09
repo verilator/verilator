@@ -79,7 +79,7 @@ private:
 // Ensures that jobs are started and completed within a given scope.
 class V3ThreadScope final {
     // MEMBERS
-    V3ThreadPool* m_pool = nullptr;  // Global thread pool instance
+    V3ThreadPool* m_poolp = nullptr;  // Global thread pool instance
 
 public:
     // CONSTRUCTORS

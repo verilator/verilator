@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
-test.top_filename = "t/t_interface_initial.v"
 
 test.lint()
 

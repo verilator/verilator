@@ -78,10 +78,21 @@ module S;
   endfunction
 endmodule
 
+// Escaped name spelling the same as class M::Cls
+// verilator lint_off UNOPTPUBLIC
+module \M::Cls ;
+  /*verilator public_module*/
+  function string name;
+    return $sformatf("e %m");
+  endfunction
+endmodule
+// verilator lint_on UNOPTPUBLIC
+
 module t;
   string s;
 
   M m ();
+  \M::Cls esc ();
 
   function string mod_func_name;
     return $sformatf("tmf %m");
@@ -148,6 +159,9 @@ module t;
     `checks(s, "ms top.t.m.sub.Cls.ms_auto_name");
     // Others: "ms top.t.m.sub.Cls.ms_auto_name
     // Others: "ms top.t.m.sub.\Cls::ms_auto_name
+
+    s = esc.name();
+    `checks(s, "e top.t.esc.name");
 
     $write("*-* All Finished *-*\n");
     $finish;

@@ -17,6 +17,9 @@ class Cls;
   function void setv_methoda(input int val);
     imembera = val;
   endfunction
+  function bit is_methoda(int val = 300);
+    return imembera == val;
+  endfunction
 endclass : Cls
 
 module t;
@@ -34,6 +37,8 @@ module t;
     c.setv_methoda(300);
     tmp_i = c.get_methoda;
     if (tmp_i != 300) $stop;
+    // Without parentheses, as a condition (IEEE 1800-2023 13.5.5)
+    if (!c.is_methoda) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

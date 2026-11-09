@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0103,C0114,C0115,C0116,C0123,C0209,C0301,C0302,R0902,R0904,R0913,R0914,R0912,R0915,W0511,W0621
+# pylint: disable=C0103,C0114,C0115,C0116,C0123,C0209,C0301,C0302,R0902,R0904,R0912,R0913,R0914,R0915,R0917,W0511,W0621
 ######################################################################
 
 import argparse
@@ -31,6 +31,7 @@ class Node:
         self._ordIdx = None  # Ordering index of this class
         self._arity = -1  # Arity of node
         self._ops = {}  # Operands of node
+        self._privateOps = set()  # Numbers of operands without generated accessors
         self._ptrs = []  # Pointer members of node (name, types)
         self._makeDfgVertex = False  # Create a corresponding DfgVertex sub-class
 
@@ -79,10 +80,12 @@ class Node:
         assert not self.isCompleted
         self._subClasses.append(subClass)
 
-    def addOp(self, n, name, monad, kind, legals):
+    def addOp(self, n, name, monad, kind, legals, private=False):
         assert 1 <= n <= 4
         self._ops[n] = (name, monad, kind, legals)
         self._arity = max(self._arity, n)
+        if private:
+            self._privateOps.add(n)
 
     def getOp(self, n):
         assert 1 <= n <= 4
@@ -92,6 +95,13 @@ class Node:
         if not self.isRoot:
             return self.superClass.getOp(n)
         return None
+
+    def isPrivateOp(self, n):
+        if n in self._privateOps:
+            return True
+        if not self.isRoot:
+            return self.superClass.isPrivateOp(n)
+        return False
 
     def addPtr(self, name, monad, kind, legals):
         name = re.sub(r'^m_', '', name)
@@ -635,6 +645,9 @@ def read_types(filename, Nodes, prefix):
                     n = int(what[-1])
                     ident, sep, kind = partitionAndStrip(rest, ":")
                     ident = ident.strip()
+                    private = re.match(r'^private\s+', kind)
+                    if private:
+                        kind = kind[private.end():]
                     if not sep or not re.match(r'^\w+$', ident):
                         error(
                             lineno, "Malformed '@astgen " + what + "' directive (expecting '" +
@@ -648,7 +661,7 @@ def read_types(filename, Nodes, prefix):
                         elif node.getOp(n) is not None:
                             error(lineno, "Already defined " + what + " for " + node.name)
                         else:
-                            node.addOp(n, ident, *kind)
+                            node.addOp(n, ident, *kind, private=bool(private))
                 elif what in ("alias op1", "alias op2", "alias op3", "alias op4"):
                     n = int(what[-1])
                     ident = rest.strip()
@@ -965,6 +978,10 @@ def write_ast_impl(filename):
         def emitBlock(pattern, **fmt):
             fh.write(pattern.format(**fmt))
 
+        def emitStmts(pattern, **fmt):
+            # Emit template as statements in a function body
+            fh.write(textwrap.indent(textwrap.dedent(pattern), "    ").format(**fmt))
+
         for node in AstNodeList:
             if node.name == "Node":
                 continue
@@ -998,18 +1015,37 @@ def write_ast_impl(filename):
                 op = node.getOp(i)
                 if op is None:
                     continue
-                name, _, _, legals = op
-                legals = legals.split('|')
-                if legals and legals != ["Node"]:
-                    emitBlock("    BROKEN_RTN({name}() && !(", name=name)
-                    eor = ""
-                    for legal in legals:
-                        emitBlock("{eor}privateTypeTest<Ast{legal}>({name}())",
-                                  eor=eor,
-                                  name=name,
-                                  legal=legal)
-                        eor = " || "
-                    emitBlock("));\n")
+                _, monad, _, legals = op
+                isLegal = " || ".join("privateTypeTest<Ast{legal}>(nodep)".format(legal=legal)
+                                      for legal in legals.split('|'))
+                if monad == "List":
+                    emitStmts('''\
+                        for (const AstNode* nodep = op{i}p(); nodep; nodep = nodep->nextp()) {{
+                            BROKEN_RTN(!({isLegal}));
+                        }}
+                        ''',
+                              i=i,
+                              isLegal=isLegal)
+                elif monad == "Optional":
+                    emitStmts('''\
+                        if (const AstNode* const nodep = op{i}p()) {{
+                            BROKEN_RTN(!({isLegal}));
+                            BROKEN_RTN(nodep->nextp());
+                        }}
+                        ''',
+                              i=i,
+                              isLegal=isLegal)
+                else:
+                    emitStmts('''\
+                        {{
+                            const AstNode* const nodep = op{i}p();
+                            BROKEN_RTN(!nodep);
+                            BROKEN_RTN(!({isLegal}));
+                            BROKEN_RTN(nodep->nextp());
+                        }}
+                        ''',
+                              i=i,
+                              isLegal=isLegal)
             # Node's broken rules can be specialized by declaring broken()
             emitBlock("    return Ast{t}::broken();\n", t=node.name)
             emitBlock("}}\n")
@@ -1025,7 +1061,7 @@ def write_ast_impl(filename):
                 legals = legals.split('|')
                 if legals and legals != ["Node"]:
                     # 'this' is a parent, where oldp replacing newp as op1p, must follow op1p's rules
-                    # Could also be on a list, we don't check for speed reasons and as V3Broken doesn't
+                    # Could also be on a list, we don't check for speed reasons
                     emitBlock("    if (oldp == op{i}p() && !(", i=i)
                     eor = ""
                     for legal in legals:
@@ -1156,9 +1192,12 @@ def write_ast_macros(filename):
                 if superOp:
                     superName = superOp[0]
                     hiddenMethods.append(superName)
-                if monad == "List":
+                if node.isPrivateOp(n):
+                    pass  # The node provides its own accessors
+                elif monad == "List":
                     emitBlock('''\
                     Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}
+                    VNList<Ast{kind}> {name}List() const VL_MT_STABLE {{ return VNList<Ast{kind}>{{{name}()}}; }}
                     void add{Name}(Ast{kind}* nodep) {{ addNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     void prepend{Name}(Ast{kind}* nodep) {{ prependNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     ''',
@@ -1167,9 +1206,10 @@ def write_ast_macros(filename):
                               Name=name[0].upper() + name[1:],
                               n=n,
                               retrieve=retrieve)
-                    if superOp:
+                    if superOp and not node.superClass.isPrivateOp(n):
                         hiddenMethods.append("add" + superName[0].upper() + superName[1:])
                         hiddenMethods.append("prepend" + superName[0].upper() + superName[1:])
+                        hiddenMethods.append(superName + "List")
                 elif monad == "Optional":
                     emitBlock('''\
                     Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}

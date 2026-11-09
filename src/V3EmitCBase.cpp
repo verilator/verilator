@@ -25,14 +25,13 @@
 
 EmitCParentModule::EmitCParentModule() {
     const auto setAll = [](AstNodeModule* modp) -> void {
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : modp->stmtspList()) {
             if (VN_IS(nodep, CFunc) || VN_IS(nodep, Var) || VN_IS(nodep, NodeCoverDecl)) {
                 nodep->user4p(modp);
             }
         }
-        modp->foreach([&](AstNodeCoverDecl* nodep) { nodep->user4p(modp); });
     };
-    for (AstNode* modp = v3Global.rootp()->modulesp(); modp; modp = modp->nextp()) {
+    for (AstNode* const modp : v3Global.rootp()->modulespList()) {
         setAll(VN_AS(modp, NodeModule));
     }
 }
@@ -94,7 +93,7 @@ string EmitCBaseVisitorConst::funcNameProtect(const AstCFunc* nodep, const AstNo
     return name;
 }
 
-string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
+string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
     // Return argument list for given C function
     string args;
     if (nodep->isLoose() && !nodep->isStatic()) {
@@ -106,7 +105,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
             args += "* vlSelf";
         }
     }
-    if (nodep->needProcess()) {
+    if (nodep->needsVlProcess()) {
         if (!args.empty()) args += ", ";
         args += "VlProcessRef vlProcess";
     }
@@ -115,17 +114,19 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
         args += nodep->argTypes();
     }
     // Might be a user function with argument list.
-    for (const AstNode* stmtp = nodep->argsp(); stmtp; stmtp = stmtp->nextp()) {
-        if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
-            if (portp->isIO() && !portp->isFuncReturn()) {
-                if (!args.empty()) args += ", ";
-                if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
-                    args += portp->dpiArgType(true, false);
-                } else if (nodep->funcPublic()) {
-                    args += portp->cPubArgType(true, false);
-                } else {
-                    args += portp->vlArgType(true, false, true);
-                }
+    for (const AstVar* const portp : nodep->argspList()) {
+        if (portp->isIO() && !portp->isFuncReturn()) {
+            if (!args.empty()) args += ", ";
+            if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
+                args += portp->dpiArgType(true, false, cpp);
+            } else if (closureDTypep(portp)) {
+                // Bound to the closure in the body, see EmitCFunc::visit(AstCFunc*)
+                args += "VlClosure<" + EmitCUtil::symClassName() + ">* " + portp->nameProtect()
+                        + "p";
+            } else if (nodep->funcPublic()) {
+                args += portp->cPubArgType(true, false);
+            } else {
+                args += portp->vlArgType(true, false, true);
             }
         }
     }
@@ -343,12 +344,12 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         puts(");\n");
     } else {
         // Strings and other fundamental C types
-        if (nodep->isFuncLocal() && nodep->isString()) {
+        if (nodep->isFuncLocal() && nodep->dtypep()->containsString()) {
             const string name = nodep->name();
             const string suffix = V3Task::dpiTemporaryVarSuffix();
-            // String temporary variable for DPI-C needs to be static because c_str() will be
-            // passed to C code and the lifetime of the variable must be long enough. See also
-            // Issue 2622.
+            // Temporary variable for DPI-C containing strings needs to be static because c_str()
+            // will be passed to C code and the lifetime of the variable must be long enough. See
+            // also Issue 2622.
             const bool beStatic = name.size() >= suffix.size()
                                   && name.substr(name.size() - suffix.size()) == suffix;
             if (beStatic) puts("static thread_local ");
@@ -381,8 +382,7 @@ std::pair<string, FileLine*> EmitCBaseVisitorConst::scSection(const AstNodeModul
     string text;
     FileLine* fl = nullptr;
     int last_line = -999;
-    for (const AstSystemCSection* scSectionp = modp->scSectionsp(); scSectionp;
-         scSectionp = VN_AS(scSectionp->nextp(), SystemCSection)) {
+    for (const AstSystemCSection* const scSectionp : modp->scSectionspList()) {
         if (scSectionp->sectionType() != type) continue;
         if (text.empty()) {
             fl = scSectionp->fileline();

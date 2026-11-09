@@ -110,6 +110,9 @@ extern "C" int mon_check() {
     return 0;  // Ok
 }
 
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp() { return mon_check(); }
+
 //======================================================================
 
 int main(int argc, char** argv) {

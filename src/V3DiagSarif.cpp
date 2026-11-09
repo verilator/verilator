@@ -27,8 +27,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class V3DiagSarifImp final {
     // MEMBERS
-    std::deque<VErrorMessage> m_messages;
-    std::set<V3ErrorCode> m_codes;
+    std::deque<VErrorMessage> m_messages;  // All messages to report
+    std::set<V3ErrorCode> m_codes;  // Error codes referenced by the messages
     std::map<V3ErrorCode, int> m_codeIndex;
 
     // METHODS

@@ -39,15 +39,17 @@ module t (/*AUTOARG*/
 
   const reg aconst = '0;
 
-  reg [1:0][1:0] ptoggle; initial ptoggle=0;
+  reg [1:0][1:0] ptoggle;
+  initial ptoggle = 0;
 
-  integer cyc; initial cyc=1;
+  integer cyc;
+  initial cyc = 1;
   wire [7:0] cyc_copy = cyc[7:0];
-  wire       toggle_up;
+  // One net per alpha instance (identical values) to avoid a two-driver conflict
+  wire toggle_up1;
+  wire toggle_up2;
 
-  typedef struct {
-    int q[$];
-  } str_queue_t;
+  typedef struct {int q[$];} str_queue_t;
   str_queue_t str_queue;
 
   typedef struct packed {
@@ -63,14 +65,14 @@ module t (/*AUTOARG*/
 
   alpha a1 (/*AUTOINST*/
          // Outputs
-         .toggle_up                 (toggle_up),
+         .toggle_up                 (toggle_up1),
          // Inputs
          .clk                       (clk),
          .toggle                    (toggle),
          .cyc_copy                  (cyc_copy[7:0]));
   alpha a2 (/*AUTOINST*/
          // Outputs
-         .toggle_up                 (toggle_up),
+         .toggle_up                 (toggle_up2),
          // Inputs
          .clk                       (clk),
          .toggle                    (toggle),
@@ -79,7 +81,7 @@ module t (/*AUTOARG*/
   beta  b1 (/*AUTOINST*/
          // Inputs
          .clk                       (clk),
-         .toggle_up                 (toggle_up));
+         .toggle_up                 (toggle_up1));
 
   off   o1 (/*AUTOINST*/
          // Inputs
@@ -199,7 +201,7 @@ module beta (/*AUTOARG*/
   // CHECK_COVER(-1,"top.t.b1","toggle_up:0->1",1)
   // CHECK_COVER(-2,"top.t.b1","toggle_up:1->0",1)
 
-  /* verilator public_module */
+  /* verilator no_inline_module */
 
   always @ (posedge clk) begin
     if (0 && toggle_up) begin end
@@ -234,12 +236,12 @@ module param #(parameter P = 2) (/*AUTOARG*/
 
   for (genvar i = 0; i < P; i++) begin
     logic x;
-    always @ (posedge clk) begin
+    always @(posedge clk) begin
       x <= toggle;
     end
     for (genvar j = 0; j < 3; j++) begin
       logic [2:0] y;
-      always @ (negedge clk) begin
+      always @(negedge clk) begin
         y <= {toggle, ~toggle, 1'b1};
       end
     end

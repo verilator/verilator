@@ -85,6 +85,19 @@ module t;
     instant_event_count++;
   end
 
+  // Sensitivity through a virtual interface that is null until the initial block below sets it.
+  // The NBA keeps the process clocked, rather than combinational.
+  int vif_sig_count = 0;
+  always @(vif.sig) if ($time > 0) vif_sig_count <= vif_sig_count + 1;
+  // Two changes, at times 40 and 50, by the task called below
+  initial begin
+    #60;
+    if (vif_sig_count != 2) begin
+      $display("%%Error: vif_sig_count = %0d, expected 2", vif_sig_count);
+      $stop;
+    end
+  end
+
   // Construct the class at time 0
   initial begin
     vif = intf;
@@ -129,7 +142,10 @@ module t;
       $display("%%Error: Instant fall-through failed - events at time 0 were missed!");
       $stop;
     end
+  end
 
+  initial begin
+    #100;
     $write("*-* All Finished *-*\n");
     $finish;
   end

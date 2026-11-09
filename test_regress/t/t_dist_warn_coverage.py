@@ -74,7 +74,6 @@ for s in [
         'Parameter type variable isn\'t a type: Param',
         'Pattern replication value of 0 is not legal.',
         'Signals inside functions/tasks cannot be marked forceable',
-        'Slice size cannot be zero.',
         'Symbol matching',
         'Thread scheduler is unable to provide requested',
         'Unsized numbers/parameters not allowed in streams.',
@@ -117,7 +116,7 @@ for s in [
         'Unsupported: super',
         'Unsupported: with[] stream expression',
         'loading other than unpacked-array variable',
-        'loading other than unpacked/associative-array variable',
+        'loading other than unpacked/dynamic/associative-array variable',
         # These are safety limits requiring >1000 bins or >10000 members to trigger
 ]:
     Suppressed[s] = True

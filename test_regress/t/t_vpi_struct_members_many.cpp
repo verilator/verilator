@@ -55,3 +55,6 @@ extern "C" int mon_check(int nmembers) {
     TEST_CHECK_EQ(count, nmembers);
     return errors;
 }
+
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp(int nmembers) { return mon_check(nmembers); }

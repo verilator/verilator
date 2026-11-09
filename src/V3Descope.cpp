@@ -60,7 +60,7 @@ class DescopeVisitor final : public VNVisitor {
         // True iff there's exactly one instance of this module in the design (including top).
         if (modp->isTop()) return true;
         int instances = 0;
-        for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* const stmtp : modp->stmtspList()) {
             if (VN_IS(stmtp, Scope)) {
                 if (++instances > 1) return false;
             }
@@ -104,7 +104,7 @@ class DescopeVisitor final : public VNVisitor {
 
         if (VN_IS(scopep->modp(), Class)) {
             // Direct reference to class members are from within the class itself, references from
-            // outside the class must go via AstMemberSel
+            // outside the class must go via AstMemberRef
             return VSelfPointerText{VSelfPointerText::This{}};
         } else if (relativeRefOk && scopep == m_scopep) {
             return VSelfPointerText{VSelfPointerText::This{}};
@@ -156,7 +156,7 @@ class DescopeVisitor final : public VNVisitor {
                     UINFO(6, "  at " << newfuncp->argTypes() << " und " << funcp->argTypes());
                     funcp->declPrivate(true);
                     AstVarRef* argsp = nullptr;
-                    for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
+                    for (AstNode* const stmtp : newfuncp->argspList()) {
                         if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
                                 AstVarRef* const newp = new AstVarRef{
@@ -172,7 +172,7 @@ class DescopeVisitor final : public VNVisitor {
                     } else {
                         callp->dtypeSetVoid();
                     }
-                    AstNode* const returnp = new AstCReturn{funcp->fileline(), callp};
+                    AstCReturn* const returnp = new AstCReturn{funcp->fileline(), callp};
 
                     if (moreOfSame) {
                         AstIf* const ifp = new AstIf{

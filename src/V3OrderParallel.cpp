@@ -119,9 +119,9 @@ static void checkDataHazards(OrderMTaskGraph& mTaskGraph) {
 // of the logic nodes from the fine-grained graph.
 
 static std::unique_ptr<OrderMTaskGraph> partition(OrderMoveGraph& moveGraph) {
-    // Build the initial MTask graph. Initially, each MTask just wraps one OrderMoveVertex. We will
-    // merge MTasks together and eventually each MTask will wrap a large number of OrderMoveVertex
-    // (and the logic nodes therein).
+    // Build the initial MTask graph. Initially, each MTask just wraps one OrderMoveVertex, or a
+    // threads_group part of them. We will merge MTasks together and eventually each MTask will
+    // wrap a large number of OrderMoveVertex (and the logic nodes therein).
     std::unique_ptr<OrderMTaskGraph> mTaskGraphp = OrderMTaskGraph::build(moveGraph);
     mTaskGraphp->hashGraphDebug("initial MTask graph");
 
@@ -295,6 +295,8 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
         if (!v3Global.opt.hierBlocks().empty()) {
             execMTaskp->threads(DpiThreadsVisitor::apply(execMTaskp));
         }
+        // A multi-thread hierarchical block task is placed automatically
+        if (execMTaskp->threads() == 1) execMTaskp->fixedThread(mTaskp->fixedThread());
         const bool newEntry = logicMTaskToExecMTask.emplace(mTaskp, execMTaskp).second;
         UASSERT_OBJ(newEntry, mTaskp, "LogicMTasks should be processed in dependencyorder");
         UINFO(3, "Final '" << tag << "' LogicMTask " << mTaskp->id() << " maps to ExecMTask"

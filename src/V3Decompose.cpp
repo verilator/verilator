@@ -255,8 +255,7 @@ protected:
         if (isUnpacked(dtypep)) {
             // Not splittable if has member default values
             if (const AstStructDType* const structp = VN_CAST(dtypep->skipRefp(), StructDType)) {
-                for (const AstMemberDType* mp = structp->membersp(); mp;
-                     mp = VN_AS(mp->nextp(), MemberDType)) {
+                for (const AstMemberDType* const mp : structp->memberspList()) {
                     if (mp->valuep()) return false;
                 }
             }
@@ -302,8 +301,7 @@ protected:
             } else {
                 const AstStructDType* const structp = VN_AS(dtypep, StructDType);
                 const bool packed = isPacked(dtypep);
-                for (AstMemberDType* mp = structp->membersp(); mp;
-                     mp = VN_AS(mp->nextp(), MemberDType)) {
+                for (AstMemberDType* const mp : structp->memberspList()) {
                     const int lsb = packed ? mp->lsb() : 0;
                     const int msb = packed ? lsb + mp->width() - 1 : 0;
                     compsr.push_back({mp->subDTypep(), mp, 0, lsb, msb});
@@ -425,7 +423,7 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
                 // Eligible if no refusal reason returned
                 return !reasonp;
             }();
-            varp->user1(2 | eligible);
+            varp->user1(2 | (eligible ? 1 : 0));
         }
         // Return the cached result
         return varp->user1() & 1;
@@ -650,7 +648,7 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
         // whole of the Place it references, mark as such.
         if (Place* const placep = placeOf(nodep)) referencedWhole(nodep, placep);
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         iterateChildrenConst(nodep);
         AstVar* const varp = nodep->varp();
         if (!isEligible(varp)) return;
@@ -1360,7 +1358,7 @@ class DecomposeRewrite final : public VNDeleter, public DecomposeBase {
             AstNodeExpr* const rhsp = new AstVarRef{flp, childp->vscp, VAccess::READ};
             AstNodeExpr* const lhsRefp = new AstVarRef{flp, vscp, VAccess::WRITE};
             AstNodeExpr* const lhsp = newSelect(lhsRefp, placep->dtypep, i);
-            activep->addStmtsp(new AstAlways{new AstAssignW{flp, lhsp, rhsp}});
+            activep->addProcsp(new AstAlways{new AstAssignW{flp, lhsp, rhsp}});
         }
     }
 

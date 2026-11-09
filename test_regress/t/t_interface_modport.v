@@ -52,6 +52,7 @@ module t (
   counter_if c2_data();
   counter_if c3_data();
   counter_if c4_data();
+  counter_if c5_data();
 
   counter_ansi    c1 (.clkm(clk),
                       .c_data(c1_data.counter_mp),
@@ -67,6 +68,9 @@ module t (
   /**/            c4 (.clkm(clk),
                       .c_data(c4_data),
                       .i_value(4'h4));
+  counter_ansi_mw c5 (.clkm(clk),
+                      .c_data(c5_data.counter_mp),
+                      .i_value(4'h5));
 
   logic inout_we;
   tri inout_d;
@@ -77,6 +81,7 @@ module t (
      c2_data.value = 4'h5;
      c3_data.value = 4'h6;
      c4_data.value = 4'h7;
+     c5_data.value = 4'h8;
      inout_we = 1'b0;
   end
 
@@ -87,12 +92,14 @@ module t (
         c2_data.reset <= 1;
         c3_data.reset <= 1;
         c4_data.reset <= 1;
+        c5_data.reset <= 1;
      end
      if (cyc==2) begin
         c1_data.reset <= 0;
         c2_data.reset <= 0;
         c3_data.reset <= 0;
         c4_data.reset <= 0;
+        c5_data.reset <= 0;
      end
      if (cyc==20) begin
         $write("[%0t] cyc%0d: c1 %0x %0x  c2 %0x %0x  c3 %0x %0x  c4 %0x %0x\n", $time, cyc,
@@ -104,6 +111,7 @@ module t (
         if (c2_data.value != 3) $stop;
         if (c3_data.value != 4) $stop;
         if (c4_data.value != 5) $stop;
+        if (c5_data.value != 6) $stop;
         $write("*-* All Finished *-*\n");
         $finish;
      end
@@ -136,6 +144,17 @@ module counter_ansi_m
     c_data.value <= c_data.reset ? i_value : c_data.value + 1;
   end
 endmodule : counter_ansi_m
+
+// Modport port connected to a port without modport (IEEE 1800-2023 25.5)
+module counter_ansi_mw
+ (
+  input clkm,
+  counter_if.counter_mp c_data,
+  input logic [3:0] i_value
+  );
+
+  counter_ansi c (.clkm, .c_data, .i_value);
+endmodule : counter_ansi_mw
 
 `ifndef VERILATOR
 // non-ansi modports not seen in the wild yet.  Verilog-Perl needs parser improvement too.

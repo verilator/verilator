@@ -68,9 +68,9 @@ module Test (  /*AUTOARG*/
     I2
 );
 
-  input [9:0] I1  /*verilator public*/;
-  input [9:0] I2  /*verilator public*/;
-  output reg [9:0] S  /*verilator public*/;
+  input [9:0] I1  /*verilator public_flat_rw*/;
+  input [9:0] I2  /*verilator public_flat_rw*/;
+  output reg [9:0] S  /*verilator public_flat_rw*/;
 
   always @(I1 or I2) t2(I1, I2, S);
 

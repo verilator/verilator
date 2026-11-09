@@ -66,8 +66,6 @@ module t;
 
   import "DPI-C" function void dpii_unused(input reg u []);
 
-  // [] on packed arrays is unsupported in VCS & NC, so not supporting this
-
   // p is number of packed dimensions, u is number of unpacked dimensions
   import "DPI-C" function void dpii_open_p0_u1(input int c,p,u, input reg i [], output reg o []);
   import "DPI-C" function void dpii_open_p1_u1(input int c,p,u, input reg [1:-1] i [], output reg [1:-1] o []);

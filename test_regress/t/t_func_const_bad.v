@@ -56,4 +56,11 @@ module t;
     $fatal(2, "%s", $sformatf("Fatal Error"));
     return 0;
   endfunction
+
+  // Array read out of bounds
+  localparam BOOB = f_bad_out_of_bounds(3);
+  function automatic integer f_bad_out_of_bounds(input [31:0] i);
+    int a[3] = '{default: 7};
+    return a[i];
+  endfunction
 endmodule

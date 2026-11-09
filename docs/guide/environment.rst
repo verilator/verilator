@@ -107,6 +107,20 @@ associated programs.
 
    Other values may be supported in future releases.
 
+.. option:: VERILATOR_RAND_SAMPLER
+
+   If set, controls the sampling algorithm for ``randomize()`` results.
+   See :vlopt:`+verilator+rand+sampler+\<name\>`. If not
+   specified, it will use the one supplied during configure with
+   ``--with-rand-sampler``, which defaults to ``default``.
+
+   This is independent of :option:`VERILATOR_SOLVER`, which selects the
+   solver program that is run. :option:`VERILATOR_RAND_SAMPLER` instead
+   selects how the ``randomize()`` result is picked from the solutions that
+   solver finds. With ``default``, Verilator makes additional solver queries
+   to pick a well-distributed solution. With ``solver``, the solver's
+   solution, seeded from the object's random state, is used directly.
+
 .. option:: VERILATOR_ROOT
 
    The ``VERILATOR_ROOT`` environment variable is used in several places:

@@ -124,16 +124,17 @@ class UnrollGenVisitor final : public VNVisitor {
         return true;
     }
 
-    bool simulateTree(AstNodeExpr* nodep, const V3Number* loopValue, const AstNode* dtypep,
+    bool simulateTree(AstNodeExpr* nodep, const V3Number* loopValuep, const AstNode* dtypep,
                       V3Number& outNum) {
         AstNode* clonep = nodep->cloneTree(true);
         UASSERT_OBJ(clonep, nodep, "Failed to clone tree");
-        if (loopValue) {
-            AstConst* varValuep = new AstConst{nodep->fileline(), *loopValue};
+        if (loopValuep) {
+            AstConst* varValuep = new AstConst{nodep->fileline(), *loopValuep};
             // Iteration requires a back, so put under temporary node
-            AstBegin* tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep, false};
-            replaceVarRef(tempp->stmtsp(), varValuep);
-            clonep = tempp->stmtsp()->unlinkFrBackWithNext();
+            AstBegin* tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false};
+            tempp->addDeclsp(clonep);
+            replaceVarRef(tempp->declsp(), varValuep);
+            clonep = tempp->declsp()->unlinkFrBackWithNext();
             VL_DO_CLEAR(tempp->deleteTree(), tempp = nullptr);
             VL_DO_DANGLING(pushDeletep(varValuep), varValuep);
         }
@@ -215,9 +216,10 @@ class UnrollGenVisitor final : public VNVisitor {
                     if (oneloopp) {
                         // Iteration requires a back, so put under temporary node
                         AstBegin* const tempp
-                            = new AstBegin{oneloopp->fileline(), "[EditWrapper]", oneloopp, false};
-                        replaceVarRef(tempp->stmtsp(), varValuep);
-                        oneloopp = tempp->stmtsp()->unlinkFrBackWithNext();
+                            = new AstBegin{oneloopp->fileline(), "[EditWrapper]", nullptr, false};
+                        tempp->addDeclsp(oneloopp);
+                        replaceVarRef(tempp->declsp(), varValuep);
+                        oneloopp = tempp->declsp()->unlinkFrBackWithNext();
                         VL_DO_DANGLING(tempp->deleteTree(), tempp);
                     }
                     const string index = AstNode::encodeNumber(varValuep->toSInt());
@@ -227,9 +229,9 @@ class UnrollGenVisitor final : public VNVisitor {
                     newbodysp = AstNode::addNextNull(newbodysp, oneloopp);
 
                     // loopValue += valInc
-                    const AstAssign* const incpass = VN_AS(incp, Assign);
+                    const AstAssign* const incpassp = VN_AS(incp, Assign);
                     V3Number newLoopValue{nodep};
-                    if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
+                    if (!simulateTree(incpassp->rhsp(), &loopValue, incpassp, newLoopValue)) {
                         nodep->v3error("Loop unrolling failed");
                         return false;
                     }

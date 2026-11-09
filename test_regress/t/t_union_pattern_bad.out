@@ -13,7 +13,7 @@
       |         ^~
 %Error: t/t_union_pattern_bad.v:28:9: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
                                     : ... note: In instance 't'
-   28 |     u = '{int: 7};
+   28 |     u = '{int : 7};
       |         ^~
 %Error: t/t_union_pattern_bad.v:29:12: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
                                      : ... note: In instance 't'

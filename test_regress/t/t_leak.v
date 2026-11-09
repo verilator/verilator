@@ -5,12 +5,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (
-    clk
+    input clk
 );
 
   sub sub ();
 
-  input clk;
   integer cyc = 1;
 
   always @(posedge clk) begin
@@ -23,5 +22,5 @@ module t (
 endmodule
 
 module sub;
-  /* verilator public_module */
+  /* verilator no_inline_module */
 endmodule

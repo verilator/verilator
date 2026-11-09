@@ -213,8 +213,34 @@ Summary:
    When make is run on the generated makefile, these will be passed to the
    C++ compiler (g++/clang++/msvc++).
 
-   C++ modules (e.g. :command:`-CFLAGS -fmodules`) are not supported due to
-   precompiled header (PCH) incompatibilities in GCC.
+   C++ modules may be used in user-provided C++ files.  Verilator compiles
+   its generated code with modules disabled, so the precompiled header (PCH)
+   remains usable, and keeps the module flags for user files.  Verilator does
+   not build module interface units or module CMIs; imported modules must be
+   prebuilt before building the Verilated model.
+
+   With GCC, pass :command:`-CFLAGS -fmodules` and prebuild the standard
+   library module in the model object directory:
+
+   .. code-block:: bash
+
+      cd obj_dir
+      g++ -std=c++23 -fmodules --compile-std-module -c -x c++ /dev/null -o /dev/null
+
+   With Clang, precompile libc++'s ``std.cppm`` and pass
+   :command:`-CFLAGS -fmodule-file=std=std.pcm`.  Clang's
+   :command:`-fmodules` enables Clang modules, not C++20 modules.
+   The :command:`-fmodule-header` and :command:`-fmodule-only` options are not
+   supported.
+
+   For modules defined by the user, precompile the module interface unit and
+   pass the resulting object file to Verilator as a ``.o`` input.  Keep the
+   module CMI in the model object directory, or pass it with
+   :command:`-CFLAGS -fmodule-file` when using Clang.
+
+   User translation units that use modules do not use the PCH; include the
+   Verilator headers explicitly.  ``--compiler-include`` headers must also be
+   included explicitly in those translation units.
 
 .. option:: --clk <signal-name>
 
@@ -416,10 +442,10 @@ Summary:
      the type coverage of a covergroup merges its instances as a union of
      their bins. This applies to ``get_coverage()``, to
      ``get_inst_coverage()`` unless ``option.get_inst_coverage`` is set, and
-     to the coverage that :command:`verilator_coverage` reports. This is
-     like the default behavior of Synopsys VCS. In Questa, it is the
-     equivalent of ``vsim -cvgmergeinstances``, which sets
-     ``SVCovergroupMergeInstancesDefault`` to 1.
+     to the coverage that :command:`verilator_coverage` reports. Use this
+     option to match the coverage of another simulator that merges
+     covergroup instances, either by default or with its own equivalent
+     option.
 
    With "--no-coverage-merge-instances", the default, the value is 0, as
      IEEE specifies, so the type coverage of a covergroup is the average of
@@ -976,6 +1002,11 @@ Summary:
 
    Rarely needed. Disable eager inlining of SystemVerilog functions and tasks.
 
+.. option:: -fno-inline-getters
+
+   Rarely needed. Disable replacing calls to class methods that only return
+   a single member variable, with a direct read of that variable.
+
 .. option:: -fno-life
 
    Rarely needed. Disable removing assignments whose value is overwritten before
@@ -1015,8 +1046,8 @@ Summary:
 
 .. option:: -fno-reloop
 
-   Rarely needed. Disable converting sequences of similar array assignments
-   into loops.
+   Rarely needed. Disable converting sequences of statements that differ
+   only in constants into loops.
 
 .. option:: -fno-reorder
 
@@ -1064,10 +1095,11 @@ Summary:
 
    Disables four-state logic support which is the default. Exists for forward compatibility.
 
-.. option:: --fslice-element-limit
+.. option:: --fslice-element-limit <value>
 
    Rarely needed. Set the maximum array size (number of elements) for slice
-   optimization to avoid excessive memory usage.
+   optimization to avoid excessive memory usage. Defaults to 256. A value
+   of 0 removes the limit.
 
 .. option:: --func-recursion-depth <value>
 
@@ -1130,6 +1162,7 @@ Summary:
 
    Rarely needed. Set the maximum number of statements present in an
    equation for the gate substitution optimization to inline that equation.
+   Defaults to 100.
 
 .. option:: --gdb
 
@@ -1346,7 +1379,9 @@ Summary:
    model has a time resolution that is always compatible with the time
    precision of the upper instantiating module.
 
-   Designs compiled using this option cannot use :vlopt:`--timing` with delays.
+   Designs compiled using this option cannot use :vlopt:`--timing` with delays,
+   and cannot use :vlopt:`--sc`. The design must have a single top level module,
+   see :vlopt:`--top-module`.
 
    See also :vlopt:`--protect-lib`.
 
@@ -1575,7 +1610,9 @@ Summary:
    faster, at a small loss in performance that gets worse with decreasing
    split values. Note that this option is stronger than
    :vlopt:`--output-split` in the sense that :vlopt:`--output-split` will
-   not split inside a function.
+   not split inside a function. Timed processes and tasks (coroutines)
+   are also split inside nested statements, such as the items of a case
+   statement, by moving parts of them into separate functions.
 
    Defaults to the value of :vlopt:`--output-split`, unless explicitly
    specified.
@@ -2246,7 +2283,6 @@ Summary:
    Rarely needed. Specifies the maximum number of iterations for procedural
    loops that may be unrolled. If the loop has more iterations, it will not
    be unrolled at all. Does not effect generate loops. See also
-   :option:`BLKLOOPINIT` warning, and
    :option:`/*verilator&32;unroll_disable*/` and
    :option:`/*verilator&32;unroll_full*/` metacomments.
 
@@ -2267,7 +2303,6 @@ Summary:
 
    Rarely needed. Specifies the maximum number of statements in the
    unrolling of a loop for that loop to be unrolled. See also
-   :option:`BLKLOOPINIT` warning, and
    :option:`/*verilator&32;unroll_disable*/` and
    :option:`/*verilator&32;unroll_full*/` metacomments.
 

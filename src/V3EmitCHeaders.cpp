@@ -17,9 +17,10 @@
 #include "V3PchAstMT.h"
 
 #include "V3EmitC.h"
-#include "V3EmitCConstInit.h"
+#include "V3EmitCBase.h"
 #include "V3File.h"
 #include "V3MemberMap.h"
+#include "V3SolverBackend.h"
 #include "V3UniqueNames.h"
 
 #include <algorithm>
@@ -33,9 +34,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Internal EmitC implementation
 
-class EmitCHeader final : public EmitCConstInit {
-    V3UniqueNames m_names;
-    VMemberMap m_memberMap;
+class EmitCHeader final : public EmitCBaseVisitorConst {
+    V3UniqueNames m_names;  // Generates unique names
+    VMemberMap m_memberMap;  // Finds members of classes
     // METHODS
 
     class CoverCountVisitor final : public VNVisitorConst {
@@ -64,7 +65,7 @@ class EmitCHeader final : public EmitCConstInit {
     }
     void emitCellDecls(const AstNodeModule* modp) {
         bool first = true;
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
                 if (cellp->modp()->isConstPool()) continue;  // Special emit rules
                 decorateFirst(first, "// CELLS\n");
@@ -83,7 +84,7 @@ class EmitCHeader final : public EmitCConstInit {
         size_t nPort = 0;
         size_t nTriv = 0;
         size_t nNont = 0;
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             const AstVar* const varp = VN_CAST(nodep, Var);
             if (!varp) break;
             if (!varp->isModelState()) {
@@ -202,17 +203,12 @@ class EmitCHeader final : public EmitCConstInit {
     }
     void emitParamDecls(const AstNodeModule* modp) {
         bool first = true;
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : modp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isParam()) {
                     decorateFirst(first, "\n// PARAMETERS\n");
-                    UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
-                    // Only C++ LiteralTypes can be constexpr
-                    const bool canBeConstexpr = varp->dtypep()->isLiteralType();
-                    putns(varp, "static ");
-                    puts(canBeConstexpr ? "constexpr " : "const ");
+                    putns(varp, "static const ");
                     puts(varp->dtypep()->cType(varp->nameProtect(), false, false));
-                    if (canBeConstexpr) emitDirectInit(varp->valuep());
                     puts(";\n");
                 }
             }
@@ -321,7 +317,7 @@ class EmitCHeader final : public EmitCConstInit {
     }
     void emitEnums(const AstNodeModule* modp) {
         bool first = true;
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             const AstTypedef* const tdefp = VN_CAST(nodep, Typedef);
             if (!tdefp) continue;
             if (!tdefp->attrPublic()) continue;
@@ -334,8 +330,7 @@ class EmitCHeader final : public EmitCConstInit {
                                "// enum " + tdefp->nameProtect() + " ignored: Too wide for C++\n");
             } else {
                 putns(tdefp, "enum " + tdefp->name() + " {\n");
-                for (const AstEnumItem* itemp = edtypep->itemsp(); itemp;
-                     itemp = VN_AS(itemp->nextp(), EnumItem)) {
+                for (const AstEnumItem* const itemp : edtypep->itemspList()) {
                     if (const AstConst* const constp = VN_CAST(itemp->valuep(), Const)) {
                         if (constp->num().isFourState()) {
                             putns(itemp, "// " + itemp->nameProtect() + " is four-state\n");
@@ -344,7 +339,7 @@ class EmitCHeader final : public EmitCConstInit {
                     }
                     putns(itemp, itemp->nameProtect());
                     puts(" = ");
-                    iterateConst(itemp->valuep());
+                    putns(itemp, VN_AS(itemp->valuep(), Const)->num().emitC());
                     if (VN_IS(itemp->nextp(), EnumItem)) puts(",");
                     puts("\n");
                 }
@@ -356,8 +351,7 @@ class EmitCHeader final : public EmitCConstInit {
                         std::set<AstNodeUOrStructDType*>& emitted) {
         if (emitted.count(sdtypep) > 0) return;
         emitted.insert(sdtypep);
-        for (AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (AstMemberDType* const itemp : sdtypep->memberspList()) {
             AstNodeUOrStructDType* const subp = itemp->getChildStructp();
             if (subp && (!subp->packed() || sdtypep->packed())) {
                 // Recurse if it belongs to the current module
@@ -381,9 +375,9 @@ class EmitCHeader final : public EmitCConstInit {
         case AttributeType::WIDTH: {
             if (isArrayType) {
                 // For arrays, get innermost element width
-                const AstNodeDType* dtype = itemp->dtypep();
-                while (dtype->subDTypep()) dtype = dtype->subDTypep();
-                return dtype->width();
+                const AstNodeDType* dtypep = itemp->dtypep();
+                while (dtypep->subDTypep()) dtypep = dtypep->subDTypep();
+                return dtypep->width();
             }
             return itemp->width();
         }
@@ -400,8 +394,7 @@ class EmitCHeader final : public EmitCConstInit {
     void emitMemberVector(const AstNodeUOrStructDType* sdtypep) {
         puts("return {");
         bool needComma = false;
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             if (!itemp->isConstrainedRand()) continue;
             // Comma handling: add before element except first
             if (needComma) puts(",\n");
@@ -411,12 +404,20 @@ class EmitCHeader final : public EmitCConstInit {
         puts("};\n}\n");
     }
     void emitUnpackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
+        const AstStructDType* const structp = VN_CAST(sdtypep, StructDType);
+        const bool isClosure = structp && structp->isClosure();
         putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
-        puts(" " + EmitCUtil::prefixNameProtect(sdtypep) + " {\n");
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        puts(" " + EmitCUtil::prefixNameProtect(sdtypep));
+        if (isClosure) puts(" : public VlClosure<" + EmitCUtil::symClassName() + ">");
+        puts(" {\n");
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false));
             puts(";\n");
+        }
+        // Closures are only passed to their function, never compared. Might have no members.
+        if (isClosure) {
+            puts("};\n");
+            return;
         }
 
         // Three helper functions for struct constrained randomization:
@@ -429,8 +430,7 @@ class EmitCHeader final : public EmitCConstInit {
             bool needComma = false;
             putns(sdtypep, "\nstd::vector<std::string> memberNames(void) const {\n");
             puts("return {");
-            for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
                 if (!itemp->isConstrainedRand()) continue;
                 if (needComma) puts(",\n");
                 putns(itemp, "\"" + itemp->shortName() + "\"");
@@ -447,8 +447,7 @@ class EmitCHeader final : public EmitCConstInit {
             needComma = false;
             putns(sdtypep, "\nauto memberIndices(void) const {\n");
             puts("return std::index_sequence_for<");
-            for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
                 if (!itemp->isConstrainedRand()) continue;
                 if (needComma) puts(",\n");
                 putns(itemp, itemp->dtypep()->cType("", false, false));
@@ -460,8 +459,7 @@ class EmitCHeader final : public EmitCConstInit {
             putns(sdtypep, "\ntemplate <typename T>");
             putns(sdtypep, "\nauto getMembers(T& obj) {\n");
             puts("return std::tie(");
-            for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
                 if (!itemp->isConstrainedRand()) continue;
                 if (needComma) puts(",\n");
                 putns(itemp, "obj." + itemp->nameProtect());
@@ -472,8 +470,7 @@ class EmitCHeader final : public EmitCConstInit {
         putns(sdtypep, "\nbool operator==(const " + EmitCUtil::prefixNameProtect(sdtypep)
                            + "& rhs) const {\n");
         puts("return ");
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             if (itemp != sdtypep->membersp()) puts("\n    && ");
             putns(itemp, itemp->nameProtect() + " == " + "rhs." + itemp->nameProtect());
         }
@@ -484,8 +481,7 @@ class EmitCHeader final : public EmitCConstInit {
         puts("return !(*this == rhs);\n}\n");
         putns(sdtypep, "\nbool operator<(const " + EmitCUtil::prefixNameProtect(sdtypep)
                            + "& rhs) const {\n");
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             putns(itemp, "if (" + itemp->nameProtect() + " < rhs." + itemp->nameProtect()
                              + ") return true;\n");
             putns(itemp, "if (rhs." + itemp->nameProtect() + " < " + itemp->nameProtect()
@@ -501,21 +497,21 @@ class EmitCHeader final : public EmitCConstInit {
 
     // getfunc: VL_ASSIGNSEL_XX(rbits, obits, off, lhsdata, rhsdata);
     // !getfunc: VL_SELASSIGN_XX(rbits, obits, lhsdata, rhsdata, off);
-    void emitVlAssign(const AstNodeDType* const lhstype, const AstNodeDType* rhstype,
+    void emitVlAssign(const AstNodeDType* const lhstypep, const AstNodeDType* rhstypep,
                       const std::string& off, const std::string& lhsdata,
                       const std::string& rhsdata, bool getfunc) {
         puts(getfunc ? "VL_ASSIGNSEL_" : "VL_SELASSIGN_");
-        puts(lhstype->charIQWN());
-        puts(rhstype->charIQWN());
-        puts("(" + std::to_string(lhstype->width()) + ", ");  // LHS width
+        puts(lhstypep->charIQWN());
+        puts(rhstypep->charIQWN());
+        puts("(" + std::to_string(lhstypep->width()) + ", ");  // LHS width
         if (getfunc) {
-            puts(std::to_string(rhstype->width()) + ", ");  // Number of copy bits
+            puts(std::to_string(rhstypep->width()) + ", ");  // Number of copy bits
             puts(off + ", ");  // LHS offset
         } else {
             // Number of copy bits. Use widthTototalBytes to
             // make VL_SELASSIGN_XX clear upper unused bits for us.
             // puts(std::to_string(lhstype->width()) + ", ");
-            puts(std::to_string(lhstype->widthTotalBytes() * 8) + ", ");
+            puts(std::to_string(lhstypep->widthTotalBytes() * 8) + ", ");
         }
         puts(lhsdata + ", ");  // LHS data
         puts(rhsdata);  // RHS data
@@ -626,7 +622,7 @@ class EmitCHeader final : public EmitCConstInit {
     void emitStructs(const AstNodeModule* modp) {
         // Track structs that've been emitted already
         std::set<AstNodeUOrStructDType*> emitted;
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             const AstTypedef* const tdefp = VN_CAST(nodep, Typedef);
             if (!tdefp) continue;
             AstNodeUOrStructDType* const sdtypep
@@ -642,7 +638,7 @@ class EmitCHeader final : public EmitCConstInit {
     void emitFuncDecls(const AstNodeModule* modp, bool inClassBody) {
         std::vector<const AstCFunc*> funcsp;
 
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
                 if (funcp->dpiImportPrototype())  // Declared in __Dpi.h
                     continue;
@@ -668,8 +664,7 @@ class EmitCHeader final : public EmitCConstInit {
     void emitAll(const AstNodeModule* modp) {
         // Include files required by this AstNodeModule
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            for (const AstClassExtends* extp = classp->extendsp(); extp;
-                 extp = VN_AS(extp->nextp(), ClassExtends)) {
+            for (const AstClassExtends* const extp : classp->extendspList()) {
                 putns(extp, "#include \""
                                 + EmitCUtil::prefixNameProtect(extp->classp()->classOrPackagep())
                                 + ".h\"\n");
@@ -693,8 +688,7 @@ class EmitCHeader final : public EmitCConstInit {
             puts(" : ");
             if (classp->extendsp()) {
                 bool needComma = false;
-                for (const AstClassExtends* extp = classp->extendsp(); extp;
-                     extp = VN_AS(extp->nextp(), ClassExtends)) {
+                for (const AstClassExtends* const extp : classp->extendspList()) {
                     if (needComma) puts(", ");
                     // Use virtual only for interfaces for class inheritance
                     // (extends)
@@ -735,6 +729,9 @@ class EmitCHeader final : public EmitCConstInit {
         emitSystemCSection(modp, VSystemCSectionType::HDR_POST);
     }
 
+    // VISITORS
+    void visit(AstNode* nodep) override { nodep->v3fatalSrc("Unused"); }  // LCOV_EXCL_LINE
+
     explicit EmitCHeader(const AstNodeModule* modp) {
         UINFO(5, "  Emitting header for " << EmitCUtil::prefixNameProtect(modp));
 
@@ -755,7 +752,8 @@ class EmitCHeader final : public EmitCConstInit {
         if (v3Global.opt.coverage() || v3Global.useCovergroup())
             puts("#include \"verilated_covergroup.h\"\n");
         if (v3Global.usesTiming()) puts("#include \"verilated_timing.h\"\n");
-        if (v3Global.useRandomizeMethods()) puts("#include \"verilated_random.h\"\n");
+        if (v3Global.useRandomizeMethods())
+            puts("#include \"" + v3Global.solverBackendp()->runtimeHeader() + "\"\n");
         if (v3Global.usesForce()) puts("#include \"verilated_force.h\"\n");
 
         std::set<string> cuse_set;
@@ -795,7 +793,7 @@ void V3EmitC::emitcHeaders() {
     UINFO(2, __FUNCTION__ << ":");
 
     // Process each module in turn
-    for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
+    for (const AstNode* const nodep : v3Global.rootp()->modulespList()) {
         if (VN_IS(nodep, Class)) continue;  // Declared with the ClassPackage
         const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
         if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool

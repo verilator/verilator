@@ -30,6 +30,14 @@ module t;
 
   typedef enum_t [3:0] enums_t;
 
+  typedef enum {
+    A,
+    B,
+    C
+  } abc_t;
+  typedef int int_t;
+  typedef logic idx_t;
+
   packed_t pdata;
   packed_t pdata_reg;
   packed2_t pdata2_reg;
@@ -132,6 +140,16 @@ module t;
     if (two_dee_sig[0] != 8'h56) $stop;
     if (two_dee_sig[1] != 8'h34) $stop;
     if (two_dee_sig[2] != 8'h12) $stop;
+
+    // Method call and member select on a cast
+    i = 1;
+    if (abc_t'(i).name() != "B") $stop;
+    if (abc_t'(i).next().name() != "C") $stop;
+    if (packed_t'(16'h1234).data != 16'h1234) $stop;
+    // Cast in a function-call argument and in an index within a dotted expression
+    if (abc_t'(i).next(int_t'(2)) != A) $stop;
+    the_intf.octets = 16'habcd;
+    if (the_intf.octets[idx_t'(1)] != 8'hab) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

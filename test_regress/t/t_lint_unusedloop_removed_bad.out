@@ -1,39 +1,39 @@
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:169:5: Loop condition is always false
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:173:5: Loop condition is always false
                                                             : ... note: In instance 't.with_always'
-  169 |     while(0);
+  173 |     while (0);
       |     ^~~~~
                      ... For warning description see https://verilator.org/warn/UNUSEDLOOP?v=latest
                      ... Use "/* verilator lint_off UNUSEDLOOP */" and lint_on around source to disable this message.
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:155:5: Loop condition is always false
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:157:5: Loop condition is always false
                                                             : ... note: In instance 't.non_parametrized_initial'
-  155 |     while(0);
+  157 |     while (0);
       |     ^~~~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:158:5: Loop condition is always false
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:160:5: Loop condition is always false
                                                             : ... note: In instance 't.non_parametrized_initial'
-  158 |     do ; while(0);
+  160 |     do; while (0);
       |     ^~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:136:5: Loop is not used and will be optimized out
-  136 |     while(param_unused_while < always_zero) begin
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:139:5: Loop is not used and will be optimized out
+  139 |     while (param_unused_while < always_zero) begin
       |     ^~~~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:156:5: Loop is not used and will be optimized out
-  156 |     while(always_false);
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:158:5: Loop is not used and will be optimized out
+  158 |     while (always_false);
       |     ^~~~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:280:5: Loop is not used and will be optimized out
-  280 |     while (m_2_ticked);
-      |     ^~~~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:181:5: Loop condition is always false
-  181 |     while(always_zero) begin
-      |     ^~~~~
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:291:7: Loop is not used and will be optimized out
+  291 |       while (m_2_ticked);
+      |       ^~~~~
 %Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:185:5: Loop condition is always false
-  185 |     for (int i = 0; always_zero; i++)
-      |     ^~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:190:5: Loop condition is always false
-  190 |     for (int i = 0; i < always_zero; i++)
-      |     ^~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:171:5: Loop condition is always false
-  171 |     while(always_false) begin
+  185 |     while (always_zero) begin
       |     ^~~~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:114:5: Loop condition is always false
-  114 |     while(always_zero < 0) begin
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:189:5: Loop condition is always false
+  189 |     for (int i = 0; always_zero; i++) begin
+      |     ^~~
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:193:5: Loop condition is always false
+  193 |     for (int i = 0; i < always_zero; i++) begin
+      |     ^~~
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:175:5: Loop condition is always false
+  175 |     while (always_false) begin
+      |     ^~~~~
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:117:5: Loop condition is always false
+  117 |     while (always_zero < 0) begin
       |     ^~~~~
 %Error: Exiting due to

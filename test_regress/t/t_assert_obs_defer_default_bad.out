@@ -1,0 +1,18 @@
+%Error-NEEDTIMINGOPT: t/t_assert_obs_defer_notiming_bad.v:9:5: Use --timing or --no-timing to specify how observed deferred immediate assertions should be handled
+                                                             : ... note: In instance 't'
+    9 |     assert #0 (0)
+      |     ^~~~~~
+                      ... For error description see https://verilator.org/warn/NEEDTIMINGOPT?v=latest
+%Error-NEEDTIMINGOPT: t/t_assert_obs_defer_notiming_bad.v:11:5: Use --timing or --no-timing to specify how observed deferred immediate assertions should be handled
+                                                              : ... note: In instance 't'
+   11 |     assert #0 (0);
+      |     ^~~~~~
+%Error-NEEDTIMINGOPT: t/t_assert_obs_defer_notiming_bad.v:12:5: Use --timing or --no-timing to specify how observed deferred immediate assertions should be handled
+                                                              : ... note: In instance 't'
+   12 |     assert #0 (0) $display("pass");
+      |     ^~~~~~
+%Error-NEEDTIMINGOPT: t/t_assert_obs_defer_notiming_bad.v:14:5: Use --timing or --no-timing to specify how observed deferred immediate assertions should be handled
+                                                              : ... note: In instance 't'
+   14 |     cover #0 (0);
+      |     ^~~~~
+%Error: Exiting due to

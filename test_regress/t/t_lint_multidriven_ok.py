@@ -11,7 +11,6 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
-test.top_filename = "t/t_lint_multidriven_ok.v"
 
 test.lint()
 

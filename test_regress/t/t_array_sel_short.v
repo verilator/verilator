@@ -9,7 +9,7 @@ module t;
   logic [15:0] foo[8];
 
   initial begin
-    if (foo[1] != foo[1]) $stop;
+    if (foo[1] != foo[2]) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

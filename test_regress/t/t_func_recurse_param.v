@@ -29,14 +29,26 @@ module t;
     end
   endfunction
 
+  // Sets the top bit of n, after a recursive call that assigns its own x
+  function automatic logic [7:0] set_top_bit(logic [7:0] n);
+    logic [7:0] x;
+    logic [7:0] unused;
+    x = n;
+    if (n > 0) unused = set_top_bit(n - 1);
+    x[7] = 1'b1;  // Must set the bit of this call's x
+    return x;
+  endfunction
+
   localparam int F0 = recurse_self(0);
   localparam int F3 = recurse_self(3);
   localparam int F4 = recurse_self(4);
+  localparam logic [7:0] SET_TOP_BIT = set_top_bit(8'h03);
 
   initial begin
     `checkd(F0, 0);
     `checkd(F3, 348);
     `checkd(F4, 1754);
+    `checkd(SET_TOP_BIT, 8'h83);
     $write("*-* All Finished *-*\n");
     $finish;
   end

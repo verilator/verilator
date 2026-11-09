@@ -128,6 +128,7 @@ class ExtractCyclicComponents final {
     // Map from vertices to the component they belong to
     DfgUserMap<uint64_t> m_component = m_dfg.makeUserMap<uint64_t>();
     const std::string m_prefix;  // Component name prefix
+    // Enable expensive internal consistency checks
     const bool m_doExpensiveChecks = v3Global.opt.debugCheck();
     // The extracted cyclic components
     std::vector<std::unique_ptr<DfgGraph>> m_components;

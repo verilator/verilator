@@ -13,4 +13,7 @@ module t;
 
   Cls #(.PARAM($random)) c;  // Bad param name
 
+  int i;
+  Cls #(.PARAM(i++)) c2;  // Bad, side effect
+
 endmodule

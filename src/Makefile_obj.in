@@ -57,6 +57,7 @@ pkgdatadir = @pkgdatadir@
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
 CFG_WITH_DEV_GCOV = @CFG_WITH_DEV_GCOV@
+CFG_WITH_RAND_SAMPLER = @CFG_WITH_RAND_SAMPLER@
 CFG_WITH_SOLVER = @CFG_WITH_SOLVER@
 CPPFLAGS += @CPPFLAGS@
 CFLAGS += @CFLAGS@
@@ -130,6 +131,9 @@ ifeq ($(CFG_WITH_DEFENV),yes)
     CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(pkgdatadir)\"
   else
     CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(VERILATOR_ROOT)\"
+  endif
+  ifneq ($(CFG_WITH_RAND_SAMPLER),default)
+    CPPFLAGS += -DDEFENV_VERILATOR_RAND_SAMPLER='"$(CFG_WITH_RAND_SAMPLER)"'
   endif
   ifneq ($(CFG_WITH_SOLVER),no)
     CPPFLAGS += -DDEFENV_VERILATOR_SOLVER='"$(CFG_WITH_SOLVER)"'
@@ -243,15 +247,14 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Branch.o \
   V3CCtors.o \
   V3CUse.o \
+  V3CallTargets.o \
   V3Case.o \
   V3Cast.o \
   V3Cfg.o \
   V3CfgBuilder.o \
   V3CfgLiveVariables.o \
   V3Class.o \
-  V3ClassGraph.o \
   V3Clean.o \
-  V3Clock.o \
   V3Combine.o \
   V3Common.o \
   V3Const__gen.o \
@@ -323,6 +326,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3OrderParallel.o \
   V3OrderProcessDomains.o \
   V3OrderSerial.o \
+  V3Outline.o \
   V3Param.o \
   V3PatternStats.o \
   V3Premit.o \
@@ -338,11 +342,14 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3SchedPartition.o \
   V3SchedReplicate.o \
   V3SchedTiming.o \
+  V3SchedTimingPrep.o \
   V3SchedTrigger.o \
   V3SchedUtil.o \
   V3SchedVirtIface.o \
   V3Scope.o \
   V3Slice.o \
+  V3SolverBackend.o \
+  V3SolverSmt.o \
   V3Split.o \
   V3StackCount.o \
   V3Subst.o \

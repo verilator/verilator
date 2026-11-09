@@ -52,8 +52,34 @@ class Unsat;
   }
 endclass
 
+// Diversity pin round replies: the soft constraint keeps this off the UniGen2 sampler,
+// and any random target bit differing from the fixed value is a conflicting assumption
+class Pinned;
+  rand bit [6:0] v;
+  constraint pc {
+    v == 7'h55;
+    soft v[0] == 1'b1;
+  }
+endclass
+
 module t;
-  initial begin
+  // t_randomize_solver_reply runs the +MODE=pins rows alone, so the replies their
+  // TAMPER_AT counts start at the first Pinned call
+  task automatic pin_rounds;
+    automatic Pinned pn = new;
+    automatic int npass = 0;
+    automatic int rc;
+    pn.srandom(13);
+    for (int i = 0; i < 4; ++i) begin
+      rc = pn.randomize();
+      if (rc != 0) npass++;
+      // A pin round that gives up keeps the base solution
+      `checkd(pn.v, 7'h55);
+    end
+    $write("NPASS=%0d\n", npass);
+  endtask
+
+  initial begin : checks
     automatic Packet p = new;
     automatic Softy s = new;
     automatic Phased ph = new;
@@ -61,6 +87,13 @@ module t;
     automatic Unsat un = new;
     automatic int npass = 0;
     automatic int rc;
+    if ($test$plusargs("MODE=pins")) begin
+      pin_rounds();
+      $write("*-* All Finished *-*\n");
+      $finish;
+      // $finish ends the run only after this process stops, so leave before the checks
+      disable checks;
+    end
     for (int i = 0; i < 4; ++i) begin
       // Below the constraint, so any model the runtime applies overwrites it
       p.a = 8'd5;

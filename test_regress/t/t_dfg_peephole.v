@@ -330,6 +330,7 @@ module t (
   `signal(REPLACE_XOR_WITH_ONES, -64'd1 ^ rand_a);
   `signal(REPLACE_COND_DEC, randbit_a ? rand_b - 64'b1 : rand_b);
   `signal(REPLACE_COND_INC, randbit_a ? rand_b + 64'b1 : rand_b);
+  `signal(REPLACE_COND_OF_SEL_BITS_WITH_BITWISE, {srand_a[59] ? srand_b[59] : srand_b[3], srand_a[58] ? srand_b[58] : srand_b[2]});
   `signal(NO_REPLACE_COND_DEC, randbit_a ? rand_b - 64'hf000000000000000 : rand_b);
   `signal(NO_REPLACE_COND_INC, randbit_a ? rand_b + 64'hf000000000000000 : rand_b);
   `signal(REPLACE_LOGAND_WITH_AND, rand_a[0] && rand_a[1]);

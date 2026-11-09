@@ -4,6 +4,10 @@
 // SPDX-FileCopyrightText: 2006 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off UNOPTPUBLIC
+
+typedef struct packed { logic [1:0] dp; logic x; } s_t;
+
 module t (/*AUTOARG*/
   // Inputs
   clk
@@ -39,6 +43,10 @@ module t (/*AUTOARG*/
       if (ma0.mb0.    getP2(1'b0) !== 32'h0) $stop;
       if (ma0.mb0.mc0.getP3(1'b0) !== 32'h0) $stop;
       if (ma0.mb0.mc1.getP3(1'b0) !== 32'h1) $stop;
+      // Member select on the value of a hierarchical function call
+      if (ma0.mb0.mc1.getS(1'b0).dp !== 2'h1) $stop;
+      if (ma0.mb0.mc1.getS(1'b0).dp[0] !== 1'b1) $stop;
+      if (ma0.mb0.mc1.getS(1'b0).x !== 1'b1) $stop;
     end
     if (cyc==5) begin
       ma0.        checkName(ma0.        getName(1'b0));
@@ -121,6 +129,7 @@ module mb ();
     ma. checkName (ma. getName(1'b0));
     /**/checkName (    getName(1'b0));
     mc1.checkName (mc1.getName(1'b0));
+    if (mc1.getS(1'b0).dp !== 2'h1) $stop;
   end
 endmodule
 
@@ -132,6 +141,7 @@ module mc ();
   reg [31:0] gName; initial gName = "mc  ";
   function [31:0] getName;  input fake;  getName = "mc  "; endfunction
   function [31:0] getP3  ;  input fake;  getP3 = P3;       endfunction
+  function s_t    getS   ;  input fake;  getS = '{dp: 2'(P3), x: 1'b1}; endfunction
   task checkName; input [31:0] name;  if (name !== "mc  ") $stop; endtask
 
   initial begin

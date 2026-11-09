@@ -8,3 +8,4 @@
 
 inline -module "l*"
 public -module "l*" -var "z*"
+lint_off -rule UNOPTPUBLIC

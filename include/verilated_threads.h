@@ -46,45 +46,25 @@
 class VlExecutionProfiler;
 class VlThreadPool;
 
-// VlMTaskVertex and VlThreadpool will work with multiple model class types.
-// Since the type is opaque to VlMTaskVertex and VlThreadPool, represent it
+// VlThreadpool will work with multiple model class types.
+// Since the type is opaque to VlThreadPool, represent it
 // as a void* here.
 using VlSelfP = void*;
 
-using VlExecFnp = void (*)(VlSelfP, bool);
+using VlExecFnp = void (*)(VlSelfP);
 
-// Track dependencies for a single MTask.
-class VlMTaskVertex final {
+// Progress of one thread through its part of a static mtask schedule: the position, counted
+// from 1, of its last finished mtask. Written only by that thread, with a plain release store;
+// other threads wait for it with acquire loads. No read-modify-write, and one cache line per
+// thread, so a dependency costs one line transfer from producer to consumer, however many
+// consumers there are.
+class alignas(VL_CACHE_LINE_BYTES) VlThreadProgress final {
     // MEMBERS
     static std::atomic<uint64_t> s_yields;  // Statistics
-
-    // On even cycles, _upstreamDepsDone increases as upstream
-    // dependencies complete. When it reaches _upstreamDepCount,
-    // this MTaskVertex is ready.
-    //
-    // On odd cycles, _upstreamDepsDone decreases as upstream
-    // dependencies complete, and when it reaches zero this MTaskVertex
-    // is ready.
-    //
-    // An atomic is smaller than a mutex, and lock-free.
-    //
-    // (Why does the size of this class matter? If an mtask has many
-    // downstream mtasks to notify, we hope these will pack into a
-    // small number of cache lines to reduce the cost of pointer chasing
-    // during done-notification. Nobody's quantified that cost though.
-    // If we were really serious about shrinking this class, we could
-    // use 16-bit types here...)
-    std::atomic<uint32_t> m_upstreamDepsDone;
-    const uint32_t m_upstreamDepCount;
+    std::atomic<uint32_t> m_pos{0};  // Position of the last finished mtask, or DONE
 
 public:
-    // CONSTRUCTORS
-
-    // 'upstreamDepCount' is the number of upstream MTaskVertex's
-    // that must notify this MTaskVertex before it will become ready
-    // to run.
-    explicit VlMTaskVertex(uint32_t upstreamDepCount);
-    ~VlMTaskVertex() = default;
+    static constexpr uint32_t DONE = ~0U;  // Thread finished its part of the schedule
 
     static uint64_t yields() { return s_yields; }
     static void yieldThread() {
@@ -92,28 +72,14 @@ public:
         std::this_thread::yield();
     }
 
-    // Upstream mtasks must call this when they complete.
-    // Returns true when the current MTaskVertex becomes ready to execute,
-    // false while it's still waiting on more dependencies.
-    bool signalUpstreamDone(bool evenCycle) {
-        if (evenCycle) {
-            const uint32_t upstreamDepsDone
-                = 1 + m_upstreamDepsDone.fetch_add(1, std::memory_order_release);
-            assert(upstreamDepsDone <= m_upstreamDepCount);
-            return (upstreamDepsDone == m_upstreamDepCount);
-        }
-        const uint32_t upstreamDepsDone_prev
-            = m_upstreamDepsDone.fetch_sub(1, std::memory_order_release);
-        assert(upstreamDepsDone_prev > 0);
-        return (upstreamDepsDone_prev == 1);
-    }
-    bool areUpstreamDepsDone(bool evenCycle) const {
-        const uint32_t target = evenCycle ? m_upstreamDepCount : 0;
-        return m_upstreamDepsDone.load(std::memory_order_acquire) == target;
-    }
-    void waitUntilUpstreamDone(bool evenCycle) const {
+    // Dispatching thread, while no thread runs the schedule
+    void reset() { m_pos.store(0, std::memory_order_relaxed); }
+    // Thread running its part: everything up to and including 'pos' is done
+    void publish(uint32_t pos) { m_pos.store(pos, std::memory_order_release); }
+    // Other threads: wait until the thread has published at least 'pos'
+    void waitFor(uint32_t pos) const {
         unsigned ct = 0;
-        while (VL_UNLIKELY(!areUpstreamDepsDone(evenCycle))) {
+        while (VL_UNLIKELY(m_pos.load(std::memory_order_acquire) < pos)) {
             VL_CPU_RELAX();
             ++ct;
             if (VL_UNLIKELY(ct > VL_LOCK_SPINS)) {
@@ -124,6 +90,26 @@ public:
     }
 };
 
+// Progress of the threads running the schedule of one exec graph; a graph runs one schedule at
+// a time.
+template <size_t N_Threads>
+class VlScheduleProgress final {
+    // MEMBERS
+    VlThreadProgress m_threads[N_Threads];  // Progress of each thread of the schedule
+
+public:
+    // Dispatching thread, before starting a schedule. Handing the threads' functions to the
+    // thread pool orders this before they start.
+    void start() {
+        for (VlThreadProgress& thread : m_threads) thread.reset();
+    }
+    void publish(uint32_t thread, uint32_t pos) { m_threads[thread].publish(pos); }
+    void waitFor(uint32_t thread, uint32_t pos) const { m_threads[thread].waitFor(pos); }
+    void done(uint32_t thread) { m_threads[thread].publish(VlThreadProgress::DONE); }
+    // Dispatching thread: wait for a thread run by the pool to be done
+    void waitDone(uint32_t thread) const { m_threads[thread].waitFor(VlThreadProgress::DONE); }
+};
+
 class VlWorkerThread final {
     friend class VlThreadPool;
 
@@ -131,12 +117,10 @@ class VlWorkerThread final {
     struct ExecRec final {
         VlExecFnp m_fnp = nullptr;  // Function to execute
         VlSelfP m_selfp = nullptr;  // Symbol table to execute
-        bool m_evenCycle = false;  // Even/odd for flag alternation
         ExecRec() = default;
-        ExecRec(VlExecFnp fnp, VlSelfP selfp, bool evenCycle)
+        ExecRec(VlExecFnp fnp, VlSelfP selfp)
             : m_fnp{fnp}
-            , m_selfp{selfp}
-            , m_evenCycle{evenCycle} {}
+            , m_selfp{selfp} {}
     };
 
     // MEMBERS
@@ -193,12 +177,11 @@ public:
         m_ready.erase(m_ready.begin());
         m_ready_size.fetch_sub(1, std::memory_order_relaxed);
     }
-    void addTask(VlExecFnp fnp, VlSelfP selfp, bool evenCycle = false)
-        VL_MT_SAFE_EXCLUDES(m_mutex) {
+    void addTask(VlExecFnp fnp, VlSelfP selfp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         bool notify;
         {
             const VerilatedLockGuard lock{m_mutex};
-            m_ready.emplace_back(fnp, selfp, evenCycle);
+            m_ready.emplace_back(fnp, selfp);
             m_ready_size.fetch_add(1, std::memory_order_relaxed);
             notify = m_waiting;
         }

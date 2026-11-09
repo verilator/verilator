@@ -62,6 +62,10 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
       logic [128:0] s129_out;
       logic [3:0] [31:0] s4x32_in;
       logic [3:0] [31:0] s4x32_out;
+      logic [3:0]        s4x1t_in;
+      logic [3:0]        s4x1t_out;
+      logic [1:0] [39:0] s2x2x40up_in[2];
+      logic [1:0] [39:0] s2x2x40up_out[2];
       /*verilator lint_off ASCRANGE*/
       logic [0:15]       s6x16up_in[0:1][2:0];
       logic [0:15]       s6x16up_out[0:1][2:0];
@@ -114,6 +118,10 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
              .s129_out,
              .s4x32_in,
              .s4x32_out,
+             .s4x1t_in,
+             .s4x1t_out,
+             .s2x2x40up_in,
+             .s2x2x40up_out,
              .s6x16up_in,
              .s6x16up_out,
              .s8x16up_in,
@@ -143,6 +151,8 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
         `DRIVE(s65)
         `DRIVE(s129)
         `DRIVE(s4x32)
+        `DRIVE(s4x1t)
+        {s2x2x40up_in[0], s2x2x40up_in[1]} <= {crc, ~crc, crc[31:0]};
         {s1up_in[1], s1up_in[0]} <= {^crc, ~(^crc)};
         {s6x16up_in[0][0], s6x16up_in[0][1], s6x16up_in[0][2]} <= crc[47:0];
         {s6x16up_in[1][0], s6x16up_in[1][1], s6x16up_in[1][2]} <= ~crc[63:16];
@@ -209,6 +219,8 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
         `CHECK(s65)
         `CHECK(s129)
         `CHECK(s4x32)
+        `CHECK(s4x1t)
+        `CHECK(s2x2x40up)
         `CHECK(s6x16up)
         `CHECK(s8x16up)
         `CHECK(s8x16up_3d)

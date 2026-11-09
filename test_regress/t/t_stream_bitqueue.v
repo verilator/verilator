@@ -52,7 +52,7 @@ module t (
       six_q = {>>{w96}};
       `checkh(six_q.size(), 16);
       `checkh(six_q[0], 6'h2a);
-            `checkh(six_q[15], 6'h2a);
+      `checkh(six_q[15], 6'h2a);
     end
     begin
       bit_q_t bit_q, bit_qq;

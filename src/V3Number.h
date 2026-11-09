@@ -388,7 +388,7 @@ class V3Number final {
     using V3NumberDataType = V3NumberData::V3NumberDataType;
 
     // MEMBERS
-    V3NumberData m_data;
+    V3NumberData m_data;  // Value and flags
     AstNode* m_nodep = nullptr;  // Parent node - for error reporting only
     FileLine* m_fileline = nullptr;  // Source location - if no parent node is reasonable
 
@@ -707,11 +707,13 @@ public:
     bool isAllX() const VL_MT_SAFE;
     bool isEqZero() const VL_MT_SAFE;
     bool isNeqZero() const;
+    bool isTrue() const;
     bool isBitsZero(int msb, int lsb) const;
     bool isBroken(int vwidth) const;
     bool isEqOne() const;
     bool isEqAllOnes(int optwidth = 0) const;
     bool isCaseEq(const V3Number& rhs) const;  // operator==
+    bool isLt(const V3Number& rhs) const;  // Unsigned operator<, false if unknown
     bool isLtXZ(const V3Number& rhs) const;  // operator< with XZ compared
     bool isAnyX() const VL_MT_SAFE;
     bool isAnyXZ() const;
@@ -791,6 +793,7 @@ public:
     V3Number& opWildNeq(const V3Number& lhs, const V3Number& rhs);
     V3Number& opBufIf1(const V3Number& ens, const V3Number& if1s);
     V3Number& opSetRange(uint32_t lsb, uint32_t width, char bitValue);
+    V3Number& opCleanTwoStateNumber(const AstNodeDType* dtypep, int lsb = 0);
     // "standard" math
     V3Number& opNot(const V3Number& lhs);
     V3Number& opLogNot(const V3Number& lhs);
@@ -798,6 +801,7 @@ public:
     V3Number& opLogOr(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLogEq(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLogIf(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opCond(const V3Number& cond, const V3Number& then, const V3Number& elseNum);
     V3Number& opNegate(const V3Number& lhs);
     V3Number& opAdd(const V3Number& lhs, const V3Number& rhs);
     V3Number& opSub(const V3Number& lhs, const V3Number& rhs);

@@ -14,7 +14,8 @@ module t (/*AUTOARG*/
   input bool;  // BAD
 
   reg  vector; // OK, as not public
-  reg  switch /*verilator public*/;    // Bad
+  reg  switch /*verilator public_flat*/;    // Bad
+  localparam int nullptr /*verilator public_flat*/ = 123;  // Bad
 
   typedef struct packed {
     logic [31:0] vector;      // OK, as not public
@@ -26,6 +27,7 @@ module t (/*AUTOARG*/
 
   initial begin
     t.vector = 1;
+    if (nullptr != 123) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

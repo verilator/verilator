@@ -6,6 +6,7 @@
 
 bit a_finished;
 bit b_finished;
+bit lib_bound;
 
 module t (
     input clk
@@ -20,13 +21,21 @@ module t (
       .i(1'b0)
   /*AUTOINST*/);
 
+  LibraryModule library_inst ();
+  LibraryBound unused_bound ();
+
   Prog p (  /*AUTOINST*/
-          // Inputs
-          .si                           (si));
+      // Inputs
+      .si(si)
+  );
 
   always @(posedge clk) begin
     if (!a_finished) $stop;
     if (!b_finished) $stop;
+`ifdef VERILATOR
+    // The bind should not apply to the module marked 'verilator_lib'
+    if (lib_bound) $stop;
+`endif
     $write("*-* All Finished *-*\n");
     $finish;
   end
@@ -39,6 +48,22 @@ module InstModule (
 );
   assign so = {32{si}};
 endmodule
+
+module LibraryModule;
+endmodule
+`ifdef VERILATOR
+`verilator_config
+verilator_lib -module "LibraryModule"
+`verilog
+`endif
+
+module LibraryBound #(
+    parameter bit ENABLE = 1'b0
+);
+  initial lib_bound = ENABLE;
+endmodule
+
+bind LibraryModule LibraryBound #(.ENABLE(1'b1)) bound_instance ();
 
 program Prog (
     input si

@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: 2010-2023 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+// Call the C++-linkage wrapper of a test function, as $c cannot declare an extern "C" function
+`define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
+
 `ifdef USE_VPI_NOT_DPI
 //We call it via $c so we can verify DPI isn't required - see bug572
 `else
@@ -19,12 +22,6 @@ module \t.has.dots (/*AUTOARG*/
   // Inputs
   clk, a, \b.c
   );
-
-`ifdef VERILATOR
-`systemc_header
-extern "C" int mon_check();
-`verilog
-`endif
 
   input clk;
   input [7:0] a /*verilator public_flat_rw*/;
@@ -60,20 +57,28 @@ extern "C" int mon_check();
   wire [31:0] \a0.cyc = ~a0.cyc;
   wire [31:0] \other.cyc = ~a0.cyc;
 
-  integer        status;
+  integer status;
 
-  sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name a0 (.cyc(cyc));
+  sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name a0 (
+      .cyc(cyc)
+  );
 
-  sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name \mod.with_dot (.cyc(cyc));
+  sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name \mod.with_dot (
+      .cyc(cyc)
+  );
 
   // Check if scope names are not decoded twice
-  sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name ___0F_ (.cyc(cyc));
-  sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name ___0_ (.cyc(cyc));
+  sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name ___0F_ (
+      .cyc(cyc)
+  );
+  sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name ___0_ (
+      .cyc(cyc)
+  );
 
   initial begin
 
 `ifdef VERILATOR
-    status = $c32("mon_check()");
+    status = `CPP_CALL(mon_check);
 `endif
 `ifdef IVERILOG
     status = $mon_check();
@@ -88,7 +93,7 @@ extern "C" int mon_check();
     $write("%%Info: Checking results\n");
   end
 
-  always @ (posedge clk) begin
+  always @(posedge clk) begin
     cyc <= cyc + 1;
     if (escaped_normal != cyc[0]) $stop;
     if (\escaped_normal != cyc[0]) $stop;
@@ -102,7 +107,7 @@ extern "C" int mon_check();
     if (\check;alias != !cyc[0]) $stop;
     if (\a0.cyc != ~cyc) $stop;
     if (\other.cyc != ~cyc) $stop;
-    if (cyc==10) begin
+    if (cyc == 10) begin
       if (a != 2) $stop;
       if (\b.c != 1) $stop;
       $write("*-* All Finished *-*\n");
@@ -113,11 +118,11 @@ extern "C" int mon_check();
 endmodule
 
 module sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name (
-        input [31:0] cyc /*verilator public_flat_rd*/
-        );
+    input [31:0] cyc  /*verilator public_flat_rd*/
+);
   reg \b.c /*verilator public_flat_rw*/;
-  reg subsig1 /*verilator public_flat_rd*/;
-  reg subsig2; // public in .vlt
+  reg subsig1  /*verilator public_flat_rd*/;
+  reg subsig2;  // public in .vlt
 `ifdef IVERILOG
   // stop icarus optimizing signals away
   wire redundant = subsig1 | subsig2 | \b.c ;

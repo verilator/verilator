@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface intf (
-    input wire clk  /*verilator public*/
+    input wire clk  /*verilator public_flat_rw*/
 );
 endinterface
 

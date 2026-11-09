@@ -112,15 +112,38 @@ static string V3HierParametersFileName(const string& prefix) {
     return v3Global.opt.makeDir() + "/" + prefix + "__hierParameters.v";
 }
 
-static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of, bool forMkJson) {
+// Writes input files ahead of the original options, which include any -work, so each file's
+// library is stated explicitly with -work when it changes.
+class V3HierInputWriter final {
+    std::ostream& m_os;  // Output stream to write to
+    string m_libname;  // Library of the previous file
+
+public:
+    explicit V3HierInputWriter(std::ostream* osp)
+        : m_os{*osp} {}
+    void writeFileLib(const string& prefix, const VFileLibName& file) {
+        if (file.libname() != m_libname) {
+            m_libname = file.libname();
+            m_os << "-work " << m_libname << "\n";
+        }
+        m_os << prefix << file.filename() << "\n";
+    }
+    // Hierarchical block wrapper replaces its module, so must be in the module's library.
+    void writeHierBlock(const string& dir, const V3HierBlock* hblockp) {
+        writeFileLib(dir, {hblockp->hierWrapperFilename(true), hblockp->modp()->libname()});
+    }
+};
+
+static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, V3HierInputWriter& writer,
+                                    bool forMkJson) {
     const string topModuleFile = hblockp ? hblockp->vFileIfNecessary() : "";
     if (!forMkJson) {
-        for (const string& filename : V3HierGraph::sourceFiles(topModuleFile))
-            *of << filename << "\n";
+        for (const VFileLibName& vfile : v3Global.opt.vFiles()) writer.writeFileLib("", vfile);
+        if (!topModuleFile.empty())
+            writer.writeFileLib("", {topModuleFile, hblockp->modp()->libname()});
     }
-    for (const auto& i : v3Global.opt.libraryFiles()) {
-        if (V3Os::filenameRealPath(i.filename()) != topModuleFile)
-            *of << "-v " << i.filename() << "\n";
+    for (const VFileLibName& i : v3Global.opt.libraryFiles()) {
+        if (V3Os::filenameRealPath(i.filename()) != topModuleFile) writer.writeFileLib("-v ", i);
     }
 }
 
@@ -142,8 +165,8 @@ bool V3HierBlock::stringParamPassable(const string& value) {
 V3HierBlock::StrGParams V3HierBlock::stringifyParams(const std::vector<AstVar*>& gparams,
                                                      bool forGOption) {
     StrGParams strParams;
-    for (const AstVar* const gparam : gparams) {
-        if (const AstConst* const constp = VN_CAST(gparam->valuep(), Const)) {
+    for (const AstVar* const gparamp : gparams) {
+        if (const AstConst* const constp = VN_CAST(gparamp->valuep(), Const)) {
             string s;
             // Only constant parameter needs to be set to -G because already checked in
             // V3Param.cpp. See also ParamVisitor::checkSupportedParam() in the file.
@@ -168,7 +191,7 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const std::vector<AstVar*>&
                 s = num.ascii(true, true);
                 s = VString::quoteAny(s, '\'', '\\');
             }
-            strParams.emplace_back(gparam->name(), s);
+            strParams.emplace_back(gparamp->name(), s);
         }
     }
     return strParams;
@@ -251,10 +274,6 @@ string V3HierBlock::hierLibFilename(bool withDir) const {
     return hierSomeFilename(withDir, "lib", ".a");
 }
 
-string V3HierBlock::hierGeneratedFilenames(bool withDir) const {
-    return hierWrapperFilename(withDir) + ' ' + hierMkFilename(withDir);
-}
-
 string V3HierBlock::vFileIfNecessary() const {
     string filename = V3Os::filenameRealPath(m_modp->fileline()->filename());
     for (const auto& v : v3Global.opt.vFiles()) {
@@ -268,14 +287,14 @@ void V3HierBlock::writeCommandArgsFile(bool forMkJson) const {
     const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(commandArgsFilename(forMkJson))};
     *of << "--cc\n";
 
+    V3HierInputWriter writer{of.get()};
     if (!forMkJson) {
         for (const V3GraphEdge& edge : outEdges()) {
-            const V3HierBlock* const dependencyp = edge.top()->as<V3HierBlock>();
-            *of << v3Global.opt.makeDir() << "/" << dependencyp->hierWrapperFilename(true) << "\n";
+            writer.writeHierBlock(v3Global.opt.makeDir() + "/", edge.top()->as<V3HierBlock>());
         }
         *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     }
-    V3HierWriteCommonInputs(this, of.get(), forMkJson);
+    V3HierWriteCommonInputs(this, writer, forMkJson);
     const VStringList& commandOpts = commandArgs(false);
     for (const string& opt : commandOpts) *of << opt << "\n";
     *of << hierBlockArgs().front() << "\n";
@@ -301,10 +320,10 @@ void V3HierBlock::writeParametersFile() const {
     const string moduleName = "Vhsh" + hash.digestSymbol24();
     const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(typeParametersFilename())};
     *of << "module " << moduleName << ";\n";
-    for (AstParamTypeDType* const gparam : m_typeParams) {
+    for (AstParamTypeDType* const gparamp : m_typeParams) {
         AstTypedef* tdefp
-            = new AstTypedef{new FileLine{FileLine::builtInFilename()}, gparam->name(), nullptr,
-                             VFlagChildDType{}, gparam->skipRefp()->cloneTreePure(true)};
+            = new AstTypedef{new FileLine{FileLine::builtInFilename()}, gparamp->name(), nullptr,
+                             VFlagChildDType{}, gparamp->skipRefp()->cloneTreePure(true)};
         V3EmitV::verilogForTree(tdefp, *of);
         VL_DO_DANGLING(tdefp->deleteTree(), tdefp);
     }
@@ -426,13 +445,13 @@ void V3HierGraph::writeCommandArgsFiles(bool forMkJson) const {
     // For the top module
     const std::unique_ptr<std::ofstream> of{
         V3File::new_ofstream(topCommandArgsFilename(forMkJson))};
+    V3HierInputWriter writer{of.get()};
     if (!forMkJson) {
         // Load wrappers first not to be overwritten by the original HDL
-        for (const V3GraphVertex& vtx : vertices()) {
-            *of << vtx.as<V3HierBlock>()->hierWrapperFilename(true) << "\n";
-        }
+        for (const V3GraphVertex& vtx : vertices())
+            writer.writeHierBlock("", vtx.as<V3HierBlock>());
     }
-    V3HierWriteCommonInputs(nullptr, of.get(), forMkJson);
+    V3HierWriteCommonInputs(nullptr, writer, forMkJson);
     if (!forMkJson) {
         const VStringSet& cppFiles = v3Global.opt.cppFiles();
         for (const string& i : cppFiles) *of << i << "\n";

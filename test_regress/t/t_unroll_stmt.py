@@ -16,7 +16,6 @@ test.compile(verilator_flags2=["--binary", "--stats"])
 test.execute(expect_filename=test.golden_filename)
 
 test.file_grep(test.stats, r'Optimizations, Loop unrolling, Failed - contains fork\s+(\d+)', 0)
-test.file_grep(test.stats, r'Optimizations, Loop unrolling, Failed - infinite loop\s+(\d+)', 0)
 test.file_grep(test.stats,
                r'Optimizations, Loop unrolling, Failed - loop test in sub-statement\s+(\d+)', 0)
 test.file_grep(test.stats,
@@ -26,7 +25,7 @@ test.file_grep(test.stats,
 test.file_grep(test.stats,
                r'Optimizations, Loop unrolling, Failed - unknown loop condition\s+(\d+)', 0)
 test.file_grep(test.stats, r'Optimizations, Loop unrolling, Pragma unroll_disable\s+(\d+)', 0)
-test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled loops\s+(\d+)', 13)
-test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled iterations\s+(\d+)', 77)
+test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled loops\s+(\d+)', 21)
+test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled iterations\s+(\d+)', 97)
 
 test.passes()

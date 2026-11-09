@@ -71,4 +71,47 @@ module t;
       end
     end
   end
+
+  // Written after time 0, so not a constant, and the arrays below are not split into elements
+  int idx;
+  initial #1 idx = 0;
+
+  // Consecutive NBAs do not share a flag when updating an array of another scope
+  sub u_sub ();
+  always @(posedge clk) begin
+    u_sub.arr[idx] <= 8'h01;
+    u_sub.arr[idx+1] <= 8'h02;
+  end
+  initial begin
+    #12;
+    `checkh(u_sub.arr[0], 8'h01);
+    `checkh(u_sub.arr[1], 8'h02);
+  end
+
+  // Nor when updating arrays also updated on different clocks
+  reg [7:0] c[2];
+  // verilator lint_off MULTIDRIVEN
+  reg [7:0] d[2];
+  // verilator lint_on MULTIDRIVEN
+  always @(posedge clk) begin
+    // The 'if' depends on a variable written in the process, so is not split by array
+    bit en;
+    en = idx == 0;
+    if (en) begin
+      c[idx] <= 8'h03;
+      d[idx] <= 8'h04;
+    end
+  end
+  always @(negedge clk) d[idx+1] <= 8'h05;
+  initial begin
+    #12;
+    `checkh(c[0], 8'h03);
+    `checkh(d[0], 8'h04);
+    `checkh(d[1], 8'h05);
+  end
+endmodule
+
+module sub;
+  // verilator no_inline_module
+  reg [7:0] arr[2];
 endmodule

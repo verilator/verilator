@@ -413,7 +413,7 @@ public:
 	void construct() {
 		info.resize(computeBytesNeeded(EncodingType::VERILOG));
 		EmitWriterHelper wh(info.data_ptr());
-		wh.writeTimeIndexAndEncoding(0, EncodingType::VERILOG).write(T(0)).write(T(-1));
+		wh.writeTimeIndexAndEncoding(0, EncodingType::VERILOG).write(T(-1)).write(T(-1));
 	}
 
 	void emitValueChange(uint64_t current_time_index, const uint64_t val) {
@@ -639,7 +639,7 @@ public:
 		EmitWriterHelper wh(info.data_ptr());
 		wh  //
 			.writeTimeIndexAndEncoding(0, EncodingType::VERILOG)
-			.fill(static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()) << 32, nw);
+			.fill(std::numeric_limits<uint64_t>::max(), nw);
 	}
 
 	void emitValueChange(uint64_t current_time_index, const uint64_t val) {
@@ -857,7 +857,7 @@ inline VariableInfo::VariableInfo(uint32_t bitwidth_, bool is_real_) {
 	platform::write_field(m_misc, bitwidth_, kBitwidthWidth, kBitwidthOffset);
 	platform::write_field(m_misc, is_real_, kIsRealWidth, kIsRealOffset);
 	dispatchHelper([](auto obj) { obj.construct(); });
-	last_written_encode_type(EncodingType::BINARY);
+	last_written_encode_type(is_real_ ? EncodingType::BINARY : EncodingType::VERILOG);
 }
 
 inline uint32_t VariableInfo::emitValueChange(uint64_t current_time_index, const uint64_t val) {

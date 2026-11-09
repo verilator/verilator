@@ -44,7 +44,8 @@ inline bool isVlForceVec(const AstVarScope* vscp) {
 }
 
 inline bool isForceReadMethod(VCMethod method) {
-    return method == VCMethod::FORCE_READ || method == VCMethod::FORCE_READ_INDEX;
+    return method == VCMethod::FORCE_READ || method == VCMethod::FORCE_READ_INDEX
+           || method == VCMethod::FORCE_READ_SEL;
 }
 
 inline void collectForceReadEdgeIgnores(AstNode* nodep, VarScopeSet& out) {
@@ -68,7 +69,10 @@ inline void collectForceReadEdgeIgnores(AstNode* nodep, VarScopeSet& out) {
         const AstVarRef* const fromRefp = VN_CAST(callp->fromp(), VarRef);
         if (!fromRefp || !writtenForceVecs.count(fromRefp->varScopep())) return;
 
-        AstNodeExpr* const origp = callp->pinsp();
+        // readSel has the variable width before the original value
+        AstNode* const origp = callp->method() == VCMethod::FORCE_READ_SEL
+                                   ? callp->pinsp()->nextp()
+                                   : callp->pinsp();
         if (!origp) return;
         origp->foreach([&](const AstVarRef* refp) {
             AstVarScope* const vscp = refp->varScopep();
@@ -114,14 +118,14 @@ public:
     // Add an AstActive under the given scope
     void add(AstScope* scopep, AstActive* activep) { m_entries.push_back({scopep, activep, {}}); }
 
-    // Add logic
-    void add(AstScope* scopep, AstSenTree* senTreep, AstNode* logicp) {
-        UASSERT_OBJ(!logicp->backp(), logicp, "Already linked");
+    // Add a process
+    void add(AstScope* scopep, AstSenTree* senTreep, AstNodeProcedure* procp) {
+        UASSERT_OBJ(!procp->backp(), procp, "Already linked");
         if (m_entries.empty() || m_entries.back().m_scopep != scopep
             || m_entries.back().m_activep->sentreep() != senTreep) {
-            add(scopep, new AstActive{logicp->fileline(), "", senTreep});
+            add(scopep, new AstActive{procp->fileline(), "", senTreep});
         }
-        m_entries.back().m_activep->addStmtsp(logicp);
+        m_entries.back().m_activep->addProcsp(procp);
     };
 
     // Create copy, with the AstActives cloned
@@ -138,9 +142,8 @@ public:
         for (const Entry& entry : m_entries) {
             AstActive* const activep = entry.m_activep;
             if (v3Global.opt.debugCheck()) {
-                for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
-                    AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure);
-                    UASSERT_OBJ(procp && !procp->stmtsp(), activep, "Leftover logic");
+                for (AstNodeProcedure* const procp : activep->procspList()) {
+                    UASSERT_OBJ(!procp->stmtsp(), activep, "Leftover logic");
                 }
             }
             if (activep->backp()) activep->unlinkFrBack();
@@ -149,10 +152,10 @@ public:
         m_entries.clear();
     };
 
-    void foreachLogic(const std::function<void(AstNode*)>& f) const {
+    void foreachProcess(const std::function<void(AstNodeProcedure*)>& f) const {
         for (const Entry& entry : m_entries) {
             const AstActive* const activep = entry.m_activep;
-            for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) f(nodep);
+            for (AstNodeProcedure* const procp : activep->procspList()) f(procp);
         }
     }
 };
@@ -302,7 +305,7 @@ private:
     mutable AstCFunc* m_dumpExtp = nullptr;
     // The AstCFunc testing if a trigger vector has any bits set - create lazily
     mutable AstCFunc* m_anySetVecp = nullptr;
-    mutable AstCFunc* m_anySetExtp = nullptr;
+    mutable AstCFunc* m_anySetExtp = nullptr;  // Function testing if extra trigger bits are set
     // The AstCFunc setting bits in a trigger vector that are set in another - create lazily
     mutable std::array<AstCFunc*, 4> m_orIntoVecps = {nullptr};
     // The AstCFunc setting a trigger vector to all zeroes - create lazily
@@ -343,7 +346,7 @@ public:
         uint32_t size() const { return m_descriptions.size(); }
     };
     // Generates list of assignments that fills
-    static AstAssign* createSenTrigVecAssignment(AstVarScope* const target,
+    static AstAssign* createSenTrigVecAssignment(AstVarScope* const targetp,
                                                  std::vector<AstNodeExpr*>& trigps);
 
     // Create a TriggerKit for the given AstSenTree vector
@@ -409,7 +412,7 @@ class TimingKit final {
 
 public:
     LogicByScope m_lbs;  // Actives that resume timing schedulers
-    AstNodeStmt* m_postUpdates = nullptr;  // Post updates for the trigger eval function
+    AstNodeStmt* m_postUpdatesp = nullptr;  // Post updates for the trigger eval function
 
     // Trigger indices of the external domains of each variable
     std::map<const AstVarScope*, std::vector<uint32_t>>
@@ -422,11 +425,11 @@ public:
     AstCCall* createReady(AstVarScope* trigVscp) VL_MT_DISABLED;
 
     TimingKit() = default;
-    TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdates,
+    TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdatesp,
               std::map<const AstVarScope*, std::set<AstSenTree*>>&& externalDomains)
         : m_externalDomains{externalDomains}
         , m_lbs{lbs}
-        , m_postUpdates{postUpdates} {}
+        , m_postUpdatesp{postUpdatesp} {}
     VL_UNCOPYABLE(TimingKit);
     TimingKit(TimingKit&&) = default;
     TimingKit& operator=(TimingKit&&) = default;
@@ -481,7 +484,7 @@ private:
     // How the sample() calls seen so far resolved. Statistics only, hence mutable: ordering
     // runs once per scheduling region and must hold this by const reference.
     mutable uint32_t m_numExactCalls = 0;
-    mutable uint32_t m_numUnionCalls = 0;
+    mutable uint32_t m_numUnionCalls = 0;  // Statistic, sample() calls that resolved to a union
     // Returned for a covergroup with no reference formal at all.
     static const Bindings s_none;
 

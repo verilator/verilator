@@ -118,26 +118,26 @@ class SchedReplicateLogicVertex final : public SchedReplicateVertex {
     VL_RTTI_IMPL(SchedReplicateLogicVertex, SchedReplicateVertex)
     AstScope* const m_scopep;  // The enclosing AstScope of the logic node
     AstSenTree* const m_senTreep;  // The sensitivity of the logic node
-    AstNode* const m_logicp;  // The logic node this vertex represents
+    AstNodeProcedure* const m_procp;  // The process this vertex represents
     RegionFlags const m_assignedRegion;  // The region this logic is originally assigned to
 
 public:
     SchedReplicateLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* senTreep,
-                              AstNode* logicp, RegionFlags assignedRegion)
+                              AstNodeProcedure* procp, RegionFlags assignedRegion)
         : SchedReplicateVertex{graphp}
         , m_scopep{scopep}
         , m_senTreep{senTreep}
-        , m_logicp{logicp}
+        , m_procp{procp}
         , m_assignedRegion{assignedRegion} {
         addDrivingRegions(assignedRegion);
     }
     AstScope* scopep() const { return m_scopep; }
     AstSenTree* senTreep() const { return m_senTreep; }
-    AstNode* logicp() const { return m_logicp; }
+    AstNodeProcedure* procp() const { return m_procp; }
     RegionFlags assignedRegion() const { return m_assignedRegion; }
 
     // For graph dumping
-    string name() const override VL_MT_STABLE { return m_logicp->fileline()->ascii(); };
+    string name() const override VL_MT_STABLE { return m_procp->fileline()->ascii(); };
     string dotShape() const override { return "rectangle"; }
 };
 
@@ -211,7 +211,7 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
             });
         }
 
-        for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNodeProcedure* const nodep : activep->procspList()) {
             SchedReplicateLogicVertex* const lvtxp
                 = new SchedReplicateLogicVertex{graphp.get(), scopep, senTreep, nodep, region};
             const VNUser2InUse user2InUse;
@@ -223,17 +223,19 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
             nodep->foreach([&](AstVarRef* refp) {
                 AstVarScope* const vscp = refp->varScopep();
                 SchedReplicateVarVertex* const vvtxp = getVarVertex(vscp);
-                if (refp->access().isReadOrRW() && !vscp->user3SetOnce()
-                    && readTriggersThisLogic(vscp) && !vscp->user2()
-                    && !forceReadEdgeIgnores.count(vscp)) {  //
-                    addEdge(vvtxp, lvtxp);
-                }
                 // If written, add logic -> var edge
                 // Note: See V3Order for why AlwaysPostponed is safe to be ignored. We ignore it
                 // as otherwise we would end up with a false cycle.
                 if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()
                     && !vscp->user2SetOnce() && !VN_IS(nodep, AlwaysPostponed)) {  //
                     addEdge(lvtxp, vvtxp);
+                }
+                // If read, add var -> logic edge. Checked after the write, as in V3SchedAcyclic,
+                // so a read-write reference counts only as a write
+                if (refp->access().isReadOrRW() && !vscp->user3SetOnce()
+                    && readTriggersThisLogic(vscp) && !vscp->user2()
+                    && !forceReadEdgeIgnores.count(vscp)) {  //
+                    addEdge(vvtxp, lvtxp);
                 }
             });
         }
@@ -276,7 +278,7 @@ LogicReplicas replicate(Graph* graphp) {
     for (V3GraphVertex& vtx : graphp->vertices()) {
         if (SchedReplicateLogicVertex* const lvtxp = vtx.cast<SchedReplicateLogicVertex>()) {
             const auto replicateTo = [&](LogicByScope& lbs) {
-                lbs.add(lvtxp->scopep(), lvtxp->senTreep(), lvtxp->logicp()->cloneTree(false));
+                lbs.add(lvtxp->scopep(), lvtxp->senTreep(), lvtxp->procp()->cloneTree(false));
             };
             const uint8_t targetRegions = lvtxp->drivingRegions() & ~lvtxp->assignedRegion();
             UASSERT(!lvtxp->senTreep()->hasClocked() || targetRegions == 0,

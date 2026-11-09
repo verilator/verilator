@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["-Wno-WIDTHTRUNC"])
+test.compile()
+
+test.execute()
 
 test.passes()

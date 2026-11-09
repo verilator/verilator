@@ -25,12 +25,12 @@ module t_std_randomize_queue;
   initial begin
     int randomize_result;
 
-    // Test 1: std::randomize with queue (no constraints)
+    // Test: std::randomize with queue (no constraints)
     q8 = {8'd0, 8'd0, 8'd0};
     randomize_result = std::randomize(q8);
     `checkd(randomize_result, 1);
 
-    // Test 2: std::randomize with queue and constraints
+    // Test: std::randomize with queue and constraints
     q8 = {8'd0, 8'd0, 8'd0, 8'd0};
     randomize_result = std::randomize(q8) with {
       foreach (q8[j]) q8[j] > 8'd10 && q8[j] < 8'd100;
@@ -40,7 +40,7 @@ module t_std_randomize_queue;
       if (q8[j] <= 8'd10 || q8[j] >= 8'd100) `stop;
     end
 
-    // Test 3: std::randomize with 32-bit queue
+    // Test: std::randomize with 32-bit queue
     q32 = {32'd0, 32'd0, 32'd0};
     randomize_result = std::randomize(q32) with {
       foreach (q32[k]) q32[k] < 32'd1000;
@@ -50,7 +50,7 @@ module t_std_randomize_queue;
       if (q32[k] >= 32'd1000) `stop;
     end
 
-    // Test 4: std::randomize with dynamic array
+    // Test: std::randomize with dynamic array
     dyn8 = new[3];
     randomize_result = std::randomize(dyn8) with {
       foreach (dyn8[m]) dyn8[m] inside {[1:50]};
@@ -60,7 +60,7 @@ module t_std_randomize_queue;
       if (dyn8[m] < 1 || dyn8[m] > 50) `stop;
     end
 
-    // Test 5: Multiple randomizations produce different values
+    // Test: Multiple randomizations produce different values
     q8 = {8'd0, 8'd0, 8'd0};
     begin
       automatic int non_zero = 0;

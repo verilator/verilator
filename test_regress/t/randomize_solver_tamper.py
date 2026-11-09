@@ -17,8 +17,8 @@
 #         | garbage_assume | garbage_at | garbage_model | garbage_status
 #         | high_digit | indent | low_digit | model_trunc | multiline | mute_at
 #         | no_digits | none | octal | oor_assume | phase_model | phase_trunc
-#         | short_model | success | unknown_once | unknown_twice | unknown_var
-#         | unsat_recheck | unsupported_once | upper_hex
+#         | short_model | stale_assume | success | unknown_once | unknown_twice
+#         | unknown_var | unsat_recheck | unsupported_once | upper_hex
 #   bad_base         - replace the Nth model reply with a base character that is not b, o, x or h
 #   bad_digits       - replace the Nth model reply with one value holding digits outside its base
 #   bad_index        - replace the first array model reply with a bad select index
@@ -57,6 +57,7 @@
 #   phase_model      - replace the final phased model reply with (error ...)
 #   phase_trunc      - answer an unterminated phase value reply and close the pipe
 #   short_model      - replace the Nth model reply with one omitting a requested variable
+#   stale_assume     - answer every unsat assumptions reply from the Nth with the literal a0
 #   success          - echo a print-success line before every reply
 #   unknown_once     - answer the Nth status with unknown
 #   unknown_twice    - answer two statuses with unknown
@@ -95,7 +96,7 @@ RECHECK_MODES = ("unsat_recheck", )
 # phase_model acts on the final phased model; the others on any phase value reply
 PHASE_MODES = ("err_phase", "phase_model", "phase_trunc")
 # Modes acting on an unsat-assumptions reply, which lists a<N> literals
-ASSUME_MODES = ("err_assume", "garbage_assume", "oor_assume")
+ASSUME_MODES = ("err_assume", "garbage_assume", "oor_assume", "stale_assume")
 # Modes acting on an unsat-core reply, which lists cons<N> names
 CORE_MODES = ("core_junk", "err_core")
 # Modes rewriting every line, so they never consume the index
@@ -345,6 +346,13 @@ for line in proc.stdout:
         sys.exit(0)
     if mode == "short_model":
         emit("((a #x0b))")
+        swallow(line)
+        continue
+    # Naming the already dropped a0 leaves the real conflict in place, so every round
+    # stays unsat up to the round limit; it keeps acting instead of latching
+    if mode == "stale_assume":
+        done = False
+        emit("(a0)")
         swallow(line)
         continue
     if mode == "unknown_once":

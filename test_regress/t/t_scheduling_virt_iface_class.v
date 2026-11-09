@@ -37,6 +37,7 @@ endinterface
 class Driver #(
     parameter int DW = 8
 );
+  bit sent = '0;
   virtual BusIf #(.DW(DW)) vif;
 
   function new(virtual BusIf #(.DW(DW)) vif);
@@ -49,6 +50,7 @@ class Driver #(
   endtask
 
   task send(input logic [DW-1:0] data);
+    sent <= '1;
     vif.req_valid <= 1'b1;
     vif.req_data <= data;
     @(posedge vif.clk);
@@ -102,6 +104,7 @@ module t;
     // path writes back to drv_if.req_ready with the same value (1'b1),
     // which should NOT re-trigger infinitely.
     drv.send(8'hAB);
+    if (!drv.sent) $stop;
     @(posedge clk);
     // Send same value again
     drv.send(8'hAB);

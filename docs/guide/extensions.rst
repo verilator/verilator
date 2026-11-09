@@ -499,9 +499,9 @@ conservative extractor.
 
 .. option:: /*verilator&32;public*/ (on parameter)
 
-   Used after a parameter declaration to indicate the emitted C code should
-   have the parameter values visible. Due to C++ language restrictions,
-   this may only be used on 64-bit or narrower integral enumerations.
+   Used after a parameter declaration to indicate the emitted C++ code should
+   have the parameter value visible, as a ``static const`` member of the class
+   generated for the module.
 
    .. code-block:: sv
 
@@ -707,6 +707,14 @@ conservative extractor.
    Attached after a variable or structure member to indicate opaque (to
    Verilator) text that should be passed through to the XML output as a tag,
    for use by downstream applications.
+
+.. option:: /*verilator&32;threads_group*/
+
+   Specifies that each instance of the module is partitioned as a group with
+   :vlopt:`--threads`. This metacomment must be between
+   ``module module_name(...);`` and ``endmodule``.
+
+   Same as :option:`threads_group` control file option.
 
 .. option:: /*verilator&32;timing_off*/
 

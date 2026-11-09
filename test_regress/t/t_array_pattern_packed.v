@@ -12,10 +12,36 @@ module t (
 
   logic [3:0] array_oned;
 
+  // Ascending-packed signals: an implicitly-indexed pattern item lands on the
+  // declared first (leftmost) element first, for variables and constants too
+  // (IEEE 1800-2023 10.9.1, issue #9023).
+  /* verilator lint_off ASCRANGE */
+  logic [0:3] array_oned_asc;
+  logic [0:1][1:0][0:1] array_mixed;
+  localparam [0:3] array_oned_asc_const = '{1, 0, 0, 0};
+  /* verilator lint_on ASCRANGE */
+
   // verilog_format: off
   initial begin
     array_oned = '{2:1'b1, 0:1'b1, default:1'b0};
     if (array_oned != 4'b0101) $stop;
+
+    // '{1, 0, 0, 0} : leftmost item lands on the MSB for both orderings
+    array_oned = '{1, 0, 0, 0};
+    if (array_oned != 4'b1000) $stop;
+    array_oned_asc = '{1, 0, 0, 0};
+    if (array_oned_asc != 4'b1000) $stop;
+    if (array_oned_asc_const[3] !== 1'b0) $stop;
+    if (array_oned_asc_const[0] !== 1'b1) $stop;
+
+    // Keyed items are placed by index, regardless of dimension direction
+    array_oned_asc = '{0:1'b1, 2:1'b1, default:1'b0};
+    if (array_oned_asc != 4'b1010) $stop;
+
+    array_mixed = '{ '{ '{1,0}, '{0,1} }, '{ '{1,0}, '{0,1} } };
+    // outer [0:1] asc: first item at index 0 (MSB half); mid [1:0] dsc: first
+    // item at index 1; inner [0:1] asc: first item at index 0 (element MSB)
+    if (array_mixed != 8'b10011001) $stop;
 
     array_simp[0] = '{ 4'd3, 4'd2, 4'd1, 4'd0};
     if (array_simp[0] !== 16'h3210) $stop;

@@ -1,0 +1,5 @@
+%Error: t/t_package_y_cell_bad.v:10:8: Can't resolve module reference: 'ypkg'
+   10 |   ypkg u_ypkg ();
+      |        ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

@@ -59,7 +59,7 @@ private:
     static constexpr size_t WRITE_BUFFER_SIZE = 256 * 1024;  // Bytes between write calls
 
     // Currently active scope
-    VerilatedSaifActivityScope* m_currentScope = nullptr;
+    VerilatedSaifActivityScope* m_currentScopep = nullptr;
     // Array of declared scopes
     std::vector<std::unique_ptr<VerilatedSaifActivityScope>> m_scopes;
     // Activity accumulators used to store variables statistics over simulation time

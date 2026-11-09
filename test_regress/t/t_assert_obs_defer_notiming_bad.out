@@ -1,0 +1,18 @@
+%Error-NOTIMING: t/t_assert_obs_defer_notiming_bad.v:9:5: Observed deferred immediate assertion requires --timing
+                                                        : ... note: In instance 't'
+    9 |     assert #0 (0)
+      |     ^~~~~~
+                 ... For error description see https://verilator.org/warn/NOTIMING?v=latest
+%Error-NOTIMING: t/t_assert_obs_defer_notiming_bad.v:11:5: Observed deferred immediate assertion requires --timing
+                                                         : ... note: In instance 't'
+   11 |     assert #0 (0);
+      |     ^~~~~~
+%Error-NOTIMING: t/t_assert_obs_defer_notiming_bad.v:12:5: Observed deferred immediate assertion requires --timing
+                                                         : ... note: In instance 't'
+   12 |     assert #0 (0) $display("pass");
+      |     ^~~~~~
+%Error-NOTIMING: t/t_assert_obs_defer_notiming_bad.v:14:5: Observed deferred immediate assertion requires --timing
+                                                         : ... note: In instance 't'
+   14 |     cover #0 (0);
+      |     ^~~~~
+%Error: Exiting due to

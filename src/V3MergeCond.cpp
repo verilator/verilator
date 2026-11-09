@@ -40,7 +40,7 @@
 //      'lhs = cond & value' is actually 'lhs = cond ? value : 1'd0'
 //      'lhs = cond' is actually 'lhs = cond ? 1'd1 : 1'd0'.
 //
-//  Also merges consecutive AstNodeIf statements with the same condition.
+//  Also merges consecutive AstIf statements with the same condition.
 //
 //  Because this optimization has notable performance impact, we go further
 //  and perform code motion to try to move mergeable conditionals next to each
@@ -171,7 +171,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
     //                         AstNode list
     // AstNode::user4       -> Used by V3Hasher
 
-    StmtPropertiesAllocator& m_stmtProperties;
+    StmtPropertiesAllocator& m_stmtProperties;  // Properties of each statement
 
     // MEMBERS
     V3Hasher m_hasher;  // Used by V3DupFinder
@@ -187,7 +187,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
             if (AstCond* const conditionalp = extractCondFromRhs(assignp->rhsp())) {
                 conditionp = conditionalp->condp();
             }
-        } else if (const AstNodeIf* const ifp = VN_CAST(nodep, NodeIf)) {
+        } else if (const AstIf* const ifp = VN_CAST(nodep, If)) {
             conditionp = ifp->condp();
         }
         while (AstCCast* const castp = VN_CAST(conditionp, CCast)) conditionp = castp->lhsp();
@@ -343,7 +343,7 @@ class CodeMotionOptimizeVisitor final : public VNVisitor {
 
     VNUser4InUse m_user4InUse;
 
-    const StmtPropertiesAllocator& m_stmtProperties;
+    const StmtPropertiesAllocator& m_stmtProperties;  // Properties of each statement
 
     // MEMBERS
 
@@ -637,38 +637,43 @@ class MergeCondVisitor final : public VNVisitor {
         return new AstAnd{nodep->fileline(), maskp, nodep};
     }
 
-    // Fold the RHS expression of an assignment assuming the given condition state.
+    // Fold the RHS expression of an assignment assuming the condition is true, and false.
+    // Returns the folded expressions for the 'then' and 'else' branches respectively.
     // Unlink bits from the RHS which is only used once, and can be reused (is an unmodified
     // sub-tree). What remains of the RHS is expected to be deleted by the caller.
-    AstNodeExpr* foldAndUnlink(AstNodeExpr* rhsp, bool condTrue) {
+    std::pair<AstNodeExpr*, AstNodeExpr*> foldAndUnlink(AstNodeExpr* rhsp) {
+        FileLine* const flp = rhsp->fileline();
         if (rhsp->sameTree(m_mgCondp)) {
-            return new AstConst{rhsp->fileline(), AstConst::BitTrue{}, condTrue};
-        } else if (const AstCond* const condp = extractCondFromRhs(rhsp)) {
-            AstNodeExpr* const resp
-                = condTrue ? condp->thenp()->unlinkFrBack() : condp->elsep()->unlinkFrBack();
-            if (condp == rhsp) return resp;
-            if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
-                UASSERT_OBJ(andp->rhsp() == condp, rhsp, "Should not try to fold this");
-                return new AstAnd{andp->fileline(), andp->lhsp()->cloneTreePure(false), resp};
-            }
-        } else if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
+            return {new AstConst{flp, AstConst::BitTrue{}},
+                    new AstConst{flp, AstConst::BitFalse{}}};
+        }
+        if (const AstCond* const condp = extractCondFromRhs(rhsp)) {
+            AstNodeExpr* const thenp = condp->thenp()->unlinkFrBack();
+            AstNodeExpr* const elsep = condp->elsep()->unlinkFrBack();
+            if (condp == rhsp) return {thenp, elsep};
+            const AstAnd* const andp = VN_AS(rhsp, And);
+            UASSERT_OBJ(andp->rhsp() == condp, rhsp, "Should not try to fold this");
+            return {new AstAnd{andp->fileline(), andp->lhsp()->cloneTreePure(false), thenp},
+                    new AstAnd{andp->fileline(), andp->lhsp()->cloneTreePure(false), elsep}};
+        }
+        if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
             if (andp->lhsp()->sameTree(m_mgCondp)) {
-                return condTrue ? maskLsb(andp->rhsp()->unlinkFrBack())
-                                : new AstConst{rhsp->fileline(), AstConst::BitFalse{}};
-            } else {
-                UASSERT_OBJ(andp->rhsp()->sameTree(m_mgCondp), rhsp,
-                            "AstAnd doesn't hold condition expression");
-                return condTrue ? maskLsb(andp->lhsp()->unlinkFrBack())
-                                : new AstConst{rhsp->fileline(), AstConst::BitFalse{}};
+                return {maskLsb(andp->rhsp()->unlinkFrBack()),
+                        new AstConst{flp, AstConst::BitFalse{}}};
             }
-        } else if (VN_IS(rhsp, ArraySel) || VN_IS(rhsp, WordSel) || VN_IS(rhsp, VarRef)
-                   || VN_IS(rhsp, Const)) {
-            return rhsp->cloneTree(false);
+            UASSERT_OBJ(andp->rhsp()->sameTree(m_mgCondp), rhsp,
+                        "AstAnd doesn't hold condition expression");
+            return {maskLsb(andp->lhsp()->unlinkFrBack()),
+                    new AstConst{flp, AstConst::BitFalse{}}};
+        }
+        if (VN_IS(rhsp, ArraySel) || VN_IS(rhsp, WordSel) || VN_IS(rhsp, VarRef)
+            || VN_IS(rhsp, Const)) {
+            return {rhsp->cloneTree(false), rhsp->cloneTree(false)};
         }
         // LCOV_EXCL_START
         if (debug()) rhsp->dumpTree("Don't know how to fold expression: ");
         rhsp->v3fatalSrc("Should not try to fold this during conditional merging");
-        return nullptr;
+        return {nullptr, nullptr};
         // LCOV_EXCL_STOP
     }
 
@@ -692,9 +697,9 @@ class MergeCondVisitor final : public VNVisitor {
             UASSERT_OBJ(m_mgLastp && m_mgLastp->nextp() == nextp, m_mgFirstp,
                         "Cheap statement should not be at the front of the list");
         }
-        // If the list contains a single AstNodeIf, we will want to merge its branches.
-        // If so, keep hold of the AstNodeIf in this variable.
-        AstNodeIf* recursivep = nullptr;
+        // If the list contains a single AstIf, we will want to merge its branches.
+        // If so, keep hold of the AstIf in this variable.
+        AstIf* recursivep = nullptr;
         // Merge if list is longer than one node
         if (m_mgFirstp != m_mgLastp) {
             UINFO(6, "MergeCond - First: " << m_mgFirstp << " Last: " << m_mgLastp);
@@ -730,20 +735,21 @@ class MergeCondVisitor final : public VNVisitor {
                     AstNodeAssign* const thenp = assignp;
                     AstNodeAssign* const elsep = assignp->cloneTree(false);
                     // Construct the new RHSs and add to branches
-                    thenp->rhsp(foldAndUnlink(rhsp, true));
-                    elsep->rhsp(foldAndUnlink(rhsp, false));
+                    const std::pair<AstNodeExpr*, AstNodeExpr*> folded = foldAndUnlink(rhsp);
+                    thenp->rhsp(folded.first);
+                    elsep->rhsp(folded.second);
                     resultp->addThensp(thenp);
                     resultp->addElsesp(elsep);
                     // Cleanup
                     VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
                 } else {
-                    AstNodeIf* const ifp = VN_AS(currp, NodeIf);
-                    UASSERT_OBJ(ifp, currp, "Must be AstNodeIf");
+                    AstIf* const ifp = VN_AS(currp, If);
+                    UASSERT_OBJ(ifp, currp, "Must be AstIf");
                     // Move branch contents under new if
-                    if (AstNode* const listp = ifp->thensp()) {
+                    if (AstNodeStmt* const listp = ifp->thensp()) {
                         resultp->addThensp(listp->unlinkFrBackWithNext());
                     }
-                    if (AstNode* const listp = ifp->elsesp()) {
+                    if (AstNodeStmt* const listp = ifp->elsesp()) {
                         resultp->addElsesp(listp->unlinkFrBackWithNext());
                     }
                     // Record branch prediction
@@ -759,8 +765,8 @@ class MergeCondVisitor final : public VNVisitor {
             // Merge the branches of the resulting AstIf after re-analysis
             if (resultp->thensp()) m_workQueuep->push(resultp->thensp());
             if (resultp->elsesp()) m_workQueuep->push(resultp->elsesp());
-        } else if (AstNodeIf* const ifp = VN_CAST(m_mgFirstp, NodeIf)) {
-            // There was nothing to merge this AstNodeIf with, so try to merge its branches.
+        } else if (AstIf* const ifp = VN_CAST(m_mgFirstp, If)) {
+            // There was nothing to merge this AstIf with, so try to merge its branches.
             // No re-analysis is required for this, so do it directly below
             recursivep = ifp;
         }
@@ -907,7 +913,7 @@ class MergeCondVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         // Check if mergeable
         if (!checkOrMakeMergeable(nodep)) {
             // If not mergeable, try to merge the branches

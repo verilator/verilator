@@ -178,6 +178,20 @@ module t (
     s_split_1 <= s_vif.w;
   end
 
+  // Likewise a variable accessed by a function that is not inlined, so a read must see the write
+  // in the call before
+  reg [15:0] t_split_1, t_split_2;
+  class split_cls;
+    function void set(logic [15:0] v);
+      t_split_1 = v;
+    endfunction
+  endclass
+  split_cls t_obj = new;
+  always @(posedge clk) begin
+    t_obj.set(~m_din);
+    t_split_2 <= t_split_1;
+  end
+
   always @(posedge clk) begin
     if (cyc == 1) begin
       m_din <= 16'hfeed;
@@ -196,6 +210,7 @@ module t (
       if (!(q_init_1 == 16'h2 && q_init_2 == 16'hbeef && q_init_3 == 16'h1)) $stop;
       if (!(r_split_1 == 16'h0)) $stop;
       if (!(s_if.v == 16'h0112 && s_split_1 == 16'h0112)) $stop;
+      if (!(t_split_2 == 16'h0112)) $stop;
     end
     if (cyc == 5) begin
       m_din <= 16'he22e;
@@ -213,6 +228,7 @@ module t (
       if (!(p_split_1 == 16'hfeed)) $stop;
       if (!(r_split_1 == 16'h0)) $stop;
       if (!(s_if.v == 16'h0112 && s_split_1 == 16'h0112)) $stop;
+      if (!(t_split_2 == 16'h0112)) $stop;
     end
     if (cyc == 6) begin
       m_din <= 16'he33e;
@@ -230,6 +246,7 @@ module t (
       if (!(p_split_1 == 16'he11e)) $stop;
       if (!(r_split_1 == 16'hfeed)) $stop;
       if (!(s_if.v == 16'h1ee1 && s_split_1 == 16'h1ee1)) $stop;
+      if (!(t_split_2 == 16'h1ee1)) $stop;
     end
     if (cyc == 7) begin
       $write("*-* All Finished *-*\n");

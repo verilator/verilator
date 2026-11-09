@@ -16,7 +16,17 @@ class Cls;
     if (x != 23) $stop;
     return 42;
   endfunction
+
+  static function bit static_bit(int x = 5);
+    return x == 5;
+  endfunction
 endclass : Cls
+
+class ECls extends Cls;
+  function int call_super();
+    return super.static_function(23);
+  endfunction
+endclass
 
 class OCls;
   int i;
@@ -35,6 +45,8 @@ module t;
   initial begin
     int x;
     OCls oc;
+    Cls c;
+    ECls ec;
 
     Cls::static_task(16);
     x = Cls::static_function(23);
@@ -43,6 +55,14 @@ module t;
 
     oc = OCls::create();
     OCls::test_obj(oc);
+
+    // Through an object, as a condition, also without parentheses (IEEE 1800-2023 13.5.5)
+    c = new;
+    if (!c.static_bit()) $stop;
+    if (!c.static_bit) $stop;
+
+    ec = new;
+    if (ec.call_super() != 42) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

@@ -447,7 +447,7 @@ not directly correspond to the similarly named SystemVerilog scheduling
 regions as defined in the standard:
 
 - All logic (clocked, combinational and hybrid) that transitively feeds
-  into, or drives via a non-blocking or continuous assignments (or via any
+  into, or drives via a blocking or continuous assignments (or via any
   update that SystemVerilog executes in the Active scheduling region), a
   variable that is used in the explicit sensitivity list of some clocked or
   hybrid logic, is assigned to the 'act' region.
@@ -680,7 +680,9 @@ it, overrides it, or is overriden by it.
 
 The second visitor in ``V3Timing.cpp``, ``TimingControlVisitor``, uses the
 information provided by ``TimingSuspendableVisitor`` and transforms each
-timing control into a ``co_await``.
+timing control into a ``co_await``. It also turns each suspendable
+``always`` into an ``initial forever``, with the sensitivity list of a
+clocked ``always`` as an event control at the start of the loop body.
 
 - event controls are turned into ``co_await`` on a trigger scheduler's
   ``trigger`` method. The awaited trigger scheduler is the one
@@ -713,9 +715,9 @@ condition is always false, the ``wait`` statement is replaced by a
 the ``wait`` is deep in a call stack (otherwise, the coroutine's caller
 would continue execution).
 
-Each sub-statement of a ``fork`` is put in an ``AstBegin`` node for easier
-grouping. In a later step, each of these gets transformed into a new,
-separate function. See the `Forks` section for more detail.
+Each sub-statement of a ``fork`` is put in an ``AstForkItem`` node, the
+process that executes it. In a later step, each of these gets transformed
+into a new, separate function. See the `Forks` section for more detail.
 
 Suspendable functions get the return type of ``VlCoroutine``, which makes
 them coroutines. Later, during ``V3Sched``, suspendable processes are also
@@ -933,6 +935,29 @@ fragmentation (idle CPU cores waiting) is possible. This is the major
 source of overhead in this approach. The ``--prof-exec`` switch and the
 ``verilator_gantt`` script can visualize the time lost to such
 fragmentation.
+
+
+Synchronizing Macro-Tasks
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each thread of a schedule owns one progress word (``VlThreadProgress``), on
+its own cache line: the position, counted from 1, of its last finished
+macro-task. The words of each macro-task graph are held together in
+``VlScheduleProgress``.
+
+After a macro-task that a macro-task on another thread depends on, its
+thread publishes its position with a release store, however many threads
+depend on it. Before a macro-task, its thread waits, with acquire loads,
+for each producing thread to reach the latest position it needs, unless an
+earlier wait in the same thread already covered it. Each dependency
+therefore costs one cache line transfer from producer to consumer, and no
+read-modify-write.
+
+At the end of a schedule, each thread publishes that it is done, and the
+dispatching thread waits for the threads run by the thread pool. Before
+starting a schedule, while no thread is running one, the dispatching thread
+sets the words back to zero; handing the threads' functions to the thread
+pool orders this before they start.
 
 
 Locating Variables for Best Spatial Locality
@@ -1170,6 +1195,38 @@ gets reset, so that it can be reused by subsequent randomization attempts:
    (reset)
 
 
+Constraint solver back-ends
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the internals of Verilator, the randomization pass is split into a
+solver-neutral front end, ``V3Randomize.cpp``, and a constraint solver
+back-end implementing the ``V3SolverBackend`` interface
+(``V3SolverBackend.h``). ``v3Global.solverBackendp()`` is the back-end for
+the run; the SMT-LIB back-end, ``V3SolverSmt.cpp``, is currently the only
+one. For each ``V3Randomize`` pass, the back-end creates a
+``V3SolverLowering``, which lowers the randomize sites.
+
+The front end handles everything that does not depend on the solver:
+``pre_randomize``/``post_randomize`` callbacks, ``rand_mode`` and
+``constraint_mode`` state, randomization of unconstrained variables
+(``__VBasicRand``), ``randomize()`` arguments, and the capture of inline
+``with`` expressions. The lowering handles the constraints of each
+randomize site: a class ``randomize()``, a ``randomize() with``, a
+``std::randomize() with`` and a ``randomize(null)``. Each site is lowered
+by one hook, which the front end calls at a fixed point of its own
+lowering. A hook returns the solver result for the front end to combine
+with ``__VBasicRand``, except for ``randomize() with``, where the hook
+assigns the return value itself.
+
+The back-end also describes the runtime library its generated code needs:
+the header to include, the runtime sources to compile with the model, and
+the flags added to the generated makefile.
+
+The contract between the two halves (which variables the back-end owns, how
+the mode state is passed, which AST the back-end may rewrite) is documented
+at the top of ``V3SolverBackend.cpp``.
+
+
 Coding Conventions
 ==================
 
@@ -1338,6 +1395,10 @@ method is generated that appends new nodes (or lists of nodes) to the child
 list, and a ``prepend<Identifier>`` method that prepends them to the front
 of the child list.
 
+The ``<type>`` can be prefixed with ``private`` to generate no accessors,
+for a child that only the node's own methods may change, e.g. to keep it
+consistent with other members of the node.
+
 
 ``alias op<N>`` operand alias directives
 ++++++++++++++++++++++++++++++++++++++++
@@ -1400,12 +1461,12 @@ The behavior of the visitor classes is achieved by overloading the
 ``visit`` function for the different ``AstNode`` derived classes. If a
 specific implementation is not found, the system will look in turn for
 overloaded implementations up the inheritance hierarchy. For example
-calling ``accept`` on ``AstIf`` will look in turn for:
+calling ``accept`` on ``AstAssignDly`` will look in turn for:
 
 ::
 
-   void visit(AstIf* nodep)
-   void visit(AstNodeIf* nodep)
+   void visit(AstAssignDly* nodep)
+   void visit(AstNodeAssign* nodep)
    void visit(AstNodeStmt* nodep)
    void visit(AstNode* nodep)
 
@@ -1538,22 +1599,22 @@ Identifying Derived Classes
 
 A common requirement is to identify the specific ``AstNode`` class we are
 dealing with. For example, a visitor might not implement separate ``visit``
-methods for ``AstIf`` and ``AstGenIf``, but just a single method for the
-base class:
+methods for ``AstAssign`` and ``AstAssignDly``, but just a single method
+for the base class:
 
 ::
 
-   void visit(AstNodeIf* nodep)
+   void visit(AstNodeAssign* nodep)
 
 However that method might want to specify additional code if it is called
-for ``AstGenIf``. Verilator does this by providing a ``VN_IS`` method for
-each possible node type, which returns true if the node is of that type (or
-derived from that type). So our ``visit`` method could use:
+for ``AstAssignDly``. Verilator does this by providing a ``VN_IS`` method
+for each possible node type, which returns true if the node is of that type
+(or derived from that type). So our ``visit`` method could use:
 
 ::
 
-   if (VN_IS(nodep, AstGenIf) {
-     <code specific to AstGenIf>
+   if (VN_IS(nodep, AssignDly)) {
+     <code specific to AstAssignDly>
    }
 
 Additionally the ``VN_CAST`` method converts pointers similar to C++
@@ -1586,8 +1647,9 @@ For all tests to pass, you must install the following packages:
 
 - SystemC to compile the SystemC outputs, see https://systemc.org
 
-- wavediff to find differences in waveform outputs. See the readme at
-  https://github.com/hudson-trading/wavetools
+- wavetools to find differences in waveform outputs, and to convert from
+  FST to VCD when updating golden files. See
+  https://github.com/hudson-trading/wavetools.
 
 - Cmake for build paths that use it.
 
@@ -2601,6 +2663,13 @@ VERILATOR_XELAB
 
 VERILATOR_XVLOG
    Command to use to invoke XSim xvlog
+
+WAVECAT
+   Path to wavecat executable, used for FST to VCD conversion when using
+   --golden.
+
+WAVEDIFF
+   Path to wavediff executable, used for comparing VCD and FST trace files.
 
 
 Test Language

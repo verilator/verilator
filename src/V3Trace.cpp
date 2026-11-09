@@ -58,8 +58,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class TraceActivityVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(TraceActivityVertex, V3GraphVertex)
-    AstNode* const m_insertp;
-    int32_t m_activityCode;
+    AstNode* const m_insertp;  // Node to insert activity code setting before
+    int32_t m_activityCode;  // Activity code, 0 if always active
     bool m_slow;  // If always slow, we can use the same code
 public:
     enum { ACTIVITY_NEVER = ((1UL << 31) - 1) };
@@ -103,7 +103,7 @@ public:
 
 class TraceCFuncVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(TraceCFuncVertex, V3GraphVertex)
-    AstCFunc* const m_nodep;
+    AstCFunc* const m_nodep;  // Function this vertex represents
 
 public:
     TraceCFuncVertex(V3Graph* graphp, AstCFunc* nodep)
@@ -147,7 +147,7 @@ public:
 
 class TraceVarVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(TraceVarVertex, V3GraphVertex)
-    AstVarScope* const m_nodep;
+    AstVarScope* const m_nodep;  // Variable scope this vertex represents
 
 public:
     TraceVarVertex(V3Graph* graphp, AstVarScope* nodep)
@@ -370,7 +370,7 @@ class TraceVisitor final : public VNVisitor {
                                                                 : std::numeric_limits<int>::max();
         if (splitLimit == std::numeric_limits<int>::max()) return;
 
-        for (AstNode* nodep = m_topScopep->blocksp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : m_topScopep->blockspList()) {
             AstCFunc* const funcp = VN_CAST(nodep, CFunc);
             if (!funcp || !funcp->user2()) continue;
 
@@ -400,8 +400,8 @@ class TraceVisitor final : public VNVisitor {
                 curSize = 0;
             };
 
-            for (AstNode *stmtp = funcp->stmtsp(), *nextp; stmtp; stmtp = nextp) {
-                nextp = stmtp->nextp();
+            for (AstNodeStmt *stmtp = funcp->stmtsp(), *nextp; stmtp; stmtp = nextp) {
+                nextp = VN_AS(stmtp->nextp(), NodeStmt);
                 curSize += stmtp->nodeCount();
 
                 if (curFuncp != funcp) {
@@ -587,7 +587,7 @@ class TraceVisitor final : public VNVisitor {
         return new AstArraySel(flp, new AstVarRef{flp, m_activityVscp, access}, acode);
     }
 
-    AstNode* newActivitySetter(AstNode* insertp, uint32_t code) {
+    AstNodeStmt* newActivitySetter(AstNode* insertp, uint32_t code) {
         ++m_statSetters;
         FileLine* const fl = insertp->fileline();
         AstAssign* const setterp = new AstAssign{fl, selectActivity(fl, code, VAccess::WRITE),
@@ -595,7 +595,7 @@ class TraceVisitor final : public VNVisitor {
         return setterp;
     }
 
-    AstNode* newActivityAll(AstNode* insertp) {
+    AstNodeStmt* newActivityAll(AstNode* insertp) {
         ++m_statSettersSlow;
         if (!m_actAllFuncp) {
             FileLine* const flp = m_topScopep->fileline();
@@ -605,7 +605,7 @@ class TraceVisitor final : public VNVisitor {
             funcp->isLoose(true);
             m_topScopep->addBlocksp(funcp);
             for (uint32_t code = 0; code < m_activityNumber; ++code) {
-                AstNode* const setterp = newActivitySetter(insertp, code);
+                AstNodeStmt* const setterp = newActivitySetter(insertp, code);
                 funcp->addStmtsp(setterp);
             }
             m_actAllFuncp = funcp;
@@ -626,16 +626,16 @@ class TraceVisitor final : public VNVisitor {
         FileLine* const flp = m_topScopep->fileline();
         AstNodeDType* const newScalarDtp = new AstBasicDType{flp, VFlagBitPacked{}, 1};
         v3Global.rootp()->typeTablep()->addTypesp(newScalarDtp);
-        AstRange* const newArange
+        AstRange* const newArangep
             = new AstRange{flp, VNumRange{static_cast<int>(m_activityNumber) - 1, 0}};
-        AstNodeDType* const newArrDtp = new AstUnpackArrayDType{flp, newScalarDtp, newArange};
+        AstNodeDType* const newArrDtp = new AstUnpackArrayDType{flp, newScalarDtp, newArangep};
         v3Global.rootp()->typeTablep()->addTypesp(newArrDtp);
         m_activityVscp = v3Global.rootp()->topScopep()->createTemp("__VtraceActivity", newArrDtp);
 
         // Insert activity setters
         for (const V3GraphVertex& vtx : m_graph.vertices()) {
             if (const TraceActivityVertex* const vtxp = vtx.cast<const TraceActivityVertex>()) {
-                AstNode* setterp = nullptr;
+                AstNodeStmt* setterp = nullptr;
                 if (vtxp->activitySlow()) {
                     setterp = newActivityAll(vtxp->insertp());
                     // Just set all flags in slow code as it should be rare.
@@ -776,14 +776,13 @@ class TraceVisitor final : public VNVisitor {
             AstCFunc* const funcp = newCFunc(VTraceType::CONSTANT, nullptr, 0, 0, declp);
 
             bool first = true;
-            for (AstNode* callStmtp = declp->dtypeCallp()->funcp()->stmtsp(); callStmtp;
-                 callStmtp = callStmtp->nextp()) {
+            for (AstNode* const callStmtp : declp->dtypeCallp()->funcp()->stmtspList()) {
                 const AstCCall* const callp
                     = VN_CAST(VN_CAST(callStmtp, StmtExpr)->exprp(), CCall);
                 bool onlyOne = first && !callStmtp->nextp();
                 AstCFunc* const subFuncp
                     = onlyOne ? funcp : newCDtypeSubFunc(VTraceType::CONSTANT, declp, funcp);
-                for (AstNode* stmtp = callp->funcp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                for (AstNode* const stmtp : callp->funcp()->stmtspList()) {
                     if (AstTraceDecl* const fieldDeclp = VN_CAST(stmtp, TraceDecl)) {
                         AstTraceInc* const incp
                             = new AstTraceInc{flp, fieldDeclp, VTraceType::CONSTANT};
@@ -873,8 +872,7 @@ class TraceVisitor final : public VNVisitor {
             AstCFunc* const chgFuncp = newCFunc(VTraceType::CHANGE, nullptr, 0, 0, declp);
 
             bool first = true;
-            for (AstNode* callStmtp = declp->dtypeCallp()->funcp()->stmtsp(); callStmtp;
-                 callStmtp = callStmtp->nextp()) {
+            for (AstNode* const callStmtp : declp->dtypeCallp()->funcp()->stmtspList()) {
                 const AstCCall* const callp
                     = VN_CAST(VN_CAST(callStmtp, StmtExpr)->exprp(), CCall);
                 bool onlyOne = first && !callStmtp->nextp();
@@ -882,7 +880,7 @@ class TraceVisitor final : public VNVisitor {
                     = onlyOne ? fullFuncp : newCDtypeSubFunc(VTraceType::FULL, declp, fullFuncp);
                 AstCFunc* const chgSubFuncp
                     = onlyOne ? chgFuncp : newCDtypeSubFunc(VTraceType::CHANGE, declp, chgFuncp);
-                for (AstNode* stmtp = callp->funcp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                for (AstNode* const stmtp : callp->funcp()->stmtspList()) {
                     if (AstTraceDecl* const fieldDeclp = VN_CAST(stmtp, TraceDecl)) {
                         AstTraceInc* const incFullp
                             = new AstTraceInc{flp, fieldDeclp, VTraceType::FULL};
@@ -918,7 +916,7 @@ class TraceVisitor final : public VNVisitor {
             int subStmts = 0;
             const uint32_t maxCodes = std::max((nAllCodes + parallelism - 1) / parallelism, 1U);
             uint32_t nCodes = 0;
-            const ActCodeSet* prevActSet = nullptr;
+            const ActCodeSet* prevActSetp = nullptr;
             AstIf* ifp = nullptr;
             uint32_t baseCode = 0;
             for (; nCodes < maxCodes && it != traces.end(); ++it) {
@@ -950,12 +948,12 @@ class TraceVisitor final : public VNVisitor {
                     subFulFuncp = newCFunc(VTraceType::FULL, topFulFuncp, subFuncNum, baseCode);
                     subChgFuncp = newCFunc(VTraceType::CHANGE, topChgFuncp, subFuncNum, baseCode);
                     ++subFuncNum;
-                    prevActSet = nullptr;
+                    prevActSetp = nullptr;
                     ifp = nullptr;
                 }
 
                 // If required, create the conditional node checking the activity flags
-                if (!prevActSet || actSet != *prevActSet) {
+                if (!prevActSetp || actSet != *prevActSetp) {
                     FileLine* const flp = m_topScopep->fileline();
                     const bool always = actSet.count(TraceActivityVertex::ACTIVITY_ALWAYS) != 0;
                     AstNodeExpr* condp = nullptr;
@@ -971,7 +969,7 @@ class TraceVisitor final : public VNVisitor {
                     if (!always) ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     subChgFuncp->addStmtsp(ifp);
                     subStmts += ifp->nodeCount();
-                    prevActSet = &actSet;
+                    prevActSetp = &actSet;
                 }
 
                 // Add TraceInc nodes
@@ -1050,8 +1048,8 @@ class TraceVisitor final : public VNVisitor {
 
         // Clear fine grained activity flags
         for (uint32_t i = 0; i < m_activityNumber; ++i) {
-            AstNode* const clrp = new AstAssign{fl, selectActivity(fl, i, VAccess::WRITE),
-                                                new AstConst{fl, AstConst::BitFalse{}}};
+            AstNodeStmt* const clrp = new AstAssign{fl, selectActivity(fl, i, VAccess::WRITE),
+                                                    new AstConst{fl, AstConst::BitFalse{}}};
             cleanupFuncp->addStmtsp(clrp);
         }
     }
@@ -1108,7 +1106,7 @@ class TraceVisitor final : public VNVisitor {
             std::vector<AstTraceDecl*> topDeclps;
             TraceInitDeclCollector rootCollector{rootDeclps};
             TraceInitDeclCollector topCollector{topDeclps};
-            for (AstNode* blockp = m_topScopep->blocksp(); blockp; blockp = blockp->nextp()) {
+            for (AstNode* const blockp : m_topScopep->blockspList()) {
                 AstCFunc* const funcp = VN_CAST(blockp, CFunc);
                 if (funcp && VString::startsWith(funcp->name(), "trace_init_leaf_root__")) {
                     rootCollector.collect(funcp);
@@ -1194,8 +1192,8 @@ class TraceVisitor final : public VNVisitor {
                 // If so, all funcs might share the same activity code
                 TraceActivityVertex* const activityVtxp
                     = getActivityVertexp(nodep, callp->funcp()->slow());
-                for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
-                    if (AstStmtExpr* const stmtp = VN_CAST(nextp, StmtExpr)) {
+                for (AstNode* const currp : VNList<AstNode>{nodep}) {
+                    if (AstStmtExpr* const stmtp = VN_CAST(currp, StmtExpr)) {
                         if (AstCCall* const ccallp = VN_CAST(stmtp->exprp(), CCall)) {
                             stmtp->user2(true);  // Processed
                             UINFO(8, "     SubCCALL " << ccallp);
@@ -1289,7 +1287,7 @@ class TraceVisitor final : public VNVisitor {
             }
         }
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         if (m_cfuncp && m_finding && nodep->access().isWriteOrRW()) {
             AstIfaceRefDType* const dtypep
                 = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType);

@@ -93,6 +93,7 @@ CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
 CFG_WITH_DEV_GCOV = @CFG_WITH_DEV_GCOV@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
+CFG_WITH_RAND_SAMPLER = @CFG_WITH_RAND_SAMPLER@
 CFG_WITH_SOLVER = @CFG_WITH_SOLVER@
 GCOV = @GCOV@
 PACKAGE_VERSION = @PACKAGE_VERSION@
@@ -298,7 +299,7 @@ installredirect: installbin | mkbindirs
 	REDIR_SCRATCH=$$(mktemp redir_XXXXXX); \
 	perl -p -e 'use File::Spec;' \
 	        -e' $$path = File::Spec->abs2rel("$(realpath $(DESTDIR)$(bindir))", "$(realpath $(DESTDIR)$(pkgdatadir)/bin)");' \
-	        -e 's/RELPATH.*/"$$path";/g' -- "${srcdir}/bin/redirect" > $$REDIR_SCRATCH; \
+	        -e 's/RELPATH.*/"$$path";/g' -- "${srcdir}/bin/verilator_redirect" > $$REDIR_SCRATCH; \
 	for p in $(VL_INST_PUBLIC_SCRIPT_FILES) $(VL_INST_PUBLIC_BIN_FILES) ; do \
 		$(INSTALL_PROGRAM) $$REDIR_SCRATCH $(DESTDIR)$(pkgdatadir)/bin/$$p; \
 	done; \
@@ -469,6 +470,7 @@ analyzer-include:
 
 # Bash/sh files
 BASH_FILES = \
+  ci/ci-claude-post-review.bash \
   ci/ci-coverage-report.bash \
   ci/ci-install.bash \
   ci/ci-pages-notify.bash \
@@ -507,9 +509,9 @@ MD_FILES = \
 
 # Perl programs
 PERL_PROGRAMS = \
-  bin/redirect \
   bin/verilator \
   bin/verilator_coverage \
+  bin/verilator_redirect \
 
 # Python programs, subject to format and lint
 PY_PROGRAMS = \
@@ -644,7 +646,7 @@ MYPY_FLAGS = --strict --no-error-summary
 
 PYLINT = pylint
 PYLINT_FLAGS = --recursive=n --score=n --disable=R0801
-PYLINT_TEST_FLAGS = $(PYLINT_FLAGS) --disable=C0103,C0114,C0116,C0209,C0411,C0413,C0301,R0801,R0912,R0915,R0916,R1702,W0511,W0621
+PYLINT_TEST_FLAGS = $(PYLINT_FLAGS) --disable=C0103,C0114,C0116,C0209,C0411,C0413,C0301,R0801,R0912,R0915,R0916,R0917,R1702,W0511,W0621
 
 RUFF = ruff
 RUFF_FLAGS = check --ignore=E402,E501,E701

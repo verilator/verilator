@@ -65,4 +65,15 @@ module t (
     sink = ~x_arr;
     sink = !x_arr;
   end
+
+  // A string is allowed as a condition, but not as an operand of a logical operator
+  initial begin
+    string s;
+    bit b;
+    b = s && x;
+    b = x || s;
+    b = s -> x;
+    b = x <-> s;
+    b = !s;
+  end
 endmodule

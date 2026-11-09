@@ -40,7 +40,7 @@ class AstVar;
 class V3HierGraph final : public V3Graph {
 public:
     V3HierGraph() = default;
-    ~V3HierGraph() = default;
+    ~V3HierGraph() override = default;
     VL_UNCOPYABLE(V3HierGraph);
     VL_UNMOVABLE(V3HierGraph);
 
@@ -97,7 +97,6 @@ public:
     string hierWrapperFilename(bool withDir) const VL_MT_DISABLED;
     string hierMkFilename(bool withDir) const VL_MT_DISABLED;
     string hierLibFilename(bool withDir) const VL_MT_DISABLED;
-    string hierGeneratedFilenames(bool withDir) const VL_MT_DISABLED;
     // Returns the original HDL file if it is not included in v3Global.opt.vFiles().
     string vFileIfNecessary() const VL_MT_DISABLED;
     // Write command line arguments to .f file for this hierarchical block

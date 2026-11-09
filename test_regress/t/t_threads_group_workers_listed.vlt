@@ -1,0 +1,11 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Michael Bedford Taylor
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+// Grouped only with --threads 4 and 8, placed automatically, so not at --threads 2
+threads_group -module "tile" -workers 4->4 -workers 4->8
+// At --threads 2, placed automatically
+threads_group -module "acc" -workers 4->2

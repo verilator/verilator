@@ -1,0 +1,11 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Michael Bedford Taylor
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+// Worker 0 is the thread calling eval; the list for --threads 8 is not used
+threads_group -module "tile" -workers 4->2: { 0 1 0 1 } -workers 4->8: { 0 2 4 6 }
+threads_group -module "acc" -workers 4->2: { 1 0 1 0 }
+threads_group -module "chk" -workers 1->2: { 1 }

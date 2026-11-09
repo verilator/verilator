@@ -37,7 +37,7 @@ module t (
   // Referenced whole, not split
   logic [6:0] whole[2]  /*verilator split_var*/;
   // Public, not split
-  logic [6:0] pub[2]  /*verilator public*/  /*verilator split_var*/;
+  logic [6:0] pub[2]  /*verilator public_flat_rw*/  /*verilator split_var*/;
   // Not a signal, not split
   localparam logic [6:0] LP[2]  /*verilator split_var*/ = '{7'd1, 7'd2};
   // Forceable, not split

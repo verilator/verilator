@@ -169,7 +169,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
         if (maxFile <= 0) maxFile = std::numeric_limits<int>::max();
         return std::min(maxCFunc, maxFile);
     }();
-    const size_t m_maxSizeTrace = []() -> size_t {
+    const size_t m_maxSizeTrace = []() -> size_t {  // Maximum size of trace function to inline
         int maxTrace = v3Global.opt.outputSplitCTrace();
         int maxFile = v3Global.opt.outputSplit();
         if (maxTrace <= 0) maxTrace = std::numeric_limits<int>::max();
@@ -221,23 +221,28 @@ class InlineCFuncsVisitor final : public VNVisitor {
         const VNUser2InUse user2InUse;
 
         // Clone local variables, add them to the local scope
-        for (AstVar* varp = calleep->varsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
+        for (AstVar* const varp : calleep->varspList()) {
             AstVar* const newVarp = varp->cloneTree(false);
             newVarp->name(varPrefix + varp->name());
-            lscopep->addStmtsp(newVarp);
+            lscopep->addVarsp(newVarp);
             varp->user2p(newVarp);
         }
 
         // Clone the function body
-        AstNode* const bodyp = calleep->stmtsp()->cloneTree(true);
+        AstNodeStmt* const bodyp = calleep->stmtsp()->cloneTree(true);
         lscopep->addStmtsp(bodyp);
 
         // Retarget local variable references to the cloned locals
-        // Rename locals defined in the body, TODO: there should be none after #6280
+        // Rename locals declared inside the body
         // Reset vertex pointers on calls
         bodyp->foreachAndNext([&](AstNode* nodep) {
             if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
-                if (AstVar* const varp = VN_AS(refp->varp()->user2p(), Var)) refp->varp(varp);
+                if (AstVar* const varp = VN_AS(refp->varp()->user2p(), Var)) {
+                    // Keep dtype; V3Expand may have widened the reference beyond the variable
+                    AstNodeDType* const dtypep = refp->dtypep();
+                    refp->varp(varp);
+                    refp->dtypep(dtypep);
+                }
             } else if (AstVar* const varp = VN_CAST(nodep, Var)) {
                 varp->name(varPrefix + varp->name());
             } else if (AstCCall* const callp = VN_CAST(nodep, CCall)) {
@@ -405,6 +410,11 @@ class InlineCFuncsVisitor final : public VNVisitor {
     void visit(AstAddrOfCFunc* nodep) override {
         if (m_cfuncVtxp) m_cfuncVtxp->sizeInc();
         getInlineCFuncsFunctionVertexp(nodep->funcp())->setKeep("Referenced by AddressOfCFunc");
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstNbaEnqueue* nodep) override {
+        if (m_cfuncVtxp) m_cfuncVtxp->sizeInc();
+        getInlineCFuncsFunctionVertexp(nodep->funcp())->setKeep("Referenced by NbaEnqueue");
         iterateChildrenConst(nodep);
     }
 

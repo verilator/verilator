@@ -8,7 +8,8 @@
       |               ^~~~~~~~
                       ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
                       ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
-%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:20:20: Unsupported: Blocking and non-blocking assignments to potentially overlapping bits of same packed variable: 't.array'
+%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:20:20: Unsupported: Blocking and non-blocking assignments to potentially overlapping bits of same packed variable: 'array'
+                                                   : ... note: In instance 't'
    20 |   logic [1:0][3:0] array;
       |                    ^~~~~
                    t/t_order_blkandnblk_bad.v:22:24: ... Location of blocking assignment (bits [3:0])
@@ -18,7 +19,8 @@
    24 |   always @(posedge clk) array[0] <= array[0];
       |                         ^~~~~
                    ... For error description see https://verilator.org/warn/BLKANDNBLK?v=latest
-%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:29:5: Unsupported: Blocking and non-blocking assignments to same non-packed variable: 't.unpacked'
+%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:29:5: Unsupported: Blocking and non-blocking assignments to same non-packed variable: 'unpacked'
+                                                  : ... note: In instance 't'
    29 |   } unpacked;
       |     ^~~~~~~~
                    t/t_order_blkandnblk_bad.v:31:15: ... Location of blocking assignment
@@ -27,4 +29,54 @@
                    t/t_order_blkandnblk_bad.v:33:25: ... Location of nonblocking assignment
    33 |   always @(posedge clk) unpacked.b <= unpacked.a;
       |                         ^~~~~~~~
+%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:37:15: Unsupported: Blocking and non-blocking assignments to potentially overlapping bits of same packed variable: 'viaFunc'
+                                                   : ... note: In instance 't'
+   37 |   logic [3:0] viaFunc;
+      |               ^~~~~~~
+                   t/t_order_blkandnblk_bad.v:40:7: ... Location of blocking assignment (bits [3:0])
+   40 |       viaFunc = v;
+      |       ^~~~~~~
+                   t/t_order_blkandnblk_bad.v:48:25: ... Location of nonblocking assignment (bits [3:0])
+   48 |   always @(posedge clk) viaFunc <= viaFunc;
+      |                         ^~~~~~~
+%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:52:15: Unsupported: Blocking and non-blocking assignments to potentially overlapping elements of same unpacked array: 'elems'
+                                                   : ... note: In instance 't'
+   52 |   logic [3:0] elems[2];
+      |               ^~~~~
+                   t/t_order_blkandnblk_bad.v:54:20: ... Location of blocking assignment (elements [0:0])
+   54 |   always_comb elems[0] = i;
+      |                    ^
+                   t/t_order_blkandnblk_bad.v:56:25: ... Location of nonblocking assignment (elements [1:0])
+   56 |   always @(posedge clk) elems[idx] <= i;
+      |                         ^~~~~
+%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:67:15: Unsupported: Blocking and non-blocking assignments to potentially overlapping elements of same unpacked array: 'whole'
+                                                   : ... note: In instance 't'
+   67 |   logic [3:0] whole[257];
+      |               ^~~~~
+                   t/t_order_blkandnblk_bad.v:69:15: ... Location of blocking assignment (elements [256:0])
+   69 |   always_comb whole = '{default: i};
+      |               ^~~~~
+                   t/t_order_blkandnblk_bad.v:71:25: ... Location of nonblocking assignment (elements [1:1])
+   71 |   always @(posedge clk) whole[1] <= i;
+      |                         ^~~~~
+%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:106:15: Unsupported: Blocking and non-blocking assignments to potentially overlapping bits of same packed variable: 'y'
+                                                    : ... note: In instance 't.ifc1'
+  106 |   logic [3:0] y;
+      |               ^
+                   t/t_order_blkandnblk_bad.v:84:17: ... Location of blocking assignment (bits [3:0])
+   84 |   always @* vif.y = i;
+      |                 ^
+                   t/t_order_blkandnblk_bad.v:86:30: ... Location of nonblocking assignment (bits [3:0])
+   86 |   always @(posedge clk) ifc1.y <= i;
+      |                              ^
+%Error-BLKANDNBLK: t/t_order_blkandnblk_bad.v:105:15: Unsupported: Blocking and non-blocking assignments to potentially overlapping bits of same packed variable: 'x'
+                                                    : ... note: In instance 't'
+  105 |   logic [3:0] x;
+      |               ^
+                   t/t_order_blkandnblk_bad.v:79:18: ... Location of blocking assignment (bits [3:0])
+   79 |   always @* ifc2.x = i;
+      |                  ^
+                   t/t_order_blkandnblk_bad.v:81:29: ... Location of nonblocking assignment (bits [3:0])
+   81 |   always @(posedge clk) vif.x <= i;
+      |                             ^
 %Error: Exiting due to

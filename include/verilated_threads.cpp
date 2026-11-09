@@ -40,16 +40,7 @@
 
 // Internal note: Globals may multi-construct, see verilated.cpp top.
 
-std::atomic<uint64_t> VlMTaskVertex::s_yields;
-
-//=============================================================================
-// VlMTaskVertex
-
-VlMTaskVertex::VlMTaskVertex(uint32_t upstreamDepCount)
-    : m_upstreamDepsDone{0}
-    , m_upstreamDepCount{upstreamDepCount} {
-    assert(atomic_is_lock_free(&m_upstreamDepsDone));
-}
+std::atomic<uint64_t> VlThreadProgress::s_yields;
 
 //=============================================================================
 // VlWorkerThread
@@ -90,7 +81,7 @@ VlWorkerThread::~VlWorkerThread() {
 #endif
 }
 
-static void shutdownTask(void*, bool) {  // LCOV_EXCL_LINE
+static void shutdownTask(void*) {  // LCOV_EXCL_LINE
     // Deliberately empty, we use the address of this function as a magic number
 }
 
@@ -99,7 +90,7 @@ void VlWorkerThread::shutdown() { addTask(shutdownTask, nullptr); }
 void VlWorkerThread::wait() {
     // Enqueue a task that sets this flag. Execution is in-order so this ensures completion.
     std::atomic<bool> flag{false};
-    addTask([](void* flagp, bool) { static_cast<std::atomic<bool>*>(flagp)->store(true); }, &flag);
+    addTask([](void* flagp) { static_cast<std::atomic<bool>*>(flagp)->store(true); }, &flag);
     // Spin wait
     for (unsigned i = 0; i < VL_LOCK_SPINS; ++i) {
         if (flag.load()) return;
@@ -120,7 +111,7 @@ void VlWorkerThread::main() {
     if (work.m_fnp != shutdownTask) Verilated::threadContextp(m_contextp);
     // Loop until shutdown task is received
     while (VL_UNLIKELY(work.m_fnp != shutdownTask)) {
-        work.m_fnp(work.m_selfp, work.m_evenCycle);
+        work.m_fnp(work.m_selfp);
         // Wait for next task with spinning.
         dequeWork</* SpinWait: */ true>(&work);
     }

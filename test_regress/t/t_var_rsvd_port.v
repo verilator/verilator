@@ -12,8 +12,8 @@ module t (  /*AUTOARG*/
   input bool;  // BAD
 
   reg vector;  // OK, as not public
-  reg switch  /*verilator public*/;  // Bad
-  reg free  /*verilator public*/;  // OK, not actually a keyword
+  reg switch  /*verilator public_flat*/;  // Bad
+  reg free  /*verilator public_flat*/;  // OK, not actually a keyword
 
   initial begin
     $write("*-* All Finished *-*\n");

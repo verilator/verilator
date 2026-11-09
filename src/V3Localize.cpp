@@ -63,7 +63,8 @@ class LocalizeVisitor final : public VNVisitor {
     // METHODS
     bool isOptimizable(AstVarScope* nodep) {
         // Don't want to malloc/free the backing store all the time
-        if (VN_IS(nodep->dtypep(), NBACommitQueueDType)) return false;
+        if (nodep->varp()->basicp() && nodep->varp()->basicp()->isNbaGenericQueue()) return false;
+        if (VN_IS(nodep->dtypep()->skipRefp(), ClosurePoolDType)) return false;
         // Do not localize strings. They result in unnecessary initialization
         // and bloated code size due to destructor calls when unused.
         // TODO: Local variables should be pushed into the narrowest scope rather

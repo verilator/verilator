@@ -98,7 +98,7 @@ class VlCoroutineHandle final {
     // MEMBERS
     std::coroutine_handle<VlPromise> m_coro;  // The wrapped coroutine handle
     VlProcessRef m_process;  // Data of the suspended process, null if not needed
-    VlFileLineDebug m_fileline;
+    VlFileLineDebug m_fileline;  // Source location, for debug
 
 public:
     // CONSTRUCTORS
@@ -163,7 +163,7 @@ class VlDelayScheduler final {
     using VlDelayedCoroutineQueue = std::multimap<uint64_t, VlCoroutineHandle>;
 
     // MEMBERS
-    VerilatedContext& m_context;
+    VerilatedContext& m_context;  // Context to get current time from
     VlDelayedCoroutineQueue m_queue;  // Coroutines to be restored at a certain simulation time
     std::vector<VlCoroutineHandle> m_zeroDelayed;  // Coroutines waiting for #0
     // Coroutines that waited for #0 and are being resumed now. As member to avoid reallocations
@@ -412,6 +412,7 @@ public:
 };
 
 class VlForkSync final {
+    // State shared between copies of this object
     std::shared_ptr<VlForkSyncState> m_state{std::make_shared<VlForkSyncState>()};
 
 public:

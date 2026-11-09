@@ -292,8 +292,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         ofp()->putsQuoted(vformat);
     }
 
-    int exprArgs = 0;
-    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) ++exprArgs;
+    const int exprArgs = static_cast<int>(VNList<AstNode>{exprsp}.size());
     if (VL_UNCOVERABLE(!exprFormat && exprArgs != formatArgs)) {  // LCOV_EXCL_START
         // expectDisplay() checks this first, so probably internal error if found here
         nodep->v3error("Internal: Missing or extra arguments for $display-like format, "
@@ -304,7 +303,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     int argc = 0;
     if (needsScope) ++argc;
     if (needsTimescale) ++argc;
-    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
+    for (AstNode* const argp : VNList<AstNode>{exprsp}) {
         ++argc;
         const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
         if (fargp && fargp->formatAttr().isEnum()) ++argc;  // Additional name argument
@@ -316,13 +315,13 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         UASSERT_OBJ(scopenamep, nodep, "Display with %m but no AstScopeName");
         ofp()->puts(", '"s + VFormatAttr{VFormatAttr::SCOPE}.ascii() + "'");
         if (scopenamep->selfRelative()) {
-            // vlNamep is catName(name(), instance), so starts with '.' when the model is unnamed
-            const string namep = string{m_useSelfForThis ? "vlSelf" : "this"} + "->vlNamep";
-            ofp()->puts(",(vlSymsp->name()[0] ? " + namep + " : " + namep + " + 1),");
+            ofp()->puts(","s + (m_useSelfForThis ? "vlSelf" : "this") + "->vlNamep,");
             ofp()->putsQuoted(scopenamep->scopeAttr());
         } else {
-            ofp()->puts(",vlSymsp->name(),");
-            ofp()->putsQuoted(scopenamep->scopePrettySymName());
+            const std::pair<size_t, std::string> top
+                = EmitCUtil::splitTopPath(scopenamep->scopePrettySymName());
+            ofp()->puts("," + EmitCUtil::topNameExpr(top.first, false) + ",");
+            ofp()->putsQuoted(top.second);
         }
     }
 
@@ -345,7 +344,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     }
 
     // Arguments
-    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
+    for (AstNode* const argp : VNList<AstNode>{exprsp}) {
         ofp()->indentInc();
         ofp()->putbs("");
         AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
@@ -392,7 +391,7 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
         puts(selfPointer);
         comma = true;
     }
-    if (nodep->funcp()->needProcess()) {
+    if (nodep->funcp()->needsVlProcess()) {
         if (comma) puts(", ");
         if (VN_IS(nodep->backp(), CAwait) || !nodep->funcp()->isCoroutine()) {
             puts("vlProcess");
@@ -486,8 +485,7 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
         // If an ARRAYINIT we initialize it using an initial block similar to a signal
         // puts("// parameter "+varp->nameProtect()+" = "+varp->valuep()->name()+"\n");
     } else {
-        putns(varp,
-              emitVarResetRecurse(varp, constructing, newPrefix, dtypep, 0, "", varp->valuep()));
+        putns(varp, emitVarResetRecurse(varp, constructing, newPrefix, dtypep, 0, "", nullptr));
     }
 }
 
@@ -532,6 +530,17 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
     } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                     "Should have swapped msb & lsb earlier.");
+        const AstNodeDType* const elementp = adtypep->subDTypep()->skipRefp();
+        if (!varp->isFuncLocal() && elementp->isIntegralOrPacked()) {
+            // Scoped reset has no array-index input or mutable RNG state. Initialize one
+            // element, then fill in the optimized runtime even when this code is cold.
+            const string first
+                = emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
+                                      depth + 1, suffix + "[0]", nullptr);
+            const string array = varNameProtected + suffix;
+            return first + "VL_UNPACKED_FILL(" + array + ".data(), sizeof(" + array + "[0]), "
+                   + cvtToStr(adtypep->elementsConst()) + ");\n";
+        }
         const string ivar = "__Vi"s + cvtToStr(depth);
         const string pre = ("for (int " + ivar + " = " + cvtToStr(0) + "; " + ivar + " < "
                             + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
@@ -543,8 +552,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
     } else if (VN_IS(dtypep, NodeUOrStructDType) && !VN_AS(dtypep, NodeUOrStructDType)->packed()) {
         const AstNodeUOrStructDType* const sdtypep = VN_AS(dtypep, NodeUOrStructDType);
         string literal;
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             const std::string line = emitVarResetRecurse(
                 varp, constructing, varNameProtected + suffix + "." + itemp->nameProtect(),
                 itemp->dtypep(), depth + 1, "", itemp->valuep());
@@ -564,6 +572,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
         return "";
     } else if (basicp && basicp->isDynamicTriggerScheduler()) {
         return "";
+    } else if (basicp && basicp->isNbaGenericQueue()) {
+        return "";
     } else if (basicp && (basicp->isRandomGenerator() || basicp->isStdRandomGenerator())) {
         return "";
     } else if (basicp && basicp->isCovergroupInstHandle()) {
@@ -581,7 +591,6 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                || (varp->isXTemp()
                        ? (v3Global.opt.xAssign() != "unique")
                        : (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0")));
-        const bool slow = !varp->isFuncLocal() && !varp->isClassMember();
         splitSizeInc(1);
         if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
             string out;
@@ -593,7 +602,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                 }
             } else {
-                out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(")
+                out += zeroit ? "VL_ZERO_W("
                               : (varp->isXTemp() ? "VL_SCOPED_RAND_RESET_ASSIGN_W("
                                                  : "VL_SCOPED_RAND_RESET_W(");
                 out += cvtToStr(dtypep->widthMin());
@@ -602,7 +611,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     emitVarResetScopeHash();
                     const uint64_t salt = VString::hashMurmur(varp->prettyName());
                     out += ", ";
-                    out += m_classOrPackage ? m_classOrPackageHash : "__VscopeHash";
+                    out += m_classOrPackagep ? m_classOrPackageHash : "__VscopeHash";
                     out += ", ";
                     out += std::to_string(salt);
                     out += "ull";
@@ -629,7 +638,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 if (varp->isXTemp()) out += "ASSIGN_";
                 out += dtypep->charIQWN();
                 out += "(" + cvtToStr(dtypep->widthMin()) + ", "
-                       + (m_classOrPackage ? m_classOrPackageHash : "__VscopeHash") + ", "
+                       + (m_classOrPackagep ? m_classOrPackageHash : "__VscopeHash") + ", "
                        + std::to_string(salt) + "ull);\n";
             }
             return out;
@@ -642,9 +651,9 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
 
 void EmitCFunc::emitVarResetScopeHash() {
     if (VL_LIKELY(m_createdScopeHash)) { return; }
-    if (m_classOrPackage) {
+    if (m_classOrPackagep) {
         m_classOrPackageHash
-            = std::to_string(VString::hashMurmur(m_classOrPackage->name())) + "ULL";
+            = std::to_string(VString::hashMurmur(m_classOrPackagep->name())) + "ULL";
     } else {
         puts(string("const uint64_t __VscopeHash = VL_MURMUR64_HASH(")
              + (m_useSelfForThis ? "vlSelf" : "this") + "->vlNamep);\n");

@@ -47,8 +47,7 @@ class V3EmitMkJsonEmitter final {
         std::vector<string> deps;
         std::vector<string> cppFiles;
 
-        for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
-             nodep = VN_AS(nodep->nextp(), NodeFile)) {
+        for (AstNodeFile* const nodep : v3Global.rootp()->filespList()) {
             const AstCFile* const cfilep = VN_CAST(nodep, CFile);
             if (cfilep && cfilep->source()) {
                 const std::string filename

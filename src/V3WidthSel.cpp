@@ -71,13 +71,6 @@ class WidthSelVisitor final : public VNVisitor {
         // What is the data type and information for this SEL-ish's from()?
         UINFO(9, "  fromData start ddtypep = " << basefromp);
         VNumRange fromRange;  // constructs to isRanged(false)
-        while (basefromp) {
-            if (VN_IS(basefromp, AttrOf)) {
-                basefromp = VN_AS(basefromp, AttrOf)->fromp();
-                continue;
-            }
-            break;
-        }
         UASSERT_OBJ(basefromp && basefromp->dtypep(), nodep, "Select with no from dtype");
         AstNodeDType* const ddtypep = basefromp->dtypep()->skipRefp();
         AstNodeDType* const errp = ddtypep;
@@ -319,22 +312,11 @@ class WidthSelVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, BasicDType) && ddtypep->isString()) {
             // SELBIT(string, index) -> GETC(string, index)
-            AstNodeExpr* exprp = fromp;
-            while (true) {
-                if (AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
-                    exprp = memberselp->fromp();
-                } else if (AstStructSel* const structselp = VN_CAST(exprp, StructSel)) {
-                    exprp = structselp->fromp();
-                } else {
-                    break;
-                }
-            }
-            const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef);
             AstNodeExpr* newp;
-            if (!varrefp || varrefp->access().isReadOnly()) {
-                newp = new AstGetcN{nodep->fileline(), fromp, rhsp};
-            } else {
+            if (fromp->isLValue()) {
                 newp = new AstGetcRefN{nodep->fileline(), fromp, rhsp};
+            } else {
+                newp = new AstGetcN{nodep->fileline(), fromp, rhsp};
             }
             UINFO(6, "   new " << newp);
             nodep->replaceWith(newp);

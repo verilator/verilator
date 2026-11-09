@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0103,C0114,C0115,C0116,C0209,C0302,R0902,R0903,R0904,R0912,R0913,R0914,R0915,R0916,W0212,W0511,W0603,W1201
+# pylint: disable=C0103,C0114,C0115,C0116,C0209,C0302,R0902,R0903,R0904,R0912,R0913,R0914,R0915,R0916,R0917,W0212,W0511,W0603,W1201
 ######################################################################
 
 import argparse
@@ -1217,6 +1217,8 @@ class VlTest:
             verilator_flags += ["-CFLAGS -ggdb -LDFLAGS -ggdb"]
         if self.tsan:
             verilator_flags += ["-CFLAGS -fsanitize=thread -CFLAGS -g -LDFLAGS -fsanitize=thread"]
+        if not re.search(r'-unlimited-stack', checkflags):
+            verilator_flags += ["--no-unlimited-stack"]  # Speed up bin/verilator harness
         verilator_flags += ["--x-assign unique"]  # More likely to be buggy
 
         if param['vltmt']:
@@ -1225,7 +1227,6 @@ class VlTest:
             verilator_flags += ["--threads", str(param['threads'])]
         if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["--exe"]
-        if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["../" + self.main_filename]
 
         cmdargs = [
@@ -2262,7 +2263,6 @@ class VlTest:
                     fh.write("    topp->clk(clk);\n")
                 setp = ""
             else:
-                fh.write("    topp->eval();\n")
                 setp = "topp->"
 
             if self.trace:
@@ -2285,10 +2285,14 @@ class VlTest:
                              "  // Finish elaboration before trace and open\n")
                 fh.write("    topp->trace(tfp.get(), 99);\n")
                 fh.write("    tfp->open(\"" + self.trace_filename + "\");\n")
-
-                if self.trace and not self.sc:
-                    fh.write("    if (tfp) tfp->dump(contextp->time());\n")
                 fh.write("#endif\n")
+
+            if not self.sc:
+                fh.write("    topp->eval();\n")
+                if self.trace:
+                    fh.write("#if VM_TRACE\n")
+                    fh.write("    if (tfp) tfp->dump(contextp->time());\n")
+                    fh.write("#endif\n")
 
             if self.savable:
                 fh.write("    const char* save_time_strp"
@@ -2656,8 +2660,18 @@ class VlTest:
     def copy_if_golden(self, fn1: str, fn2: str) -> None:
         """Copy a file if updating golden .out files"""
         if 'HARNESS_UPDATE_GOLDEN' in os.environ:  # Update golden files with current
-            print("%Warning: HARNESS_UPDATE_GOLDEN set: cp " + fn1 + " " + fn2, file=sys.stderr)
-            shutil.copy(fn1, fn2)
+            if fn1.endswith('.fst'):
+                # Keep golden traces as text.
+                cmd = [
+                    VtOs.getenv_def('WAVECAT', 'wavecat'), fn1, '--out', fn2, '--out-format',
+                    'vcd', '--no-date'
+                ]
+                print("%Warning: HARNESS_UPDATE_GOLDEN set: " + ' '.join(cmd), file=sys.stderr)
+                self.run(cmd=cmd)
+            else:
+                print("%Warning: HARNESS_UPDATE_GOLDEN set: cp " + fn1 + " " + fn2,
+                      file=sys.stderr)
+                shutil.copy(fn1, fn2)
 
     def vcd_identical(self, fn1: str, fn2: str) -> None:
         """Test if two VCD/FST files have logically-identical contents"""
@@ -3102,7 +3116,9 @@ if __name__ == '__main__':
     parser.add_argument('--benchmark', action='store', help='enable benchmarking')
     parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
     # --debugi: see _parameter()
-    parser.add_argument('--driver-clean', action='store_true', help='clean after test passes')
+    parser.add_argument('--driver-clean',
+                        action=argparse.BooleanOptionalAction,
+                        help='clean after test passes, default set when running multiple tests')
     parser.add_argument('--driver-prune',
                         action='store_true',
                         help='clean after test passes, but keep files for test-snap/test-diff')
@@ -3221,9 +3237,14 @@ if __name__ == '__main__':
         Capabilities.warmup_cache()
         # Without this tests such as t_debug_sigsegv_bt_bad.py will occasionally
         # block on input and cause a SIGSTOP, then a "fg" was needed to resume testing.
-        print("== Many jobs; redirecting STDIN", file=sys.stderr)
-        #
+        jmsg = "== Many jobs"
+        jmsg += ": redirecting STDIN"
         sys.stdin = open("/dev/null", 'r', encoding="utf8")  # pylint: disable=consider-using-with
+        if Args.driver_clean is None and not Args.driver_prune:
+            jmsg += "; implying --driver-clean"
+            Args.driver_clean = True
+        #
+        print(jmsg, file=sys.stderr)
     else:
         # Speed up single-test makes
         Args.driver_build_jobs_n = calc_jobs()

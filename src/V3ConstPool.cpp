@@ -18,92 +18,83 @@
 
 #include "V3ConstPool.h"
 
+#include "V3Hasher.h"
+
 //######################################################################
 // V3ConstPool
 
-bool V3ConstPool::equalMap(const AstConsAssoc* ap, const AstConsAssoc* bp) {
+V3Hash V3ConstPool::hashValue(const AstNode* nodep) {
+    // Hash what 'equalValue' compares
+    V3Hash hash{nodep->type().hash()};
+    hash += nodep->dtypep()->cType("", false, false);
+    if (const AstConst* const constp = VN_CAST(nodep, Const)) return hash + constp->num().toHash();
+    if (const AstConsArray* const consp = VN_CAST(nodep, ConsArray)) {
+        const uint64_t size
+            = VN_AS(consp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
+        for (uint64_t n = 0; n < size; ++n) hash += hashValue(consp->valuep(n));
+        return hash;
+    }
+    return hash + V3Hasher::uncachedHash(nodep);
+}
+
+bool V3ConstPool::equalValue(const AstNode* ap, const AstNode* bp) {
+    if (ap->type() != bp->type()) return false;
+    if (ap->dtypep()->cType("", false, false) != bp->dtypep()->cType("", false, false)) {
+        return false;
+    }
+    // Compare constants by value, which also checks the width
+    if (const AstConst* const constp = VN_CAST(ap, Const)) {
+        return constp->num().isCaseEq(VN_AS(bp, Const)->num());
+    }
+    // Compare unpacked arrays by element values, as equal arrays might differ in their range,
+    // and in which elements are given or defaulted
+    if (const AstConsArray* const aConsp = VN_CAST(ap, ConsArray)) {
+        const AstConsArray* const bConsp = VN_AS(bp, ConsArray);
+        const uint64_t size
+            = VN_AS(aConsp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
+        for (uint64_t n = 0; n < size; ++n) {
+            if (!equalValue(aConsp->valuep(n), bConsp->valuep(n))) return false;
+        }
+        return true;
+    }
     return ap->sameTree(bp);
 }
 
-bool V3ConstPool::equalTable(const AstInitArray* ap, const AstInitArray* bp) {
-    // Unpacked array initializers must have equivalent values
-    // Note, sadly we can't just call ap->sameTree(pb), because both:
-    // - the dtypes might be different instances
-    // - the default/inititem children might be in different order yet still yield the same table
-    // See note in AstInitArray::same about the same. This function instead compares by initializer
-    // value, rather than by tree structure.
-    const AstUnpackArrayDType* const aDTypep = VN_AS(ap->dtypep(), UnpackArrayDType);
-    const AstUnpackArrayDType* const bDTypep = VN_AS(bp->dtypep(), UnpackArrayDType);
-    if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
-    // Compare the range by value, as the bounds might be differently typed constants
-    if (!(aDTypep->declRange() == bDTypep->declRange())) return false;
-    // Compare initializer arrays by value. Note this is only called when they hash the same.
-    const uint64_t size = aDTypep->elementsConst();
-    for (uint64_t n = 0; n < size; ++n) {
-        const AstNode* const valAp = ap->getIndexDefaultedValuep(n);
-        const AstNode* const valBp = bp->getIndexDefaultedValuep(n);
-        UASSERT_OBJ(VN_IS(valAp, Const), valAp, "Const pool table item not Const");
-        UASSERT_OBJ(VN_IS(valBp, Const), valBp, "Const pool table item not Const");
-        if (!valAp->sameTree(valBp)) return false;
-    }
-    return true;
-}
-
-size_t V3ConstPool::hashTable(const AstInitArray* initp) {
-    // Hash what 'equalTable' compares: the element type, the range by value, and the values
-    const AstUnpackArrayDType* const dtypep = VN_AS(initp->dtypep(), UnpackArrayDType);
-    V3Hash hash = V3Hasher::uncachedHash(dtypep->subDTypep());
-    hash += dtypep->left();
-    hash += dtypep->right();
-    const uint64_t size = dtypep->elementsConst();
-    for (uint64_t n = 0; n < size; ++n) {
-        hash += V3Hasher::uncachedHash(initp->getIndexDefaultedValuep(n));
-    }
-    return hash.value();
-}
-
-template <typename T_Set, typename T_Init>
-AstVarRef* V3ConstPool::findOrCreate(T_Set& set, uint32_t& nextr, const char* prefixp,
-                                     T_Init* initp) {
-    // Rebuild the cache if invalidated
-    if (VL_UNLIKELY(!m_cacheValid)) {
-        m_cacheValid = true;
-        m_scopep = nullptr;
-        m_consts.clear();
-        m_maps.clear();
-        m_tables.clear();
-        m_varScopes.clear();
-        AstPackage* const pkgp = v3Global.rootp()->constPoolPkgp();
-        for (AstNode* nodep = pkgp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (AstScope* const scopep = VN_CAST(nodep, Scope)) {
-                if (m_stage == Stage::SCOPED) m_scopep = scopep;
-                continue;
-            }
-            // Otherwise must be a variable
-            AstVar* const varp = VN_AS(nodep, Var);
-            UASSERT_OBJ(varp->constPoolEntry(), varp, "Unmarked variable in constant pool");
-            if (VN_IS(varp->valuep(), Const)) {
-                m_consts.insert(varp);
-            } else if (VN_IS(varp->valuep(), InitArray)) {
-                m_tables.insert(varp);
-            } else {
-                m_maps.insert(varp);
-            }
+void V3ConstPool::rebuildCache() {
+    m_cacheValid = true;
+    m_scopep = nullptr;
+    m_entries.clear();
+    m_varScopes.clear();
+    AstPackage* const pkgp = v3Global.rootp()->constPoolPkgp();
+    for (AstNode* const nodep : pkgp->stmtspList()) {
+        if (AstScope* const scopep = VN_CAST(nodep, Scope)) {
+            if (m_stage == Stage::SCOPED) m_scopep = scopep;
+            continue;
         }
-        if (m_scopep) {
-            for (AstVarScope* vscp = m_scopep->varsp(); vscp;
-                 vscp = VN_AS(vscp->nextp(), VarScope)) {
-                m_varScopes.insert({vscp->varp(), vscp});
-            }
+        // Otherwise must be a variable
+        AstVar* const varp = VN_AS(nodep, Var);
+        UASSERT_OBJ(varp->constPoolEntry(), varp, "Unmarked variable in constant pool");
+        m_entries.insert(varp);
+    }
+    if (m_scopep) {
+        for (AstVarScope* const vscp : m_scopep->varspList()) {
+            m_varScopes.insert({vscp->varp(), vscp});
         }
     }
+}
+
+AstVarRef* V3ConstPool::find(AstNodeExpr* initp) {
+    UASSERT_OBJ(initp->isConstantTree(), initp, "Const pool value is not constant");
+    V3ConstPool& self = instance();
+    if (VL_UNLIKELY(!self.m_cacheValid)) self.rebuildCache();
 
     FileLine* const flp = initp->fileline();
     AstNodeDType* const dtypep = initp->dtypep();
 
     // Look up/create the variable with this value
-    const auto pair = set.insertLazy(initp, [&]() {
-        const std::string name = prefixp + std::to_string(nextr++);
+    const auto pair = self.m_entries.insertLazy(initp, [&]() {
+        uint32_t& numberr = self.m_nextNumber[initp->type()];
+        const std::string name = std::string{initp->typeName()} + "_" + std::to_string(numberr++);
         AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
         varp->setConstPoolEntry();
         varp->lifetime(VLifetime::STATIC_EXPLICIT);
@@ -116,7 +107,7 @@ AstVarRef* V3ConstPool::findOrCreate(T_Set& set, uint32_t& nextr, const char* pr
 
     // Create a read reference to the entry, of the right form for the current stage
     AstVarRef* refp = nullptr;
-    switch (m_stage) {
+    switch (self.m_stage) {
     case Stage::UNSCOPED: {
         // Before V3Scope, reference via the package, as any other package variable
         AstPackage* const pkgp = v3Global.rootp()->constPoolPkgp();
@@ -125,9 +116,9 @@ AstVarRef* V3ConstPool::findOrCreate(T_Set& set, uint32_t& nextr, const char* pr
     }
     case Stage::SCOPED: {
         // While scoped, reference the VarScope, creating it for a new entry, or if removed
-        const auto vscpPair = m_varScopes.insertLazy(varp, [&]() {
-            AstVarScope* const vscp = new AstVarScope{varp->fileline(), m_scopep, varp};
-            m_scopep->addVarsp(vscp);
+        const auto vscpPair = self.m_varScopes.insertLazy(varp, [&]() {
+            AstVarScope* const vscp = new AstVarScope{varp->fileline(), self.m_scopep, varp};
+            self.m_scopep->addVarsp(vscp);
             return std::pair<const AstVar*, AstVarScope*>{varp, vscp};
         });
         refp = new AstVarRef{flp, vscpPair.first->second, VAccess::READ};
@@ -145,38 +136,11 @@ AstVarRef* V3ConstPool::findOrCreate(T_Set& set, uint32_t& nextr, const char* pr
     return refp;
 }
 
-AstVarRef* V3ConstPool::findConst(AstConst* initp) {
-    V3ConstPool& self = instance();
-    return self.findOrCreate(self.m_consts, self.m_nextConst, "CONST_", initp);
-}
-
-AstVarRef* V3ConstPool::findMap(AstConsAssoc* initp) {
-    UASSERT_OBJ(VN_IS(initp->dtypep(), AssocArrayDType), initp,
-                "Const pool map must have associative array dtype");
-    V3ConstPool& self = instance();
-    return self.findOrCreate(self.m_maps, self.m_nextMap, "MAP_", initp);
-}
-
-AstVarRef* V3ConstPool::findTable(AstInitArray* initp) {
-    UASSERT_OBJ(VN_IS(initp->dtypep(), UnpackArrayDType), initp,
-                "Const pool table must have unpacked array dtype");
-    V3ConstPool& self = instance();
-    return self.findOrCreate(self.m_tables, self.m_nextTable, "TABLE_", initp);
-}
-
-AstVarRef* V3ConstPool::find(AstNodeExpr* initp) {
-    if (AstConst* const constp = VN_CAST(initp, Const)) return findConst(constp);
-    if (AstInitArray* const arrayp = VN_CAST(initp, InitArray)) return findTable(arrayp);
-    return findMap(VN_AS(initp, ConsAssoc));
-}
-
 const char* V3ConstPool::broken() {
     const V3ConstPool& self = instance();
     if (!self.m_cacheValid) return nullptr;
     BROKEN_RTN(self.m_scopep && !self.m_scopep->brokeExists());
-    for (const AstVar* const varp : self.m_consts) BROKEN_RTN(!varp->brokeExists());
-    for (const AstVar* const varp : self.m_maps) BROKEN_RTN(!varp->brokeExists());
-    for (const AstVar* const varp : self.m_tables) BROKEN_RTN(!varp->brokeExists());
+    for (const AstVar* const varp : self.m_entries) BROKEN_RTN(!varp->brokeExists());
     for (const auto& pair : self.m_varScopes) {
         BROKEN_RTN(!pair.first->brokeExists());
         BROKEN_RTN(!pair.second->brokeExists());

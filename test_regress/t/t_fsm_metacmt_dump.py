@@ -13,8 +13,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.top_filename = "t/t_fsm_metacmt_dump.v"
-
 test.lint(v_flags=["--dump-tree --dump-tree-json --no-json-edit-nums"])
 
 tree_files = test.glob_some(test.obj_dir + "/*.tree")

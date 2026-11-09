@@ -1,5 +1,4 @@
 [0] vif1.data==dead
-[0] intf2.data==0000
 [1] intf2.data==beef
 [2] vif1.data==cafe
 [3] intf2.data==face

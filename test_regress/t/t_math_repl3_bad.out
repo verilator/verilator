@@ -15,7 +15,7 @@
       |                        ^
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Error: t/t_math_repl3_bad.v:17:19: Replication value of < 0 or X/Z not legal (IEEE 1800-2023 11.4.12.1): '32'bzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz'
+%Error: t/t_math_repl3_bad.v:17:19: Replication value of < 0 or X/Z not legal (IEEE 1800-2023 11.4.12.1): '32'bz'
                                   : ... note: In instance 't'
    17 |     other = {32'bz{1'b1}};
       |                   ^

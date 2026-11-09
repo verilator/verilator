@@ -301,18 +301,18 @@ CfgDominatorTree::CfgDominatorTree(const CfgGraph& cfg)
             if (curr.isEnter()) continue;  // Skip entry block
 
             // For each predecessor of current block
-            const CfgBlock* idom = nullptr;
+            const CfgBlock* idomp = nullptr;
             for (const V3GraphEdge& edge : curr.inEdges()) {
                 const CfgBlock& pred = static_cast<const CfgBlock&>(*edge.fromp());
                 // Skip if perdecessor not yet processed
                 if (!m_bb2Idom[pred]) continue;
                 // Pick first, then use intersect
-                idom = !idom ? &pred : intersect(&pred, idom);
+                idomp = !idomp ? &pred : intersect(&pred, idomp);
             }
 
             // If chenged, record it, else move on
-            if (idom == m_bb2Idom[curr]) continue;
-            m_bb2Idom[curr] = idom;
+            if (idomp == m_bb2Idom[curr]) continue;
+            m_bb2Idom[curr] = idomp;
             changed = true;
         }
     }

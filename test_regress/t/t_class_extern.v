@@ -84,11 +84,98 @@ task Cls::SubCls::ext_t_i(int in);
   value = in;
 endtask
 
+// Each class has a foreach in a method defined in the class body and in one
+// defined out-of-block, so their unnamed blocks get the same name
+
+class CDyn;  // Dynamic array, out-of-block task
+  int a[];
+  task reset();
+    foreach (a[i]) a[i] = 0;
+  endtask
+  extern task run();
+endclass
+task CDyn::run();
+  foreach (a[i]) a[i] += i + 1;
+endtask
+
+package pkg_queue;
+  class CQueue;  // Queue, out-of-block function
+    int q[$];
+    function void reset();
+      foreach (q[i]) q[i] = 0;
+    endfunction
+    extern function int run();
+  endclass
+  function int CQueue::run();
+    int sum = 0;
+    foreach (q[i]) begin
+      q[i]++;
+      sum += q[i];
+    end
+    q.delete();
+    return sum;
+  endfunction
+endpackage
+
+package pkg_assoc;
+  class CAssoc;  // Associative array
+    int m[string];
+    task reset();
+      foreach (m[k]) m[k] = 0;
+    endtask
+    extern task run();
+  endclass
+  task CAssoc::run();
+    foreach (m[k]) m[k] += k.len();
+  endtask
+endpackage
+
+package pkg_string;
+  class CString;  // String
+    string s;
+    task reset();
+      foreach (s[j]) s[j] = "a";
+    endtask
+    extern task run();
+  endclass
+  task CString::run();
+    foreach (s[j]) s[j] = s[j] + 8'(j);
+  endtask
+endpackage
 
 module t;
   initial begin
     automatic Cls c = new;
     automatic Cls::SubCls subc = new;
+    automatic CDyn cdyn = new;
+    automatic pkg_queue::CQueue cqueue = new;
+    automatic pkg_assoc::CAssoc cassoc = new;
+    automatic pkg_string::CString cstring = new;
+
+    cdyn.a = '{5, 6, 7};
+    cdyn.reset();
+    cdyn.run();
+    if (cdyn.a[0] != 1) $stop;
+    if (cdyn.a[2] != 3) $stop;
+
+    cqueue.q.push_back(4);
+    cqueue.q.push_back(9);
+    cqueue.reset();
+    if (cqueue.run() != 2) $stop;
+    if (cqueue.q.size() != 0) $stop;
+
+    cassoc.m["x"] = 4;
+    cassoc.m["yyy"] = 4;
+    cassoc.reset();
+    cassoc.run();
+    if (cassoc.m["x"] != 1) $stop;
+    if (cassoc.m["yyy"] != 3) $stop;
+
+    cstring.s = "zzz";
+    cstring.reset();
+    cstring.run();
+    if (cstring.s != "abc") $stop;
+
     c.ext_t_i(2);
     if (c.ext_f_np() != 1) $stop;
     if (c.ext_f_p() != 2) $stop;

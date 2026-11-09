@@ -18,11 +18,12 @@ test.compile(verilator_flags2=[
 test.file_grep(test.stats, r'NBA, variables using ShadowVar scheme\s+(\d+)', 2)
 test.file_grep(test.stats, r'NBA, variables using ShadowVarMasked scheme\s+(\d+)', 2)
 test.file_grep(test.stats, r'NBA, variables using FlagShared scheme\s+(\d+)', 2)
-test.file_grep(test.stats, r'NBA, variables using FlagUnique scheme\s+(\d+)', 2)
-test.file_grep(test.stats, r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 2)
+test.file_grep(test.stats, r'NBA, variables using GenericLocal scheme\s+(\d+)', 2)
+test.file_grep(test.stats, r'NBA, variables using GenericGlobal scheme\s+(\d+)', 6)
 
 # The commit queue of 'y' is shared by all instances of 'sub'
-test.file_grep_count(test.obj_dir + "/" + test.vm_prefix + "_sub.h", r'__Vdly_CommitQueue__y_', 1)
+test.file_grep_count(test.obj_dir + "/" + test.vm_prefix + "_sub.h", r'__Vdly_NbaLocalQueue__y_',
+                     1)
 
 test.execute()
 

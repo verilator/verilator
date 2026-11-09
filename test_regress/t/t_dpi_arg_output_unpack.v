@@ -129,18 +129,24 @@ module t;
   typedef chandle           chandle_array1_t[1][1][1];
   typedef string            string_array_t[4][3][2];
   typedef string            string_array1_t[1][1][1];
+  typedef bit               bit_t;
   typedef bit               bit1_array_t[4][3][2];
   typedef bit               bit1_array1_t[1][1][1];
   typedef bit [6:0]         bit7_array_t[4][3][2];
   typedef bit [6:0]         bit7_array1_t[1][1][1];
   typedef bit [120:0]       bit121_array_t[4][3][2];
   typedef bit [120:0]       bit121_array1_t[1][1][1];
+  typedef bit_t [120:0]     bit_t121_array_t[4][3][2];
+  typedef bit_t [120:0]     bit_t121_array1_t[1][1][1];
+  typedef logic             logic_t;
   typedef logic             logic1_array_t[4][3][2];
   typedef logic             logic1_array1_t[1][1][1];
   typedef logic [6:0]       logic7_array_t[4][3][2];
   typedef logic [6:0]       logic7_array1_t[1][1][1];
   typedef logic [120:0]     logic121_array_t[4][3][2];
   typedef logic [120:0]     logic121_array1_t[1][1][1];
+  typedef logic_t [120:0]   logic_t121_array_t[4][3][2];
+  typedef logic_t [120:0]   logic_t121_array1_t[1][1][1];
 
   typedef struct            packed {
     logic [6:0]            val;
@@ -304,6 +310,14 @@ module t;
   import "DPI-C" function void i_bit121_2d1(output bit[120:0] val[1][1]);
   import "DPI-C" function void i_bit121_3d1(output bit121_array1_t val);
 
+  import "DPI-C" function void i_bit_t121_0d(output bit_t[120:0] val);
+  import "DPI-C" function void i_bit_t121_1d(output bit_t[120:0] val[2]);
+  import "DPI-C" function void i_bit_t121_2d(output bit_t[120:0] val[3][2]);
+  import "DPI-C" function void i_bit_t121_3d(output bit_t121_array_t val);
+  import "DPI-C" function void i_bit_t121_1d1(output bit_t[120:0] val[1]);
+  import "DPI-C" function void i_bit_t121_2d1(output bit_t[120:0] val[1][1]);
+  import "DPI-C" function void i_bit_t121_3d1(output bit_t121_array1_t val);
+
   import "DPI-C" function void i_logic1_0d(output logic val);
   import "DPI-C" function void i_logic1_1d(output logic val[2]);
   import "DPI-C" function void i_logic1_2d(output logic val[3][2]);
@@ -327,6 +341,14 @@ module t;
   import "DPI-C" function void i_logic121_1d1(output logic[120:0] val[1]);
   import "DPI-C" function void i_logic121_2d1(output logic[120:0] val[1][1]);
   import "DPI-C" function void i_logic121_3d1(output logic121_array1_t val);
+
+  import "DPI-C" function void i_logic_t121_0d(output logic_t[120:0] val);
+  import "DPI-C" function void i_logic_t121_1d(output logic_t[120:0] val[2]);
+  import "DPI-C" function void i_logic_t121_2d(output logic_t[120:0] val[3][2]);
+  import "DPI-C" function void i_logic_t121_3d(output logic_t121_array_t val);
+  import "DPI-C" function void i_logic_t121_1d1(output logic_t[120:0] val[1]);
+  import "DPI-C" function void i_logic_t121_2d1(output logic_t[120:0] val[1][1]);
+  import "DPI-C" function void i_logic_t121_3d1(output logic_t121_array1_t val);
 
   import "DPI-C" function void i_pack_struct_0d(output pack_struct_t val);
   import "DPI-C" function void i_pack_struct_1d(output pack_struct_t val[2]);
@@ -491,6 +513,14 @@ module t;
   export "DPI-C" function e_bit121_2d1;
   export "DPI-C" function e_bit121_3d1;
 
+  export "DPI-C" function e_bit_t121_0d;
+  export "DPI-C" function e_bit_t121_1d;
+  export "DPI-C" function e_bit_t121_2d;
+  export "DPI-C" function e_bit_t121_3d;
+  export "DPI-C" function e_bit_t121_1d1;
+  export "DPI-C" function e_bit_t121_2d1;
+  export "DPI-C" function e_bit_t121_3d1;
+
   export "DPI-C" function e_logic1_0d;
   export "DPI-C" function e_logic1_1d;
   export "DPI-C" function e_logic1_2d;
@@ -514,6 +544,14 @@ module t;
   export "DPI-C" function e_logic121_1d1;
   export "DPI-C" function e_logic121_2d1;
   export "DPI-C" function e_logic121_3d1;
+
+  export "DPI-C" function e_logic_t121_0d;
+  export "DPI-C" function e_logic_t121_1d;
+  export "DPI-C" function e_logic_t121_2d;
+  export "DPI-C" function e_logic_t121_3d;
+  export "DPI-C" function e_logic_t121_1d1;
+  export "DPI-C" function e_logic_t121_2d1;
+  export "DPI-C" function e_logic_t121_3d1;
 
   export "DPI-C" function e_pack_struct_0d;
   export "DPI-C" function e_pack_struct_1d;
@@ -747,6 +785,14 @@ module t;
   function void e_bit121_2d1(output bit[120:0] val[1][1]); `SET_2D1(val); endfunction
   function void e_bit121_3d1(output bit121_array1_t val); `SET_3D1(val); endfunction
 
+  function void e_bit_t121_0d(output bit_t[120:0] val); `SET_0D(val); endfunction
+  function void e_bit_t121_1d(output bit_t[120:0] val[2]); `SET_1D(val); endfunction
+  function void e_bit_t121_2d(output bit_t[120:0] val[3][2]); `SET_2D(val); endfunction
+  function void e_bit_t121_3d(output bit_t121_array_t val); `SET_3D(val); endfunction
+  function void e_bit_t121_1d1(output bit_t[120:0] val[1]); `SET_1D1(val); endfunction
+  function void e_bit_t121_2d1(output bit_t[120:0] val[1][1]); `SET_2D1(val); endfunction
+  function void e_bit_t121_3d1(output bit_t121_array1_t val); `SET_3D1(val); endfunction
+
   function void e_logic1_0d(output logic val); `SET_0D(val); endfunction
   function void e_logic1_1d(output logic val[2]); `SET_1D(val); endfunction
   function void e_logic1_2d(output logic val[3][2]); `SET_2D(val); endfunction
@@ -770,6 +816,14 @@ module t;
   function void e_logic121_1d1(output logic[120:0] val[1]); `SET_1D1(val); endfunction
   function void e_logic121_2d1(output logic[120:0] val[1][1]); `SET_2D1(val); endfunction
   function void e_logic121_3d1(output logic121_array1_t val); `SET_3D1(val); endfunction
+
+  function void e_logic_t121_0d(output logic_t[120:0] val); `SET_0D(val); endfunction
+  function void e_logic_t121_1d(output logic_t[120:0] val[2]); `SET_1D(val); endfunction
+  function void e_logic_t121_2d(output logic_t[120:0] val[3][2]); `SET_2D(val); endfunction
+  function void e_logic_t121_3d(output logic_t121_array_t val); `SET_3D(val); endfunction
+  function void e_logic_t121_1d1(output logic_t[120:0] val[1]); `SET_1D1(val); endfunction
+  function void e_logic_t121_2d1(output logic_t[120:0] val[1][1]); `SET_2D1(val); endfunction
+  function void e_logic_t121_3d1(output logic_t121_array1_t val); `SET_3D1(val); endfunction
 
   function void e_pack_struct_0d(output pack_struct_t val); `SET_0D(val); endfunction
   function void e_pack_struct_1d(output pack_struct_t val[2]); `SET_1D(val); endfunction
@@ -856,12 +910,16 @@ module t;
     bit7_array1_t bit7_array1;
     bit121_array_t bit121_array;
     bit121_array1_t bit121_array1;
+    bit_t121_array_t bit_t121_array;
+    bit_t121_array1_t bit_t121_array1;
     logic1_array_t logic1_array;
     logic1_array1_t logic1_array1;
     logic7_array_t logic7_array;
     logic7_array1_t logic7_array1;
     logic121_array_t logic121_array;
     logic121_array1_t logic121_array1;
+    logic_t121_array_t logic_t121_array;
+    logic_t121_array1_t logic_t121_array1;
     pack_struct_array_t pack_struct_array;
     pack_struct_array1_t pack_struct_array1;
 `ifndef NO_UNPACK_STRUCT
@@ -1163,6 +1221,22 @@ module t;
     i_bit121_3d1(bit121_array1);
     `CHECK_3D1(bit121_array1);
 
+    i_bit_t121_0d(bit_t121_array[3][2][1]);
+    `CHECK_0D(bit_t121_array[3][2][1]);
+    i_bit_t121_1d(bit_t121_array[2][1]);
+    `CHECK_1D(bit_t121_array[2][1]);
+    i_bit_t121_2d(bit_t121_array[1]);
+    `CHECK_2D(bit_t121_array[1]);
+    i_bit_t121_3d(bit_t121_array);
+    `CHECK_3D(bit_t121_array);
+
+    i_bit_t121_1d1(bit_t121_array1[0][0]);
+    `CHECK_1D1(bit_t121_array1[0][0]);
+    i_bit_t121_2d1(bit_t121_array1[0]);
+    `CHECK_2D1(bit_t121_array1[0]);
+    i_bit_t121_3d1(bit_t121_array1);
+    `CHECK_3D1(bit_t121_array1);
+
     i_logic1_0d(logic1_array[3][2][1]);
     `CHECK_0D(logic1_array[3][2][1]);
     i_logic1_1d(logic1_array[2][1]);
@@ -1210,6 +1284,22 @@ module t;
     `CHECK_2D1(logic121_array1[0]);
     i_logic121_3d1(logic121_array1);
     `CHECK_3D1(logic121_array1);
+
+    i_logic_t121_0d(logic_t121_array[3][2][1]);
+    `CHECK_0D(logic_t121_array[3][2][1]);
+    i_logic_t121_1d(logic_t121_array[2][1]);
+    `CHECK_1D(logic_t121_array[2][1]);
+    i_logic_t121_2d(logic_t121_array[1]);
+    `CHECK_2D(logic_t121_array[1]);
+    i_logic_t121_3d(logic_t121_array);
+    `CHECK_3D(logic_t121_array);
+
+    i_logic_t121_1d1(logic_t121_array1[0][0]);
+    `CHECK_1D1(logic_t121_array1[0][0]);
+    i_logic_t121_2d1(logic_t121_array1[0]);
+    `CHECK_2D1(logic_t121_array1[0]);
+    i_logic_t121_3d1(logic_t121_array1);
+    `CHECK_3D1(logic_t121_array1);
 
     i_pack_struct_0d(pack_struct_array[3][2][1]);
     `CHECK_0D(pack_struct_array[3][2][1]);

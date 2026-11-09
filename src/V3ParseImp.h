@@ -48,7 +48,7 @@ enum V3ImportProperty : uint8_t { iprop_NONE, iprop_CONTEXT, iprop_PURE };
 
 struct VMemberQualifiers final {
     union {
-        uint32_t m_flags;
+        uint32_t m_flags;  // All qualifier flags, to clear at once
         struct {
             uint32_t m_local : 1;  // Local class item (ignored until warning implemented)
             uint32_t m_protected : 1;  // Protected class item (ignored until warning implemented)
@@ -75,7 +75,7 @@ struct VMemberQualifiers final {
         return VRandAttr::NONE;
     }
     void applyToNodes(AstNodeFTask* nodesp) const {
-        for (AstNodeFTask* nodep = nodesp; nodep; nodep = VN_AS(nodep->nextp(), NodeFTask)) {
+        for (AstNodeFTask* const nodep : VNList<AstNodeFTask>{nodesp}) {
             if (m_local) nodep->isHideLocal(true);
             if (m_protected) nodep->isHideProtected(true);
             if (m_static) nodep->isStatic(true);
@@ -95,7 +95,7 @@ struct VMemberQualifiers final {
         }
     }
     void applyToNodes(AstVar* nodesp) const {
-        for (AstVar* nodep = nodesp; nodep; nodep = VN_AS(nodep->nextp(), Var)) {
+        for (AstVar* const nodep : VNList<AstVar>{nodesp}) {
             if (m_rand) nodep->rand(VRandAttr::RAND);
             if (m_randc) nodep->rand(VRandAttr::RAND_CYCLIC);
             if (m_local) nodep->isHideLocal(true);
@@ -223,7 +223,7 @@ public:
         return false;
     }
     int lexKwdLastState() const { return m_lexKwdLast; }
-    static const char* tokenName(int tok) VL_MT_DISABLED;
+    static const char* tokenName(int token) VL_MT_DISABLED;
     static bool isStrengthToken(int tok) VL_MT_DISABLED;
 
     void ppPushText(const string& text) {
@@ -263,7 +263,7 @@ public:
 
     // For 'unique if' cannot have empty else statements as then assertion
     // would misfire
-    AstNode* newBlock(FileLine* fl, AstNode* nodep) {
+    AstNodeStmt* newBlock(FileLine* fl, AstNodeStmt* nodep) {
         if (nodep) return nodep;
         return new AstBegin{fl, "", nullptr, true};
     }
@@ -315,7 +315,7 @@ public:
     void dumpInputsFile() VL_MT_DISABLED;
     void dumpTokensAhead(int line) VL_MT_DISABLED;
     static void candidatePli(VSpellCheck* spellerp) VL_MT_DISABLED;
-    void importIfInStd(FileLine* fileline, const string& id, bool doImport);
+    void importIfInStd(FileLine* fileline, const string& id);
     AstNodeExpr* makePropertyCase(FileLine* flp, AstNodeExpr* exprp, AstCaseItem* itemsp);
 
 private:

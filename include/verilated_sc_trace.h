@@ -58,8 +58,8 @@ class VerilatedScTraceBase VL_NOT_FINAL : private sc_core::sc_object,
                                           private sc_core::sc_stage_callback_if,
 #endif
                                           private sc_core::sc_trace_file {
-    bool m_enableDeltaCycles = false;
-    bool m_traceFileAdded = false;
+    bool m_enableDeltaCycles = false;  // Trace delta cycles
+    bool m_traceFileAdded = false;  // Trace file has been added to the SystemC context
     static void stubReportHandler(const sc_core::sc_report&, const sc_core::sc_actions&) {};
 
 public:

@@ -57,8 +57,7 @@ public:
     explicit SenTreeFinder(AstNetlist* netlistp)
         : m_topScopep{netlistp->topScopep()} {
         // Gather existing global SenTrees
-        for (AstSenTree* senTreep = m_topScopep->senTreesp(); senTreep;
-             senTreep = VN_AS(senTreep->nextp(), SenTree)) {
+        for (AstSenTree* const senTreep : m_topScopep->senTreespList()) {
             m_trees.emplace(*senTreep);
             if (senTreep->hasCombo()) m_combop = senTreep;
             if (senTreep->hasInitial()) m_initialp = senTreep;

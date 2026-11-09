@@ -9,7 +9,7 @@
 import "DPI-C" context function int mon_check();
 
 module t (  /*AUTOARG*/
-);  /*verilator public_module*/
+);  /*verilator no_inline_module*/
 
   parameter int intParam  /*verilator public_flat_rd*/ = 5;
   parameter real realParam  /*verilator public_flat_rd*/ = 2.3;

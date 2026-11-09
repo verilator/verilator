@@ -50,6 +50,14 @@ module t;
     if (!(get_value(50) inside {[0 : $]})) $stop;
     if (get_value(50) inside {[100 : $]}) $stop;  // Should NOT match
 
+    // Test with side effects, evaluated even if the result is known
+    cnt = 0;
+    if (!(cnt_value(50) inside {[0 : $]})) $stop;
+    if (cnt != 1) $stop;
+    cnt = 0;
+    if (!(cnt_byte() inside {[8'h00 : 8'hff]})) $stop;
+    if (cnt != 1) $stop;
+
     // Test with increment
     value = 49;
     if (!(++value inside {[$ : 100]})) $stop;  // value becomes 50
@@ -65,6 +73,16 @@ module t;
 
   function int get_value(int v);
     return v;
+  endfunction
+
+  int cnt;
+  function int cnt_value(int v);
+    ++cnt;
+    return v;
+  endfunction
+  function logic [7:0] cnt_byte();
+    ++cnt;
+    return 8'd3;
   endfunction
 
   // Use volatile-like behavior to prevent compile-time optimization

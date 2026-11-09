@@ -7,7 +7,73 @@ t.cg.cp_trans2.trans2: 1
 t.cg.cp_trans2.trans3: 1
 t.cg.cp_trans3.seq_a: 1
 t.cg.cp_trans3.seq_b: 1
+t.cg_alt.cp_b.auto_0: 4
+t.cg_alt.cp_b.auto_1: 0
+t.cg_alt.cp_multi.seq: 1
+t.cg_alt.cp_multi.three: 1
+t.cg_alt.cp_two.one: 1
+t.cg_alt.cp_two.seq: 1
+t.cg_alt.cx_multi.<seq,auto_0> [cross]: 1
+t.cg_alt.cx_multi.<seq,auto_1> [cross]: 0
+t.cg_alt.cx_multi.<three,auto_0> [cross]: 1
+t.cg_alt.cx_multi.<three,auto_1> [cross]: 0
+t.cg_alt.cx_two.<one,auto_0> [cross]: 1
+t.cg_alt.cx_two.<one,auto_1> [cross]: 0
+t.cg_alt.cx_two.<seq,auto_0> [cross]: 1
+t.cg_alt.cx_two.<seq,auto_1> [cross]: 0
 t.cg_array.cp_mix.tr: 1
 t.cg_array.cp_mix.vals[0]: 1
 t.cg_array.cp_mix.vals[1]: 0
 t.cg_array.cp_mix.vals[2]: 0
+t.cg_first.cp_first.bad [illegal]: 0
+t.cg_first.cp_first.rise: 1
+t.cg_first.cp_first.stay: 2
+t.cg_first.cp_gated.rise: 1
+t.cg_first.cp_gated.to2: 0
+t.cg_long.cp_ignore.ignore_long [ignore]: 65
+t.cg_long.cp_ignore.one: 128
+t.cg_long.cp_long.alt: 128
+t.cg_long.cp_long.gen64: 97
+t.cg_long.cp_long.overlap: 65
+t.cg_long.cp_long.seq: 1
+t.cg_long_cross.cp_b.auto_0: 130
+t.cg_long_cross.cp_b.auto_1: 2
+t.cg_long_cross.cp_dynamic.five: 1
+t.cg_long_cross.cp_dynamic.ignored [ignore]: 0
+t.cg_long_cross.cp_dynamic.ignored_long [ignore]: 0
+t.cg_long_cross.cp_dynamic.illegal_long [illegal]: 0
+t.cg_long_cross.cp_dynamic.long: 1
+t.cg_long_cross.cp_dynamic.one: 64
+t.cg_long_cross.cp_dynamic.part: 1
+t.cg_long_cross.cp_dynamic.six: 1
+t.cg_long_cross.cp_static.long: 1
+t.cg_long_cross.cp_static.one: 64
+t.cg_long_cross.cp_static.part: 1
+t.cg_long_cross.x_dynamic.<five,auto_0> [cross]: 0
+t.cg_long_cross.x_dynamic.<five,auto_1> [cross]: 1
+t.cg_long_cross.x_dynamic.<part,auto_0> [cross]: 1
+t.cg_long_cross.x_dynamic.<part,auto_1> [cross]: 0
+t.cg_long_cross.x_dynamic.<six,auto_0> [cross]: 0
+t.cg_long_cross.x_dynamic.<six,auto_1> [cross]: 1
+t.cg_long_cross.x_dynamic.ones [cross]: 64
+t.cg_long_cross.x_dynamic.twos [cross]: 1
+t.cg_long_cross.x_static.<part,auto_0> [cross]: 1
+t.cg_long_cross.x_static.<part,auto_1> [cross]: 0
+t.cg_long_cross.x_static.ones [cross]: 64
+t.cg_long_cross.x_static.twos [cross]: 1
+t.cg_multi.cp_multi.multi: 4
+t.cg_overlap.cp_overlap.aab: 1
+t.cg_overlap.cp_overlap.aba: 2
+t.cg_pair.cp_pair.long: 1
+t.cg_signed.cp_longint.neg: 1
+t.cg_signed.cp_signed.neg: 1
+t.cg_signed.cp_signed.neg_long: 1
+t.cg_signed.cp_signed.param: 1
+t.cg_signed.cp_signed.part: 32
+t.cg_types.cp_enum.long: 2
+t.cg_types.cp_signed40.long: 2
+t.cg_types.cp_struct.long: 2
+t.cg_wide.cp_wide.long: 1
+t.cg_wide.cp_wide.long_top: 1
+t.cg_wide.cp_wide.rise: 97
+t.cg_wide.cp_wide.top: 1

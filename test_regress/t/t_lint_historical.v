@@ -28,6 +28,7 @@ module t;
   // verilator lint_off CMPCONST
   // verilator lint_off COLONPLUS
   // verilator lint_off COMBDLY
+  // verilator lint_off COMBDLYCALL
   // verilator lint_off CONSTRAINTIGN
   // verilator lint_off CONTASSREG
   // verilator lint_off COVERIGN

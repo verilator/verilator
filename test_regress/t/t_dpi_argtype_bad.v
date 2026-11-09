@@ -8,9 +8,9 @@
 
 module t;
 
-  typedef struct {
-    string a;
-    string b;
+  typedef union {
+    int a;
+    int b;
   } foo_t;
 
   import "DPI-C" task dpix_twice(foo_t arg);

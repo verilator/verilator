@@ -50,47 +50,47 @@ module t (
   int count_fail23 = 0;
   int count_fail24 = 0;
 
-  // Test 1: a[*3] |-> b
+  // Test: a[*3] |-> b
   assert property (@(posedge clk) a [* 3] |-> b)
   else count_fail1 <= count_fail1 + 1;
 
-  // Test 2: a[*1] |-> c
+  // Test: a[*1] |-> c
   assert property (@(posedge clk) a [* 1] |-> c)
   else count_fail2 <= count_fail2 + 1;
 
-  // Test 3: a[*2] |=> d
+  // Test: a[*2] |=> d
   assert property (@(posedge clk) a [* 2] |=> d)
   else count_fail3 <= count_fail3 + 1;
 
-  // Test 4: b[*2] standalone
+  // Test: b[*2] standalone
   assert property (@(posedge clk) b [* 2])
   else count_fail4 <= count_fail4 + 1;
 
-  // Test 5: a[*10000] large count
+  // Test: a[*10000] large count
   assert property (@(posedge clk) a [* 100] |-> b)
   else count_fail5 <= count_fail5 + 1;
 
-  // Test 6: a[*1:3] ##1 b -- bounded range in SExpr
+  // Test: a[*1:3] ##1 b -- bounded range in SExpr
   assert property (@(posedge clk) a [* 1:3] ##1 b)
   else count_fail6 <= count_fail6 + 1;
 
-  // Test 7: a[+] ##1 b -- one-or-more in SExpr
+  // Test: a[+] ##1 b -- one-or-more in SExpr
   assert property (@(posedge clk) a [+] ##1 b)
   else count_fail7 <= count_fail7 + 1;
 
-  // Test 8: a[+] |-> b -- standalone [+]
+  // Test: a[+] |-> b -- standalone [+]
   assert property (@(posedge clk) a [+] |-> b)
   else count_fail8 <= count_fail8 + 1;
 
-  // Test 9: a[*] |-> b -- standalone [*]
+  // Test: a[*] |-> b -- standalone [*]
   assert property (@(posedge clk) a [*] |-> b)
   else count_fail9 <= count_fail9 + 1;
 
-  // Test 10: a[*1] ##1 b -- trivial [*1] in SExpr (restored to plain SExpr)
+  // Test: a[*1] ##1 b -- trivial [*1] in SExpr (restored to plain SExpr)
   assert property (@(posedge clk) a [* 1] ##1 b)
   else count_fail10 <= count_fail10 + 1;
 
-  // Test 11: a[*] ##1 b -- zero-or-more in SExpr (minN==0 path)
+  // Test: a[*] ##1 b -- zero-or-more in SExpr (minN==0 path)
   assert property (@(posedge clk) a [*] ##1 b)
   else count_fail11 <= count_fail11 + 1;
 
@@ -129,15 +129,15 @@ module t (
   assert property (@(posedge clk) c |-> (a ##1 a [+]))
   else count_fail21 <= count_fail21 + 1;
 
-  // Test 22: Fail the middle required check of an exact repetition.
+  // Test: Fail the middle required check of an exact repetition.
   assert property (@(posedge clk) cyc == 1 |-> ##1 (cyc != 3) [*3])
   else count_fail22 <= count_fail22 + 1;
 
-  // Test 23: A bounded range succeeds at its minimum, later repetitions are optional.
+  // Test: A bounded range succeeds at its minimum, later repetitions are optional.
   assert property (@(posedge clk) cyc == 1 |-> ##1 (cyc != 5) [*3:5])
   else count_fail23 <= count_fail23 + 1;
 
-  // Test 24: The empty endpoint of [*0:1] must not remain live for a later match.
+  // Test: The empty endpoint of [*0:1] must not remain live for a later match.
   assert property (@(posedge clk) cyc == 1 |-> (cyc == 2) [*0:1] ##1 (cyc == 2))
   else count_fail24 <= count_fail24 + 1;
 

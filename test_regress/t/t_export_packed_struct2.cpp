@@ -18,7 +18,7 @@
 #include VM_PREFIX_ROOT_INCLUDE
 
 #include "TestCheck.h"
-#include "Vt_export_packed_struct2___024unit__03a__03acls_in__Vclpkg.h"
+#include "Vt_export_packed_struct2___024unit__03A__03Acls_in__Vclpkg.h"
 
 /*
 // Packed struct in package

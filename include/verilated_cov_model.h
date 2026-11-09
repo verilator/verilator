@@ -54,14 +54,24 @@ enum class VlCovBinKind : uint8_t {
 
 class VlCoverpointIf VL_NOT_FINAL {
     // MEMBERS
-    int32_t m_weight = 1;  // option.weight; never negative
+    const IData* m_weightp = nullptr;  // Borrowed option.weight member
+    mutable IData m_loadedWeight = 1;  // Last option.weight loaded through m_weightp
+    mutable int32_t m_weight = 1;  // option.weight; never negative
     int32_t m_typeWeight = 1;  // type_option.weight; never negative
+    std::string m_hier;  // "covergroup.item"
+    VlFileLineDebug m_fileline;  // Item declaration, where a negative weight is reported
+
+    void loadWeight() const;
 
 public:
     // CONSTRUCTORS
     virtual ~VlCoverpointIf() = default;
 
     // METHODS
+    /// Name of the item, "covergroup.item", which its covergroup's instances share
+    const std::string& hier() const { return m_hier; }
+    /// Set the name of the item, as the implementor's init() does
+    void hier(const char* value) { m_hier = value; }
     // All bins, across every set; index range [0, binCount()).
     virtual uint32_t binCount() const = 0;
     // Bin name in declaration order (e.g. "myBin" or "b[3]"); for an auto
@@ -69,12 +79,30 @@ public:
     virtual std::string binName(uint32_t i) const = 0;
     // Bins covered / effective total (Normal set only) for the coverage calc
     virtual void coverageParts(double& covered, double& total) const = 0;
+    /// Coverage of this item in its covergroup instance, as returned by the item's
+    /// get_inst_coverage(), in 0..100 (IEEE 1800-2023 19.11.1, 19.11.2)
+    double coverage() const;
     /// Weight of this item in its covergroup instance's coverage (option.weight,
     /// IEEE 1800-2023 19.11)
-    int32_t weight() const { return m_weight; }
+    int32_t weight() const {
+        loadWeight();
+        return m_weight;
+    }
+    /// Read the current item weight from a coverage database registration callback.
+    static int32_t databaseItemWeight(const void* objp) {
+        return static_cast<const VlCoverpointIf*>(objp)->weight();
+    }
+    /// Read the current type weight from a coverage database registration callback.
+    static int32_t databaseTypeWeight(const void* objp) {
+        return static_cast<const VlCoverpointIf*>(objp)->m_typeWeight;
+    }
     /// Load option.weight, as evaluated by the covergroup constructor.  A negative
     /// weight is reported as an error, and counts as zero.
     void weight(uint32_t value, VlFileLineDebug fileline);
+    /// Lend the coverpoint or cross option.weight member so procedural writes are observed.
+    void lendWeight(const IData* weightp, VlFileLineDebug fileline);
+    /// Stop reading the option member when its owning covergroup object is destroyed.
+    void unlendWeight();
     /// Weight of this item in its covergroup type's coverage when the instances are merged
     /// (type_option.weight, IEEE 1800-2023 19.11.3)
     int32_t typeWeight() const { return m_typeWeight; }

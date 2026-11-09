@@ -12,12 +12,13 @@
       |                      ^
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Warning-MULTIDRIVEN: t/t_sarif.v:10:18: Signal has multiple driving blocks with different clocking: 'multidriven'
-                      t/t_sarif.v:15:26: ... Location of first driving block
-   15 |   always @(posedge clk1) multidriven <= '1;
-      |                          ^~~~~~~~~~~
-                      t/t_sarif.v:16:26: ... Location of other driving block
-   16 |   always @(posedge clk2) multidriven <= '0;
-      |                          ^~~~~~~~~~~
+%Warning-MULTIDRIVEN: t/t_sarif.v:16:29: Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'multidriven'
+                                       : ... note: In instance 't'
+                      t/t_sarif.v:16:29: 
+   16 |   always_ff @(posedge clk2) multidriven <= '0;
+      |                             ^~~~~~~~~~~
+                      t/t_sarif.v:15:29: ... Location of other write
+   15 |   always_ff @(posedge clk1) multidriven <= '1;
+      |                             ^~~~~~~~~~~
                       ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
                       ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.

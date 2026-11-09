@@ -190,6 +190,11 @@ class SubstValidVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
     }
 
+    void visit(AstNodeConsItem* nodep) override {
+        if (!m_valid) return;
+        iterateChildrenConst(nodep);
+    }
+
     void visit(AstNode* nodep) override { nodep->v3fatalSrc("Non AstNodeExpr under AstNodeExpr"); }
 
     // CONSTRUCTORS

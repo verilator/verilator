@@ -105,7 +105,7 @@ class VIfaceCaptureTag;
 //######################################################################
 
 struct VNTypeInfo final {
-    const char* m_namep;
+    const char* m_namep;  // Name of the node type
     enum OpEn : uint8_t {
         OP_UNUSED,
         OP_USED,
@@ -113,7 +113,7 @@ struct VNTypeInfo final {
         OP_OPTIONAL,
     } m_opType[4];
     const char* m_opNamep[4];
-    size_t m_sizeof;
+    size_t m_sizeof;  // Size of the node type
 };
 
 class VNType final {
@@ -121,7 +121,7 @@ class VNType final {
 
 public:
 #include "V3Ast__gen_type_enum.h"  // From ./astgen
-    const en m_e;
+    const en m_e;  // Enumeration value
     VNType() = delete;
 
     // VNType is interconvetible with VNType::en
@@ -394,8 +394,8 @@ protected:
     };
     AstNode* m_oldp = nullptr;  // The old node that was linked to this point in the tree
     AstNode* m_backp = nullptr;  // Saved AstNode::m_backp of the unlinked node, to relink
-    AstNode** m_iterpp = nullptr;
-    RelinkWhatEn m_chg = RELINK_BAD;
+    AstNode** m_iterpp = nullptr;  // Iterator pointer of the unlinked node, to restore
+    RelinkWhatEn m_chg = RELINK_BAD;  // Kind of link the node previously had, to restore
 
 public:
     VNRelinker() = default;
@@ -634,7 +634,7 @@ public:
 
 #if defined(VL_LEAK_CHECKS) || defined(VL_ALLOC_RANDOM_CHECKS)
     static void* operator new(size_t size);
-    static void operator delete(void* obj, size_t size);
+    static void operator delete(void* objp, size_t size);
 #endif
 
     // CONSTANTS
@@ -785,13 +785,14 @@ public:
 
 #ifdef VL_DEBUG
     uint64_t editCount() const { return m_editCount; }
+#endif
     void editCountInc() {
-        m_editCount = ++s_editCntGbl;  // Preincrement, so can "watch AstNode::s_editCntGbl=##"
+        ++s_editCntGbl;
+#ifdef VL_DEBUG
+        m_editCount = s_editCntGbl;  // Incremented before, so can "watch AstNode::s_editCntGbl=##"
+#endif
         VIsCached::clearCacheTree();  // Any edit clears all caching
     }
-#else
-    void editCountInc() { ++s_editCntGbl; }
-#endif
     static uint64_t editCountLast() VL_MT_SAFE { return s_editCntLast; }
     static uint64_t editCountGbl() VL_MT_SAFE { return s_editCntGbl; }
     static void editCountSetLast() { s_editCntLast = editCountGbl(); }
@@ -803,7 +804,10 @@ public:
     inline bool isNull() const;
     inline bool isZero() const;
     inline bool isOne() const;
+    inline bool isAnyXZ() const;
     inline bool isNeqZero() const;
+    // Whether value is true - same as !$isunknown(x) && x != 0  // x and z are false
+    inline bool isTrue() const;
     inline bool isAllOnes() const;
     inline bool isAllOnesV() const;  // Verilog width rules apply
 
@@ -820,6 +824,7 @@ public:
     void dtypeChgSigned(bool flag = true);
     void dtypeChgWidth(int width, int widthMin);
     void dtypeChgWidthSigned(int width, int widthMin, VSigning numeric);
+    void dtypeChgStates(const bool isFourstate) { dtypep(findStatesCounterpart(isFourstate)); }
     void dtypeSetBitUnsized(int width, int widthMin, VSigning numeric) {
         dtypep(findBitDType(width, widthMin, numeric));
     }
@@ -894,6 +899,8 @@ public:
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogic2StateDType(int width, int widthMin, VSigning numeric) const;
+    AstNodeDType* findLogic2StateRangeDType(const VNumRange& range, int widthMin,
+                                            VSigning numeric) const VL_MT_STABLE;
     AstNodeDType* findBitOrLogicDType(int width, int widthMin, VSigning numeric,
                                       bool isFourstate) const {
         return isFourstate ? findLogicDType(width, widthMin, numeric)
@@ -910,11 +917,12 @@ public:
     AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin,
                                     VSigning numeric) const VL_MT_STABLE;
     AstNodeDType* findBasicDType(VBasicDTypeKwd kwd) const;
+    AstNodeDType* findStatesCounterpart(bool isFourstate) const;
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     static VCastable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
                                      const AstNode* fromConstp, bool checkIfaceArgCompat = false);
-    static AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2);
+    static AstNodeDType* getCommonClassTypep(AstNode* node1p, AstNode* node2p);
 
     // METHODS - dump and error
     void v3errorEnd(const std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
@@ -1026,7 +1034,7 @@ public:
     virtual bool isBrancher() const { return false; }
     // Else a AstTime etc that can't be pushed out
     virtual bool isGateOptimizable() const { return !isTimingControl(); }
-    // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
+    // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstIf)
     virtual bool isGateDedupable() const { return isGateOptimizable(); }
     // Whether the node can be used in expression coverage
     virtual bool isExprCoverageEligible() const { return isGateDedupable(); }
@@ -1611,13 +1619,13 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable&
     return N_Default;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
-    if (!rhs) {  // LCOV_EXCL_LINE
+inline std::ostream& operator<<(std::ostream& os, const AstNode* rhsp) {
+    if (!rhsp) {  // LCOV_EXCL_LINE
         os << "nullptr";  // LCOV_EXCL_LINE
-    } else if (VN_DELETED(rhs)) {  // LCOV_EXCL_LINE
+    } else if (VN_DELETED(rhsp)) {  // LCOV_EXCL_LINE
         os << "%E-0x1/deleted!";  // LCOV_EXCL_LINE
     } else {
-        rhs->dump(os);
+        rhsp->dump(os);
     }
     return os;
 }
@@ -1667,6 +1675,45 @@ struct std::equal_to<VNRef<T_Node>> final {
 };
 
 //######################################################################
+// VNList - Proxy for a list of nodes chained via 'nextp()'
+
+template <typename T_Node>
+class VNList final {
+    T_Node* const m_headp;  // First node in the list, or nullptr if empty
+
+public:
+    class Iterator final {
+        AstNode* m_currp;  // Current node, or nullptr at end
+        AstNode* m_nextp;  // Successor of current node
+
+    public:
+        explicit Iterator(AstNode* nodep)
+            : m_currp{nodep}
+            , m_nextp{nodep ? nodep->nextp() : nullptr} {}
+        T_Node* operator*() const { return static_cast<T_Node*>(m_currp); }
+        Iterator& operator++() {
+            m_currp = m_nextp;
+            m_nextp = m_currp ? m_currp->nextp() : nullptr;
+            return *this;
+        }
+        bool operator!=(const Iterator& other) const { return m_currp != other.m_currp; }
+    };
+
+    explicit VNList(T_Node* headp)
+        : m_headp{headp} {}
+
+    // Iterates node list via nextp() in a ranged 'for' loop. Current node is editable
+    Iterator begin() const { return Iterator{m_headp}; }
+    Iterator end() const { return Iterator{nullptr}; }
+    // Number of nodes in the list - O(n)
+    size_t size() const {
+        size_t count = 0;
+        for (const AstNode* nodep = m_headp; nodep; nodep = nodep->nextp()) ++count;
+        return count;
+    }
+};
+
+//######################################################################
 // VDTypeNameScopes -- Index of the scopes declaring types, for naming them
 
 // While alive, indexes the scopes declaring the types that dtypeName() names, as $typename names
@@ -1689,7 +1736,7 @@ class VDTypeNameScopes final {
     static const VDTypeNameScopes* s_currentp;  // Index in use, or nullptr if none
 
     // METHODS
-    void index(AstNode* nodep, AstNode* scopep);
+    void index(AstNode* nodesp, AstNode* scopep);
     VL_UNCOPYABLE(VDTypeNameScopes);
     VL_UNMOVABLE(VDTypeNameScopes);
 
