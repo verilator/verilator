@@ -4754,10 +4754,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VSymEnt* foundp;
             string baddot;
             VSymEnt* okSymp = nullptr;
+            VSymEnt* lookupSymp = m_ds.m_dotSymp;
             // Restricted 'with (id_list)': only id_list names bind into target class.
             if (m_randSymp
                 && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 foundp = m_randSymp->findIdFlat(nodep->name());
+                const AstVar* const paramp = foundp ? VN_CAST(foundp->nodep(), Var) : nullptr;
+                if (paramp && paramp->isParam() && m_currentWithp && first) {
+                    // Class parameter: not read through the object, so look it up from the class
+                    lookupSymp = m_randSymp;
+                    foundp = nullptr;
+                }
                 if (foundp) {
                     if (m_currentWithp && m_currentWithp->restricted()) {
                         m_restrictedNamesUsed.insert(nodep->name());
@@ -4788,12 +4795,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             }
             if (allowScope) {
-                foundp = m_statep->findDotted(nodep->fileline(), m_ds.m_dotSymp, nodep->name(),
-                                              baddot, okSymp, first);  // Maybe nullptr
+                foundp = m_statep->findDotted(nodep->fileline(), lookupSymp, nodep->name(), baddot,
+                                              okSymp, first);  // Maybe nullptr
             } else if (first) {
-                foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
+                foundp = lookupSymp->findIdFallback(nodep->name());
             } else {
-                foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
+                foundp = lookupSymp->findIdFlat(nodep->name());
             }
             // In a generate block, an implicit net is local to the block, even if an enclosing
             // scope declares the name later (IEEE 1800-2023 6.10)
@@ -5711,7 +5718,24 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (m_ds.m_dotPos != DP_MEMBER || nodep->name() != "randomize") {
             // Visit arguments at the beginning.
             // They may be visitted even if the current node can't be linked now.
-            symIterateChildren(nodep, m_curSymp);
+            const bool thisRandWith = nodep->name() == "randomize" && nodep->withp()
+                                      && VN_IS(m_modp, Class)
+                                      && (!m_ds.m_dotp || isDotThisReference(m_ds.m_dotp));
+            VL_RESTORER_COPY(m_ds);
+            VL_RESTORER(m_randSymp);
+            m_ds.init(m_curSymp);
+            // Only the with section should be visited with m_randSymp set
+            iterateAndNextNull(nodep->argsp());
+            iterateNull(nodep->scopeNamep());
+            if (thisRandWith) {
+                // Inherited members of a parameterized base are only visible post-V3Param
+                if (m_statep->forPrimary() && m_insideClassExtParam) {
+                    m_ds.m_unresolvedClass = true;
+                } else {
+                    m_randSymp = m_statep->getNodeSym(m_modp);
+                }
+            }
+            iterateNull(nodep->withp());
         }
 
         if (m_ds.m_super) {
