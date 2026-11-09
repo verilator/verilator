@@ -223,10 +223,12 @@ LiveNodes collectLiveNodes() {
     return liveNodes;
 }
 
-// Find the module that owns this node; a snapshot, if given, stops the walk at a stale link.
+// Walk links directly to check liveness before each dereference.
 AstNodeModule* findOwnerModuleImpl(AstNode* nodep, const LiveNodes* liveNodesp) {
-    for (AstNode* curp = nodep; curp; curp = curp->backp()) {
+    AstNode* prevp = nullptr;
+    for (AstNode* curp = nodep; curp; prevp = curp, curp = curp->backp()) {
         if (liveNodesp && !liveNodesp->count(curp)) return nullptr;
+        if (prevp && curp->nextp() == prevp) continue;
         if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
     }
     return nullptr;
