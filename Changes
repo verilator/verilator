@@ -49,6 +49,7 @@ Verilator 5.055 devel
 * Fix `std::randomize` changing variables when constraints fail (#8686) (#8880). [Steven Bellock]
 * Fix $fscanf/$sscanf into non-addressable destinations (#8860) (#8912). [Adrien Le Masle]
 * Fix class size constraints in randomize..with (#8861). [Ryszard Rozak, Antmicro Ltd.]
+* Fix post_randomize() not to be called when randomize() fails (#8881). [Steven Bellock]
 * Fix modport array ref access (#8908). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix change sensitivity on constant nets with --timing (#8911). [Geza Lore, Testorrent USA, Inc.]
 * Fix 'randomize with' on inherited type parameter (#8922). [Mateusz Gancarz, Antmicro Ltd.]
