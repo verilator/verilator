@@ -491,7 +491,7 @@ class DeadVisitor final : public VNVisitor {
         }
         checkAll(nodep);
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         iterateChildren(nodep);
         if (nodep->varp()) nodep->varp()->user1Inc();
         if (nodep->fromp()->dtypep()) nodep->fromp()->dtypep()->user1Inc();  // classref

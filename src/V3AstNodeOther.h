@@ -50,6 +50,15 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };
+class AstNodeConstraintItem VL_NOT_FINAL : public AstNode {
+    // An item of a constraint block
+protected:
+    AstNodeConstraintItem(VNType t, FileLine* fl)
+        : AstNode{t, fl} {}
+
+public:
+    ASTGEN_MEMBERS_AstNodeConstraintItem;
+};
 class AstNodeCoverDecl VL_NOT_FINAL : public AstNode {
     // Coverage analysis point declaration
     //
@@ -548,13 +557,14 @@ public:
 class AstBind final : public AstNode {
     // Parents: MODULE
     // Children: CELL
-    // @astgen op1 := cellsp : List[AstNode]
+    // @astgen op1 := targetp : AstNode
+    // @astgen op2 := cellsp : List[AstNode]
     string m_name;  // Binding to name
 public:
-    AstBind(FileLine* fl, const string& name, AstNode* cellsp)
-        : ASTGEN_SUPER_Bind(fl)
-        , m_name{name} {
+    AstBind(FileLine* fl, AstNode* targetp, AstNode* cellsp)
+        : ASTGEN_SUPER_Bind(fl) {
         UASSERT_OBJ(VN_IS(cellsp, Cell), cellsp, "Only instances allowed to be bound");
+        this->targetp(targetp);
         addCellsp(cellsp);
     }
     ASTGEN_MEMBERS_AstBind;
@@ -1036,8 +1046,8 @@ public:
 };
 class AstConstraint final : public AstNode {
     // Constraint
-    // @astgen op1 := itemsp : List[AstNode]
-    // @astgen op2 := classOrPackagep : Optional[AstNode]
+    // @astgen op1 := itemsp : List[AstNodeConstraintItem]
+    // @astgen op2 := classOrPackagep : Optional[AstNode<AstClassOrPackageRef|AstDot>]
     string m_name;  // Name of constraint
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     bool m_isExternDef = false;  // Extern prototype definition
@@ -1046,11 +1056,9 @@ class AstConstraint final : public AstNode {
     bool m_isKwdPure = false;  // Pure constraint
     bool m_isStatic = false;  // Static constraint
 public:
-    AstConstraint(FileLine* fl, const string& name, AstNode* itemsp)
+    AstConstraint(FileLine* fl, const string& name)
         : ASTGEN_SUPER_Constraint(fl)
-        , m_name{name} {
-        addItemsp(itemsp);
-    }
+        , m_name{name} {}
     ASTGEN_MEMBERS_AstConstraint;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1356,15 +1364,14 @@ class AstDefParam final : public AstNode {
     // Parents: MODULE
     // @astgen op1 := rhsp : AstNodeExpr
     // @astgen op2 := pathp : AstNodeExpr
-    string m_name;  // Name of variable getting set
+    // @astgen op3 := targetp : AstNodeExpr
 public:
-    AstDefParam(FileLine* fl, AstNodeExpr* pathp, const string& name, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_DefParam(fl)
-        , m_name{name} {
+    AstDefParam(FileLine* fl, AstNodeExpr* pathp, AstNodeExpr* targetp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_DefParam(fl) {
         this->rhsp(rhsp);
         this->pathp(pathp);
+        this->targetp(targetp);
     }
-    string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     ASTGEN_MEMBERS_AstDefParam;
     bool sameNode(const AstNode*) const override { return true; }
 };
@@ -2049,6 +2056,25 @@ public:
     bool hasFinal() const;  // Includes a FINAL SenItem
     bool hasCombo() const;  // Includes a COMBO SenItem
     bool hasHybrid() const;  // Includes a HYBRID SenItem
+};
+class AstSetuphold final : public AstNode {
+    // Verilog $setuphold
+    // Parents: MODULE
+    // @astgen op1 := refevp : AstNodeExpr
+    // @astgen op2 := dataevp : AstNodeExpr
+    // @astgen op3 := delrefp : Optional[AstNodeExpr]
+    // @astgen op4 := deldatap : Optional[AstNodeExpr]
+public:
+    AstSetuphold(FileLine* fl, AstNodeExpr* refevp, AstNodeExpr* dataevp,
+                 AstNodeExpr* delrefp = nullptr, AstNodeExpr* deldatap = nullptr)
+        : ASTGEN_SUPER_Setuphold(fl) {
+        this->refevp(refevp);
+        this->dataevp(dataevp);
+        this->delrefp(delrefp);
+        this->deldatap(deldatap);
+    }
+    ASTGEN_MEMBERS_AstSetuphold;
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstStrengthSpec final : public AstNode {
     VStrength m_s0;  // Drive 0 strength
@@ -2986,6 +3012,81 @@ public:
         BROKEN_RTN(!VN_IS(backp(), ConsWildcard) && !VN_IS(backp(), ConsWildcardItem));
         return nullptr;
     }
+};
+
+// === AstNodeConstraintItem ===
+class AstConstraintBefore final : public AstNodeConstraintItem {
+    // Constraint solve before item
+    // @astgen op1 := lhssp : List[AstNodeExpr]
+    // @astgen op2 := rhssp : List[AstNodeExpr]
+public:
+    AstConstraintBefore(FileLine* fl, AstNodeExpr* lhssp, AstNodeExpr* rhssp)
+        : ASTGEN_SUPER_ConstraintBefore(fl) {
+        addLhssp(lhssp);
+        addRhssp(rhssp);
+    }
+    ASTGEN_MEMBERS_AstConstraintBefore;
+};
+class AstConstraintExpr final : public AstNodeConstraintItem {
+    // Constraint expression
+    // @astgen op1 := exprp : AstNodeExpr
+    bool m_isDisableSoft = false;  // Disable soft constraint expression
+    bool m_isSoft = false;  // Soft constraint expression
+public:
+    AstConstraintExpr(FileLine* fl, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_ConstraintExpr(fl) {
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstConstraintExpr;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool isDisableSoft() const { return m_isDisableSoft; }
+    void isDisableSoft(bool flag) { m_isDisableSoft = flag; }
+    bool isSoft() const { return m_isSoft; }
+    void isSoft(bool flag) { m_isSoft = flag; }
+};
+class AstConstraintForeach final : public AstNodeConstraintItem {
+    // Constraint foreach item
+    // @astgen op1 := headerp : AstForeachHeader
+    // @astgen op2 := bodyp : List[AstNodeConstraintItem]
+    bool m_soft;  // is soft foreach, non-standard extension
+public:
+    AstConstraintForeach(FileLine* fl, AstForeachHeader* headerp, AstNodeConstraintItem* bodyp,
+                         bool soft = false)
+        : ASTGEN_SUPER_ConstraintForeach(fl)
+        , m_soft{soft} {
+        this->headerp(headerp);
+        addBodyp(bodyp);
+    }
+    ASTGEN_MEMBERS_AstConstraintForeach;
+    bool isSoft() const { return m_soft; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+};
+class AstConstraintIf final : public AstNodeConstraintItem {
+    // Constraint if-else
+    // @astgen op1 := condp : AstNodeExpr
+    // @astgen op2 := thensp : List[AstNodeConstraintItem]
+    // @astgen op3 := elsesp : List[AstNodeConstraintItem]
+public:
+    AstConstraintIf(FileLine* fl, AstNodeExpr* condp, AstNodeConstraintItem* thensp,
+                    AstNodeConstraintItem* elsesp)
+        : ASTGEN_SUPER_ConstraintIf(fl) {
+        this->condp(condp);
+        addThensp(thensp);
+        addElsesp(elsesp);
+    }
+    ASTGEN_MEMBERS_AstConstraintIf;
+};
+class AstConstraintUnique final : public AstNodeConstraintItem {
+    // Constraint unique item
+    // @astgen op1 := rangesp : List[AstNodeExpr]
+public:
+    AstConstraintUnique(FileLine* fl, AstNodeExpr* rangesp)
+        : ASTGEN_SUPER_ConstraintUnique(fl) {
+        addRangesp(rangesp);
+    }
+    ASTGEN_MEMBERS_AstConstraintUnique;
 };
 
 // === AstNodeCoverDecl ===

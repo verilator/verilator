@@ -2802,8 +2802,9 @@ bind_directive<nodep>:          // ==IEEE: bind_directive + bind_target_scope
         //                      // - it's already in module_instantiation
         //                      // We merged the rules - id may be a bind_target_instance or
         //                      // module_identifier or interface_identifier
-                yBIND bind_target_instance bind_instantiation   { $$ = new AstBind{$<fl>2, *$2, $3}; }
-        |       yBIND bind_target_instance ':' bind_target_instance_list bind_instantiation
+                yBIND bind_target_instance bind_instantiation
+                        { $$ = new AstBind{$<fl>2, $2, $3}; }
+        |       yBIND bind_target_instance/*scope*/ ':' bind_target_instance_list bind_instantiation
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: Bind with instance list"); DEL($5); }
         ;
 
@@ -2812,9 +2813,10 @@ bind_target_instance_list:      // ==IEEE: bind_target_instance_list
         |       bind_target_instance_list ',' bind_target_instance      { }
         ;
 
-bind_target_instance<strp>:     // ==IEEE: bind_target_instance
-        //UNSUP hierarchical_identifierBit              { }
-                idAny                                   { $$ = $1; }
+bind_target_instance<nodep>:    // ==IEEE: bind_target_instance
+        //                      // IEEE: hierarchical_identifier constant_bit_select
+        //                      // Happens to have same syntax as defparam pre-dot
+                defparamIdRangeList                     { $$ = $1; }
         ;
 
 bind_instantiation<nodep>:      // ==IEEE: bind_instantiation
@@ -3247,34 +3249,24 @@ list_of_defparam_assignments<nodep>:    //== IEEE: list_of_defparam_assignments
         ;
 
 defparam_assignment<nodep>:     // ==IEEE: defparam_assignment
-                defparamIdRangeList '.' defparamIdRange '=' expr
-                        { $$ = new AstDefParam{$4, $1, *$3, $5}; }
-        |       defparamIdRange '=' expr
+                defparamIdRangeList '.' idAnyAsParseRef '=' expr
+                        { $$ = new AstDefParam{$4, $1, $3, $5}; }
+        |       idAnyAsParseRef '=' expr
                         { $$ = nullptr; BBUNSUP($2, "Unsupported: defparam with no dot");
                           DEL($3); }
         ;
 
 defparamIdRangeList<nodeExprp>:  // IEEE: part of defparam_assignment
-                defparamIdRangeExpr                     { $$ = $1; }
-        |       defparamIdRangeList '.' defparamIdRangeExpr
+                defparamIdRange                     { $$ = $1; }
+        |       defparamIdRangeList '.' defparamIdRange
                         { $$ = new AstDot{$2, false, $1, $3}; }
         ;
 
-defparamIdRangeExpr<nodeExprp>:  // IEEE: part of defparam_assignment
-                idAny
-                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
-        |       idAny part_select_rangeList
-                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr};
-                          BBUNSUP($2, "Unsupported: defparam with arrayed instance");
-                          DEL($2); }
-        ;
-
-defparamIdRange<strp>:  // IEEE: part of defparam_assignment
-                idAny
+defparamIdRange<nodeExprp>:  // IEEE: part of defparam_assignment
+                idAnyAsParseRef
                         { $$ = $1; }
-        |       idAny part_select_rangeList
-                        { $$ = $1; BBUNSUP($2, "Unsupported: defparam with arrayed instance");
-                          DEL($2); }
+        |       idAnyAsParseRef part_select_rangeList
+                        { $$ = GRAMMARP->scrubSel($1, $2); }
         ;
 
 //************************************************
@@ -4025,29 +4017,29 @@ patternNoExpr<nodeExprp>:       // IEEE: pattern **Excluding Expr*
         //                      // "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
         ;
 
-patternList<nodep>:             // IEEE: part of pattern
+patternList<patternItemp>:      // IEEE: part of pattern
                 patternOne                              { $$ = $1; }
         |       patternList ',' patternOne              { $$ = addNextNull($1, $3); }
         ;
 
-patternOne<nodep>:              // IEEE: part of pattern
+patternOne<patternItemp>:       // IEEE: part of pattern
                 expr
-                        { if ($1) $$ = new AstPatMember{$1->fileline(), $1, nullptr, nullptr}; else $$ = nullptr; }
-        |       expr '{' argsExprList '}'               { $$ = new AstPatMember{$2, $3, nullptr, $1}; }
-        |       patternNoExpr                           { $$ = $1; }
+                        { if ($1) $$ = new AstPatternItem{$1->fileline(), $1, nullptr, nullptr}; else $$ = nullptr; }
+        |       expr '{' argsExprList '}'               { $$ = new AstPatternItem{$2, $3, nullptr, $1}; }
+        |       patternNoExpr                           { $$ = new AstPatternItem{$1->fileline(), $1, nullptr, nullptr}; }
         ;
 
-patternMemberList<nodep>:       // IEEE: part of pattern and assignment_pattern
+patternMemberList<patternItemp>: // IEEE: part of pattern and assignment_pattern
                 patternMemberOne                        { $$ = $1; }
         |       patternMemberList ',' patternMemberOne  { $$ = addNextNull($1, $3); }
         ;
 
-patternMemberOne<patMemberp>:   // IEEE: part of pattern and assignment_pattern
-                patternKey ':' expr                     { $$ = new AstPatMember{$1->fileline(), $3, $1, nullptr}; }
-        |       patternKey ':' patternNoExpr            { $$ = new AstPatMember{$1->fileline(), $3, $1, nullptr}; }
+patternMemberOne<patternItemp>: // IEEE: part of pattern and assignment_pattern
+                patternKey ':' expr                     { $$ = new AstPatternItem{$1->fileline(), $3, $1, nullptr}; }
+        |       patternKey ':' patternNoExpr            { $$ = new AstPatternItem{$1->fileline(), $3, $1, nullptr}; }
         //                      // From assignment_pattern_key
-        |       yDEFAULT ':' expr                       { $$ = new AstPatMember{$1, $3, nullptr, nullptr}; $$->isDefault(true); }
-        |       yDEFAULT ':' patternNoExpr              { AstPatMember* const patp = new AstPatMember{$1, $3, nullptr, nullptr}; patp->isDefault(true); $$ = patp; }
+        |       yDEFAULT ':' expr                       { $$ = new AstPatternItem{$1, $3, nullptr, nullptr}; $$->isDefault(true); }
+        |       yDEFAULT ':' patternNoExpr              { AstPatternItem* const patp = new AstPatternItem{$1, $3, nullptr, nullptr}; patp->isDefault(true); $$ = patp; }
         ;
 
 patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key
@@ -8252,10 +8244,10 @@ class_constraint<constraintp>:  // ==IEEE: class_constraint
 
 constraintIdNew<constraintp>:  // IEEE: id part of class_constraint
                 idAny/*constraint_identifier*/
-                        { $$ = new AstConstraint{$<fl>1, *$1, nullptr}; }
+                        { $$ = new AstConstraint{$<fl>1, *$1}; }
         ;
 
-constraint_block<nodep>:  // ==IEEE: constraint_block
+constraint_block<nodeConstraintItemp>:  // ==IEEE: constraint_block
                 '{' '}'                                         { $$ = nullptr; }
         |       '{' constraint_block_itemList '}'               { $$ = $2; }
         //
@@ -8263,12 +8255,12 @@ constraint_block<nodep>:  // ==IEEE: constraint_block
         |       '{' constraint_block_itemList error '}'         { $$ = $2; }  // LCOV_EXCL_LINE
         ;
 
-constraint_block_itemList<nodep>:  // IEEE: { constraint_block_item }
+constraint_block_itemList<nodeConstraintItemp>:  // IEEE: { constraint_block_item }
                 constraint_block_item                           { $$ = $1; }
         |       constraint_block_itemList constraint_block_item { $$ = addNextNull($1, $2); }
         ;
 
-constraint_block_item<nodep>:  // ==IEEE: constraint_block_item
+constraint_block_item<nodeConstraintItemp>:  // ==IEEE: constraint_block_item
                 constraint_expression                           { $$ = $1; }
         |       ySOLVE solve_before_list yBEFORE solve_before_list ';'
                         { $$ = new AstConstraintBefore{$1, $2, $4}; }
@@ -8285,7 +8277,7 @@ constraint_primary<nodeExprp>:  // ==IEEE: constraint_primary
                 exprScope                                       { $$ = $1; }
         ;
 
-constraint_expressionList<nodeStmtp>:  // ==IEEE: { constraint_expression }
+constraint_expressionList<nodeConstraintItemp>:  // ==IEEE: { constraint_expression }
                 constraint_expression                           { $$ = $1; }
         |       ySOLVE solve_before_list yBEFORE solve_before_list ';'
                         { $$ = new AstConstraintBefore{$1, $2, $4}; }
@@ -8294,7 +8286,7 @@ constraint_expressionList<nodeStmtp>:  // ==IEEE: { constraint_expression }
                         { $$ = addNextNull($1, new AstConstraintBefore{$<fl>2, $3, $5}); }
         ;
 
-constraint_expression<nodeStmtp>:  // ==IEEE: constraint_expression
+constraint_expression<nodeConstraintItemp>:  // ==IEEE: constraint_expression
                 expr/*expression_or_dist*/ ';'
                         { $$ = new AstConstraintExpr{$1->fileline(), $1}; }
         //                      // 1800-2012:
@@ -8313,7 +8305,7 @@ constraint_expression<nodeStmtp>:  // ==IEEE: constraint_expression
         //                      // production below covers one constraint_set
         //                      // shape that is not a plain expression and
         //                      // builds an outer AstConstraintIf wrapping the
-        //                      // statement V3Randomize already knows how to
+        //                      // item V3Randomize already knows how to
         //                      // lower (with disable-soft hoisted by the
         //                      // ConstraintExprVisitor pre-pass).
         |       expr yP_MINUSGT '{' constraint_expressionList '}'
@@ -8358,7 +8350,7 @@ constraint_expression<nodeStmtp>:  // ==IEEE: constraint_expression
                         { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
-constraint_set<nodeStmtp>:  // ==IEEE: constraint_set
+constraint_set<nodeConstraintItemp>:  // ==IEEE: constraint_set
                 constraint_expression                   { $$ = $1; }
         |       '{' constraint_expressionList '}'       { $$ = $2; }
         //

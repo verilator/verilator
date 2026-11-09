@@ -124,7 +124,46 @@ module t;
       `checkh(ri.size, 3);
       ri = qi[2 : 10];  // 5 - 2 + 1 = 4
       `checkh(ri.size, 4);
+    end
 
+    // Slices lying outside the queue are empty (#7355)
+    begin
+      automatic int one[$] = '{1};
+      int none[$];
+      int res[$];
+      res = one[1 : $];
+      `checkh(res.size, 0);
+      res = one[2 : 3];
+      `checkh(res.size, 0);
+      res = one[0 : 0];
+      `checkh(res.size, 1);
+      res = none[0 : 0];
+      `checkh(res.size, 0);
+      res = none[0 : $];
+      `checkh(res.size, 0);
+      one = one[1 : $];
+      `checkh(one.size, 0);
+    end
+
+    begin
+      automatic int q3[$] = '{1, 2, 3};
+      automatic int res[$];
+      res = q3[0 : $ - 5];
+      `checkh(res.size, 0);
+      res = q3[$ - 5 : 1];
+      `checkh(res.size, 2);
+      res = q3[$ - 1 : $];
+      `checkh(res.size, 2);
+      res = q3[-3 : -1];
+      `checkh(res.size, 0);
+      q3[5 : 6] = '{9, 9};
+      `checkh(q3[2], 3);
+      q3[1 : 5] = '{7, 8};
+      `checkh(q3[1], 7);
+      `checkh(q3[2], 8);
+    end
+
+    begin
       // Assignment from unsized to sized
       ri = '{1, 2, 3, 4, 5, 6, 7, 8, 9};
       qi = ri;

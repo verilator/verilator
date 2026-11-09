@@ -665,7 +665,7 @@ class UndrivenVisitor final : public VNVisitorConst {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
         iterateChildrenConst(nodep);
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         // The selected field is not a VarRef child; track it separately from the object handle.
         // Only user1: user2 tracks per-always_comb order, but this field declaration
         // is shared across class instances, so field-only tracking lacks object identity.
@@ -722,7 +722,7 @@ class UndrivenVisitor final : public VNVisitorConst {
             // The width is known, but an X/Z LSB has no definite offset for toUInt().
             // Track it like a dynamic index rather than claiming a specific bit range.
             if (constp && !constp->num().isFourState()
-                && (VN_IS(nodep->fromp(), Sel) || VN_IS(nodep->fromp(), MemberSel))) {
+                && (VN_IS(nodep->fromp(), Sel) || VN_IS(nodep->fromp(), MemberRef))) {
                 m_memberSelLsb = constp->toUInt() + (m_memberSelWidth ? m_memberSelLsb : 0);
                 if (!m_memberSelWidth) m_memberSelWidth = nodep->width();
             } else {

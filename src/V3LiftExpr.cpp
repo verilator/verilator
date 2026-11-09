@@ -58,7 +58,7 @@
 // non-standard but common extension where a function call returning a class
 // handle, under a member select can be an LValue, e.g.:
 //    'getInstance().member = foo;'
-// Fortunately we can discover these via MemberSel, and we can transform them
+// Fortunately we can discover these via MemberRef, and we can transform them
 // to the IEEE-1800 compliant form:
 //    __VleLvalCall_0 = getInstance();
 //    __VleLvalCall_0.member = foo;
@@ -365,9 +365,9 @@ class LiftExprVisitor final : public VNVisitor {
         nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
         addStmtps(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep});
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         if (!m_lift) return;
-        // MemberSel is special as it can appear as an LValue selecting from a call
+        // MemberRef is special as it can appear as an LValue selecting from a call
         // that returns a class handle. Note this is not in IEEE-1800, but is supported
         // for compatibility. Here we turn it into an IEEE-1800 compliant LValue by
         // lifting the call and use the return value via a temporary variable.
@@ -387,7 +387,7 @@ class LiftExprVisitor final : public VNVisitor {
         AstVar* const varp = newVar("LvalCall", nodep->fromp());
         addStmtps(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE},
                                 nodep->fromp()->unlinkFrBack()});
-        // This one is a WRITE or READWRITE, same as the MemberSel
+        // This one is a WRITE or READWRITE, same as the MemberRef
         nodep->fromp(new AstVarRef{flp, varp, nodep->access()});
     }
 

@@ -197,6 +197,43 @@ class CycDerivedA;
   rand CycDerived b;
 endclass
 
+// --- No post_randomize when randomize() fails (#8881) ---
+
+class FailInner;
+  rand bit [14:0] p;
+  int post_count;
+  function void post_randomize;
+    post_count++;
+  endfunction
+endclass
+
+class FailOuter;
+  rand bit [6:0] c;
+  rand FailInner inner;
+  int post_count;
+  constraint bad {
+    c > 100;
+    c < 50;
+  }
+  function new();
+    inner = new;
+  endfunction
+  function void post_randomize;
+    post_count++;
+  endfunction
+endclass
+
+class FailBase;
+  rand bit [6:0] c;
+endclass
+
+class FailDerived extends FailBase;
+  int post_count;
+  function void post_randomize;
+    post_count++;
+  endfunction
+endclass
+
 module t;
 
   initial begin
@@ -283,6 +320,29 @@ module t;
       automatic CycDerivedA a = new;
       r = a.randomize();
       `checkd(r, 1);
+    end
+
+    // Test: post_randomize is not called when randomize() fails (IEEE 18.6.3)
+    begin
+      automatic FailOuter obj = new;
+      r = obj.randomize();
+      `checkd(r, 0);
+      r = obj.randomize() with {c == 1;};
+      `checkd(r, 0);
+      `checkd(obj.post_count, 0);
+      `checkd(obj.inner.post_count, 0);
+    end
+
+    // Test: virtual post_randomize through base handle only on success
+    begin
+      automatic FailDerived d = new;
+      automatic FailBase b = d;
+      r = b.randomize() with {c > 100; c < 50;};
+      `checkd(r, 0);
+      `checkd(d.post_count, 0);
+      r = b.randomize() with {c == 5;};
+      `checkd(r, 1);
+      `checkd(d.post_count, 1);
     end
 
     $write("*-* All Finished *-*\n");

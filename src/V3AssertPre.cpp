@@ -140,13 +140,13 @@ private:
                                      const VAccess& access) {
         if (const AstVarXRef* const xrefp = VN_CAST(drive.refp, VarXRef)) {
             return new AstVarXRef{flp, varp, xrefp->dotted(), access};
-        } else if (const AstMemberSel* const selp = VN_CAST(drive.refp, MemberSel)) {
+        } else if (const AstMemberRef* const memberRefp = VN_CAST(drive.refp, MemberRef)) {
             // The interface expression is evaluated again, so it must not have side effects;
             // cloneTreePure warns if it has any
-            AstMemberSel* const newSelp
-                = new AstMemberSel{flp, selp->fromp()->cloneTreePure(false), varp};
-            newSelp->access(access);
-            return newSelp;
+            AstMemberRef* const newRefp
+                = new AstMemberRef{flp, memberRefp->fromp()->cloneTreePure(false), varp};
+            newRefp->access(access);
+            return newRefp;
         }
         return new AstVarRef{flp, varp, access};
     }
@@ -175,11 +175,11 @@ private:
                                           " has a hierarchical reference");
             return nullptr;
         }
-        const AstMemberSel* const selp = VN_CAST(drive.refp, MemberSel);
+        const AstMemberRef* const memberRefp = VN_CAST(drive.refp, MemberRef);
         // Processes outside classes evaluate their events also when not waiting on them,
         // possibly before the interface reference is set, so the event is guarded against a
         // null reference, which needs an integral value; scheduling does not guard it
-        const bool guardNull = selp && !VN_IS(m_modp, Class);
+        const bool guardNull = memberRefp && !VN_IS(m_modp, Class);
         if (guardNull) {
             for (AstSenItem* const itemp : origp->sensespList()) {
                 if (!itemp->sensp()->dtypep()->skipRefp()->isIntegralOrPacked()) {
@@ -193,8 +193,9 @@ private:
         }
         // Interface declaring the clocking block, if driven through an interface reference
         AstIface* const ifacep
-            = selp ? VN_AS(selp->fromp()->dtypep()->skipRefp(), IfaceRefDType)->ifaceViaCellp()
-                   : nullptr;
+            = memberRefp ? VN_AS(memberRefp->fromp()->dtypep()->skipRefp(), IfaceRefDType)
+                               ->ifaceViaCellp()
+                         : nullptr;
         AstSenTree* const sentreep = origp->cloneTree(false);
         std::vector<AstVarRef*> refps;
         sentreep->foreach([&](AstVarRef* refp) {
@@ -215,7 +216,7 @@ private:
         }
         if (guardNull) {
             for (AstSenItem* const itemp : sentreep->sensespList()) {
-                guardNullIface(itemp, selp->fromp());
+                guardNullIface(itemp, memberRefp->fromp());
             }
         }
         return sentreep;
@@ -836,7 +837,7 @@ private:
             nodep->user1(true);
         }
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         if (AstClockingItem* const itemp = VN_CAST(
                 nodep->varp()->user1p() ? nodep->varp()->user1p() : nodep->varp()->firstAbovep(),
                 ClockingItem)) {

@@ -2221,7 +2221,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         // No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
 
-    void visit(AstNodeForeach* nodep) override {  // FindVisitor::
+    // Scope of a foreach loop or constraint, declaring the loop variables of 'headerp'
+    void visitForeach(AstNode* nodep, AstForeachHeader* headerp) {
         // Symbol table needs nodep->name() as the index variable's name
         VL_RESTORER(m_curSymp);
         {
@@ -2229,8 +2230,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_curSymp = m_statep->insertBlock(m_curSymp, "__Vforeach" + cvtToStr(m_modWithNum),
                                               nodep, m_classOrPackagep);
             m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
-            for (AstNode *nextp, *argp = nodep->headerp()->elementsp(); argp; argp = nextp) {
-                nextp = argp->nextp();
+            for (AstNode* const argp : headerp->elementspList()) {
                 AstVar* argrefp = nullptr;
                 if (AstParseRef* const parserefp = VN_CAST(argp, ParseRef)) {
                     // IEEE 1800-2023 12.7.3: foreach loop variable type shall be int (2-state)
@@ -2240,7 +2240,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                                          parserefp->name(), argp->findIntDType()};
                     argrefp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                     parserefp->replaceWith(argrefp);
-                    VL_DO_DANGLING2(parserefp->deleteTree(), parserefp, argp);
+                    VL_DO_DANGLING(parserefp->deleteTree(), parserefp);
                     // Insert argref's name into symbol table
                     m_statep->insertSym(m_curSymp, argrefp->name(), argrefp, nullptr);
                 } else if (const auto largrefp = VN_CAST(argp, Var)) {
@@ -2254,6 +2254,12 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
             iterateChildren(nodep);
         }
+    }
+    void visit(AstForeach* nodep) override {  // FindVisitor::
+        visitForeach(nodep, nodep->headerp());
+    }
+    void visit(AstConstraintForeach* nodep) override {  // FindVisitor::
+        visitForeach(nodep, nodep->headerp());
     }
 
     void visit(AstRandSequence* nodep) override {
@@ -2574,10 +2580,19 @@ class LinkDotParamVisitor final : public VNVisitor {
     }
     void visit(AstDefParam* nodep) override {  // ParamVisitor::
         iterateChildren(nodep);
+        AstParseRef* const targetp = VN_CAST(nodep->targetp(), ParseRef);
+        UASSERT_OBJ(targetp, nodep, "verilog.y made defparam without parseref");
+        if (nodep->pathp()->exists([](const AstNodePreSel*) { return true; })) {
+            nodep->targetp()->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: defparam path with arrayed instance");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        const std::string name = targetp->name();
         nodep->v3warn(DEFPARAM, "defparam is deprecated (IEEE 1800-2023 C.4.1)\n"
                                     << nodep->warnMore()
-                                    << "... Suggest use instantiation with #(."
-                                    << nodep->prettyName() << "(...etc...))");
+                                    << "... Suggest use instantiation with '#(."
+                                    << AstNode::prettyName(name) << "(...etc...))'");
         bool hasPartSelect = false;
         const string path = extractDottedPath(nodep->pathp(), hasPartSelect);
         UASSERT_OBJ(!hasPartSelect && !path.empty(), nodep, "Unexpected defparam path shape");
@@ -2590,12 +2605,12 @@ class LinkDotParamVisitor final : public VNVisitor {
             nodep->v3error("In defparam, instance " << path << " never declared");
         } else {
             AstNodeExpr* const exprp = nodep->rhsp()->unlinkFrBack();
-            UINFO(9, "Defparam cell " << path << "." << nodep->name() << " attach-to " << cellp
+            UINFO(9, "Defparam cell " << path << "." << name << " attach-to " << cellp
                                       << "  <= " << exprp);
             // Don't need to check the name of the defparam exists.  V3Param does.
             AstPin* const pinp = new AstPin{nodep->fileline(),
                                             -1,  // Pin# not relevant
-                                            nodep->name(), exprp};
+                                            name, exprp};
             pinp->param(true);
             pinp->paramPath(path);
             cellp->addParamsp(pinp);
@@ -2848,13 +2863,10 @@ private:
         symp->fallbackp(m_modSymp);
         iterateChildren(nodep);
     }
-    void visit(AstNodeForeach* nodep) override {  // ScopeVisitor::
+    void visit(AstForeach* nodep) override {  // ScopeVisitor::
         VSymEnt* const symp = m_statep->insertBlock(m_modSymp, nodep->name(), nodep, nullptr);
         symp->fallbackp(m_modSymp);
         // No recursion, we don't want to pick up variables
-    }
-    void visit(AstConstraintForeach* nodep) override {  // ScopeVisitor::
-        iterateChildren(nodep);
     }
     void visit(AstWith* nodep) override {  // ScopeVisitor::
         VSymEnt* const symp = m_statep->insertBlock(m_modSymp, nodep->name(), nodep, nullptr);
@@ -3928,8 +3940,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     static const AstNodeDType* getExprDTypep(const AstNodeExpr* selp) {
         while (const AstNodePreSel* const sp = VN_CAST(selp, NodePreSel)) selp = sp->fromp();
-        if (const AstMemberSel* const sp = VN_CAST(selp, MemberSel)) {
-            if (const AstNodeDType* dtypep = getExprDTypep(sp->fromp())) {
+        if (const AstMemberRef* const memberRefp = VN_CAST(selp, MemberRef)) {
+            if (const AstNodeDType* dtypep = getExprDTypep(memberRefp->fromp())) {
                 if (const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType)) {
                     const AstClass* const classp = classRefp->classp();
                     const bool found = classp->existsMember(
@@ -3964,10 +3976,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     // Introduce implicit parameters for modules with generic interafeces
     void addImplicitParametersOfGenericIface(AstCell* const nodep, const AstModule* const modp) {
         // Get Param number
-        int paramNum = 1;
-        for (AstPin* paramp = nodep->paramsp(); paramp; paramp = VN_CAST(paramp->nextp(), Pin)) {
-            ++paramNum;
-        }
+        int paramNum = 1 + static_cast<int>(nodep->paramspList().size());
 
         // Add each implicit parameter type
         const AstVar* modIfaceVarp = getNextVarp(modp->stmtsp());
@@ -4467,7 +4476,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         m_inSens = true;
         iterateChildren(nodep);
     }
-    void visit(AstPatMember* nodep) override {
+    void visit(AstPatternItem* nodep) override {
         LINKDOT_VISIT_START();
         if (nodep->varrefp()) return;  // only do this mapping once
         // If we have a TEXT token as our key, lookup if it's a LPARAM
@@ -4478,7 +4487,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (VSymEnt* const foundp = m_curSymp->findIdFallback(textp->text())) {
                 if (AstVar* const varp = VN_CAST(foundp->nodep(), Var)) {
                     if (varp->isParam() || varp->isGenVar()) {
-                        // Attach found Text reference to PatMember
+                        // Attach found Text reference to PatternItem
                         nodep->varrefp(
                             new AstVarRef{nodep->fileline(),
                                           foundp->imported() ? foundp->classOrPackagep() : nullptr,
@@ -4487,7 +4496,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                 }
                 if (AstEnumItem* const itemp = VN_CAST(foundp->nodep(), EnumItem)) {
-                    // Attach enum item value to PatMember
+                    // Attach enum item value to PatternItem
                     nodep->varrefp(
                         new AstEnumItemRef{nodep->fileline(), itemp, foundp->classOrPackagep()});
                     UINFO(9, indent() << " new " << itemp);
@@ -4552,7 +4561,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->unlinkFrBack();  // Avoid circular node loop on errors
             } else {
                 AstNodeExpr* const varEtcp = VN_AS(m_ds.m_dotp->lhsp()->unlinkFrBack(), NodeExpr);
-                AstNodeExpr* const newp = new AstMemberSel{nodep->fileline(), varEtcp,  //
+                AstNodeExpr* const newp = new AstMemberRef{nodep->fileline(), varEtcp,  //
                                                            VFlagChildDType{}, nodep->name()};
                 nodep->replaceWith(newp);
             }
@@ -4638,7 +4647,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         UASSERT_OBJ(VN_IS(m_randMethodCallp->fromp(), VarRef), m_randMethodCallp,
                                     "Expected simple randomize target");
                         // A ParseRef is used here so that the dot RHS gets resolved
-                        AstMemberSel* const newp = new AstMemberSel{
+                        AstMemberRef* const newp = new AstMemberRef{
                             nodep->fileline(), m_randMethodCallp->fromp()->cloneTree(false),
                             VFlagChildDType{}, nodep->name()};
                         nodep->replaceWith(newp);
@@ -4648,7 +4657,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     UINFO(9, indent() << "randomize-with fromSym " << foundp->nodep());
                     AstLambdaArgRef* const lambdaRefp
                         = new AstLambdaArgRef{nodep->fileline(), "__Vrandwith_obj", false};
-                    AstMemberSel* newp = new AstMemberSel{nodep->fileline(), lambdaRefp,
+                    AstMemberRef* newp = new AstMemberRef{nodep->fileline(), lambdaRefp,
                                                           VFlagChildDType{}, nodep->name()};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -5928,7 +5937,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
         if (packedArrayDtp) m_packedArrayDtp = packedArrayDtp;
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         // checkNoDot not appropriate, can be under a dot
         LINKDOT_VISIT_START();
         iterateChildren(nodep);
@@ -6052,7 +6061,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         symIterateChildren(nodep, m_curSymp);
     }
-    void visit(AstNodeForeach* nodep) override {
+    void visit(AstForeach* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep);
+        checkNoDot(nodep);
+        symIterateChildren(nodep, m_statep->getNodeSym(nodep));
+    }
+    void visit(AstConstraintForeach* nodep) override {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);

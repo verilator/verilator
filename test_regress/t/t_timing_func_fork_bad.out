@@ -43,4 +43,12 @@
                                        : ... note: In instance 't'
    66 |         o5 = 0;
       |         ^~
+%Error: t/t_timing_func_fork_bad.v:78:13: Writing to an output automatic variable of a task after a timing control is not allowed (IEEE 1800-2023 13.2.2)
+                                        : ... note: In instance 't'
+   78 |             o2 = 0;
+      |             ^~
+%Error: t/t_timing_func_fork_bad.v:93:13: Writing to an output automatic variable of a task after a timing control is not allowed (IEEE 1800-2023 13.2.2)
+                                        : ... note: In instance 't'
+   93 |             o3 = 0;
+      |             ^~
 %Error: Exiting due to

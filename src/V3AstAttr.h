@@ -1201,7 +1201,6 @@ FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
 #define FOR_EACH_CFUNCTION(macro) \
     /*    id,                                 function,                 pure,   args */ \
     macro(_NONE,                              "_none",                  false,  "") \
-    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",          PURE,   "r") \
     macro(STRING_APPEND,                      "VL_APPENDN_NN",          false,  "mr")
 // clang-format on
 
@@ -1901,7 +1900,7 @@ public:
         m_cachedCnt = 0;
         m_state = 0;
     }
-    static void clearCacheTree() {
+    VL_ATTR_ALWINLINE static void clearCacheTree() {
         ++s_cachedCntGbl;
         // 64 bits so won't overflow
         // UASSERT_STATIC(s_cachedCntGbl < MAX_CNT, "Overflow of cache counting");

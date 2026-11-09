@@ -13,7 +13,7 @@ test.scenarios('simulator')
 test.top_filename = 't_event_control_expr.v'
 
 test.compile(
-    # do not test classes for multithreaded, as V3InstrCount doesn't handle MemberSel
+    # do not test classes for multithreaded, as V3InstrCount doesn't handle MemberRef
     verilator_flags2=(['-fno-inline'] + ['-DNO_CLASS'] if test.vltmt else []))
 
 test.execute()
