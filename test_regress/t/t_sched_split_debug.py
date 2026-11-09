@@ -15,8 +15,10 @@ test.compile(verilator_flags2=["--binary", "--output-split-cfuncs", "1"])
 
 test.execute()
 
-files = [filename for filename in test.glob_some(test.obj_dir + "/" + test.vm_prefix + "*")
-         if filename.endswith((".cpp", ".h"))]
+files = [
+    filename for filename in test.glob_some(test.obj_dir + "/" + test.vm_prefix + "*")
+    if filename.endswith((".cpp", ".h"))
+]
 # The dump function was split
 test.file_grep_any(files, r'___dump_triggers__act__0\(')
 # Every declaration and definition of a dump function or piece is under VL_DEBUG
