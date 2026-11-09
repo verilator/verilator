@@ -107,7 +107,7 @@ class LinkWithVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         if (m_inRandomizeWith && nodep->fromp()->sameTree(m_currentRandomizeSelectp)) {
             // Replace member selects to the element
             // on which the randomize() is called with LambdaArgRef

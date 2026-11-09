@@ -1888,7 +1888,7 @@ public:
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
-class AstMemberSel final : public AstNodeExpr {
+class AstMemberRef final : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr
     //
     // @astgen ptr := m_varp : Optional[AstVar]  // Post link, variable in class that is selecting
@@ -1896,14 +1896,14 @@ class AstMemberSel final : public AstNodeExpr {
     string m_name;
     VAccess m_access;  // Read or write, as in AstNodeVarRef
 public:
-    AstMemberSel(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name)
-        : ASTGEN_SUPER_MemberSel(fl)
+    AstMemberRef(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name)
+        : ASTGEN_SUPER_MemberRef(fl)
         , m_name{name} {
         this->fromp(fromp);
         dtypep(nullptr);  // V3Width will resolve
     }
-    AstMemberSel(FileLine* fl, AstNodeExpr* fromp, AstVar* varp);
-    ASTGEN_MEMBERS_AstMemberSel;
+    AstMemberRef(FileLine* fl, AstNodeExpr* fromp, AstVar* varp);
+    ASTGEN_MEMBERS_AstMemberRef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
@@ -3039,14 +3039,14 @@ class AstWithParse final : public AstNodeExpr {
     // Children: funcref, expr
     // @astgen op1 := funcrefp : AstNodeExpr
     // @astgen op3 := exprsp : List[AstNodeExpr]  // With's parenthesis part
-    // @astgen op4 := constraintsp : List[AstNode]  // With's braces part
+    // @astgen op4 := constraintsp : List[AstNodeConstraintItem]  // With's braces part
 private:
     // True for the 'with (identifier_list) {...}' form, including 'with () {...}'.
     bool m_restricted = false;
 
 public:
     AstWithParse(FileLine* fl, AstNodeExpr* funcrefp, AstNodeExpr* exprsp,
-                 AstNode* constraintsp = nullptr)
+                 AstNodeConstraintItem* constraintsp = nullptr)
         : ASTGEN_SUPER_WithParse(fl) {
         this->funcrefp(funcrefp);
         addExprsp(exprsp);

@@ -622,7 +622,6 @@ class CoverageVisitor final : public VNVisitor {
             lineTrack(nodep);
         }
     }
-    // Note not AstNodeIf; other types don't get covered
     void visit(AstIf* nodep) override {
         if (nodep->user2()) return;
 

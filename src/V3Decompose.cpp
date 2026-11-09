@@ -648,7 +648,7 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
         // whole of the Place it references, mark as such.
         if (Place* const placep = placeOf(nodep)) referencedWhole(nodep, placep);
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         iterateChildrenConst(nodep);
         AstVar* const varp = nodep->varp();
         if (!isEligible(varp)) return;

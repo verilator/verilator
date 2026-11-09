@@ -8252,10 +8252,10 @@ class_constraint<constraintp>:  // ==IEEE: class_constraint
 
 constraintIdNew<constraintp>:  // IEEE: id part of class_constraint
                 idAny/*constraint_identifier*/
-                        { $$ = new AstConstraint{$<fl>1, *$1, nullptr}; }
+                        { $$ = new AstConstraint{$<fl>1, *$1}; }
         ;
 
-constraint_block<nodep>:  // ==IEEE: constraint_block
+constraint_block<nodeConstraintItemp>:  // ==IEEE: constraint_block
                 '{' '}'                                         { $$ = nullptr; }
         |       '{' constraint_block_itemList '}'               { $$ = $2; }
         //
@@ -8263,12 +8263,12 @@ constraint_block<nodep>:  // ==IEEE: constraint_block
         |       '{' constraint_block_itemList error '}'         { $$ = $2; }  // LCOV_EXCL_LINE
         ;
 
-constraint_block_itemList<nodep>:  // IEEE: { constraint_block_item }
+constraint_block_itemList<nodeConstraintItemp>:  // IEEE: { constraint_block_item }
                 constraint_block_item                           { $$ = $1; }
         |       constraint_block_itemList constraint_block_item { $$ = addNextNull($1, $2); }
         ;
 
-constraint_block_item<nodep>:  // ==IEEE: constraint_block_item
+constraint_block_item<nodeConstraintItemp>:  // ==IEEE: constraint_block_item
                 constraint_expression                           { $$ = $1; }
         |       ySOLVE solve_before_list yBEFORE solve_before_list ';'
                         { $$ = new AstConstraintBefore{$1, $2, $4}; }
@@ -8285,7 +8285,7 @@ constraint_primary<nodeExprp>:  // ==IEEE: constraint_primary
                 exprScope                                       { $$ = $1; }
         ;
 
-constraint_expressionList<nodeStmtp>:  // ==IEEE: { constraint_expression }
+constraint_expressionList<nodeConstraintItemp>:  // ==IEEE: { constraint_expression }
                 constraint_expression                           { $$ = $1; }
         |       ySOLVE solve_before_list yBEFORE solve_before_list ';'
                         { $$ = new AstConstraintBefore{$1, $2, $4}; }
@@ -8294,7 +8294,7 @@ constraint_expressionList<nodeStmtp>:  // ==IEEE: { constraint_expression }
                         { $$ = addNextNull($1, new AstConstraintBefore{$<fl>2, $3, $5}); }
         ;
 
-constraint_expression<nodeStmtp>:  // ==IEEE: constraint_expression
+constraint_expression<nodeConstraintItemp>:  // ==IEEE: constraint_expression
                 expr/*expression_or_dist*/ ';'
                         { $$ = new AstConstraintExpr{$1->fileline(), $1}; }
         //                      // 1800-2012:
@@ -8313,7 +8313,7 @@ constraint_expression<nodeStmtp>:  // ==IEEE: constraint_expression
         //                      // production below covers one constraint_set
         //                      // shape that is not a plain expression and
         //                      // builds an outer AstConstraintIf wrapping the
-        //                      // statement V3Randomize already knows how to
+        //                      // item V3Randomize already knows how to
         //                      // lower (with disable-soft hoisted by the
         //                      // ConstraintExprVisitor pre-pass).
         |       expr yP_MINUSGT '{' constraint_expressionList '}'
@@ -8358,7 +8358,7 @@ constraint_expression<nodeStmtp>:  // ==IEEE: constraint_expression
                         { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
-constraint_set<nodeStmtp>:  // ==IEEE: constraint_set
+constraint_set<nodeConstraintItemp>:  // ==IEEE: constraint_set
                 constraint_expression                   { $$ = $1; }
         |       '{' constraint_expressionList '}'       { $$ = $2; }
         //

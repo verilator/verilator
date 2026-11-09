@@ -1033,7 +1033,7 @@ public:
     virtual bool isBrancher() const { return false; }
     // Else a AstTime etc that can't be pushed out
     virtual bool isGateOptimizable() const { return !isTimingControl(); }
-    // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
+    // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstIf)
     virtual bool isGateDedupable() const { return isGateOptimizable(); }
     // Whether the node can be used in expression coverage
     virtual bool isExprCoverageEligible() const { return isGateDedupable(); }

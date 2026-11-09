@@ -3,7 +3,7 @@
    27 |       if (i.s[0].arr.size > 0) {
       |              ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Internal Error: t/t_constraint_arr_with_arrsize_unsup.v:27:14: ../V3SolverSmt.cpp:#: Should be MemberSel or VarRef
+%Error: Internal Error: t/t_constraint_arr_with_arrsize_unsup.v:27:14: ../V3SolverSmt.cpp:#: Should be MemberRef or VarRef
                                                                      : ... note: In instance 't'
    27 |       if (i.s[0].arr.size > 0) {
       |              ^

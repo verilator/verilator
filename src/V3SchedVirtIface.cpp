@@ -60,17 +60,17 @@ private:
     // METHODS
     // Returns true if statement writes across a virtual interface boundary
     static bool writesToVirtIface(const AstNode* const nodep) {
-        return nodep->exists([](const AstMemberSel* const memberSelp) {
-            if (!memberSelp->access().isWriteOrRW()) return false;
+        return nodep->exists([](const AstMemberRef* const memberRefp) {
+            if (!memberRefp->access().isWriteOrRW()) return false;
             AstIfaceRefDType* const dtypep
-                = VN_CAST(memberSelp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+                = VN_CAST(memberRefp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
             return dtypep && dtypep->isVirtual();
         });
     }
 
     // VISITORS
-    void visit(AstMemberSel* nodep) override {
-        // Detect writes through VIF: the MemberSel's fromp resolves to a virtual interface type.
+    void visit(AstMemberRef* nodep) override {
+        // Detect writes through VIF: the MemberRef's fromp resolves to a virtual interface type.
         // Handles both direct VIF access (vif.member) and class chain (obj.vif.member).
         if (nodep->access().isWriteOrRW()) {
             AstIfaceRefDType* const dtypep
@@ -84,9 +84,9 @@ private:
     void visit(AstCMethodCall* nodep) override {
         // A method call on a member selected through a virtual interface. This includes the
         // calls through a virtual interface, which call a method of its dispatcher (V3Task)
-        if (const AstMemberSel* const selp = VN_CAST(nodep->fromp(), MemberSel)) {
+        if (const AstMemberRef* const memberRefp = VN_CAST(nodep->fromp(), MemberRef)) {
             const AstIfaceRefDType* const dtypep
-                = VN_CAST(selp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+                = VN_CAST(memberRefp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
             if (dtypep && dtypep->isVirtual()) {
                 for (AstCFunc* const funcp : m_callTargetsp->getTargets(nodep)) {
                     addReachableIfaceCallable(dtypep->ifaceViaCellp(), funcp);
@@ -97,7 +97,7 @@ private:
     }
     void visit(AstVarScope* nodep) override {
         // Collect candidate VarScopes. sensIfacep() is set on interface members
-        // accessed via any MemberSel (virtual or non-virtual).
+        // accessed via any MemberRef (virtual or non-virtual).
         AstVar* const varp = nodep->varp();
         if (varp->isTemp()) return;
         m_vscpsByVar[varp].push_back(nodep);
