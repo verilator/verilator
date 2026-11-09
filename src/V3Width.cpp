@@ -1731,7 +1731,8 @@ class WidthVisitor final : public VNVisitor {
             if (AstCMethodHard* const methodp = VN_CAST(selp, CMethodHard)) {
                 if (methodp != fromp && methodp->method().isDynElementAccess()) {
                     // visit(AstCMethodHard) does not revisit the newly lowered index.
-                    iterateCheckSizedSelf(methodp, "index", methodp->pinsp(), SELF, FINAL);
+                    iterateCheckSizedSelf(methodp, "index", methodp->pinsp(), SELF, FINAL,
+                                          /* deferUntyped */ true);
                 }
             }
             userIterate(selp, m_vup);
