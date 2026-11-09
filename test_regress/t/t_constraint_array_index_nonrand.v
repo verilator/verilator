@@ -209,6 +209,42 @@ class StructArrayConstIndex;
   constraint c_a { arr[2].a == 8'hBB; }
 endclass
 
+// Packed-struct elements are bit vectors like any other.
+typedef struct packed {
+  bit [1:0] x;
+  bit y;
+} packed_elem_t;
+class PackedStructPool;
+  rand int idx;
+  packed_elem_t used[4];
+  constraint c { idx inside {[0:5]}; used[idx] == 3'b101; }
+  function new();
+    used = '{3'b000, 3'b001, 3'b101, 3'b010};
+  endfunction
+endclass
+
+// The pool as an array member of a non-rand struct, in range and out of range.
+typedef struct {
+  bit used[4];
+} pool_s;
+class StructFieldPool;
+  rand int idx;
+  pool_s pool;
+  constraint c { idx inside {[0:5]}; pool.used[idx] == 0; idx != 4; idx != 5; }
+  function new();
+    pool.used = '{1, 1, 0, 1};
+  endfunction
+endclass
+
+class StructFieldPoolOob;
+  rand int idx;
+  pool_s pool;
+  constraint c { idx == 6; pool.used[idx] == 0; }
+  function new();
+    pool.used = '{1, 1, 1, 1};
+  endfunction
+endclass
+
 module t;
   initial begin
     UniqueIdPool obj;
@@ -232,6 +268,9 @@ module t;
     RandQueueOuterRandIndex rq_outer_obj;
     RandAssocOuterRandIndex raa_outer_obj;
     HolderQueueLastIndex hq_last_obj;
+    PackedStructPool ps_obj;
+    StructFieldPool sf_obj;
+    StructFieldPoolOob sf_oob_obj;
     bit [15:0] seen;
     int randomize_result;
 
@@ -390,6 +429,25 @@ module t;
       `checkd(randomize_result, 1);
       `checkd(hq_last_obj.idx, 5);
     end
+
+    ps_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = ps_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(ps_obj.idx, 2);
+    end
+
+    sf_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = sf_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(sf_obj.idx, 2);
+    end
+
+    sf_oob_obj = new;
+    randomize_result = sf_oob_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(sf_oob_obj.idx, 6);
 
     mobj = new;
     for (int i = 0; i < 16; i++) begin

@@ -1839,6 +1839,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 fromp = selp->fromp();
             } else if (const AstCMethodHard* const methodp = VN_CAST(fromp, CMethodHard)) {
                 fromp = methodp->fromp();
+            } else if (const AstStructSel* const sselp = VN_CAST(fromp, StructSel)) {
+                fromp = sselp->fromp();
             } else {
                 break;
             }
@@ -1882,18 +1884,22 @@ class ConstraintExprVisitor final : public VNVisitor {
         muxp->user1(true);
         return muxp;
     }
-    void handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl, const AstVar* arrVarp) {
+    void handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl) {
+        const bool nestedElement
+            = VN_IS(nodep->fromp(), NodeSel) || VN_IS(nodep->fromp(), CMethodHard);
         const AstUnpackArrayDType* const arrDtp
-            = VN_CAST(arrVarp->dtypep()->skipRefp(), UnpackArrayDType);
-        // 1-D only, scalar element -- editSMT()'s hex formatting needs a bit vector.
+            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+        // A 1-D array indexed directly (not an element of an outer array or container),
+        // with bit-vector elements (scalar or packed) -- editSMT()'s hex formatting needs one.
         const AstNodeDType* const subp = arrDtp ? arrDtp->subDTypep()->skipRefp() : nullptr;
         // WildcardArrayDType: untestable, hits an unrelated V3Width error first.
-        const bool arrIsSupported1D = arrDtp && !VN_IS(subp, NodeArrayDType)
+        const AstNodeUOrStructDType* const structDtp = VN_CAST(subp, NodeUOrStructDType);
+        const bool arrIsSupported1D = !nestedElement && arrDtp && !VN_IS(subp, NodeArrayDType)
                                       && !VN_IS(subp, QueueDType) && !VN_IS(subp, DynArrayDType)
                                       && !VN_IS(subp, AssocArrayDType)
                                       && !VN_IS(subp, WildcardArrayDType)  // LCOV_EXCL_BR_LINE
                                       // Tested (C6, C8); gcov misattributes one branch of each.
-                                      && !VN_IS(subp, NodeUOrStructDType)  // LCOV_EXCL_BR_LINE
+                                      && (!structDtp || structDtp->packed())  // LCOV_EXCL_BR_LINE
                                       && !VN_IS(subp, ClassRefDType);  // LCOV_EXCL_BR_LINE
         if (!arrIsSupported1D) {
             nodep->v3warn(E_UNSUPPORTED,
@@ -1969,7 +1975,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstVar* const rootVarp = resolveArraySelRootVarp(nodep, nodep->fromp());
             if (!rootVarp) return;
             if (!rootVarp->rand().isRandomizable() && !rootVarp->isStdRandomizeArg()) {
-                handleRandIndexIntoNonrandArray(nodep, fl, rootVarp);
+                handleRandIndexIntoNonrandArray(nodep, fl);
                 return;
             }
             // Index depends on rand variable -- keep as SMT symbol.
