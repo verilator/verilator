@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 test.compile(
-    # do not test classes for multithreaded, as V3InstrCount doesn't handle MemberSel
+    # do not test classes for multithreaded, as V3InstrCount doesn't handle MemberRef
     verilator_flags2=(['-DNO_CLASS'] if test.vltmt else []))
 
 test.execute()

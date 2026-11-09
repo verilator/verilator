@@ -50,6 +50,15 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };
+class AstNodeConstraintItem VL_NOT_FINAL : public AstNode {
+    // An item of a constraint block
+protected:
+    AstNodeConstraintItem(VNType t, FileLine* fl)
+        : AstNode{t, fl} {}
+
+public:
+    ASTGEN_MEMBERS_AstNodeConstraintItem;
+};
 class AstNodeCoverDecl VL_NOT_FINAL : public AstNode {
     // Coverage analysis point declaration
     //
@@ -107,13 +116,10 @@ public:
 };
 class AstNodeFTask VL_NOT_FINAL : public AstNode {
     // Class/package scope
-    // @astgen op1 := classOrPackagep : Optional[AstNode]
-    // Ports/Vars/other declarations
-    // @astgen op2 := declsp : List[AstNode]
-    // Statements, or body of a property/sequence
-    // @astgen op3 := stmtsp : List[AstNode]
-    // Scope name
-    // @astgen op4 := scopeNamep : Optional[AstScopeName]
+    // @astgen op1 := classOrPackagep : Optional[AstNode<AstClassOrPackageRef|AstDot>]
+    // @astgen op2 := declsp : List[AstNode]  // Ports/Vars/other declarations
+    // @astgen op3 := stmtsp : List[AstNodeStmt]  // Statements
+    // @astgen op4 := scopeNamep : Optional[AstScopeName]  // DPI export scope
     // @astgen ptr := m_fvarp : Optional[AstVar]  // Output variable in functions, under declsp
     string m_name;  // Name of task
     string m_cname;  // Name of task if DPI import
@@ -152,7 +158,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     VIsCached m_purity;  // Pure state
 
 protected:
-    AstNodeFTask(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
+    AstNodeFTask(VNType t, FileLine* fl, const string& name)
         : AstNode{t, fl}
         , m_name{name}
         , m_taskPublic{false}
@@ -181,7 +187,6 @@ protected:
         , m_virtual{false}
         , m_needsVlProcess{false}
         , m_isCovergroupSample{false} {
-        addStmtsp(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
     void fvarp(AstVar* varp) { m_fvarp = varp; }
@@ -476,6 +481,22 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };
+class AstNodeSchema VL_NOT_FINAL : public AstNode {
+    // A definition whose body is substituted at each reference (AstSchemaRef),
+    // with the actual arguments replacing the formal ports
+    // @astgen op1 := declsp : List[AstNode]  // Ports and local declarations
+    std::string m_name;  // Name of definition
+
+protected:
+    AstNodeSchema(VNType t, FileLine* fl, const std::string& name)
+        : AstNode{t, fl}
+        , m_name{name} {}
+
+public:
+    ASTGEN_MEMBERS_AstNodeSchema;
+    std::string name() const override VL_MT_STABLE { return m_name; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
+};
 
 // === Concrete node types =====================================================
 
@@ -536,13 +557,14 @@ public:
 class AstBind final : public AstNode {
     // Parents: MODULE
     // Children: CELL
-    // @astgen op1 := cellsp : List[AstNode]
+    // @astgen op1 := targetp : AstNode
+    // @astgen op2 := cellsp : List[AstNode]
     string m_name;  // Binding to name
 public:
-    AstBind(FileLine* fl, const string& name, AstNode* cellsp)
-        : ASTGEN_SUPER_Bind(fl)
-        , m_name{name} {
+    AstBind(FileLine* fl, AstNode* targetp, AstNode* cellsp)
+        : ASTGEN_SUPER_Bind(fl) {
         UASSERT_OBJ(VN_IS(cellsp, Cell), cellsp, "Only instances allowed to be bound");
+        this->targetp(targetp);
         addCellsp(cellsp);
     }
     ASTGEN_MEMBERS_AstBind;
@@ -1024,8 +1046,8 @@ public:
 };
 class AstConstraint final : public AstNode {
     // Constraint
-    // @astgen op1 := itemsp : List[AstNode]
-    // @astgen op2 := classOrPackagep : Optional[AstNode]
+    // @astgen op1 := itemsp : List[AstNodeConstraintItem]
+    // @astgen op2 := classOrPackagep : Optional[AstNode<AstClassOrPackageRef|AstDot>]
     string m_name;  // Name of constraint
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     bool m_isExternDef = false;  // Extern prototype definition
@@ -1034,11 +1056,9 @@ class AstConstraint final : public AstNode {
     bool m_isKwdPure = false;  // Pure constraint
     bool m_isStatic = false;  // Static constraint
 public:
-    AstConstraint(FileLine* fl, const string& name, AstNode* itemsp)
+    AstConstraint(FileLine* fl, const string& name)
         : ASTGEN_SUPER_Constraint(fl)
-        , m_name{name} {
-        addItemsp(itemsp);
-    }
+        , m_name{name} {}
     ASTGEN_MEMBERS_AstConstraint;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1344,15 +1364,14 @@ class AstDefParam final : public AstNode {
     // Parents: MODULE
     // @astgen op1 := rhsp : AstNodeExpr
     // @astgen op2 := pathp : AstNodeExpr
-    string m_name;  // Name of variable getting set
+    // @astgen op3 := targetp : AstNodeExpr
 public:
-    AstDefParam(FileLine* fl, AstNodeExpr* pathp, const string& name, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_DefParam(fl)
-        , m_name{name} {
+    AstDefParam(FileLine* fl, AstNodeExpr* pathp, AstNodeExpr* targetp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_DefParam(fl) {
         this->rhsp(rhsp);
         this->pathp(pathp);
+        this->targetp(targetp);
     }
-    string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     ASTGEN_MEMBERS_AstDefParam;
     bool sameNode(const AstNode*) const override { return true; }
 };
@@ -1830,12 +1849,12 @@ class AstPropSpec final : public AstNode {
     // Children: SENITEM, Properties
     // @astgen op1 := sensesp : Optional[AstSenItem]
     // @astgen op2 := disablep : Optional[AstNodeExpr]
-    // @astgen op3 := propp : AstNode
+    // @astgen op3 := propp : AstNodeExpr
     // @astgen op4 := matchCountp : Optional[AstNodeExpr] // Cover sequence matches this tick
     VPropStrength m_propStrength = VPropStrength::DEFAULT;
 
 public:
-    AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNodeExpr* disablep, AstNode* propp,
+    AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNodeExpr* disablep, AstNodeExpr* propp,
                 VPropStrength propStrength = VPropStrength::DEFAULT)
         : ASTGEN_SUPER_PropSpec(fl)
         , m_propStrength{propStrength} {
@@ -1873,11 +1892,11 @@ public:
 class AstRSProd final : public AstNode {
     // randomsequence production, under a AstRandSequence
     // @astgen op1 := fvarp : Optional[AstVar]
-    // @astgen op2 := portsp : List[AstNode]
+    // @astgen op2 := portsp : List[AstVar]
     // @astgen op3 := rulesp : List[AstRSRule]
     string m_name;  // Name of block, or "" to use first production
 public:
-    AstRSProd(FileLine* fl, const string& name, AstNode* portsp, AstRSRule* rulesp)
+    AstRSProd(FileLine* fl, const string& name, AstVar* portsp, AstRSRule* rulesp)
         : ASTGEN_SUPER_RSProd(fl)
         , m_name{name} {
         addPortsp(portsp);
@@ -2038,6 +2057,25 @@ public:
     bool hasCombo() const;  // Includes a COMBO SenItem
     bool hasHybrid() const;  // Includes a HYBRID SenItem
 };
+class AstSetuphold final : public AstNode {
+    // Verilog $setuphold
+    // Parents: MODULE
+    // @astgen op1 := refevp : AstNodeExpr
+    // @astgen op2 := dataevp : AstNodeExpr
+    // @astgen op3 := delrefp : Optional[AstNodeExpr]
+    // @astgen op4 := deldatap : Optional[AstNodeExpr]
+public:
+    AstSetuphold(FileLine* fl, AstNodeExpr* refevp, AstNodeExpr* dataevp,
+                 AstNodeExpr* delrefp = nullptr, AstNodeExpr* deldatap = nullptr)
+        : ASTGEN_SUPER_Setuphold(fl) {
+        this->refevp(refevp);
+        this->dataevp(dataevp);
+        this->delrefp(delrefp);
+        this->deldatap(deldatap);
+    }
+    ASTGEN_MEMBERS_AstSetuphold;
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
 class AstStrengthSpec final : public AstNode {
     VStrength m_s0;  // Drive 0 strength
     VStrength m_s1;  // Drive 1 strength
@@ -2181,7 +2219,7 @@ public:
 };
 class AstTypedef final : public AstNode {
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
-    // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
+    // @astgen op4 := attrsp : List[AstAttrOf] // Attributes during early parse
 
     string m_name;  // Name of the typedef
     string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
@@ -2192,7 +2230,7 @@ class AstTypedef final : public AstNode {
     bool m_isUnderClass : 1;  // Underneath class
 
 public:
-    AstTypedef(FileLine* fl, const string& name, AstNode* attrsp, VFlagChildDType,
+    AstTypedef(FileLine* fl, const string& name, AstAttrOf* attrsp, VFlagChildDType,
                AstNodeDType* dtp)
         : ASTGEN_SUPER_Typedef(fl)
         , m_name{name}
@@ -2320,9 +2358,12 @@ class AstVar final : public AstNode {
     // Initial value that never changes (static const)
     // @astgen op3 := valuep : Optional[AstNode<AstNodeExpr|AstNodeDType>]
     //     Value is a DType for type parameter defaults
-    // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
+    // @astgen op4 := attrsp : List[AstAttrOf] // Attributes during early parse
     // @astgen ptr := m_sensIfacep : Optional[AstIface]  // Interface type to which reads from this
     //                                                      var are sensitive
+    // @astgen ptr := m_forceRdVarp : Optional[AstVar]  // [AfterForce] Generated force read signal
+    // @astgen ptr := m_forceEnVarp : Optional[AstVar]  // [AfterForce] Generated force enable
+    // @astgen ptr := m_forceValVarp : Optional[AstVar]  // [AfterForce] Generated force value
 
     string m_name;  // Name of variable
     string m_origName;  // Original name before dot addition
@@ -2655,6 +2696,12 @@ public:
     void trace(bool flag) { m_trace = flag; }
     void isLatched(bool flag) { m_isLatched = flag; }
     bool isForceable() const { return m_isForceable; }
+    AstVar* forceRdVarp() const { return m_forceRdVarp; }
+    void forceRdVarp(AstVar* const nodep) { m_forceRdVarp = nodep; }
+    AstVar* forceEnVarp() const { return m_forceEnVarp; }
+    void forceEnVarp(AstVar* const nodep) { m_forceEnVarp = nodep; }
+    AstVar* forceValVarp() const { return m_forceValVarp; }
+    void forceValVarp(AstVar* const nodep) { m_forceValVarp = nodep; }
     void setForceable() { m_isForceable = true; }
     void setForcedByCode() { m_isForcedByCode = true; }
     bool isForced() const { return m_isForceable || m_isForcedByCode; }
@@ -2967,6 +3014,81 @@ public:
     }
 };
 
+// === AstNodeConstraintItem ===
+class AstConstraintBefore final : public AstNodeConstraintItem {
+    // Constraint solve before item
+    // @astgen op1 := lhssp : List[AstNodeExpr]
+    // @astgen op2 := rhssp : List[AstNodeExpr]
+public:
+    AstConstraintBefore(FileLine* fl, AstNodeExpr* lhssp, AstNodeExpr* rhssp)
+        : ASTGEN_SUPER_ConstraintBefore(fl) {
+        addLhssp(lhssp);
+        addRhssp(rhssp);
+    }
+    ASTGEN_MEMBERS_AstConstraintBefore;
+};
+class AstConstraintExpr final : public AstNodeConstraintItem {
+    // Constraint expression
+    // @astgen op1 := exprp : AstNodeExpr
+    bool m_isDisableSoft = false;  // Disable soft constraint expression
+    bool m_isSoft = false;  // Soft constraint expression
+public:
+    AstConstraintExpr(FileLine* fl, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_ConstraintExpr(fl) {
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstConstraintExpr;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool isDisableSoft() const { return m_isDisableSoft; }
+    void isDisableSoft(bool flag) { m_isDisableSoft = flag; }
+    bool isSoft() const { return m_isSoft; }
+    void isSoft(bool flag) { m_isSoft = flag; }
+};
+class AstConstraintForeach final : public AstNodeConstraintItem {
+    // Constraint foreach item
+    // @astgen op1 := headerp : AstForeachHeader
+    // @astgen op2 := bodyp : List[AstNodeConstraintItem]
+    bool m_soft;  // is soft foreach, non-standard extension
+public:
+    AstConstraintForeach(FileLine* fl, AstForeachHeader* headerp, AstNodeConstraintItem* bodyp,
+                         bool soft = false)
+        : ASTGEN_SUPER_ConstraintForeach(fl)
+        , m_soft{soft} {
+        this->headerp(headerp);
+        addBodyp(bodyp);
+    }
+    ASTGEN_MEMBERS_AstConstraintForeach;
+    bool isSoft() const { return m_soft; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+};
+class AstConstraintIf final : public AstNodeConstraintItem {
+    // Constraint if-else
+    // @astgen op1 := condp : AstNodeExpr
+    // @astgen op2 := thensp : List[AstNodeConstraintItem]
+    // @astgen op3 := elsesp : List[AstNodeConstraintItem]
+public:
+    AstConstraintIf(FileLine* fl, AstNodeExpr* condp, AstNodeConstraintItem* thensp,
+                    AstNodeConstraintItem* elsesp)
+        : ASTGEN_SUPER_ConstraintIf(fl) {
+        this->condp(condp);
+        addThensp(thensp);
+        addElsesp(elsesp);
+    }
+    ASTGEN_MEMBERS_AstConstraintIf;
+};
+class AstConstraintUnique final : public AstNodeConstraintItem {
+    // Constraint unique item
+    // @astgen op1 := rangesp : List[AstNodeExpr]
+public:
+    AstConstraintUnique(FileLine* fl, AstNodeExpr* rangesp)
+        : ASTGEN_SUPER_ConstraintUnique(fl) {
+        addRangesp(rangesp);
+    }
+    ASTGEN_MEMBERS_AstConstraintUnique;
+};
+
 // === AstNodeCoverDecl ===
 class AstCoverOtherDecl final : public AstNodeCoverDecl {
     // Coverage analysis point declaration
@@ -3035,12 +3157,12 @@ class AstFunc final : public AstNodeFTask {
 public:
     // Returning a value of child data type
     AstFunc(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtypep)
-        : ASTGEN_SUPER_Func(fl, name, nullptr) {
+        : ASTGEN_SUPER_Func(fl, name) {
         initFvarp(new AstVar{fl, VVarType::VAR, name, VFlagChildDType{}, dtypep});
     }
     // Returning a value of resolved data type, or void if nullptr
     AstFunc(FileLine* fl, const string& name, AstNodeDType* dtypep = nullptr)
-        : ASTGEN_SUPER_Func(fl, name, nullptr) {
+        : ASTGEN_SUPER_Func(fl, name) {
         if (!dtypep) {
             dtypeSetVoid();
             return;
@@ -3052,52 +3174,11 @@ public:
     bool hasDType() const override VL_MT_SAFE { return true; }
     string verilogKwd() const override { return "function"; }
 };
-class AstLet final : public AstNodeFTask {
-    // Verilog "let" statement
-    // Parents: MODULE
-    // stmtp list first item is returned StmtExpr, as Let always returns AstNodeExpr
-public:
-    AstLet(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_Let(fl, name, nullptr) {}
-    ASTGEN_MEMBERS_AstLet;
-    bool hasDType() const override VL_MT_SAFE { return true; }
-    const char* broken() const override {
-        BROKEN_RTN(!VN_IS(stmtsp(), StmtExpr));
-        return nullptr;
-    }
-    string verilogKwd() const override { return "let"; }
-};
-class AstProperty final : public AstNodeFTask {
-    // A property inside a module
-public:
-    AstProperty(FileLine* fl, const string& name, AstNode* stmtp)
-        : ASTGEN_SUPER_Property(fl, name, stmtp) {}
-    ASTGEN_MEMBERS_AstProperty;
-    bool hasDType() const override VL_MT_SAFE { return true; }
-    string verilogKwd() const override { return "property"; }
-};
-class AstSequence final : public AstNodeFTask {
-    // A sequence inside a module
-    // TODO when supported might not want to be a NodeFTask
-    bool m_referenced = false;  // Set by V3LinkResolve when referenced; cleared by
-                                // V3AssertPre after inlining; if still set after
-                                // V3AssertPre, the reference is in an unsupported context
-public:
-    AstSequence(FileLine* fl, const string& name, AstNode* stmtp)
-        : ASTGEN_SUPER_Sequence(fl, name, stmtp) {}
-    ASTGEN_MEMBERS_AstSequence;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    bool hasDType() const override VL_MT_SAFE { return true; }
-    string verilogKwd() const override { return "sequence"; }
-    bool isReferenced() const { return m_referenced; }
-    void isReferenced(bool flag) { m_referenced = flag; }
-};
 class AstTask final : public AstNodeFTask {
     // A task inside a module
 public:
     AstTask(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_Task(fl, name, nullptr) {}
+        : ASTGEN_SUPER_Task(fl, name) {}
     ASTGEN_MEMBERS_AstTask;
     string verilogKwd() const override { return "task"; }
 };
@@ -3178,7 +3259,7 @@ public:
 // === AstNodeGen ===
 class AstGenBlock final : public AstNodeGen {
     // Generate 'begin'
-    // @astgen op1 := genforp : Optional[AstNode]
+    // @astgen op1 := genforp : Optional[AstGenFor]
     // @astgen op2 := itemsp : List[AstNode]
     std::string m_name;  // Name of block
     const bool m_unnamed;  // Originally unnamed (name change does not affect this)
@@ -3662,6 +3743,44 @@ public:
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual string emitVerilog() { return "[*]"; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
+
+// === AstNodeSchema ===
+class AstLet final : public AstNodeSchema {
+    // Verilog "let" definition
+    // Parents: MODULE
+    // @astgen op2 := exprp : AstNodeExpr
+public:
+    AstLet(FileLine* fl, const std::string& name)
+        : ASTGEN_SUPER_Let(fl, name) {}
+    ASTGEN_MEMBERS_AstLet;
+    std::string verilogKwd() const override { return "let"; }
+};
+class AstProperty final : public AstNodeSchema {
+    // Verilog "property" definition
+    // @astgen op2 := specp : AstPropSpec
+public:
+    AstProperty(FileLine* fl, const std::string& name)
+        : ASTGEN_SUPER_Property(fl, name) {}
+    ASTGEN_MEMBERS_AstProperty;
+    std::string verilogKwd() const override { return "property"; }
+};
+class AstSequence final : public AstNodeSchema {
+    // Verilog "sequence" definition
+    // @astgen op2 := exprp : AstNodeExpr
+    // Set by V3LinkWith when referenced; cleared by V3AssertPre after inlining; if still set
+    // after V3AssertPre, the reference is in an unsupported context
+    bool m_referenced = false;
+
+public:
+    AstSequence(FileLine* fl, const std::string& name)
+        : ASTGEN_SUPER_Sequence(fl, name) {}
+    ASTGEN_MEMBERS_AstSequence;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    std::string verilogKwd() const override { return "sequence"; }
+    bool isReferenced() const { return m_referenced; }
+    void isReferenced(bool flag) { m_referenced = flag; }
 };
 
 #endif  // Guard

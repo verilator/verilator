@@ -106,30 +106,30 @@ class SeqEventLowerVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstSenItem* nodep) override {
-        AstFuncRef* const funcrefp = VN_CAST(nodep->sensp(), FuncRef);
-        if (funcrefp && VN_IS(funcrefp->taskp(), Sequence)) {
+        AstSchemaRef* const schemaRefp = VN_CAST(nodep->sensp(), SchemaRef);
+        if (schemaRefp && VN_IS(schemaRefp->schemap(), Sequence)) {
             FileLine* const flp = nodep->fileline();
             AstVar* const eventp = new AstVar{flp, VVarType::MODULETEMP, m_names.get(nodep),
                                               m_modp->findBasicDType(VBasicDTypeKwd::EVENT)};
             eventp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(eventp);
             v3Global.setHasEvents();
-            funcrefp->unlinkFrBack();
+            schemaRefp->unlinkFrBack();
             nodep->sensp(new AstVarRef{flp, eventp, VAccess::READ});
-            const bool automaticActual = funcrefp->exists([](const AstNodeVarRef* refp) {
+            const bool automaticActual = schemaRefp->exists([](const AstNodeVarRef* refp) {
                 return refp->varp() && refp->varp()->lifetime().isAutomatic();
             });
             if (automaticActual) {
                 nodep->v3error("Arguments to a sequence used as an event control must be"
                                " static (IEEE 1800-2023 9.4.2.4)");
-                VN_AS(funcrefp->taskp(), Sequence)->isReferenced(false);
-                VL_DO_DANGLING(pushDeletep(funcrefp), funcrefp);
+                VN_AS(schemaRefp->schemap(), Sequence)->isReferenced(false);
+                VL_DO_DANGLING(pushDeletep(schemaRefp), schemaRefp);
                 return;
             }
             AstFireEvent* const firep
                 = new AstFireEvent{flp, new AstVarRef{flp, eventp, VAccess::WRITE}, false};
             AstCover* const coverp
-                = new AstCover{flp, new AstPropSpec{flp, nullptr, nullptr, funcrefp}, firep,
+                = new AstCover{flp, new AstPropSpec{flp, nullptr, nullptr, schemaRefp}, firep,
                                VAssertType::CONCURRENT};
             coverp->isCoverSeq(true);
             coverp->isSeqEvent(true);
@@ -229,7 +229,7 @@ bool V3AssertCommon::refsSvaFormal(const AstNode* nodep) {
         const AstVar* const varp = refp->varp();
         if (!varp || !varp->isIO()) return false;
         const AstNode* const declp = varp->aboveLoopp();
-        return VN_IS(declp, Sequence) || VN_IS(declp, Property);
+        return VN_IS(declp, NodeSchema);
     });
 }
 
@@ -340,13 +340,34 @@ public:
 
 // Prepare one default sampled expression.
 class DefaultSampledValueVisitor final : public VNVisitor {
+    // STATE
+    bool m_defaulted = false;  // A reference below was replaced by its default
+
     // METHODS
-    static AstConst* newTypeDefault(AstNodeExpr* nodep) {
+    AstConst* newTypeDefault(AstNodeExpr* nodep) {
+        m_defaulted = true;
         AstConst* const constp
             = new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()};
         if (nodep->dtypep()->isFourstate()) constp->num().setAllBitsX();
         constp->dtypeFrom(nodep);
         return constp;
+    }
+
+    void visitSelect(AstNodeExpr* nodep) {
+        // A select of a replaced value or index is itself the default of its type
+        bool setDefaulted;
+        {
+            VL_RESTORER(m_defaulted);
+            m_defaulted = false;
+            iterateChildren(nodep);
+            setDefaulted = m_defaulted;
+        }
+        if (setDefaulted) {
+            m_defaulted = true;  // Propagate up that replacement was made
+            nodep->replaceWith(newTypeDefault(nodep));
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
     }
 
     // VISITORS
@@ -367,13 +388,8 @@ class DefaultSampledValueVisitor final : public VNVisitor {
         nodep->replaceWith(newTypeDefault(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstArraySel* nodep) override {
-        iterateChildren(nodep);
-        // The default of an element of an array replaced by its default above
-        if (!VN_IS(nodep->fromp(), Const)) return;
-        nodep->replaceWith(newTypeDefault(nodep));
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
+    void visit(AstArraySel* nodep) override { visitSelect(nodep); }
+    void visit(AstSel* nodep) override { visitSelect(nodep); }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
@@ -647,11 +663,9 @@ class AssertVisitor final : public VNVisitor {
         m_obsFlushp = AstNode::addNext(m_obsFlushp, clearp->makeStmt());
     }
     void snapshotObservedSFormatArgs(AstSFormatF* fmtp, AstNodeStmt*& queuesp) {
-        for (AstNodeExpr* exprp = fmtp->exprsp(); exprp;) {
-            AstNodeExpr* const nextp = VN_CAST(exprp->nextp(), NodeExpr);
+        for (AstNodeExpr* const exprp : fmtp->exprspList()) {
             AstSFormatArg* const argp = VN_CAST(exprp, SFormatArg);
             snapshotObservedExpr(argp ? argp->exprp() : exprp, queuesp);
-            exprp = nextp;
         }
     }
     static AstIf* newIfAssertOn(AstNodeStmt* bodyp, VAssertDirectiveType directiveType,
@@ -672,7 +686,7 @@ class AssertVisitor final : public VNVisitor {
         // Don't make this an AND term, as it's unlikely to need to test this.
         FileLine* const fl = bodyp->fileline();
         AstNodeExpr* const condp = assertPassOnCond(fl, type, directiveType, vacuous);
-        AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
+        AstIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
         newp->user2(true);  // Mark as an assertOn() check
@@ -684,7 +698,7 @@ class AssertVisitor final : public VNVisitor {
         // Don't make this an AND term, as it's unlikely to need to test this.
         FileLine* const fl = bodyp->fileline();
         AstNodeExpr* const condp = assertFailOnCond(fl, type, directiveType);
-        AstNodeIf* const newp = new AstIf{fl, condp, bodyp};
+        AstIf* const newp = new AstIf{fl, condp, bodyp};
         newp->isBoundsCheck(true);  // To avoid LATCH warning
         newp->user1(true);  // Don't assert/cover this if
         newp->user2(true);  // Mark as an assertOn() check
@@ -1149,13 +1163,13 @@ class AssertVisitor final : public VNVisitor {
     void visit(AstIf* nodep) override {
         if (!nodep->user1SetOnce()) {
             if (nodep->uniquePragma() || nodep->unique0Pragma()) {
-                const AstNodeIf* ifp = nodep;
+                const AstIf* ifp = nodep;
                 AstNodeExpr* propp = nullptr;
                 bool hasDefaultElse = false;
                 do {
                     // If this statement ends with 'else if', then nextIf will point to the
                     // nextIf statement.  Otherwise it will be null.
-                    const AstNodeIf* const nextifp = dynamic_cast<AstNodeIf*>(ifp->elsesp());
+                    const AstIf* const nextifp = dynamic_cast<AstIf*>(ifp->elsesp());
                     iterateAndNextNull(ifp->condp());
 
                     // Recurse into the true case.

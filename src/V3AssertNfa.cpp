@@ -2920,7 +2920,7 @@ class AssertNfaVisitor final : public VNVisitor {
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
     V3UniqueNames m_failCountNames{"__VnfaRemainingFailCount"};  // Fail replay counter names
     std::set<const AstProperty*> m_inliningProps;  // Recursion guard for clonePropertyBody
-    bool m_inlinePropRefs = false;  // Inline property instances in visit(AstFuncRef)
+    bool m_inlinePropRefs = false;  // Inline property instances in visit(AstSchemaRef)
 
     template <typename T_Node>
     void visitSampledValue(T_Node* const nodep) {
@@ -2948,36 +2948,17 @@ class AssertNfaVisitor final : public VNVisitor {
         }
     }
 
-    static AstNodeExpr* getSequenceBodyExprp(const AstSequence* seqp) {
-        return VN_CAST(seqp->stmtsp(), NodeExpr);
-    }
-
-    static AstPropSpec* getPropertySpecp(const AstProperty* propp) {
-        AstNode* stmtp = propp->stmtsp();
-        // V3LinkParse emits InitialStaticStmt for property-local variable
-        // initialisers; the InitialAutomaticStmt variant only appears for
-        // task/function-scope automatic lifetime, not properties.
-        while (stmtp
-               && (VN_IS(stmtp, InitialStaticStmt)
-                   || VN_IS(stmtp, InitialAutomaticStmt))) {  // LCOV_EXCL_LINE
-            stmtp = stmtp->nextp();
-        }
-        return VN_CAST(stmtp, PropSpec);
-    }
-
-    AstPropSpec* clonePropertyBody(AstFuncRef* funcrefp, const AstProperty* propyp) {
-        UASSERT_OBJ(m_inliningProps.emplace(propyp).second, funcrefp,
+    AstPropSpec* clonePropertyBody(AstSchemaRef* schemaRefp, const AstProperty* propyp) {
+        UASSERT_OBJ(m_inliningProps.emplace(propyp).second, schemaRefp,
                     "Recursive property reference should have been rejected by V3Width");
         struct Guard final {
             std::set<const AstProperty*>& setr;
             const AstProperty* keyp;
             ~Guard() { setr.erase(keyp); }
         } guard{m_inliningProps, propyp};
-        AstPropSpec* propSpecp = getPropertySpecp(propyp);
-        UASSERT_OBJ(propSpecp, funcrefp, "Property has no body PropSpec");
-        propSpecp = propSpecp->cloneTree(false);
+        AstPropSpec* const propSpecp = propyp->specp()->cloneTree(false);
 
-        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propyp->declsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(schemaRefp);
         std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
         for (const auto& tconnect : tconnects) {
             portMap[tconnect.first] = tconnect.second->exprp();
@@ -3012,9 +2993,9 @@ class AssertNfaVisitor final : public VNVisitor {
         for (const auto& tconnect : tconnects) {
             pushDeletep(tconnect.second->exprp()->unlinkFrBack());
         }
-        V3AssertCommon::checkSvaInstanceDelays(propSpecp, funcrefp);
-        if (AstFuncRef* const rootRefp = VN_CAST(propSpecp->propp(), FuncRef)) {
-            if (const AstProperty* const rootPropp = VN_CAST(rootRefp->taskp(), Property)) {
+        V3AssertCommon::checkSvaInstanceDelays(propSpecp, schemaRefp);
+        if (AstSchemaRef* const rootRefp = VN_CAST(propSpecp->propp(), SchemaRef)) {
+            if (const AstProperty* const rootPropp = VN_CAST(rootRefp->schemap(), Property)) {
                 AstPropSpec* const mergedp = mergeNamedProperty(propSpecp, rootRefp, rootPropp);
                 VL_DO_DANGLING(pushDeletep(propSpecp), propSpecp);
                 return mergedp;
@@ -3029,9 +3010,9 @@ class AssertNfaVisitor final : public VNVisitor {
     }
 
     // The outer disable iff and clock move onto the body (IEEE 1800-2023 16.12.1)
-    AstPropSpec* mergeNamedProperty(AstPropSpec* outerSpecp, AstFuncRef* funcrefp,
+    AstPropSpec* mergeNamedProperty(AstPropSpec* outerSpecp, AstSchemaRef* schemaRefp,
                                     const AstProperty* propyp) {
-        AstPropSpec* const propSpecp = clonePropertyBody(funcrefp, propyp);
+        AstPropSpec* const propSpecp = clonePropertyBody(schemaRefp, propyp);
 
         // Merge disable iff (IEEE 1800-2023 16.12.1)
         if (outerSpecp->disablep() && propSpecp->disablep()) {
@@ -3056,19 +3037,17 @@ class AssertNfaVisitor final : public VNVisitor {
         return propSpecp;
     }
 
-    void inlineNamedProperty(AstPropSpec* outerSpecp, AstFuncRef* funcrefp,
+    void inlineNamedProperty(AstPropSpec* outerSpecp, AstSchemaRef* schemaRefp,
                              const AstProperty* propyp) {
-        AstPropSpec* const propSpecp = mergeNamedProperty(outerSpecp, funcrefp, propyp);
+        AstPropSpec* const propSpecp = mergeNamedProperty(outerSpecp, schemaRefp, propyp);
         outerSpecp->replaceWith(propSpecp);
         VL_DO_DANGLING(pushDeletep(outerSpecp), outerSpecp);
     }
 
-    void inlineSequenceRef(AstFuncRef* funcrefp, AstSequence* seqp) {
-        AstNodeExpr* const bodyExprp = getSequenceBodyExprp(seqp);
-        UASSERT_OBJ(bodyExprp, funcrefp, "Sequence has no body expression");
-        AstNodeExpr* const clonedp = bodyExprp->cloneTree(false);
+    void inlineSequenceRef(AstSchemaRef* schemaRefp, AstSequence* seqp) {
+        AstNodeExpr* const clonedp = seqp->exprp()->cloneTree(false);
 
-        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, seqp->declsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(schemaRefp);
         std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
         for (const auto& tconnect : tconnects) {
             portMap[tconnect.first] = tconnect.second->exprp();
@@ -3083,9 +3062,9 @@ class AssertNfaVisitor final : public VNVisitor {
         for (const auto& tconnect : tconnects) {
             pushDeletep(tconnect.second->exprp()->unlinkFrBack());
         }
-        V3AssertCommon::checkSvaInstanceDelays(clonedp, funcrefp);
-        funcrefp->replaceWith(clonedp);
-        VL_DO_DANGLING(pushDeletep(funcrefp), funcrefp);
+        V3AssertCommon::checkSvaInstanceDelays(clonedp, schemaRefp);
+        schemaRefp->replaceWith(clonedp);
+        VL_DO_DANGLING(pushDeletep(schemaRefp), schemaRefp);
         // Clear referenced flag so V3AssertPre cleanup does not emit
         // spurious UNSUPPORTED for sequences that were already inlined here.
         seqp->isReferenced(false);
@@ -3096,10 +3075,10 @@ class AssertNfaVisitor final : public VNVisitor {
         bool changed = true;
         while (changed) {
             changed = false;
-            rootp->foreach([&](AstFuncRef* funcrefp) {
+            rootp->foreach([&](AstSchemaRef* schemaRefp) {
                 if (changed) return;
-                if (AstSequence* const seqp = VN_CAST(funcrefp->taskp(), Sequence)) {
-                    inlineSequenceRef(funcrefp, seqp);
+                if (AstSequence* const seqp = VN_CAST(schemaRefp->schemap(), Sequence)) {
+                    inlineSequenceRef(schemaRefp, seqp);
                     changed = true;
                 }
             });
@@ -3420,11 +3399,11 @@ class AssertNfaVisitor final : public VNVisitor {
     // Returns the PropSpec to lower, or nullptr when fully handled here.
     AstPropSpec* prepareAssertionProp(AstNodeCoverOrAssert* assertp) {
         if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
-            AstFuncRef* const funcrefp = VN_CAST(specp->propp(), FuncRef);
+            AstSchemaRef* const schemaRefp = VN_CAST(specp->propp(), SchemaRef);
             const AstProperty* const propyp
-                = funcrefp ? VN_CAST(funcrefp->taskp(), Property) : nullptr;
+                = schemaRefp ? VN_CAST(schemaRefp->schemap(), Property) : nullptr;
             if (propyp) {
-                inlineNamedProperty(specp, funcrefp, propyp);
+                inlineNamedProperty(specp, schemaRefp, propyp);
             } else {
                 VL_RESTORER(m_inlinePropRefs);
                 m_inlinePropRefs = true;
@@ -3621,10 +3600,10 @@ class AssertNfaVisitor final : public VNVisitor {
         // Remove here so temporal SExpr don't leak to V3AssertPre.
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
-    void visit(AstFuncRef* nodep) override {
+    void visit(AstSchemaRef* nodep) override {
         iterateChildren(nodep);
         if (!m_inlinePropRefs) return;
-        const AstProperty* const propyp = VN_CAST(nodep->taskp(), Property);
+        const AstProperty* const propyp = VN_CAST(nodep->schemap(), Property);
         if (!propyp) return;
         AstPropSpec* const specp = clonePropertyBody(nodep, propyp);
         AstNode* replp = nullptr;

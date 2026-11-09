@@ -57,6 +57,7 @@ public:
     static V3TaskConnects taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
                                        V3TaskConnectState* statep = nullptr,
                                        bool makeChanges = true) VL_MT_DISABLED;
+    static V3TaskConnects taskConnects(AstSchemaRef* nodep) VL_MT_DISABLED;
     static void taskConnectWrap(AstNodeFTaskRef* nodep, const V3TaskConnects& tconnects,
                                 V3TaskConnectState* statep,
                                 const VInsertionSet<const AstVar*>& argWrap) VL_MT_DISABLED;

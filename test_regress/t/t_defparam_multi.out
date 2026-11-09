@@ -1,0 +1,18 @@
+%Error-UNSUPPORTED: t/t_defparam_multi.v:15:20: Unsupported: defparam path with arrayed instance
+   15 |   defparam u_m3[0].PAR3 = 100;
+      |                    ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_defparam_multi.v:16:20: Unsupported: defparam path with arrayed instance
+   16 |   defparam u_m3[1].PAR3 = 200;
+      |                    ^~~~
+%Error-UNSUPPORTED: t/t_defparam_multi.v:24:28: Unsupported: defparam path with arrayed instance
+   24 |       defparam blk[i].u_m3.PAR3 = i;
+      |                            ^~~~
+%Error: t/t_defparam_multi.v:52:49: Duplicate parameter connection: 'PAR3'
+   52 |       defparam m2.PAR2 = 4; defparam m2.m3.PAR3 = 40;
+      |                                                 ^
+        t/t_defparam_multi.v:48:49: ... Location of original parameter connection
+   48 |       defparam m2.PAR2 = 8; defparam m2.m3.PAR3 = 80;
+      |                                                 ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

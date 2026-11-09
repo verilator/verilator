@@ -86,13 +86,14 @@ class LinkWithVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstSchemaRef* nodep) override {
+        if (AstSequence* const seqp = VN_CAST(nodep->schemap(), Sequence)) {
+            seqp->isReferenced(true);
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstNodeFTaskRef* nodep) override {
         VL_RESTORER(m_currentRandomizeSelectp);
-        if (nodep->taskp()) {
-            if (AstSequence* const seqp = VN_CAST(nodep->taskp(), Sequence))
-                seqp->isReferenced(true);
-        }
-
         if (nodep->name() == "randomize") {
             if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
                 if (m_inRandomizeWith) {
@@ -106,7 +107,7 @@ class LinkWithVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         if (m_inRandomizeWith && nodep->fromp()->sameTree(m_currentRandomizeSelectp)) {
             // Replace member selects to the element
             // on which the randomize() is called with LambdaArgRef

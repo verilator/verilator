@@ -377,7 +377,7 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstCase* nodep) override { iterateChildren(nodep); }
     // VISITORS - LINT CHECK
-    void visit(AstIf* nodep) override {  // not AstNodeIf; other types not covered
+    void visit(AstIf* nodep) override {
         VL_RESTORER(m_keepBegins);
         m_keepBegins = false;
         // Check IFDEPTH warning - could be in other transform files if desire
@@ -462,10 +462,9 @@ void V3Begin::debeginAll(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("begin", 0, dumpTreeEitherLevel() >= 3);
 }
 
-static AstNodeStmt* createForeachLoop(AstNodeForeach* /*nodep*/, AstBegin* blockp,
-                                      AstNodeStmt* bodysp, bool arrayMayResize,
-                                      AstNodeExpr* subfromp, AstVar* varp, AstNodeExpr* leftp,
-                                      AstNodeExpr* rightp, VNType nodeType) {
+static AstNodeStmt* createForeachLoop(AstForeach* /*nodep*/, AstBegin* blockp, AstNodeStmt* bodysp,
+                                      bool arrayMayResize, AstNodeExpr* subfromp, AstVar* varp,
+                                      AstNodeExpr* leftp, AstNodeExpr* rightp, VNType nodeType) {
     FileLine* const fl = varp->fileline();
     AstNodeExpr* varRefp = new AstVarRef{fl, varp, VAccess::READ};
     AstNodeExpr* condp;
@@ -515,7 +514,7 @@ static AstNodeStmt* createForeachLoop(AstNodeForeach* /*nodep*/, AstBegin* block
     stmtsp->addNext(loopp);
     return stmtsp;
 }
-static AstNodeStmt* createForeachLoopRanged(AstNodeForeach* nodep, AstBegin* blockp,
+static AstNodeStmt* createForeachLoopRanged(AstForeach* nodep, AstBegin* blockp,
                                             AstNodeStmt* bodysp, AstNodeExpr* subfromp,
                                             AstVar* varp, const VNumRange& declRange) {
     FileLine* const fl = varp->fileline();
@@ -622,8 +621,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     // dyn-arr and associative-arr)
     AstNodeExpr* subfromp = fromp->cloneTreePure(false);
     // Major dimension first
-    for (AstNode *argsp = headerp->elementsp(), *next_argsp; argsp; argsp = next_argsp) {
-        next_argsp = argsp->nextp();
+    for (AstNode* const argsp : headerp->elementspList()) {
         const bool empty = VN_IS(argsp, Empty);
         AstVar* const varp = VN_CAST(argsp, Var);
         UASSERT_OBJ(varp || empty, argsp, "Missing foreach loop variable");

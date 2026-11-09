@@ -269,7 +269,7 @@ class CastVisitor final : public VNVisitor {
         iterateChildren(nodep);
         nodep->user1(true);
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         iterateChildren(nodep);
         ensureNullChecked(nodep->fromp());
         nodep->user1(true);

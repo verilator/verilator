@@ -18,4 +18,12 @@
                                                         : ... note: In instance 't'
    18 |     {>>{packed_data2}} = stream;
       |                        ^
+%Warning-WIDTHTRUNC: t/t_stream_unpack_narrower.v:19:17: Target fixed size variable (31 bits) is narrower than the stream (61 bits) (IEEE 1800-2023 11.4.14)
+                                                       : ... note: In instance 't'
+   19 |     packed_data = {>>{packed_data2}};
+      |                 ^
+%Warning-WIDTHTRUNC: t/t_stream_unpack_narrower.v:19:17: Operator ASSIGN expects 31 bits on the Assign RHS, but Assign RHS's STREAMR generates 61 bits.
+                                                       : ... note: In instance 't'
+   19 |     packed_data = {>>{packed_data2}};
+      |                 ^
 %Error: Exiting due to

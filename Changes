@@ -40,7 +40,9 @@ Verilator 5.055 devel
 * Fix writing a character of a string array element. [Geza Lore, Testorrent USA, Inc.]
 * Fix type check of associative array traversal arguments (#5439) (#8954). [Ethan Sifferman]
 * Fix unordered NBAs executing in wrong order (#5485) (#9030) (#7541) (#8214) (#8346). [Geza Lore, Testorrent USA, Inc.]
+* Fix `q[1:$]` when queue has only one item in it (#7355). [Bryan Murdock]
 * Fix inherited class member resolution in parameter overrides (#8539). [Artur Bieniek, Antmicro Ltd.]
+* Fix output write rejected in a fork whose children finish before the task returns (#8594). [Martin Velay]
 * Fix `std::randomize` changing variables when constraints fail (#8686) (#8880). [Steven Bellock]
 * Fix $fscanf/$sscanf into non-addressable destinations (#8860) (#8912). [Adrien Le Masle]
 * Fix class size constraints in randomize..with (#8861). [Ryszard Rozak, Antmicro Ltd.]
@@ -79,7 +81,9 @@ Verilator 5.055 devel
 * Fix FSM coverage with a compound reset under line or expression coverage (#9071) (#9073). [David Harris]
 * Fix parameters as the slice size of a stream target (#9072). [Marco Bartoli]
 * Fix wide unpacked array copy between opposite directions (#9074) (#9075). [Graeme Smecher]
+* Fix sampled-value functions with a variable index (#9084). [Steven Bellock]
 * Fix process not found after a covergroup or randomize() (#9085). [Steven Bellock]
+
 
 
 Verilator 5.054 2026-11-01

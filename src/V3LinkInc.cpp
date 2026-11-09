@@ -115,8 +115,8 @@ class LinkIncVisitor final : public VNVisitor {
         nodep->v3fatalSrc("Unhandled compound assignment operation");
     }
     AstAssign* hoistIndices(AstNodeExpr* nodep) {
-        if (AstMemberSel* const selp = VN_CAST(nodep, MemberSel)) {
-            return hoistIndices(selp->fromp());
+        if (AstMemberRef* const memberRefp = VN_CAST(nodep, MemberRef)) {
+            return hoistIndices(memberRefp->fromp());
         }
         if (AstReplicate* const repp = VN_CAST(nodep, Replicate)) {
             return hoistIndices(repp->srcp());

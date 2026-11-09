@@ -496,14 +496,12 @@ class RandSequenceVisitor final : public VNVisitor {
         // Production formal ports become real input ports on the generated task.
         // Must be added after m_breakVarp / localize ports so positional argument
         // order in newProdFuncRef stays consistent: [break, localize..., user...].
-        if (AstNode* const portsp = nodep->portsp()) {
-            portsp->unlinkFrBackWithNext();
-            m_prodFuncp->addDeclsp(portsp);
-            for (AstNode* itp = portsp; itp; itp = itp->nextp()) {
-                AstVar* const portVarp = VN_AS(itp, Var);
-                portVarp->funcLocal(true);
-                portVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            }
+        for (AstVar* const portVarp : nodep->portspList()) {
+            portVarp->funcLocal(true);
+            portVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        }
+        if (AstVar* const portsp = nodep->portsp()) {
+            m_prodFuncp->addDeclsp(portsp->unlinkFrBackWithNext());
         }
 
         // Put JumpBlock immediately under the new function to support

@@ -19,6 +19,7 @@
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
 #include "V3ExecGraph.h"
+#include "V3Hash.h"
 #include "V3LanguageWords.h"
 #include "V3StackCount.h"
 #include "V3Stats.h"
@@ -93,6 +94,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const AstVar* const m_varp;  // Public variable
         const AstNodeModule* const m_modp;  // Module containing the variable
         const AstScope* const m_scopep;  // Scope containing the variable
+        bool m_isForceControl = false;  // Registered as part of a forceable variable
         ScopeVarData(const std::string& scopeName, const std::string& varBasePretty,
                      const AstVar* varp, const AstNodeModule* modp, const AstScope* scopep)
             : m_scopeName{scopeName}
@@ -104,6 +106,15 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     using ScopeNames = std::map<const std::string, ScopeData>;
     using ScopeModPair = std::pair<const AstScope*, AstNodeModule*>;
     using ModVarPair = std::pair<const AstNodeModule*, const AstVar*>;
+    using ScopedVar = std::pair<const AstScope*, const AstVar*>;
+    struct ScopedVarHash final {
+        std::size_t operator()(const ScopedVar& pair) const {
+            V3Hash hash;
+            hash += pair.first;
+            hash += pair.second;
+            return hash.value();
+        }
+    };
 
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current function
@@ -114,6 +125,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     std::vector<ModVarPair> m_modVars;  // Each public {mod,var}
     std::map<const std::string, ScopeFuncData> m_scopeFuncs;  // Each {scope,dpi-export-func}
     std::map<const std::string, ScopeVarData> m_scopeVars;  // Each {scope,public-var}
+    std::unordered_map<ScopedVar, ScopeVarData*, ScopedVarHash>
+        m_scopeVarsByVar;  // Registered variable identities
     ScopeNames m_scopeNames;  // Each unique AstScopeName. Dpi scopes added later
     ScopeNames m_dpiScopeNames;  // Each unique AstScopeName for DPI export
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
@@ -285,21 +298,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return vlEnumType == "VLVT_STRUCT" || vlEnumType == "VLVT_UNION";
     }
 
-    static std::pair<bool, std::string> isForceControlSignal(const AstVar* const signalVarp) {
-        // __VforceRd should not show up here because it is never public, but just in case it does,
-        // it should be skipped because forceableVarInsert creates its VerilatedVar.
-        for (const std::string forceControlSuffix : {"__VforceEn", "__VforceVal", "__VforceRd"}) {
-            const std::size_t suffixPos = signalVarp->name().find(forceControlSuffix);
-            const bool suffixFound = suffixPos != std::string::npos;
-            const bool suffixIsAtEnd
-                = suffixPos + forceControlSuffix.length() == signalVarp->name().length();
-            if (!(suffixFound && suffixIsAtEnd)) continue;
-            const std::string baseSignalName = signalVarp->name().substr(0, suffixPos);
-            return std::pair<bool, std::string>{true, baseSignalName};
-        }
-        return std::pair<bool, std::string>{false, ""};
-    }
-
     static void appendVarProperties(std::string& stmt, const std::string& vlEnumType,
                                     const std::string& vlEnumDir, const int udim, const int pdim,
                                     const std::string& bounds, const std::string& entSize = "") {
@@ -393,9 +391,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                       const AstScope* const scopep,
                                       const std::string& modClassName, const VarDims& dims,
                                       std::string& rowOut) {
-        if (varp->isForceable() && forceControlSignalsAreValid(scopep, varp)) {
-            return TableEntryKind::FORCEABLE_RESIDUAL;
-        }
+        if (varp->isForceable()) return TableEntryKind::FORCEABLE_RESIDUAL;
 
         const std::string vlEnumType = varp->vlEnumType();
         if (needsEmittedEntSize(vlEnumType))
@@ -642,34 +638,21 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += ", ";
         stmt += varp->vlEnumDir();  // VLVD_IN etc
         stmt += ", &(";
-        stmt += varExpr + "__VforceRd";
+        // The read helper is a separate member with its own path and protected name.
+        stmt += "vlSymsp->" + instName(scopep) + "." + varName(varp->forceRdVarp());
         stmt += "), \"" + V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty))
                 + "__VforceRd" + '"';
         stmt += ", {";
 
-        for (const std::string forceControlSuffix : {"__VforceEn", "__VforceVal"}) {
-            const std::string enableSignalKey
-                = getKeyName(scopep, varp->name() + forceControlSuffix);
-            const std::map<const std::string, ScopeVarData>::const_iterator itpair
-                = m_scopeVars.find(enableSignalKey);
-
-            if (itpair == m_scopeVars.end()) {
-                varp->v3fatalSrc("Signal "
-                                 << varp->prettyNameQ()
-                                 << " is marked forceable, but the force control signal '"
-                                 << varp->name() << forceControlSuffix
-                                 << "' can not be found in m_scopeVars with key '"
-                                 << enableSignalKey << "'.");
-            }
-
-            const ScopeVarData& svd = itpair->second;
-            const AstScope* const scopep = svd.m_scopep;
-            const AstVar* const varp = svd.m_varp;
-            const VarDims dims = dimsFor(svd);
-            stmt
-                += insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, boundsString(dims));
-            if (forceControlSuffix == "__VforceEn") stmt += ",";
-        }
+        const ScopeVarData& enable = forceControlScopeVar(scopep, varp, varp->forceEnVarp());
+        const VarDims enableDims = dimsFor(enable);
+        stmt += insertVarStatement(enable, enable.m_scopep, enable.m_varp, enableDims.udim,
+                                   enableDims.pdim, boundsString(enableDims));
+        stmt += ",";
+        const ScopeVarData& value = forceControlScopeVar(scopep, varp, varp->forceValVarp());
+        const VarDims valueDims = dimsFor(value);
+        stmt += insertVarStatement(value, value.m_scopep, value.m_varp, valueDims.udim,
+                                   valueDims.pdim, boundsString(valueDims));
 
         stmt += "}";
         stmt += ", ";
@@ -681,93 +664,33 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return stmt;
     }
 
-    static std::string getKeyName(const AstScope* const scopep, const std::string& signal_name) {
-        // Copies the process from `addScopeVarEntry` which created the keys in the first place, in
-        // order
-        // signal can be found.
-        std::string whole = scopep->name() + "__DOT__" + signal_name;
-        std::string scpName;
-        if (VString::startsWith(whole, "__DOT__TOP")) whole.replace(0, 10, "");
-        const std::string::size_type dpos = whole.rfind("__DOT__");
-        if (dpos != std::string::npos) { scpName = whole.substr(0, dpos); }
-        const std::string scpSym = scopeSymString(VName::dehash(scpName));
-        return scpSym + " " + signal_name;
+    ScopeVarData& forceControlScopeVar(const AstScope* const scopep, const AstVar* const varp,
+                                       const AstVar* const controlVarp) const {
+        const auto it = m_scopeVarsByVar.find(ScopedVar{scopep, controlVarp});
+        UASSERT_OBJ(it != m_scopeVarsByVar.end(), varp,
+                    "Forceable variable has no registered force control signal.");
+        return *it->second;
     }
 
-    bool baseSignalIsValid(const AstScope* const scopep, const AstVar* const controlSignalVarp,
-                           const std::string& baseSignalName) const {
-        const std::string baseSignalKey = getKeyName(scopep, baseSignalName);
-        const std::map<const std::string, ScopeVarData>::const_iterator baseSignalIt
-            = m_scopeVars.find(baseSignalKey);
-        if (baseSignalIt == m_scopeVars.end()) {
-            // This means that the signal is forceable, but not public, so only the force control
-            // signals show up in the m_scopeVars, but not the base signal itself.
-            // Expect this branch not to be hit, because `baseSignalIsPublic` is checked before
-            // this, so this function will not get called in that case.
-            return false;
-        } else {
-            const AstVar* const baseSignalVarp = baseSignalIt->second.m_varp;
-            if (m_scopeVars.count(baseSignalName) > 1) {
-                baseSignalVarp->v3fatalSrc(
-                    "Found Signal " << baseSignalName
-                                    << ", but also found at least one other signal with name"
-                                    << baseSignalName << " occurring in the same scope.");
-                return false;
-            }
-            if (!baseSignalVarp->isForceable()) {
-                controlSignalVarp->v3fatalSrc(
-                    "Found signal " << controlSignalVarp->prettyNameQ()
-                                    << " which is a force control signal, but the base signal "
-                                    << baseSignalVarp->prettyNameQ()
-                                    << " is not marked as forceable.");
-                return false;
+    void collectForceControls() {
+        if (!v3Global.hasForceableSignals()) return;
+        for (auto& entry : m_scopeVars) {
+            ScopeVarData& svd = entry.second;
+            const bool inserted
+                = m_scopeVarsByVar.emplace(ScopedVar{svd.m_scopep, svd.m_varp}, &svd).second;
+            UASSERT_OBJ(inserted, svd.m_varp,
+                        "Registered variable has multiple entries in the same scope.");
+        }
+        for (const auto& entry : m_scopeVars) {
+            const ScopeVarData& svd = entry.second;
+            const AstVar* const varp = svd.m_varp;
+            if (!varp->isForceable()) continue;
+            UASSERT_OBJ(varp->forceRdVarp() && varp->forceEnVarp() && varp->forceValVarp(), varp,
+                        "Forceable variable has incomplete force helper links.");
+            for (const AstVar* const controlVarp : {varp->forceEnVarp(), varp->forceValVarp()}) {
+                forceControlScopeVar(svd.m_scopep, varp, controlVarp).m_isForceControl = true;
             }
         }
-        return true;
-    }
-
-    bool baseSignalIsPublic(const AstScope* const scopep,
-                            const std::string& baseSignalName) const {
-        const std::string baseSignalKey = getKeyName(scopep, baseSignalName);
-        const std::map<const std::string, ScopeVarData>::const_iterator baseSignalIt
-            = m_scopeVars.find(baseSignalKey);
-        if (baseSignalIt == m_scopeVars.end()) {
-            return false;
-        } else {
-            const AstVar* const baseSignalVarp = baseSignalIt->second.m_varp;
-            // Should not actually occur if the variable is in the m_scopeVars
-            if (!baseSignalVarp->isSigPublic()) return false;
-        }
-        return true;
-    }
-
-    bool forceControlSignalsAreValid(const AstScope* const scopep,
-                                     const AstVar* const baseSignalVarp) const {
-        constexpr std::array<const char*, 2> forceControlSuffixes = {"__VforceEn", "__VforceVal"};
-        return std::all_of(
-            forceControlSuffixes.begin(), forceControlSuffixes.end(),
-            [scopep, baseSignalVarp, this](const std::string& forceControlSuffix) {
-                const std::string controlSignalName = baseSignalVarp->name() + forceControlSuffix;
-                const std::string controlSignalKey = getKeyName(scopep, controlSignalName);
-                const std::size_t controlSignalCount = m_scopeVars.count(controlSignalKey);
-                if (controlSignalCount == 0) {
-                    baseSignalVarp->v3fatalSrc("Signal "
-                                               << baseSignalVarp->prettyNameQ()
-                                               << " is marked forceable, but the control signal '"
-                                               << controlSignalName
-                                               << "' can not be found in m_scopeVars with key '"
-                                               << controlSignalKey << "'.");
-                    return false;
-                }
-                if (controlSignalCount > 1) {
-                    baseSignalVarp->v3fatalSrc("The control signal '"
-                                               << controlSignalName << "' for forceable signal "
-                                               << baseSignalVarp->prettyNameQ()
-                                               << " occurs several times within the same scope.");
-                    return false;
-                }
-                return true;
-            });
     }
 
     /// (scp, m_vpiScopeCandidates, m_scopeNames) -> m_scopeNames
@@ -932,6 +855,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         // Collect list of scopes
         iterateChildrenConst(nodep);
         varsExpand();
+        collectForceControls();
 
         if (v3Global.opt.vpi()) buildVpiHierarchy();
 
@@ -1641,12 +1565,8 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                 const AstVar* const varp = svd.m_varp;
                 const VarDims dims = dimsFor(svd);
 
-                // Force-control signals fold into the base signal's forceable insert.
-                const std::pair<bool, std::string> fc = isForceControlSignal(varp);
-                if (fc.first && baseSignalIsPublic(scopep, fc.second)
-                    && baseSignalIsValid(scopep, varp, fc.second)) {
-                    continue;
-                }
+                // Actual force-control declarations fold into the base variable's insert.
+                if (svd.m_isForceControl) continue;
 
                 std::string row;
                 const TableEntryKind kind

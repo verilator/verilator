@@ -443,8 +443,7 @@ class ParamProcessor final {
         } else if (const AstPattern* const patp = VN_CAST(nodep, Pattern)) {
             // A parameter override pattern, keyed before the specialized module types it
             key += "'{";
-            for (const AstPatMember* memp = VN_AS(patp->itemsp(), PatMember); memp;
-                 memp = VN_AS(memp->nextp(), PatMember)) {
+            for (const AstPatternItem* const memp : patp->itemspList()) {
                 if (memp->isDefault()) key += "default";
                 if (const AstText* const textp = VN_CAST(memp->keyp(), Text)) {
                     key += textp->text();
@@ -752,16 +751,14 @@ class ParamProcessor final {
 
         std::map<string, AstNode*> pins;
 
-        AstPin* pinp = paramPinsp;
-        while (pinp) {
+        for (AstPin* const pinp : VNList<AstPin>{paramPinsp}) {
+            if (!pinp->exprp()) continue;  // An empty override keeps the default
             checkSupportedParam(modp, pinp);
             if (const AstVar* const varp = pinp->modVarp()) {
-                if (!pinp->exprp()) continue;
                 if (varp->isGParam()) pins.emplace(varp->name(), pinp->exprp());
             } else if (VN_IS(pinp->exprp(), BasicDType) || VN_IS(pinp->exprp(), NodeDType)) {
                 pins.emplace(pinp->name(), pinp->exprp());
             }
-            pinp = VN_AS(pinp->nextp(), Pin);
         }
 
         const auto pair = m_defaultParameterValues.emplace(
@@ -862,10 +859,10 @@ class ParamProcessor final {
             // This fixes static method calls through typedefs in parameterized classes
             if (ftaskRefp->classOrPackagep() == oldClassp) ftaskRefp->classOrPackagep(newClassp);
             // Also update taskp if it points to a function in the old class.
-            // AstNodeFTask::classOrPackagep() (op2) holds a parse-time
+            // AstNodeFTask::classOrPackagep() (op1) holds a parse-time
             // Dot/ClassOrPackageRef for extern declarations, which is deleted
             // in LinkDot::moveExternFuncDecl before V3Param runs. For inline
-            // class methods op2 is nullptr. So this should never match.
+            // class methods op1 is nullptr. So this should never match.
             if (AstNodeFTask* const oldTaskp = ftaskRefp->taskp()) {
                 if (oldTaskp->classOrPackagep() == oldClassp) {
                     oldTaskp->v3fatalSrc(  // LCOV_EXCL_LINE
@@ -1245,7 +1242,7 @@ class ParamProcessor final {
 
     // True for an expression produced while lowering a deferred struct-member chain.
     static bool isDeferredMemberBase(const AstNodeExpr* nodep) {
-        if (VN_IS(nodep, MemberSel)) return true;
+        if (VN_IS(nodep, MemberRef)) return true;
         if (const AstNodePreSel* const selp = VN_CAST(nodep, NodePreSel)) {
             const AstNodeDType* const fromDTypep = selp->fromp()->dtypep();
             const AstNodeArrayDType* const arrayDTypep
@@ -1265,7 +1262,7 @@ class ParamProcessor final {
         AstNodeExpr* const lhsp = VN_CAST(dotp->lhsp(), NodeExpr);
         AstParseRef* const memberRefp = memberParseRef(dotp->rhsp());
         if (!lhsp || !memberRefp || !isDeferredMemberBase(lhsp)) return;
-        AstMemberSel* const newp = new AstMemberSel{memberRefp->fileline(), lhsp->unlinkFrBack(),
+        AstMemberRef* const newp = new AstMemberRef{memberRefp->fileline(), lhsp->unlinkFrBack(),
                                                     VFlagChildDType{}, memberRefp->name()};
         replaceMemberDot(dotp, memberRefp, newp);
     }
@@ -1351,7 +1348,7 @@ class ParamProcessor final {
     }
 
     // Substitute a class param/lparam member's constant value for dotp. The
-    // reverse-order deferred-Dot walk lowers any outer fields to MemberSels.
+    // reverse-order deferred-Dot walk lowers any outer fields to MemberRefs.
     void substituteParamMember(AstDot* const dotp, AstParseRef* const memberRefp,
                                AstVar* const varp) {
         if (!varp->isParam() || !varp->valuep()) return;
@@ -2192,7 +2189,7 @@ class ParamProcessor final {
         // Link source class to its specialized version for later relinking of method references
         if (defaultsResolved) srcModp->user4p(newModp);
 
-        for (auto* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : newModp->stmtspList()) {
             if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
                 if (VN_IS(dtypep->skipRefOrNullp(), VoidDType)) {
                     nodep->v3error(
@@ -3843,7 +3840,7 @@ class ParamVisitor final : public VNVisitor {
         // conditional expression, since this is currently restricted to simple
         // comparisons. If we ever do move to more generic constant expressions, such code
         // will be needed here.
-        if (AstGenFor* const forp = VN_AS(nodep->genforp(), GenFor)) {
+        if (AstGenFor* const forp = nodep->genforp()) {
             // We should have a GENFOR under here.  We will be replacing the begin,
             // so process here rather than at the generate to avoid iteration problems
             UINFO(9, "  BEGIN " << nodep);
@@ -3862,14 +3859,10 @@ class ParamVisitor final : public VNVisitor {
             // Note m_unroller will replace some AstVarRef's to the loop variable with constants
             // Don't remove any deleted nodes in m_unroller until whole process finishes,
             // as some AstXRefs may still point to old nodes.
+            // Unroll after the begin, so the blocks it makes go there, and the begin is no
+            // longer special
+            nodep->addNextHere(forp->unlinkFrBack());
             VL_DO_DANGLING(m_unroller.unroll(forp, beginName), forp);
-            // Blocks were constructed under the special begin, move them up
-            // Note forp is null, so grab statements again
-            if (AstNode* const stmtsp = nodep->genforp()) {
-                stmtsp->unlinkFrBackWithNext();
-                nodep->addNextHere(stmtsp);
-                // Note this clears nodep->genforp(), so begin is no longer special
-            }
         } else {
             VL_RESTORER_COPY(m_generateHierName);
             m_generateHierName += "." + nodep->prettyName();
@@ -3887,7 +3880,7 @@ class ParamVisitor final : public VNVisitor {
         V3Case::caseLint(nodep);
         // Case-item expressions must also be linked before widthing the case.
         for (AstGenCaseItem* const itemp : nodep->itemspList()) {
-            for (AstNode* ep = itemp->condsp(); ep; ep = ep->nextp()) {
+            for (AstNode* const ep : itemp->condspList()) {
                 m_processor.resolveDeferredDotsReachableFrom(ep, m_modp);
             }
         }
@@ -3972,7 +3965,7 @@ class ParamTop final : VNDeleter {
             const AstClassOrPackageRef* const classRefp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
             const AstClass* const lhsClassp = VN_AS(classRefp->classOrPackageSkipp(), Class);
             AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
-            for (auto* itemp = lhsClassp->membersp(); itemp; itemp = itemp->nextp()) {
+            for (AstNode* const itemp : lhsClassp->memberspList()) {
                 if (itemp->name() == rhsp->name()) {
                     rhsp->classOrPackageNodep(itemp);
                     break;

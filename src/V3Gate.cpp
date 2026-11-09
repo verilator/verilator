@@ -911,7 +911,7 @@ class GateDedupeVarVisitor final : public VNVisitorConst {
     // 1. AstNodeAssign
     // 2. AstAlways -> AstNodeAssign
     //   (Note, the assign must also be the only node under the always)
-    // 3. AstAlways -> AstNodeIf -> AstNodeAssign
+    // 3. AstAlways -> AstIf -> AstNodeAssign
     //   (Note, the IF must be the only node under the always,
     //    and the assign must be the only node under the if, other than the ifcond)
     // Any other ordering or node type, except for an AstComment, makes it not dedupable
@@ -955,7 +955,7 @@ class GateDedupeVarVisitor final : public VNVisitorConst {
     //  always @(...)
     //    if (...)
     //       foo = ...; // or foo <= ...;
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         if (!m_dedupable) return;
 
         if (m_always && !m_ifCondp && !nodep->elsesp()) {
