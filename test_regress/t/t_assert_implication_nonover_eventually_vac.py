@@ -16,7 +16,8 @@ test.compile(verilator_flags2=['--timing', '--assert', '--coverage-user', '+defi
 
 test.execute()
 
-# The strong |=> attempt still waiting for b2 fails once, at the end of simulation
+# The strong |=> attempts still waiting for b2 fail once each, at the end of simulation
 test.file_grep_count(test.run_log_filename, r'fail2_non=1 at the end of simulation', 1)
+test.file_grep_count(test.run_log_filename, r'fail2_rep=1 at the end of simulation', 1)
 
 test.passes()

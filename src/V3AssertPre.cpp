@@ -1007,11 +1007,6 @@ private:
         const int n = constp->toSInt();
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
-        if (n == 1) {
-            nodep->replaceWith(exprp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            return;
-        }
         // Saturating counter: if (expr) cnt <= min(cnt+1, N); else cnt <= 0;
         AstVar* const cntVarp = new AstVar{flp, VVarType::MODULETEMP, m_consRepNames.get(""),
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};

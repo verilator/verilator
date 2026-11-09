@@ -25,9 +25,11 @@ module t;
   assert property (@(posedge clk) a |-> (s_eventually b) and c);
   assert property (@(posedge clk) a #=# s_eventually b);
   assert property (@(posedge clk) disable iff (c) a |=> s_eventually b);
-  assert property (@(posedge clk) a[*1] |=> s_eventually b);
   assert property (@(posedge clk) a |=> s_eventually b[*2]);
   assert property (@(posedge clk) a |-> s_eventually b[*2]);
+  assert property (@(posedge clk) a |-> s_eventually b[*1:2]);
+  assert property (@(posedge clk) a |-> s_eventually b[+]);
+  assert property (@(posedge clk) a |-> s_eventually b[*0:1]);
   assert property (@(posedge clk) a |-> s_eventually (b or c));
   assert property (@(posedge clk) a |-> s_eventually (b ##1 c));
   // An if/case property with s_eventually in a branch, also with a pass action

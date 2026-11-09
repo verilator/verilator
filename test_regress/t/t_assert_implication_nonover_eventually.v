@@ -99,6 +99,56 @@ module t (
       `checkd(fail2_over, 0);
     end
 
+  // A one-cycle repetition ([*1], [*1:1], also nested) as the operand of s_eventually or as an
+  // antecedent gives the passes and failures of its operand: with b1 each assertion passes
+  // once and does not fail, with the 3-bit h (nonzero from cycle 1) it passes once; with b2
+  // the |=> attempt fails once, at the end of simulation
+  int pass_rep = 0, pass_rep11 = 0, pass_rep11o = 0, pass_rep2 = 0, pass_rep_proc = 0;
+  int fail_rep = 0, fail_rep11 = 0, fail_rep11o = 0, fail_rep2 = 0, fail_rep_proc = 0;
+  int pass_rep_ant = 0, pass_rep_h = 0, pass2_rep = 0;
+  int fail_rep_ant = 0, fail_rep_h = 0, fail2_rep = 0;
+  assert property (@(posedge clk) a1 |-> s_eventually (b1 [* 1])) pass_rep = pass_rep + 1;
+  else fail_rep = fail_rep + 1;
+  assert property (@(posedge clk) a1 |=> s_eventually (b1 [* 1:1])) pass_rep11 = pass_rep11 + 1;
+  else fail_rep11 = fail_rep11 + 1;
+  assert property (@(posedge clk) a1 |-> s_eventually (b1 [* 1:1])) pass_rep11o = pass_rep11o + 1;
+  else fail_rep11o = fail_rep11o + 1;
+  assert property (@(posedge clk) a1 |=> s_eventually ((b1 [* 1]) [* 1])) pass_rep2 = pass_rep2 + 1;
+  else fail_rep2 = fail_rep2 + 1;
+  always @(posedge clk)
+    assert property (a1 |=> s_eventually ((b1 [* 1]) [* 1])) pass_rep_proc = pass_rep_proc + 1;
+    else fail_rep_proc = fail_rep_proc + 1;
+  assert property (@(posedge clk) a1 [* 1] |=> s_eventually b1) pass_rep_ant = pass_rep_ant + 1;
+  else fail_rep_ant = fail_rep_ant + 1;
+  // verilator lint_off WIDTH
+  assert property (@(posedge clk) a1 |-> s_eventually (h [* 1])) pass_rep_h = pass_rep_h + 1;
+  else fail_rep_h = fail_rep_h + 1;
+  // verilator lint_on WIDTH
+  assert property (@(posedge clk) a2 |=> s_eventually (b2 [* 1])) pass2_rep = pass2_rep + 1;
+  else begin
+    fail2_rep = fail2_rep + 1;
+    $write("fail2_rep=%0d at the end of simulation\n", fail2_rep);
+  end
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass_rep, 1);
+      `checkp(pass_rep11, 1);
+      `checkp(pass_rep11o, 1);
+      `checkp(pass_rep2, 1);
+      `checkp(pass_rep_proc, 1);
+      `checkp(pass_rep_ant, 1);
+      `checkp(pass_rep_h, 1);
+      `checkp(pass2_rep, 0);
+      `checkd(fail_rep, 0);
+      `checkd(fail_rep11, 0);
+      `checkd(fail_rep11o, 0);
+      `checkd(fail_rep2, 0);
+      `checkd(fail_rep_proc, 0);
+      `checkd(fail_rep_ant, 0);
+      `checkd(fail_rep_h, 0);
+      `checkd(fail2_rep, 0);
+    end
+
   // Two attempts wait at the same time (from a3 in cycles 11 and 12) and both pass on b3
   int pass3_non = 0, fail3_non = 0;
   assert property (@(posedge clk) a3 |=> s_eventually b3) pass3_non = pass3_non + 1;
