@@ -4467,7 +4467,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         m_inSens = true;
         iterateChildren(nodep);
     }
-    void visit(AstPatMember* nodep) override {
+    void visit(AstPatternItem* nodep) override {
         LINKDOT_VISIT_START();
         if (nodep->varrefp()) return;  // only do this mapping once
         // If we have a TEXT token as our key, lookup if it's a LPARAM
@@ -4478,7 +4478,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (VSymEnt* const foundp = m_curSymp->findIdFallback(textp->text())) {
                 if (AstVar* const varp = VN_CAST(foundp->nodep(), Var)) {
                     if (varp->isParam() || varp->isGenVar()) {
-                        // Attach found Text reference to PatMember
+                        // Attach found Text reference to PatternItem
                         nodep->varrefp(
                             new AstVarRef{nodep->fileline(),
                                           foundp->imported() ? foundp->classOrPackagep() : nullptr,
@@ -4487,7 +4487,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                 }
                 if (AstEnumItem* const itemp = VN_CAST(foundp->nodep(), EnumItem)) {
-                    // Attach enum item value to PatMember
+                    // Attach enum item value to PatternItem
                     nodep->varrefp(
                         new AstEnumItemRef{nodep->fileline(), itemp, foundp->classOrPackagep()});
                     UINFO(9, indent() << " new " << itemp);

@@ -4025,29 +4025,29 @@ patternNoExpr<nodeExprp>:       // IEEE: pattern **Excluding Expr*
         //                      // "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
         ;
 
-patternList<nodep>:             // IEEE: part of pattern
+patternList<patternItemp>:      // IEEE: part of pattern
                 patternOne                              { $$ = $1; }
         |       patternList ',' patternOne              { $$ = addNextNull($1, $3); }
         ;
 
-patternOne<nodep>:              // IEEE: part of pattern
+patternOne<patternItemp>:       // IEEE: part of pattern
                 expr
-                        { if ($1) $$ = new AstPatMember{$1->fileline(), $1, nullptr, nullptr}; else $$ = nullptr; }
-        |       expr '{' argsExprList '}'               { $$ = new AstPatMember{$2, $3, nullptr, $1}; }
-        |       patternNoExpr                           { $$ = $1; }
+                        { if ($1) $$ = new AstPatternItem{$1->fileline(), $1, nullptr, nullptr}; else $$ = nullptr; }
+        |       expr '{' argsExprList '}'               { $$ = new AstPatternItem{$2, $3, nullptr, $1}; }
+        |       patternNoExpr                           { $$ = new AstPatternItem{$1->fileline(), $1, nullptr, nullptr}; }
         ;
 
-patternMemberList<nodep>:       // IEEE: part of pattern and assignment_pattern
+patternMemberList<patternItemp>: // IEEE: part of pattern and assignment_pattern
                 patternMemberOne                        { $$ = $1; }
         |       patternMemberList ',' patternMemberOne  { $$ = addNextNull($1, $3); }
         ;
 
-patternMemberOne<patMemberp>:   // IEEE: part of pattern and assignment_pattern
-                patternKey ':' expr                     { $$ = new AstPatMember{$1->fileline(), $3, $1, nullptr}; }
-        |       patternKey ':' patternNoExpr            { $$ = new AstPatMember{$1->fileline(), $3, $1, nullptr}; }
+patternMemberOne<patternItemp>: // IEEE: part of pattern and assignment_pattern
+                patternKey ':' expr                     { $$ = new AstPatternItem{$1->fileline(), $3, $1, nullptr}; }
+        |       patternKey ':' patternNoExpr            { $$ = new AstPatternItem{$1->fileline(), $3, $1, nullptr}; }
         //                      // From assignment_pattern_key
-        |       yDEFAULT ':' expr                       { $$ = new AstPatMember{$1, $3, nullptr, nullptr}; $$->isDefault(true); }
-        |       yDEFAULT ':' patternNoExpr              { AstPatMember* const patp = new AstPatMember{$1, $3, nullptr, nullptr}; patp->isDefault(true); $$ = patp; }
+        |       yDEFAULT ':' expr                       { $$ = new AstPatternItem{$1, $3, nullptr, nullptr}; $$->isDefault(true); }
+        |       yDEFAULT ':' patternNoExpr              { AstPatternItem* const patp = new AstPatternItem{$1, $3, nullptr, nullptr}; patp->isDefault(true); $$ = patp; }
         ;
 
 patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key

@@ -3634,12 +3634,12 @@ void AstPast::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, propertyTiming);
     dumpJsonGen(str);
 }
-void AstPatMember::dump(std::ostream& str) const {
+void AstPatternItem::dump(std::ostream& str) const {
     Super::dump(str);
     if (isConcat()) str << " [CONCAT]";
     if (isDefault()) str << " [DEFAULT]";
 }
-void AstPatMember::dumpJson(std::ostream& str) const {
+void AstPatternItem::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isConcat);
     dumpJsonBoolFuncIf(str, isDefault);
     dumpJsonGen(str);

@@ -443,8 +443,7 @@ class ParamProcessor final {
         } else if (const AstPattern* const patp = VN_CAST(nodep, Pattern)) {
             // A parameter override pattern, keyed before the specialized module types it
             key += "'{";
-            for (const AstPatMember* memp = VN_AS(patp->itemsp(), PatMember); memp;
-                 memp = VN_AS(memp->nextp(), PatMember)) {
+            for (const AstPatternItem* const memp : patp->itemspList()) {
                 if (memp->isDefault()) key += "default";
                 if (const AstText* const textp = VN_CAST(memp->keyp(), Text)) {
                     key += textp->text();

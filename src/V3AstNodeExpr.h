@@ -615,6 +615,34 @@ public:
     void isWhole(bool flag) { m_isWhole = flag; }
     bool isWhole() const { return m_isWhole; }
 };
+class AstPatternItem final : public AstNode {
+    // Item of an AstPattern: 'value', 'key: value', 'default: value' or 'count{values}'
+    // Parents: AstPattern
+    // Children: expression, AstPattern, replication count, decoded nodep if TEXT
+    // Expression to assign or another AstPattern (list if replicated)
+    // @astgen op1 := lhssp : List[AstNodeExpr]
+    // @astgen op2 := keyp : Optional[AstNode]
+    // @astgen op3 := repp : Optional[AstNodeExpr]  // replication count, or nullptr for count 1
+    // @astgen op4 := varrefp : Optional[AstNodeExpr]  // Decoded variable if TEXT
+    bool m_isDefault = false;  // Has default
+    bool m_isConcat = false;  // From concatenate
+
+public:
+    AstPatternItem(FileLine* fl, AstNodeExpr* lhssp, AstNode* keyp, AstNodeExpr* repp)
+        : ASTGEN_SUPER_PatternItem(fl) {
+        addLhssp(lhssp);
+        this->keyp(keyp);
+        this->repp(repp);
+    }
+    ASTGEN_MEMBERS_AstPatternItem;
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
+    bool isConcat() const { return m_isConcat; }
+    void isConcat(bool flag) { m_isConcat = flag; }
+    bool isDefault() const { return m_isDefault; }
+    void isDefault(bool flag) { m_isDefault = flag; }
+    AstNodeExpr* keyExprp() const { return varrefp() ? varrefp() : VN_CAST(keyp(), NodeExpr); }
+};
 class AstWith final : public AstNode {
     // Similar to AstArg, but this is essentially a lambda passed to a call.
     // Not an AstNodeExpr as there is no concept of function values in Verilator
@@ -2047,47 +2075,14 @@ public:
     bool propertyTiming() const { return m_propertyTiming; }
     bool isSystemFunc() const override { return true; }
 };
-class AstPatMember final : public AstNodeExpr {
-    // Verilog '{a} or '{a{b}}
-    // Parents: AstPattern
-    // Children: expression, AstPattern, replication count, decoded nodep if TEXT
-    // Expression to assign or another AstPattern (list if replicated)
-    // @astgen op1 := lhssp : List[AstNodeExpr]
-    // @astgen op2 := keyp : Optional[AstNode]
-    // @astgen op3 := repp : Optional[AstNodeExpr]  // replication count, or nullptr for count 1
-    // @astgen op4 := varrefp : Optional[AstNodeExpr]  // Decoded variable if TEXT
-    bool m_isDefault = false;  // Has default
-    bool m_isConcat = false;  // From concatenate
-
-public:
-    AstPatMember(FileLine* fl, AstNodeExpr* lhssp, AstNode* keyp, AstNodeExpr* repp)
-        : ASTGEN_SUPER_PatMember(fl) {
-        addLhssp(lhssp);
-        this->keyp(keyp);
-        this->repp(repp);
-    }
-    ASTGEN_MEMBERS_AstPatMember;
-    string emitVerilog() override { return lhssp() ? "%f{%r{%k%l}}" : "%l"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
-    int instrCount() const override { return widthInstrs() * 2; }
-    void dump(std::ostream& str = std::cout) const override;
-    void dumpJson(std::ostream& str = std::cout) const override;
-    bool isConcat() const { return m_isConcat; }
-    void isConcat(bool flag) { m_isConcat = flag; }
-    bool isDefault() const { return m_isDefault; }
-    void isDefault(bool flag) { m_isDefault = flag; }
-    AstNodeExpr* keyExprp() const { return varrefp() ? varrefp() : VN_CAST(keyp(), NodeExpr); }
-};
 class AstPattern final : public AstNodeExpr {
     // Verilog '{a,b,c,d...}
     // Parents: AstNodeAssign, AstPattern, ...
-    // Children: expression, AstPattern, AstPatReplicate
+    // Children: AstPatternItem
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
-    // @astgen op2 := itemsp : List[AstNode] // AstPatReplicate, AstPatMember, etc
+    // @astgen op2 := itemsp : List[AstPatternItem]
 public:
-    AstPattern(FileLine* fl, AstNode* itemsp)
+    AstPattern(FileLine* fl, AstPatternItem* itemsp)
         : ASTGEN_SUPER_Pattern(fl) {
         addItemsp(itemsp);
     }
