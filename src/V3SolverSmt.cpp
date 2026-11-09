@@ -87,6 +87,11 @@ public:
         return setupAllTaskp;
     }
 
+    // Solver variable name for a constrained dynamic or queue size.
+    static std::string sizeVarName(const AstVar* const varp) {
+        return "__V" + varp->name() + "_size";
+    }
+
     // Look through unpacked array dimensions to the element type
     static AstNodeDType* arrayElementDTypep(AstNodeDType* dtypep) {
         dtypep = dtypep->skipRefp();
@@ -458,7 +463,24 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
             return nullptr;
         }
-        if (VN_IS(exprp, CMethodHard)) return buildPathExpr(fl, exprp, "");
+        if (const AstCMethodHard* const methodp = VN_CAST(exprp, CMethodHard)) {
+            if (methodp->method() == VCMethod::DYN_SIZE) {
+                const AstVar* varp = nullptr;
+                if (const AstVarRef* const varrefp = VN_CAST(methodp->fromp(), VarRef)) {
+                    varp = varrefp->varp();
+                } else if (m_inlineInitBlockp) {
+                    if (const AstMemberRef* const memberp = VN_CAST(methodp->fromp(), MemberRef)) {
+                        varp = memberp->varp();
+                    }
+                }
+                if (varp) {
+                    // The size may be introduced later by an inline constraint; the solver
+                    // ignores the edge when no size variable is registered.
+                    return new AstConst{fl, AstConst::String{}, SmtUtil::sizeVarName(varp)};
+                }
+            }
+            return buildPathExpr(fl, exprp, "");
+        }
         const AstNodeSel* selp = VN_CAST(exprp, ArraySel);
         if (!selp) selp = VN_CAST(exprp, AssocSel);
         if (selp) {
@@ -3178,8 +3200,8 @@ class SolverSmtLowering final : public V3SolverLowering {
         AstVar* sizeVarp = VN_CAST(arrVarp->user4p(), Var);
         wasCreated = false;
         if (!sizeVarp) {
-            sizeVarp = new AstVar{fl, VVarType::MEMBER, "__V" + arrVarp->name() + "_size",
-                                  signed32DTypep};
+            sizeVarp
+                = new AstVar{fl, VVarType::MEMBER, SmtUtil::sizeVarName(arrVarp), signed32DTypep};
             classp->addMembersp(sizeVarp);
             m_memberMap.insert(classp, sizeVarp);
             sizeVarp->user2p(classp);
@@ -4255,10 +4277,15 @@ public:
             resizeStmtsp = (new AstTaskRef{nodep->fileline(), resizeAllTaskp})->makeStmt();
         }
         {
+            std::set<AstCMethodHard*> beforeMethods;
+            capturedTreep->foreachAndNext([&](AstConstraintBefore* beforep) {
+                beforep->foreach([&](AstCMethodHard* methodp) { beforeMethods.insert(methodp); });
+            });
             std::vector<AstCMethodHard*> sizeMethodps;
             capturedTreep->foreachAndNext([&](AstCMethodHard* methodp) {
-                if (methodp->method() == VCMethod::DYN_SIZE
-                    || methodp->method() == VCMethod::ASSOC_SIZE) {
+                if ((methodp->method() == VCMethod::DYN_SIZE
+                     || methodp->method() == VCMethod::ASSOC_SIZE)
+                    && !beforeMethods.count(methodp)) {
                     sizeMethodps.push_back(methodp);
                 }
             });

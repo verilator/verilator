@@ -16,6 +16,18 @@ if not test.have_solver:
 
 test.compile()
 
-test.execute()
+if test.vlt:
+    solver_log = test.obj_dir + '/solver.log'
+    test.execute(all_run_flags=['+verilator+solver+file+' + solver_log])
+    # These get-value commands only appear when the named variables form an
+    # intermediate solve-before layer, rather than when the edge is dropped.
+    test.file_grep(solver_log, r'\(get-value \(n_before \)\)')
+    test.file_grep(solver_log, r'\(get-value \(__Vdyn_before_size __Vque_before_size \)\)')
+    test.file_grep(solver_log, r'\(get-value \(inline_n \)\)')
+    test.file_grep(solver_log, r'\(get-value \(with_n \)\)')
+    test.file_grep(solver_log, r'\(get-value \(first \)\)')
+    test.file_grep(solver_log, r'\(get-value \(__Vd_size \)\)')
+else:
+    test.execute()
 
 test.passes()

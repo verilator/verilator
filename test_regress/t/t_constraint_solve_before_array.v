@@ -83,7 +83,144 @@ class DynArr;  // dynamic array solved before a scalar
   }
 endclass
 
+// Explicit container sizes are valid on either side of solve...before.
+class Issue9092;
+  rand int unsigned n;
+  rand bit [7:0] d[];
+  constraint c {
+    n inside {[1:4]};
+    d.size == n;
+    solve n before d.size;
+  }
+endclass
+
+class SizeAfter;
+  rand int unsigned n_before;
+  rand bit [7:0] dyn_after[];
+  rand bit [7:0] que_after[$];
+  constraint c {
+    n_before inside {[1:4]};
+    dyn_after.size == n_before;
+    que_after.size == n_before;
+    solve n_before before dyn_after.size, que_after.size;
+  }
+endclass
+
+class SizeBefore;
+  rand int unsigned n_after;
+  rand bit [7:0] dyn_before[];
+  rand bit [7:0] que_before[$];
+  constraint c {
+    n_after inside {[1:4]};
+    dyn_before.size == n_after;
+    que_before.size == n_after;
+    solve dyn_before.size, que_before.size before n_after;
+  }
+endclass
+
+class SizeFixed;
+  rand int unsigned n;
+  rand bit [7:0] d[];
+  rand bit [7:0] q[$];
+  constraint c {
+    n inside {[1:4]};
+    solve n before d.size;
+    solve q.size before n;
+  }
+endclass
+
+class SizeInline;
+  rand int unsigned inline_n;
+  rand bit [7:0] inline_d[];
+  constraint c {
+    inline_n inside {[1:4]};
+    solve inline_n before inline_d.size;
+  }
+endclass
+
+class SizeWith;
+  rand int unsigned with_n;
+  rand bit [7:0] with_d[];
+  rand bit [7:0] with_q[$];
+endclass
+
+class SizeIndependent;
+  rand int unsigned first;
+  rand int unsigned last;
+  rand bit [7:0] d[];
+  constraint c {
+    solve first before d.size;
+    solve d.size before last;
+    first inside {[1:3]};
+    last inside {[1:3]};
+    d.size inside {[1:3]};
+  }
+endclass
+
 module t;
+  initial begin
+    Issue9092 original;
+    SizeAfter afters;
+    SizeBefore befores;
+    SizeFixed fixeds;
+    SizeInline inliner;
+    SizeWith withs;
+    SizeIndependent independent;
+    int ok;
+    original = new;
+    afters = new;
+    befores = new;
+    fixeds = new;
+    fixeds.d = new[3];
+    fixeds.q.push_back(1);
+    fixeds.q.push_back(2);
+    inliner = new;
+    withs = new;
+    withs.with_d = new[3];
+    withs.with_q.push_back(1);
+    withs.with_q.push_back(2);
+    independent = new;
+    repeat (10) begin
+      ok = original.randomize();
+      `checkd(ok, 1);
+      `checkd(original.d.size(), original.n);
+      ok = afters.randomize();
+      `checkd(ok, 1);
+      `checkd(afters.dyn_after.size(), afters.n_before);
+      `checkd(afters.que_after.size(), afters.n_before);
+      ok = befores.randomize();
+      `checkd(ok, 1);
+      `checkd(befores.dyn_before.size(), befores.n_after);
+      `checkd(befores.que_before.size(), befores.n_after);
+      ok = fixeds.randomize();
+      `checkd(ok, 1);
+      `checkd(fixeds.d.size(), 3);
+      `checkd(fixeds.q.size(), 2);
+      ok = inliner.randomize() with { inline_d.size == inline_n; };
+      `checkd(ok, 1);
+      `checkd(inliner.inline_d.size(), inliner.inline_n);
+      withs.with_d = new[3];
+      ok = withs.randomize() with {
+        with_n inside {[1:4]};
+        solve with_n before with_d.size;
+        solve with_q.size before with_n;
+      };
+      `checkd(ok, 1);
+      `checkd(withs.with_d.size(), 3);
+      `checkd(withs.with_q.size(), 2);
+      ok = withs.randomize() with {
+        with_n inside {[1:4]};
+        with_d.size == with_n;
+        solve with_n before with_d.size;
+      };
+      `checkd(ok, 1);
+      `checkd(withs.with_d.size(), withs.with_n);
+      ok = independent.randomize();
+      `checkd(ok, 1);
+      if (independent.d.size() < 1 || independent.d.size() > 3) `stop;
+    end
+  end
+
   OneD o1;
   TwoD o2;
   Mul om;
