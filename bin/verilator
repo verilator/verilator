@@ -12,9 +12,7 @@
 require 5.006_001;
 use warnings;
 use Getopt::Long;
-use FindBin qw($RealBin $RealScript);
-use IO::File;
-use Pod::Usage;
+use File::Basename qw(dirname);
 use Cwd qw(realpath);
 
 use strict;
@@ -26,6 +24,8 @@ use vars qw($Debug @Opt_Verilator_Sw);
 
 autoflush STDOUT 1;
 autoflush STDERR 1;
+
+my $RealBin = dirname(realpath($0));  # Faster than 'use FindBin'
 
 # Guard against unbounded recursive re-entry. Hierarchical / --build flows
 # legitimately re-enter the wrapper a few levels deep (wrapper -> verilator_bin
@@ -53,7 +53,7 @@ my $opt_valgrind;
 
 # No arguments can't do anything useful.  Give help
 if ($#ARGV < 0) {
-    pod2usage(-exitstatus => 2, -verbose => 0);
+    pod2usagelazy(-exitstatus => 2, -verbose => 0);
 }
 
 # Insert debugging options up front
@@ -84,7 +84,7 @@ if (! GetOptions(
           # Additional parameters
           "<>"               => sub {},      # Ignored
     )) {
-    pod2usage(-exitstatus => 2, -verbose => 0);
+    pod2usagelazy(-exitstatus => 2, -verbose => 0);
 }
 
 # WARNING: $verilator_pkgdatadir_relpath is substituted during Verilator 'make install'
@@ -202,7 +202,7 @@ if ($opt_gdb) {
 #----------------------------------------------------------------------
 
 sub usage {
-    pod2usage(-verbose => 2, -exitval => 0, -output => \*STDOUT);
+    pod2usagelazy(-verbose => 2, -exitval => 0, -output => \*STDOUT);
 }
 
 sub debug {
@@ -228,6 +228,11 @@ sub verilator_bin {
 #######################################################################
 #######################################################################
 # Utilities
+
+sub pod2usagelazy {
+    require Pod::Usage;  # Lazy-load Pod::Usage for speed
+    Pod::Usage::pod2usage(@_);
+}
 
 sub gdb_works {
     $! = undef;  # Cleanup -x

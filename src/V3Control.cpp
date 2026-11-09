@@ -212,9 +212,9 @@ public:
 
     void apply(AstNodeFTask* ftaskp) const {
         if (m_noinline)
-            ftaskp->addStmtsp(new AstPragma{ftaskp->fileline(), VPragmaType::NO_INLINE_TASK});
+            ftaskp->addDeclsp(new AstPragma{ftaskp->fileline(), VPragmaType::NO_INLINE_TASK});
         if (m_public)
-            ftaskp->addStmtsp(new AstPragma{ftaskp->fileline(), VPragmaType::PUBLIC_TASK});
+            ftaskp->addDeclsp(new AstPragma{ftaskp->fileline(), VPragmaType::PUBLIC_TASK});
     }
 };
 

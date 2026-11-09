@@ -1,5 +1,5 @@
 %Warning-DEFPARAM: t/t_lint_defparam.v:10:18: defparam is deprecated (IEEE 1800-2023 C.4.1)
-                                            : ... Suggest use instantiation with #(.P(...etc...))
+                                            : ... Suggest use instantiation with '#(.P(...etc...))'
    10 |   defparam sub.P = 2;
       |                  ^
                    ... For warning description see https://verilator.org/warn/DEFPARAM?v=latest

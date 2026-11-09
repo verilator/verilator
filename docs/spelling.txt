@@ -339,6 +339,7 @@ Mora
 Muhlestein
 Multithreaded
 Multithreading
+Murdock
 Mykyta
 NFA
 NOUNOPTFLAT
@@ -1031,6 +1032,7 @@ oversubscription
 parallelized
 param
 parameterization
+parameterizations
 parameterized
 parameterized
 parameterless

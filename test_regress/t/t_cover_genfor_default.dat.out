@@ -1,0 +1,28 @@
+# SystemC::Coverage-3
+C 'ft/t_cover_genfor.vl14n13tlinepagev_line/tboblockS14htb' 1
+C 'ft/t_cover_genfor.vl15n17tlinepagev_line/tboblockS15htb' 1
+C 'ft/t_cover_genfor.vl16n17tlinepagev_line/tboblockS16htb' 1
+C 'ft/t_cover_genfor.vl17n17tlinepagev_line/tboblockS17htb' 1
+C 'ft/t_cover_genfor.vl18n17tlinepagev_line/tboblockS18htb' 1
+C 'ft/t_cover_genfor.vl20n19texprpagev_expr/tbo(clk==0) => 1htb' 3
+C 'ft/t_cover_genfor.vl20n19texprpagev_expr/tbo(clk==1) => 0htb' 4
+C 'ft/t_cover_genfor.vl20n3tlinepagev_line/tboblockS20htb' 7
+C 'ft/t_cover_genfor.vl27n7tlinepagev_line/tboblockS26-27,30htb' 16
+C 'ft/t_cover_genfor.vl28n10tbranchpagev_branch/tboelseS26,29htb' 8
+C 'ft/t_cover_genfor.vl28n9tbranchpagev_branch/tboifS26,28htb' 8
+C 'ft/t_cover_genfor.vl30n17texprpagev_expr/tbo(a[0]==0) => 1htb' 2
+C 'ft/t_cover_genfor.vl30n17texprpagev_expr/tbo(a[0]==1) => 0htb' 2
+C 'ft/t_cover_genfor.vl30n17texprpagev_expr/tbo(a[1]==0) => 1htb' 2
+C 'ft/t_cover_genfor.vl30n17texprpagev_expr/tbo(a[1]==1) => 0htb' 2
+C 'ft/t_cover_genfor.vl30n17texprpagev_expr/tbo(a[2]==0) => 1htb' 2
+C 'ft/t_cover_genfor.vl30n17texprpagev_expr/tbo(a[2]==1) => 0htb' 2
+C 'ft/t_cover_genfor.vl30n17texprpagev_expr/tbo(a[3]==0) => 1htb' 2
+C 'ft/t_cover_genfor.vl30n17texprpagev_expr/tbo(a[3]==1) => 0htb' 2
+C 'ft/t_cover_genfor.vl38n7tlinepagev_line/tboblockS38htb' 16
+C 'ft/t_cover_genfor.vl39n10tbranchpagev_branch/tboelseS37,40htb' 8
+C 'ft/t_cover_genfor.vl39n9tbranchpagev_branch/tboifS37,39htb' 8
+C 'ft/t_cover_genfor.vl48n7tlinepagev_line/tboblockS48htb' 16
+C 'ft/t_cover_genfor.vl49n10tbranchpagev_branch/tboelseS47,50htb' 8
+C 'ft/t_cover_genfor.vl49n9tbranchpagev_branch/tboifS47,49htb' 8
+C 'ft/t_cover_genfor.vl55n3tlinepagev_line/tboblockS55-61htb' 1
+C 'ft/t_cover_genfor.vl59n5tlinepagev_line/tboblockS59htb' 4

@@ -104,7 +104,7 @@ class DescopeVisitor final : public VNVisitor {
 
         if (VN_IS(scopep->modp(), Class)) {
             // Direct reference to class members are from within the class itself, references from
-            // outside the class must go via AstMemberSel
+            // outside the class must go via AstMemberRef
             return VSelfPointerText{VSelfPointerText::This{}};
         } else if (relativeRefOk && scopep == m_scopep) {
             return VSelfPointerText{VSelfPointerText::This{}};

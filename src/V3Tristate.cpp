@@ -1819,7 +1819,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     }
                 } else {
                     // Don't set user1p here as there are no handlers for many LHS node types
-                    // (ArraySel, MemberSel, StructSel, etc.) and checkUnhandled() would error.
+                    // (ArraySel, MemberRef, StructSel, etc.) and checkUnhandled() would error.
                     m_tgraph.didProcess(nodep, true);
                 }
             }

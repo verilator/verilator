@@ -15,7 +15,7 @@
             },
             "invocations": [
                 {
-                    "commandLine": "--prefix Vt_sarif_clean --lint-only -Mdir obj_vlt/t_sarif_clean --debug-check --x-assign unique -Wno-fatal --diagnostics-sarif +librescan +notimingchecks +libext+.v -y t +incdir+t +define+TEST_OBJ_DIR=obj_vlt/t_sarif_clean +define+TEST_DUMPFILE=obj_vlt/t_sarif_clean/simx.vcd t/t_sarif_clean.v",
+                    "commandLine": "--prefix Vt_sarif_clean --lint-only -Mdir obj_vlt/t_sarif_clean --debug-check --no-unlimited-stack --x-assign unique -Wno-fatal --diagnostics-sarif +librescan +notimingchecks +libext+.v -y t +incdir+t +define+TEST_OBJ_DIR=obj_vlt/t_sarif_clean +define+TEST_DUMPFILE=obj_vlt/t_sarif_clean/simx.vcd t/t_sarif_clean.v",
                     "executionSuccessful": true
                 }
             ],

@@ -109,7 +109,15 @@ inline std::ostream& operator<<(std::ostream& os, const VAccess& rhs) { return o
 
 class VAlwaysKwd final {
 public:
-    enum en : uint8_t { ALWAYS, ALWAYS_FF, ALWAYS_LATCH, ALWAYS_COMB, CONT_ASSIGN, COVER_TOGGLE };
+    enum en : uint8_t {
+        ALWAYS,
+        ALWAYS_FF,
+        ALWAYS_LATCH,
+        ALWAYS_COMB,
+        ASSERT_COVER,
+        CONT_ASSIGN,
+        COVER_TOGGLE
+    };
     enum en m_e;
     VAlwaysKwd()
         : m_e{ALWAYS} {}
@@ -120,8 +128,9 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static constexpr const char* const names[] = {
-            "always", "always_ff", "always_latch", "always_comb", "cont_assign", "cover_toggle"};
+        static constexpr const char* const names[]
+            = {"always",       "always_ff",   "always_latch", "always_comb",
+               "assert_cover", "cont_assign", "cover_toggle"};
         return names[m_e];
     }
 };
@@ -1192,7 +1201,6 @@ FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
 #define FOR_EACH_CFUNCTION(macro) \
     /*    id,                                 function,                 pure,   args */ \
     macro(_NONE,                              "_none",                  false,  "") \
-    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",          PURE,   "r") \
     macro(STRING_APPEND,                      "VL_APPENDN_NN",          false,  "mr")
 // clang-format on
 
@@ -1892,7 +1900,7 @@ public:
         m_cachedCnt = 0;
         m_state = 0;
     }
-    static void clearCacheTree() {
+    VL_ATTR_ALWINLINE static void clearCacheTree() {
         ++s_cachedCntGbl;
         // 64 bits so won't overflow
         // UASSERT_STATIC(s_cachedCntGbl < MAX_CNT, "Overflow of cache counting");

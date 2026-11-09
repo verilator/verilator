@@ -75,7 +75,7 @@ class RandcSmall;
   endfunction
 endclass
 
-// Test 3: Inheritance - parent randc with constraint, child inherits
+// Test: Inheritance - parent randc with constraint, child inherits
 class RandcParent;
   randc bit [2:0] code;  // 8 values: 0-7
   constraint c_positive {code > 0;}  // 7 valid values: 1-7
@@ -126,7 +126,7 @@ class RandcChild extends RandcParent;
   endfunction
 endclass
 
-// Test 5: constraint_mode() interaction
+// Test: constraint_mode() interaction
 // Verifies randc cyclic behavior adapts when constraints are toggled at runtime.
 // Note: randc cycles are continuous, not per-phase, so we verify constraint
 // enforcement and that all valid values eventually appear rather than exact counts.
@@ -177,7 +177,7 @@ class RandcModeSwitch;
   endfunction
 endclass
 
-// Test 6: Enum randc with constraint excluding some values
+// Test: Enum randc with constraint excluding some values
 // Use a 2-bit enum where all bit values are valid enum members,
 // so the solver domain matches the enum domain exactly.
 class RandcEnumConstrained;
@@ -211,7 +211,7 @@ class RandcEnumConstrained;
   endfunction
 endclass
 
-// Test 7: Deep cyclic - full 4-bit range 0:15 (16 values, no constraint)
+// Test: Deep cyclic - full 4-bit range 0:15 (16 values, no constraint)
 class RandcDeep;
   randc bit [3:0] val;
 

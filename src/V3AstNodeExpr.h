@@ -598,6 +598,51 @@ public:
     void name(const std::string& name) override { m_name = name; }
     bool emptyConnectNoNext() const { return !exprp() && name() == "" && !nextp(); }
 };
+class AstDistItem final : public AstNode {
+    // Constraint distribution item
+    // @astgen op1 := rangep : AstNodeExpr
+    // @astgen op2 := weightp : AstNodeExpr
+    bool m_isWhole = false;  // True for weight ':/', false for ':='
+public:
+    AstDistItem(FileLine* fl, AstNodeExpr* rangep, AstNodeExpr* weightp)
+        : ASTGEN_SUPER_DistItem(fl) {
+        this->rangep(rangep);
+        this->weightp(weightp);
+    }
+    ASTGEN_MEMBERS_AstDistItem;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    void isWhole(bool flag) { m_isWhole = flag; }
+    bool isWhole() const { return m_isWhole; }
+};
+class AstPatternItem final : public AstNode {
+    // Item of an AstPattern: 'value', 'key: value', 'default: value' or 'count{values}'
+    // Parents: AstPattern
+    // Children: expression, AstPattern, replication count, decoded nodep if TEXT
+    // Expression to assign or another AstPattern (list if replicated)
+    // @astgen op1 := lhssp : List[AstNodeExpr]
+    // @astgen op2 := keyp : Optional[AstNode]
+    // @astgen op3 := repp : Optional[AstNodeExpr]  // replication count, or nullptr for count 1
+    // @astgen op4 := varrefp : Optional[AstNodeExpr]  // Decoded variable if TEXT
+    bool m_isDefault = false;  // Has default
+    bool m_isConcat = false;  // From concatenate
+
+public:
+    AstPatternItem(FileLine* fl, AstNodeExpr* lhssp, AstNode* keyp, AstNodeExpr* repp)
+        : ASTGEN_SUPER_PatternItem(fl) {
+        addLhssp(lhssp);
+        this->keyp(keyp);
+        this->repp(repp);
+    }
+    ASTGEN_MEMBERS_AstPatternItem;
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
+    bool isConcat() const { return m_isConcat; }
+    void isConcat(bool flag) { m_isConcat = flag; }
+    bool isDefault() const { return m_isDefault; }
+    void isDefault(bool flag) { m_isDefault = flag; }
+    AstNodeExpr* keyExprp() const { return varrefp() ? varrefp() : VN_CAST(keyp(), NodeExpr); }
+};
 class AstWith final : public AstNode {
     // Similar to AstArg, but this is essentially a lambda passed to a call.
     // Not an AstNodeExpr as there is no concept of function values in Verilator
@@ -1361,26 +1406,6 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }  // NA
 };
-class AstDistItem final : public AstNodeExpr {
-    // Constraint distribution item
-    // @astgen op1 := rangep : AstNodeExpr
-    // @astgen op2 := weightp : AstNodeExpr
-    bool m_isWhole = false;  // True for weight ':/', false for ':='
-public:
-    AstDistItem(FileLine* fl, AstNodeExpr* rangep, AstNodeExpr* weightp)
-        : ASTGEN_SUPER_DistItem(fl) {
-        this->rangep(rangep);
-        this->weightp(weightp);
-    }
-    ASTGEN_MEMBERS_AstDistItem;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    string emitVerilog() override { return "%l "s + (m_isWhole ? ":/" : ":=") + " %r"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return false; }  // NA
-    void isWhole(bool flag) { m_isWhole = flag; }
-    bool isWhole() const { return m_isWhole; }
-};
 class AstDot final : public AstNodeExpr {
     // A dot separating paths in an AstVarXRef, AstFuncRef or AstTaskRef
     // These are eliminated in the link stage
@@ -1888,7 +1913,7 @@ public:
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
-class AstMemberSel final : public AstNodeExpr {
+class AstMemberRef final : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr
     //
     // @astgen ptr := m_varp : Optional[AstVar]  // Post link, variable in class that is selecting
@@ -1896,14 +1921,14 @@ class AstMemberSel final : public AstNodeExpr {
     string m_name;
     VAccess m_access;  // Read or write, as in AstNodeVarRef
 public:
-    AstMemberSel(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name)
-        : ASTGEN_SUPER_MemberSel(fl)
+    AstMemberRef(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, const string& name)
+        : ASTGEN_SUPER_MemberRef(fl)
         , m_name{name} {
         this->fromp(fromp);
         dtypep(nullptr);  // V3Width will resolve
     }
-    AstMemberSel(FileLine* fl, AstNodeExpr* fromp, AstVar* varp);
-    ASTGEN_MEMBERS_AstMemberSel;
+    AstMemberRef(FileLine* fl, AstNodeExpr* fromp, AstVar* varp);
+    ASTGEN_MEMBERS_AstMemberRef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
@@ -2050,47 +2075,14 @@ public:
     bool propertyTiming() const { return m_propertyTiming; }
     bool isSystemFunc() const override { return true; }
 };
-class AstPatMember final : public AstNodeExpr {
-    // Verilog '{a} or '{a{b}}
-    // Parents: AstPattern
-    // Children: expression, AstPattern, replication count, decoded nodep if TEXT
-    // Expression to assign or another AstPattern (list if replicated)
-    // @astgen op1 := lhssp : List[AstNodeExpr]
-    // @astgen op2 := keyp : Optional[AstNode]
-    // @astgen op3 := repp : Optional[AstNodeExpr]  // replication count, or nullptr for count 1
-    // @astgen op4 := varrefp : Optional[AstNodeExpr]  // Decoded variable if TEXT
-    bool m_isDefault = false;  // Has default
-    bool m_isConcat = false;  // From concatenate
-
-public:
-    AstPatMember(FileLine* fl, AstNodeExpr* lhssp, AstNode* keyp, AstNodeExpr* repp)
-        : ASTGEN_SUPER_PatMember(fl) {
-        addLhssp(lhssp);
-        this->keyp(keyp);
-        this->repp(repp);
-    }
-    ASTGEN_MEMBERS_AstPatMember;
-    string emitVerilog() override { return lhssp() ? "%f{%r{%k%l}}" : "%l"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
-    int instrCount() const override { return widthInstrs() * 2; }
-    void dump(std::ostream& str = std::cout) const override;
-    void dumpJson(std::ostream& str = std::cout) const override;
-    bool isConcat() const { return m_isConcat; }
-    void isConcat(bool flag) { m_isConcat = flag; }
-    bool isDefault() const { return m_isDefault; }
-    void isDefault(bool flag) { m_isDefault = flag; }
-    AstNodeExpr* keyExprp() const { return varrefp() ? varrefp() : VN_CAST(keyp(), NodeExpr); }
-};
 class AstPattern final : public AstNodeExpr {
     // Verilog '{a,b,c,d...}
     // Parents: AstNodeAssign, AstPattern, ...
-    // Children: expression, AstPattern, AstPatReplicate
+    // Children: AstPatternItem
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
-    // @astgen op2 := itemsp : List[AstNode] // AstPatReplicate, AstPatMember, etc
+    // @astgen op2 := itemsp : List[AstPatternItem]
 public:
-    AstPattern(FileLine* fl, AstNode* itemsp)
+    AstPattern(FileLine* fl, AstPatternItem* itemsp)
         : ASTGEN_SUPER_Pattern(fl) {
         addItemsp(itemsp);
     }
@@ -2610,6 +2602,32 @@ public:
     bool internal() const { return m_internal; }
     bool isSystemFunc() const override { return true; }
 };
+class AstSchemaRef final : public AstNodeExpr {
+    // A reference to a schema, to be substituted by its body
+    // @astgen op1 := argsp : List[AstArg]
+    //
+    // @astgen ptr := m_schemap : AstNodeSchema  // The definition referenced
+    // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Package of the definition
+public:
+    AstSchemaRef(FileLine* fl, AstNodeSchema* schemap, AstNodeModule* classOrPackagep,
+                 AstArg* argsp)
+        : ASTGEN_SUPER_SchemaRef(fl)
+        , m_schemap{schemap}
+        , m_classOrPackagep{classOrPackagep} {
+        addArgsp(argsp);
+    }
+    ASTGEN_MEMBERS_AstSchemaRef;
+    std::string name() const override VL_MT_STABLE;
+    bool sameNode(const AstNode* samep) const override {
+        return schemap() == VN_DBG_AS(samep, SchemaRef)->schemap();
+    }
+    AstNodeSchema* schemap() const VL_MT_STABLE { return m_schemap; }
+    AstNodeModule* classOrPackagep() const VL_MT_STABLE { return m_classOrPackagep; }
+    bool isPure() override { return false; }  // Unknown until substituted
+    std::string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
+    std::string emitC() final override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
+};
 class AstScopeName final : public AstNodeExpr {
     // For display %m and DPI context imports
     // Parents:  AstSFormatF, AstNodeFTaskRef, AstNodeFTask, AstScope
@@ -3013,14 +3031,14 @@ class AstWithParse final : public AstNodeExpr {
     // Children: funcref, expr
     // @astgen op1 := funcrefp : AstNodeExpr
     // @astgen op3 := exprsp : List[AstNodeExpr]  // With's parenthesis part
-    // @astgen op4 := constraintsp : List[AstNode]  // With's braces part
+    // @astgen op4 := constraintsp : List[AstNodeConstraintItem]  // With's braces part
 private:
     // True for the 'with (identifier_list) {...}' form, including 'with () {...}'.
     bool m_restricted = false;
 
 public:
     AstWithParse(FileLine* fl, AstNodeExpr* funcrefp, AstNodeExpr* exprsp,
-                 AstNode* constraintsp = nullptr)
+                 AstNodeConstraintItem* constraintsp = nullptr)
         : ASTGEN_SUPER_WithParse(fl) {
         this->funcrefp(funcrefp);
         addExprsp(exprsp);

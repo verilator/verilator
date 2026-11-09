@@ -197,8 +197,7 @@ public:
         return VN_IS(nodep, Cell)  //
                || VN_IS(nodep, NodeBlock)  //
                || VN_IS(nodep, GenBlock)  //
-               || VN_IS(nodep, Func)  // Note: not AstNodeFTask (Property/Sequence)
-               || VN_IS(nodep, Task);
+               || VN_IS(nodep, NodeFTask);
     }
     VSymEnt* findSimilarIdFlat(const string& name) const {
         // Find identifier without looking upward through symbol hierarchy

@@ -136,7 +136,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         decl += nodep->dpiTask() ? "task " : "function ";
         puts(decl);
         if (!nodep->dpiTask()) {
-            if (AstVar* const fvp = VN_CAST(nodep->fvarp(), Var)) {
+            if (AstVar* const fvp = nodep->fvarp()) {
                 iterateConstNull(fvp->subDTypep());
                 puts(" ");
             } else {
@@ -146,9 +146,10 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(nodep->prettyName());
         puts("(");
         bool first = true;
-        for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : nodep->declspList()) {
             AstVar* const portp = VN_AS(itemp, Var);
             UASSERT_OBJ(portp->isIO(), portp, "Non-port in a DPI import prototype");
+            if (portp->isFuncReturn()) continue;
             if (!first) puts(", ");
             first = false;
             puts(portp->verilogKwd());
@@ -205,7 +206,18 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(nodep->prettyName());
         puts(";\n");
         // Only putfs the first time for each visitor; later for same node is putqs
+        for (AstNode* const declp : nodep->declspList()) {
+            if (declp != nodep->fvarp()) iterateConst(declp);
+        }
         iterateAndNextConstNull(nodep->stmtsp());
+        putqs(nodep, "end" + nodep->verilogKwd() + "\n");
+    }
+    void visit(AstNodeSchema* nodep) override {
+        putfs(nodep, nodep->verilogKwd());
+        puts(" ");
+        puts(nodep->prettyName());
+        puts(";\n");
+        iterateChildrenConst(nodep);
         putqs(nodep, "end" + nodep->verilogKwd() + "\n");
     }
 
@@ -296,6 +308,10 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstInitialAutomaticStmt* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstInitialStaticStmt* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstAlways* nodep) override {
+        if (nodep->keyword() == VAlwaysKwd::ASSERT_COVER) {
+            iterateAndNextConstNull(nodep->stmtsp());
+            return;
+        }
         if (const AstAssignW* const ap = VN_CAST(nodep->stmtsp(), AssignW)) {
             if (!ap->nextp()) {
                 putfs(nodep, "assign ");
@@ -747,13 +763,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateAndNextConstNull(nodep->condp());
         puts(")) break;\n");
     }
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         putfs(nodep, "");
-        if (const AstIf* const ifp = VN_CAST(nodep, If)) {
-            if (ifp->priorityPragma()) puts("priority ");
-            if (ifp->uniquePragma()) puts("unique ");
-            if (ifp->unique0Pragma()) puts("unique0 ");
-        }
+        if (nodep->priorityPragma()) puts("priority ");
+        if (nodep->uniquePragma()) puts("unique ");
+        if (nodep->unique0Pragma()) puts("unique0 ");
         puts("if (");
         iterateAndNextConstNull(nodep->condp());
         puts(") begin\n");
@@ -978,7 +992,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         emitVerilogFormat(nodep, nodep->emitVerilog(), nodep->lhsp(), nodep->rhsp(), nodep->thsp(),
                           nodep->fhsp());
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         iterateConst(nodep->fromp());
         puts(".");
         puts(nodep->prettyName());
@@ -1043,7 +1057,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstSel* nodep) override {
         const bool svSelectable = VN_IS(nodep->fromp(), VarRef) || VN_IS(nodep->fromp(), VarXRef)
-                                  || VN_IS(nodep->fromp(), MemberSel)
+                                  || VN_IS(nodep->fromp(), MemberRef)
                                   || VN_IS(nodep->fromp(), StructSel)
                                   || VN_IS(nodep->fromp(), ArraySel) || VN_IS(nodep->fromp(), Sel);
         if (!svSelectable) {
@@ -1214,7 +1228,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         // A specialization's name is mangled, so only the generic carries the '#()' header
         if (nodep->name() == nodep->origName()) {
             bool first = true;
-            for (const AstNode* stmtp = nodep->membersp(); stmtp; stmtp = stmtp->nextp()) {
+            for (const AstNode* const stmtp : nodep->memberspList()) {
                 if (const AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
                     if (!ptp->isGParam()) continue;
                     puts(first ? " #(" : ", ");
@@ -1250,7 +1264,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(";\n");
 
-        for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : nodep->memberspList()) {
             // Type parameters are emitted in the #() header, not the body
             if (!VN_IS(itemp, ParamTypeDType)) iterateConst(itemp);
         }
@@ -1409,11 +1423,17 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         } else {
             putfs(nodep, nodep->prettyName());
         }
-        if (!VN_IS(nodep->taskp(), Property)) {
+        puts("(");
+        iterateAndNextConstNull(nodep->argsp());
+        puts(")");
+        iterateConstNull(nodep->withp());
+    }
+    void visit(AstSchemaRef* nodep) override {
+        putfs(nodep, nodep->prettyName());
+        if (!VN_IS(nodep->schemap(), Property)) {
             puts("(");
             iterateAndNextConstNull(nodep->argsp());
             puts(")");
-            iterateConstNull(nodep->withp());
         }
     }
     void visit(AstCCall* nodep) override {
@@ -1442,7 +1462,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(";\n");
     }
     void visit(AstPropSpec* nodep) override {
-        if (!VN_IS(nodep->propp(), FuncRef)) {
+        if (!VN_IS(nodep->propp(), SchemaRef)) {
             // Same dumping as in AstSenTree
             putfs(nodep, "@(");
             for (AstNode* expp = nodep->sensesp(); expp; expp = expp->nextp()) {

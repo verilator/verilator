@@ -18,18 +18,18 @@ module t;
   logic [63:0] data64;  // 64-bit signal
   logic signed [2:0] sdata3;
 
-  // Test 1: auto_bin_max default (64) - creates 8 bins for 3-bit signal
+  // Test: auto_bin_max default (64) - creates 8 bins for 3-bit signal
   covergroup cg1;
     cp_data3: coverpoint data3;
   endgroup
 
-  // Test 2: auto_bin_max = 4 at covergroup level - creates 4 bins: [0:1],[2:3],[4:5],[6:7]
+  // Test: auto_bin_max = 4 at covergroup level - creates 4 bins: [0:1],[2:3],[4:5],[6:7]
   covergroup cg2;
     option.auto_bin_max = 4;
     cp_data3: coverpoint data3;
   endgroup
 
-  // Test 3: auto_bin_max and at_least set at coverpoint level
+  // Test: auto_bin_max and at_least set at coverpoint level
   covergroup cg3;
     cp_data3: coverpoint data3 {
       option.auto_bin_max = 2;  // coverpoint-level: creates 2 bins [0:3],[4:7]
@@ -37,7 +37,7 @@ module t;
     }
   endgroup
 
-  // Test 4: auto-bins where all values in a range are excluded by ignore_bins
+  // Test: auto-bins where all values in a range are excluded by ignore_bins
   // auto_bin_max=4 on 4-bit signal -> 4 range bins: [0:3],[4:7],[8:11],[12:15].
   // ignore_bins {[0:3]} excludes all values in the first range -> that bin is skipped.
   covergroup cg4;
@@ -47,7 +47,7 @@ module t;
     }
   endgroup
 
-  // Test 5: auto-bins on a 64-bit coverpoint with auto_bin_max=4
+  // Test: auto-bins on a 64-bit coverpoint with auto_bin_max=4
   covergroup cg5;
     option.auto_bin_max = 4;
     cp_data64: coverpoint data64;
@@ -59,7 +59,7 @@ module t;
     cp_data3: coverpoint data3;
   endgroup
 
-  // Test 7: signed values are partitioned in value order, the last bin taking the remainder:
+  // Test: signed values are partitioned in value order, the last bin taking the remainder:
   // [-4:-3],[-2:-1],[0:3]
   covergroup cg7;
     option.auto_bin_max = 3;

@@ -134,7 +134,7 @@ class SliceVisitor final : public VNVisitor {
                 return resultSelp;
             }
         } else if (VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel) || VN_IS(nodep, CMethodHard)
-                   || VN_IS(nodep, MemberSel) || VN_IS(nodep, StructSel)) {
+                   || VN_IS(nodep, MemberRef) || VN_IS(nodep, StructSel)) {
             UINFO(9, "  cloneSel(" << elements << "," << elemIdx << ") " << nodep);
             const int leOffset = !arrayp->rangep()->ascending()
                                      ? arrayp->rangep()->elementsConst() - 1 - elemIdx
@@ -235,6 +235,16 @@ class SliceVisitor final : public VNVisitor {
         UASSERT_OBJ(!m_assignp || m_okConsArray, nodep,
                     "Array initialization should have been removed earlier");
     }
+    // An array value, e.g. from a cast, may be selected from, or converted whole, e.g. in a stream
+    void iterateOkConsArray(AstNodeExpr* const nodep) {
+        VL_RESTORER(m_okConsArray);
+        m_okConsArray = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstArraySel* nodep) override { iterateOkConsArray(nodep); }
+    void visit(AstCvtArrayToArray* nodep) override { iterateOkConsArray(nodep); }
+    void visit(AstCvtArrayToPacked* nodep) override { iterateOkConsArray(nodep); }
+    void visit(AstCvtUnpackToQueue* nodep) override { iterateOkConsArray(nodep); }
 
     template <typename T_NodeBiop>
     void expandBiOp(T_NodeBiop* biopp) {

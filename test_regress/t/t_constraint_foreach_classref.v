@@ -43,7 +43,7 @@ module t;
   OuterQueue oq;
 
   initial begin
-    // === Test 1: Dynamic array with inline foreach constraint ===
+    // === Test: Dynamic array with inline foreach constraint ===
     od = new(3);
 
     if (od.randomize() with {
@@ -68,7 +68,7 @@ module t;
       end
     end
 
-    // === Test 2: Empty dynamic array (should succeed trivially) ===
+    // === Test: Empty dynamic array (should succeed trivially) ===
     od = new(0);
 
     if (od.randomize() with {
@@ -80,7 +80,7 @@ module t;
       $stop;
     end
 
-    // === Test 3: Queue with inline foreach constraint ===
+    // === Test: Queue with inline foreach constraint ===
     oq = new(3);
 
     if (oq.randomize() with {
@@ -105,7 +105,7 @@ module t;
       end
     end
 
-    // === Test 4: Array of objects with inline constraint for sub-object members ===
+    // === Test: Array of objects with inline constraint for sub-object members ===
     // Verifies member resolution AND runtime enforcement when randomize()
     // target is array-indexed (regression test for verilator/verilator#7431)
     foreach (od_arr[i]) begin

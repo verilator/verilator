@@ -21,8 +21,10 @@
       ]}
     ]},
     {"type":"TASK","name":"f","addr":"(AB)","loc":"d,35:17,35:18","lifetime":"VSTATICI","cname":"f",
+     "declsp": [
+      {"type":"VAR","name":"m","addr":"(BB)","loc":"d,35:32,35:33","dtypep":"(CB)","origName":"m","verilogName":"m","direction":"INPUT","declDirection":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"PORT","dtypeName":"string"}
+    ],
      "stmtsp": [
-      {"type":"VAR","name":"m","addr":"(BB)","loc":"d,35:32,35:33","dtypep":"(CB)","origName":"m","verilogName":"m","direction":"INPUT","declDirection":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"PORT","dtypeName":"string"},
       {"type":"DISPLAY","addr":"(DB)","loc":"d,36:5,36:13","displayType":"display",
        "fmtp": [
         {"type":"SFORMATF","name":"%s","addr":"(EB)","loc":"d,36:5,36:13","dtypep":"(CB)","hidden":true,

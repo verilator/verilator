@@ -1940,7 +1940,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-U", CbPartialMatch, &V3PreShell::undef);
     DECL_OPTION("-underline-zero", OnOff, &m_underlineZero).undocumented();  // Deprecated
-    DECL_OPTION("-no-unlimited-stack", CbCall, []() {});  // Processed only in bin/verilator shell
+    DECL_OPTION("-unlimited-stack", CbCall, []() {}).undocumented();  // Processed in bin/verilator
+    DECL_OPTION("-no-unlimited-stack", CbCall, []() {});  // Processed in bin/verilator
     DECL_OPTION("-constraint-array-limit", Set, &m_constraintArrayLimit);
     DECL_OPTION("-unroll-count", Set, &m_unrollCount).undocumented();  // Optimization tweak
     DECL_OPTION("-unroll-limit", Set, &m_unrollLimit);

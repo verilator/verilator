@@ -135,21 +135,21 @@ module t_constraint_unpacked_array;
   con_rand_3d_array_test rand_test_3;
 
   initial begin
-    // Test 1: Randomization for 1D array
+    // Test: Randomization for 1D array
     $display("Test 1: Randomization for 1D array:");
     rand_test_1 = new();
     repeat (2) begin
       rand_test_1.check_randomization();
     end
 
-    // Test 2: Randomization for 2D array
+    // Test: Randomization for 2D array
     $display("Test 2: Randomization for 2D array:");
     rand_test_2 = new();
     repeat (2) begin
       rand_test_2.check_randomization();
     end
 
-    // Test 3: Randomization for 3D array
+    // Test: Randomization for 3D array
     $display("Test 3: Randomization for 3D array:");
     rand_test_3 = new();
     repeat (2) begin

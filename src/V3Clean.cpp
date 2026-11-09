@@ -294,7 +294,7 @@ class CleanVisitor final : public VNVisitor {
         iterateChildren(nodep);
         ensureClean(nodep->condp());
     }
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         iterateChildren(nodep);
         ensureClean(nodep->condp());
     }
