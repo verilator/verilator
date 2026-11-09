@@ -2580,10 +2580,19 @@ class LinkDotParamVisitor final : public VNVisitor {
     }
     void visit(AstDefParam* nodep) override {  // ParamVisitor::
         iterateChildren(nodep);
+        AstParseRef* const targetp = VN_CAST(nodep->targetp(), ParseRef);
+        UASSERT_OBJ(targetp, nodep, "verilog.y made defparam without parseref");
+        if (nodep->pathp()->exists([](const AstNodePreSel*) { return true; })) {
+            nodep->targetp()->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: defparam path with arrayed instance");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        const std::string name = targetp->name();
         nodep->v3warn(DEFPARAM, "defparam is deprecated (IEEE 1800-2023 C.4.1)\n"
                                     << nodep->warnMore()
-                                    << "... Suggest use instantiation with #(."
-                                    << nodep->prettyName() << "(...etc...))");
+                                    << "... Suggest use instantiation with '#(."
+                                    << AstNode::prettyName(name) << "(...etc...))'");
         bool hasPartSelect = false;
         const string path = extractDottedPath(nodep->pathp(), hasPartSelect);
         UASSERT_OBJ(!hasPartSelect && !path.empty(), nodep, "Unexpected defparam path shape");
@@ -2596,12 +2605,12 @@ class LinkDotParamVisitor final : public VNVisitor {
             nodep->v3error("In defparam, instance " << path << " never declared");
         } else {
             AstNodeExpr* const exprp = nodep->rhsp()->unlinkFrBack();
-            UINFO(9, "Defparam cell " << path << "." << nodep->name() << " attach-to " << cellp
+            UINFO(9, "Defparam cell " << path << "." << name << " attach-to " << cellp
                                       << "  <= " << exprp);
             // Don't need to check the name of the defparam exists.  V3Param does.
             AstPin* const pinp = new AstPin{nodep->fileline(),
                                             -1,  // Pin# not relevant
-                                            nodep->name(), exprp};
+                                            name, exprp};
             pinp->param(true);
             pinp->paramPath(path);
             cellp->addParamsp(pinp);
