@@ -70,6 +70,8 @@ public:
     static AstNodeModule* findOwnerModule(AstNode* nodep);
     // Find a Typedef by name in a module's top-level statements
     static AstTypedef* findTypedefInModule(AstNodeModule* modp, const string& name);
+    // Find an enum member reference in a module's top-level statements.
+    static AstEnumItemRef* findEnumItemRefInModule(AstNodeModule* modp, const string& name);
     // Find a NodeDType by name and VNType in a module's top-level statements
     static AstNodeDType* findDTypeInModule(AstNodeModule* modp, const string& name, VNType type);
     // Find a ParamTypeDType by name in a module's top-level statements

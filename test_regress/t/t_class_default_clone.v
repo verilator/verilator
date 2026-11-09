@@ -6,12 +6,18 @@ class Other;
 endclass
 
 class Plain;
+   typedef enum int { READY = 3 } status_t;
    int x = 1;
    static int shared = 3;
    static int count = 0;
    function new(); count++; endfunction
    function int argument(int x); return x; endfunction
    function int local_value(); int x = 7; return x; endfunction
+   function int local_enum_value();
+      typedef enum int { READY = 17 } local_t;
+      local_t value = READY;
+      return int'(value);
+   endfunction
    static function int foreign_value(); return Other::shared; endfunction
 endclass
 
@@ -45,6 +51,15 @@ class Types;
    typedef Holder#(byte_t) type_id;
 endclass
 
+class InheritedEnums extends Types;
+   static function int value(); return int'(READY); endfunction
+endclass
+
+class HiddenEnums extends Types;
+   typedef enum int { READY = 11 } own_state_t;
+   static function int value(); return int'(READY); endfunction
+endclass
+
 module t;
    typedef Outer#() O0;
    typedef Outer#(1) O1;
@@ -63,6 +78,7 @@ module t;
       i0 = i1;
       if (Plain::count != 1) $stop;
       if (p.argument(9) != 9 || p.local_value() != 7) $stop;
+      if (Plain::READY != 3 || p.local_enum_value() != 17) $stop;
       if (Plain::foreign_value() != 11 || Other::shared != 11) $stop;
       if (I0::count != 2 || I1::count != 2 || I2::count != 1) $stop;
       if (i0.owner() != 1 || i2.owner() != 2) $stop;
@@ -71,6 +87,8 @@ module t;
       if (h.value.pop_front() != 8'h5a || h.value.pop_front() != 8'ha5) $stop;
       if ($bits(b.value) != 8) $stop;
       if (Types::READY != 3 || Types::BUSY != 7) $stop;
+      if (InheritedEnums::READY != 3 || InheritedEnums::value() != 3) $stop;
+      if (HiddenEnums::READY != 11 || HiddenEnums::value() != 11 || Types::READY != 3) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

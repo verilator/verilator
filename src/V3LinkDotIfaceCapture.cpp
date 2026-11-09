@@ -130,6 +130,16 @@ AstTypedef* V3LinkDotIfaceCapture::findTypedefInModule(AstNodeModule* modp, cons
     }
     return resultp;
 }
+AstEnumItemRef* V3LinkDotIfaceCapture::findEnumItemRefInModule(AstNodeModule* modp,
+                                                           const string& name) {
+    const StmtNameMap& cache = getOrBuild(modp);
+    const auto it = cache.m_byName.find(name);
+    if (it == cache.m_byName.end()) return nullptr;
+    for (AstNode* const nodep : it->second) {
+        if (AstEnumItemRef* const refp = VN_CAST(nodep, EnumItemRef)) return refp;
+    }
+    return nullptr;
+}
 AstNodeDType* V3LinkDotIfaceCapture::findDTypeInModule(AstNodeModule* modp, const string& name,
                                                        VNType type) {
 

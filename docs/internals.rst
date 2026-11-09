@@ -45,6 +45,11 @@ The main flow of Verilator can be followed by reading the Verilator.cpp
    Plain nested classes copied with an outer specialization remain members of that copy.
    Nested generic classes are elaborated only when requested.
    Member and type references are rebound before source class definitions retire.
+   Ambiguous typedef specialization repair triggers an internal error.
+   Missing typedef or enum counterparts in selected classes trigger internal errors.
+   Function-local enum bindings remain local to their selected method.
+   Enum repair verifies declaration identity through the existing cached class member index.
+   Declaration-side enum representatives remain unchanged during rebinding.
 
 #. Verilator then performs additional edits and optimizations on the
    hierarchical design. This includes coverage, assertions, X elimination,

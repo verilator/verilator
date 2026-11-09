@@ -2672,12 +2672,8 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
             if (m_origNameToClone.empty()) return;
             const std::string origName
                 = oldOwnerp->origName().empty() ? oldOwnerp->name() : oldOwnerp->origName();
-            if (m_ambiguous.count(origName)) {
-                // Ambiguous references cannot select a specialization by name.
-                UINFO(9, "post-param REFDTYPE retarget skipped (ambiguous owner '" << origName
-                                                                                   << "'): " << refp);
-                return;
-            }
+            UASSERT_OBJ(!m_ambiguous.count(origName), refp,
+                        "Ambiguous class specialization for typedef reference: " << origName);
             const auto it = m_origNameToClone.find(origName);
             if (it == m_origNameToClone.end()) return;
             correctClassp = it->second;
@@ -2724,7 +2720,7 @@ public:
         iterateChildren(nodep);
     }
     void visit(AstClassRefDType* nodep) override {
-        iterateChildren(nodep);
+        iterateAndNextNull(nodep->paramsp());
         AstClass* const classp = nodep->classp();
         if (classp && !classp->hasGParam() && classp->user4p()) {
             AstClass* const selectedp = VN_AS(classp->user4p(), Class);
@@ -2744,7 +2740,9 @@ public:
             if (!classp || classp->hasGParam() || !classp->user4p()) return;
             AstTypedef* const selectedp = V3LinkDotIfaceCapture::findTypedefInModule(
                 VN_AS(classp->user4p(), Class), tdp->name());
-            if (selectedp) nodep->classOrPackageNodep(selectedp);
+            UASSERT_OBJ(selectedp, nodep,
+                        "Missing typedef in selected class specialization: " << tdp->name());
+            nodep->classOrPackageNodep(selectedp);
         }
     }
     void visit(AstRefDType* nodep) override {
@@ -3928,12 +3926,6 @@ public:
         const ClassRefUnlinkerVisitor classUnlinkerVisitor{netlistp};
 
         netlistp->foreach([](AstNode* nodep) {
-            const auto ancestorClassOf = [](AstNode* startp) -> AstClass* {
-                for (AstNode* np = startp->aboveLoopp(); np; np = np->aboveLoopp()) {
-                    if (AstClass* const cp = VN_CAST(np, Class)) return cp;
-                }
-                return nullptr;
-            };
             if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
                 AstVar* const varp = refp->varp();
                 if (!varp) return;
@@ -3954,29 +3946,39 @@ public:
             }
             if (AstEnumItemRef* const refp = VN_CAST(nodep, EnumItemRef)) {
                 if (!refp->itemp()) return;
-                AstClass* const classp = ancestorClassOf(refp->itemp());
+                AstClass* const classp = VN_CAST(refp->classOrPackagep(), Class);
                 if (!classp || classp->hasGParam() || !classp->user4p()) return;
                 AstClass* const selectedp = VN_AS(classp->user4p(), Class);
-                for (AstNode* const stmtp : selectedp->memberspList()) {
-                    AstEnumItemRef* const memberp = VN_CAST(stmtp, EnumItemRef);
-                    if (memberp && memberp->name() == refp->name()) {
-                        refp->itemp(memberp->itemp());
-                        refp->classOrPackagep(selectedp);
-                        return;
-                    }
-                }
+                if (selectedp == classp) return;
+                const string name = refp->name();
+                AstEnumItemRef* const memberp
+                    = V3LinkDotIfaceCapture::findEnumItemRefInModule(classp, name);
+                // Match the declaration, not a function-local enum with the same name.
+                if (!memberp || memberp == refp || memberp->itemp() != refp->itemp()) return;
+                AstEnumItemRef* const selectedMemberp
+                    = V3LinkDotIfaceCapture::findEnumItemRefInModule(selectedp, name);
+                UASSERT_OBJ(selectedMemberp && selectedMemberp->itemp(), refp,
+                            "Missing enum item in selected class specialization: " << name);
+                refp->itemp(selectedMemberp->itemp());
+                refp->classOrPackagep(selectedp);
                 return;
             }
             AstNodeFTaskRef* const ftaskrefp = VN_CAST(nodep, NodeFTaskRef);
             if (!ftaskrefp) return;
-            AstClass* const qualifierp = VN_CAST(ftaskrefp->classOrPackagep(), Class);
+            AstClass* const qualifierClassp = VN_CAST(ftaskrefp->classOrPackagep(), Class);
             // Preserve unresolved method qualifiers when their plain class is cloned.
-            if (qualifierp && !qualifierp->hasGParam() && qualifierp->user4p()) {
-                ftaskrefp->classOrPackagep(VN_AS(qualifierp->user4p(), Class));
+            if (qualifierClassp && !qualifierClassp->hasGParam() && qualifierClassp->user4p()) {
+                ftaskrefp->classOrPackagep(VN_AS(qualifierClassp->user4p(), Class));
             }
             AstNodeFTask* ftaskp = ftaskrefp->taskp();
             if (!ftaskp || !ftaskp->classMethod()) return;
             const std::string funcName = ftaskp->name();
+            const auto ancestorClassOf = [](AstNode* startp) -> AstClass* {
+                for (AstNode* np = startp->aboveLoopp(); np; np = np->aboveLoopp()) {
+                    if (AstClass* const cp = VN_CAST(np, Class)) return cp;
+                }
+                return nullptr;
+            };
             AstClass* refClassp = ancestorClassOf(ftaskrefp);
             if (refClassp == ftaskrefp->classOrPackagep())
                 return;  // task is in the same class as reference
