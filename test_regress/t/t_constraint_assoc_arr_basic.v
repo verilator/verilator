@@ -192,21 +192,41 @@ endclass
 // Struct elements with keys having a zero 32-bit word
 typedef struct {rand int x;} elem_t;
 class StructWideKeyTest;
-  rand elem_t a[bit [63:0]];
+  rand elem_t a[bit [62:0]];
 
   function new();
-    a[64'h1_0000_0010] = '{x: 0};
-    a[64'h110] = '{x: 0};
+    a[63'h1_0000_0010] = '{x: 0};
+    a[63'h110] = '{x: 0};
   endfunction
 
   constraint c {
-    a[64'h1_0000_0010].x == 5;
-    a[64'h110].x == 7;
+    a[63'h1_0000_0010].x == 5;
+    a[63'h110].x == 7;
   }
 
   function void self_check();
-    `checkd(a[64'h1_0000_0010].x, 5);
-    `checkd(a[64'h110].x, 7);
+    `checkd(a[63'h1_0000_0010].x, 5);
+    `checkd(a[63'h110].x, 7);
+  endfunction
+endclass
+
+// VlWide struct keys with a zero middle word, distinct from the integral-key path.
+class StructWide95KeyTest;
+  rand elem_t a[bit [94:0]];
+
+  function new();
+    a[95'h1_0000_0000_0000_0010] = '{x: 0};
+    a[95'h110] = '{x: 0};
+  endfunction
+
+  constraint c {
+    a[95'h1_0000_0000_0000_0010].x == 9;
+    a[95'h110].x == 11;
+  }
+
+  function void self_check();
+    `checkd(a[95'h1_0000_0000_0000_0010].x, 9);
+    `checkd(a[95'h110].x, 11);
   endfunction
 endclass
 
@@ -220,6 +240,25 @@ module t_constraint_assoc_arr_basic;
   int success;
 
   initial begin
+    // Check the VlWide struct path before the other key representations.
+    begin
+      StructWide95KeyTest wide_obj;
+      StructWide95KeyTest wide_copy_obj;
+      wide_obj = new();
+      success = wide_obj.randomize();
+      `checkd(success, 1);
+      wide_obj.self_check();
+
+      wide_copy_obj = new wide_obj;
+      wide_copy_obj.a[95'h1_0000_0000_0000_0010].x = 0;
+      wide_copy_obj.a[95'h110].x = 0;
+      wide_obj.self_check();
+      success = wide_copy_obj.randomize();
+      `checkd(success, 1);
+      wide_copy_obj.self_check();
+      wide_obj.self_check();
+    end
+
     my_array = new();
     success = my_array.randomize();
     if (success == 0) $stop;
@@ -251,8 +290,8 @@ module t_constraint_assoc_arr_basic;
 
       // Shallow copying calls __VupdateRandVars to rebind the copied fields.
       copy_obj = new struct_obj;
-      copy_obj.a[64'h1_0000_0010].x = 0;
-      copy_obj.a[64'h110].x = 0;
+      copy_obj.a[63'h1_0000_0010].x = 0;
+      copy_obj.a[63'h110].x = 0;
       struct_obj.self_check();
       success = copy_obj.randomize();
       `checkd(success, 1);
