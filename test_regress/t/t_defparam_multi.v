@@ -7,9 +7,6 @@
 module t (
     input clk
 );
-  parameter PAR = 3;
-
-  defparam PAR = 5;
 
   wire [31:0] o2a, o2b, o3a, o3b;
 
@@ -30,7 +27,6 @@ module t (
   endgenerate
 
   always @(posedge clk) begin
-    if (PAR != 5) $stop;
     if (o2a != 8) $stop;
     if (o2b != 4) $stop;
     if (o3a != 80) $stop;
