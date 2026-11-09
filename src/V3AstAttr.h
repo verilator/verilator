@@ -1131,6 +1131,17 @@ public:
     explicit VCMethod(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
+    // Indexed element access to an array or queue, including writable and back-indexed forms.
+    bool isDynElementAccess() const VL_PURE {
+        switch (m_e) {
+        case ARRAY_AT:
+        case ARRAY_AT_BACK:
+        case ARRAY_AT_WRITE:
+        case DYN_AT_WRITE_APPEND:
+        case DYN_AT_WRITE_APPEND_BACK: return true;
+        default: return false;
+        }
+    }
     const char* ascii() const VL_PURE {
         static constexpr const char* const values[] = {
 #define VL_CMETHOD_NAME(id, method, pure, clean, awaitable, args) method,

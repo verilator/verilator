@@ -46,27 +46,20 @@ module t;
   initial begin
     int randomize_result;
     static RandArrayIndexTest obj = new();
+    RandDynIndexCastTest cobj;
     repeat (20) begin
       randomize_result = obj.randomize();
       `checkd(randomize_result, 1);
       `checkd(obj.selected_value, obj.data[obj.idx]);
       `check_range(obj.selected_value, 8'd10, 8'd50)
     end
-  end
-
-  initial begin
-    int randomize_result;
-    static RandDynIndexCastTest cobj = new();
+    cobj = new();
     repeat (20) begin
       randomize_result = cobj.randomize();
       `checkd(randomize_result, 1);
       `checkd(cobj.dyn_value, cobj.dyn[cobj.idx]);
       `checkd(cobj.q_value, cobj.q[cobj.idx]);
     end
-  end
-
-  initial begin
-    #1;
     $write("*-* All Finished *-*\n");
     $finish;
   end

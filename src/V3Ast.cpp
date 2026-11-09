@@ -368,6 +368,9 @@ string AstNode::vpiName(const string& namein) {
 }
 
 string AstNode::prettyTypeName() const {
+    if (const AstCMethodHard* const methodp = VN_CAST(this, CMethodHard)) {
+        if (methodp->method().isDynElementAccess()) return "array or queue element selection";
+    }
     if (name() == "") return typeName();
     return std::string{typeName()} + " '" + prettyNameMsg() + "'";
 }

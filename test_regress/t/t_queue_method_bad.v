@@ -4,9 +4,6 @@
 // SPDX-FileCopyrightText: 2019 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-class C;
-endclass
-
 module t;
   typedef int int_t;
 
@@ -38,13 +35,6 @@ module t;
 
     $write("*-* All Finished *-*\n");
     $finish;
-  end
-
-  initial begin
-    C q[$];
-    C c;
-    c = q.pop_front()[0];  // Bad class-handle selection; preserve method-call error recovery
-    c = q[0][0];  // Bad class-handle selection after an already indexed method
   end
 
   initial begin

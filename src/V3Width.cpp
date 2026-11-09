@@ -329,14 +329,7 @@ class PortLValueVisitor final : public VNVisitor {
     void visit(AstStructSel* nodep) override { iterateDestination(nodep->fromp()); }
     void visit(AstCMethodHard* nodep) override {
         // Dynamic array and queue element accesses are lowered to methods.
-        switch (nodep->method()) {
-        case VCMethod::ARRAY_AT:
-        case VCMethod::ARRAY_AT_BACK:
-        case VCMethod::ARRAY_AT_WRITE:
-        case VCMethod::DYN_AT_WRITE_APPEND:
-        case VCMethod::DYN_AT_WRITE_APPEND_BACK: dynamicElement(nodep); break;
-        default: break;
-        }
+        if (nodep->method().isDynElementAccess()) dynamicElement(nodep);
     }
     void visit(AstMemberRef* nodep) override {
         // Static class properties have already been replaced with variable references.
@@ -1730,21 +1723,15 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->fromp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->bitp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->thsp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
+        // Error recovery returns this existing receiver rather than a new selection.
+        AstNodeExpr* const fromp = nodep->fromp();
         AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
             VL_DANGLING(nodep);
             if (AstCMethodHard* const methodp = VN_CAST(selp, CMethodHard)) {
-                // Only indexed element methods need this; error recovery can return other methods.
-                switch (methodp->method()) {
-                case VCMethod::ARRAY_AT:
-                case VCMethod::ARRAY_AT_BACK:
-                case VCMethod::ARRAY_AT_WRITE:
-                case VCMethod::DYN_AT_WRITE_APPEND:
-                case VCMethod::DYN_AT_WRITE_APPEND_BACK:
-                    // visit(AstCMethodHard) does not revisit the index.
-                    iterateCheckSizedSelf(methodp, "Bit select", methodp->pinsp(), SELF, FINAL);
-                    break;
-                default: break;
+                if (methodp != fromp && methodp->method().isDynElementAccess()) {
+                    // visit(AstCMethodHard) does not revisit the newly lowered index.
+                    iterateCheckSizedSelf(methodp, "index", methodp->pinsp(), SELF, FINAL);
                 }
             }
             userIterate(selp, m_vup);
@@ -5637,30 +5624,13 @@ class WidthVisitor final : public VNVisitor {
     }
     void methodCallLValueRecurse(AstMethodCall* nodep, AstNode* childp, const VAccess& access) {
         if (AstCMethodHard* const ichildp = VN_CAST(childp, CMethodHard)) {
-            bool methAt = false;
-            bool methAtBack = false;
-            bool methAtWrite = false;
-            switch (ichildp->method()) {
-            case VCMethod::ARRAY_AT:  // FALLTHRU
-                methAt = true;
-                break;
-            case VCMethod::ARRAY_AT_BACK:  // FALLTHRU
-                methAtBack = true;
-                break;
-            case VCMethod::ARRAY_AT_WRITE:  // FALLTHRU
-            case VCMethod::DYN_AT_WRITE_APPEND:  // FALLTHRU
-            case VCMethod::DYN_AT_WRITE_APPEND_BACK:  //
-                methAtWrite = true;
-                break;
-            default: break;
-            }
-            if (methAt || methAtBack || methAtWrite) {
+            if (ichildp->method().isDynElementAccess()) {
                 const AstNodeDType* const fromDtypep = ichildp->fromp()->dtypep()->skipRefp();
                 if (VN_IS(fromDtypep, QueueDType) || VN_IS(fromDtypep, DynArrayDType)) {
                     // Change access methods to writable ones
-                    if (methAt) {
+                    if (ichildp->method() == VCMethod::ARRAY_AT) {
                         ichildp->method(VCMethod::ARRAY_AT_WRITE);
-                    } else if (methAtBack) {
+                    } else if (ichildp->method() == VCMethod::ARRAY_AT_BACK) {
                         ichildp->method(VCMethod::DYN_AT_WRITE_APPEND_BACK);
                     }
                 }
