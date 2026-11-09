@@ -100,6 +100,26 @@ class NullHandle;
   endfunction
 endclass
 
+typedef class CycB;
+
+class CycA;
+  rand bit [6:0] c;
+  rand CycB b;
+endclass
+
+class CycB;
+  rand bit [14:0] z;
+  rand CycA a;  // Left null
+endclass
+
+class ArrayOwner;
+  rand bit [6:0] c;
+  rand Inner items[2];
+  function new();
+    foreach (items[i]) items[i] = new;
+  endfunction
+endclass
+
 module t;
   initial begin
     // randomize(): the solver fails, so the member it does not own is not filled
@@ -235,6 +255,40 @@ module t;
       randomize_result = nr.randomize() with {x == 5;};
       `checkd(randomize_result, 0);
       `checkd(nr.x, 3);
+    end
+
+    // Rand class members whose classes refer to each other
+    begin
+      CycA ca;
+      int randomize_result;
+      ca = new;
+      ca.b = new;
+      ca.c = 41;
+      ca.b.z = 42;
+      randomize_result = ca.randomize() with {
+        c > 100;
+        c < 50;
+      };
+      `checkd(randomize_result, 0);
+      `checkd(ca.c, 41);
+      `checkd(ca.b.z, 42);
+    end
+
+    // A rand array of class handles keeps its handles
+    begin
+      ArrayOwner ao;
+      Inner first;
+      int randomize_result;
+      ao = new;
+      ao.c = 51;
+      first = ao.items[0];
+      randomize_result = ao.randomize() with {
+        c > 100;
+        c < 50;
+      };
+      `checkd(randomize_result, 0);
+      `checkd(ao.c, 51);
+      if (ao.items[0] != first) `stop;
     end
 
     $write("*-* All Finished *-*\n");
