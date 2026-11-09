@@ -1,0 +1,46 @@
+%Error-UNSUPPORTED: t/t_tri_port_z_unsup.v:38:25: Unsupported: tristate input port through EXTEND to port tested for Z
+                                                : ... note: In instance 't.pass'
+   38 |   zt2 zt2_extend (.i(2'(a)));
+      |                         ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_tri_port_z_unsup.v:39:26: Unsupported: tristate input port through EXTENDS to port tested for Z
+                                                : ... note: In instance 't.pass'
+   39 |   zt2 zt2_extends (.i(2'(s)));
+      |                          ^
+%Error-UNSUPPORTED: t/t_tri_port_z_unsup.v:40:27: Unsupported: tristate input port through REPLICATE to port tested for Z
+                                                : ... note: In instance 't.pass'
+   40 |   zt2 zt2_replicate (.i({2{a}}));
+      |                           ^
+%Error-UNSUPPORTED: t/t_tri_port_z_unsup.v:41:24: Unsupported: tristate input port through SHIFTL to port tested for Z
+                                                : ... note: In instance 't.pass'
+   41 |   zt2 zt2_shiftl (.i(b << 1));
+      |                        ^~
+%Error-UNSUPPORTED: t/t_tri_port_z_unsup.v:42:24: Unsupported: tristate input port through SHIFTR to port tested for Z
+                                                : ... note: In instance 't.pass'
+   42 |   zt2 zt2_shiftr (.i(b >> 1));
+      |                        ^~
+%Error-UNSUPPORTED: t/t_tri_port_z_unsup.v:43:29: Unsupported: tristate input port through SHIFTRS to port tested for Z
+                                                : ... note: In instance 't.pass'
+   43 |   zt2 zt2_shiftrs (.i(2'(s) >>> 1));
+      |                             ^~~
+%Error-UNSUPPORTED: t/t_tri_port_z_unsup.v:44:29: Unsupported: tristate input port through ARRAYSEL to port tested for Z
+                                                : ... note: In instance 't.pass'
+   44 |   zt2 zt2_arraysel (.i({a, u[0]}));
+      |                             ^
+%Error-UNSUPPORTED: t/t_tri_port_z_unsup.v:45:24: Unsupported: tristate input port through STREAML to port tested for Z
+                                                : ... note: In instance 't.pass'
+   45 |   zt2 zt2_streaml (.i({<<{b}}));
+      |                        ^~
+%Error-UNSUPPORTED: t/t_tri_port_z_unsup.v:46:24: Unsupported: tristate input port through STREAMR to port tested for Z
+                                                : ... note: In instance 't.pass'
+   46 |   zt2 zt2_streamr (.i({>>{b}}));
+      |                        ^~
+%Error-UNSUPPORTED: t/t_tri_port_z_unsup.v:47:29: Unsupported: tristate input port through VARXREF 'a' to port tested for Z
+                                                : ... note: In instance 't.pass'
+   47 |   zt2 zt2_xref (.i({a, pass.a}));
+      |                             ^
+%Error-UNSUPPORTED: t/t_tri_port_z_unsup.v:13:8: Unsupported: tristate in top-level IO: 'p'
+                                               : ... note: In instance 't'
+   13 |       .p(w),
+      |        ^
+%Error: Exiting due to

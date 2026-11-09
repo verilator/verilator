@@ -394,7 +394,7 @@ public:
 class TristateVisitor final : public TristateBaseVisitor {
     // NODE STATE
     //   *::user1p              -> pointer to output enable __en expressions
-    //   *::user2               -> int - already visited, see U2_ enum
+    //   *::user2               -> int - already visited, or other flags, see U2_ enum
     //   AstVar::user3p         -> See AuxAstVar via m_varAux
     // See TristateGraph:
     //   AstVar::user4p         -> TristateVertex* for variable being built
@@ -459,13 +459,16 @@ class TristateVisitor final : public TristateBaseVisitor {
     enum : uint8_t {
         U2_GRAPHING = 1,  // bit[0] if did m_graphing visit
         U2_NONGRAPH = 2,  // bit[1] if did !m_graphing visit
-        U2_BOTH = 3  // Both bits set
+        U2_BOTH = 3,  // Both bits set
+        U2_INPORTEN = 4  // bit[2] if read of input-only port with its __en, see visit(AstPin)
     };
 
     // MEMBERS
     bool m_graphing = false;  // Major mode - creating graph
     //
     AstNodeModule* m_modp = nullptr;  // Current module
+    // Top modules: those the $root wrapper instantiates (so not instantiated elsewhere)
+    std::unordered_set<const AstNodeModule*> m_topModps;
     AstCell* m_cellp = nullptr;  // current cell
     VarMap m_lhsmap;  // Tristate left-hand-side driver map
     VarToAssignsMap m_assigns;  // Assigns in current module
@@ -535,10 +538,45 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
         return nullptr;
     }
+    static bool isDeclInputOnly(const AstVar* varp) {
+        return varp->direction() == VDirection::INPUT && !varp->declDirection().isWritable();
+    }
+    void markInputPortEnReads(AstNodeExpr* nodep) {
+        // An input-only port of this module that an input-only pin's connection passes
+        // through is Z when its own connection is, so take its enable, as for 'i === 1'bz';
+        // instances of this module then connect it the same way. Logic and arithmetic
+        // never give Z, so their operands are left two-state.
+        if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
+            markInputPortEnReads(concatp->lhsp());
+            markInputPortEnReads(concatp->rhsp());
+        } else if (AstSel* const selp = VN_CAST(nodep, Sel)) {
+            markInputPortEnReads(selp->fromp());
+        } else if (AstCond* const condp = VN_CAST(nodep, Cond)) {
+            markInputPortEnReads(condp->thenp());
+            markInputPortEnReads(condp->elsep());
+        } else if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+            if (!isDeclInputOnly(refp->varp())) return;
+            UASSERT_OBJ(!refp->user1p(), refp, "Pin input read already has enable");
+            refp->user1p(new AstVarRef{refp->fileline(), getCreateEnVarp(refp->varp(), false),
+                                       VAccess::READ});
+            refp->user2Or(U2_INPORTEN);
+        } else if (VN_IS(nodep, Extend) || VN_IS(nodep, ExtendS) || VN_IS(nodep, Replicate)
+                   || VN_IS(nodep, ShiftL) || VN_IS(nodep, ShiftR) || VN_IS(nodep, ShiftRS)
+                   || VN_IS(nodep, ArraySel) || VN_IS(nodep, StreamL) || VN_IS(nodep, StreamR)
+                   || VN_IS(nodep, VarXRef)) {
+            // These pass Z on too, but enables are not built through them
+            if (nodep->exists(
+                    [](const AstNodeVarRef* refp) { return isDeclInputOnly(refp->varp()); })) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: tristate input port through "
+                                                 << nodep->prettyTypeName()
+                                                 << " to port tested for Z");
+            }
+        }
+    }
     AstNodeExpr* getEnp(AstNode* nodep) {
         if (nodep->user1p()) {
             if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
-                if (refp->varp()->isIO()) {
+                if (refp->varp()->isIO() && !(refp->user2() & U2_INPORTEN)) {
                     // When reading a tri-state port, we can always use the value
                     // because such port will have resolution logic in upper module.
                     return newAllZerosOrOnes(nodep, true);
@@ -603,6 +641,19 @@ class TristateVisitor final : public TristateBaseVisitor {
         numz0.opNot(numz);  // Z->0, else 1
         return new AstConst{fl, numz0};
     }
+    AstNodeExpr* newEnSel(AstSel* selp, AstNodeExpr* enFromp) {
+        // Enable of 'selp', given the enable of what it selects from. Out of range reads X,
+        // which is driven, not Z: so guard as V3Unknown will the value, but with all ones,
+        // whatever --x-assign makes of X.
+        FileLine* const fl = selp->fileline();
+        AstNodeExpr* const maxmsbp
+            = new AstConst{fl, AstConst::WidthedValue{}, selp->lsbp()->width(),
+                           static_cast<uint32_t>(selp->fromp()->width() - 1)};
+        return new AstCond{
+            fl, new AstGte{fl, maxmsbp, selp->lsbp()->cloneTreePure(true)},
+            new AstSel{fl, enFromp, selp->lsbp()->cloneTreePure(true), selp->widthConst()},
+            newAllZerosOrOnes(selp, true)};
+    }
     AstNodeExpr* getEnExprBasedOnOriginalp(AstNodeExpr* const nodep) {
         if (AstVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
             return new AstVarRef{varrefp->fileline(), getCreateEnVarp(varrefp->varp(), false),
@@ -627,12 +678,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             enExtendp->lhsp(new AstNot{enLhsp->fileline(), enLhsp});
             return new AstNot{enExtendp->fileline(), enExtendp};
         } else if (AstSel* const selp = VN_CAST(nodep, Sel)) {
-            AstNodeExpr* const fromp = selp->fromp()->unlinkFrBack();
-            AstSel* const enSelp = selp->cloneTree(false);
-            selp->fromp(fromp);
-            AstNodeExpr* const enFromp = getEnExprBasedOnOriginalp(fromp);
-            enSelp->fromp(enFromp);
-            return enSelp;
+            return newEnSel(selp, getEnExprBasedOnOriginalp(selp->fromp()));
         } else {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported tristate construct: " << nodep->prettyTypeName()
@@ -1581,10 +1627,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                      << nodep->prettyTypeName());
                 }
                 if (nodep->fromp()->user1p()) {  // SEL(VARREF, lsb)
-                    AstNodeExpr* const en1p = getEnp(nodep->fromp());
-                    AstNodeExpr* const enp
-                        = new AstSel{nodep->fileline(), en1p, nodep->lsbp()->cloneTreePure(true),
-                                     nodep->widthConst()};
+                    AstNodeExpr* const enp = newEnSel(nodep, getEnp(nodep->fromp()));
                     UINFO(9, "       newsel " << enp);
                     nodep->user1p(enp);  // propagate up SEL(fromp->enable, value)
                     m_tgraph.didProcess(nodep);
@@ -2110,13 +2153,18 @@ class TristateVisitor final : public TristateBaseVisitor {
             UINFOTREE(9, nodep, "", "pin-pre");
 
             // Empty/in-only; need Z to propagate
-            const bool inDeclProcessing = (nodep->exprp()
-                                           && nodep->modVarp()->direction() == VDirection::INPUT
-                                           // Need to consider the original state
-                                           // instead of current state as we converted
-                                           // tristates to inputs, which do not want
-                                           // to have this.
-                                           && !nodep->modVarp()->declDirection().isWritable());
+            const bool inputOnly = (nodep->modVarp()->direction() == VDirection::INPUT
+                                    // Use the declared direction: a tristate port the
+                                    // child drives was converted to an input (with
+                                    // __out and __en), and is not input only
+                                    && !nodep->modVarp()->declDirection().isWritable());
+            const bool inDeclProcessing = nodep->exprp() && inputOnly;
+            AstVar* const outModVarp = m_varAux(nodep->modVarp()).outVarp;
+            // Parent-side variable that carries the value of an input-only pin the child
+            // never drives (no __out). The child's __en is that variable's enable,
+            // resolved in this module from its drivers like any other tristate signal:
+            // none (unconnected) gives Z; a two-state expression gives all ones.
+            AstVar* inBufVarp = nullptr;
             if (!nodep->exprp()) {  // No-connect; covert to empty connection
                 UINFO(5, "Unconnected pin terminate " << nodep);
                 AstVar* const ucVarp = getCreateUnconnVarp(nodep, nodep->modVarp()->dtypep());
@@ -2127,6 +2175,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                : VAccess::READ});
                 m_tgraph.setTristate(ucVarp);
                 // We don't need a driver on the wire; the lack of one will default to tristate
+                if (inputOnly && !outModVarp) inBufVarp = ucVarp;
             } else if (inDeclProcessing) {  // Not an input that was a converted tristate
                 // Input only may have driver in underneath module which would stomp
                 // the input value.  So make a temporary connection.
@@ -2134,7 +2183,16 @@ class TristateVisitor final : public TristateBaseVisitor {
                     = V3Inst::pinReconnectSimple(nodep, m_cellp, true, true);
                 UINFO(5, "Input pin buffering: " << reAssignp);
                 m_tgraph.setTristate(reAssignp->lhsp());
+                if (!outModVarp) {
+                    inBufVarp = VN_AS(reAssignp->lhsp(), VarRef)->varp();
+                    // Not in $root or a top module, whose inputs are two-state
+                    if (!m_modp->isTop() && !m_topModps.count(m_modp)) {
+                        markInputPortEnReads(reAssignp->rhsp());
+                    }
+                }
             }
+            // The child reads the enable from this module if the pin is input only
+            const bool enInput = inDeclProcessing || inBufVarp;
 
             // pinReconnectSimple needs to presume input or output behavior; we need both
             // Therefore, create the enable, output and separate input pin,
@@ -2143,7 +2201,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstVar* const enVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
                                               nodep->name() + "__en" + cvtToStr(m_unique++),
                                               VFlagBitPacked{}, enModVarp->width()};
-            if (inDeclProcessing) {  // __en(from-resolver-const) or __en(from-resolver-wire)
+            if (enInput) {  // __en(from-resolver-const) or __en(from-resolver-wire)
                 enModVarp->varType2In();
             } else {
                 enModVarp->varType2Out();
@@ -2153,7 +2211,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 = new AstPin{nodep->fileline(), nodep->pinNum(),
                              enModVarp->name(),  // should be {var}"__en"
                              new AstVarRef{nodep->fileline(), enVarp,
-                                           inDeclProcessing ? VAccess::READ : VAccess::WRITE}};
+                                           enInput ? VAccess::READ : VAccess::WRITE}};
             enpinp->modVarp(enModVarp);
             UINFO(9, "       newpin " << enpinp);
             enpinp->user2Or(U2_BOTH);  // don't iterate the pin later
@@ -2164,12 +2222,17 @@ class TristateVisitor final : public TristateBaseVisitor {
             // Create new output pin
             const AstAssignW* outAssignp = nullptr;  // If reconnected, the related assignment
             AstPin* outpinp = nullptr;
-            AstVar* const outModVarp = m_varAux(nodep->modVarp()).outVarp;
             if (!outModVarp) {
-                // At top, no need for __out as might be input only. Otherwise resolvable.
+                // No __out: the child never drives the port. At top, no need for __out as
+                // might be input only.
                 if (!m_modp->isTop()) {
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: tristate in top-level IO: "
-                                                     << nodep->prettyNameQ());
+                    if (inBufVarp) {  // Input only: the enable is the buffer's (see above)
+                        UASSERT_OBJ(!inBufVarp->user1p(), nodep, "Pin buffer has enable");
+                        inBufVarp->user1p(enVarp);
+                    } else {
+                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: tristate in top-level IO: "
+                                                         << nodep->prettyNameQ());
+                    }
                 }
             } else {
                 AstNodeExpr* const outexprp = VN_AS(nodep->exprp(), NodeExpr)
@@ -2543,6 +2606,14 @@ public:
     // CONSTRUCTORS
     explicit TristateVisitor(AstNetlist* netlistp) {
         m_tgraph.clearAndCheck();
+        for (AstNode* const modp : netlistp->modulespList()) {
+            if (!VN_AS(modp, NodeModule)->isTop()) continue;
+            for (AstNode* const stmtp : VN_AS(modp, NodeModule)->stmtspList()) {
+                if (const AstCell* const cellp = VN_CAST(stmtp, Cell)) {
+                    m_topModps.emplace(cellp->modp());
+                }
+            }
+        }
         // Process interface modules first, so an interface tristate net is recorded
         // (AuxAstVar::ifaceTristate) before any module that drives it across hierarchy is
         // graphed. A module driving such a net with a plain (non-Z) assign has no Z in its
