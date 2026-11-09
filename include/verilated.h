@@ -1304,12 +1304,12 @@ public:
                                const char* delimiter = ".") VL_MT_SAFE;
 
     // Internal: Throw signal assertion
-    static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;
-    static void overWidthError(const char* signame) VL_ATTR_NORETURN VL_MT_SAFE;
+    [[noreturn]] static void nullPointerError(const char* filename, int linenum) VL_MT_SAFE;
+    [[noreturn]] static void overWidthError(const char* signame) VL_MT_SAFE;
     static void queueBoundError(size_t maxSize, size_t attemptedSize) VL_MT_SAFE;
-    static void scTimePrecisionError(int sc_prec, int vl_prec) VL_ATTR_NORETURN VL_MT_SAFE;
-    static void scTraceBeforeElaborationError() VL_ATTR_NORETURN VL_MT_SAFE;
-    static void sizeMismatchError() VL_ATTR_NORETURN VL_MT_SAFE;
+    [[noreturn]] static void scTimePrecisionError(int sc_prec, int vl_prec) VL_MT_SAFE;
+    [[noreturn]] static void scTraceBeforeElaborationError() VL_MT_SAFE;
+    [[noreturn]] static void sizeMismatchError() VL_MT_SAFE;
     static void stackCheck(QData needSize) VL_MT_UNSAFE;
 
     // Internal: Load a VPI shared library (+verilator+vpi+<lib>[:<bootstrap>])
