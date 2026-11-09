@@ -48,7 +48,6 @@
 # define VL_ATTR_NOINLINE __attribute__((noinline))
 # define VL_ATTR_COLD __attribute__((cold))
 # define VL_ATTR_HOT __attribute__((hot))
-# define VL_ATTR_NORETURN __attribute__((noreturn))
 // clang and gcc-8.0+ support no_sanitize("string") style attribute
 # if defined(__clang__) || (__GNUC__ >= 8)
 #  define VL_ATTR_NO_SANITIZE_ALIGN __attribute__((no_sanitize("alignment")))
@@ -173,9 +172,6 @@
 #endif
 #ifndef VL_ATTR_HOT
 # define VL_ATTR_HOT  ///< Attribute that function is highly executed
-#endif
-#ifndef VL_ATTR_NORETURN
-# define VL_ATTR_NORETURN  ///< Attribute that function does not ever return
 #endif
 #ifndef VL_ATTR_NO_SANITIZE_ALIGN
 # define VL_ATTR_NO_SANITIZE_ALIGN  ///< Attribute that function contains intended unaligned access
