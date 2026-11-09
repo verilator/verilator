@@ -2802,8 +2802,9 @@ bind_directive<nodep>:          // ==IEEE: bind_directive + bind_target_scope
         //                      // - it's already in module_instantiation
         //                      // We merged the rules - id may be a bind_target_instance or
         //                      // module_identifier or interface_identifier
-                yBIND bind_target_instance bind_instantiation   { $$ = new AstBind{$<fl>2, *$2, $3}; }
-        |       yBIND bind_target_instance ':' bind_target_instance_list bind_instantiation
+                yBIND bind_target_instance bind_instantiation
+                        { $$ = new AstBind{$<fl>2, $2, $3}; }
+        |       yBIND bind_target_instance/*scope*/ ':' bind_target_instance_list bind_instantiation
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: Bind with instance list"); DEL($5); }
         ;
 
@@ -2812,9 +2813,10 @@ bind_target_instance_list:      // ==IEEE: bind_target_instance_list
         |       bind_target_instance_list ',' bind_target_instance      { }
         ;
 
-bind_target_instance<strp>:     // ==IEEE: bind_target_instance
-        //UNSUP hierarchical_identifierBit              { }
-                idAny                                   { $$ = $1; }
+bind_target_instance<nodep>:    // ==IEEE: bind_target_instance
+        //                      // IEEE: hierarchical_identifier constant_bit_select
+        //                      // Happens to have same syntax as defparam pre-dot
+                defparamIdRangeList                     { $$ = $1; }
         ;
 
 bind_instantiation<nodep>:      // ==IEEE: bind_instantiation

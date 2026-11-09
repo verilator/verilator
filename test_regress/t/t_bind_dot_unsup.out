@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_bind_dot_unsup.v:14:12: Unsupported: bind with dotted bind_target_scope
+   14 |   bind u_a1.u_b1 mycheck #(.CHECK('h11)) u_check ();
+      |            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_bind_dot_unsup.v:15:12: Unsupported: bind with dotted bind_target_scope
+   15 |   bind u_a1.u_b2 mycheck #(.CHECK('h12)) u_check ();
+      |            ^
+%Error-UNSUPPORTED: t/t_bind_dot_unsup.v:16:12: Unsupported: bind with dotted bind_target_scope
+   16 |   bind u_a2.u_b1 mycheck #(.CHECK('h21)) u_check ();
+      |            ^
+%Error-UNSUPPORTED: t/t_bind_dot_unsup.v:17:12: Unsupported: bind with dotted bind_target_scope
+   17 |   bind u_a2.u_b2 mycheck #(.CHECK('h22)) u_check ();
+      |            ^
+%Error: Exiting due to

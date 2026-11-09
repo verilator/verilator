@@ -557,13 +557,14 @@ public:
 class AstBind final : public AstNode {
     // Parents: MODULE
     // Children: CELL
-    // @astgen op1 := cellsp : List[AstNode]
+    // @astgen op1 := targetp : AstNode
+    // @astgen op2 := cellsp : List[AstNode]
     string m_name;  // Binding to name
 public:
-    AstBind(FileLine* fl, const string& name, AstNode* cellsp)
-        : ASTGEN_SUPER_Bind(fl)
-        , m_name{name} {
+    AstBind(FileLine* fl, AstNode* targetp, AstNode* cellsp)
+        : ASTGEN_SUPER_Bind(fl) {
         UASSERT_OBJ(VN_IS(cellsp, Cell), cellsp, "Only instances allowed to be bound");
+        this->targetp(targetp);
         addCellsp(cellsp);
     }
     ASTGEN_MEMBERS_AstBind;
