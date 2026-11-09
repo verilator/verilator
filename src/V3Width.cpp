@@ -1733,6 +1733,20 @@ class WidthVisitor final : public VNVisitor {
         AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
             VL_DANGLING(nodep);
+            if (AstCMethodHard* const methodp = VN_CAST(selp, CMethodHard)) {
+                // Only indexed element methods need this; error recovery can return other methods.
+                switch (methodp->method()) {
+                case VCMethod::ARRAY_AT:
+                case VCMethod::ARRAY_AT_BACK:
+                case VCMethod::ARRAY_AT_WRITE:
+                case VCMethod::DYN_AT_WRITE_APPEND:
+                case VCMethod::DYN_AT_WRITE_APPEND_BACK:
+                    // visit(AstCMethodHard) does not revisit the index.
+                    iterateCheckSizedSelf(methodp, "Bit select", methodp->pinsp(), SELF, FINAL);
+                    break;
+                default: break;
+                }
+            }
             userIterate(selp, m_vup);
             return;
         }
