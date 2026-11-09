@@ -234,6 +234,17 @@ module t (
       i = by_data.last(index_select3[cyc+1]);  // Bounds checked, as not a power of 2
       `checkh(i, 1);
       `checkh(index_select3[1], 9);
+      // Index 3 is out of bounds of index_select3[3], so last() does not write it
+      i = by_data.last(index_select3[cyc+3]);
+      `checkh(i, 1);
+      `checkp(index_select3, "'{'h0, 'h9, 'h0}");
+      // Each next() reads the default index 0, not the key that the previous one wrote
+      by_data[0] = 3;
+      repeat (3) begin
+        i = by_data.next(index_select3[cyc+3]);
+        `checkh(i, 1);
+      end
+      `checkp(index_select3, "'{'h0, 'h9, 'h0}");
       derived_handle = new;
       by_class[derived_handle] = 1;
       i = by_class.first(base_handle);
