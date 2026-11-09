@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--func-recursion-depth 2000'])
+test.compile(verilator_flags2=['--func-recursion-depth 2000', '--unlimited-stack'])
 
 test.execute()
 
