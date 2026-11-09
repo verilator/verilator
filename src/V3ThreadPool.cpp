@@ -91,6 +91,10 @@ void V3ThreadPool::selfTestMtDisabled() {
 }
 
 void V3ThreadPool::selfTest() {
+    if (v3Global.opt.debugFatalSrcWorker()) {
+        V3ThreadScope scope;
+        scope.enqueue([]() { v3fatalSrc("--debug-fatalsrc-worker"); });
+    }
     V3Mutex commonMutex;
     int commonValue{0};
 

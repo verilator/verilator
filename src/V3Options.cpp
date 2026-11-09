@@ -1453,6 +1453,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debug-fatalsrc", CbCall, []() {
         v3fatalSrc("--debug-fatal-src");
     }).undocumented();  // See also --debug-abort
+    DECL_OPTION("-debug-fatalsrc-worker", OnOff, &m_debugFatalSrcWorker).undocumented();
     DECL_OPTION("-debug-leak", OnOff, &m_debugLeak);
     DECL_OPTION("-debug-nondeterminism", OnOff, &m_debugNondeterminism).undocumented();
     DECL_OPTION("-debug-options", OnOff, &m_debugOptions).undocumented();

@@ -356,7 +356,10 @@ void V3Error::abortIfWarnings() {
 
 void V3Error::vlAbort() {
 #ifndef V3ERROR_NO_GLOBAL_
-    v3Global.shutdown();
+    if (!(v3Global.opt.verilateJobs() > 1
+          && v3Global.mainThreadId() != std::this_thread::get_id())) {
+        v3Global.shutdown();
+    }
 #endif
     VL_GCOV_DUMP();
     std::abort();  // LCOV_EXCL_LINE
