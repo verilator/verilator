@@ -460,6 +460,40 @@ module fsm_if_else_chain_or_bad (
 
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
+module fsm_if_else_chain_tail_decode_bad (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+  logic busy;
+
+  // The tail folds to 'state_d = (state_q == S1) ? S2 : go ? S0 : S1', which
+  // tests an input after the state
+  always_comb begin
+    busy = 1'b0;
+    if (state_q == S0) begin
+      state_d = S1;
+      busy = 1'b1;
+    end
+    else if (state_q == S1) state_d = S2;
+    else if (go) state_d = S0;
+    else state_d = S1;
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
 module fsm_direct_active_low_dynamic_reset_bad (
     input logic clk,
     input logic rst_n,
@@ -559,6 +593,11 @@ module t (
   );
   fsm_if_else_chain_one_branch_bad else_chain_one_branch_u (.clk(clk));
   fsm_if_else_chain_or_bad else_chain_or_u (.clk(clk));
+  fsm_if_else_chain_tail_decode_bad else_chain_tail_decode_u (
+      .clk(clk),
+      .rst(cyc == 0),
+      .go(start)
+  );
   fsm_direct_active_low_dynamic_reset_bad active_low_dynamic_reset_u (
       .clk(clk),
       .rst_n(cyc != 0),

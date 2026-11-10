@@ -13,7 +13,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--cc --coverage-fsm'])
+test.compile(verilator_flags2=['--cc --coverage-fsm --coverage-branch'])
 test.execute()
 
 # Use annotated-source output so the expected file captures both the extracted

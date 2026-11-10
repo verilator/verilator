@@ -438,6 +438,7 @@ struct FsmIfBranch final {
 // existing case path remains the preferred candidate when both forms appear.
 struct FsmIfChainCandidate final {
     AstNode* stmtp = nullptr;  // Top-level if-chain node, or assignment of a folded chain
+    AstNodeAssign* foldedp = nullptr;  // Assignment of the folded branches, if any
     AstVarScope* compareVscp = nullptr;  // Variable used by every state comparison
     std::vector<FsmIfBranch> branches;  // Recognized state-dispatch branches
     AstNode* defaultStmtsp = nullptr;  // Optional final else body
@@ -846,8 +847,8 @@ class FsmDetectVisitor final : public VNVisitor {
                 } else if (chain.compareVscp != reg.stateVscp()) {
                     continue;
                 }
-                AstNode* const warnNodep
-                    = FsmDetectVisitor::ifChainSupportedTransitionNode(chain, reg.nextVscp());
+                AstNode* const warnNodep = FsmDetectVisitor::ifChainSupportedTransitionNode(
+                    chain, FsmDetectVisitor::ifChainAssignVscp(chain, reg.nextVscp()));
                 if (!warnNodep) continue;
                 match.matchedp = &reg;
                 match.warnNodep = warnNodep;
@@ -1171,12 +1172,20 @@ class FsmDetectVisitor final : public VNVisitor {
         return assp ? assp->rhsp() : nullptr;
     }
 
+    // The variable an if-chain's branches assign.  Branch coverage makes V3LiftExpr rewrite
+    // 'next = c0 ? A : c1 ? B : C' as an if-chain on a temporary, followed by 'next = tmp'.
+    static AstVarScope* ifChainAssignVscp(const FsmIfChainCandidate& chain,
+                                          AstVarScope* nextVscp) {
+        AstNodeAssign* const assp
+            = directStateAssign(skipLeadingIgnorableStmt(chain.stmtp->nextp()), nextVscp);
+        AstVarRef* const tmpRefp = assp ? VN_CAST(assp->rhsp(), VarRef) : nullptr;
+        return tmpRefp ? tmpRefp->varScopep() : nextVscp;
+    }
+
     static AstNode* ifChainSupportedTransitionNode(const FsmIfChainCandidate& chain,
                                                    AstVarScope* stateVscp) {
-        // A folded chain is a single assignment, which must be to the next state
-        if (AstNodeAssign* const assp = VN_CAST(chain.stmtp, NodeAssign)) {
-            if (!directStateAssign(assp, stateVscp)) return nullptr;
-        }
+        // Folded branches are one assignment, which must be to the next state
+        if (chain.foldedp && !directStateAssign(chain.foldedp, stateVscp)) return nullptr;
         // Branches support the same transitions as case items
         FsmStateValue value;
         FsmStateValue elseValue;
@@ -1353,7 +1362,7 @@ class FsmDetectVisitor final : public VNVisitor {
             chain.compareVscp = cmp.stateVscp;
             FsmIfBranch branch;
             branch.nodep = curp;
-            branch.stmtsp = curp->thensp();
+            branch.stmtsp = skipLeadingIgnorableStmt(curp->thensp());
             branch.valuep = cmp.valuep;
             branch.fromValue = cmp.value;
             branch.hasTopGuard = hasGuard;
@@ -1365,6 +1374,17 @@ class FsmDetectVisitor final : public VNVisitor {
             if (AstIf* const elseIfp = VN_CAST(elseNodep, If)) {
                 curp = elseIfp;
                 continue;
+            }
+            // Coverage in an earlier branch keeps V3Const from folding the whole chain,
+            // but the rest of it still folds into one assignment of nested conditionals
+            AstNodeAssign* const tailp = VN_CAST(elseNodep, NodeAssign);
+            AstCond* const tailCondp = tailp ? VN_CAST(tailp->rhsp(), Cond) : nullptr;
+            FsmStateComparison tailCmp;
+            bool tailHasGuard = false;
+            if (tailCondp
+                && resolveIfPredicate(tailCondp->condp(), aliases, tailCmp, tailHasGuard)) {
+                if (!collectCondBranches(tailp, aliases, chain, seenValues)) return false;
+                break;
             }
             chain.defaultStmtsp = elseNodep;
             break;
@@ -1379,6 +1399,14 @@ class FsmDetectVisitor final : public VNVisitor {
                                  FsmIfChainCandidate& chain) {
         chain.stmtp = assp;
         std::unordered_set<string> seenValues;
+        return collectCondBranches(assp, aliases, chain, seenValues) && chain.branches.size() >= 2;
+    }
+
+    // Add a branch for each conditional in 'x = c0 ? A : c1 ? B : C'
+    static bool collectCondBranches(AstNodeAssign* assp, const FsmAliasMap& aliases,
+                                    FsmIfChainCandidate& chain,
+                                    std::unordered_set<string>& seenValues) {
+        chain.foldedp = assp;
         for (AstCond* condp = VN_AS(assp->rhsp(), Cond); condp;
              condp = VN_CAST(condp->elsep(), Cond)) {
             FsmStateComparison cmp;
@@ -1395,7 +1423,7 @@ class FsmDetectVisitor final : public VNVisitor {
             branch.hasTopGuard = hasGuard;
             chain.branches.push_back(branch);
         }
-        return chain.branches.size() >= 2;
+        return true;
     }
 
     // Enum-backed FSMs should only use values that were interned as known states.
@@ -2025,7 +2053,7 @@ class FsmDetectVisitor final : public VNVisitor {
                 }
                 firstCand.warnNodep = matchedWarnNodep;
                 firstCand.stateVscp = const_cast<AstVarScope*>(matchedp->stateVscp());
-                processIfChain(chain, matchedp->nextVscp(), *matchedp);
+                processIfChain(chain, ifChainAssignVscp(chain, matchedp->nextVscp()), *matchedp);
                 continue;
             }
             if (matchedp->stateVscp() != firstCand.stateVscp) {
