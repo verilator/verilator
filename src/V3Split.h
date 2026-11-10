@@ -27,7 +27,6 @@ class AstNetlist;
 class V3Split final {
 public:
     static void splitAll(AstNetlist* nodep) VL_MT_DISABLED;
-    static void selfTest() VL_MT_DISABLED;
 };
 
 #endif  // Guard
