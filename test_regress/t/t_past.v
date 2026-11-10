@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2018 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (
     input clk
 );
@@ -22,6 +27,12 @@ module t (
   );
 
   Test2 test2 (  /*AUTOINST*/
+      // Inputs
+      .clk(clk),
+      .in(in[31:0])
+  );
+
+  TestGen testGen (  /*AUTOINST*/
       // Inputs
       .clk(clk),
       .in(in[31:0])
@@ -123,5 +134,37 @@ module Test2 (  /*AUTOARG*/
   default clocking @(posedge clk);
   endclocking
   assert property (@(posedge clk) $time < 40 || dly1 == $past(in, 2));
+
+endmodule
+
+module TestGen (
+    input clk,
+    input [31:0] in
+);
+
+  int cyc = 0;
+  always @(posedge clk) cyc <= cyc + 1;
+
+  // Changes on negedge, so stable at the posedge of the generate block clocks below
+  logic [31:0] inNeg;
+  always @(negedge clk) inNeg <= in;
+
+  for (genvar g = 0; g < 2; ++g) begin : gen
+    // Same-named variables in different generate blocks have their own history
+    wire [31:0] val = in + g;
+    logic [31:0] valDly;
+    always @(posedge clk) begin
+      valDly <= val;
+      if (cyc > 1) `checkd($past(val), valDly);
+    end
+
+    // Same-named clocks in different generate blocks have their own history
+    wire gclk = cyc[g];
+    logic [31:0] inNegDly;
+    always @(posedge gclk) begin
+      inNegDly <= inNeg;
+      if (cyc > 8) `checkd($past(inNeg), inNegDly);
+    end
+  end
 
 endmodule

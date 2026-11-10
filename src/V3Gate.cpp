@@ -25,11 +25,11 @@
 
 #include "V3Gate.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3Const.h"
 #include "V3DupFinder.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
+#include "V3VNUserAllocator.h"
 
 #include <list>
 #include <unordered_map>
@@ -545,7 +545,7 @@ class GateInline final {
     const VNUser2InUse m_inuser2;
 
     // Variable substitutions to apply to a given logic block
-    AstUser2Allocator<AstNode, Substitutions> m_substitutions;
+    VNUser2Allocator<AstNode, Substitutions> m_substitutions;
 
     // STATE
     GateGraph& m_graph;
@@ -840,7 +840,7 @@ class GateDedupeHash final : public V3DupFinderUserSame {
         // Parent AstNodeAssign* for this rhsp
         AstNodeAssign* parentp = nullptr;
     };
-    AstUser2Allocator<AstNodeExpr, AuxAstNodeExpr> m_auxNodeExpr;
+    VNUser2Allocator<AstNodeExpr, AuxAstNodeExpr> m_auxNodeExpr;
 
     AstNodeExpr* m_currRhsp = nullptr;  // Current node we are searching for duplicates of
     AuxAstNodeExpr m_auxCurRhsp;  // Aux of current node

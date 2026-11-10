@@ -926,7 +926,7 @@ public:
 
     // METHODS - dump and error
     void v3errorEnd(const std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
-    void v3errorEndFatal(const std::ostringstream& str) const VL_ATTR_NORETURN
+    [[noreturn]] void v3errorEndFatal(const std::ostringstream& str) const
         VL_RELEASE(V3Error::s().m_mutex);
     string warnContextPrimary() const VL_REQUIRES(V3Error::s().m_mutex) {
         return fileline()->warnContextPrimary();
@@ -1736,7 +1736,7 @@ class VDTypeNameScopes final {
     static const VDTypeNameScopes* s_currentp;  // Index in use, or nullptr if none
 
     // METHODS
-    void index(AstNode* nodep, AstNode* scopep);
+    void index(AstNode* nodesp, AstNode* scopep);
     VL_UNCOPYABLE(VDTypeNameScopes);
     VL_UNMOVABLE(VDTypeNameScopes);
 

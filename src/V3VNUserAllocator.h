@@ -15,8 +15,8 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3ASTUSERALLOCATOR_H_
-#define VERILATOR_V3ASTUSERALLOCATOR_H_
+#ifndef VERILATOR_V3VNUSERALLOCATOR_H_
+#define VERILATOR_V3VNUSERALLOCATOR_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -28,7 +28,7 @@
 #include <vector>
 
 template <typename T_Node, typename T_Data, int N_UserN>
-class AstUserAllocatorBase VL_NOT_FINAL {
+class VNUserAllocatorBase VL_NOT_FINAL {
     static_assert(1 <= N_UserN && N_UserN <= 4, "Wrong user pointer number");
     static_assert(std::is_base_of<AstNode, T_Node>::value, "T_Node must be an AstNode type");
 
@@ -64,7 +64,7 @@ private:
     }
 
 protected:
-    AstUserAllocatorBase() {
+    VNUserAllocatorBase() {
         if VL_CONSTEXPR_CXX17 (N_UserN == 1) {
             VNUser1InUse::check();
         } else if VL_CONSTEXPR_CXX17 (N_UserN == 2) {
@@ -76,7 +76,7 @@ protected:
         }
     }
 
-    VL_UNCOPYABLE(AstUserAllocatorBase);
+    VL_UNCOPYABLE(VNUserAllocatorBase);
 
 public:
     // Get a reference to the user data. If does not exist, construct it with given arguments.
@@ -108,12 +108,12 @@ public:
 // and is there for a bit of extra type safety. T_Data is the type of the data structure
 // managed by the allocator.
 template <typename T_Node, typename T_Data>
-class AstUser1Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 1> {};
+class VNUser1Allocator final : public VNUserAllocatorBase<T_Node, T_Data, 1> {};
 template <typename T_Node, typename T_Data>
-class AstUser2Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 2> {};
+class VNUser2Allocator final : public VNUserAllocatorBase<T_Node, T_Data, 2> {};
 template <typename T_Node, typename T_Data>
-class AstUser3Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 3> {};
+class VNUser3Allocator final : public VNUserAllocatorBase<T_Node, T_Data, 3> {};
 template <typename T_Node, typename T_Data>
-class AstUser4Allocator final : public AstUserAllocatorBase<T_Node, T_Data, 4> {};
+class VNUser4Allocator final : public VNUserAllocatorBase<T_Node, T_Data, 4> {};
 
 #endif  // Guard

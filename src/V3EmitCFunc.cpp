@@ -292,8 +292,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         ofp()->putsQuoted(vformat);
     }
 
-    int exprArgs = 0;
-    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) ++exprArgs;
+    const int exprArgs = static_cast<int>(VNList<AstNode>{exprsp}.size());
     if (VL_UNCOVERABLE(!exprFormat && exprArgs != formatArgs)) {  // LCOV_EXCL_START
         // expectDisplay() checks this first, so probably internal error if found here
         nodep->v3error("Internal: Missing or extra arguments for $display-like format, "
@@ -304,7 +303,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     int argc = 0;
     if (needsScope) ++argc;
     if (needsTimescale) ++argc;
-    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
+    for (AstNode* const argp : VNList<AstNode>{exprsp}) {
         ++argc;
         const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
         if (fargp && fargp->formatAttr().isEnum()) ++argc;  // Additional name argument
@@ -345,7 +344,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     }
 
     // Arguments
-    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
+    for (AstNode* const argp : VNList<AstNode>{exprsp}) {
         ofp()->indentInc();
         ofp()->putbs("");
         AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);

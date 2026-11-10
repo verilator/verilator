@@ -29,9 +29,9 @@
 
 #include "V3Inline.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
+#include "V3VNUserAllocator.h"
 
 #include <unordered_map>
 #include <vector>

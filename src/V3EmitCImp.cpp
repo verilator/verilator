@@ -16,11 +16,11 @@
 
 #include "V3PchAstMT.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3EmitC.h"
 #include "V3EmitCFunc.h"
 #include "V3ThreadPool.h"
 #include "V3UniqueNames.h"
+#include "V3VNUserAllocator.h"
 
 #include <algorithm>
 #include <map>
@@ -44,7 +44,7 @@ class EmitCImp final : public EmitCFunc {
 
     // NODE STATE
     //   AstNodeModule::user1()  -> CtorDtor. Constructor/destructor statements (slow only)
-    AstUser1Allocator<AstNodeModule, CtorDtor> m_ctorDtors;
+    VNUser1Allocator<AstNodeModule, CtorDtor> m_ctorDtors;
 
     // MEMBERS
     const std::vector<AstNodeModule*>& m_modps;  // Modules emitted into the same output files

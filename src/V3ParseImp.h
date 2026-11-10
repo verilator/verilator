@@ -75,7 +75,7 @@ struct VMemberQualifiers final {
         return VRandAttr::NONE;
     }
     void applyToNodes(AstNodeFTask* nodesp) const {
-        for (AstNodeFTask* nodep = nodesp; nodep; nodep = VN_AS(nodep->nextp(), NodeFTask)) {
+        for (AstNodeFTask* const nodep : VNList<AstNodeFTask>{nodesp}) {
             if (m_local) nodep->isHideLocal(true);
             if (m_protected) nodep->isHideProtected(true);
             if (m_static) nodep->isStatic(true);
@@ -95,7 +95,7 @@ struct VMemberQualifiers final {
         }
     }
     void applyToNodes(AstVar* nodesp) const {
-        for (AstVar* nodep = nodesp; nodep; nodep = VN_AS(nodep->nextp(), Var)) {
+        for (AstVar* const nodep : VNList<AstVar>{nodesp}) {
             if (m_rand) nodep->rand(VRandAttr::RAND);
             if (m_randc) nodep->rand(VRandAttr::RAND_CYCLIC);
             if (m_local) nodep->isHideLocal(true);

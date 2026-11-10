@@ -36,9 +36,9 @@
 
 #include "V3Force.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
+#include "V3VNUserAllocator.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -151,7 +151,7 @@ private:
     const VNUser2InUse m_user2InUse;
 
 public:
-    using ForceHelperVarsByVar = AstUser3Allocator<AstVar, ForceHelperVars>;
+    using ForceHelperVarsByVar = VNUser3Allocator<AstVar, ForceHelperVars>;
     // Raw-variable reads never to replace, even in the other pass (see markPermanentlyProtected)
     using ProtectedVarRefSet = std::unordered_set<const AstVarRef*>;
     // AstVarScopes with force-rd-update logic already generated, by either pass
