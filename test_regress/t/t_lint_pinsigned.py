@@ -11,7 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=['-Wwarn-PINSIGNED'],
-          fails=True, expect_filename=test.golden_filename)
+test.lint(verilator_flags2=['-Wwarn-PINSIGNED'], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

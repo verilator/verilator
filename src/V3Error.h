@@ -259,8 +259,8 @@ public:
     }
     // Warnings that default to off
     bool defaultsOff() const VL_MT_SAFE {
-        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || m_e == I_ERRORING
-                || m_e == PINSIGNED || styleError());
+        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || m_e == I_ERRORING || m_e == PINSIGNED
+                || styleError());
     }
     // Insuppressible error codes that should always stop elaboration
     bool hardError() const VL_MT_SAFE {
