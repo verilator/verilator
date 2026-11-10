@@ -3960,7 +3960,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         int paramNum = 1 + static_cast<int>(nodep->paramspList().size());
 
         // Add each implicit parameter type
-        for (const AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+        for (const AstPin* const pinp : VNList<AstPin>{nodep->pinsp()}) {
             const AstVar* const modIfaceVarp = pinp->modVarp();
             if (!modIfaceVarp || !modIfaceVarp->isIfaceRef()
                 || !VN_IS(modIfaceVarp->childDTypep()->elemDTypep(), IfaceGenericDType)) {
