@@ -407,6 +407,10 @@ static void process() {
 
             if (v3Global.opt.fLife()) V3Life::lifeAll(v3Global.rootp());
 
+            // Split single ALWAYS blocks before making tables, so that a table is made for each
+            // independent group of outputs, indexed by their own inputs only
+            if (v3Global.opt.fSplit()) V3Split::splitAll(v3Global.rootp());
+
             // Make large low-fanin logic blocks into lookup tables
             // This should probably be done much later, once we have common logic elimination.
             if (!v3Global.opt.lintOnly() && v3Global.opt.fTable()) {
