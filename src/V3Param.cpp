@@ -2207,8 +2207,11 @@ class ParamProcessor final {
 
         genericInterfaceVarSetup(paramsp, pinsp);
 
-        // Delete the parameters from the cell; they're not relevant any longer.
-        if (paramsp) VL_DO_DANGLING(paramsp->unlinkFrBackWithNext()->deleteTree(), paramsp);
+        // Detach the parameters from the cell; they're not relevant any longer. Defer deletion
+        // because m_cellps in ParamVisitor may still contain references below a parameter pin.
+        if (paramsp) {
+            VL_DO_DANGLING(m_deleter.pushDeletep(paramsp->unlinkFrBackWithNext()), paramsp);
+        }
         return newModp;
     }
 
