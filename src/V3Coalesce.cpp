@@ -110,16 +110,16 @@ class CoalesceVisitor final : public VNVisitorConst {
     static const AstConst* constOf(const AstVarScope* vscp, ConstCache& cache) {
         std::vector<const AstVarScope*> path;
         const AstConst* constp = nullptr;
-        for (; vscp && vscp->user2() == 1; vscp = VN_CAST(vscp->user1p(), VarScope)) {
-            // A null entry also breaks cycles while this path is being visited
-            const auto pair = cache.emplace(vscp, nullptr);
-            if (!pair.second) {
-                constp = pair.first->second;
-                break;
-            }
+        // A null entry also breaks cycles while this path is being visited
+        while (!constp && vscp && vscp->user2() == 1 && cache.emplace(vscp, nullptr).second) {
             path.push_back(vscp);
             constp = VN_CAST(vscp->user4p(), Const);
-            if (constp) break;
+            vscp = VN_CAST(vscp->user1p(), VarScope);
+        }
+        // Stopped at a variable resolved before
+        if (!constp && vscp) {
+            const ConstCache::const_iterator it = cache.find(vscp);
+            if (it != cache.end()) constp = it->second;
         }
         for (const AstVarScope* const seenp : path) cache[seenp] = constp;
         return constp;
