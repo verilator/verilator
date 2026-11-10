@@ -82,7 +82,6 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::onExit(void* selfp) {
 
 template <>
 VerilatedTrace<VL_SUB_T, VL_BUF_T>::VerilatedTrace() {
-    set_time_unit(Verilated::threadContextp()->timeunitString());
     set_time_resolution(Verilated::threadContextp()->timeprecisionString());
 }
 
@@ -219,13 +218,9 @@ std::string VerilatedTrace<VL_SUB_T, VL_BUF_T>::timeResStr() const {
 // External interface to client code
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_unit(const char* unitp) VL_MT_SAFE {
-    m_timeUnit = timescaleToDouble(unitp);
-}
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_unit(const char*) VL_MT_SAFE {}
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_unit(const std::string& unit) VL_MT_SAFE {
-    set_time_unit(unit.c_str());
-}
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_unit(const std::string&) VL_MT_SAFE {}
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_resolution(const char* unitp) VL_MT_SAFE {
     m_timeRes = timescaleToDouble(unitp);

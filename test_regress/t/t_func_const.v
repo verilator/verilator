@@ -20,6 +20,10 @@ module t;
   localparam P6 = f_return(P4);
   localparam P128 = f_package();
   localparam [15:0] PSEL = f_concat_sel(16'h4321);
+  localparam P0 = f_out_of_bounds(3);
+  localparam P1 = f_desc_out_of_bounds(5);
+  localparam P0_ABOVE = f_desc_out_of_bounds(6);
+  localparam P0_BELOW = f_desc_out_of_bounds(2);
 
   typedef struct packed {logic [7:0] data;} type_t;
   typedef type_t [1:0] flist;
@@ -50,6 +54,10 @@ module t;
     if (bigparam.data != 32'hfff12fff) $stop;
     if (P128 != 128) $stop;
     if (PSEL != 16'h1234) $stop;
+    if (P0 !== 0) $stop;
+    if (P1 !== 1) $stop;
+    if (P0_ABOVE !== 0) $stop;
+    if (P0_BELOW !== 0) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
@@ -57,6 +65,31 @@ module t;
   function integer f_package();
     return PARAM;
   endfunction
+
+  // Array read out of bounds gives the default value of the element type
+  function automatic integer f_out_of_bounds(input [31:0] i);
+    int a[3] = '{default: 7};
+    return a[i];
+  endfunction
+
+  // Likewise of a typedef'd array, indexed from 5 down to 3
+  typedef int desc_t[5:3];
+  function automatic integer f_desc_out_of_bounds(input integer i);
+    desc_t a;
+    a[5] = 1;
+    return a[i];
+  endfunction
+
+  // An out-of-bounds index wider than 32 bits, read and written; in a generate condition, where
+  // the index keeps its full width
+  if (f_wide_out_of_bounds(64'h1_0000_0000) != 21) $error;
+  // verilator lint_off WIDTHTRUNC
+  function automatic integer f_wide_out_of_bounds(input [63:0] i);
+    int a[3] = '{default: 7};
+    a[i] = 5;
+    return a[i] + a[0] + a[1] + a[2];
+  endfunction
+  // verilator lint_on WIDTHTRUNC
 
   function integer f_add(input [31:0] a, input [31:0] b);
     f_add = a + b;

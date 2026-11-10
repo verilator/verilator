@@ -1775,6 +1775,12 @@ public:
     }
 };
 
+// A cover sequence directive counts its matches; a sequence event control does not
+static bool countsMatches(const AstNodeCoverOrAssert* assertp) {
+    const AstCover* const coverp = VN_CAST(assertp, Cover);
+    return coverp && coverp->isCoverSeq() && !coverp->isSeqEvent();
+}
+
 //######################################################################
 // NFA Lowering (converts NFA graph to synthesizable AstAlways blocks)
 
@@ -2730,7 +2736,7 @@ public:
         // A packed range ring can emit several live endpoints without needing per-slot counts.
         // Widen only a ring whose input can already carry multiplicity.
         std::vector<bool> ringNeedsMultiplicity(N);
-        const bool countMatches = coverp && coverp->isCoverSeq() && !isSeqEvent;
+        const bool countMatches = countsMatches(assertp);
         if (countMatches) {
             std::vector<bool> stateMayHaveMultiplicity(N);
             std::vector<int> multiplicityWork;
@@ -3266,6 +3272,42 @@ class AssertNfaVisitor final : public VNVisitor {
         }
     }
 
+    static bool splitsImplicationPasssp(const AstNodeCoverOrAssert* assertp,
+                                        const PropertyParts& parts) {
+        const AstAssert* const assertAssertp = VN_CAST(assertp, Assert);
+        return assertAssertp && assertAssertp->passsp() && parts.hasImplication
+               && canSplitImplicationPassActions(parts);
+    }
+
+    // Takes ownership of outputp, and of matchp, matchCountp and threadFailCountp if non-null
+    void finishDirective(AstNodeCoverOrAssert* assertp, const PropertyParts& parts,
+                         AstSenTree* senTreep, AstNodeExpr* outputp, AstNodeExpr* matchp,
+                         AstNodeExpr* matchCountp, AstNodeExpr* threadFailCountp) {
+        AstNodeExpr* outputExprp = outputp;
+        FileLine* const flp = assertp->fileline();
+        AstPropSpec* const propp = VN_AS(assertp->propp(), PropSpec);
+        AstAssert* const assertAssertp = VN_CAST(assertp, Assert);
+        if (countsMatches(assertp)) {
+            UASSERT_OBJ(matchCountp, assertp, "Cover sequence missing match count");
+            VL_DO_DANGLING(outputExprp->deleteTree(), outputExprp);
+            propp->matchCountp(matchCountp);
+            outputExprp = new AstNeq{flp, matchCountp->cloneTreePure(false),
+                                     newTypedConstp(flp, matchCountp->dtypep(), 0)};
+        }
+
+        if (splitsImplicationPasssp(assertp, parts)) {
+            splitImplicationPassActions(assertAssertp, parts, matchp);
+        } else {
+            attachActionHandlers(assertAssertp, matchp,
+                                 threadFailCountp ? senTreep->cloneTree(false) : nullptr,
+                                 threadFailCountp);
+        }
+
+        AstNode* const innerPropp = propp->propp();
+        innerPropp->replaceWith(outputExprp);
+        VL_DO_DANGLING(pushDeletep(innerPropp), innerPropp);
+    }
+
     // Replace one VarRef to a captured local var with $past(rhs, K)
     // (or rhs inline when K == 0). No-op if refp is not in matchMap.
     void substituteMatchItemRef(AstVarRef* refp, unsigned K,
@@ -3450,7 +3492,7 @@ class AssertNfaVisitor final : public VNVisitor {
         // A sequence event control is not an assertion directive; no default
         // disable iff, no assertion control
         const bool isSeqEvent = coverp && coverp->isSeqEvent();
-        const bool countMatches = isCoverSeq && !isSeqEvent;
+        const bool countMatches = countsMatches(assertp);
         // Inherit module defaults (IEEE 14.12, 16.15) when assertion has none.
         if (!propp->sensesp() && m_defaultClockingp) {
             propp->sensesp(m_defaultClockingp->sentreep()->sensesp()->cloneTree(true));
@@ -3507,9 +3549,7 @@ class AssertNfaVisitor final : public VNVisitor {
         }
 
         AstAssert* const assertAssertp = VN_CAST(assertp, Assert);
-        const bool splitImplicationPasssp = assertAssertp && assertAssertp->passsp()
-                                            && parts.hasImplication
-                                            && canSplitImplicationPassActions(parts);
+        const bool splitImplicationPasssp = splitsImplicationPasssp(assertp, parts);
         const bool needMatch = assertAssertp && assertAssertp->passsp()
                                && (!parts.hasImplication || splitImplicationPasssp);
 
@@ -3519,32 +3559,12 @@ class AssertNfaVisitor final : public VNVisitor {
             = m_loweringp->lower(assertp, graph, senTreep, result.finalCondp, disableExprp,
                                  needsThreadFailReplay, needsThreadFailReplay && !negated);
         AstNodeExpr* matchExprp = nullptr;
-        AstNodeExpr* outputExprp = m_loweringp->assembleResult(
+        AstNodeExpr* const outputExprp = m_loweringp->assembleResult(
             assertp, negated, result.finalCondp, signals, needMatch ? &matchExprp : nullptr);
-        if (countMatches) {
-            UASSERT_OBJ(signals.matchCountp, coverp, "Cover sequence missing match count");
-            VL_DO_DANGLING(outputExprp->deleteTree(), outputExprp);
-            propp->matchCountp(signals.matchCountp);
-            outputExprp = new AstNeq{flp, signals.matchCountp->cloneTreePure(false),
-                                     newTypedConstp(flp, signals.matchCountp->dtypep(), 0)};
-        }
-
-        AstSenTree* const threadFailReplaySenTreep
-            = signals.threadFailCountp ? senTreep->cloneTree(false) : nullptr;
-
-        VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
         if (result.finalCondp && !result.finalCondp->backp()) pushDeletep(result.finalCondp);
-
-        if (splitImplicationPasssp) {
-            splitImplicationPassActions(assertAssertp, parts, matchExprp);
-        } else {
-            attachActionHandlers(assertAssertp, matchExprp, threadFailReplaySenTreep,
-                                 signals.threadFailCountp);
-        }
-
-        AstNode* const innerPropp = propp->propp();
-        innerPropp->replaceWith(outputExprp);
-        VL_DO_DANGLING(pushDeletep(innerPropp), innerPropp);
+        finishDirective(assertp, parts, senTreep, outputExprp, matchExprp, signals.matchCountp,
+                        signals.threadFailCountp);
+        VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
 
         UINFO(4, "NFA converted assertion at " << flp << endl);
 

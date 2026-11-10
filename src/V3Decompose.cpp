@@ -124,10 +124,10 @@
 
 #include "V3Decompose.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3MemberMap.h"
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
+#include "V3VNUserAllocator.h"
 
 #include <algorithm>
 #include <memory>
@@ -208,9 +208,9 @@ public:
 
     public:
         // The components of the aggregate types, see DecomposeBase::dtypeComponents
-        AstUser4Allocator<AstNodeDType, std::vector<Component>> dtypeComponents;
+        VNUser4Allocator<AstNodeDType, std::vector<Component>> dtypeComponents;
         // The Places of the original variables, see DecomposeRecord::placeOf
-        AstUser4Allocator<AstVarScope, Place> places;
+        VNUser4Allocator<AstVarScope, Place> places;
         std::vector<Place*> rootps;  // The original Places, in creation order
         std::vector<std::vector<Select>> chains;  // Select chains addressing components
         std::vector<Assignment> assignments;  // Assignments to expand if a side is split
@@ -423,7 +423,7 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
                 // Eligible if no refusal reason returned
                 return !reasonp;
             }();
-            varp->user1(2 | eligible);
+            varp->user1(2 | (eligible ? 1 : 0));
         }
         // Return the cached result
         return varp->user1() & 1;
@@ -681,7 +681,7 @@ class DecomposeDecision final : public DecomposeBase {
     // STATE
     std::vector<Place*> m_worklist;  // Places to consider splitting
     // The component AstVars of the AstVars, see the node state
-    AstUser1Allocator<AstVar, std::vector<AstVar*>> m_splitVarps;
+    VNUser1Allocator<AstVar, std::vector<AstVar*>> m_splitVarps;
     VDouble0 m_statSplitUnpackedOrig;  // Original AstVars of unpacked type split
     VDouble0 m_statSplitPackedOrig;  // Original AstVars of packed type split
     VDouble0 m_statSplitUnpackedComp;  // Component AstVars of unpacked type split

@@ -2228,10 +2228,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         } else if (thenp) {
             newp = new AstLogIf{fl, nodep->condp()->unlinkFrBack(), thenp};
         } else if (elsep) {
-            AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
-            AstNot* const notp = new AstNot{fl, condp};
-            notp->user1(condp->user1());
-            newp = new AstLogIf{fl, notp, elsep};
+            newp = new AstLogIf{fl, new AstNot{fl, nodep->condp()->unlinkFrBack()}, elsep};
         }
         if (newp) {
             newp->dtypeSetBit();  // Result is boolean (prevents bare-var != 0 wrapping)
@@ -2256,16 +2253,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (!nodep->bodyp()) {
             nodep->unlinkFrBack();
         } else if (m_wantSingle) {
-            if (AstNodeExpr* const itemp = editSingle(fl, nodep->bodyp())) {
-                AstVar* const textVarp = newTextVarp(nodep);
-                AstNodeStmt* const bodyp
-                    = prependDistPreamble(nodep, newTermAppendp(fl, textVarp, itemp));
-                nodep->replaceWith(newTextBuildp(
-                    fl, textVarp, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
-                    newTextApplyp(fl, textVarp, "bvand", "#b1")));
-            } else {
-                nodep->unlinkFrBack();
-            }
+            AstNodeExpr* const itemp = editSingle(fl, nodep->bodyp());
+            AstVar* const textVarp = newTextVarp(nodep);
+            AstNodeStmt* const bodyp
+                = prependDistPreamble(nodep, newTermAppendp(fl, textVarp, itemp));
+            nodep->replaceWith(newTextBuildp(
+                fl, textVarp, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
+                newTextApplyp(fl, textVarp, "bvand", "#b1")));
         } else {
             VL_RESTORER(m_foreachBodyp);
             VL_RESTORER_COPY(m_foreachIdxVars);
@@ -2317,18 +2311,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     // Inside a fold, a group with nothing to check still stands for true, so that a guarding
     // if or foreach keeps a body
-    void finishUnique(AstConstraintUnique* nodep, const std::vector<std::string>& smtExprs,
-                      AstNode* setupStmtsp) {
+    void finishUnique(AstConstraintUnique* nodep, AstNode* setupStmtsp) {
         if (m_wantSingle) {
-            std::string exprStr = "#b1";
-            if (smtExprs.size() == 1) {
-                exprStr = smtExprs.front();
-            } else if (smtExprs.size() > 1) {
-                exprStr = "(bvand";
-                for (const std::string& oneExprp : smtExprs) exprStr += " " + oneExprp;
-                exprStr += ')';
-            }
-            nodep->replaceWith(new AstSFormatF{nodep->fileline(), exprStr, false, nullptr});
+            nodep->replaceWith(new AstSFormatF{nodep->fileline(), "#b1", false, nullptr});
         } else {
             if (setupStmtsp) nodep->addHereThisAsNext(setupStmtsp);
             nodep->unlinkFrBack();
@@ -2383,7 +2368,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Already reported by expandUniqueElementList()
         for (const AstNodeExpr* const itemp : nodep->rangespList()) {
             if (!SmtUtil::uniqueMemberIllegal(itemp).empty()) {
-                finishUnique(nodep, {}, nullptr);
+                finishUnique(nodep, nullptr);
                 return;
             }
         }
@@ -2393,7 +2378,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 && SmtUtil::uniqueSliceUnsupported(soleItemp).empty()) {
                 lowerUniqueSlice(nodep, soleItemp);
             } else {
-                finishUnique(nodep, {}, nullptr);
+                finishUnique(nodep, nullptr);
             }
             return;
         }
@@ -2560,7 +2545,19 @@ class ConstraintExprVisitor final : public VNVisitor {
                 setupStmtsp = AstNode::addNext(setupStmtsp, new AstStmtExpr{fl, randUniqueCallp});
             }
         }
-        finishUnique(nodep, smtExprs, setupStmtsp);
+        if (m_wantSingle && !smtExprs.empty()) {
+            std::string exprStr = smtExprs.front();
+            if (smtExprs.size() > 1) {
+                exprStr = "(bvand";
+                for (const std::string& oneExprp : smtExprs) exprStr += " " + oneExprp;
+                exprStr += ')';
+            }
+            AstSFormatF* const newp = new AstSFormatF{fl, exprStr, false, nullptr};
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        finishUnique(nodep, setupStmtsp);
     }
 
     void visit(AstConstraintExpr* nodep) override {
@@ -3878,7 +3875,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             }
         };
 
-        for (AstNode* const itemp : VNList<AstNodeConstraintItem>{constrItemsp}) {
+        for (AstNodeConstraintItem* const itemp : VNList<AstNodeConstraintItem>{constrItemsp}) {
             // dist can appear inside an if/else or foreach constraint.
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
                 UASSERT_OBJ(cifp->thensp(), cifp, "constraint if without a then body");

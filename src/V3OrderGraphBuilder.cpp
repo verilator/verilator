@@ -20,11 +20,11 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3AstUserAllocator.h"
 #include "V3Graph.h"
 #include "V3OrderGraph.h"
 #include "V3OrderInternal.h"
 #include "V3Sched.h"
+#include "V3VNUserAllocator.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -88,7 +88,7 @@ class OrderGraphBuilder final : public VNVisitor {
     const VNUser2InUse user2InUse;
     const VNUser3InUse user3InUse;
     const VNUser4InUse user4InUse;
-    AstUser1Allocator<AstVarScope, OrderUser> m_orderUser;
+    VNUser1Allocator<AstVarScope, OrderUser> m_orderUser;
 
     // STATE
     OrderGraph* const m_graphp;  // The ordering graph built by this visitor

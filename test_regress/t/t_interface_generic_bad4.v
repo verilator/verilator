@@ -16,6 +16,7 @@ module GenericModule (
     interface a,
     interface b
 );
+  int lv;
   initial begin
     #1;
     if (a.v != 7) $stop;
@@ -29,6 +30,11 @@ module t;
   GenericModule genericModule (
       inf_inst,
       inf_inst2
+  );
+  GenericModule genericModule2 (
+      .a(inf_inst2),
+      .b(inf_inst2),
+      .lv(inf_inst2)
   );
   initial begin
     inf_inst.v = 7;

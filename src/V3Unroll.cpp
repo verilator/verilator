@@ -192,7 +192,7 @@ class UnrollOneVisitor final : VNVisitor {
     void emit(AstNode* stmtsp) {
         m_stmtsp = AstNode::addNextNull(m_stmtsp, stmtsp);
         if (m_state == State::FAILED) return;
-        for (const AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* const stmtp : VNList<AstNode>{stmtsp}) {
             UASSERT_OBJ(m_state != State::TERMINATED, stmtp, "Statements after JumpGo");
             // A JumpGo always redirects to the end of an enclosing JumpBlock, so it must go
             // outside the loop. The loop terminates.
@@ -211,7 +211,7 @@ class UnrollOneVisitor final : VNVisitor {
     // Returns false if the loop terminated (or we gave up)
     bool unrollOneIteration(AstNode* stmtsp) {
         // Process one body statement at a time
-        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : VNList<AstNode>{stmtsp}) {
             // Clone and process one body statement, the visitors 'emit' the results
             iterate(stmtp->cloneTree(false));
             if (m_state != State::UNROLL) return false;

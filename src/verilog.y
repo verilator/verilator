@@ -25,8 +25,8 @@
 #include "V3ParseGrammar.h"  // Defines YYTYPE; before including bison header
 
 #define YYERROR_VERBOSE 1  // For prior to Bison 3.6
-#define YYINITDEPTH 10000  // Older bisons ignore YYMAXDEPTH
-#define YYMAXDEPTH 10000
+#define YYINITDEPTH 10000
+#define YYMAXDEPTH 1000000  // Each else-if nesting level holds about 7 entries
 #define YYNEWLINE "\n"
 
 // Pick up new lexer

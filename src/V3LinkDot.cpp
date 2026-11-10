@@ -1723,10 +1723,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
         // Recurse into all children
         for (AstNode* childp : {nodep->op1p(), nodep->op2p(), nodep->op3p(), nodep->op4p()}) {
-            while (childp) {
-                AstNode* const nextp = childp->nextp();
-                rewriteIfacePortRefsSingle(childp, portName);
-                childp = nextp;
+            for (AstNode* const subp : VNList<AstNode>{childp}) {
+                rewriteIfacePortRefsSingle(subp, portName);
             }
         }
     }
@@ -2105,8 +2103,8 @@ class LinkDotFindVisitor final : public VNVisitor {
             if (const VSymEnt* const typedefEntp = m_curSymp->findIdFallback(m_hierParamsName)) {
                 const AstModule* modp = VN_CAST(typedefEntp->nodep(), Module);
 
-                for (const AstNode* stmtp = modp ? modp->stmtsp() : nullptr; stmtp;
-                     stmtp = stmtp->nextp()) {
+                for (const AstNode* const stmtp :
+                     VNList<AstNode>{modp ? modp->stmtsp() : nullptr}) {
                     const AstTypedef* tdefp = VN_CAST(stmtp, Typedef);
 
                     if (tdefp && tdefp->name() == nodep->name() && m_statep->forPrimary()) {
@@ -3963,27 +3961,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return nullptr;
     }
-    static const AstVar* getNextVarp(const AstNode* stmtsp) {
-        // Only IO ports, as parameters are on paramsp(), not the pinsp() list paired here
-        while (stmtsp) {
-            if (const AstVar* const varp = VN_CAST(stmtsp, Var)) {
-                if (varp->isIO()) return varp;
-            }
-            stmtsp = stmtsp->nextp();
-        }
-        return nullptr;
-    }
-    // Introduce implicit parameters for modules with generic interafeces
-    void addImplicitParametersOfGenericIface(AstCell* const nodep, const AstModule* const modp) {
+    // Introduce implicit parameters for modules with generic interfaces
+    void addImplicitParametersOfGenericIface(AstCell* const nodep) {
         // Get Param number
         int paramNum = 1 + static_cast<int>(nodep->paramspList().size());
 
         // Add each implicit parameter type
-        const AstVar* modIfaceVarp = getNextVarp(modp->stmtsp());
-        for (const AstPin* pinp = nodep->pinsp(); pinp && modIfaceVarp;
-             pinp = VN_CAST(pinp->nextp(), Pin),
-                           modIfaceVarp = getNextVarp(modIfaceVarp->nextp())) {
-            if (modIfaceVarp->varType() != VVarType::IFACEREF
+        for (const AstPin* const pinp : VNList<AstPin>{nodep->pinsp()}) {
+            const AstVar* const modIfaceVarp = pinp->modVarp();
+            if (!modIfaceVarp || !modIfaceVarp->isIfaceRef()
                 || !VN_IS(modIfaceVarp->childDTypep()->elemDTypep(), IfaceGenericDType)) {
                 continue;
             }
@@ -4044,9 +4030,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (refp->cellp()->paramsp()) {
                         newIfaceRefp->addParamsp(refp->cellp()->paramsp()->cloneTree(true));
                     }
-                    UASSERT_OBJ(pinp->name().find("__pinNumber") == 0
-                                    || pinp->name() == modIfaceVarp->name(),
-                                pinp, "Not found interface with such name");
                     AstPin* const newPinp
                         = new AstPin{pinp->fileline(), paramNum,
                                      "__VGIfaceParam" + modIfaceVarp->name(), newIfaceRefp};
@@ -4167,8 +4150,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
                 if (m_statep->forPrimary())
                     if (const AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
-                        if (modp->hasGenericIface())
-                            addImplicitParametersOfGenericIface(nodep, modp);
+                        if (modp->hasGenericIface()) addImplicitParametersOfGenericIface(nodep);
                     }
             }
         }
