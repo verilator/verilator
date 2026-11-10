@@ -1729,7 +1729,7 @@ class WidthVisitor final : public VNVisitor {
         if (selp != nodep) {
             VL_DANGLING(nodep);
             if (AstCMethodHard* const methodp = VN_CAST(selp, CMethodHard)) {
-                if (methodp != fromp && methodp->method().isDynElementAccess()) {
+                if (methodp != fromp) {
                     // visit(AstCMethodHard) does not revisit the newly lowered index.
                     iterateCheckSizedSelf(methodp, "index", methodp->pinsp(), SELF, FINAL,
                                           /* deferUntyped */ true);
