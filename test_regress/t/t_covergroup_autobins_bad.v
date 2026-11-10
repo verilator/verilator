@@ -194,6 +194,7 @@ module t;
     cp_a: coverpoint cp_expr {
       bins normal = {0};
       ignore_bins nonconstant = {size_var};
+      illegal_bins others = default;  // Holds the values of neither bin above
     }
     cp_b: coverpoint cp_expr {bins normal = {0};}
     xc: cross cp_a, cp_b {
@@ -268,6 +269,14 @@ module t;
     xc: cross cp_a, cp_c;
   endgroup
 
+  // Error: an array of default bins is not allowed on a coverpoint of a real expression
+  covergroup cg_real_default;
+    cp: coverpoint cp_real {
+      bins low = {[0.0 : 1.0]};
+      bins others[] = default;
+    }
+  endgroup
+
   cg1 cg1_inst = new;
   cg2 cg2_inst = new;
   cg2b cg2b_inst = new;
@@ -291,6 +300,7 @@ module t;
   cg_limit cg_limit_inst = new;
   cg_real cg_real_inst = new;
   cg_wild_nonconst cg_wild_nonconst_inst = new;
+  cg_real_default cg_real_default_inst = new;
 
   initial $finish;
 endmodule

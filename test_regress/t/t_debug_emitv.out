@@ -1189,7 +1189,11 @@ module t;
             bins all[] = {[$:$]};
         };
       defaults: coverpoint cg_sig {
-            bins remaining = default;
+            bins remaining[] = default;
+        };
+        illegal_defaults: coverpoint cg_sig {
+            bins zero = {32'sh0};
+            illegal_bins remaining = default iff (cg_sig2[1]);
         };
     endfunction
     static int __Vint;
@@ -1250,6 +1254,14 @@ module t;
         int auto_bin_max;
         bit detect_overlap;
     } __Vcg_defaults__option;
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_illegal_defaults__option;
     endcovergroup
     int cg_set_values[$];
     cg_set_values = 

@@ -105,6 +105,22 @@ module t;
     ab: cross a, b;
   endgroup
 
+  // A default bin holds the values in no other bins.  So it holds no value of an ignore bin,
+  // also of a real coverpoint, but every value of a transition bin, which holds sequences.
+  covergroup cg_others with function sample (logic [1:0] value, real real_value);
+    cp_trans: coverpoint value {
+      bins zero = {0};
+      bins rise = (1 => 2);
+      bins other = default;
+    }
+    cp_real: coverpoint real_value {
+      bins low = {[0.0 : 1.0]};
+      ignore_bins mid = {[2.0 : 3.0]};
+      illegal_bins other = default;
+    }
+  endgroup
+  cg_others cg_others_inst = new;
+
   initial begin
     cg  cg_inst;
     cg2 cg2_inst;
@@ -209,6 +225,10 @@ module t;
     // cg_cross: cross of unlabeled coverpoints referenced by derived name
     a = 0; b = 0; cg_cross_inst.sample();
     a = 3; b = 3; cg_cross_inst.sample();
+
+    // cg_others: values 1, 2, and 3 are cp_trans's 'other'; 2.5 is ignored, not illegal
+    for (int i = 0; i < 4; ++i) cg_others_inst.sample(2'(i), i[0] ? 2.5 : 0.5);
+    `checkr(cg_others_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

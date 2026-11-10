@@ -1091,6 +1091,7 @@ class AstCoverBin final : public AstNode {
     const VCoverBinsType m_binsType;  // Bin type (eg AUTO, IGNORE, ILLEGAL)
     bool m_isArray = false;  // Bin is an array: of a bin per value or transition, or of
                              // arraySizep() bins
+    bool m_isDefault = false;  // Bin is declared '= default', so holds the values of no other bins
     bool m_isWildcard = false;  // Bin uses wildcard matching (independent of ignore/illegal)
     bool m_isSetExpr = false;  // Ranges contain one set_covergroup_expression, not a braced list
 
@@ -1117,10 +1118,15 @@ public:
         this->arraySizep(arraySizep);
     }
     // Constructor for default bins (catch-all)
-    AstCoverBin(FileLine* fl, const string& name, VCoverBinsType type)
+    AstCoverBin(FileLine* fl, const string& name, VCoverBinsType type, bool isArray,
+                AstNodeExpr* iffp)
         : ASTGEN_SUPER_CoverBin(fl)
         , m_name{name}
-        , m_binsType{type} {}
+        , m_binsType{type}
+        , m_isArray{isArray}
+        , m_isDefault{true} {
+        this->iffp(iffp);
+    }
     // Constructor for transition bins
     AstCoverBin(FileLine* fl, const string& name, AstCoverTransSet* transp,
                 VCoverBinsType type = VCoverBinsType::BINS_TRANSITION, bool isArrayBin = false)
@@ -1136,11 +1142,18 @@ public:
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     VCoverBinsType binsType() const { return m_binsType; }
+    bool isDefault() const { return m_isDefault; }
     bool isWildcard() const { return m_isWildcard; }
     bool isArray() const { return m_isArray; }
     void isArray(bool flag) { m_isArray = flag; }
     bool isSetExpr() const { return m_isSetExpr; }
     void isSetExpr(bool flag) { m_isSetExpr = flag; }
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_START
+        const AstCoverBin* const asamep = VN_DBG_AS(samep, CoverBin);
+        return m_name == asamep->m_name && m_binsType.m_e == asamep->m_binsType.m_e
+               && m_isArray == asamep->m_isArray && m_isDefault == asamep->m_isDefault
+               && m_isWildcard == asamep->m_isWildcard && m_isSetExpr == asamep->m_isSetExpr;
+    }  // LCOV_EXCL_STOP
 };
 class AstCoverBinsof final : public AstNode {
     // A binsof selection of a coverpoint or one of its named bins

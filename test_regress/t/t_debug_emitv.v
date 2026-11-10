@@ -624,6 +624,10 @@ module t (/*AUTOARG*/
     defaults: coverpoint cg_sig {
       bins remaining[] = default;
     }
+    illegal_defaults: coverpoint cg_sig {
+      bins zero = {0};
+      illegal_bins remaining = default iff (cg_sig2[1]);
+    }
   endgroup
 
   // Covergroup with array transitions and an array-valued set expression.
