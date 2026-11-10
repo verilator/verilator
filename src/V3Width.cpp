@@ -8358,6 +8358,18 @@ class WidthVisitor final : public VNVisitor {
                                         << pinDirection.prettyName()
                                         << "' port (IEEE 1800-2023 11.4.14)");
             }
+            // Check the source literal before widthing can change its type or remove casts.
+            const AstConst* const literalp = VN_CAST(nodep->exprp(), Const);
+            const AstNodeDType* const portDTypep = nodep->modVarp()->dtypep()->skipRefp();
+            if (literalp && pinDirection == VDirection::INPUT && portDTypep->isSigned()
+                && literalp->num().sized() && !literalp->num().isSigned()
+                && !literalp->num().isOpaque() && !literalp->num().isFourState()
+                && literalp->num().width() == portDTypep->width()
+                && literalp->num().bitIs1(portDTypep->width() - 1)) {
+                literalp->v3warn(PINSIGNED,
+                                 "Unsigned literal exceeds positive range of signed input port "
+                                     << nodep->modVarp()->prettyNameQ() << ".");
+            }
             userIterateAndNext(nodep->exprp(), WidthVP{nodep->modVarp()->dtypep(), PRELIM}.p());
             // Outputs are continuous assignments; inouts are transistor connections (23.3.3).
             if (pinDirection.isOutput() || pinDirection.isInout()) {

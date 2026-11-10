@@ -1821,6 +1821,23 @@ List Of Warnings
    This error may be disabled with a lint_off PINNOTFOUND metacomment.
 
 
+.. option:: PINSIGNED
+
+   Warns when a sized unsigned literal connected directly to a signed input
+   port of the same width exceeds the port's positive signed range. The bit
+   pattern is unchanged, but is interpreted as negative at the port.
+
+   For example, ``14'd10483`` connected to a 14-bit signed input represents
+   -5901 at the port. Use a signed literal or an explicit cast to indicate
+   that the negative value is intentional. Unknown and high-impedance values
+   are not checked.
+
+   Disabled by default; enable it with :vlopt:`-Wall` or
+   ``-Wwarn-PINSIGNED``. Ignoring the warning does not change simulation.
+
+
+
+
 .. option:: PKGNODECL
 
    Never issued since version 5.038. Historically an error that a
