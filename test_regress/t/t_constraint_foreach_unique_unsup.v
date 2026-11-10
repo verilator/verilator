@@ -55,6 +55,12 @@ class StructRows;
   constraint c1 {foreach (s[i]) unique {s[i].r};}
 endclass
 
+class StateRowAtRandIndex;
+  rand int ri;
+  bit [2:0] s[3][4];
+  constraint c1 {ri inside {[0 : 2]}; unique {s[ri]};}
+endclass
+
 class FuncItem;
   rand bit [4:0] grid[3][3];
   function row3_t get_row();
@@ -73,6 +79,7 @@ module t;
     automatic QueueRows qr = new;
     automatic DynRows dr = new;
     automatic StructRows sr = new;
+    automatic StateRowAtRandIndex srri = new;
     int ok;
     repeat (20) begin
       ok = cb.randomize();
@@ -96,6 +103,8 @@ module t;
       ok = dr.randomize();
       `checkd(ok, 1)
       ok = sr.randomize();
+      `checkd(ok, 1)
+      ok = srri.randomize();
       `checkd(ok, 1)
     end
 

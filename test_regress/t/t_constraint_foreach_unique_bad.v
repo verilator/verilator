@@ -52,6 +52,21 @@ class StringRows;
   constraint c {foreach (grid[i]) unique {grid[i]};}
 endclass
 
+class RandcGroups;
+  randc bit [4:0] rc;
+  rand bit [4:0] x;
+  randc bit [4:0] rca[3];
+  constraint c1 {unique {rc, x};}
+  constraint c2 {unique {rca};}
+endclass
+
+class StringPair;
+  rand bit unused;
+  string s1;
+  string s2;
+  constraint c {unique {s1, s2};}
+endclass
+
 module t;
   initial begin
     automatic RandcGrid rg = new;
@@ -61,6 +76,8 @@ module t;
     automatic UnpackedStructRows usr = new;
     automatic HandleRows hr = new;
     automatic StringRows sr = new;
+    automatic RandcGroups rcg = new;
+    automatic StringPair sp = new;
     void'(rg.randomize());
     void'(rol.randomize());
     void'(rms.randomize());
@@ -68,5 +85,7 @@ module t;
     void'(usr.randomize());
     void'(hr.randomize());
     void'(sr.randomize());
+    void'(rcg.randomize());
+    void'(sp.randomize());
   end
 endmodule

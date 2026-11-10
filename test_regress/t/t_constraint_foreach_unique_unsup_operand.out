@@ -1,0 +1,23 @@
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:16:18: Unsupported: Unique constraint on an array slice with an operand that isn't a variable, member, or constant-indexed slice
+                                                                           : ... note: In instance 't'
+   16 |   constraint c1 {unique {get_row()};}
+      |                  ^~~~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:22:33: Unsupported: Unique constraint on an array in an unpacked struct
+                                                                           : ... note: In instance 't'
+   22 |   constraint c1 {foreach (s[i]) unique {s[i].r};}
+      |                                 ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:28:33: Unsupported: Unique constraint on an element of a dynamic array, queue or associative array
+                                                                           : ... note: In instance 't'
+   28 |   constraint c1 {foreach (q[i]) unique {q[i]};}
+      |                                 ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:29:33: Unsupported: Unique constraint on an element of a dynamic array, queue or associative array
+                                                                           : ... note: In instance 't'
+   29 |   constraint c2 {foreach (a[i]) unique {a[i]};}
+      |                                 ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:35:39: Unsupported: Unique constraint on a slice of a non-random array at a random index
+                                                                           : ... note: In instance 't'
+   35 |   constraint c1 {ri inside {[0 : 2]}; unique {s[ri]};}
+      |                                       ^~~~~~
+%Error: Exiting due to

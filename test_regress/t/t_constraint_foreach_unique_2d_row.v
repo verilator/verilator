@@ -132,7 +132,8 @@ endclass
 class StateRows;
   rand bit dummy;
   bit [1:0] grid[2][3];
-  constraint c {foreach (grid[i]) unique {grid[i]};}
+  bit [1:0] s[4];
+  constraint c {foreach (grid[i]) unique {grid[i]}; unique {s[0:2]};}
 endclass
 
 typedef enum bit [2:0] {RE0, RE1, RE2, RE3, RE4} row_e;
@@ -192,6 +193,14 @@ class CtxRows;
                        unique {gp[0][1], gp[1][1]};}
 endclass
 
+class PackedLeaves;
+  rand bit [1:0][1:0] rows[2][4];
+  rand bit [1:0][1:0] whole[4];
+  rand bit [1:0][1:0] pa;
+  rand bit [1:0][1:0] pb;
+  constraint c {foreach (rows[i]) unique {rows[i]}; unique {whole}; unique {pa, pb};}
+endclass
+
 class ModeRows;
   rand bit [1:0] grid[2][5];
   constraint u {foreach (grid[i]) unique {grid[i]};}
@@ -224,6 +233,7 @@ module t;
     ConstRowAndParts cp;
     Rows3d r3;
     CtxRows cr;
+    PackedLeaves pl;
     ModeRows mr2;
     InlineRows inr;
     ModeStateRows msr;
@@ -288,6 +298,7 @@ module t;
     cp = new;
     r3 = new;
     cr = new;
+    pl = new;
     repeat (20) begin
       i = er.randomize();
       `checkd(i, 1)
@@ -334,6 +345,17 @@ module t;
               `checkd(r3.cube[p][q][x] == r3.cube[p][q][y], 0)
             end
           end
+        end
+      end
+
+      i = pl.randomize();
+      `checkd(i, 1)
+      `checkd(pl.pa == pl.pb, 0)
+      for (int x = 0; x < 4; x++) begin
+        for (int y = x + 1; y < 4; y++) begin
+          `checkd(pl.rows[0][x] == pl.rows[0][y], 0)
+          `checkd(pl.rows[1][x] == pl.rows[1][y], 0)
+          `checkd(pl.whole[x] == pl.whole[y], 0)
         end
       end
 
@@ -401,9 +423,14 @@ module t;
     `checkd(i, 0)
 
     st.grid = '{'{0, 1, 2}, '{3, 1, 2}};
+    st.s = '{0, 1, 2, 2};
     i = st.randomize();
     `checkd(i, 1)
     st.grid[1][0] = 1;
+    i = st.randomize();
+    `checkd(i, 0)
+    st.grid[1][0] = 3;
+    st.s[0] = 1;
     i = st.randomize();
     `checkd(i, 0)
 

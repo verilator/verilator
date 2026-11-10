@@ -41,6 +41,13 @@ class MemberScalar;
   constraint c1 {unique {obj.val};}
 endclass
 
+class GuardedScalar;
+  rand bit [4:0] grid[3][3];
+  rand bit en;
+  constraint c1 {if (en) unique {grid[0][0]}; else grid[0][0] == 3;}
+  constraint c2 {if (en) foreach (grid[i]) unique {grid[i][1]};}
+endclass
+
 module t;
   initial begin
     automatic Grid g = new;
@@ -48,6 +55,7 @@ module t;
     automatic Row1x1 r11 = new;
     automatic BareScalar bs = new;
     automatic MemberScalar ms = new;
+    automatic GuardedScalar gs = new;
     int ok;
     repeat (20) begin
       ok = g.randomize();
@@ -60,6 +68,11 @@ module t;
       `checkd(ok, 1)
       ok = ms.randomize();
       `checkd(ok, 1)
+      ok = gs.randomize() with {en == 1;};
+      `checkd(ok, 1)
+      ok = gs.randomize() with {en == 0;};
+      `checkd(ok, 1)
+      `checkd(gs.grid[0][0], 3)
     end
 
     $write("*-* All Finished *-*\n");

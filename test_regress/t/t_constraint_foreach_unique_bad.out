@@ -27,4 +27,16 @@
                                                  : ... note: In instance 't'
    52 |   constraint c {foreach (grid[i]) unique {grid[i]};}
       |                                   ^~~~~~
+%Error: t/t_constraint_foreach_unique_bad.v:59:18: No randc variable shall appear in a unique group (IEEE 1800-2023 18.5.4)
+                                                 : ... note: In instance 't'
+   59 |   constraint c1 {unique {rc, x};}
+      |                  ^~~~~~
+%Error: t/t_constraint_foreach_unique_bad.v:60:18: No randc variable shall appear in a unique group (IEEE 1800-2023 18.5.4)
+                                                 : ... note: In instance 't'
+   60 |   constraint c2 {unique {rca};}
+      |                  ^~~~~~
+%Error: t/t_constraint_foreach_unique_bad.v:67:17: Unique group members shall be integral or real, or arrays of them (IEEE 1800-2023 18.5.4)
+                                                 : ... note: In instance 't'
+   67 |   constraint c {unique {s1, s2};}
+      |                 ^~~~~~
 %Error: Exiting due to
