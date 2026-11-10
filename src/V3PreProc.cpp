@@ -701,7 +701,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
                 if (*cp == ')' || *cp == ',') {
                     string valueDef;
                     if (haveDefault) {
-                        valueDef = token;
+                        valueDef = trimWhitespace(token, false);
                     } else {
                         argName = token;
                     }
