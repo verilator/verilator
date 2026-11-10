@@ -40,6 +40,15 @@ module pulled_stream_port (
   pullup (pad);
 endmodule
 
+module pulled_array_port (
+    output tri1 [6:0] pad [1:0]
+);
+endmodule
+
+interface pulled_port_if;
+  wire [8:0] pad;
+endinterface
+
 module t;
   // Stream truncation still requires support for matching data, enables, and pulls.
   wire [6:0] narrow_left, narrow_right;
@@ -47,6 +56,18 @@ module t;
   pulled_stream_port left_truncate (.pad({<<2{narrow_left}}));
   pulled_stream_port right_truncate (.pad({>>{narrow_right}}));
   // verilator lint_on WIDTHEXPAND
+
+  // Pull propagation does not support hierarchical or unpacked member destinations.
+  pulled_port_if pulled_if ();
+  pulled_stream_port interface_pull (.pad(pulled_if.pad));
+  struct {
+    logic [8:0] pad;
+  } unpacked_pulled;
+  pulled_stream_port member_pull (.pad(unpacked_pulled.pad));
+
+  // An unpacked array slice reaches pull propagation as a SliceSel.
+  wire [6:0] pulled_array [3:0];
+  pulled_array_port slice_pull (.pad(pulled_array[2:1]));
 
   logic sub_we_internal;
   sub_with_tri u_sub (.we_internal(sub_we_internal));
