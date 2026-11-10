@@ -302,29 +302,15 @@ class VlRandomizer VL_NOT_FINAL {
     std::vector<int> readUnsatAssumptions(VlSolverSession& sess);
     void reportUnsatSetup(VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
     void reportUnsatCore(VlSolverSession& sess);
-    // Used-value exclusions for the randc variables this call may write; a drawn
-    // value is never a used one, so its pin already satisfies them
+    // Used-value exclusions for the randc variables this call may write
     void emitRandcExclusions(std::ostream& os, const std::vector<std::string>& randcNames) const;
-    // Record the solved value of every randc variable this call wrote, drawn ones
-    // included as they are pinned to their drawn value
+    // Record the solved value of every randc variable this call wrote, drawn ones included
     void recordRandcValues(const std::vector<std::string>& randcNames);
-    // Registered randc variables this randomize() may write, fixed for the call; nextFlat
-    // and nextPhased compute them once and pass them as randcNames
+    // Randc variables this randomize() may write, computed once per call
     void activeRandcVars(std::vector<std::string>& namesr) const;
-    // True if the n'th hard constraint filters the randc draw: every solver variable it
-    // names is randc or frozen, or its names cannot tell, being merged (see hard()) or
-    // including one that matches no registered variable, as a path through an object
-    // array element does
+    // True if the n'th hard constraint filters the randc draw
     bool constraintFiltersDraw(size_t n) const;
-    // When exactly one randc variable is active, draw its next cyclic value blind
-    // to rand feasibility (IEEE 1800-2023 18.4.2: randc variables are solved
-    // before rand ones). Limitations, which do not follow 18.4.2: nothing is drawn,
-    // and the randc variables are solved jointly with the rand variables, with two or
-    // more active randc variables, a randc array, or in a randomize() that resizes
-    // arrays (next_sized(): its size solve sees the elements from before the resize).
-    // A constraint whose names cannot tell (see constraintFiltersDraw()) filters the draw
-    // with its rand variables free, as the joint solve would, where 18.4.2 would draw
-    // blind to it if its text also involves rand variables.
+    // Draw the next cyclic value of a lone active randc variable ahead of the rand ones
     bool drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
                          const std::vector<std::string>& randcNames,
                          const std::vector<std::string>& uniqueExprs,
@@ -423,8 +409,7 @@ public:
     // METHODS
     // Finds the next solution satisfying the constraints
     bool next(VlRNGReseeds& rngr);
-    // As next(), for both solves of a randomize() resizing arrays: no randc draw, as the
-    // size solve sees the elements the arrays held before resizing
+    // As next(), without the randc draw, for the solves of a randomize() resizing arrays
     bool next_sized(VlRNGReseeds& rngr);
     // Validate the constraints against the current runtime values of every
     // registered rand variable without picking new ones.
@@ -999,9 +984,7 @@ public:
 
     // varNames are the solver variables the constraint names, kept without copying until
     // clearConstraints(), so they must live that long (the generated code passes literals)
-    // namesMerged: varNames are merged from branches the state chose between, from several
-    // items folded into the constraint, or around a branch naming no rand variable, so they
-    // may name a rand variable that the randc-only part of the text does not
+    // namesMerged: varNames may name a rand variable the randc-only part of the text does not
     void hard(std::string constraint, std::initializer_list<const char*> varNames = {},
               const char* filename = "", uint32_t linenum = 0, const char* source = "",
               bool namesMerged = false);

@@ -907,6 +907,7 @@ size_t VlRandomizer::hashConstraints(const std::vector<std::string>& extras) con
 
 void VlRandomizer::emitRandcExclusions(std::ostream& os,
                                        const std::vector<std::string>& randcNames) const {
+    // A drawn value is never a used one, so its pin already satisfies these
     for (const auto& name : randcNames) {
         const auto usedIt = m_randcUsedValues.find(name);
         if (usedIt != m_randcUsedValues.end()) {
@@ -934,6 +935,9 @@ void VlRandomizer::activeRandcVars(std::vector<std::string>& namesr) const {
     }
 }
 
+// Every solver variable the constraint names is randc or frozen, or its names cannot tell:
+// merged (see hard()), or including one matching no registered variable, as a path through an
+// object array element does
 bool VlRandomizer::constraintFiltersDraw(size_t n) const {
     if (m_constraintNamesMerged[n]) return true;
     const size_t begin = n ? m_constraintVarEnds[n - 1] : 0;
@@ -967,14 +971,18 @@ void VlRandomizer::recordDrawnValues(const std::map<std::string, std::string>& d
     }
 }
 
+// Randc variables are solved before rand ones (IEEE 1800-2023 18.4.2), so the value is drawn
+// blind to rand feasibility. Limitations, which do not follow 18.4.2: nothing is drawn, and the
+// randc variables are solved jointly with the rand variables, with two or more active randc
+// variables, a randc array, or in a randomize() resizing arrays (next_sized()). A constraint whose
+// names cannot tell (see constraintFiltersDraw()) filters the draw with its rand variables free,
+// as the joint solve would, where 18.4.2 would draw blind to it if its text involves rand
+// variables.
 bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
                                    const std::vector<std::string>& randcNames,
                                    const std::vector<std::string>& uniqueExprs,
                                    std::map<std::string, std::string>& drawnr)
     VL_REQUIRES(sess.m_mutex) {
-    // Only a lone scalar cycling variable is drawn ahead of the rand variables; two or
-    // more, an array, or a randomize() resizing arrays are left to the joint solve (see the
-    // declaration)
     if (m_sized || randcNames.size() != 1 || m_vars.at(randcNames.front())->dimension() > 0) {
         return true;
     }
@@ -1085,6 +1093,7 @@ bool VlRandomizer::next_check_only(VlRNGReseeds& rngr) { return nextRandomize(rn
 
 bool VlRandomizer::next(VlRNGReseeds& rngr) { return nextRandomize(rngr, false); }
 
+// No randc draw: the size solve sees the elements the arrays held before resizing
 bool VlRandomizer::next_sized(VlRNGReseeds& rngr) {
     VL_RESTORER(m_sized);
     m_sized = true;
@@ -1906,6 +1915,8 @@ bool VlRandomizer::parseModel(std::istream& is, size_t requested) {
 void VlRandomizer::hard(std::string constraint, std::initializer_list<const char*> varNames,
                         const char* filename, uint32_t linenum, const char* source,
                         bool namesMerged) {
+    // Names are merged from branches the state chose between, from several items folded into
+    // the constraint, or around a branch naming no rand variable
     m_constraintNamesMerged.push_back(namesMerged);
     m_constraints.emplace_back(std::move(constraint));
     // Stored for every constraint: a randomize() with clause registers its constraints
