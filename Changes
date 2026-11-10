@@ -20,6 +20,7 @@ Verilator 5.055 devel
 * Add `threads_group` to partition module instances as groups (#8804). [Michael Bedford Taylor]
 * Add USEBEFOREDECL error for a parameter referenced before declared (#8962). [Chili CHIPS]
 * Add COMBDLY/FINALDLY on `->>` in combinational and final blocks (#8987) (#9046). [Geza Lore, Testorrent USA, Inc.]
+* Add MISINDENT warning on suspected `end` that should be `end else` (#9003). [Piotr Fila]
 * Add errors on non-constant port connection selections (#9011). [Yutetsu TAKATSUKASA]
 * Add infrastructure to support multiple solver back-ends (#9022). [Matthew Ballance]
 * Add `threads_group -workers` for explicit worker placement (#9031). [Michael Bedford Taylor]

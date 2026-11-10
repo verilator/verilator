@@ -97,6 +97,33 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->fileline(new FileLine{nodep->fileline()});
         }
         m_filelines.insert(nodep->fileline());
+        if (VN_IS(nodep, NodeStmt)) checkEndRunOn(nodep);
+    }
+
+    void checkEndRunOn(AstNode* nodep) {
+        // Statement run on after an 'end' that starts its line, with the
+        // following line indented deeper, as if the statement were
+        // e.g. the body of an 'else' that is missing
+        FileLine* const flp = nodep->fileline();
+        const std::string prefix = flp->sourcePrefix(flp->firstColumn());
+        const std::string::size_type prefixPos = prefix.find_first_not_of(" \t");
+        // Intionally doesn't match end with tab, as unsure what is intent
+        if (prefixPos == std::string::npos
+            || prefix.compare(prefixPos, std::strlen("end "), "end ") != 0)
+            return;
+        // Statement starts after "end[ \t]+"
+        if (prefix.find_first_not_of(" \t", prefixPos + std::strlen("end")) != std::string::npos)
+            return;
+        const std::string prefixIndent = prefix.substr(0, prefixPos);
+        const std::string nextSource = flp->sourceNextLine();
+        const std::string::size_type nextPos = nextSource.find_first_not_of(" \t\n");
+        if (nextPos == std::string::npos) return;  // Blank line
+        const std::string nextIndent = nextSource.substr(0, nextPos);
+        if (nextIndent.size() <= prefixIndent.size()
+            || nextIndent.compare(0, prefixPos, prefixIndent) != 0)
+            return;
+        nodep->v3warn(MISINDENT, "Misleading indentation, was 'end' intended to be 'end else'?\n"
+                                     << nodep->warnContextPrimary());
     }
 
     string nameFromTypedef(AstNode* nodep) {

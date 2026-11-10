@@ -36,4 +36,16 @@
                     t/t_lint_misindent_bad.v:53:7: ... Expected indentation matching this earlier statement's line:
    53 |       while (0)
       |       ^~~~~
+%Warning-MISINDENT: t/t_lint_misindent_bad.v:62:9: Misleading indentation, was 'end' intended to be 'end else'?
+   62 |     end case (1'b0)
+      |         ^~~~
+%Warning-MISINDENT: t/t_lint_misindent_bad.v:69:9: Misleading indentation, was 'end' intended to be 'end else'?
+   69 |     end begin
+      |         ^~~~~
+%Warning-MISINDENT: t/t_lint_misindent_bad.v:75:9: Misleading indentation, was 'end' intended to be 'end else'?
+   75 |     end $display("ok");
+      |         ^~~~~~~~
+%Warning-MISINDENT: t/t_lint_misindent_bad.v:80:9: Misleading indentation, was 'end' intended to be 'end else'?
+   80 |     end for (int i = 0; i < 1; ++i)
+      |         ^~~
 %Error: Exiting due to
