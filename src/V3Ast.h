@@ -197,7 +197,12 @@ public:
         m_u.up = nullptr;
         m_u.uq = i;
     }
-    explicit VNUser(void* p) { m_u.up = p; }
+    explicit VNUser(void* p) {
+        // Zero the full slot first: on 32-bit targets (e.g. wasm32) void* is
+        // narrower than uint64_t, and toUQuad() would read stale upper bytes.
+        m_u.uq = 0;
+        m_u.up = p;
+    }
     ~VNUser() = default;
     // Casters
     template <typename T>
