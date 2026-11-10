@@ -20,13 +20,23 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include <unordered_map>
+#include <vector>
+
 class AstNetlist;
+class AstVar;
+class AstVarScope;
 
 //============================================================================
 
 class V3Scope final {
 public:
+    using VarScopesOfVar = std::unordered_map<const AstVar*, std::vector<AstVarScope*>>;
+
     static void scopeAll(AstNetlist* nodep) VL_MT_DISABLED;
+    // For each member that may change of the interfaces that virtual interfaces may select, the
+    // variables of the member in all instances
+    static VarScopesOfVar virtIfaceVscps(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

@@ -297,6 +297,12 @@ private:
         // A constant value is not built at run time, so its parts cost nothing
         if (!nodep->isConstantTree()) iterateChildrenConst(nodep);
     }
+    void visit(AstHidden* nodep) override {
+        if (m_ignoreRemaining) return;
+        const VisitBase vb{this, nodep};
+        // The references only show accesses to analyses, so cost nothing
+        iterateAndNextConstNull(nodep->stmtsp());
+    }
     void visit(AstNode* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};

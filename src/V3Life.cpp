@@ -380,6 +380,17 @@ class LifeVisitor final : public VNVisitor {
         // Don't treat as normal assign
         iterateChildren(nodep);
     }
+    void visit(AstHidden* nodep) override {
+        // Variables that may be read, whose references must stay, so are not replaced
+        for (const AstVarRef* const refp : nodep->rdspList()) {
+            m_lifep->consumedFind(refp->varScopep());
+        }
+        iterateAndNextNull(nodep->stmtsp());
+        // Writes that may happen in the guarded statements
+        for (const AstVarRef* const refp : nodep->wrspList()) {
+            m_lifep->complexAssign(refp->varScopep());
+        }
+    }
 
     //---- Track control flow changes
     void visit(AstIf* nodep) override {

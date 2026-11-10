@@ -164,6 +164,7 @@
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
 #include "V3LinkLValue.h"
+#include "V3Scope.h"
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
 #include "V3VNUserAllocator.h"
@@ -368,8 +369,6 @@ public:
         VNUser1Allocator<AstNode, TargetInfo> targetInfo;  // See TargetInfo
         std::vector<AstVarScope*> nbaVscps;  // Variables updated by NBAs
         std::vector<AstVar*> nbaVarps;  // Members updated by NBAs via a handle, in any instance
-        // Variables of each member of an interface, in all instances
-        std::unordered_map<const AstVar*, std::vector<AstVarScope*>> ifaceVscps;
         std::vector<NBA> nbas;  // NBAs to lower
         V3Graph graph;  // The call graph
     };
@@ -506,11 +505,6 @@ class DelayedRecord final : public VNVisitorConst, public DelayedBase {
         m_scopep = nodep;
         iterateChildrenConst(nodep);
     }
-    void visit(AstVarScope* nodep) override {
-        // A virtual interface may select any instance of an interface, record for consideration
-        const AstIface* const ifacep = VN_CAST(m_scopep->modp(), Iface);
-        if (ifacep && ifacep->hasVirtualRef()) m_state.ifaceVscps[nodep->varp()].push_back(nodep);
-    }
     void visit(AstActive* nodep) override {
         UASSERT_OBJ(!m_activep, nodep, "Should not nest");
         VL_RESTORER(m_activep);
@@ -585,6 +579,10 @@ class DelayedRecord final : public VNVisitorConst, public DelayedBase {
         UASSERT_OBJ(m_vtxp, nodep, "Write not in a process or function");
         m_vtxp->m_wrps.push_back(nodep);
     }
+    // An AstHidden only shows the accesses through virtual interfaces, whose writes are recorded
+    // above from their AstMemberRef, with the bits written. Its references, which are of whole
+    // variables, would make BLKANDNBLK report writes to separate bits as overlapping.
+    void visit(AstHidden* nodep) override { iterateAndNextConstNull(nodep->stmtsp()); }
 
     // Post logic needs no conversion
     void visit(AstAlwaysPost*) override {}
@@ -941,6 +939,8 @@ public:
 class DelayedRewrite final : public VNDeleter, public DelayedBase {
     // STATE
     V3SharedTmps m_dlyTmps{"__Vdly", VVarType::BLOCKTEMP};  // Temporary variables
+    // Variables of each member of an interface, in all instances a virtual interface may select
+    const V3Scope::VarScopesOfVar m_ifaceVscps = V3Scope::virtIfaceVscps(v3Global.rootp());
     AstNbaCommit* m_globalNbaCommitp = nullptr;  // Commit of the Scheme::GenericGlobal queue
     AstSenTree* m_globalNbaCommitSenTreep = nullptr;  // Sensitivities of m_globalNbaCommitp
     // Closure types, by the types of the values they capture
@@ -1437,7 +1437,9 @@ class DelayedRewrite final : public VNDeleter, public DelayedBase {
             commitp->addTargetsp(new AstVarRef{vscp->fileline(), vscp, VAccess::WRITE});
         } else {
             // A MemberRef via a virtual interface may select any instance of that interface
-            for (AstVarScope* const vscp : m_state.ifaceVscps[VN_AS(targetp, Var)]) {
+            const auto it = m_ifaceVscps.find(VN_AS(targetp, Var));
+            if (it == m_ifaceVscps.end()) return;  // Not of an interface, e.g. of a class
+            for (AstVarScope* const vscp : it->second) {
                 // Avoid adding it twice if the instance is also the target of an explicit NBA
                 if (m_state.targetInfo.tryGet(vscp)) continue;
                 commitp->addTargetsp(new AstVarRef{vscp->fileline(), vscp, VAccess::WRITE});

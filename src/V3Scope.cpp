@@ -19,6 +19,10 @@
 //              SCOPE
 //                      {all blocked statements}
 //
+//      Wrap each statement accessing members of interfaces through virtual
+//      interfaces into an AstHidden, listing the variables of these members
+//      in all instances, so the analyses see what the statement may access.
+//
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
@@ -28,6 +32,7 @@
 #include "V3ConstPool.h"
 #include "V3Control.h"
 
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -49,6 +54,8 @@ class ScopeVisitor final : public VNVisitor {
     // TYPES
     // These cannot be unordered unless make a specialized hashing pair (gcc-8)
     using VarScopeMap = std::map<std::pair<AstVar*, AstScope*>, AstVarScope*>;
+    // A member accessed through a virtual interface, and whether it is written
+    using VifAccess = std::pair<const AstVar*, bool>;
 
     // STATE, inside processing a single module
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -65,6 +72,10 @@ class ScopeVisitor final : public VNVisitor {
     // Varrefs-in-scopes needing fixup when done
     std::vector<std::pair<AstVarRef*, AstScope*>> m_varRefScopes;
     std::vector<AstScope*> m_scopes;  // Scopes awaiting attachment to their modules
+    std::vector<VifAccess> m_vifAccesses;  // Made by the current statement
+    // Statements accessing members through virtual interfaces, and these accesses
+    std::vector<std::pair<AstNodeStmt*, std::vector<VifAccess>>> m_vifStmts;
+    bool m_inNba = false;  // Under an NBA, whose target is written by its commit, not by it
 
     // METHODS
 
@@ -123,6 +134,38 @@ class ScopeVisitor final : public VNVisitor {
         }
     }
 
+    // Wrap the statements accessing members through virtual interfaces, now that the variables
+    // of all instances exist. The statements are the innermost ones, so analyses like V3Life
+    // see each access where it is made.
+    void wrapVifAccesses(AstNetlist* netlistp) {
+        if (m_vifStmts.empty()) return;
+        const V3Scope::VarScopesOfVar vscps = V3Scope::virtIfaceVscps(netlistp);
+        for (const auto& stmtAccesses : m_vifStmts) {
+            AstNodeStmt* const stmtp = stmtAccesses.first;
+            FileLine* const flp = stmtp->fileline();
+            AstHidden* hiddenp = nullptr;
+            std::set<VifAccess> shown;  // Each member once as read, and once as written
+            for (const VifAccess& access : stmtAccesses.second) {
+                // Members that cannot change, e.g. sub-interfaces, have no variables listed
+                const auto it = vscps.find(access.first);
+                if (it != vscps.end() && shown.insert(access).second) {
+                    if (!hiddenp) {
+                        hiddenp = new AstHidden{flp, nullptr};
+                        stmtp->replaceWith(hiddenp);
+                        hiddenp->addStmtsp(stmtp);
+                    }
+                    for (AstVarScope* const vscp : it->second) {
+                        if (access.second) {
+                            hiddenp->addWrsp(new AstVarRef{flp, vscp, VAccess::WRITE});
+                        } else {
+                            hiddenp->addRdsp(new AstVarRef{flp, vscp, VAccess::READ});
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // VISITORS
     void visit(AstNetlist* nodep) override {
         AstNodeModule* const modp = nodep->topModulep();
@@ -140,6 +183,7 @@ class ScopeVisitor final : public VNVisitor {
         for (AstScope* const scopep : m_scopes) scopep->modp()->addStmtsp(scopep);
         if (v3Global.opt.mtasks()) V3Control::applyThreadsGroupWorkers(m_scopes);
         cleanupVarRefs();
+        wrapVifAccesses(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         // Create required blocks and add to module
@@ -334,6 +378,27 @@ class ScopeVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->isTop(), nodep,
                     "Non-top scopes must remain detached until all instances are scoped");
     }
+    void visit(AstNodeStmt* nodep) override {
+        VL_RESTORER_CLEAR(m_vifAccesses);
+        VL_RESTORER(m_inNba);
+        m_inNba = VN_IS(nodep, AssignDly);
+        iterateChildren(nodep);
+        if (!m_vifAccesses.empty()) m_vifStmts.emplace_back(nodep, std::move(m_vifAccesses));
+    }
+    void visit(AstSenTree* nodep) override {
+        // Sensitivities through virtual interfaces are handled by their triggers
+        VL_RESTORER_CLEAR(m_vifAccesses);
+        iterateChildren(nodep);
+    }
+    void visit(AstMemberRef* nodep) override {
+        iterateChildren(nodep);
+        if (!VN_IS(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType)) return;
+        if (nodep->access().isReadOrRW()) m_vifAccesses.emplace_back(nodep->varp(), false);
+        // V3Delayed shows the target of an NBA as written by its commit
+        if (nodep->access().isWriteOrRW() && !m_inNba) {
+            m_vifAccesses.emplace_back(nodep->varp(), true);
+        }
+    }
     //--------------------
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
@@ -426,4 +491,25 @@ void V3Scope::scopeAll(AstNetlist* nodep) {
     }  // Destruct before checking
     V3ConstPool::setScoped();
     V3Global::dumpCheckGlobalTree("scope", 0, dumpTreeEitherLevel() >= 3);
+}
+
+V3Scope::VarScopesOfVar V3Scope::virtIfaceVscps(AstNetlist* nodep) {
+    VarScopesOfVar vscps;
+    if (!v3Global.hasVirtIfaces()) return vscps;
+    for (AstNodeModule* const modp : nodep->modulespList()) {
+        const AstIface* const ifacep = VN_CAST(modp, Iface);
+        if (!ifacep || !ifacep->hasVirtualRef()) continue;
+        // Interfaces are not inlined, so the scopes of all instances are under it
+        for (AstNode* const stmtp : modp->stmtspList()) {
+            const AstScope* const scopep = VN_CAST(stmtp, Scope);
+            if (!scopep) continue;
+            for (AstVarScope* const vscp : scopep->varspList()) {
+                // Parameters and references to instances cannot change
+                const AstVar* const varp = vscp->varp();
+                if (varp->isParam() || varp->isIfaceRef()) continue;
+                vscps[varp].push_back(vscp);
+            }
+        }
+    }
+    return vscps;
 }
