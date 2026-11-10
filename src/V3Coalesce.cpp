@@ -32,6 +32,8 @@
 
 #include "V3Stats.h"
 
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -44,9 +46,11 @@ class CoalesceVisitor final : public VNVisitorConst {
     //  AstVarScope::user1p()  -> AstVarScope*. The signal this one is a copy of
     //  AstVarScope::user2()   -> uint64_t. Number of references that write it
     //  AstVarScope::user3()   -> bool. Used in a sensitivity list
+    //  AstVarScope::user4p()  -> AstConst*. The constant assigned to it, if any
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
+    const VNUser4InUse m_user4InUse;
 
     // STATE
     std::vector<AstNodeVarRef*> m_refps;  // All references, to redirect at the end
@@ -76,6 +80,10 @@ class CoalesceVisitor final : public VNVisitorConst {
         // Must be a whole variable assigned from a whole variable
         const AstVarRef* const lhsp = VN_CAST(nodep->lhsp(), VarRef);
         if (!lhsp) return;
+        if (AstConst* const constp = VN_CAST(nodep->rhsp(), Const)) {
+            lhsp->varScopep()->user4p(constp);
+            return;
+        }
         const AstVarRef* const rhsp = VN_CAST(nodep->rhsp(), VarRef);
         if (!rhsp) return;
         // Check types: plain vectors of the same width, or the same type. A copy that
@@ -94,6 +102,47 @@ class CoalesceVisitor final : public VNVisitorConst {
         if (!isCoalescible(rVscp)) return;
         // Note the replacement
         lVscp->user1p(rVscp);
+    }
+
+    using ConstCache = std::unordered_map<const AstVarScope*, const AstConst*>;
+
+    // Resolve each copy-chain suffix once, including nonconstant and cyclic suffixes
+    static const AstConst* constOf(const AstVarScope* vscp, ConstCache& cache) {
+        std::vector<const AstVarScope*> path;
+        const AstConst* constp = nullptr;
+        for (; vscp && vscp->user2() == 1; vscp = VN_CAST(vscp->user1p(), VarScope)) {
+            // A null entry also breaks cycles while this path is being visited
+            const auto pair = cache.emplace(vscp, nullptr);
+            if (!pair.second) {
+                constp = pair.first->second;
+                break;
+            }
+            path.push_back(vscp);
+            constp = VN_CAST(vscp->user4p(), Const);
+            if (constp) break;
+        }
+        for (const AstVarScope* const seenp : path) cache[seenp] = constp;
+        return constp;
+    }
+
+    // A kept port that gets the same constant in every instance has no logic to share, so
+    // it is not kept, and the constant can be folded into the instances
+    void releaseConstPorts() {
+        ConstCache cache;
+        // The constant of each kept port in all its instances so far, nullptr if they differ
+        std::unordered_map<AstVar*, const AstConst*> consts;
+        std::unordered_set<const AstVarScope*> seen;
+        for (const AstNodeVarRef* const refp : m_refps) {
+            const AstVarScope* const vscp = refp->varScopep();
+            if (!vscp->varp()->keepPort() || !seen.insert(vscp).second) continue;
+            const AstConst* const constp = constOf(vscp, cache);
+            const auto pair = consts.emplace(vscp->varp(), constp);
+            const AstConst*& seenp = pair.first->second;
+            if (!pair.second && seenp && !(constp && constp->sameTree(seenp))) seenp = nullptr;
+        }
+        for (const auto& pair : consts) {
+            if (pair.second) pair.first->keepPort(false);
+        }
     }
 
     // The signal the given one is a copy of, or nullptr if it is not a copy of one
@@ -152,6 +201,7 @@ class CoalesceVisitor final : public VNVisitorConst {
     explicit CoalesceVisitor(AstNetlist* nodep) {
         // Gather the references and the copy assignments
         iterateConst(nodep);
+        releaseConstPorts();
 
         // Redirect the references at the signal each chain of copies ends on
         for (AstNodeVarRef* const refp : m_refps) {

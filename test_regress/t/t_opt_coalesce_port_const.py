@@ -15,7 +15,7 @@ test.compile(verilator_flags2=['--binary', '--stats'])
 
 test.execute()
 
-# The port stays a variable, so the constant is not substituted into the instance
-test.file_grep(test.stats, r'Optimizations, Gate signals inlined\s+(\d+)', 1)
+# 'k' is folded into both instances; 'id' differs, so it stays a variable of each
+test.file_grep(test.stats, r'Optimizations, DFG, DfgToAst, output variables\s+(\d+)', 6)
 
 test.passes()
