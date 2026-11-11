@@ -198,9 +198,7 @@ public:
         m_u.uq = i;
     }
     explicit VNUser(void* p) {
-        // Zero the full slot first: on 32-bit targets (e.g. wasm32) void* is
-        // narrower than uint64_t, and toUQuad() would read stale upper bytes.
-        m_u.uq = 0;
+        m_u.uq = 0;  // For 32-bit targets where up is 32-bits
         m_u.up = p;
     }
     ~VNUser() = default;
