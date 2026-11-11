@@ -40,4 +40,8 @@
                                                                    : ... note: In instance 't.unknown_wide_direct_u'
   274 |       S0: state_d = 40'hffff_ffff_ff;
       |                   ^
+%Warning-COVERIGN: t/t_cover_fsm_if_unknown_enum_multi_bad.v:301:28: Ignoring unsupported: FSM coverage on enum state variable 'state_q': assigned value 3 is not present in the declared enum
+                                                                   : ... note: In instance 't.unknown_guarded_target_u'
+  301 |       S0: if (sel) state_d = 2'd3;
+      |                            ^
 %Error: Exiting due to
