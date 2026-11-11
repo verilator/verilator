@@ -167,6 +167,18 @@ class SizePath;
   }
 endclass
 
+// The first variable has two legal values, while the array has more legal sizes.
+// Solving the variable first should keep both values well represented.
+class SizeDistribution;
+  rand bit choice;
+  rand bit [7:0] d[];
+  constraint c {
+    solve choice before d.size;
+    if (choice == 0) d.size == 0;
+    else d.size inside {[1:16]};
+  }
+endclass
+
 class SizeIndependent;
   rand int unsigned first;
   rand int unsigned last;
@@ -262,6 +274,20 @@ module t;
       `checkd(ok, 1);
       if (independent.d.size() < 1 || independent.d.size() > 3) `stop;
     end
+  end
+
+  initial begin
+    SizeDistribution distribution;
+    int zeros;
+    int ok;
+    distribution = new;
+    zeros = 0;
+    repeat (100) begin
+      ok = distribution.randomize();
+      `checkd(ok, 1);
+      if (distribution.choice == 0) zeros++;
+    end
+    `checkd(zeros >= 20 && zeros <= 80, 1);
   end
 
   OneD o1;

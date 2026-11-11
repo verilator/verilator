@@ -94,10 +94,7 @@ public:
 
     // A solve-before item orders variables; it does not constrain container size.
     static bool isSolveBeforeItem(const AstNode* nodep) {
-        while (nodep->backp()) {
-            while (nodep->backp() && nodep->backp()->nextp() == nodep) nodep = nodep->backp();
-            nodep = nodep->backp();
-            if (!nodep) break;
+        while ((nodep = nodep->aboveLoopp())) {
             if (VN_IS(nodep, ConstraintBefore)) return true;
             if (VN_IS(nodep, ConstraintExpr)) return false;
         }
@@ -480,13 +477,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                 const AstVar* varp = nullptr;
                 if (const AstVarRef* const varrefp = VN_CAST(methodp->fromp(), VarRef)) {
                     varp = varrefp->varp();
-                } else if (m_inlineInitBlockp) {
-                    if (const AstMemberRef* const memberp = VN_CAST(methodp->fromp(), MemberRef)) {
-                        const std::string path = buildMemberPath(memberp);
-                        return new AstConst{fl, AstConst::String{},
-                                            path.substr(0, path.size() - memberp->name().size())
-                                                + SmtUtil::sizeVarName(memberp->varp())};
-                    }
+                } else if (const AstMemberRef* const memberp
+                           = VN_CAST(methodp->fromp(), MemberRef)) {
+                    const std::string path = buildMemberPath(memberp);
+                    return new AstConst{fl, AstConst::String{},
+                                        path.substr(0, path.size() - memberp->name().size())
+                                            + SmtUtil::sizeVarName(memberp->varp())};
                 }
                 if (varp) {
                     // The size may be introduced later by an inline constraint; the solver
