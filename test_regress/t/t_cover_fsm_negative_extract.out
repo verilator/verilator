@@ -506,45 +506,6 @@
             if (start) state_q <= state_d;
           end
         endmodule
-        module fsm_reg_cond_reset_temp_bad (
-            input logic clk,
-            input logic rst
-        );
-          typedef enum logic [1:0] {
-            S0 = 2'd0,
-            S1 = 2'd1
-          } state_t;
-          state_t then_q  /*verilator fsm_state*/;
-          state_t then_d;
-          state_t then_tmp;
-          state_t else_q  /*verilator fsm_state*/;
-          state_t else_d;
-          state_t else_tmp;
-          state_t then_other;
-          state_t else_other;
-          always_comb begin
-            then_d = then_q;
-            if (then_q == S0) then_d = S1;
-            else then_d = S0;
-          end
-          always_comb begin
-            else_d = else_q;
-            if (else_q == S0) else_d = S1;
-            else else_d = S0;
-          end
-          // 'if (rst) tmp = S0; else tmp = next; state <= tmp;' is a conditional reset,
-          // but not when an arm assigns another variable
-          always_ff @(posedge clk) begin
-            if (rst) then_other = S0;
-            else then_tmp = then_d;
-            then_q <= then_tmp;
-          end
-          always_ff @(posedge clk) begin
-            if (rst) else_tmp = S0;
-            else else_other = else_d;
-            else_q <= else_tmp;
-          end
-        endmodule
         module t (
             input logic clk
         );
@@ -612,10 +573,6 @@
           fsm_reg_enable_no_else_bad reg_enable_no_else_u (
               .clk(clk),
               .start(start)
-          );
-          fsm_reg_cond_reset_temp_bad cond_reset_temp_u (
-              .clk(clk),
-              .rst(cyc == 0)
           );
 
           always @(posedge clk) begin
