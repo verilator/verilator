@@ -835,7 +835,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (VN_IS(basep, ArraySel) || VN_IS(basep, Replicate) || VN_IS(basep, SliceSel)
             || VN_IS(basep, StructSel) || VN_IS(basep, VarXRef)) {
             basep->v3warn(E_UNSUPPORTED, "Unsupported: Pull propagation through port connection: "
-                                             << basep->prettyTypeName() << ".");
+                                             << basep->prettyTypeNameQ() << ".");
             return;
         }
         AstVarRef* const refp = VN_AS(basep, VarRef);
