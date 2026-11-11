@@ -3173,13 +3173,10 @@ anyrange<nodeRangep>:
 
 packedRange<nodeRangep>:        // IEEE: packed_dimension, excluding unsized_dimension
                 anyrange                                { $$ = $1; }
-        //                      // Non-standard C-style size, accepted as other simulators do, meaning
-        //                      // '[0:size-1]' as for an unpacked dimension (IEEE 1800-2023 7.4.2)
+        //                      // Non-standard C-style size (V3LinkParse warns), accepted as other simulators
+        //                      // do, meaning '[0:size-1]' as for an unpacked dimension (IEEE 1800-2023 7.4.2)
         |       '[' constExpr ']'
-                        { $$ = new AstRange{$1, new AstConst{$1, 0},
-                                            new AstSub{$1, $2, new AstConst{$1, AstConst::Unsized32{}, 1}}, true};
-                          $1->v3warn(NONSTD, "Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)"
-                                             << YYNEWLINE << $1->warnMore() << "... Suggest use equivalent '[0:size-1]'"); }
+                        { $$ = new AstRange{$1, new AstConst{$1, 0}, new AstSub{$1, $2, new AstConst{$1, 1}}, true}; }
         ;
 
 part_select_rangeList<nodePreSelp>:  // IEEE: part_select_range (as used after function calls)

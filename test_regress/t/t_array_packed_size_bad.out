@@ -1,21 +1,21 @@
-%Warning-NONSTD: t/t_array_packed_size_bad.v:13:28: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
-                                                  : ... Suggest use equivalent '[0:size-1]'
-   13 |   function int count(logic [WORDS][WORD_WIDTH/8] be);   
-      |                            ^
-                 ... For warning description see https://verilator.org/warn/NONSTD?v=latest
-                 ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
-%Warning-NONSTD: t/t_array_packed_size_bad.v:13:35: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
-                                                  : ... Suggest use equivalent '[0:size-1]'
-   13 |   function int count(logic [WORDS][WORD_WIDTH/8] be);   
-      |                                   ^
 %Warning-NONSTD: t/t_array_packed_size_bad.v:25:10: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
                                                   : ... Suggest use equivalent '[0:size-1]'
    25 |   byte_t [WORDS] bytes;   
       |          ^
+                 ... For warning description see https://verilator.org/warn/NONSTD?v=latest
+                 ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
 %Warning-NONSTD: t/t_array_packed_size_bad.v:26:18: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
                                                   : ... Suggest use equivalent '[0:size-1]'
    26 |   typedef byte_t [WORDS] bytes_t;   
       |                  ^
+%Warning-NONSTD: t/t_array_packed_size_bad.v:13:28: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                                  : ... Suggest use equivalent '[0:size-1]'
+   13 |   function int count(logic [WORDS][WORD_WIDTH/8] be);   
+      |                            ^
+%Warning-NONSTD: t/t_array_packed_size_bad.v:13:35: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                                  : ... Suggest use equivalent '[0:size-1]'
+   13 |   function int count(logic [WORDS][WORD_WIDTH/8] be);   
+      |                                   ^
 %Warning-ASCRANGE: t/t_array_packed_size_bad.v:31:12: Ascending bit range vector: left < right of bit range: [0:1]
                                                     : ... note: In instance 't'
    31 |   buf gates[WORDS] (gate_out, gate_in);   

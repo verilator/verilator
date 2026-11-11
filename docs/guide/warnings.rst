@@ -1644,7 +1644,8 @@ List Of Warnings
    Warns when a non-standard language feature is used that has a standard
    equivalent, which might behave differently in corner cases. For example
    ``$psprintf`` system function is replaced by its standard equivalent
-   ``$sformatf``.
+   ``$sformatf``, and a C-style packed dimension ``[size]``, as accepted by
+   other simulators, by the ascending range ``[0:size-1]``.
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.

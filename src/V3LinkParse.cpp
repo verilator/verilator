@@ -149,6 +149,14 @@ class LinkParseVisitor final : public VNVisitor {
         m_dtypep = nodep;
         iterateChildren(nodep);
     }
+    // Warn if a packed dimension is a C-style '[size]', which the grammar accepts
+    static void warnPackedSize(const AstRange* rangep) {
+        if (rangep && rangep->fromBracket()) {
+            rangep->v3warn(
+                NONSTD, "Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)\n"
+                            << rangep->warnMore() << "... Suggest use equivalent '[0:size-1]'");
+        }
+    }
 
     bool nestedIfBegin(AstGenBlock* nodep) {  // Point at begin inside the GenIf/GenCaseItem
         // IEEE says directly nested item is not a new block
@@ -323,6 +331,10 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
+    void visit(AstPackArrayDType* nodep) override {
+        warnPackedSize(nodep->rangep());
+        visitIterateNodeDType(nodep);
+    }
     void visit(AstConstraint* nodep) override {
         v3Global.useRandomizeMethods(true);
         iterateChildren(nodep);
@@ -1228,6 +1240,7 @@ class LinkParseVisitor final : public VNVisitor {
         if (nodep->keyword() == VBasicDTypeKwd::CVOID) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: void (for tagged unions)");
         }
+        warnPackedSize(nodep->rangep());
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
