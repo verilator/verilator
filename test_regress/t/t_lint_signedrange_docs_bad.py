@@ -10,13 +10,17 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
-test.lint(verilator_flags2=['-Wwarn-SIGNEDRANGE'], fails=test.vlt_all,
+test.lint(verilator_flags2=['-Wwarn-SIGNEDRANGE'],
+          fails=test.vlt_all,
           expect_filename=test.golden_filename)
 test.extract(in_filename=test.top_filename,
-             out_filename=test.root + "/docs/gen/ex_SIGNEDRANGE_faulty.rst", lines="8")
+             out_filename=test.root + "/docs/gen/ex_SIGNEDRANGE_faulty.rst",
+             lines="8")
 test.extract(in_filename=test.golden_filename,
-             out_filename=test.root + "/docs/gen/ex_SIGNEDRANGE_msg.rst", lineno_adjust=-7,
+             out_filename=test.root + "/docs/gen/ex_SIGNEDRANGE_msg.rst",
+             lineno_adjust=-7,
              regexp=r'Warning-SIGNEDRANGE')
 test.extract(in_filename=test.top_filename,
-             out_filename=test.root + "/docs/gen/ex_SIGNEDRANGE_fixed.rst", lines="13")
+             out_filename=test.root + "/docs/gen/ex_SIGNEDRANGE_fixed.rst",
+             lines="13")
 test.passes()
