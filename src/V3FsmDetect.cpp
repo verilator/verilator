@@ -848,7 +848,7 @@ class FsmDetectVisitor final : public VNVisitor {
                     continue;
                 }
                 AstNode* const warnNodep = FsmDetectVisitor::ifChainSupportedTransitionNode(
-                    chain, FsmDetectVisitor::ifChainAssignVscp(chain, reg.nextVscp()));
+                    chain /*ref*/, FsmDetectVisitor::ifChainAssignVscp(chain, reg.nextVscp()));
                 if (!warnNodep) continue;
                 match.matchedp = &reg;
                 match.warnNodep = warnNodep;
@@ -1176,10 +1176,11 @@ class FsmDetectVisitor final : public VNVisitor {
     // 'next = c0 ? A : c1 ? B : C' as an if-chain on a temporary, followed by 'next = tmp'.
     static AstVarScope* ifChainAssignVscp(const FsmIfChainCandidate& chain,
                                           AstVarScope* nextVscp) {
+        if (!VN_IS(chain.stmtp, If)) return nextVscp;
         AstNodeAssign* const assp
             = directStateAssign(skipLeadingIgnorableStmt(chain.stmtp->nextp()), nextVscp);
         AstVarRef* const tmpRefp = assp ? VN_CAST(assp->rhsp(), VarRef) : nullptr;
-        return tmpRefp ? tmpRefp->varScopep() : nextVscp;
+        return tmpRefp && tmpRefp->varp()->isTemp() ? tmpRefp->varScopep() : nextVscp;
     }
 
     static AstNode* ifChainSupportedTransitionNode(const FsmIfChainCandidate& chain,
@@ -1376,15 +1377,17 @@ class FsmDetectVisitor final : public VNVisitor {
                 continue;
             }
             // Coverage in an earlier branch keeps V3Const from folding the whole chain,
-            // but the rest of it still folds into one assignment of nested conditionals
+            // but the rest of it still folds into one assignment of nested conditionals.
+            // If its conditions do not continue the chain, it is the chain's default.
             AstNodeAssign* const tailp = VN_CAST(elseNodep, NodeAssign);
-            AstCond* const tailCondp = tailp ? VN_CAST(tailp->rhsp(), Cond) : nullptr;
-            FsmStateComparison tailCmp;
-            bool tailHasGuard = false;
-            if (tailCondp
-                && resolveIfPredicate(tailCondp->condp(), aliases, tailCmp, tailHasGuard)) {
-                if (!collectCondBranches(tailp, aliases, chain, seenValues)) return false;
-                break;
+            if (tailp && VN_IS(tailp->rhsp(), Cond)) {
+                FsmIfChainCandidate tailChain = chain;
+                std::unordered_set<string> tailSeenValues = seenValues;
+                if (collectCondBranches(tailp, aliases, tailChain /*ref*/,
+                                        tailSeenValues /*ref*/)) {
+                    chain = std::move(tailChain);
+                    break;
+                }
             }
             chain.defaultStmtsp = elseNodep;
             break;
@@ -1399,7 +1402,8 @@ class FsmDetectVisitor final : public VNVisitor {
                                  FsmIfChainCandidate& chain) {
         chain.stmtp = assp;
         std::unordered_set<string> seenValues;
-        return collectCondBranches(assp, aliases, chain, seenValues) && chain.branches.size() >= 2;
+        return collectCondBranches(assp, aliases, chain /*ref*/, seenValues /*ref*/)
+               && chain.branches.size() >= 2;
     }
 
     // Add a branch for each conditional in 'x = c0 ? A : c1 ? B : C'
@@ -1942,7 +1946,7 @@ class FsmDetectVisitor final : public VNVisitor {
             FsmIfChainCandidate chain;
             if (!collectIfChain(cand.first, aliases, chain)) continue;
             AstVarScope* const vscp = chain.compareVscp;
-            if (!ifChainSupportedTransitionNode(chain, vscp)) continue;
+            if (!ifChainSupportedTransitionNode(chain /*ref*/, vscp)) continue;
             if (!firstCand.stateVscp) {
                 firstCand.warnNodep = cand.first;
                 firstCand.stateVscp = vscp;

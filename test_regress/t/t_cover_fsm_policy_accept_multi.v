@@ -100,8 +100,9 @@ module fsm_if_chain_cond_default_ok (
   state_t state_d;
   logic busy;
 
-  // Two statements per branch keep the chain from folding; the final else is a
-  // conditional default, not a further state comparison
+  // Two statements per branch keep the chain from folding.  The rest folds to
+  // 'state_d = (state_q == S2) ? S0 : start ? S1 : S2', which tests an input
+  // after the state, so it is the chain's default
   always_comb begin
     busy = 1'b0;
     if (state_q == S0) begin
@@ -112,7 +113,9 @@ module fsm_if_chain_cond_default_ok (
       state_d = S2;
       busy = 1'b1;
     end
-    else state_d = start ? S0 : S1;
+    else if (state_q == S2) state_d = S0;
+    else if (start) state_d = S1;
+    else state_d = S2;
   end
 
   always_ff @(posedge clk) begin

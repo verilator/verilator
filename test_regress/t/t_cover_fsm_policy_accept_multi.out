@@ -128,18 +128,19 @@
           state_t state_d;
           logic busy;
         
-          // Two statements per branch keep the chain from folding; the final else is a
-          // conditional default, not a further state comparison
+          // Two statements per branch keep the chain from folding.  The rest folds to
+          // 'state_d = (state_q == S2) ? S0 : start ? S1 : S2', which tests an input
+          // after the state, so it is the chain's default
           always_comb begin
             busy = 1'b0;
-%000003     if (state_q == S0) begin
+%000002     if (state_q == S0) begin
         // [FSM coverage]
-%000001        // [fsm_arc t.if_chain_cond_default_u.state_q::S0->S1]
+%000002        // [fsm_arc t.if_chain_cond_default_u.state_q::S0->S1]
 %000000        // [fsm_arc t.if_chain_cond_default_u.state_q::S1->S0]
 %000002        // [fsm_arc t.if_chain_cond_default_u.state_q::S1->S2]
-%000000        // [fsm_arc t.if_chain_cond_default_u.state_q::S2->S0]
-%000001        // [fsm_state t.if_chain_cond_default_u.state_q::S0]
-%000003        // [fsm_state t.if_chain_cond_default_u.state_q::S1]
+%000001        // [fsm_arc t.if_chain_cond_default_u.state_q::S2->S0]
+%000002        // [fsm_state t.if_chain_cond_default_u.state_q::S0]
+%000002        // [fsm_state t.if_chain_cond_default_u.state_q::S1]
 %000002        // [fsm_state t.if_chain_cond_default_u.state_q::S2]
               state_d = S1;
               busy = 1'b1;
@@ -148,7 +149,9 @@
               state_d = S2;
               busy = 1'b1;
             end
-            else state_d = start ? S0 : S1;
+            else if (state_q == S2) state_d = S0;
+            else if (start) state_d = S1;
+            else state_d = S2;
           end
         
           always_ff @(posedge clk) begin

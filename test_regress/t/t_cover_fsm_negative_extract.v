@@ -494,6 +494,40 @@ module fsm_if_else_chain_tail_decode_bad (
   end
 endmodule
 
+module fsm_if_else_chain_user_var_bad (
+    input logic clk,
+    input logic rst
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+  state_t next_v;
+  logic busy;
+
+  // The chain assigns a user variable, not a lifted temporary, before the
+  // next state
+  always_comb begin
+    busy = 1'b0;
+    if (state_q == S0) begin
+      next_v = S1;
+      busy = 1'b1;
+    end
+    else if (state_q == S1) next_v = S2;
+    else next_v = S0;
+    state_d = next_v;
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
 module fsm_direct_active_low_dynamic_reset_bad (
     input logic clk,
     input logic rst_n,
@@ -597,6 +631,10 @@ module t (
       .clk(clk),
       .rst(cyc == 0),
       .go(start)
+  );
+  fsm_if_else_chain_user_var_bad else_chain_user_var_u (
+      .clk(clk),
+      .rst(cyc == 0)
   );
   fsm_direct_active_low_dynamic_reset_bad active_low_dynamic_reset_u (
       .clk(clk),
