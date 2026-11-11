@@ -13,6 +13,8 @@ test.scenarios('simulator')
 
 if 'clang' in test.cxx_version.lower() or 'microsoft' in test.cxx_version.lower():
     test.skip('Requires GCC for -fmodules')
+if not test.have_cxx_module_scan:
+    test.skip('Requires a compiler with -fmodules')
 
 test.compile(verilator_flags2=[
     '--compiler-include',
