@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.top_filename = "t/t_array_packed_size.v"
 
 test.lint(fails=True, expect_filename=test.golden_filename)
 

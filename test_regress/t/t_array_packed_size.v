@@ -13,8 +13,6 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-// verilator lint_off NONSTD
-
 localparam int WORDS = 2;
 localparam int WORD_WIDTH = 64;
 
@@ -108,17 +106,22 @@ module t (
     `checkh(w[1][1], crc[0]);
   end
 
-  // Typedefs, of a type and of a type identifier, and a variable of a type identifier
+  // Typedefs, of a type and of a type identifier, and variables of a type identifier
   typedef logic [5] five_t;
   typedef five_t [3] five3_t;
+  typedef five_t [WORDS] five_words_t;
+  five_t [WORDS] five_words;
+  assign five_words = crc[9:0];
   always @(posedge clk) begin
     automatic five3_t v = crc[14:0];
     automatic five_t [2] w = crc[9:0];
     `checkd($right(five_t), 4);
     `checkd($right(five3_t, 1), 2);
+    `checkd($right(five_words_t, 1), WORDS - 1);
     `checkh(v[0], crc[14:10]);
     `checkh(v[2][4], crc[0]);
     `checkh(w[1][0], crc[4]);
+    `checkh(five_words[1][0], crc[4]);
   end
 
   // Packed struct members, and an array of packed structs
@@ -165,6 +168,13 @@ module t (
   localparam [4] P = 4'b0001;
   always @(posedge clk) begin
     `checkh(P[3], 1'b1);
+  end
+
+  // Unlike a packed dimension, a C-style gate instance array warns of its ascending range
+  wire [WORDS-1:0] gate_out;
+  buf gates[WORDS] (gate_out, crc[WORDS-1:0]);
+  always @(posedge clk) begin
+    `checkh(gate_out, crc[WORDS-1:0]);
   end
 
 endmodule
