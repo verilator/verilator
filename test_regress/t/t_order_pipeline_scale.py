@@ -12,6 +12,12 @@ import re
 import vltest_bootstrap
 
 test.scenarios('vlt')
+
+if test.have_dev_gcov:
+    test.skip("Too slow with code coverage")
+if test.have_dev_asan or test.tsan:
+    test.skip("Too slow with sanitizers")
+
 test.top_filename = test.obj_dir + "/t_order_pipeline_scale.v"
 
 # Pipeline stages. Each stage reads the previous one, so ordering ranks a path through all of

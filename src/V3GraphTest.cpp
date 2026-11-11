@@ -291,7 +291,7 @@ public:
         {
             V3GraphTestRankGraph graph;
             // Reverse vertex creation, parallel paths, and a disconnected vertex must not affect
-            // the longest ranks. Zero-weight and cuttable back edges are not followed here.
+            // the longest ranks. Zero-weight and cutable back edges are not followed here.
             V3GraphTestVertex* const qp = new V3GraphTestVertex{&graph, "q"};
             V3GraphTestVertex* const bp = new V3GraphTestVertex{&graph, "b"};
             V3GraphTestVertex* const ap = new V3GraphTestVertex{&graph, "a"};
@@ -306,7 +306,7 @@ public:
             UASSERT(!graph.loopDetected() && ap->rank() == 1 && bp->rank() == 2 && qp->rank() == 3
                         && ip->rank() == 1,
                     "SelfTest: Longest ranks with parallel and filtered edges");
-            // Following the same cuttable back edge makes a real cycle; rank must report it.
+            // Following the same cutable back edge makes a real cycle; rank must report it.
             graph.rank();
             UASSERT(graph.loopDetected(), "SelfTest: Rank did not report a cycle");
         }
