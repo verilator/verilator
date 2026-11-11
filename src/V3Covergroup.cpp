@@ -1055,17 +1055,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (m_cpGuardp) m_sampleFuncp->addStmtsp(m_cpGuardp);
     }
 
-    // Build the condition under which a default bin matches: NOT(OR of all normal bins).
+    // Build the condition under which a default bin matches: NOT(OR of the other bins of values;
+    // ignore and illegal ones too, as their values lie within defined bins).
     AstNodeExpr* buildDefaultCondition(AstCoverpoint* coverpointp, AstNodeExpr* exprp,
                                        FileLine* fl) {
         AstNodeExpr* anyBinMatchp = nullptr;
         for (AstNode* const binp : coverpointp->binspList()) {
             AstCoverBin* const cbinp = VN_AS(binp, CoverBin);
-            if (cbinp->binsType() == VCoverBinsType::BINS_DEFAULT
-                || cbinp->binsType() == VCoverBinsType::BINS_IGNORE
-                || cbinp->binsType() == VCoverBinsType::BINS_ILLEGAL)
-                continue;
-            // The values of constructed bins are known at construction; see emitSizedSample
+            // Transition bins hold sequences rather than values, whose rest only a 'default
+            // sequence' bin catches (IEEE 1800-2023 19.5)
+            if (cbinp->isDefault() || cbinp->transp()) continue;
+            // The values of constructed bins are known at construction; see emitSizedSample, and
+            // binCondition for those of ignore and illegal bins
             if (isConstructedBins(cbinp)) continue;
             if (isAutoBins(cbinp)) {
                 // Automatic bins partition the whole domain, leaving no default value
@@ -1073,8 +1074,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 return new AstConst{fl, AstConst::BitFalse{}};
             }
             AstNodeExpr* const binCondp = buildBinCondition(cbinp, exprp);
-            UASSERT_OBJ(binCondp, cbinp,
-                        "buildBinCondition returned nullptr for non-ignore/non-illegal bin");
+            if (!binCondp) {  // The bin's values are in error, or unsupported (--bbox-unsup)
+                UASSERT_OBJ(V3Error::errorCount() > 0 || v3Global.opt.bboxUnsup(), cbinp,
+                            "Bin of values without a condition");
+                continue;
+            }
             anyBinMatchp = anyBinMatchp ? new AstOr{fl, anyBinMatchp, binCondp} : binCondp;
         }
         return anyBinMatchp ? static_cast<AstNodeExpr*>(new AstNot{fl, anyBinMatchp})
@@ -1806,8 +1810,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (binp->iffp()) condp = new AstLogAnd{fl, binp->iffp()->cloneTree(false), condp};
         const auto excluded = m_excludedVars.find(cpVarp);
         if (excluded != m_excludedVars.end() && !binp->transp()
-            && (binp->binsType().binIsNormal()
-                || binp->binsType() == VCoverBinsType::BINS_DEFAULT)) {
+            && (binp->binsType().binIsNormal() || binp->isDefault())) {
             condp = new AstLogAnd{
                 fl, new AstNot{fl, new AstVarRef{fl, excluded->second, VAccess::READ}}, condp};
         }
@@ -2360,7 +2363,19 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         for (AstNode* const binp : coverpointp->binspList()) {
             AstCoverBin* const cbinp = VN_AS(binp, CoverBin);
             const int errorsBefore = dynamic ? V3Error::errorCount() : 0;
-            if (cbinp->binsType() == VCoverBinsType::BINS_DEFAULT) {
+            if (cbinp->isDefault()) {
+                // An array of default bins has a bin for each value in no other bin, unless of a
+                // real coverpoint, where it is not allowed (IEEE 1800-2023 19.5.1)
+                if (cbinp->isArray() && !exprp->dtypep()->skipRefp()->isIntegralOrPacked()) {
+                    cbinp->v3error("Array of default bins "
+                                   << cbinp->prettyNameQ()
+                                   << " is not allowed on a coverpoint of a non-integral "
+                                      "expression (IEEE 1800-2023 19.5.1).");
+                } else if (cbinp->isArray()) {
+                    cbinp->v3warn(COVERIGN, "Unsupported: Array of default cover bins "
+                                                << cbinp->prettyNameQ()
+                                                << " (treated as one bin).");
+                }
                 defaultBins.push_back(cbinp);
                 continue;
             }
@@ -2444,8 +2459,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
             } else {
                 namerStmts.push_back(makeNamer(cpVarp, cbinp, -1, static_cast<uint32_t>(idx)));
-                // buildBinCondition is null for 'ignore_bins = default' (no ranges); the bin
-                // still gets a reserved slot (recorded, never incremented).
+                // buildBinCondition is null for values in error or unsupported; the bin still
+                // gets a reserved slot (recorded, never incremented).
                 if (AstNodeExpr* const condp = buildBinCondition(cbinp, exprp))
                     emitConvHitIf(coverpointp, cbinp, cpVarp,
                                   cnum(cbinp->fileline(), static_cast<uint32_t>(idx)), condp);
