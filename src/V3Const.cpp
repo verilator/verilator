@@ -3119,6 +3119,15 @@ class ConstVisitor final : public VNVisitor {
         replaceWithSimulation(nodep);
         return true;
     }
+    bool matchAggregateEqConst(AstNodeBiop* nodep) {
+        // Equality of constant unpacked arrays or structs. V3Width allows no other operators on
+        // them, and made both operands the same type.
+        if (!VN_IS(nodep->lhsp(), ConsArray) && !VN_IS(nodep->lhsp(), ConsStruct)) return false;
+        if (!nodep->lhsp()->isConstantTree()) return false;
+        if (!nodep->rhsp()->isConstantTree()) return false;
+        replaceWithSimulation(nodep);
+        return true;
+    }
     int operandConcatMove(const AstConcat* nodep) {
         //    CONCAT under concat  (See moveConcat)
         // Return value: true indicates to do it; 2 means move to LHS
@@ -4409,6 +4418,10 @@ class ConstVisitor final : public VNVisitor {
     TREEOPA("AstNodeBiop {$lhsp.castConst, $rhsp.castConst, nodep->isPredictOptimizable()}",  "replaceConst(nodep)");
     TREEOPA("AstNodeUniop{$lhsp.castConst, nodep->isPredictOptimizable()}",  "replaceConst(nodep)");
     TREEOPA("AstNodeQuadop{$lhsp.castConst, $rhsp.castConst, $thsp.castConst, $fhsp.castConst}",  "replaceConst(nodep)");
+    TREEOP ("AstEq     {matchAggregateEqConst(nodep)}",  "DONE");
+    TREEOP ("AstEqCase {matchAggregateEqConst(nodep)}",  "DONE");
+    TREEOP ("AstNeq    {matchAggregateEqConst(nodep)}",  "DONE");
+    TREEOP ("AstNeqCase{matchAggregateEqConst(nodep)}",  "DONE");
     // Zero on one side or the other
     TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
     TREEOP ("AstAnd   {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");

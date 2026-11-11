@@ -30,7 +30,6 @@
 #include "V3Task.h"
 
 #include "V3Const.h"
-#include "V3ConstPool.h"
 #include "V3Control.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
@@ -506,34 +505,23 @@ class TaskVisitor final : public VNVisitor {
         m_scopep->addVarsp(newvscp);
         return newvscp;
     }
-    static AstVarScope* constPoolTable(AstVar* paramp) {
-        // Move array params in functions into constant pool, return the VarScope of the entry
-        AstVarRef* const refp = V3ConstPool::find(VN_AS(paramp->valuep(), ConsArray));
-        AstVarScope* const vscp = refp->varScopep();
-        VL_DO_DANGLING(refp->deleteTree(), refp);
-        return vscp;
-    }
     // Create variable for 'invarp' of the call 'refp', named after the called task and 'suffix'
     AstVarScope* createVarScope(const AstNodeFTaskRef* refp, AstVar* invarp,
                                 const std::string& suffix) {
-        if (invarp->isParam() && VN_IS(invarp->valuep(), ConsArray)) {
-            return constPoolTable(invarp);
-        } else {
-            // We could create under either the ref's scope or the ftask's scope.
-            // It shouldn't matter, as they are only local variables.
-            // We choose to do it under whichever called this function, which results
-            // in more cache locality.
-            // Share the variable with the other scopes of the module, so the same calls in
-            // instances use the same variables
-            V3SharedTmps& tmps = VN_IS(refp, FuncRef) ? m_funcTmps : m_taskTmps;
-            AstVarScope* const newvscp = tmps.make(invarp->fileline(), m_scopep, invarp->dtypep(),
-                                                   refp->taskp()->shortName() + suffix);
-            AstVar* const newvarp = newvscp->varp();
-            newvarp->funcLocal(false);
-            newvarp->propagateAttrFrom(invarp);
-            newvarp->isInternal(true);
-            return newvscp;
-        }
+        // We could create under either the ref's scope or the ftask's scope.
+        // It shouldn't matter, as they are only local variables.
+        // We choose to do it under whichever called this function, which results
+        // in more cache locality.
+        // Share the variable with the other scopes of the module, so the same calls in
+        // instances use the same variables
+        V3SharedTmps& tmps = VN_IS(refp, FuncRef) ? m_funcTmps : m_taskTmps;
+        AstVarScope* const newvscp = tmps.make(invarp->fileline(), m_scopep, invarp->dtypep(),
+                                               refp->taskp()->shortName() + suffix);
+        AstVar* const newvarp = newvscp->varp();
+        newvarp->funcLocal(false);
+        newvarp->propagateAttrFrom(invarp);
+        newvarp->isInternal(true);
+        return newvscp;
     }
 
     // Replace varrefs with new var pointer
@@ -1740,32 +1728,24 @@ class TaskVisitor final : public VNVisitor {
         // Move arguments and local variables to function
         for (AstNode* const declp : nodep->declspList()) {
             if (AstVar* const portp = VN_CAST(declp, Var)) {
-                if (portp->isParam() && VN_IS(portp->valuep(), ConsArray)) {
-                    // Move array parameters in functions into constant pool
-                    portp->unlinkFrBack();
-                    pushDeletep(portp);
-                    portp->user2p(constPoolTable(portp));
-                } else {
-                    unlinkAndClone(nodep, portp, false);
-                    portp->funcLocal(true);
-                    if (portp->isIO()) {
-                        if (portp->valuep()) pushDeletep(portp->valuep()->unlinkFrBack());
-                        cfuncp->addArgsp(portp);
-                        // Pass inputs to DPI import wrappers by reference, unless fits in register
-                        if (cfuncp->dpiImportWrapper() && portp->isReadOnly()) {
-                            AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
-                            if (dtypep->isCompound() || dtypep->isWide()) {
-                                portp->direction(VDirection::CONSTREF);
-                            }
+                unlinkAndClone(nodep, portp, false);
+                portp->funcLocal(true);
+                if (portp->isIO()) {
+                    if (portp->valuep()) pushDeletep(portp->valuep()->unlinkFrBack());
+                    cfuncp->addArgsp(portp);
+                    // Pass inputs to DPI import wrappers by reference, unless fits in register
+                    if (cfuncp->dpiImportWrapper() && portp->isReadOnly()) {
+                        AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
+                        if (dtypep->isCompound() || dtypep->isWide()) {
+                            portp->direction(VDirection::CONSTREF);
                         }
-                    } else {
-                        cfuncp->addVarsp(portp);
                     }
-                    AstVarScope* const newvscp
-                        = new AstVarScope{portp->fileline(), m_scopep, portp};
-                    m_scopep->addVarsp(newvscp);
-                    portp->user2p(newvscp);
+                } else {
+                    cfuncp->addVarsp(portp);
                 }
+                AstVarScope* const newvscp = new AstVarScope{portp->fileline(), m_scopep, portp};
+                m_scopep->addVarsp(newvscp);
+                portp->user2p(newvscp);
             }
         }
 

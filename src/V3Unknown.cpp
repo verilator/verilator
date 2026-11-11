@@ -219,7 +219,7 @@ class UnknownVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         VL_RESTORER(m_allowXUnique);
-        if (nodep->isParam()) m_allowXUnique = false;
+        if (nodep->isParam() || nodep->constPoolEntry()) m_allowXUnique = false;
         iterateChildren(nodep);
     }
     void visitEqNeqCase(AstNodeBiop* nodep) {

@@ -4907,7 +4907,7 @@ class WidthVisitor final : public VNVisitor {
             if (AstNode* const foundp = m_memberMap.findMember(classp, nodep->name())) {
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
                     if (!varp->didWidth()) userIterate(varp, nullptr);
-                    if (varp->lifetime().isStatic() || varp->isParam()) {
+                    if (varp->lifetime().isStatic()) {
                         // Static members are moved outside the class, so they shouldn't be
                         // accessed by member select on a class object
                         AstVarRef* const varRefp
