@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:60:49: Unsupported: Pull propagation through port connection: REPLICATE
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:60:49: Unsupported: Pull propagation through port connection: REPLICATE.
                                                   : ... note: In instance 't'
    60 |   pulled_pair_port repeated_pull (.pad({repeated, repeated}));
       |                                                 ^
@@ -11,15 +11,15 @@
                                                   : ... note: In instance 't'
    66 |   pulled_stream_port right_truncate (.pad({>>{narrow_right}}));
       |                                       ^~~
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:71:53: Unsupported: Pull propagation through port connection: VARXREF 'pad'
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:71:53: Unsupported: Pull propagation through port connection: VARXREF 'pad'.
                                                   : ... note: In instance 't'
    71 |   pulled_stream_port interface_pull (.pad(pulled_if.pad));
       |                                                     ^~~
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:75:56: Unsupported: Pull propagation through port connection: STRUCTSEL 'pad'
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:75:56: Unsupported: Pull propagation through port connection: STRUCTSEL 'pad'.
                                                   : ... note: In instance 't'
    75 |   pulled_stream_port member_pull (.pad(unpacked_pulled.pad));
       |                                                        ^~~
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:79:50: Unsupported: Pull propagation through port connection: SLICESEL
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:79:50: Unsupported: Pull propagation through port connection: SLICESEL.
                                                   : ... note: In instance 't'
    79 |   pulled_array_port slice_pull (.pad(pulled_array[2:1]));
       |                                                  ^

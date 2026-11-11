@@ -393,13 +393,13 @@ class TristateStreamReadVisitor final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTORS
-    TristateStreamReadVisitor(AstNodeModule* modp, int& unique)
+    TristateStreamReadVisitor(AstNodeModule* const modp, int& unique)
         : m_modp{modp}
         , m_unique{unique} {}
 
 public:
     // METHODS
-    static void apply(AstNodeExpr* nodep, AstNodeModule* modp, int& unique) {
+    static void apply(AstNodeExpr* const nodep, AstNodeModule* const modp, int& unique) {
         TristateStreamReadVisitor visitor{modp, unique};
         visitor.iterateAndNextNull(nodep);
     }
@@ -835,7 +835,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (VN_IS(basep, ArraySel) || VN_IS(basep, Replicate) || VN_IS(basep, SliceSel)
             || VN_IS(basep, StructSel) || VN_IS(basep, VarXRef)) {
             basep->v3warn(E_UNSUPPORTED, "Unsupported: Pull propagation through port connection: "
-                                             << basep->prettyTypeName());
+                                             << basep->prettyTypeName() << ".");
             return;
         }
         AstVarRef* const refp = VN_AS(basep, VarRef);
