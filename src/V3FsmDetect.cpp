@@ -449,6 +449,8 @@ struct FsmIfChainCandidate final {
 using FsmAliasMap = std::unordered_map<const AstVarScope*, FsmStateComparison>;
 using FsmCellPortMap = std::unordered_map<string, AstVarScope*>;
 using FsmCellPortAliasMap = std::unordered_map<const AstCell*, FsmCellPortMap>;
+// Target value and assignment of each guarded transition in a case item
+using FsmGuardedTargets = std::vector<std::pair<FsmStateValue, AstNodeAssign*>>;
 
 struct StateConstLabel final {
     string text;
@@ -1118,6 +1120,36 @@ class FsmDetectVisitor final : public VNVisitor {
         return true;
     }
 
+    // Transitions guarded by ifs: each arm is 'next = CONST', another such if, or leaves next
+    // unassigned.  That adds no arc: after 'next = state', or in a clocked block, it holds.
+    static bool guardedTargets(AstNode* stmtp, AstVarScope* stateVscp,
+                               FsmGuardedTargets& targets) {
+        if (!skipLeadingIgnorableStmt(stmtp)) return true;
+        AstNode* const nodep = singleMeaningfulStmt(stmtp);
+        if (AstIf* const ifp = VN_CAST(nodep, If)) {
+            // Without other coverage V3Const folds an if/else of two assignments into '?:',
+            // so leave that unsupported here, in either form
+            if (VN_IS(singleMeaningfulStmt(ifp->thensp()), NodeAssign)
+                && VN_IS(singleMeaningfulStmt(ifp->elsesp()), NodeAssign)) {
+                return false;
+            }
+            return guardedTargets(ifp->thensp(), stateVscp, targets)
+                   && guardedTargets(ifp->elsesp(), stateVscp, targets);
+        }
+        AstNodeAssign* const assp = directStateAssign(nodep, stateVscp);
+        FsmStateValue value;
+        if (!assp || constValueStatus(assp->rhsp(), value) != ConstValueStatus::OK) return false;
+        targets.emplace_back(value, assp);
+        return true;
+    }
+
+    // The if of a case item whose transitions are all guarded
+    static AstIf* caseItemGuardedIf(AstCaseItem* itemp, AstVarScope* stateVscp,
+                                    FsmGuardedTargets& targets) {
+        AstIf* const ifp = VN_CAST(singleMeaningfulStmt(itemp->stmtsp()), If);
+        return ifp && guardedTargets(itemp->stmtsp(), stateVscp, targets) ? ifp : nullptr;
+    }
+
     // A guarded transition target: 'guard ? CONST : CONST'
     static bool condConstTargets(AstNodeExpr* exprp, FsmStateValue& thenValue,
                                  FsmStateValue& elseValue) {
@@ -1151,7 +1183,8 @@ class FsmDetectVisitor final : public VNVisitor {
         if (ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)) {
             return singleMeaningfulBranch(itemp->stmtsp());
         }
-        return nullptr;
+        FsmGuardedTargets targets;
+        return caseItemGuardedIf(itemp, stateVscp, targets);
     }
 
     // Combinational transition blocks are paired only through supported case
@@ -1677,6 +1710,12 @@ class FsmDetectVisitor final : public VNVisitor {
                             return false;
                         }
                     }
+                    FsmGuardedTargets targets;
+                    if (caseItemGuardedIf(itemp, assignVscp, targets)) {
+                        for (const std::pair<FsmStateValue, AstNodeAssign*>& target : targets) {
+                            if (!visitValuep(target.second->rhsp())) return false;
+                        }
+                    }
                 }
                 return true;
             });
@@ -1767,6 +1806,21 @@ class FsmDetectVisitor final : public VNVisitor {
                                  itemp->stmtsp()->fileline());
                 }
             }
+            return true;
+        }
+
+        FsmGuardedTargets targets;
+        if (caseItemGuardedIf(itemp, stateVscp, targets)) {
+            for (const std::pair<FsmStateValue, AstNodeAssign*>& target : targets) {
+                if (!validateKnownStateValue(target.second, stateSpace, target.first, "target"))
+                    return true;
+            }  // LCOV_EXCL_LINE
+            for (const std::pair<FsmStateValue, AstNodeAssign*>& target : targets) {
+                for (const std::pair<string, FsmStateValue>& from : froms) {
+                    graph.addArc(from.second, target.first, false, true, itemp->isDefault(),
+                                 target.second->fileline());
+                }  // LCOV_EXCL_LINE
+            }  // LCOV_EXCL_LINE
             return true;
         }
 

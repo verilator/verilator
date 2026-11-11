@@ -568,6 +568,40 @@ module fsm_reg_enable_no_else_bad (
     if (start) state_q <= state_d;
   end
 endmodule
+module fsm_case_guarded_bad (
+    input logic clk,
+    input logic [1:0] dyn
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+
+  state_t state_q  /*verilator fsm_state*/;
+  state_t state_d;
+  logic side;
+
+  // Only S0 is supported: a guarded arm with another statement, or with a
+  // non-constant target, is skipped
+  always_comb begin
+    state_d = state_q;
+    side = 1'b0;
+    case (state_q)
+      S0: state_d = S1;
+      S1:
+      if (dyn[0]) begin
+        state_d = S2;
+        side = 1'b1;
+      end
+      S2: if (dyn[1]) state_d = state_t'(dyn);
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) state_q <= state_d;
+endmodule
+
 module t (
     input logic clk
 );
@@ -644,6 +678,10 @@ module t (
   fsm_reg_enable_no_else_bad reg_enable_no_else_u (
       .clk(clk),
       .start(start)
+  );
+  fsm_case_guarded_bad case_guarded_u (
+      .clk(clk),
+      .dyn(dyn_case[1:0])
   );
 
   always @(posedge clk) begin
