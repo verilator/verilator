@@ -113,6 +113,69 @@ module inline_empty_reset (
   end
 endmodule
 
+module two_proc_wide_empty_reset (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  typedef enum logic [1:0] {
+    IDLE,
+    RUN,
+    DONE
+  } state_t;
+
+  state_t state = IDLE;
+  state_t state_next;
+
+  always_ff @(posedge clk) begin
+    if (rst) begin
+    end
+    else state <= state_next;
+  end
+
+  always_comb begin
+    state_next = state;
+    case (state)
+      IDLE: state_next = go ? RUN : IDLE;
+      RUN: state_next = DONE;
+      default: state_next = IDLE;
+    endcase
+  end
+endmodule
+
+module chain_empty_reset (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  typedef enum logic [1:0] {
+    IDLE,
+    RUN,
+    DONE
+  } state_t;
+
+  state_t state = IDLE;
+  logic busy = 1'b0;
+
+  // Two statements per branch keep the chain from folding into one assignment
+  always_ff @(posedge clk) begin
+    if (rst) begin
+    end
+    else if (state == IDLE) begin
+      state <= go ? RUN : IDLE;
+      busy <= go;
+    end
+    else if (state == RUN) begin
+      state <= DONE;
+      busy <= 1'b1;
+    end
+    else begin
+      state <= IDLE;
+      busy <= 1'b0;
+    end
+  end
+endmodule
+
 module t (
     input logic clk
 );
@@ -148,6 +211,18 @@ module t (
       .input_data(input_data),
       .output_data(output_data),
       .output_valid(output_valid)
+  );
+
+  two_proc_wide_empty_reset two_proc_wide_u (
+      .clk(clk),
+      .rst(rst),
+      .go(go)
+  );
+
+  chain_empty_reset chain_u (
+      .clk(clk),
+      .rst(rst),
+      .go(go)
   );
 
   initial begin
