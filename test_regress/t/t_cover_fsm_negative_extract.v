@@ -602,6 +602,60 @@ module fsm_case_guarded_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
+module fsm_case_guarded_nohold_bad (
+    input logic clk,
+    input logic start
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+
+  state_t state_q  /*verilator fsm_state*/;
+  state_t state_d;
+
+  // The default is not 'state_d = state_q', so a guarded item that leaves
+  // state_d unassigned does not hold; S1 is skipped
+  always_comb begin
+    state_d = S0;
+    case (state_q)
+      S0: state_d = S1;
+      S1: if (start) state_d = S2;
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) state_q <= state_d;
+endmodule
+
+module fsm_case_guarded_overwrite_bad (
+    input logic clk,
+    input logic start
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+
+  state_t state_q  /*verilator fsm_state*/;
+  state_t state_d;
+
+  // The canonical default is overwritten before the case, so S1 is skipped
+  always_comb begin
+    state_d = state_q;
+    state_d = S0;
+    case (state_q)
+      S0: state_d = S1;
+      S1: if (start) state_d = S2;
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) state_q <= state_d;
+endmodule
+
 module t (
     input logic clk
 );
@@ -682,6 +736,14 @@ module t (
   fsm_case_guarded_bad case_guarded_u (
       .clk(clk),
       .dyn(dyn_case[1:0])
+  );
+  fsm_case_guarded_nohold_bad case_guarded_nohold_u (
+      .clk(clk),
+      .start(start)
+  );
+  fsm_case_guarded_overwrite_bad case_guarded_overwrite_u (
+      .clk(clk),
+      .start(start)
   );
 
   always @(posedge clk) begin

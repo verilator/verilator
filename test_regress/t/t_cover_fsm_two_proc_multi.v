@@ -496,7 +496,7 @@ module fsm_case_guarded_chain (
   state_t state_d;
 
   // S1 assigns on every path, which without coverage folds to a nested '?:',
-  // so it is skipped in all forms
+  // so it is skipped in all forms.  S2 assigns nothing, so it has no transition.
   always_comb begin
     state_d = state_q;
     case (state_q)
@@ -505,6 +505,8 @@ module fsm_case_guarded_chain (
       if (a) state_d = S2;
       else if (b) state_d = S0;
       else state_d = S1;
+      S2: if (b) begin
+      end
       default: state_d = S0;
     endcase
   end
