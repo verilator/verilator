@@ -2380,9 +2380,11 @@ class TristateVisitor final : public TristateBaseVisitor {
                 // Tristate stream data, enables, and pulls require matching widths.
                 if (VN_IS(outAssignp->lhsp(), NodeStream)
                     && outAssignp->lhsp()->width() != outAssignp->rhsp()->width()) {
+                    outAssignp->lhsp()->v3warn(
+                        E_UNSUPPORTED,
+                        "Unsupported: Tristate streaming port connection with width mismatch.");
                     exprrefp = nullptr;
-                }
-                if (!exprrefp) {
+                } else if (!exprrefp) {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported tristate port expression: "
                                                      << nodep->exprp()->prettyTypeNameQ());
                 }

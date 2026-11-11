@@ -3,14 +3,14 @@
    60 |   pulled_pair_port repeated_pull (.pad({repeated, repeated}));
       |                                                 ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:65:38: Unsupported tristate port expression: VARREF '__Vcellinpt__left_truncate__pad'
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:65:43: Unsupported: Tristate streaming port connection with width mismatch.
                                                   : ... note: In instance 't'
    65 |   pulled_stream_port left_truncate (.pad({<<2{narrow_left}}));
-      |                                      ^~~
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:66:39: Unsupported tristate port expression: VARREF '__Vcellinpt__right_truncate__pad'
+      |                                           ^~
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:66:44: Unsupported: Tristate streaming port connection with width mismatch.
                                                   : ... note: In instance 't'
    66 |   pulled_stream_port right_truncate (.pad({>>{narrow_right}}));
-      |                                       ^~~
+      |                                            ^~
 %Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:71:53: Unsupported: Pull propagation through port connection: VARXREF 'pad'.
                                                   : ... note: In instance 't'
    71 |   pulled_stream_port interface_pull (.pad(pulled_if.pad));
