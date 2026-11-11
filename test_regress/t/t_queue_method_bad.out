@@ -67,11 +67,11 @@
                                     : ... note: In instance 't'
    47 |     c = q[0][0];   
       |             ^
-%Error: t/t_queue_method_bad.v:55:6: Operator array or queue element selection expects a numeric index operand, but it has data type 'string' (IEEE 1800-2023 11.3)
+%Error: t/t_queue_method_bad.v:55:6: Operator 'array or queue element selection' expects a numeric index operand, but it has data type 'string' (IEEE 1800-2023 11.3)
                                    : ... note: In instance 't'
    55 |     d[s] = 1;   
       |      ^
-%Error: t/t_queue_method_bad.v:56:20: Operator array or queue element selection expects a numeric index operand, but it has data type 'string' (IEEE 1800-2023 11.3)
+%Error: t/t_queue_method_bad.v:56:20: Operator 'array or queue element selection' expects a numeric index operand, but it has data type 'string' (IEEE 1800-2023 11.3)
                                     : ... note: In instance 't'
    56 |     $write("%0d", q[s]);   
       |                    ^
