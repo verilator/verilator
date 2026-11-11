@@ -3471,9 +3471,8 @@ void VerilatedContext::threads(unsigned n) {
     if (n == 0) VL_FATAL_MT(__FILE__, __LINE__, "", "Simulation threads must be >= 1");
 
     if (m_threadPool) {
-        VL_FATAL_MT(
-            __FILE__, __LINE__, "",
-            "%Error: Cannot set simulation threads after the thread pool has been created.");
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "Cannot set simulation threads after the thread pool has been created.");
     }
 
     m_useNumaAssign = true;
@@ -3643,7 +3642,7 @@ std::string VerilatedContextImp::argPlusMatch(const char* prefixp)
     if (VL_UNLIKELY(!m_args.m_argVecLoaded)) {
         m_args.m_argVecLoaded = true;  // Complain only once
         VL_FATAL_MT("unknown", 0, "",
-                    "%Error: Verilog called $test$plusargs or $value$plusargs without"
+                    "Verilog called $test$plusargs or $value$plusargs without"
                     " testbench C first calling Verilated::commandArgs(argc,argv).");
     }
     for (const auto& i : m_args.m_argVec) {
@@ -4134,7 +4133,7 @@ void Verilated::scTimePrecisionError(int sc_prec, int vl_prec) VL_MT_SAFE {
 void Verilated::scTraceBeforeElaborationError() VL_MT_SAFE {
     // Slowpath - Called only when trace file opened before SystemC elaboration
     VL_FATAL_MT("unknown", 0, "",
-                "%Error: Verilated*Sc::open(...) was called before sc_core::sc_start(). "
+                "Verilated*Sc::open(...) was called before sc_core::sc_start(). "
                 "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.");
     VL_UNREACHABLE;
 }

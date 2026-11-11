@@ -414,7 +414,7 @@ private:
         m_logfp = std::make_unique<std::ofstream>(filename);
         if (m_logfp.get() && m_logfp.get()->fail()) m_logfp = nullptr;
         if (!m_logfp) {
-            const std::string msg = "%Error: Can't write '"s + filename + "'";
+            const std::string msg = "Can't write '"s + filename + "'";
             VL_FATAL_MT("", 0, "", msg.c_str());
             return;
         }
