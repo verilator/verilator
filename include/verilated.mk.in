@@ -66,14 +66,7 @@ VERILATOR_INCLUDER = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_includer
 VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
 
 VK_MODULE_DEPS = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_module_deps
-ifeq ($(origin VK_MODULE_BACKEND),undefined)
-  VK_CXX_VERSION := $(shell $(CXX) --version 2>/dev/null)
-  ifneq ($(findstring clang,$(VK_CXX_VERSION)),)
-    VK_MODULE_BACKEND := clang
-  else
-    VK_MODULE_BACKEND := $(if $(findstring cl.exe,$(CXX)),msvc,gcc)
-  endif
-endif
+VK_MODULE_BACKEND ?= $(if $(findstring clang,$(shell $(CXX) --version 2>/dev/null)),clang,$(if $(findstring cl.exe,$(CXX)),msvc,gcc))
 
 ######################################################################
 # CCACHE flags (via environment as no command line option available)

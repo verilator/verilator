@@ -32,8 +32,9 @@ Summary:
    relative to where the make will be executed from, or add to your
    makefile's VPATH the appropriate directory to find the file.
 
-   ``.cppm`` and ``.ixx`` files are C++20 module interface units; pass
-   :vlopt:`--cxx-modules` (or list them all) to build them.
+   ``.cppm`` and ``.ixx`` files are C++20 module interface units.  Pass
+   :vlopt:`--cxx-modules`; listing a ``.cppm``/``.ixx`` file on the command
+   line enables the module build by itself.
 
    See also :vlopt:`-CFLAGS` and :vlopt:`-LDFLAGS` options, which are
    useful when the C++ files need special compiler flags. The compiler

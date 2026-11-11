@@ -646,10 +646,7 @@ function(verilate TARGET)
                 ${${VERILATE_PREFIX}_MODULE_INTERFACES}
             )
         else()
-            message(
-                WARNING
-                "C++ module interface files require CMake 3.28 or newer; they are added as ordinary sources"
-            )
+            message(FATAL_ERROR "C++ module interface files require CMake 3.28 or newer")
         endif()
     endif()
 

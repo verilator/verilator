@@ -17,7 +17,6 @@ test.lint(verilator_flags2=[
     '--exe',
     test.t_dir + '/t_flag_cxx_modules_msvc.ixx',
 ])
-test.file_grep_not(test.obj_dir + '/vlt_compile.log', r'Unsupported: \.ixx')
 test.compile(make_main=False,
              verilator_make_gmake=False,
              verilator_make_cmake=False,
@@ -31,5 +30,7 @@ test.compile(make_main=False,
                  'json',
                  test.t_dir + '/t_flag_cxx_modules_msvc.ixx',
              ])
-test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.json', r't_flag_cxx_modules_msvc')
+test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.json', r'"cxx_modules": true')
+test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.json',
+               r'"module_interfaces": \[\s*"[^"]*\.ixx"')
 test.passes()

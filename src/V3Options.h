@@ -236,10 +236,9 @@ private:
     V3OptionsImp* m_impp;  // Slow hidden options
 
     // clang-format off
-    VStringSet m_cppFiles;      // argument: C++ files to link against
-    VStringSet m_moduleFiles;   // argument: C++ module interface files
-    VStringList m_cFlags;       // argument: user CFLAGS
-    bool m_cxxModules = false;  // main switch: --cxx-modules
+    VStringSet m_cppFiles;     // argument: C++ files to link against
+    VStringSet m_moduleFiles;  // argument: C++ module interface files
+    VStringList m_cFlags;      // argument: user CFLAGS
     VStringList m_ldLibs;      // argument: user LDFLAGS
     VStringList m_ldLibFiles;  // argument: library files, subset of m_ldLibs
     VStringList m_makeFlags;   // argument: user MAKEFLAGS
@@ -279,6 +278,7 @@ private:
     bool m_coverageToggle = false;  // main switch: --coverage-toggle
     bool m_coverageUnderscore = false;  // main switch: --coverage-underscore
     bool m_coverageUser = false;    // main switch: --coverage-func
+    bool m_cxxModules = false;      // main switch: --cxx-modules
     bool m_debugCheck = false;      // main switch: --debug-check
     bool m_debugCollision = false;  // main switch: --debug-collision
     bool m_debugEmitV = false;      // main switch: --debug-emitv
@@ -771,7 +771,7 @@ public:
 
     const VStringSet& cppFiles() const { return m_cppFiles; }
     const VStringSet& moduleFiles() const { return m_moduleFiles; }
-    bool cxxModules() const;
+    bool cxxModules() const { return m_cxxModules || !m_moduleFiles.empty(); }
     const VStringList& cFlags() const { return m_cFlags; }
     const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
     const VStringList& ldLibFiles() const { return m_ldLibFiles; }

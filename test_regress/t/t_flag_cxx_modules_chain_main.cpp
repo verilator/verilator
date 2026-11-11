@@ -9,6 +9,8 @@
 #include "verilated.h"
 
 #include "Vt_flag_cxx_modules_chain.h"
+
+import buildmod;
 import m2;
 
 int main(int argc, char** argv) {
@@ -16,5 +18,5 @@ int main(int argc, char** argv) {
     context.commandArgs(argc, argv);
     Vt_flag_cxx_modules_chain top{&context};
     top.eval();
-    return g() == 2 ? 0 : 1;
+    return g() == 2 && module_value() == 42 ? 0 : 1;
 }
