@@ -293,6 +293,17 @@ class VlRandomizer VL_NOT_FINAL {
     // Fetch the model and write it into the registered variables.
     bool applyModel(VlSolverSession& sess);
     bool parseModel(std::istream& is, size_t requested);
+    // Keep each lower 32-bit key word intact and pad to the stored key width.
+    static std::string assocStructKeySuffix(const std::vector<size_t>& words, size_t idxWidth) {
+        std::ostringstream oss;
+        for (size_t i = 0; i < words.size(); ++i) {
+            if (i) oss << std::setw(8) << std::setfill('0');
+            oss << std::hex << static_cast<int>(words[i]);
+        }
+        std::string result = oss.str();
+        result.insert(result.begin(), int(idxWidth / 4) - result.size(), '0');
+        return result;
+    }
     // Assert the maximal compatible soft-constraint set onto the open session.
     void relaxSoftConstraints(VlSolverSession& sess);
     // Indices of the "a<N>" literals named by (get-unsat-assumptions).
@@ -421,7 +432,8 @@ public:
         std::ostringstream hex_stream;
         for (size_t i = key.size(); i > 0; --i) {
             const size_t segment_value = key.at(i - 1);
-            hex_stream << std::hex << segment_value;
+            // Zero padded, so a zero segment is not dropped
+            hex_stream << std::hex << std::setw(8) << std::setfill('0') << segment_value;
             integral_index.push_back(segment_value);
         }
         std::string index_string = hex_stream.str();
@@ -796,12 +808,7 @@ public:
                 size_t idx_width = 0;
 
                 process_key(key, indexed_name, integral_index, name, idx_width);
-                std::ostringstream oss;
-                for (int i = 0; i < integral_index.size(); ++i)
-                    oss << std::hex << static_cast<int>(integral_index[i]);
-
-                std::string result = oss.str();
-                result.insert(result.begin(), int(idx_width / 4) - result.size(), '0');
+                const std::string result = assocStructKeySuffix(integral_index, idx_width);
                 record_struct_arr(var.atWrite(key), name + "." + result, dimension - 1, indices,
                                   idxWidths, randmodeIdx);
             }
@@ -818,13 +825,7 @@ public:
             size_t idx_width = 0;
 
             process_key(key, indexed_name, integral_index, name, idx_width);
-            std::ostringstream oss;
-            for (size_t i = 0; i < integral_index.size(); ++i) {
-                oss << std::hex << static_cast<int>(integral_index[i]);
-            }
-
-            std::string result = oss.str();
-            result.insert(result.begin(), int(idx_width / 4) - result.size(), '0');
+            const std::string result = assocStructKeySuffix(integral_index, idx_width);
             update_struct_arr(var.atWrite(key), name + "." + result);
         }
     }

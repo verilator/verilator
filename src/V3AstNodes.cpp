@@ -962,6 +962,11 @@ bool AstCMethodHard::getPurity() {
     for (AstNodeExpr* const argp : pinspList()) {
         if (!argp->isPure()) return false;
     }
+    if (withp()) {
+        for (AstNode* const itemp : withp()->exprpList()) {
+            if (!itemp->isPure()) return false;
+        }
+    }
     return true;
 }
 int AstCMethodHard::instrCount() const {
@@ -1606,12 +1611,14 @@ void AstCoverBin::dump(std::ostream& str) const {
     Super::dump(str);
     str << " " << m_binsType.ascii();
     if (m_isArray) str << "[]";
+    if (m_isDefault) str << " [DEFAULT]";
     if (m_isWildcard) str << "[*]";
     if (m_isSetExpr) str << " [SETEXPR]";
 }
 void AstCoverBin::dumpJson(std::ostream& str) const {
     Super::dumpJson(str);
     dumpJsonBoolIf(str, "isArray", isArray());
+    dumpJsonBoolIf(str, "isDefault", isDefault());
     dumpJsonBoolIf(str, "isWildcard", isWildcard());
     dumpJsonBoolIf(str, "isSetExpr", isSetExpr());
     str << ", \"binsType\": \"" << binsType().ascii() << "\"";
@@ -2989,7 +2996,7 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
                     nodep = subp;
                     continue;
                 }
-                if (assertOn) nodep->v3fatalSrc(nodep->prettyTypeName() << " not linked to type");
+                if (assertOn) nodep->v3fatalSrc(nodep->prettyTypeNameQ() << " not linked to type");
                 return nullptr;
             }
             return nodep;
@@ -3014,7 +3021,7 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
             if (depth < MAX_CHAIN_DISPLAY && !nodep->name().empty()) {
                 FileLine* const flp = nodep->fileline();
                 ss << '\n'
-                   << flp->warnOther() << "... Type chain: " << nodep->prettyTypeName() << '\n'
+                   << flp->warnOther() << "... Type chain: " << nodep->prettyTypeNameQ() << '\n'
                    << (!depth ? flp->warnContextPrimary() : flp->warnContextSecondary());
             }
             nodep = nodep->subDTypep();
@@ -3177,15 +3184,9 @@ const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
         return anodep->lhsp()->getVAccessTargetRecurse();
     }
     if (const AstCMethodHard* const anodep = VN_CAST(this, CMethodHard)) {
-        switch (anodep->method()) {
-        case VCMethod::ARRAY_AT:
-        case VCMethod::ARRAY_AT_BACK:
-        case VCMethod::ARRAY_AT_WRITE:
-        case VCMethod::DYN_AT_WRITE_APPEND:
-        case VCMethod::DYN_AT_WRITE_APPEND_BACK:
+        if (anodep->method().isDynElementAccess()) {
             // Used for things like Queue/AssocArray/DynArray
             return anodep->fromp()->getVAccessTargetRecurse();
-        default: break;
         }
     }
     return nullptr;  // nothing found

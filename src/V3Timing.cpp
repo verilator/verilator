@@ -133,7 +133,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
                     return cvtToHex(nodep()) + ' ' + classp()->name() + "::" + nodep()->name();
                 }
             }
-            return cvtToHex(nodep()) + ' ' + nodep()->prettyTypeName();
+            return cvtToHex(nodep()) + ' ' + nodep()->prettyTypeNameQ();
         }
         FileLine* fileline() const override { return nodep()->fileline(); }
 
@@ -186,7 +186,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
     //                                                            and to T_PROC if it
     //                                                            needs process metadata.
     //  Ast{NodeProcedure,CFunc,ForkItem}::user3()  -> DependencyVertex*.  Vertex in m_suspGraph
-    //  Ast{NodeProcedure,CFunc,ForkItem}::user3()  -> DependencyVertex*.  Vertex in m_procGraph
+    //  Ast{NodeProcedure,CFunc,ForkItem}::user4()  -> DependencyVertex*.  Vertex in m_procGraph
     const VNUser3InUse m_user3InUse;
     const VNUser4InUse m_user4InUse;
 
@@ -654,8 +654,8 @@ class TimingControlVisitor final : public VNVisitor {
     void addDebugInfo(AstCMethodHard* const methodp) const {
         FileLine* const flp = methodp->fileline();
         const bool protectIds = v3Global.opt.protectIds();
-        AstCExpr* const ap
-            = new AstCExpr{flp, protectIds ? "VL_UNKNOWN" : '"' + flp->filenameEsc() + '"'};
+        AstCExpr* const ap = new AstCExpr{flp, protectIds ? "VL_UNKNOWN_FILENAME"
+                                                          : '"' + flp->filenameEsc() + '"'};
         ap->dtypeSetString();
         methodp->addPinsp(ap);
         AstCExpr* const bp = new AstCExpr{flp, protectIds ? "0" : cvtToStr(flp->lineno())};
@@ -666,7 +666,7 @@ class TimingControlVisitor final : public VNVisitor {
     void addEventDebugInfo(AstCMethodHard* const methodp, AstSenTree* const sentreep) const {
         if (v3Global.opt.protectIds()) {
             FileLine* const flp = sentreep->fileline();
-            AstCExpr* const descp = new AstCExpr{flp, "VL_UNKNOWN"};
+            AstCExpr* const descp = new AstCExpr{flp, "VL_UNKNOWN_FILENAME"};
             descp->dtypeSetString();
             methodp->addPinsp(descp);
             addDebugInfo(methodp);
@@ -806,7 +806,7 @@ class TimingControlVisitor final : public VNVisitor {
             procp->v3fatalSrc(
                 procp->prettyNameQ()
                 << " is not of an expected type NodeProcedure/CFunc/ForkItem instead it is: "
-                << procp->prettyTypeName());
+                << procp->prettyTypeNameQ());
         }
     }
 

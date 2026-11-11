@@ -144,6 +144,10 @@ struct V3ParseBisonYYSType final {
 std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) VL_MT_DISABLED;
 
 #define YYSTYPE V3ParseBisonYYSType
+// Lets bison grow its stack past YYINITDEPTH by copying
+#define YYSTYPE_IS_TRIVIAL 1
+static_assert(std::is_trivially_copyable<V3ParseBisonYYSType>::value,
+              "YYSTYPE_IS_TRIVIAL requires a trivially copyable YYSTYPE");
 
 //######################################################################
 

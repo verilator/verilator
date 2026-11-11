@@ -1,5 +1,8 @@
-%Error: t/t_interface_generic_bad4.v:30:7: Generic interfaces can only connect to an interface and 'inf_inst' is of type 'int'
-   30 |       inf_inst,
+%Error: t/t_interface_generic_bad4.v:31:7: Generic interfaces can only connect to an interface and 'inf_inst' is of type 'int'
+   31 |       inf_inst,
       |       ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_interface_generic_bad4.v:37:8: Instance attempts to connect to 'lv', but it is a variable
+   37 |       .lv(inf_inst2)
+      |        ^~
 %Error: Exiting due to

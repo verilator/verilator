@@ -43,10 +43,10 @@
 
 #include "V3Outline.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3EmitCBase.h"
 #include "V3Sched.h"
 #include "V3Stats.h"
+#include "V3VNUserAllocator.h"
 
 #include <algorithm>
 #include <limits>
@@ -133,7 +133,7 @@ class OutlineVisitor final : public VNVisitor {
     };
 
     // STATE
-    AstUser1Allocator<AstNodeStmt, StmtInfo> m_info;
+    VNUser1Allocator<AstNodeStmt, StmtInfo> m_info;
     const size_t m_limit = static_cast<size_t>(v3Global.opt.outputSplitCFuncs());
     AstCFunc* m_funcp = nullptr;  // Current coroutine
     size_t m_funcNum = 0;  // Number of functions outlined from the current coroutine

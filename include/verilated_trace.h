@@ -225,7 +225,6 @@ private:
     // TODO: Should keep this as a Trie, that is how it's accessed all the time.
     std::vector<std::pair<int, std::string>> m_dumpvars;  // dumpvar() entries
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
-    double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
     uint64_t m_timeLastDump = 0;  // Last time we did a dump
     bool m_didSomeDump = false;  // Did at least one dump (i.e.: m_timeLastDump is valid)
     VerilatedContext* m_contextp = nullptr;  // The context used by the traced models
@@ -264,7 +263,6 @@ protected:
     void fullDump(bool value) { m_fullDump = value; }
 
     double timeRes() const { return m_timeRes; }
-    double timeUnit() const { return m_timeUnit; }
     std::string timeResStr() const;
 
     void traceInit() VL_MT_UNSAFE;
@@ -309,7 +307,7 @@ public:
     explicit VerilatedTrace();
     ~VerilatedTrace();
 
-    // Set time units (s/ms, defaults to ns)
+    // Set time units (s/ms, defaults to ns). Ignored, the time resolution is used for the trace.
     void set_time_unit(const char* unitp) VL_MT_SAFE;
     void set_time_unit(const std::string& unit) VL_MT_SAFE;
     // Set time resolution (s/ms, defaults to ns)

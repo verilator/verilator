@@ -770,3 +770,12 @@ class uvm_master_imp``SFX  \
   `uvm_a(SFX, REQ, t) // req \
   \
 endclass
+
+//======================================================================
+// Join between a define name and its arguments
+`define JA_32(a, b) ja32 a b
+`define JOIN_ARGS(n, x) `JA_``n``(x, y)
+EXP: ja32 z y
+`JOIN_ARGS(32, z)
+EXP: ja32 p q
+`JA_32``(p, q)

@@ -17,8 +17,8 @@ test.compile(verilator_flags2=['-trace'])
 test.execute()
 
 if test.vlt_all:
-    test.file_grep(test.obj_dir + "/V" + test.name + "__Trace__0__Slow.cpp", r'c_trace_on\"')
-    test.file_grep_not(test.obj_dir + "/V" + test.name + "__Trace__0__Slow.cpp", r'_trace_off\"')
+    test.file_grep(test.trace_filename, r' c_trace_on ')
+    test.file_grep_not(test.trace_filename, r'_trace_off')
     test.file_grep(test.trace_filename, r'\$enddefinitions')
     test.file_grep_not(test.trace_filename, r'inside_sub')
 
