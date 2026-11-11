@@ -2608,7 +2608,6 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
 
         // IEEE 1800-2023 6.18.2 typedef with packed dimensions on an existing type identifier
         // Disambiguated from interface array access by requiring ':' inside the brackets
-        // (applies to both plain identifiers and type identifiers)
         |       yTYPEDEF id '[' constExpr ':' constExpr ']' packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
@@ -2616,13 +2615,13 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull(rangep, $8), true);
                           $$ = GRAMMARP->createTypedef($<fl>9, *$9, $11, dtp, $10); }
 
-        // Same as above but for type identifiers (parameter types, etc.)
-        |       yTYPEDEF idType '[' constExpr ':' constExpr ']' packed_dimensionListE
+        // Same as above but for type identifiers (parameter types, etc.), which cannot be an
+        // interface array access so need no disambiguation
+        |       yTYPEDEF idType packedRange packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
-                          AstNodeRange* const rangep = new AstRange{$3, $4, $6};
-                          AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull(rangep, $8), true);
-                          $$ = GRAMMARP->createTypedef($<fl>9, *$9, $11, dtp, $10); }
+                          AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull($3, $4), true);
+                          $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
 
         |       yTYPEDEF idAny parameter_value_assignmentClass packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
@@ -3164,12 +3163,23 @@ rangeListE<nodeRangep>:         // IEEE: [{packed_dimension}]
         ;
 
 rangeList<nodeRangep>:          // IEEE: {packed_dimension}
-                anyrange                                { $$ = $1; }
-        |       rangeList anyrange                      { $$ = $1->addNext($2); }
+                packedRange                             { $$ = $1; }
+        |       rangeList packedRange                   { $$ = $1->addNext($2); }
         ;
 
 anyrange<nodeRangep>:
                 '[' constExpr ':' constExpr ']'         { $$ = new AstRange{$1, $2, $4}; }
+        ;
+
+packedRange<nodeRangep>:        // IEEE: packed_dimension, excluding unsized_dimension
+                anyrange                                { $$ = $1; }
+        //                      // Non-standard C-style size, accepted as other simulators do, meaning
+        //                      // '[0:size-1]' as for an unpacked dimension (IEEE 1800-2023 7.4.2)
+        |       '[' constExpr ']'
+                        { $$ = new AstRange{$1, new AstConst{$1, 0},
+                                            new AstSub{$1, $2, new AstConst{$1, AstConst::Unsized32{}, 1}}, true};
+                          $1->v3warn(NONSTD, "Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)"
+                                             << YYNEWLINE << $1->warnMore() << "... Suggest use equivalent '[0:size-1]'"); }
         ;
 
 part_select_rangeList<nodePreSelp>:  // IEEE: part_select_range (as used after function calls)
@@ -3199,7 +3209,7 @@ packed_dimensionList<nodeRangep>:       // IEEE: { packed_dimension }
         ;
 
 packed_dimension<nodeRangep>:   // ==IEEE: packed_dimension
-                anyrange                                { $$ = $1; }
+                packedRange                             { $$ = $1; }
         |       '[' ']'
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: [] dimensions"); }
         ;
