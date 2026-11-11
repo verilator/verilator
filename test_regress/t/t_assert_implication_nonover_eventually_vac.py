@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_assert_implication_nonover_eventually.v"
 
-test.compile(verilator_flags2=['--timing', '--assert', '--coverage-user', '+define+VACUOUS_ON'])
+test.compile(verilator_flags2=['--binary', '--assert', '--coverage-user', '+define+VACUOUS_ON'])
 
 test.execute()
 

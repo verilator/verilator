@@ -245,6 +245,14 @@ void V3AssertCommon::checkSvaInstanceDelays(AstNode* nodep, AstNode* instp) {
     for (AstDelay* const delayp : delayps) checkSvaCycleDelay(delayp, instp);
 }
 
+const AstNodeExpr* V3AssertCommon::skipRepeatOnce(const AstNodeExpr* exprp) {
+    const AstSConsRep* const repp = VN_CAST(exprp, SConsRep);
+    if (!repp || repp->unbounded() || repp->maxCountp() || !repp->countp()->isOne()) {
+        return exprp;
+    }
+    return skipRepeatOnce(repp->exprp());
+}
+
 //######################################################################
 // AssertDeFutureVisitor
 // If any AstFuture, then move all non-future varrefs to be one cycle behind,

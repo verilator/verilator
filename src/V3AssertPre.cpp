@@ -990,6 +990,11 @@ private:
         const int n = constp->toSInt();
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const exprp = nodep->exprp()->unlinkFrBack();
+        if (n == 1) {
+            nodep->replaceWith(exprp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         // Saturating counter: if (expr) cnt <= min(cnt+1, N); else cnt <= 0;
         AstVar* const cntVarp = new AstVar{flp, VVarType::MODULETEMP, m_consRepNames.get(""),
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
@@ -1078,14 +1083,44 @@ private:
         sizep->dtypep(refp->findBasicDType(VBasicDTypeKwd::UINT32));
         return sizep;
     }
+    // What in the operand of s_eventually the process below cannot evaluate, or nullptr.
+    // The process tests the operand as a boolean at each clock tick, so it cannot evaluate a
+    // sequence or property operator. It is forked when the attempt starts and reads a copy,
+    // made then, of the history that $past, $rose, $fell, $stable and $changed use, so these
+    // see the history of the attempt's first tick. The future-value global clocking functions
+    // ($future_gclk, $rising_gclk, ...) are reported too: V3Assert evaluates them by delaying
+    // every other variable of the assertion by one tick, which it cannot do for the
+    // variables that this process writes.
+    static const char* unsupportedOperandWhat(const AstNodeExpr* operandp) {
+        bool sampled = false;
+        const bool multiCycle = operandp->exists([&](const AstNodeExpr* np) {
+            sampled |= VN_IS(np, Past) || VN_IS(np, Rose) || VN_IS(np, Fell) || VN_IS(np, Stable)
+                       || VN_IS(np, Future) || VN_IS(np, Rising) || VN_IS(np, Falling)
+                       || VN_IS(np, Steady);
+            return np->isMultiCycleSva();
+        });
+        if (multiCycle) return "sequence or property operator";
+        if (sampled) return "sampled value function";
+        return nullptr;
+    }
     void visit(AstSEventually* nodep) override {
         UASSERT(v3Global.rootp()->stdPackagep(), "Should be imported");
-        // The process below tests the operand as a boolean at each clock tick
-        if (nodep->exprp()->exists(
-                [](const AstNodeExpr* exprp) { return exprp->isMultiCycleSva(); })) {
+        // Inline the sequence and property instances in the operand first, also nested ones,
+        // so that the check below sees their bodies. One instance per pass: replacing a node
+        // ends the traversal, and an inlined body can contain further instances.
+        while (true) {
+            AstSchemaRef* refp = nullptr;
+            nodep->exprp()->exists([&](AstSchemaRef* np) {
+                refp = np;
+                return true;
+            });
+            if (!refp) break;
+            visit(refp);
+        }
+        if (const char* const whatp
+            = unsupportedOperandWhat(V3AssertCommon::skipRepeatOnce(nodep->exprp()))) {
             nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: sequence or property operator in the operand of "
-                          "s_eventually");
+                          "Unsupported: " << whatp << " in the operand of s_eventually");
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;

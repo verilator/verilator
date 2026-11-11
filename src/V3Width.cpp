@@ -1914,12 +1914,6 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
             nodep->dtypeSetBit();
-            // [*1] and [*1:1] are their operand; the parent checks it as it checks any operand
-            if (!nodep->unbounded() && nodep->countp()->isOne()
-                && (!nodep->maxCountp() || nodep->maxCountp()->isOne())) {
-                nodep->replaceWith(nodep->exprp()->unlinkFrBack());
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            }
         }
     }
     void visit(AstPropAlways* nodep) override {

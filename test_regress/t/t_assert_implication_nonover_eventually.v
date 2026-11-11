@@ -16,9 +16,9 @@
 `endif
 // verilog_format: on
 
-module t (
-    input clk
-);
+module t;
+  logic clk = 0;
+  always #5 clk = ~clk;
 
   int cyc = 0;
   // Vacuous successes also run pass actions (IEEE 1800-2023 20.11). Turn them off, so that the
@@ -26,21 +26,12 @@ module t (
 `ifndef VACUOUS_ON
   initial $assertvacuousoff;
 `endif
-  logic a1 = 0, b1 = 0, c1 = 0, a2 = 0, b2 = 0, a3 = 0, b3 = 0;
-  logic [2:0] h = 3'd0;
-
-  // a1 in cycle 3, c1 in cycle 4, b1 in cycle 6; a2 and b2 both only in cycle 9;
-  // a3 in cycles 11 and 12, b3 in cycle 13; h is 3 from cycle 1
+  // a1 in cycle 3 and b1 in cycle 6, used by several cases below
+  logic a1 = 0, b1 = 0;
   always @(posedge clk) begin
     cyc <= cyc + 1;
     a1 <= (cyc == 2);
-    c1 <= (cyc == 3);
     b1 <= (cyc == 5);
-    a2 <= (cyc == 8);
-    b2 <= (cyc == 8);
-    a3 <= (cyc == 10 || cyc == 11);
-    b3 <= (cyc == 12);
-    h <= 3'd3;
     if (cyc == 16) begin
       $write("*-* All Finished *-*\n");
       $finish;
@@ -48,7 +39,9 @@ module t (
   end
 
   // Single-cycle antecedent, b1 after it: every form passes once (only non-vacuous
-  // successes are counted) and nothing fails
+  // successes are counted) and nothing fails. h is 3 from cycle 1, so the function returns 4
+  logic [2:0] h = 3'd0;
+  always @(posedge clk) h <= 3'd3;
   int pass_non = 0, pass_over = 0, pass_func = 0, pass_rose = 0, pass_expr = 0;
   int fail_non = 0, fail_over = 0, fail_func = 0, fail_rose = 0, fail_expr = 0;
   function automatic int burst_len(logic [2:0] hb);
@@ -80,10 +73,15 @@ module t (
       `checkd(fail_expr, 0);
     end
 
-  // b2 only in a2's own cycle: |-> passes, |=> starts one cycle later and never passes
+  // a2 and b2 both only in cycle 9: |-> passes, |=> starts one cycle later and never passes
   // (it stays unresolved until the end of simulation, after the checks, and then fails
-  // once: the .py checks the message)
-  int pass2_non = 0, pass2_over = 0, fail2_non = 0, fail2_over = 0;
+  // once: the .py checks the message). The operand b2 [* 1] gives the result of b2
+  logic a2 = 0, b2 = 0;
+  always @(posedge clk) begin
+    a2 <= (cyc == 8);
+    b2 <= (cyc == 8);
+  end
+  int pass2_non = 0, pass2_over = 0, pass2_rep = 0, fail2_non = 0, fail2_over = 0, fail2_rep = 0;
   assert property (@(posedge clk) a2 |=> s_eventually b2) pass2_non = pass2_non + 1;
   else begin
     fail2_non = fail2_non + 1;
@@ -91,39 +89,6 @@ module t (
   end
   assert property (@(posedge clk) a2 |-> s_eventually b2) pass2_over = pass2_over + 1;
   else fail2_over = fail2_over + 1;
-  always @(posedge clk)
-    if (cyc == 15) begin
-      `checkp(pass2_non, 0);
-      `checkp(pass2_over, 1);
-      `checkd(fail2_non, 0);
-      `checkd(fail2_over, 0);
-    end
-
-  // A one-cycle repetition ([*1], [*1:1], also nested) as the operand of s_eventually or as an
-  // antecedent gives the passes and failures of its operand: with b1 each assertion passes
-  // once and does not fail, with the 3-bit h (nonzero from cycle 1) it passes once; with b2
-  // the |=> attempt fails once, at the end of simulation
-  int pass_rep = 0, pass_rep11 = 0, pass_rep11o = 0, pass_rep2 = 0, pass_rep_proc = 0;
-  int fail_rep = 0, fail_rep11 = 0, fail_rep11o = 0, fail_rep2 = 0, fail_rep_proc = 0;
-  int pass_rep_ant = 0, pass_rep_h = 0, pass2_rep = 0;
-  int fail_rep_ant = 0, fail_rep_h = 0, fail2_rep = 0;
-  assert property (@(posedge clk) a1 |-> s_eventually (b1 [* 1])) pass_rep = pass_rep + 1;
-  else fail_rep = fail_rep + 1;
-  assert property (@(posedge clk) a1 |=> s_eventually (b1 [* 1:1])) pass_rep11 = pass_rep11 + 1;
-  else fail_rep11 = fail_rep11 + 1;
-  assert property (@(posedge clk) a1 |-> s_eventually (b1 [* 1:1])) pass_rep11o = pass_rep11o + 1;
-  else fail_rep11o = fail_rep11o + 1;
-  assert property (@(posedge clk) a1 |=> s_eventually ((b1 [* 1]) [* 1])) pass_rep2 = pass_rep2 + 1;
-  else fail_rep2 = fail_rep2 + 1;
-  always @(posedge clk)
-    assert property (a1 |=> s_eventually ((b1 [* 1]) [* 1])) pass_rep_proc = pass_rep_proc + 1;
-    else fail_rep_proc = fail_rep_proc + 1;
-  assert property (@(posedge clk) a1 [* 1] |=> s_eventually b1) pass_rep_ant = pass_rep_ant + 1;
-  else fail_rep_ant = fail_rep_ant + 1;
-  // verilator lint_off WIDTH
-  assert property (@(posedge clk) a1 |-> s_eventually (h [* 1])) pass_rep_h = pass_rep_h + 1;
-  else fail_rep_h = fail_rep_h + 1;
-  // verilator lint_on WIDTH
   assert property (@(posedge clk) a2 |=> s_eventually (b2 [* 1])) pass2_rep = pass2_rep + 1;
   else begin
     fail2_rep = fail2_rep + 1;
@@ -131,25 +96,50 @@ module t (
   end
   always @(posedge clk)
     if (cyc == 15) begin
-      `checkp(pass_rep, 1);
-      `checkp(pass_rep11, 1);
-      `checkp(pass_rep11o, 1);
-      `checkp(pass_rep2, 1);
-      `checkp(pass_rep_proc, 1);
-      `checkp(pass_rep_ant, 1);
-      `checkp(pass_rep_h, 1);
+      `checkp(pass2_non, 0);
+      `checkp(pass2_over, 1);
       `checkp(pass2_rep, 0);
-      `checkd(fail_rep, 0);
-      `checkd(fail_rep11, 0);
-      `checkd(fail_rep11o, 0);
-      `checkd(fail_rep2, 0);
-      `checkd(fail_rep_proc, 0);
-      `checkd(fail_rep_ant, 0);
-      `checkd(fail_rep_h, 0);
+      `checkd(fail2_non, 0);
+      `checkd(fail2_over, 0);
       `checkd(fail2_rep, 0);
     end
 
-  // Two attempts wait at the same time (from a3 in cycles 11 and 12) and both pass on b3
+  // An exact [* 1], also nested, as the operand of s_eventually or around the antecedent
+  // gives the result of the form without it: each assertion passes once and does not fail
+  int pass_rep = 0, pass_rep2 = 0, pass_rep_proc = 0, pass_ant = 0, pass_ant2 = 0;
+  int fail_rep = 0, fail_rep2 = 0, fail_rep_proc = 0, fail_ant = 0, fail_ant2 = 0;
+  assert property (@(posedge clk) a1 |-> s_eventually (b1 [* 1])) pass_rep = pass_rep + 1;
+  else fail_rep = fail_rep + 1;
+  assert property (@(posedge clk) a1 |=> s_eventually ((b1 [* 1]) [* 1])) pass_rep2 = pass_rep2 + 1;
+  else fail_rep2 = fail_rep2 + 1;
+  always @(posedge clk)
+    assert property (a1 |=> s_eventually ((b1 [* 1]) [* 1])) pass_rep_proc = pass_rep_proc + 1;
+    else fail_rep_proc = fail_rep_proc + 1;
+  assert property (@(posedge clk) a1 [* 1] |=> s_eventually b1) pass_ant = pass_ant + 1;
+  else fail_ant = fail_ant + 1;
+  assert property (@(posedge clk) (a1 [* 1]) [* 1] |-> s_eventually b1) pass_ant2 = pass_ant2 + 1;
+  else fail_ant2 = fail_ant2 + 1;
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass_rep, 1);
+      `checkp(pass_rep2, 1);
+      `checkp(pass_rep_proc, 1);
+      `checkp(pass_ant, 1);
+      `checkp(pass_ant2, 1);
+      `checkd(fail_rep, 0);
+      `checkd(fail_rep2, 0);
+      `checkd(fail_rep_proc, 0);
+      `checkd(fail_ant, 0);
+      `checkd(fail_ant2, 0);
+    end
+
+  // Two attempts wait at the same time (from a3 in cycles 11 and 12) and both pass on b3 in
+  // cycle 13
+  logic a3 = 0, b3 = 0;
+  always @(posedge clk) begin
+    a3 <= (cyc == 10 || cyc == 11);
+    b3 <= (cyc == 12);
+  end
   int pass3_non = 0, fail3_non = 0;
   assert property (@(posedge clk) a3 |=> s_eventually b3) pass3_non = pass3_non + 1;
   else fail3_non = fail3_non + 1;
@@ -159,8 +149,10 @@ module t (
       `checkd(fail3_non, 0);
     end
 
-  // |=> then |->: c1 is true one cycle after a1, so the chain passes once; with the
-  // operands swapped a1 is never one cycle after c1 and the chain is vacuous
+  // |=> then |->: c1 is true in cycle 4, one cycle after a1, so the chain passes once; with
+  // the operands swapped a1 is never one cycle after c1 and the chain is vacuous
+  logic c1 = 0;
+  always @(posedge clk) c1 <= (cyc == 3);
   int pass_chain = 0, pass_chain0 = 0, fail_chain = 0, fail_chain0 = 0;
   assert property (@(posedge clk) a1 |=> c1 |-> s_eventually b1) pass_chain = pass_chain + 1;
   else fail_chain = fail_chain + 1;
@@ -190,13 +182,44 @@ module t (
       `checkd(fail_proc_rep, 0);
     end
 
+  // A named sequence, a named property and a let around a boolean operand give the result of
+  // the operand: each assertion passes once and does not fail
+  sequence s_b1; b1; endsequence
+  property p_b1;
+    s_eventually s_b1;
+  endproperty
+  let l_b1(x) = x && !a1;
+  int pass_nseq = 0, pass_nprop = 0, pass_nlet = 0, fail_nseq = 0, fail_nprop = 0, fail_nlet = 0;
+  assert property (@(posedge clk) a1 |=> s_eventually s_b1) pass_nseq = pass_nseq + 1;
+  else fail_nseq = fail_nseq + 1;
+  assert property (@(posedge clk) a1 |-> p_b1) pass_nprop = pass_nprop + 1;
+  else fail_nprop = fail_nprop + 1;
+  assert property (@(posedge clk) a1 |=> s_eventually l_b1(b1)) pass_nlet = pass_nlet + 1;
+  else fail_nlet = fail_nlet + 1;
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass_nseq, 1);
+      `checkp(pass_nprop, 1);
+      `checkp(pass_nlet, 1);
+      `checkd(fail_nseq, 0);
+      `checkd(fail_nprop, 0);
+      `checkd(fail_nlet, 0);
+    end
+
   sub_default_disable sub (
       .clk(clk),
       .cyc(cyc),
       .a1(a1),
       .b1(b1)
   );
+  sub_default_clocking subc (
+      .clk(clk),
+      .cyc(cyc),
+      .a1(a1),
+      .b1(b1)
+  );
 
+  // Each cover property is hit once
   int cov_non = 0, cov_over = 0;
   cover property (@(posedge clk) a1 |=> s_eventually b1) cov_non = cov_non + 1;
   cover property (@(posedge clk) a1 |-> s_eventually b1) cov_over = cov_over + 1;
@@ -226,5 +249,28 @@ module sub_default_disable (
     if (cyc == 15) begin
       `checkp(pass_proc, 1);
       `checkd(fail_proc, 0);
+    end
+endmodule
+
+// Assertions clocked by a default clocking block: each passes once and does not fail
+module sub_default_clocking (
+    input clk,
+    input int cyc,
+    input logic a1,
+    input logic b1
+);
+  default clocking cb @(posedge clk);
+  endclocking
+  int pass_non = 0, pass_over = 0, fail_non = 0, fail_over = 0;
+  assert property (a1 |=> s_eventually b1) pass_non = pass_non + 1;
+  else fail_non = fail_non + 1;
+  assert property (a1 |-> s_eventually b1) pass_over = pass_over + 1;
+  else fail_over = fail_over + 1;
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass_non, 1);
+      `checkp(pass_over, 1);
+      `checkd(fail_non, 0);
+      `checkd(fail_over, 0);
     end
 endmodule

@@ -853,11 +853,26 @@ class SvaNfaBuilder final {
         return res;
     }
 
+    // s_eventually is lowered by V3AssertPre, and only as the consequent of a chain of |-> and
+    // |=> (AssertNfaVisitor::checkEventuallyProp)
+    static BuildResult unsupportedEventuallyBuild(AstSEventually* nodep) {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: s_eventually other than as the consequent"
+                                     " of a chain of |-> and |=>");
+        return BuildResult::failWithError();
+    }
+
     // always[lo:hi] / s_always[lo:hi] (IEEE 1800-2023 16.12.11).
     BuildResult buildPropAlways(AstPropAlways* nodep, SvaStateVertex* entryVtxp,
                                 bool isTopLevelStep = false) {
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const propp = nodep->propp();
+        // propp is tested as a boolean below, which an s_eventually in it is not
+        AstSEventually* eventuallyp = nullptr;
+        propp->exists([&](AstSEventually* np) {
+            eventuallyp = np;
+            return true;
+        });
+        if (eventuallyp) return unsupportedEventuallyBuild(eventuallyp);
         const unsigned lo = getConstUInt(nodep->loBoundp());
         if (VN_IS(nodep->hiBoundp(), Unbounded)) {
             // Weak always [lo:$]: unbounded upper bound (IEEE 1800-2023 16.12.11).
@@ -1691,6 +1706,9 @@ public:
                                 isTopLevelStep);
         }
         if (VN_IS(nodep, SNonConsRep)) return BuildResult::fail();
+        if (AstSEventually* const eventuallyp = VN_CAST(nodep, SEventually)) {
+            return unsupportedEventuallyBuild(eventuallyp);
+        }
         if (AstImplication* const implp = VN_CAST(nodep, Implication)) {
             return buildImplicationEdges(implp->lhsp(), implp->rhsp(), entryVtxp,
                                          implp->isOverlapped(), implp->isFollowedBy(),
@@ -3421,39 +3439,40 @@ class AssertNfaVisitor final : public VNVisitor {
     // s_eventually is lowered by V3AssertPre, one process per attempt, together with
     // the implications above it if their antecedents are single-cycle. That lowering
     // delays only the antecedent of a |=> by one cycle, so a |=> must be the outermost
-    // implication. Report any other shape of a clocked property, which this pass would
-    // otherwise build, as unsupported.
-    void checkEventuallyProp(AstPropSpec* propp) {
+    // implication, and it applies disable iff only when an attempt starts, not while
+    // s_eventually waits (#9082). Returns true for a property whose chain of |-> and |=>
+    // ends in s_eventually: the first unsupported part of the chain, or a disable iff, is
+    // reported here, else the property is left to V3AssertPre. Returns false for any other
+    // property, which is built, and the builder reports an s_eventually it meets. A property
+    // that is not multi-cycle, such as a |-> s_eventually b, does not reach this function.
+    bool checkEventuallyProp(AstPropSpec* propp) {
         AstNodeExpr* const topp = propp->propp();
+        AstNode* errp = nullptr;  // First unsupported part of the chain
+        const char* whatp = nullptr;  // Its message
         AstNodeExpr* bodyp = topp;
         while (AstImplication* const implp = VN_CAST(bodyp, Implication)) {
-            if (implp->isFollowedBy()) return unsupportedOperatorEventually(propp, implp);
-            if (implp != topp && !implp->isOverlapped())
-                return unsupportedEventually(propp, implp,
-                                             "after a nested non-overlapped implication");
-            if (hasMultiCycleExpr(implp->lhsp()))
-                return unsupportedEventually(propp, implp->lhsp(),
-                                             "after an antecedent with a sequence operator");
+            if (implp->isFollowedBy()) return false;
+            if (!errp) {
+                if (implp != topp && !implp->isOverlapped()) {
+                    errp = implp;
+                    whatp = "after a nested non-overlapped implication";
+                } else if (hasMultiCycleExpr(V3AssertCommon::skipRepeatOnce(implp->lhsp()))) {
+                    errp = implp->lhsp();
+                    whatp = "after an antecedent with a sequence operator";
+                }
+            }
             bodyp = implp->rhsp();
         }
-        if (!VN_IS(bodyp, SEventually)) return unsupportedOperatorEventually(propp, bodyp);
-        // V3AssertPre applies disable iff only when an attempt starts, not while s_eventually
-        // waits (#9082). Report it for a |=> on top; with a |-> on top and a boolean operand
-        // the property is not multi-cycle and does not reach this pass
-        AstImplication* const topImplp = VN_CAST(topp, Implication);
-        if (topImplp && !topImplp->isOverlapped() && propp->disablep())
-            return unsupportedEventually(propp, topImplp,
-                                         "with disable iff after a non-overlapped implication");
-    }
-    void unsupportedOperatorEventually(AstPropSpec* propp, AstNodeExpr* operatorp) {
-        unsupportedEventually(
-            propp, operatorp,
-            "under this property operator\n" + operatorp->warnMore()
-                + "... Supported: s_eventually of a boolean as the consequent of |-> or |=>");
-    }
-    void unsupportedEventually(AstPropSpec* propp, AstNode* nodep, const std::string& what) {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: s_eventually " << what);
-        replaceBodyOnBuildError(propp->fileline(), propp, /*errorEmitted=*/true);
+        if (!VN_IS(bodyp, SEventually)) return false;
+        if (!errp && propp->disablep()) {
+            errp = topp;
+            whatp = "with disable iff in a multi-cycle property";
+        }
+        if (errp) {
+            errp->v3warn(E_UNSUPPORTED, "Unsupported: s_eventually " << whatp);
+            replaceBodyOnBuildError(propp->fileline(), propp, /*errorEmitted=*/true);
+        }
+        return true;
     }
 
     // Inline property/sequence refs and reject unsupported shapes.
@@ -3539,12 +3558,8 @@ class AssertNfaVisitor final : public VNVisitor {
             propp->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
         }
         if (!propp->sensesp()) return;
-        // A property without a clock stays on V3AssertPre, so check s_eventually shapes only
-        // now; V3AssertPre lowers every property with s_eventually
-        if (propp->exists([](const AstSEventually*) { return true; })) {
-            checkEventuallyProp(propp);
-            return;
-        }
+        // Only a clocked property is lowered here; one without a clock stays on V3AssertPre
+        if (checkEventuallyProp(propp)) return;
         AstSenTree* senTreep
             = new AstSenTree{propp->fileline(), propp->sensesp()->cloneTree(true)};
         AstNodeExpr* const disableExprp = propp->disablep();

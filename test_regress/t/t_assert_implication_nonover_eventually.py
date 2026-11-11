@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--timing', '--assert', '--coverage-user'])
+test.compile(verilator_flags2=['--binary', '--assert', '--coverage-user'])
 
 test.execute()
 
