@@ -44,8 +44,8 @@ if float(version_match.group(1)) < 1.14:
               ", need version >= 1.14")
 
 test.run(cmd=[
-    "genhtml", test.obj_dir + "/coverage.info", "--branch-coverage", "--output-directory " +
-    test.obj_dir + "/html"
+    "genhtml", test.obj_dir + "/coverage.info", "--branch-coverage", "--no-function-coverage",
+    "--output-directory", test.obj_dir + "/html"
 ])
 
 test.passes()

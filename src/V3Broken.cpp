@@ -210,7 +210,7 @@ private:
                 UASSERT_OBJ(!VN_IS(nodep, NodeExpr), nodep,
                             "All AstNodeExpr must have a dtype post V3WidthCommit");
                 UASSERT_OBJ(!nodep->dtypep(), nodep,
-                            "DType on node without hasDType(): " << nodep->prettyTypeName());
+                            "DType on node without hasDType(): " << nodep->prettyTypeNameQ());
             }
             UASSERT_OBJ(!nodep->getChildDTypep(), nodep,
                         "childDTypep() non-null on node after should have removed");

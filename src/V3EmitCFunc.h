@@ -2001,10 +2001,10 @@ public:
 
     // Default
     void visit(AstNode* nodep) override {  // LCOV_EXCL_START
-        putns(nodep, "\n???? // "s + nodep->prettyTypeName() + "\n");
+        putns(nodep, "\n???? // "s + nodep->prettyTypeNameQ() + "\n");
         iterateChildrenConst(nodep);
         if (!v3Global.opt.lintOnly()) {  // An internal problem, so suppress
-            nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
+            nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeNameQ());
         }
     }  // LCOV_EXCL_STOP
 

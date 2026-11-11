@@ -1,0 +1,8 @@
+t.cg.cp_bins.low: 2
+t.cg.cp_bins.others [default]: 6
+t.cg.cp_bins.tolerance: 0
+t.cg.cp_ignore.low: 2
+t.cg.cp_ignore.others [default]: 6
+t.cg.cp_ignore.tolerance [ignore]: 0
+t.cg.cp_illegal.low: 2
+t.cg.cp_illegal.tolerance [illegal]: 0

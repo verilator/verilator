@@ -43,4 +43,12 @@
                                                 : ... note: In instance 'sub'
    30 |     i = {6{1.2}};   
       |       ^
+%Warning-REALCVT: t/t_lint_realcvt_bad.v:39:25: Implicit conversion of real to integer; expected integral input to 'array or queue element selection'
+                                              : ... note: In instance 'sub'
+   39 |     $write("%0d %0d", d[r], q[r]);
+      |                         ^
+%Warning-REALCVT: t/t_lint_realcvt_bad.v:39:31: Implicit conversion of real to integer; expected integral input to 'array or queue element selection'
+                                              : ... note: In instance 'sub'
+   39 |     $write("%0d %0d", d[r], q[r]);
+      |                               ^
 %Error: Exiting due to

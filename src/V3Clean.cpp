@@ -109,7 +109,7 @@ class CleanVisitor final : public VNVisitor {
         const CleanState clstate = getCleanState(nodep);
         if (clstate == CS_CLEAN) return true;
         if (clstate == CS_DIRTY) return false;
-        nodep->v3fatalSrc("Unknown clean state on node: " + nodep->prettyTypeName());
+        nodep->v3fatalSrc("Unknown clean state on node: " + nodep->prettyTypeNameQ());
         return false;
     }
     void setClean(AstNode* nodep, bool isClean) {

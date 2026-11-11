@@ -333,9 +333,7 @@ public:
     // METHODS - Internal/backward compatible
     // \protectedsection
 
-    // Set time units (s/ms, defaults to ns)
-    // Users should not need to call this, as for Verilated models, these
-    // propagate from the Verilated default timeunit
+    // Set time units (s/ms, defaults to ns). Ignored, the time resolution is used for the trace.
     void set_time_unit(const char* unit) VL_MT_SAFE { m_sptrace.set_time_unit(unit); }
     void set_time_unit(const std::string& unit) VL_MT_SAFE { m_sptrace.set_time_unit(unit); }
     // Set time resolution (s/ms, defaults to ns)

@@ -4,6 +4,9 @@
 // SPDX-FileCopyrightText: 2019 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+class C;
+endclass
+
 module t;
   typedef int int_t;
 
@@ -35,5 +38,21 @@ module t;
 
     $write("*-* All Finished *-*\n");
     $finish;
+  end
+
+  initial begin
+    C q[$];
+    C c;
+    c = q.pop_front()[0];  // Bad class-handle selection; preserve method-call error recovery
+    c = q[0][0];  // Bad class-handle selection after an already indexed method
+  end
+
+  initial begin
+    int d[];
+    int q[$];
+    string s;
+    s = "str";
+    d[s] = 1;  // Bad nonnumeric dynamic-array element index
+    $write("%0d", q[s]);  // Bad nonnumeric queue element index
   end
 endmodule

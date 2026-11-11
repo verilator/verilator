@@ -367,7 +367,10 @@ string AstNode::vpiName(const string& namein) {
     return pretty;
 }
 
-string AstNode::prettyTypeName() const {
+string AstNode::prettyTypeNameQ() const {
+    if (const AstCMethodHard* const methodp = VN_CAST(this, CMethodHard)) {
+        return "'"s + methodp->method().prettyName() + "'";
+    }
     if (name() == "") return typeName();
     return std::string{typeName()} + " '" + prettyNameMsg() + "'";
 }

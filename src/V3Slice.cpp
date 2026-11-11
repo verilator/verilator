@@ -71,7 +71,7 @@ class SliceVisitor final : public VNVisitor {
         if (!arrayp) {  // V3Width should have complained, but...
             if (!m_assignError) {
                 nodep->v3error(
-                    nodep->prettyTypeName()
+                    nodep->prettyTypeNameQ()
                     << " is not an unpacked array, but is in an unpacked array context");
             } else {
                 V3Error::incErrors();  // Otherwise might infinite loop
@@ -142,7 +142,7 @@ class SliceVisitor final : public VNVisitor {
             newp = new AstArraySel{nodep->fileline(), nodep->cloneTree(false, needPure), leOffset};
         } else {
             if (!m_assignError) {
-                nodep->v3error(nodep->prettyTypeName()
+                nodep->v3error(nodep->prettyTypeNameQ()
                                << " unexpected in assignment to unpacked array");
             }
             m_assignError = true;
