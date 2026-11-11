@@ -22,7 +22,7 @@ flags = [
     '-std=c++23',
     '-CFLAGS',
     "-DSTR=\\'x\\'",
-    test.t_dir + '/t_flag_cxx_modules_build.cppm',
+    test.t_dir + '/t_flag_cxx_modules_build.ixx',
 ]
 test.compile(make_main=False, verilator_flags2=flags)
 test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'export VK_SCAN_CXXFLAGS')

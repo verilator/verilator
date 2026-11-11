@@ -82,11 +82,15 @@ def scan_deps_path(cxx: str) -> str:
     fatal("clang-scan-deps is required for the clang C++ module backend")
 
 
+def clang_language_flags(source: str) -> list[str]:
+    return ['-x', 'c++-module'] if source.endswith('.ixx') else []
+
+
 def scan_clang(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str], abs_source: str,
                deps_file: str) -> None:
     compile_database = deps_file + '.compile_commands.json'
-    command = shlex.split(
-        args.cxx) + cppflags + cxxflags + ['-c', abs_source, '-o', abs_source + '.o']
+    command = shlex.split(args.cxx) + cppflags + cxxflags + clang_language_flags(
+        abs_source) + ['-c', abs_source, '-o', abs_source + '.o']
     try:
         with open(compile_database, 'w', encoding='utf8') as fh:
             json.dump([{
@@ -351,6 +355,7 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
         ]
         if module['provides']:
             command.append('-fmodule-output=' + module['pcm'])
+        command += clang_language_flags(module['source'])
         command += ['-c', module['source'], '-o', module['obj']]
         lines.append(' '.join(command))
         lines.append('')

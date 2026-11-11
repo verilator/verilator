@@ -979,18 +979,6 @@ void V3Options::notify() VL_MT_DISABLED {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
-    bool hasIxx = false;
-    for (const string& file : m_moduleFiles) {
-        if (suffixed(file, ".ixx")) {
-            hasIxx = true;
-            break;
-        }
-    }
-    if (hasIxx && !m_compilerMsvc) {
-        cmdfl->v3error("Unsupported: .ixx C++ module interface files require the MSVC "
-                       "compiler, e.g. --compiler msvc");
-    }
-
     // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_jsonOnly are mutually
     // exclusive
     std::vector<std::string> backendFlags;

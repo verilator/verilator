@@ -24,6 +24,6 @@ verilate(
     VERILATOR_ARGS
         --cxx-modules
         -CFLAGS -std=c++23
-        ../t_flag_cxx_modules_build.cppm
+        ../t_flag_cxx_modules_build.ixx
 )
 target_compile_features(t_flag_cxx_modules_cmake PRIVATE cxx_std_23)
