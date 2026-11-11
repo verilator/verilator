@@ -579,12 +579,14 @@ public:
         of.puts("\n### Switches...\n");
         of.puts("# C11 constructs required?  0/1 (always on now)\n");
         of.putSet("VM_C11", "1");
-        of.puts("# Timing enabled?  0/1\n");
-        of.putSet("VM_TIMING", v3Global.usesTiming() ? "1" : "0");
         of.puts("# Coverage output mode?  0/1 (from --coverage)\n");
         of.putSet("VM_COVERAGE", v3Global.opt.coverage() ? "1" : "0");
+        of.puts("# DPI enabled?  0/1\n");
+        of.putSet("VM_DPI", v3Global.dpi() ? "1" : "0");
         of.puts("# Parallel builds?  0/1 (from --output-split)\n");
         of.putSet("VM_PARALLEL_BUILDS", v3Global.useParallelBuild() ? "1" : "0");
+        of.puts("# Timing enabled?  0/1\n");
+        of.putSet("VM_TIMING", v3Global.usesTiming() ? "1" : "0");
         of.puts("# Tracing output mode?  0/1 (from --trace-fst/--trace-saif/--trace-vcd)\n");
         of.putSet("VM_TRACE", v3Global.opt.trace() ? "1" : "0");
         of.puts("# Tracing output mode in FST format?  0/1 (from --trace-fst)\n");
