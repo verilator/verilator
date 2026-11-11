@@ -272,8 +272,9 @@ void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgStrongly{this, 
 class GraphAlgRank final : GraphAlg<> {
     void main() {
         // Rank each vertex, ignoring cutable edges, with the longest path to it. Visit vertices
-        // in topological order, so each once; raising ranks depth first instead revisits all
-        // vertices after one at each raise, which is quadratic on long paths.
+        // in topological order (A. B. Kahn, "Topological sorting of large networks", CACM 1962),
+        // so each once; raising ranks depth first instead revisits all vertices after one at
+        // each raise, which is quadratic on long paths.
         // Vertex::m_user: number of predecessors not visited yet
         size_t nUnvisited = 0;
         // This unmodified range-for cannot increment an end iterator; the inlined past-end
