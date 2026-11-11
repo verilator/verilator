@@ -1275,11 +1275,29 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
+    // Return the variable under packed selects (AstSel) and unpacked/index
+    // selects (AstNodeSel: ArraySel, WordSel, ...).
+    AstVarRef* lhsVarRefp(AstNodeExpr* lhsp) {
+        while (lhsp) {
+            if (AstVarRef* const varrefp = VN_CAST(lhsp, VarRef)) return varrefp;
+            if (AstNodeSel* const selp = VN_CAST(lhsp, NodeSel)) {
+                lhsp = selp->fromp();
+            } else if (AstSel* const selp = VN_CAST(lhsp, Sel)) {
+                lhsp = selp->fromp();
+            } else {
+                return nullptr;
+            }
+        }
+        return nullptr;
+    }
+
     bool isOnlyAssignmentIsToLhsVar(const AstAssignW* const nodep) {
-        if (const AstVarRef* const varRefp = VN_CAST(nodep->lhsp(), VarRef)) {
-            auto foundIt = m_assigns.find(varRefp->varp());
+        // Conservative: any other continuous assign to the same variable,
+        // including a different bit, is treated as a second driver.
+        if (AstVarRef* const varRefp = lhsVarRefp(nodep->lhsp())) {
+            const auto foundIt = m_assigns.find(varRefp->varp());
             if (foundIt != m_assigns.end()) {
-                auto const& assignsToVar = foundIt->second;
+                const Assigns& assignsToVar = foundIt->second;
                 if (assignsToVar.size() == 1 && assignsToVar[0] == nodep) return true;
             }
         }
@@ -1287,17 +1305,32 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     void addToAssignmentList(AstAssignW* nodep) {
-        if (AstVarRef* const varRefp = VN_CAST(nodep->lhsp(), VarRef)) {
-            if (varRefp->varp()->isNet()) {
-                m_assigns[varRefp->varp()].push_back(nodep);
-            } else if (nodep->strengthSpecp()) {
-                nodep->strengthSpecp()->unlinkFrBack()->deleteTree();
+        AstVarRef* const varRefp = lhsVarRefp(nodep->lhsp());
+        const bool wholeNet = VN_IS(nodep->lhsp(), VarRef);
+        // Whole-net assigns of any net, and selects of wired nets only.
+        // Non-wired selects stay last-write-wins so strength cleanup cannot
+        // drop an independent bit of a plain wire.
+        if (varRefp && varRefp->varp()->isNet()
+            && (wholeNet || varRefp->varp()->isWiredNet())) {
+            for (AstNodeExpr* lhsp = nodep->lhsp(); const AstSel* const selp = VN_CAST(lhsp, Sel);
+                 lhsp = selp->fromp()) {
+                if (!VN_IS(selp->lsbp(), Const)) {
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: Non-constant bit or part select of a wired net");
+                    return;
+                }
             }
-        } else if (nodep->strengthSpecp()) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Assignments with signal strength with LHS of type: "
-                              << nodep->lhsp()->prettyTypeName());
+            m_assigns[varRefp->varp()].push_back(nodep);
+            return;
         }
+        if (!nodep->strengthSpecp()) return;
+        if (wholeNet) {
+            nodep->strengthSpecp()->unlinkFrBack()->deleteTree();
+            return;
+        }
+        nodep->v3warn(E_UNSUPPORTED,
+                      "Unsupported: Assignments with signal strength with LHS of type: "
+                          << nodep->lhsp()->prettyTypeName());
     }
 
     uint8_t getStrength(const AstAssignW* const nodep, bool value) {
@@ -1342,44 +1375,180 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     AstNodeExpr* newMergeExpr(AstNodeExpr* const lhsp, AstNodeExpr* const rhsp, FileLine* const fl,
                               bool isWor) {
-        AstNodeExpr* exprp = nullptr;
-        if (isWor)
-            exprp = new AstOr{fl, lhsp, rhsp};
-        else
-            exprp = new AstAnd{fl, lhsp, rhsp};
-        return exprp;
+        if (isWor) return new AstOr{fl, lhsp, rhsp};
+        return new AstAnd{fl, lhsp, rhsp};
+    }
+
+    // Packed selects (AstSel) sit on a shared base lvalue (the net, or an
+    // unpacked ArraySel). Strip them so a[1:0] and a[0] group together.
+    AstNodeExpr* wiredLhsBasep(AstNodeExpr* lhsp) const {
+        while (AstSel* const selp = VN_CAST(lhsp, Sel)) lhsp = selp->fromp();
+        return lhsp;
+    }
+
+    // n is the number of continuous assigns to that net, typically a handful.
+    std::vector<Assigns> groupAssignsByBase(const Assigns& assigns) const {
+        std::vector<Assigns> groups;
+        for (AstAssignW* const assignp : assigns) {
+            AstNodeExpr* const keyp = wiredLhsBasep(assignp->lhsp());
+            Assigns* groupp = nullptr;
+            for (Assigns& group : groups) {
+                if (wiredLhsBasep(group.front()->lhsp())->sameTree(keyp)) {
+                    groupp = &group;
+                    break;
+                }
+            }
+            if (groupp) {
+                groupp->push_back(assignp);
+            } else {
+                groups.emplace_back(Assigns{assignp});
+            }
+        }
+        return groups;
+    }
+
+    struct WiredLhsRange final {
+        int lsb;
+        int width;
+        bool whole;
+    };
+
+    // Bit range of a packed select on its base. Whole-base and variable
+    // indexes are treated as covering the entire base.
+    WiredLhsRange wiredRange(AstAssignW* assignp) const {
+        AstNodeExpr* const lhsp = assignp->lhsp();
+        AstSel* const selp = VN_CAST(lhsp, Sel);
+        if (!selp || wiredLhsBasep(lhsp) != selp->fromp() || !VN_IS(selp->lsbp(), Const)) {
+            return WiredLhsRange{0, 0, true};
+        }
+        return WiredLhsRange{selp->lsbConst(), selp->widthConst(), false};
+    }
+
+    // Union of packed ranges in an overlapping component. A whole-base
+    // driver forces the union to the full base width.
+    WiredLhsRange wiredUnionRange(const Assigns& group) const {
+        const WiredLhsRange front = wiredRange(group.front());
+        if (front.whole) {
+            return WiredLhsRange{0, wiredLhsBasep(group.front()->lhsp())->width(), true};
+        }
+        int minLsb = front.lsb;
+        int maxMsb = front.lsb + front.width - 1;
+        for (size_t i = 1; i < group.size(); ++i) {
+            const WiredLhsRange a = wiredRange(group[i]);
+            if (a.whole) {
+                return WiredLhsRange{0, wiredLhsBasep(group[i]->lhsp())->width(), true};
+            }
+            if (a.lsb < minLsb) minLsb = a.lsb;
+            const int aMsb = a.lsb + a.width - 1;
+            if (aMsb > maxMsb) maxMsb = aMsb;
+        }
+        return WiredLhsRange{minLsb, maxMsb - minLsb + 1, false};
+    }
+
+    // Place rhsp at destLsb in a destWidth vector. WOR identity is 0
+    // (zero-extend and shift). WAND identity is 1 (~deposit(~rhs)).
+    AstNodeExpr* depositWiredBits(FileLine* const fl, AstNodeExpr* rhsp, int destWidth, int destLsb,
+                                  bool isWor) {
+        if (!isWor) rhsp = new AstNot{fl, rhsp};
+        rhsp = new AstShiftL{fl, new AstExtend{fl, rhsp, destWidth},
+                             new AstConst{fl, static_cast<uint32_t>(destLsb)}, destWidth};
+        if (!isWor) rhsp = new AstNot{fl, rhsp};
+        return rhsp;
+    }
+
+    // Widen one driver to the overlapping component's union range.
+    AstNodeExpr* widenWiredDriverTo(AstAssignW* assignp, const WiredLhsRange& dest, bool isWor) {
+        const WiredLhsRange a = wiredRange(assignp);
+        AstNodeExpr* rhsp = assignp->rhsp()->cloneTreePure(false);
+        if (a.whole || (a.lsb == dest.lsb && a.width == dest.width)) return rhsp;
+        return depositWiredBits(assignp->fileline(), rhsp, dest.width, a.lsb - dest.lsb, isWor);
+    }
+
+    // Identical LHS and overlapping packed selects (a[1:0] and a[0], or a and
+    // a[1]) resolve per bit. Widen each driver to the union of those ranges,
+    // then OR/AND. Keep the first assignment node so strengthSpecp and
+    // fileline stay attached. Disjoint bits of the same net stay separate.
+    AstAssignW* mergeWiredAssigns(Assigns& group, AstVar* const varp) {
+        AstAssignW* const assignWp0 = group.front();
+        FileLine* const fl = assignWp0->fileline();
+        const bool isWor = varp->isWor();
+        const WiredLhsRange dest = wiredUnionRange(group);
+        AstNodeExpr* wExp = widenWiredDriverTo(assignWp0, dest, isWor);
+        for (size_t i = 1; i < group.size(); ++i) {
+            AstAssignW* const assignWpip = group[i];
+            wExp = newMergeExpr(wExp, widenWiredDriverTo(assignWpip, dest, isWor), fl, isWor);
+            VL_DO_DANGLING((assignWpip->unlinkFrBack()->deleteTree()), assignWpip);
+        }
+        AstNodeExpr* const basep = wiredLhsBasep(assignWp0->lhsp())->cloneTreePure(false);
+        AstNodeExpr* const newLhsp
+            = dest.whole ? basep : new AstSel{fl, basep, dest.lsb, dest.width};
+        AstNodeExpr* const oldLhsp = assignWp0->lhsp();
+        oldLhsp->replaceWith(newLhsp);
+        VL_DO_DANGLING(pushDeletep(oldLhsp), oldLhsp);
+        AstNodeExpr* const oldRhsp = assignWp0->rhsp();
+        oldRhsp->replaceWith(wExp);
+        VL_DO_DANGLING(pushDeletep(oldRhsp), oldRhsp);
+        return assignWp0;
+    }
+
+    void mergeWiredAssignGroup(Assigns& group, AstVar* const varp, Assigns& remaining) {
+        // Packed selects on one base are intervals. Sort by lsb and sweep so
+        // overlapping ranges merge in O(n log n). A whole-base driver covers all.
+        // Disjoint selects (a[0] vs a[1]) stay separate.
+        std::sort(group.begin(), group.end(), [this](AstAssignW* ap, AstAssignW* bp) {
+            const WiredLhsRange a = wiredRange(ap);
+            const WiredLhsRange b = wiredRange(bp);
+            if (a.whole != b.whole) return a.whole;
+            if (a.lsb != b.lsb) return a.lsb < b.lsb;
+            return a.width > b.width;
+        });
+        Assigns comp;
+        WiredLhsRange span{0, 0, false};
+        const auto flushComp = [&]() {
+            if (comp.size() == 1) {
+                remaining.push_back(comp.front());
+            } else if (comp.size() > 1) {
+                remaining.push_back(mergeWiredAssigns(comp, varp));
+            }
+            comp.clear();
+        };
+        for (AstAssignW* const assignp : group) {
+            const WiredLhsRange r = wiredRange(assignp);
+            const bool overlaps = !comp.empty()
+                                  && (span.whole || r.whole
+                                      || (span.lsb < r.lsb + r.width
+                                          && r.lsb < span.lsb + span.width));
+            if (!overlaps) {
+                flushComp();
+                span = r.whole ? WiredLhsRange{0, wiredLhsBasep(assignp->lhsp())->width(), true}
+                               : r;
+            } else if (r.whole) {
+                span = WiredLhsRange{0, wiredLhsBasep(assignp->lhsp())->width(), true};
+            } else if (!span.whole) {
+                const int maxMsb = std::max(span.lsb + span.width - 1, r.lsb + r.width - 1);
+                if (r.lsb < span.lsb) span.lsb = r.lsb;
+                span.width = maxMsb - span.lsb + 1;
+            }
+            comp.push_back(assignp);
+        }
+        flushComp();
     }
 
     void mergeWiredNetsAssignments() {
-        // Support for WOR/TRIOR/WAND/TRIAND, by merging the Assignments for the
-        // same Net (merge by or for WOR/TIOR and merge by and for WAND/TRIAND).
+        // Support for WOR/TRIOR/WAND/TRIAND, by merging assignments that drive
+        // the same base lvalue (merge by or for WOR/TRIOR and merge by and for
+        // WAND/TRIAND). Overlapping packed selects are widened to the union of
+        // those ranges and resolved per bit.
         for (auto& varpAssigns : m_assigns) {
             Assigns& assigns = varpAssigns.second;
             if (assigns.size() <= 1) continue;
             AstVar* const varp = varpAssigns.first;
             if (!varp->isWiredNet()) continue;
-            auto it = assigns.begin();
-            AstAssignW* const assignWp0 = *it;
-            FileLine* const fl = assignWp0->fileline();
-            AstNodeExpr* wExp = nullptr;
-            while (++it != assigns.end()) {
-                AstAssignW* assignWpip = *it;
-                if (!wExp) {
-                    wExp = newMergeExpr(assignWp0->rhsp()->cloneTreePure(false),
-                                        assignWpip->rhsp()->cloneTreePure(false), fl,
-                                        varp->isWor());
-                } else {
-                    wExp = newMergeExpr(wExp, assignWpip->rhsp()->cloneTreePure(false), fl,
-                                        varp->isWor());
-                }
-                VL_DO_DANGLING((assignWpip->unlinkFrBack()->deleteTree()), assignWpip);
+            Assigns remaining;
+            for (Assigns& group : groupAssignsByBase(assigns)) {
+                mergeWiredAssignGroup(group, varp, remaining);
             }
-            AstVarRef* const wVarRefp = new AstVarRef{fl, varp, VAccess::WRITE};
-            AstAssignW* const wAssignp = new AstAssignW{fl, wVarRefp, wExp};
-            assignWp0->replaceWith(wAssignp);
-            VL_DO_DANGLING(pushDeletep(assignWp0), assignWp0);
-            assigns.clear();
-            assigns.push_back(wAssignp);
+            assigns = std::move(remaining);
         }
     }
 
@@ -1410,6 +1579,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         for (auto& varpAssigns : m_assigns) {
             Assigns& assigns = varpAssigns.second;
             if (assigns.size() <= 1) continue;
+            if (varpAssigns.first->isWiredNet()) continue;
             const AstAssignW* const strongest0p = getStrongestAssignmentOfValue(assigns, 0);
             const AstAssignW* const strongest1p = getStrongestAssignmentOfValue(assigns, 1);
             const AstAssignW* strongestp = nullptr;
@@ -1441,6 +1611,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         for (auto& varpAssigns : m_assigns) {
             Assigns& assigns = varpAssigns.second;
             if (assigns.size() <= 1) continue;
+            if (varpAssigns.first->isWiredNet()) continue;
             auto maxIt = std::max_element(
                 assigns.begin(), assigns.end(), [&](const AstAssignW* ap, const AstAssignW* bp) {
                     if (m_tgraph.isTristate(ap)) return !m_tgraph.isTristate(bp);
@@ -1828,9 +1999,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                 if (AstStrengthSpec* const specp = assignWp->strengthSpecp()) {
                     if (specp->strength0() != specp->strength1()) {
                         // Unequal strengths are not a problem if the assignment is the only
-                        // assignment to its variable. Unfortunately, m_assigns map stores only
-                        // assignments to var. Selects are not inserted, so they may be handled
-                        // improperly
+                        // continuous assign to this variable. Wired-net selects are collected
+                        // into m_assigns; a second driver of any bit still counts.
                         if (!isOnlyAssignmentIsToLhsVar(assignWp)) {
                             assignWp->v3warn(
                                 E_UNSUPPORTED,
