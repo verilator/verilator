@@ -286,16 +286,6 @@ def gcc_module_target(module: dict[str, Any], module_only: bool) -> str:
     return str(module['obj'])
 
 
-def module_artifact_lines(modules: list[dict[str, Any]], pcms: list[str],
-                          gcms: list[str]) -> list[str]:
-    return [
-        'VK_MODULE_PCMS = ' + ' '.join(sorted(pcms)),
-        'VK_MODULE_GCMS = ' + ' '.join(sorted(gcms)),
-        'VK_MODULE_DEPS_FILES = ' + ' '.join(sorted({m['deps_file']
-                                                     for m in modules})),
-    ]
-
-
 def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any]],
                  module_only: bool) -> str:
     lines: list[str] = []
@@ -308,10 +298,6 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
             gcc_module_target(module, module_only) for module in modules if module['provides'])
     lines.append('VK_MODULE_OBJS = ' + ' '.join(module_objs))
     lines.append('VK_MODULE_CMIS = ' + ' '.join(sorted(module_cmis)))
-    lines.extend(
-        module_artifact_lines(
-            modules, [],
-            [gcc_module_target(module, True) for module in modules if module['provides']]))
     if module_only:
         # -fmodule-only does not produce objects, so do not ask make to link them.
         stems = sorted({
@@ -352,10 +338,6 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
     module_objs = sorted({module['obj'] for module in modules if module['provides']})
     lines.append('VK_MODULE_OBJS = ' + ' '.join(module_objs))
     lines.append('VK_MODULE_CMIS =')
-    lines.extend(
-        module_artifact_lines(modules,
-                              [str(module['pcm']) for module in modules if module['provides']],
-                              []))
     lines.extend(module_flags_lines())
     lines.append('')
     lines.append('.PHONY: modules')

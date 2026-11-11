@@ -724,8 +724,6 @@ public:
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
         const VStringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("  " + i + " \\\n");
-        for (const string& i : v3Global.opt.cxxModuleFiles())
-            of.puts("  -fmodule-file=" + i + " \\\n");
         of.puts("\n");
 
         of.puts("# User LDLIBS (from -LDFLAGS on Verilator command line)\n");
@@ -767,8 +765,6 @@ public:
                         + " \\\n");
             of.puts("\n");
 
-            const string backend = v3Global.opt.cxxModuleBackend();
-            if (!backend.empty()) of.puts("VK_MODULE_BACKEND = " + backend + "\n");
             of.puts("export VK_SCAN_CXXFLAGS = $(CXXFLAGS)\n");
             of.puts("export VK_SCAN_CPPFLAGS = $(CPPFLAGS)\n");
             of.puts("export VK_SCAN_OPT_FAST = $(OPT_FAST)\n");

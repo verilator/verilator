@@ -9,7 +9,7 @@ module top (
 );
   always_ff @(posedge clk) out <= ~out;
   initial begin
-    $display("Hello from t_flag_cxx_modules");
+    $display("Hello world");
     $write("*-* All Finished *-*\n");
     $finish;
   end

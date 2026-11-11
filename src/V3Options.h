@@ -238,10 +238,8 @@ private:
     // clang-format off
     VStringSet m_cppFiles;      // argument: C++ files to link against
     VStringSet m_moduleFiles;   // argument: C++ module interface files
-    VStringList m_cxxModuleFiles;  // argument: prebuilt C++ modules
     VStringList m_cFlags;       // argument: user CFLAGS
     bool m_cxxModules = false;  // main switch: --cxx-modules
-    string m_cxxModuleBackend;  // argument: --cxx-module-backend
     VStringList m_ldLibs;      // argument: user LDFLAGS
     VStringList m_ldLibFiles;  // argument: library files, subset of m_ldLibs
     VStringList m_makeFlags;   // argument: user MAKEFLAGS
@@ -774,8 +772,6 @@ public:
     const VStringSet& cppFiles() const { return m_cppFiles; }
     const VStringSet& moduleFiles() const { return m_moduleFiles; }
     bool cxxModules() const;
-    string cxxModuleBackend() const { return m_cxxModuleBackend; }
-    const VStringList& cxxModuleFiles() const { return m_cxxModuleFiles; }
     const VStringList& cFlags() const { return m_cFlags; }
     const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
     const VStringList& ldLibFiles() const { return m_ldLibFiles; }

@@ -371,9 +371,7 @@ void V3Options::addMakeFlags(const string& filename) { m_makeFlags.push_back(fil
 void V3Options::addFuture(const string& flag) { m_futures.insert(flag); }
 void V3Options::addFuture0(const string& flag) { m_future0s.insert(flag); }
 void V3Options::addFuture1(const string& flag) { m_future1s.insert(flag); }
-bool V3Options::cxxModules() const {
-    return m_cxxModules || !m_moduleFiles.empty() || !m_cxxModuleFiles.empty();
-}
+bool V3Options::cxxModules() const { return m_cxxModules || !m_moduleFiles.empty(); }
 bool V3Options::isFuture(const string& flag) const {
     return m_futures.find(flag) != m_futures.end();
 }
@@ -987,15 +985,9 @@ void V3Options::notify() VL_MT_DISABLED {
             break;
         }
     }
-    const bool msvcBackend
-        = m_cxxModuleBackend.empty() ? m_compilerMsvc : m_cxxModuleBackend == "msvc";
-    if (hasIxx && !msvcBackend) {
-        cmdfl->v3error("Unsupported: .ixx C++ module interface files require the MSVC backend, "
-                       "e.g. --compiler msvc or --cxx-module-backend msvc");
-    }
-    if (m_cxxModuleBackend == "gcc" && !m_cxxModuleFiles.empty()) {
-        cmdfl->v3error("Unsupported: --cxx-module-file and --cxx-module-std require the "
-                       "Clang backend; with GCC keep CMIs in gcm.cache");
+    if (hasIxx && !m_compilerMsvc) {
+        cmdfl->v3error("Unsupported: .ixx C++ module interface files require the MSVC "
+                       "compiler, e.g. --compiler msvc");
     }
 
     // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_jsonOnly are mutually
@@ -1030,7 +1022,7 @@ void V3Options::notify() VL_MT_DISABLED {
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_makeJson) m_gmake = true;
 
-    if (cxxModules() && msvcBackend && !m_makeJson && !lintOnly() && !preprocOnly()
+    if (cxxModules() && m_compilerMsvc && !m_makeJson && !lintOnly() && !preprocOnly()
         && !dpiHdrOnly() && !jsonOnly()) {
         cmdfl->v3error("Unsupported: the MSVC C++ module backend requires CMake; "
                        "use --make json and build with CMake");
@@ -1459,20 +1451,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
     DECL_OPTION("-coverage-user", OnOff, &m_coverageUser);
 
-    DECL_OPTION("-cxx-module-backend", CbVal, [this, fl](const char* valp) {
-        const string val{valp};
-        if (val != "gcc" && val != "clang" && val != "msvc") {
-            fl->v3error("Unknown setting for --cxx-module-backend: '"
-                        << val << "'\n"
-                        << fl->warnMore() << "... Suggest 'gcc', 'clang', or 'msvc'");
-            return;
-        }
-        m_cxxModuleBackend = val;
-    });
-    DECL_OPTION("-cxx-module-file", CbVal,
-                [this](const char* valp) { m_cxxModuleFiles.push_back(valp); });
-    DECL_OPTION("-cxx-module-std", CbVal,
-                [this](const char* valp) { m_cxxModuleFiles.push_back(string{"std="} + valp); });
     DECL_OPTION("-cxx-modules", OnOff, &m_cxxModules);
 
     DECL_OPTION("-D", CbPartialMatch, [this](const char* valp) VL_MT_DISABLED {

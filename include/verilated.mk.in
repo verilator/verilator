@@ -40,7 +40,6 @@ CFG_CXXFLAGS_STD_NEWEST = @CFG_CXXFLAGS_STD_NEWEST@
 CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
 # Compiler flag to disable C++ modules for generated code and the runtime
 CFG_CXXFLAGS_NO_MODULES = @CFG_CXXFLAGS_NO_MODULES@
-# C++ module dependency backend detected at configure time (gcc, clang, or msvc)
 # Compiler flags that turn on extra warnings
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
 # Compiler flags that enable coroutine support
@@ -410,13 +409,6 @@ ifneq ($(VK_MODULES)$(VK_MODULE_CMIS)$(VK_MODULE_OBJS),)
 %.c++-module:
 	@:
 endif
-
-######################################################################
-### Clean
-
-clean::
-	-rm -f $(VK_MODULE_CMIS) $(VK_MODULE_OBJS) $(VK_MODULE_PCMS) $(VK_MODULE_GCMS)
-	-rm -f $(VK_MODULE_DEPS_FILES) $(VM_PREFIX)__modules.mk
 
 ######################################################################
 ### Detect out of date files and rebuild.

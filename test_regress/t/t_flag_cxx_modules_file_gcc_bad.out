@@ -1,3 +1,0 @@
-%Error: Unsupported: --cxx-module-file and --cxx-module-std require the Clang backend; with GCC keep CMIs in gcm.cache
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: Exiting due to

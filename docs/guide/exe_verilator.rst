@@ -25,12 +25,15 @@ Summary:
    rule that uses these files when linking the module's executable. This
    generally is only useful when used with the :vlopt:`--exe` option.
 
-.. option:: <file.c/.cc/.cpp/.cxx>
+.. option:: <file.c/.cc/.cpp/.cppm/.ixx/.cxx>
 
    Used with :vlopt:`--exe` to specify optional C++ files to be linked in
    with the Verilog code. The file path should either be absolute, or
    relative to where the make will be executed from, or add to your
    makefile's VPATH the appropriate directory to find the file.
+
+   ``.cppm`` and ``.ixx`` files are C++20 module interface units; pass
+   :vlopt:`--cxx-modules` (or list them all) to build them.
 
    See also :vlopt:`-CFLAGS` and :vlopt:`-LDFLAGS` options, which are
    useful when the C++ files need special compiler flags. The compiler
@@ -213,9 +216,10 @@ Summary:
    When make is run on the generated makefile, these will be passed to the
    C++ compiler (g++/clang++/msvc++).
 
-   For C++ modules, prefer :vlopt:`--cxx-modules` and its related options.
-   :command:`-CFLAGS` remains available as an escape hatch for passing
-   compiler flags directly, including module flags.
+   For C++ modules, prefer :vlopt:`--cxx-modules`.
+   :command:`-CFLAGS` remains available for passing compiler flags
+   directly, including module flags such as
+   :command:`-fmodule-file=name=path`.
 
 .. option:: --clk <signal-name>
 
@@ -459,41 +463,21 @@ Summary:
    Enables adding user-inserted functional covergroup coverage. See
    :ref:`Covergroup Coverage`.
 
-.. option:: --cxx-module-backend <gcc|clang|msvc>
-
-   Override the C++ module backend detected from the C++ compiler.  ``msvc``
-   also allows ``.ixx`` module interface files.
-
-.. option:: --cxx-module-file <name=path>
-
-   Pass a precompiled C++ module to the compilation of user C++ files as
-   :command:`-fmodule-file=name=path`.  This is equivalent to passing the same
-   flag with :vlopt:`-CFLAGS <-CFLAGS>`.  This option is supported with Clang;
-   with GCC, keep the CMI in ``gcm.cache`` in the model object directory
-   instead.
-
-.. option:: --cxx-module-std <path>
-
-   Equivalent to :vlopt:`--cxx-module-file` with ``std=<path>``.  This option
-   is supported with Clang.  With GCC the standard library module is normally
-   precompiled into ``gcm.cache/std.gcm`` in the model object directory
-   instead.
-
 .. option:: --cxx-modules
 
    Build C++ module interface units passed on the command line.  Interface
    units may be ``.cppm`` or ``.ixx`` files.  Verilator generates make rules
-   that build the interface units and order the user C++ compilation after
+   that build the interface units, and order the user C++ compilation after
    them.  GCC header units imported by user files are also built.  Modules not
    built from user files must be precompiled before building the Verilated
    model, and their CMIs kept in the model object directory or passed with
-   :vlopt:`--cxx-module-file`.  The generated model and runtime keep the
-   precompiled header (PCH), so user translation units that use modules must
-   include the Verilator headers explicitly.  ``--compiler-include`` headers
-   must also be included explicitly in those translation units.
+   :command:`-CFLAGS -fmodule-file=name=path`.  The generated model and runtime
+   keep the precompiled header (PCH), so user translation units that use
+   modules must include the Verilator headers explicitly.
+   ``--compiler-include`` headers must also be included explicitly in those
+   translation units.
 
-   The module backend is detected from the C++ compiler; see
-   :vlopt:`--cxx-module-backend` to override it.  GCC emits CMIs under
+   The module backend follows the C++ compiler.  GCC emits CMIs under
    ``gcm.cache``, including the CMIs of header units imported with
    ``import "header.h";``.  With GCC, :command:`-fmodule-only` builds only the
    module interface CMIs and does not link the interface units.  Precompile
@@ -506,16 +490,17 @@ Summary:
 
    Clang writes ``.pcm`` files.  Its :command:`-fmodules` option enables
    Clang modules, not C++20 modules, so Verilator does not pass it.  Precompile
-   libc++'s ``std.cppm`` and pass it with :vlopt:`--cxx-module-std`.  Clang
-   header units are not supported.
+   libc++'s ``std.cppm`` and pass it with
+   :command:`-CFLAGS -fmodule-file=std=<path>`.  Clang header units are not
+   supported.
 
    With MSVC, C++ modules are supported only through CMake.  Pass ``.ixx``
    interface files on the Verilator command line and build with CMake 3.28 or
    newer, which adds them as a ``CXX_MODULES`` file set.  GNU make with MSVC is
    not supported.
 
-   Existing :command:`-CFLAGS -fmodules` style flags remain supported as an
-   escape hatch, including :command:`-fmodule-header` and
+   Existing :command:`-CFLAGS -fmodules` style flags remain supported,
+   including :command:`-fmodule-header` and
    :command:`-fmodule-only` for GCC.  They do not by themselves enable module
    scanning; pass :vlopt:`--cxx-modules` or module interface files to enable
    the generated module rules.

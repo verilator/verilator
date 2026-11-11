@@ -85,10 +85,6 @@ class V3EmitMkJsonEmitter final {
             moduleInterfaces.emplace_back(
                 V3Os::filenameSlashPath(V3Os::filenameAbsolutePath(moduleFile)));
 
-        VStringList cflags = v3Global.opt.cFlags();
-        for (const string& moduleFile : v3Global.opt.cxxModuleFiles())
-            cflags.push_back("-fmodule-file=" + moduleFile);
-
         of.put("version", 1)
             .begin("system")
             .put("perl", V3Options::getenvPERL())
@@ -97,18 +93,18 @@ class V3EmitMkJsonEmitter final {
             .put("verilator_solver", V3Options::getenvVERILATOR_SOLVER())
             .end()
             .begin("options")
-            .putList("cflags", cflags)
+            .putList("cflags", v3Global.opt.cFlags())
+            .put("coverage", v3Global.opt.coverage())
+            .put("cxx_modules", v3Global.opt.cxxModules())
+            .put("dpi", v3Global.dpi())
             .putList("ldflags", v3Global.opt.ldLibs())
             .put("system_c", v3Global.opt.systemC())
-            .put("coverage", v3Global.opt.coverage())
-            .put("dpi", v3Global.dpi())
-            .put("use_timing", v3Global.usesTiming())
-            .put("cxx_modules", v3Global.opt.cxxModules())
             .put("threads", v3Global.opt.threads())
             .put("trace", v3Global.opt.trace())
             .put("trace_fst", v3Global.opt.traceEnabledFst())
             .put("trace_saif", v3Global.opt.traceEnabledSaif())
             .put("trace_vcd", v3Global.opt.traceEnabledVcd())
+            .put("use_timing", v3Global.usesTiming())
             .end()
             .begin("sources")
             .putList("global", global)

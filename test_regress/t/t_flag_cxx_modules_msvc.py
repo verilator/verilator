@@ -22,13 +22,17 @@ if cmake_version < (3, 28):
     test.skip('Requires CMake 3.28 or newer for CXX_MODULES file sets')
 if not shutil.which('ninja'):
     test.skip('Requires Ninja for CMake C++ module scanning')
+
 test.run(logfile=test.obj_dir + '/cmake.log',
          cmd=[
              'cd "' + test.obj_dir + '" && cmake -G Ninja ' + test.t_dir +
              '/t_flag_cxx_modules_msvc', '-DCMAKE_PREFIX_PATH=' + os.environ['VERILATOR_ROOT']
          ])
+
 test.run(logfile=test.obj_dir + '/build.log',
          cmd=['cd "' + test.obj_dir + '" && cmake --build', '.', '-j ' + str(test.max_procs)])
+
 test.run(logfile=test.obj_dir + '/run.log',
          cmd=['cd "' + test.obj_dir + '" && .\\t_flag_cxx_modules_msvc.exe'])
+
 test.passes()

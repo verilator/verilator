@@ -4,9 +4,5 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module top (
-    input clk,
-    output logic out
-);
-  always_ff @(posedge clk) out <= ~out;
+module t;
 endmodule

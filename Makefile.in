@@ -586,7 +586,8 @@ format-bash:
 
 CLANGFORMAT = clang-format-21
 CLANGFORMAT_FLAGS = -i
-CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
+CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) \
+  test_regress/t/*.c* test_regress/t/*.cppm test_regress/t/*.h test_regress/t/*.ixx
 
 format-c clang-format:
 	$(CLANGFORMAT) --version
