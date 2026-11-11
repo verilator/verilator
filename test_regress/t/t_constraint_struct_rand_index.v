@@ -79,12 +79,13 @@ class Grid;
   }
 endclass
 
-// Several arrays, a queue, a wide index, a non-random lookup array
+// Several arrays, a queue, a wide index, non-random lookup arrays
 class Mixed;
   rand pair_t items[];
   rand pair_t others[$];
   rand pair_t single;
   pair_t lookup[];
+  pair_t history[$];
   rand longint unsigned idx;
   constraint c_size {
     items.size() == 3;
@@ -95,10 +96,12 @@ class Mixed;
     items[idx].a == others[idx].b;
     single.a == items[idx].a;
     items[idx].a == lookup[idx].a;
+    single.b == history[$].b;
   }
   function new();
     lookup = new[3];
     foreach (lookup[i]) lookup[i] = '{i + 5, 0};
+    history = '{'{0, 11}, '{0, 12}};
   endfunction
 endclass
 
@@ -191,6 +194,7 @@ module t;
       `checkd(mixed.items[mixed.idx].a, int'(mixed.idx) + 5);
       `checkd(mixed.others[mixed.idx].b, mixed.items[mixed.idx].a);
       `checkd(mixed.single.a, mixed.items[mixed.idx].a);
+      `checkd(mixed.single.b, 12);
 
       foreach (lookup[i]) lookup[i] = '{i * 10 + 1, 0};
       ok = std::randomize(k) with {
