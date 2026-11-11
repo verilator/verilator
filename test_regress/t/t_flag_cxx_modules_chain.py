@@ -6,6 +6,7 @@
 # or the Perl Artistic License Version 2.0.
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+import re
 import vltest_bootstrap
 
 test.scenarios('simulator')
@@ -22,6 +23,9 @@ flags = [
     test.t_dir + '/t_flag_cxx_modules_chain_m2.cppm',
 ]
 test.compile(make_main=False, verilator_flags2=flags, make_flags=['VM_PARALLEL_BUILDS=1'])
-test.glob_some(test.obj_dir + '/gcm.cache/*.gcm')
+if re.search(r'\(GCC\)', test.cxx_version):
+    test.glob_some(test.obj_dir + '/gcm.cache/*.gcm')
+else:
+    test.glob_some(test.obj_dir + '/*.pcm')
 test.execute()
 test.passes()

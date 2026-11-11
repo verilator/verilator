@@ -15,8 +15,6 @@ test.scenarios('simulator')
 if not re.search(r'\(GCC\)', test.cxx_version):
     test.skip('Requires GCC for -fmodules')
 
-# -CFLAGS -fmodules alone must not enable the module scanner: the model keeps
-# the per-file rules and the compiler include still reaches the PCH.
 test.compile(verilator_flags2=[
     '--compiler-include',
     test.t_dir + '/t_flag_cxx_modules_compiler_include.h',
