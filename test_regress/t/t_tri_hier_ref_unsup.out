@@ -1,47 +1,51 @@
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:60:49: Unsupported: Pull propagation through port connection: REPLICATE.
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:73:49: Unsupported: Pull propagation through port connection: REPLICATE.
                                                   : ... note: In instance 't'
-   60 |   pulled_pair_port repeated_pull (.pad({repeated, repeated}));
+   73 |   pulled_pair_port repeated_pull (.pad({repeated, repeated}));
       |                                                 ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:65:43: Unsupported: Tristate streaming port connection with width mismatch.
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:78:43: Unsupported: Tristate streaming port connection with width mismatch.
                                                   : ... note: In instance 't'
-   65 |   pulled_stream_port left_truncate (.pad({<<2{narrow_left}}));
+   78 |   pulled_stream_port left_truncate (.pad({<<2{narrow_left}}));
       |                                           ^~
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:66:44: Unsupported: Tristate streaming port connection with width mismatch.
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:79:44: Unsupported: Tristate streaming port connection with width mismatch.
                                                   : ... note: In instance 't'
-   66 |   pulled_stream_port right_truncate (.pad({>>{narrow_right}}));
+   79 |   pulled_stream_port right_truncate (.pad({>>{narrow_right}}));
       |                                            ^~
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:71:53: Unsupported: Pull propagation through port connection: VARXREF 'pad'.
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:84:53: Unsupported: Pull propagation through port connection: VARXREF 'pad'.
                                                   : ... note: In instance 't'
-   71 |   pulled_stream_port interface_pull (.pad(pulled_if.pad));
+   84 |   pulled_stream_port interface_pull (.pad(pulled_if.pad));
       |                                                     ^~~
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:75:56: Unsupported: Pull propagation through port connection: STRUCTSEL 'pad'.
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:88:56: Unsupported: Pull propagation through port connection: STRUCTSEL 'pad'.
                                                   : ... note: In instance 't'
-   75 |   pulled_stream_port member_pull (.pad(unpacked_pulled.pad));
+   88 |   pulled_stream_port member_pull (.pad(unpacked_pulled.pad));
       |                                                        ^~~
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:79:50: Unsupported: Pull propagation through port connection: SLICESEL.
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:92:50: Unsupported: Pull propagation through port connection: SLICESEL.
                                                   : ... note: In instance 't'
-   79 |   pulled_array_port slice_pull (.pad(pulled_array[2:1]));
+   92 |   pulled_array_port slice_pull (.pad(pulled_array[2:1]));
       |                                                  ^
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:60:49: Unsupported LHS tristate construct: REPLICATE
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:96:71: Unsupported LHS tristate construct: REPLICATE
                                                   : ... note: In instance 't'
-   60 |   pulled_pair_port repeated_pull (.pad({repeated, repeated}));
-      |                                                 ^
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:75:56: Unsupported LHS tristate construct: STRUCTSEL 'pad'
-                                                  : ... note: In instance 't'
-   75 |   pulled_stream_port member_pull (.pad(unpacked_pulled.pad));
+   96 |   unpulled_port #(.WIDTH(2)) repeated_no_pull (.pad({unpulled_repeated, unpulled_repeated}));
+      |                                                                       ^
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:100:56: Unsupported LHS tristate construct: STRUCTSEL 'pad'
+                                                   : ... note: In instance 't'
+  100 |   unpulled_port member_no_pull (.pad(unpacked_unpulled.pad));
       |                                                        ^~~
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:79:50: Unsupported LHS tristate construct: SLICESEL
-                                                  : ... note: In instance 't'
-   79 |   pulled_array_port slice_pull (.pad(pulled_array[2:1]));
-      |                                                  ^
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:86:16: Unsupported tristate construct: hierarchical driver of non-interface tri signal: 'bus'
-                                                  : ... note: In instance 't'
-   86 |   assign u_sub.bus = hier_we ? 8'hBB : 8'hzz;
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:102:56: Unsupported LHS tristate construct: ARRAYSEL
+                                                   : ... note: In instance 't'
+  102 |   unpulled_port element_no_pull (.pad(unpulled_elements[0]));
+      |                                                        ^
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:104:57: Unsupported LHS tristate construct: SLICESEL
+                                                   : ... note: In instance 't'
+  104 |   unpulled_array_port slice_no_pull (.pad(unpulled_array[2:1]));
+      |                                                         ^
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:111:16: Unsupported tristate construct: hierarchical driver of non-interface tri signal: 'bus'
+                                                   : ... note: In instance 't'
+  111 |   assign u_sub.bus = hier_we ? 8'hBB : 8'hzz;
       |                ^~~
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:92:18: Unsupported tristate construct: hierarchical driver of non-interface tri signal: 'io'
-                                                  : ... note: In instance 't'
-   92 |   assign u_inout.io = 1'b1;
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:117:18: Unsupported tristate construct: hierarchical driver of non-interface tri signal: 'io'
+                                                   : ... note: In instance 't'
+  117 |   assign u_inout.io = 1'b1;
       |                  ^~
 %Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:23:13: Unsupported tristate construct (in graph; not converted): VAR 'bus'
                                                   : ... note: In instance 't.u_sub'

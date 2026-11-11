@@ -453,7 +453,7 @@ public:
 class TristateVisitor final : public TristateBaseVisitor {
     // NODE STATE
     //   *::user1p              -> pointer to output enable __en expressions
-    //   *::user2               -> int - already visited, see U2_ enum
+    //   *::user2               -> int - visit and diagnostic flags, see U2_ enum
     //   AstVar::user3p         -> See AuxAstVar via m_varAux
     // See TristateGraph:
     //   AstVar::user4p         -> TristateVertex* for variable being built
@@ -517,7 +517,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     enum : uint8_t {
         U2_GRAPHING = 1,  // bit[0] if did m_graphing visit
         U2_NONGRAPH = 2,  // bit[1] if did !m_graphing visit
-        U2_BOTH = 3  // Both bits set
+        U2_BOTH = 3,  // Both visit bits set
+        U2_PULL_UNSUPPORTED = 4  // Pull propagation already diagnosed this node
     };
 
     // MEMBERS
@@ -836,6 +837,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             || VN_IS(basep, StructSel) || VN_IS(basep, VarXRef)) {
             basep->v3warn(E_UNSUPPORTED, "Unsupported: Pull propagation through port connection: "
                                              << basep->prettyTypeNameQ() << ".");
+            basep->user2Or(U2_PULL_UNSUPPORTED);
             return;
         }
         AstVarRef* const refp = VN_AS(basep, VarRef);
@@ -878,7 +880,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Check for unsupported tristate constructs. This is not a 100% check.
         // The best way would be to visit the tree again and find any user1p()
         // pointers that did not get picked up and expanded.
-        if (m_alhs && nodep->user1p()) {
+        // Keep the specific pull diagnostic instead of diagnosing the same LHS again.
+        if (m_alhs && nodep->user1p() && !(nodep->user2() & U2_PULL_UNSUPPORTED)) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported LHS tristate construct: " << nodep->prettyTypeNameQ());
         }
