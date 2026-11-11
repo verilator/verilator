@@ -152,7 +152,6 @@ public:
         PINMISSING,     // Cell pin not specified
         PINNOCONNECT,   // Cell pin not connected
         PINNOTFOUND,    // instance port name not found in it's module
-        PINSIGNED,      // Unsigned literal outside signed input port range
         PKGNODECL,      // Error: Package/class needs to be predeclared
         PREPROCZERO,    // Preprocessor expression with zero
         PROCASSINIT,    // Procedural assignment versus initialization
@@ -167,6 +166,7 @@ public:
         SELRANGE,       // Selection index out of range
         SHORTREAL,      // Shortreal not supported
         SIDEEFFECT,     // Sideeffect ignored
+        SIGNEDRANGE,    // Positive literal exceeds signed destination range
         SIMILARNAME,    // names differ only by case
         SPECIFYIGN,     // Specify construct ignored
         SPLITVAR,       // Cannot split the variable
@@ -245,22 +245,22 @@ public:
             "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTIDRIVENPROC", "MULTITOP",
             "NEVERMATCH", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NORETURN", "NOTREDOP",
             "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT",
-            "PINNOTFOUND", "PINSIGNED", "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE",
+            "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO",
-            "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SIMILARNAME", "SPECIFYIGN",
-            "SPLITVAR", "STATICVAR", "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET",
-            "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTPUBLIC",
-            "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR", "UNSIGNED", "UNUSED", "UNUSEDGENVAR",
-            "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USEBEFOREDECL", "USERERROR", "USERFATAL",
-            "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",
-            "WIDTHDIGITS", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
-            " MAX"};
+            "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SIGNEDRANGE", "SIMILARNAME",
+            "SPECIFYIGN", "SPLITVAR", "STATICVAR", "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD",
+            "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT", "UNOPTFLAT",
+            "UNOPTPUBLIC", "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR", "UNSIGNED", "UNUSED",
+            "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USEBEFOREDECL",
+            "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH",
+            "WIDTHCONCAT", "WIDTHDIGITS", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY",
+            "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
     bool defaultsOff() const VL_MT_SAFE {
-        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || m_e == I_ERRORING || m_e == PINSIGNED
-                || styleError());
+        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || m_e == I_ERRORING
+                || m_e == SIGNEDRANGE || styleError());
     }
     // Insuppressible error codes that should always stop elaboration
     bool hardError() const VL_MT_SAFE {
@@ -299,8 +299,8 @@ public:
                 || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST || m_e == CMPCONST
                 || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC || m_e == LATCH
                 || m_e == MISINDENT || m_e == NEWERSTD || m_e == PREPROCZERO || m_e == PINMISSING
-                || m_e == PINSIGNED || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED
-                || m_e == WIDTH || m_e == WIDTHDIGITS || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
+                || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH
+                || m_e == WIDTHDIGITS || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
                 || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only

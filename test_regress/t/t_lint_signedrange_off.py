@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = 't/t_lint_pinsigned.v'
-test.lint()
-test.file_grep_not(test.compile_log_filename, r'Warning-PINSIGNED')
+test.top_filename = 't/t_lint_signedrange.v'
+test.lint(verilator_flags2=["-Wall", "-Wno-fatal"])
+test.file_grep_not(test.compile_log_filename, r'Warning-SIGNEDRANGE')
 test.passes()

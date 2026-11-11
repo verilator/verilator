@@ -1821,23 +1821,6 @@ List Of Warnings
    This error may be disabled with a lint_off PINNOTFOUND metacomment.
 
 
-.. option:: PINSIGNED
-
-   Warns when a sized unsigned literal connected directly to a signed input
-   port of the same width exceeds the port's positive signed range. The bit
-   pattern is unchanged, but is interpreted as negative at the port.
-
-   For example, ``14'd10483`` connected to a 14-bit signed input represents
-   -5901 at the port. Use a signed literal or an explicit cast to indicate
-   that the negative value is intentional. Unknown and high-impedance values
-   are not checked.
-
-   Disabled by default; enable it with :vlopt:`-Wall` or
-   ``-Wwarn-PINSIGNED``. Ignoring the warning does not change simulation.
-
-
-
-
 .. option:: PKGNODECL
 
    Never issued since version 5.038. Historically an error that a
@@ -2169,6 +2152,26 @@ List Of Warnings
 
    Ignoring this warning may make Verilator simulations differ from other
    simulators.
+
+
+.. option:: SIGNEDRANGE
+
+   Warns when a positive numeric literal assigned to an integral destination
+   exceeds the positive range of a signed value of the destination's width.
+   This includes initializations, assignments, and input port connections,
+   including unsigned destinations. For a signed destination, the resulting
+   bit pattern may be interpreted as negative. Cast the literal explicitly
+   when the bit pattern is intentional. Unknown and high-impedance values
+   and unbased unsized fill literals are not checked.
+
+   Disabled by default, including with :vlopt:`-Wall`; enable it with
+   ``-Wwarn-SIGNEDRANGE``.
+
+   .. include:: ../../docs/gen/ex_SIGNEDRANGE_faulty.rst
+
+   .. include:: ../../docs/gen/ex_SIGNEDRANGE_msg.rst
+
+   .. include:: ../../docs/gen/ex_SIGNEDRANGE_fixed.rst
 
 
 .. option:: SIMILARNAME
