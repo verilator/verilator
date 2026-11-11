@@ -1611,12 +1611,14 @@ void AstCoverBin::dump(std::ostream& str) const {
     Super::dump(str);
     str << " " << m_binsType.ascii();
     if (m_isArray) str << "[]";
+    if (m_isDefault) str << " [DEFAULT]";
     if (m_isWildcard) str << "[*]";
     if (m_isSetExpr) str << " [SETEXPR]";
 }
 void AstCoverBin::dumpJson(std::ostream& str) const {
     Super::dumpJson(str);
     dumpJsonBoolIf(str, "isArray", isArray());
+    dumpJsonBoolIf(str, "isDefault", isDefault());
     dumpJsonBoolIf(str, "isWildcard", isWildcard());
     dumpJsonBoolIf(str, "isSetExpr", isSetExpr());
     str << ", \"binsType\": \"" << binsType().ascii() << "\"";

@@ -3306,6 +3306,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     VSymEnt* m_randSymp = nullptr;  // SymEnt for randomize target class's lookups
     const AstCell* m_cellp = nullptr;  // Current cell
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstGenBlock* m_genBlockp = nullptr;  // Current generate block
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstMethodCall* m_randMethodCallp = nullptr;  // Current randomize() method call
     int m_modportNum = 0;  // Uniqueify modport numbers
@@ -3384,6 +3385,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
     } m_ds;  // State to preserve across recursions
 
+    // True if the lookup point is the current generate block itself
+    bool inGenBlockScope() const {
+        return m_genBlockp && m_curSymp == m_statep->getNodeSym(m_genBlockp);
+    }
+
     // METHODS - Variables
     AstVar* createImplicitVar(VSymEnt* /*lookupSymp*/, AstParseRef* nodep, AstNodeModule* modp,
                               VSymEnt* moduleSymp, bool noWarn) {
@@ -3413,6 +3419,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             = new AstVar{nodep->fileline(), VVarType::WIRE, nodep->name(), VFlagLogicPacked{}, 1};
         newp->lifetime(VLifetime::STATIC_IMPLICIT);
         newp->trace(modp->modTrace());
+        if (inGenBlockScope()) {
+            // Local to the generate block (IEEE 1800-2023 6.10)
+            m_genBlockp->addItemsp(newp);
+            m_statep->insertSym(m_curSymp, newp->name(), newp, nullptr /*classOrPackagep*/);
+            return newp;
+        }
         modp->addStmtsp(newp);
         // Link it to signal list, must add the variable under the module;
         // current scope might be lower now
@@ -3961,27 +3973,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return nullptr;
     }
-    static const AstVar* getNextVarp(const AstNode* stmtsp) {
-        // Only IO ports, as parameters are on paramsp(), not the pinsp() list paired here
-        while (stmtsp) {
-            if (const AstVar* const varp = VN_CAST(stmtsp, Var)) {
-                if (varp->isIO()) return varp;
-            }
-            stmtsp = stmtsp->nextp();
-        }
-        return nullptr;
-    }
-    // Introduce implicit parameters for modules with generic interafeces
-    void addImplicitParametersOfGenericIface(AstCell* const nodep, const AstModule* const modp) {
+    // Introduce implicit parameters for modules with generic interfaces
+    void addImplicitParametersOfGenericIface(AstCell* const nodep) {
         // Get Param number
         int paramNum = 1 + static_cast<int>(nodep->paramspList().size());
 
         // Add each implicit parameter type
-        const AstVar* modIfaceVarp = getNextVarp(modp->stmtsp());
-        for (const AstPin* pinp = nodep->pinsp(); pinp && modIfaceVarp;
-             pinp = VN_CAST(pinp->nextp(), Pin),
-                           modIfaceVarp = getNextVarp(modIfaceVarp->nextp())) {
-            if (modIfaceVarp->varType() != VVarType::IFACEREF
+        for (const AstPin* const pinp : VNList<AstPin>{nodep->pinsp()}) {
+            const AstVar* const modIfaceVarp = pinp->modVarp();
+            if (!modIfaceVarp || !modIfaceVarp->isIfaceRef()
                 || !VN_IS(modIfaceVarp->childDTypep()->elemDTypep(), IfaceGenericDType)) {
                 continue;
             }
@@ -4042,9 +4042,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (refp->cellp()->paramsp()) {
                         newIfaceRefp->addParamsp(refp->cellp()->paramsp()->cloneTree(true));
                     }
-                    UASSERT_OBJ(pinp->name().find("__pinNumber") == 0
-                                    || pinp->name() == modIfaceVarp->name(),
-                                pinp, "Not found interface with such name");
                     AstPin* const newPinp
                         = new AstPin{pinp->fileline(), paramNum,
                                      "__VGIfaceParam" + modIfaceVarp->name(), newIfaceRefp};
@@ -4165,8 +4162,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
                 if (m_statep->forPrimary())
                     if (const AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
-                        if (modp->hasGenericIface())
-                            addImplicitParametersOfGenericIface(nodep, modp);
+                        if (modp->hasGenericIface()) addImplicitParametersOfGenericIface(nodep);
                     }
             }
         }
@@ -4669,6 +4665,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
+            }
+            // In a generate block, an implicit net is local to the block, even if an enclosing
+            // scope declares the name later (IEEE 1800-2023 6.10)
+            const AstVar* const laterVarp = foundp && !m_ds.m_dotp && inGenBlockScope()
+                                                ? VN_CAST(foundp->nodep(), Var)
+                                                : nullptr;
+            if (laterVarp && !laterVarp->isParam() && m_statep->implicitOk(m_modp, nodep->name())
+                && m_curSymp->isEnclosedBy(foundp->parentp(), m_modSymp)
+                && nodep->fileline()->tokenNum() < laterVarp->fileline()->tokenNum()) {
+                foundp = nullptr;
             }
             if (!foundp && m_ds.m_dotp && isDotThisReference(m_ds.m_dotp)) {
                 const AstClass* const classp = VN_CAST(m_ds.m_dotSymp->nodep(), Class);
@@ -5946,9 +5952,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         checkNoDot(nodep);
         {
             VL_RESTORER(m_curSymp);
+            VL_RESTORER(m_genBlockp);
             VL_RESTORER_COPY(m_ds);
             if (nodep->name() != "") {
                 m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+                m_genBlockp = nodep;
                 UINFO(5, indent() << "cur=se" << cvtToHex(m_curSymp));
             }
             iterateChildren(nodep);

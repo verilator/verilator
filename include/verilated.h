@@ -361,12 +361,13 @@ class VerilatedModel VL_NOT_FINAL {
     VL_UNCOPYABLE(VerilatedModel);
 
     VerilatedContext& m_context;  // The VerilatedContext this model is instantiated under
+    uint32_t m_id = ~0U;  // Unique id of the model in its context
 
 protected:
     bool m_didInit = false;  // Time 0 initialization has run
 
     explicit VerilatedModel(VerilatedContext& context);
-    virtual ~VerilatedModel() = default;
+    virtual ~VerilatedModel();
 
 public:
     /// Returns the VerilatedContext this model is instantiated under
@@ -378,11 +379,14 @@ public:
     virtual const char* modelName() const = 0;
     /// Returns the thread level parallelism, this model was Verilated with. Always 1 or higher.
     virtual unsigned threads() const = 0;
+    // Orders models in the order they were added to their context
+    bool operator<(const VerilatedModel& other) const { return m_id < other.m_id; }
 
 private:
     // The following are for use by Verilator internals only
     template <typename, typename>
     friend class VerilatedTrace;
+    friend class VerilatedContext;
     friend class VerilatedEvalLoop;
 
     // Run-time trace configuration requested by this model
@@ -863,7 +867,12 @@ public:
     }
 
     // Internal: Model and thread setup
-    void addModel(const VerilatedModel* modelp);
+    void addModel(VerilatedModel* modelp);
+    // Internal: Remove a model being destroyed
+    void removeModel(const VerilatedModel* modelp);
+    // Internal: Retrieve all models in the context, indexed by their hierarchical path
+    std::map<std::string, VerilatedModel*> models() const VL_MT_SAFE;
+
     // Get the thread pool, creating it if needed. 'modelThreads' is the parallelism of the model
     // being constructed, so that the context can grow to the number of threads it requires.
     VerilatedVirtualBase* threadPoolp(unsigned modelThreads = 1);

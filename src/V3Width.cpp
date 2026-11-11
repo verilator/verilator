@@ -2211,7 +2211,7 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
         if (minConstp->isZero()) {
-            nodep->v3warn(E_UNSUPPORTED, std::string{"Unsupported: zero min count in "} + kind
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: zero min count in "s + kind
                                              + " repetition range (IEEE 1800-2023 16.9.2)");
         }
     }
@@ -4299,6 +4299,7 @@ class WidthVisitor final : public VNVisitor {
         AstNodeDType* const vdtypep = m_vup->dtypep();
         UASSERT_OBJ(vdtypep, nodep, "ENUMITEM not under ENUM");
         nodep->dtypep(vdtypep);
+        nodep->didWidth(true);  // So references need not search for the enum
         if (nodep->valuep()) {  // else the value will be assigned sequentially
             // Default type is int, but common to assign narrower values, so minwidth from value
             userIterateAndNext(nodep->valuep(), WidthVP{CONTEXT_DET, PRELIM}.p());
@@ -10427,11 +10428,11 @@ class WidthVisitor final : public VNVisitor {
         std::string lhsName;
         std::string rhsName;
         if (VN_IS(nodep, Pin)) {
-            lhsName = std::string{"Pin"};
-            rhsName = std::string{"Expression"};
+            lhsName = "Pin";
+            rhsName = "Expression";
         } else {
-            lhsName = std::string{"Left-hand"};
-            rhsName = std::string{"Right-hand"};
+            lhsName = "Left-hand";
+            rhsName = "Right-hand";
         }
 
         const AstNodeDType* const lhsDtp = lhsRefp->dtypep()->skipRefp();

@@ -14,7 +14,8 @@ test.top_filename = "t/t_emit_memb_limit_force.v"
 
 test.compile(threads=2 if test.vltmt else 1,
              verilator_flags2=[
-                 "--binary", "--vpi", "--protect-ids", "-Wno-INSECURE", "--comp-limit-members", "1"
+                 "--binary", "--vpi", "--protect-ids", "--protect-key", "SECRET_KEY",
+                 "-Wno-INSECURE", "--comp-limit-members", "1"
              ])
 
 test.execute()

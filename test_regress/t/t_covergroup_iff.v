@@ -272,6 +272,21 @@ module t;
     cross_ab: cross cp_a, cp_b;
   endgroup
 
+  // iff on a default bin, which holds the values in no other bins: it counts them, and if
+  // illegal errors on them, only while its guard is true (IEEE 1800-2023 19.5)
+  covergroup cg_default_bin_iff with function sample (bit [2:0] value, bit enable);
+    cp_bins: coverpoint value {
+      bins low = {[0 : 1]};
+      ignore_bins seven = {7};
+      bins others = default iff (enable && value != 6);
+    }
+    cp_illegal: coverpoint value {
+      bins low = {[0 : 3]};
+      ignore_bins high = {[5 : 7]};
+      illegal_bins others = default iff (enable);
+    }
+  endgroup
+
   cg_iff cg1 = new;
   cg_default_iff cg2 = new;
   cg_array_iff cg3 = new;
@@ -291,6 +306,7 @@ module t;
   CrossIffEmbedded cxe = new;
   cg_state_bin_iff state_bins = new;
   cg_bin_cross cxb = new;
+  cg_default_bin_iff default_bin_iff = new;
 
   initial begin
     cxc.sample(1, 1, 0, 1);
@@ -340,6 +356,13 @@ module t;
       state_bins.sample();
     end
     `checkr(state_bins.get_inst_coverage(), 100.0);
+
+    // default_bin_iff: no default bin counts or errors while its guard is false
+    for (int i = 0; i < 8; ++i) default_bin_iff.sample(3'(i), 0);
+    for (int i = 0; i < 8; ++i) begin
+      if (i != 4) default_bin_iff.sample(3'(i), 1);  // 4 is cp_illegal's default value
+    end
+    `checkr(default_bin_iff.get_inst_coverage(), 100.0);
 
     // Sample disabled_lo and disabled_hi with enable=0 -- must not be recorded
     enable = 0;
