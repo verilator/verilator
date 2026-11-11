@@ -263,7 +263,7 @@ private:
                             const AstNode* itemp) {
         if (itemp && (!matcherp || matcherp->nodeMatch(itemp))) {
             if (includeType) {
-                spellerp->pushCandidate(itemp->prettyName(), itemp->prettyTypeName());
+                spellerp->pushCandidate(itemp->prettyName(), itemp->prettyTypeNameQ());
             } else {
                 spellerp->pushCandidate(itemp->prettyName());
             }

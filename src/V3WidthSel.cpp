@@ -341,7 +341,7 @@ class WidthSelVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {  // nullptr=bad extract, or unknown node type
             nodep->v3error("Illegal bit or array select; type already selected, or bad dimension: "
-                           << "data type is" << fromdata.m_errp->prettyDTypeNameQ());
+                           << "data type is " << fromdata.m_errp->prettyDTypeNameQ());
             // How to recover?  We'll strip a dimension.
             nodep->replaceWith(fromp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);

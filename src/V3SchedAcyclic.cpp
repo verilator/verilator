@@ -105,7 +105,7 @@ class Graph final : public V3Graph {
     string loopsVertexCb(V3GraphVertex* vtxp) override {
         if (SchedAcyclicLogicVertex* const lvtxp = vtxp->cast<SchedAcyclicLogicVertex>()) {
             AstNode* const procp = lvtxp->procp();
-            std::string logicName = procp->prettyTypeName();
+            std::string logicName = procp->prettyTypeNameQ();
             if (const AstAlways* const alwaysp = VN_CAST(procp, Always)) {
                 if (alwaysp->keyword() == VAlwaysKwd::CONT_ASSIGN) {
                     logicName = "ASSIGNW";  // Keep using historiacl name until we have better

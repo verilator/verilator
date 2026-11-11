@@ -313,7 +313,7 @@ public:
         } else if (VN_IS(nodep, Task)) {
             return "task";
         } else {
-            return nodep->prettyTypeName();
+            return nodep->prettyTypeNameQ();
         }
     }
 
@@ -6255,12 +6255,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     iterate(nodep->childDTypep());
                 } else {
                     nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: " << foundp->nodep()->prettyTypeName()
+                                  "Unsupported: " << foundp->nodep()->prettyTypeNameQ()
                                                   << " in 'class extends'");
                     return;
                 }
             } else {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << foundp->nodep()->prettyTypeName()
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << foundp->nodep()->prettyTypeNameQ()
                                                              << " in 'class extends'");
                 return;
             }
@@ -6575,7 +6575,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // Likely impossible, as error thrown earlier
                     cpackagerefp->v3error(  // LCOV_EXCL_LINE
                         "'::' expected to reference a class/package but referenced '"
-                        << (nodep->classOrPackagep() ? nodep->classOrPackagep()->prettyTypeName()
+                        << (nodep->classOrPackagep() ? nodep->classOrPackagep()->prettyTypeNameQ()
                                                      : "<unresolved-object>")
                         << "'\n"
                         << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
@@ -6674,7 +6674,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         UINFO(1, "Found sym node: " << foundp->nodep());
                         nodep->v3error("Expecting a data type: "
                                        << nodep->prettyNameQ()
-                                       << ", found: " << foundp->nodep()->prettyTypeName());
+                                       << ", found: " << foundp->nodep()->prettyTypeNameQ());
                     } else {
                         nodep->v3error("Can't find typedef/interface: " << nodep->prettyNameQ());
                     }
@@ -6741,7 +6741,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (!VN_IS(nodep->targetRefp(), ParseRef)) {
                 // If it is a ParseRef, either it couldn't be linked or it is linked to a block
                 nodep->v3warn(E_UNSUPPORTED, "Node of type "
-                                                 << nodep->targetRefp()->prettyTypeName()
+                                                 << nodep->targetRefp()->prettyTypeNameQ()
                                                  << " referenced by disable");
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
