@@ -32,7 +32,9 @@ endclass
 class StateRowAtRandIndex;
   rand int ri;
   bit [2:0] s[3][4];
+  bit [2:0] s3[3][2][4];
   constraint c1 {ri inside {[0 : 2]}; unique {s[ri]};}
+  constraint c2 {unique {s3[ri][1]};}
 endclass
 
 module t;
