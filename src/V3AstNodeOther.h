@@ -3276,7 +3276,7 @@ class AstGenBlock final : public AstNodeGen {
     // @astgen op2 := itemsp : List[AstNode]
     std::string m_name;  // Name of block
     const bool m_unnamed;  // Originally unnamed (name change does not affect this)
-    const bool m_implied;  // Not inserted by user
+    bool m_implied;  // Not inserted by user, after V3LinkParse not a hierarchy level
     AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff in this scope
 
 public:
@@ -3294,6 +3294,7 @@ public:
     void name(const std::string& name) override { m_name = name; }
     bool unnamed() const { return m_unnamed; }
     bool implied() const { return m_implied; }
+    void implied(bool flag) { m_implied = flag; }
     AstDefaultDisable* defaultDisablep() const { return m_defaultDisablep; }
     void defaultDisablep(AstDefaultDisable* nodep) { m_defaultDisablep = nodep; }
     // As AstNodeModule::dtypeNameInnerScope(), e.g. 'top.gen[0].'
