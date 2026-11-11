@@ -1,0 +1,42 @@
+%Error-UNSUPPORTED: t/t_tri_pull_port_unsup.v:43:49: Unsupported: Pull propagation through port connection: REPLICATE.
+                                                   : ... note: In instance 't'
+   43 |   pulled_pair_port repeated_pull (.pad({repeated, repeated}));
+      |                                                 ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_tri_pull_port_unsup.v:48:43: Unsupported: Tristate streaming port connection with width mismatch.
+                                                   : ... note: In instance 't'
+   48 |   pulled_stream_port left_truncate (.pad({<<2{narrow_left}}));
+      |                                           ^~
+%Error-UNSUPPORTED: t/t_tri_pull_port_unsup.v:49:44: Unsupported: Tristate streaming port connection with width mismatch.
+                                                   : ... note: In instance 't'
+   49 |   pulled_stream_port right_truncate (.pad({>>{narrow_right}}));
+      |                                            ^~
+%Error-UNSUPPORTED: t/t_tri_pull_port_unsup.v:54:53: Unsupported: Pull propagation through port connection: VARXREF 'pad'.
+                                                   : ... note: In instance 't'
+   54 |   pulled_stream_port interface_pull (.pad(pulled_if.pad));
+      |                                                     ^~~
+%Error-UNSUPPORTED: t/t_tri_pull_port_unsup.v:58:56: Unsupported: Pull propagation through port connection: STRUCTSEL 'pad'.
+                                                   : ... note: In instance 't'
+   58 |   pulled_stream_port member_pull (.pad(unpacked_pulled.pad));
+      |                                                        ^~~
+%Error-UNSUPPORTED: t/t_tri_pull_port_unsup.v:62:50: Unsupported: Pull propagation through port connection: SLICESEL.
+                                                   : ... note: In instance 't'
+   62 |   pulled_array_port slice_pull (.pad(pulled_array[2:1]));
+      |                                                  ^
+%Error-UNSUPPORTED: t/t_tri_pull_port_unsup.v:66:71: Unsupported LHS tristate construct: REPLICATE
+                                                   : ... note: In instance 't'
+   66 |   unpulled_port #(.WIDTH(2)) repeated_no_pull (.pad({unpulled_repeated, unpulled_repeated}));
+      |                                                                       ^
+%Error-UNSUPPORTED: t/t_tri_pull_port_unsup.v:70:56: Unsupported LHS tristate construct: STRUCTSEL 'pad'
+                                                   : ... note: In instance 't'
+   70 |   unpulled_port member_no_pull (.pad(unpacked_unpulled.pad));
+      |                                                        ^~~
+%Error-UNSUPPORTED: t/t_tri_pull_port_unsup.v:72:56: Unsupported LHS tristate construct: ARRAYSEL
+                                                   : ... note: In instance 't'
+   72 |   unpulled_port element_no_pull (.pad(unpulled_elements[0]));
+      |                                                        ^
+%Error-UNSUPPORTED: t/t_tri_pull_port_unsup.v:74:57: Unsupported LHS tristate construct: SLICESEL
+                                                   : ... note: In instance 't'
+   74 |   unpulled_array_port slice_no_pull (.pad(unpulled_array[2:1]));
+      |                                                         ^
+%Error: Exiting due to
