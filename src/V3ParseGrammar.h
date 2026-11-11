@@ -150,6 +150,15 @@ public:
         VL_DO_DANGLING(sizep->deleteTree(), sizep);
         return true;
     }
+    // Report a default bin declared 'ignore_bins', or a default sequence one, which is not allowed
+    static void coverBinIgnoredDefault(FileLine* fl, const string& name) {
+        fl->v3error("Default bin " << AstNode::prettyNameQ(name)
+                                   << " is declared 'ignore_bins', but a default bin cannot be "
+                                      "explicitly ignored (IEEE 1800-2023 19.5).\n"
+                                   << fl->warnMore()
+                                   << "... Suggest removing it, as values in no bins do not "
+                                      "affect coverage");
+    }
     AstNodeExpr* createGatePin(AstNodeExpr* exprp) {
         AstRange* const rangep = m_gateRangep;
         if (!rangep) return exprp;

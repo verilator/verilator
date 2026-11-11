@@ -313,7 +313,7 @@ public:
         } else if (VN_IS(nodep, Task)) {
             return "task";
         } else {
-            return nodep->prettyTypeName();
+            return nodep->prettyTypeNameQ();
         }
     }
 
@@ -3317,6 +3317,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     VSymEnt* m_randSymp = nullptr;  // SymEnt for randomize target class's lookups
     const AstCell* m_cellp = nullptr;  // Current cell
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstGenBlock* m_genBlockp = nullptr;  // Current generate block
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstMethodCall* m_randMethodCallp = nullptr;  // Current randomize() method call
     int m_modportNum = 0;  // Uniqueify modport numbers
@@ -3395,6 +3396,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
     } m_ds;  // State to preserve across recursions
 
+    // True if the lookup point is the current generate block itself
+    bool inGenBlockScope() const {
+        return m_genBlockp && m_curSymp == m_statep->getNodeSym(m_genBlockp);
+    }
+
     // METHODS - Variables
     AstVar* createImplicitVar(VSymEnt* /*lookupSymp*/, AstParseRef* nodep, AstNodeModule* modp,
                               VSymEnt* moduleSymp, bool noWarn) {
@@ -3424,6 +3430,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             = new AstVar{nodep->fileline(), VVarType::WIRE, nodep->name(), VFlagLogicPacked{}, 1};
         newp->lifetime(VLifetime::STATIC_IMPLICIT);
         newp->trace(modp->modTrace());
+        if (inGenBlockScope()) {
+            // Local to the generate block (IEEE 1800-2023 6.10)
+            m_genBlockp->addItemsp(newp);
+            m_statep->insertSym(m_curSymp, newp->name(), newp, nullptr /*classOrPackagep*/);
+            return newp;
+        }
         modp->addStmtsp(newp);
         // Link it to signal list, must add the variable under the module;
         // current scope might be lower now
@@ -4664,6 +4676,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
+            }
+            // In a generate block, an implicit net is local to the block, even if an enclosing
+            // scope declares the name later (IEEE 1800-2023 6.10)
+            const AstVar* const laterVarp = foundp && !m_ds.m_dotp && inGenBlockScope()
+                                                ? VN_CAST(foundp->nodep(), Var)
+                                                : nullptr;
+            if (laterVarp && !laterVarp->isParam() && m_statep->implicitOk(m_modp, nodep->name())
+                && m_curSymp->isEnclosedBy(foundp->parentp(), m_modSymp)
+                && nodep->fileline()->tokenNum() < laterVarp->fileline()->tokenNum()) {
+                foundp = nullptr;
             }
             if (!foundp && m_ds.m_dotp && isDotThisReference(m_ds.m_dotp)) {
                 const AstClass* const classp = VN_CAST(m_ds.m_dotSymp->nodep(), Class);
@@ -5941,9 +5963,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         checkNoDot(nodep);
         {
             VL_RESTORER(m_curSymp);
+            VL_RESTORER(m_genBlockp);
             VL_RESTORER_COPY(m_ds);
             if (nodep->name() != "") {
                 m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+                m_genBlockp = nodep;
                 UINFO(5, indent() << "cur=se" << cvtToHex(m_curSymp));
             }
             iterateChildren(nodep);
@@ -6242,12 +6266,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     iterate(nodep->childDTypep());
                 } else {
                     nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: " << foundp->nodep()->prettyTypeName()
+                                  "Unsupported: " << foundp->nodep()->prettyTypeNameQ()
                                                   << " in 'class extends'");
                     return;
                 }
             } else {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << foundp->nodep()->prettyTypeName()
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << foundp->nodep()->prettyTypeNameQ()
                                                              << " in 'class extends'");
                 return;
             }
@@ -6562,7 +6586,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // Likely impossible, as error thrown earlier
                     cpackagerefp->v3error(  // LCOV_EXCL_LINE
                         "'::' expected to reference a class/package but referenced '"
-                        << (nodep->classOrPackagep() ? nodep->classOrPackagep()->prettyTypeName()
+                        << (nodep->classOrPackagep() ? nodep->classOrPackagep()->prettyTypeNameQ()
                                                      : "<unresolved-object>")
                         << "'\n"
                         << cpackagerefp->warnMore() + "... Suggest '.' instead of '::'");
@@ -6661,7 +6685,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         UINFO(1, "Found sym node: " << foundp->nodep());
                         nodep->v3error("Expecting a data type: "
                                        << nodep->prettyNameQ()
-                                       << ", found: " << foundp->nodep()->prettyTypeName());
+                                       << ", found: " << foundp->nodep()->prettyTypeNameQ());
                     } else {
                         nodep->v3error("Can't find typedef/interface: " << nodep->prettyNameQ());
                     }
@@ -6728,7 +6752,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (!VN_IS(nodep->targetRefp(), ParseRef)) {
                 // If it is a ParseRef, either it couldn't be linked or it is linked to a block
                 nodep->v3warn(E_UNSUPPORTED, "Node of type "
-                                                 << nodep->targetRefp()->prettyTypeName()
+                                                 << nodep->targetRefp()->prettyTypeNameQ()
                                                  << " referenced by disable");
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;

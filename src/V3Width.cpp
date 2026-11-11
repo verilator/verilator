@@ -329,14 +329,7 @@ class PortLValueVisitor final : public VNVisitor {
     void visit(AstStructSel* nodep) override { iterateDestination(nodep->fromp()); }
     void visit(AstCMethodHard* nodep) override {
         // Dynamic array and queue element accesses are lowered to methods.
-        switch (nodep->method()) {
-        case VCMethod::ARRAY_AT:
-        case VCMethod::ARRAY_AT_BACK:
-        case VCMethod::ARRAY_AT_WRITE:
-        case VCMethod::DYN_AT_WRITE_APPEND:
-        case VCMethod::DYN_AT_WRITE_APPEND_BACK: dynamicElement(nodep); break;
-        default: break;
-        }
+        if (nodep->method().isDynElementAccess()) dynamicElement(nodep);
     }
     void visit(AstMemberRef* nodep) override {
         // Static class properties have already been replaced with variable references.
@@ -783,8 +776,8 @@ class WidthVisitor final : public VNVisitor {
                     nodep->dtypep(commonClassTypep);
                 } else {
                     nodep->v3error("Incompatible types of operands of condition operator: "
-                                   << thenDTypep->prettyTypeName() << " and "
-                                   << elseDTypep->prettyTypeName());
+                                   << thenDTypep->prettyTypeNameQ() << " and "
+                                   << elseDTypep->prettyTypeNameQ());
                     nodep->dtypeFrom(thenDTypep);
                 }
             } else if (!((thenDTypeSkippedp->isIntegralOrPacked()
@@ -1730,9 +1723,18 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->fromp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->bitp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->thsp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
+        // Error recovery returns this existing receiver rather than a new selection.
+        AstNodeExpr* const fromp = nodep->fromp();
         AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
             VL_DANGLING(nodep);
+            if (AstCMethodHard* const methodp = VN_CAST(selp, CMethodHard)) {
+                if (methodp != fromp) {
+                    // visit(AstCMethodHard) does not revisit the newly lowered index.
+                    iterateCheckSizedSelf(methodp, "index", methodp->pinsp(), SELF, FINAL,
+                                          /* deferUntyped */ true);
+                }
+            }
             userIterate(selp, m_vup);
             return;
         }
@@ -2211,7 +2213,7 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
         if (minConstp->isZero()) {
-            nodep->v3warn(E_UNSUPPORTED, std::string{"Unsupported: zero min count in "} + kind
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: zero min count in "s + kind
                                              + " repetition range (IEEE 1800-2023 16.9.2)");
         }
     }
@@ -3041,7 +3043,7 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(exprp, WidthVP{SELF, FINAL}.p());
         } else {
             nodep->v3fatalSrc("CellRef exprp is not a NodeExpr: "  // LCOV_EXCL_LINE
-                              << nodep->exprp()->prettyTypeName());
+                              << nodep->exprp()->prettyTypeNameQ());
         }
 
         nodep->didWidth(true);
@@ -3331,7 +3333,7 @@ class WidthVisitor final : public VNVisitor {
         } else {
             if (nodep->lhsp())
                 nodep->lhsp()->v3error("Expected data type, not a "
-                                       << nodep->lhsp()->prettyTypeName());
+                                       << nodep->lhsp()->prettyTypeNameQ());
             nodep->replaceWith(new AstVoidDType{nodep->fileline()});
         }
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -3413,7 +3415,7 @@ class WidthVisitor final : public VNVisitor {
             userIterate(newp, m_vup);
         } else {
             nodep->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Cast to " << nodep->dtp()->prettyTypeName());
+                          "Unsupported: Cast to " << nodep->dtp()->prettyTypeNameQ());
             nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
@@ -4299,6 +4301,7 @@ class WidthVisitor final : public VNVisitor {
         AstNodeDType* const vdtypep = m_vup->dtypep();
         UASSERT_OBJ(vdtypep, nodep, "ENUMITEM not under ENUM");
         nodep->dtypep(vdtypep);
+        nodep->didWidth(true);  // So references need not search for the enum
         if (nodep->valuep()) {  // else the value will be assigned sequentially
             // Default type is int, but common to assign narrower values, so minwidth from value
             userIterateAndNext(nodep->valuep(), WidthVP{CONTEXT_DET, PRELIM}.p());
@@ -4878,8 +4881,8 @@ class WidthVisitor final : public VNVisitor {
             return;
         } else {
             nodep->v3error("Member selection of non-struct/union object '"
-                           << nodep->fromp()->prettyTypeName() << "' which is a '"
-                           << nodep->fromp()->dtypep()->prettyTypeName() << "'");
+                           << nodep->fromp()->prettyTypeNameQ() << "' which is a '"
+                           << nodep->fromp()->dtypep()->prettyTypeNameQ() << "'");
         }
         // Error handling
         nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
@@ -5223,10 +5226,10 @@ class WidthVisitor final : public VNVisitor {
         } else if (basicp && basicp->isString()) {
             methodCallString(nodep, basicp);
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Member call on object '"
-                                             << nodep->fromp()->prettyTypeName()
-                                             << "' which is a '"
-                                             << nodep->fromp()->dtypep()->prettyTypeName() << "'");
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Member call on object '"
+                              << nodep->fromp()->prettyTypeNameQ() << "' which is a '"
+                              << nodep->fromp()->dtypep()->prettyTypeNameQ() << "'");
             nodep->dtypeSetVoid();
         }
     }
@@ -5623,30 +5626,13 @@ class WidthVisitor final : public VNVisitor {
     }
     void methodCallLValueRecurse(AstMethodCall* nodep, AstNode* childp, const VAccess& access) {
         if (AstCMethodHard* const ichildp = VN_CAST(childp, CMethodHard)) {
-            bool methAt = false;
-            bool methAtBack = false;
-            bool methAtWrite = false;
-            switch (ichildp->method()) {
-            case VCMethod::ARRAY_AT:  // FALLTHRU
-                methAt = true;
-                break;
-            case VCMethod::ARRAY_AT_BACK:  // FALLTHRU
-                methAtBack = true;
-                break;
-            case VCMethod::ARRAY_AT_WRITE:  // FALLTHRU
-            case VCMethod::DYN_AT_WRITE_APPEND:  // FALLTHRU
-            case VCMethod::DYN_AT_WRITE_APPEND_BACK:  //
-                methAtWrite = true;
-                break;
-            default: break;
-            }
-            if (methAt || methAtBack || methAtWrite) {
+            if (ichildp->method().isDynElementAccess()) {
                 const AstNodeDType* const fromDtypep = ichildp->fromp()->dtypep()->skipRefp();
                 if (VN_IS(fromDtypep, QueueDType) || VN_IS(fromDtypep, DynArrayDType)) {
                     // Change access methods to writable ones
-                    if (methAt) {
+                    if (ichildp->method() == VCMethod::ARRAY_AT) {
                         ichildp->method(VCMethod::ARRAY_AT_WRITE);
-                    } else if (methAtBack) {
+                    } else if (ichildp->method() == VCMethod::ARRAY_AT_BACK) {
                         ichildp->method(VCMethod::DYN_AT_WRITE_APPEND_BACK);
                     }
                 }
@@ -6555,7 +6541,7 @@ class WidthVisitor final : public VNVisitor {
         if (!dtypep) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported/Illegal: Assignment pattern"
                                          " member not underneath a supported construct: "
-                                             << nodep->backp()->prettyTypeName());
+                                             << nodep->backp()->prettyTypeNameQ());
 
             if (nodep->backp() && (VN_IS(nodep->backp(), Eq) || VN_IS(nodep->backp(), Neq)))
                 return;
@@ -6687,7 +6673,7 @@ class WidthVisitor final : public VNVisitor {
                             // Undefined pattern
                             patp->keyp()->v3error(
                                 "Assignment pattern key not supported/understood: "
-                                << patp->keyp()->prettyTypeName());
+                                << patp->keyp()->prettyTypeNameQ());
                         }
                     } else if (memp) {
                         // constant expr
@@ -7676,7 +7662,7 @@ class WidthVisitor final : public VNVisitor {
                 // Nothing special here
             } else if (AstBasicDType* const adtypep = VN_CAST(fromDtp, BasicDType)) {
                 if (!adtypep->isString() && !adtypep->isRanged()) {
-                    argsp->v3error("Illegal 'foreach' loop on " << fromDtp->prettyTypeName()
+                    argsp->v3error("Illegal 'foreach' loop on " << fromDtp->prettyTypeNameQ()
                                                                 << " data type");
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                     return false;
@@ -7685,7 +7671,7 @@ class WidthVisitor final : public VNVisitor {
                        = VN_CAST(fromDtp, AssocArrayDType)) {
                 varp->dtypeFrom(adtypep->keyDTypep());
             } else {
-                argsp->v3error("Illegal 'foreach' loop on " << fromDtp->prettyTypeName()
+                argsp->v3error("Illegal 'foreach' loop on " << fromDtp->prettyTypeNameQ()
                                                             << " data type");
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 return false;
@@ -8314,7 +8300,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->v3error(ucfirst(nodep->prettyOperatorName())
                        << " as part of a module instance array" << " requires " << modwidth
                        << " or " << modwidth * elements * subElems << " bits, but connection's "
-                       << nodep->exprp()->prettyTypeName() << " generates " << conwidth
+                       << nodep->exprp()->prettyTypeNameQ() << " generates " << conwidth
                        << " bits. (IEEE 1800-2023 23.3.3)");
         userIterateAndNext(nodep->exprp(), WidthVP{conDTypep, FINAL, STREAM_USE_ASSIGN}.p());
         return true;
@@ -8418,7 +8404,7 @@ class WidthVisitor final : public VNVisitor {
                                       "Unsupported: " << ucfirst(nodep->prettyOperatorName())
                                                       << " to inout signal requires " << modwidth
                                                       << " bits, but connection's "
-                                                      << nodep->exprp()->prettyTypeName()
+                                                      << nodep->exprp()->prettyTypeNameQ()
                                                       << " generates " << conwidth << " bits.");
                         // otherwise would need some mess to force both sides to proper size
                     }
@@ -8960,7 +8946,7 @@ class WidthVisitor final : public VNVisitor {
                     pinp->v3widthWarn(portp->width(), pinp->width(),
                                       "Function output argument "
                                           << portp->prettyNameQ() << " requires " << portp->width()
-                                          << " bits, but connection's " << pinp->prettyTypeName()
+                                          << " bits, but connection's " << pinp->prettyTypeNameQ()
                                           << " generates " << pinp->width() << " bits.");
                     VNRelinker relinkHandle;
                     pinp->unlinkFrBack(&relinkHandle);
@@ -9973,7 +9959,7 @@ class WidthVisitor final : public VNVisitor {
             } else if (nodep->lhsp()->isString() || nodep->rhsp()->isString()) {
                 nodep->v3error(
                     "Operator "
-                    << nodep->prettyTypeName()
+                    << nodep->prettyTypeNameQ()
                     << " is not legal on string data types (IEEE 1800-2023 6.16)\n"
                     << (VN_IS(nodep, Add)
                             ? (nodep->warnMore()
@@ -10212,15 +10198,15 @@ class WidthVisitor final : public VNVisitor {
         const int expWidth = expDTypep->width();
         int expWidthMin = expDTypep->widthMin();
         UASSERT_OBJ(nodep->dtypep(), nodep,
-                    "Under node " << nodep->prettyTypeName()
+                    "Under node " << nodep->prettyTypeNameQ()
                                   << " has no dtype?? Missing Visitor func?");
         if (expDTypep->basicp()->untyped() || nodep->dtypep()->basicp()->untyped()) return false;
         // During DepGraph execution, expected width may be 0 if the type hasn't been
         UASSERT_OBJ(nodep->width() != 0, nodep,
-                    "Under node " << nodep->prettyTypeName()
+                    "Under node " << nodep->prettyTypeNameQ()
                                   << " has no expected width?? Missing Visitor func?");
         UASSERT_OBJ(expWidth != 0, nodep,
-                    "Node " << nodep->prettyTypeName()
+                    "Node " << nodep->prettyTypeNameQ()
                             << " has no expected width?? Missing Visitor func?");
         if (expWidthMin == 0) expWidthMin = expWidth;
         if (nodep->dtypep()->width() == expWidth) return false;
@@ -10427,11 +10413,11 @@ class WidthVisitor final : public VNVisitor {
         std::string lhsName;
         std::string rhsName;
         if (VN_IS(nodep, Pin)) {
-            lhsName = std::string{"Pin"};
-            rhsName = std::string{"Expression"};
+            lhsName = "Pin";
+            rhsName = "Expression";
         } else {
-            lhsName = std::string{"Left-hand"};
-            rhsName = std::string{"Right-hand"};
+            lhsName = "Left-hand";
+            rhsName = "Right-hand";
         }
 
         const AstNodeDType* const lhsDtp = lhsRefp->dtypep()->skipRefp();
@@ -10494,8 +10480,8 @@ class WidthVisitor final : public VNVisitor {
             } else if (rhsp->isNull()) {
                 return rhsp;
             }
-            nodep->v3error(side << " expects a " << lhsClassRefp->prettyTypeName() << ", got "
-                                << rhsRawDTypep->prettyTypeName());
+            nodep->v3error(side << " expects a " << lhsClassRefp->prettyTypeNameQ() << ", got "
+                                << rhsRawDTypep->prettyTypeNameQ());
         } else if (VN_IS(rhsRawDTypep, ClassRefDType)) {
             nodep->v3error(side << " " << rhsRawDTypep->prettyDTypeNameQ()
                                 << " cannot be assigned to non-class "
@@ -10758,9 +10744,9 @@ class WidthVisitor final : public VNVisitor {
                     UINFOTREE(5, parentp->backp(), "", "back");
                     parentp->v3widthWarn(1, underp->width(),
                                          "Logical operator "
-                                             << parentp->prettyTypeName()
+                                             << parentp->prettyTypeNameQ()
                                              << " expects 1 bit on the " << side << ", but "
-                                             << side << "'s " << underp->prettyTypeName()
+                                             << side << "'s " << underp->prettyTypeNameQ()
                                              << " generates " << underp->width()
                                              << (underp->width() != underp->widthMin()
                                                      ? " or " + cvtToStr(underp->widthMin())
@@ -11020,7 +11006,7 @@ class WidthVisitor final : public VNVisitor {
                         << " expects " << expWidth
                         << (expWidth != expWidthMin ? " or " + cvtToStr(expWidthMin) : "")
                         << " bits on the " << side << ", but " << side << "'s "
-                        << underp->prettyTypeName() << " generates " << underp->width()
+                        << underp->prettyTypeNameQ() << " generates " << underp->width()
                         << (underp->width() != underp->widthMin()
                                 ? " or " + cvtToStr(underp->widthMin())
                                 : "")
@@ -11069,11 +11055,11 @@ class WidthVisitor final : public VNVisitor {
     AstNodeExpr* checkCvtUS(AstNodeExpr* nodep, bool fatal) {
         if (nodep && nodep->dtypep()->skipRefp()->isDouble()) {
             if (fatal) {
-                nodep->v3error("Expected integral input to " << nodep->backp()->prettyTypeName());
+                nodep->v3error("Expected integral input to " << nodep->backp()->prettyTypeNameQ());
             } else {
                 nodep->v3warn(REALCVT,
                               "Implicit conversion of real to integer; expected integral input to "
-                                  << nodep->backp()->prettyTypeName());
+                                  << nodep->backp()->prettyTypeNameQ());
             }
             nodep = spliceCvtS(nodep, false, 32);
         }
@@ -11323,7 +11309,7 @@ class WidthVisitor final : public VNVisitor {
             UASSERT_OBJ(dtnodep, parentp, "iterateEditMoveDTypep lost pointer to child");
             UASSERT_OBJ(dtnodep->didWidth(), parentp,
                         "iterateEditMoveDTypep didn't get width resolution of "
-                            << dtnodep->prettyTypeName());
+                            << dtnodep->prettyTypeNameQ());
 
             // Move to under netlist
             UINFO(9, "iterateEditMoveDTypep child moving " << dtnodep);
@@ -11865,14 +11851,14 @@ class WidthVisitor final : public VNVisitor {
 
     void assertAtExpr(AstNode* nodep) {
         if (VL_UNCOVERABLE(!m_vup)) {
-            nodep->v3fatalSrc("Unexpected '" << nodep->prettyTypeName() << "' expression under '"
-                                             << nodep->backp()->prettyTypeName() << "'");
+            nodep->v3fatalSrc("Unexpected '" << nodep->prettyTypeNameQ() << "' expression under '"
+                                             << nodep->backp()->prettyTypeNameQ() << "'");
         }
     }
     void assertAtStatement(AstNode* nodep) {
         if (VL_UNCOVERABLE(m_vup && !m_vup->selfDtm())) {
             UINFO(1, "-: " << m_vup);
-            nodep->v3fatalSrc("No dtype expected at statement " << nodep->prettyTypeName());
+            nodep->v3fatalSrc("No dtype expected at statement " << nodep->prettyTypeNameQ());
         }
     }
     void checkConstantOrReplace(AstNode* nodep, bool noFourState, const string& message) {

@@ -125,6 +125,13 @@ public:
     VSymEnt* fallbackp() const { return m_fallbackp; }
     void parentp(VSymEnt* entp) { m_parentp = entp; }
     VSymEnt* parentp() const { return m_parentp; }
+    // True if symp is a parent of this table, without going above stopp
+    bool isEnclosedBy(const VSymEnt* symp, const VSymEnt* stopp) const {
+        for (const VSymEnt* curp = this; curp != stopp; curp = curp->parentp()) {
+            if (curp->parentp() == symp) return true;
+        }
+        return false;
+    }
     void classOrPackagep(AstNodeModule* entp) { m_classOrPackagep = entp; }
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     AstNode* nodep() const { return m_nodep; }
@@ -256,7 +263,7 @@ private:
                             const AstNode* itemp) {
         if (itemp && (!matcherp || matcherp->nodeMatch(itemp))) {
             if (includeType) {
-                spellerp->pushCandidate(itemp->prettyName(), itemp->prettyTypeName());
+                spellerp->pushCandidate(itemp->prettyName(), itemp->prettyTypeNameQ());
             } else {
                 spellerp->pushCandidate(itemp->prettyName());
             }

@@ -217,3 +217,6 @@ verilator_coverage Arguments
    verilator_coverage format has. It can be used with :command:`genhtml` to
    generate an HTML report. :command:`genhtml --branch-coverage` will also
    display the branch coverage, analogous to :option:`--annotate-points`.
+   As the .info file has no function coverage, version 2.5 and later of
+   :command:`lcov` and :command:`genhtml` may report an error unless run
+   with ``--no-function-coverage``.

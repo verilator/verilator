@@ -86,7 +86,7 @@ protected:
         , m_nodep{nodep} {}
     // ACCESSORS
     std::string name() const override {
-        return cvtToHex(m_nodep) + ' ' + m_nodep->prettyTypeName();
+        return cvtToHex(m_nodep) + ' ' + m_nodep->prettyTypeNameQ();
     }
 
 public:

@@ -284,6 +284,18 @@ public:
 
     void puts(const string& str) { ofp()->puts(str); }
     void putns(const AstNode* nodep, const string& str) { ofp()->putns(nodep, str); }
+    void putOffsetofPragmaPush() {
+        // offsetof on the non-standard-layout generated classes works but warns, so suppress it
+        puts("\n#if defined(__GNUC__)\n");
+        puts("# pragma GCC diagnostic push\n");
+        puts("# pragma GCC diagnostic ignored \"-Winvalid-offsetof\"\n");
+        puts("#endif\n");
+    }
+    void putOffsetofPragmaPop() {
+        puts("\n#if defined(__GNUC__)\n");
+        puts("# pragma GCC diagnostic pop\n");
+        puts("#endif\n");
+    }
     void putsHeader() { ofp()->putsHeader(); }
     void putbs(const string& str) { ofp()->putbs(str); }
     void putnbs(const AstNode* nodep, const string& str) { ofp()->putnbs(nodep, str); }

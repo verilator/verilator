@@ -215,35 +215,39 @@
                                             : ... note: In instance 't'
   196 |       ignore_bins nonconstant = {size_var};
       |                                  ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:243:12: Unsupported: array 'bins' covering more than 1024 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin 'over_limit' ignored
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:244:12: Unsupported: array 'bins' covering more than 1024 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin 'over_limit' ignored
                                                        : ... note: In instance 't'
                                                        : ... Suggest a larger --coverage-max-bins
-  243 |       bins over_limit[] = {[0 : 1024]};   
+  244 |       bins over_limit[] = {[0 : 1024]};   
       |            ^~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:244:12: Unsupported: array 'bins' covering more than 1024 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin 'split_over_limit' ignored
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:245:12: Unsupported: array 'bins' covering more than 1024 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin 'split_over_limit' ignored
                                                        : ... note: In instance 't'
                                                        : ... Suggest a larger --coverage-max-bins
-  244 |       bins split_over_limit[] = {[0 : 511], [512 : 1024]};   
+  245 |       bins split_over_limit[] = {[0 : 511], [512 : 1024]};   
       |            ^~~~~~~~~~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:251:18: Coverpoint of a non-integral expression requires explicit bins (IEEE 1800-2023 19.5.3).
+%Error: t/t_covergroup_autobins_bad.v:252:18: Coverpoint of a non-integral expression requires explicit bins (IEEE 1800-2023 19.5.3).
                                             : ... note: In instance 't'
-  251 |     cp_implicit: coverpoint cp_real;
+  252 |     cp_implicit: coverpoint cp_real;
       |                  ^~~~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:253:12: Automatic bins are not allowed on a coverpoint of a non-integral expression (IEEE 1800-2023 19.5.3).
+%Error: t/t_covergroup_autobins_bad.v:254:12: Automatic bins are not allowed on a coverpoint of a non-integral expression (IEEE 1800-2023 19.5.3).
                                             : ... note: In instance 't'
-  253 |       bins auto[4];
+  254 |       bins auto[4];
       |            ^~~~
-%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:257:12: Unsupported: array 'bins' of a real coverpoint covering more than 1024 values; bin 'over_limit' ignored.
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:258:12: Unsupported: array 'bins' of a real coverpoint covering more than 1024 values; bin 'over_limit' ignored.
                                                        : ... note: In instance 't'
                                                        : ... Suggest a larger --coverage-max-real-bins
-  257 |       bins over_limit[] = {[0 : 1024]};   
+  258 |       bins over_limit[] = {[0 : 1024]};   
       |            ^~~~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:264:21: Non-constant expression in array bins value list; values must be constants (IEEE 1800-2023 19.5)
+%Error: t/t_covergroup_autobins_bad.v:265:21: Non-constant expression in array bins value list; values must be constants (IEEE 1800-2023 19.5)
                                             : ... note: In instance 't'
-  264 |       wildcard bins value[] = {size_var};
+  265 |       wildcard bins value[] = {size_var};
       |                     ^~~~~
-%Error: t/t_covergroup_autobins_bad.v:265:21: Non-constant expression in array bins range; range bounds must be constants (IEEE 1800-2023 19.5)
+%Error: t/t_covergroup_autobins_bad.v:266:21: Non-constant expression in array bins range; range bounds must be constants (IEEE 1800-2023 19.5)
                                             : ... note: In instance 't'
-  265 |       wildcard bins range[] = {[0 : size_var]};
+  266 |       wildcard bins range[] = {[0 : size_var]};
       |                     ^~~~~
+%Error: t/t_covergroup_autobins_bad.v:276:12: Array of default bins 'others' is not allowed on a coverpoint of a non-integral expression (IEEE 1800-2023 19.5.1).
+                                            : ... note: In instance 't'
+  276 |       bins others[] = default;
+      |            ^~~~~~
 %Error: Exiting due to

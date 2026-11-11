@@ -5687,9 +5687,7 @@ public:
     ASTGEN_MEMBERS_AstCastWrap;
     void numberOperate(V3Number& out, const V3Number& lhs) override {
         out.opAssign(lhs);
-        AstNodeDType* const castDTypep = dtypep();
-        out.opCleanTwoStateNumber(castDTypep->isIntegralOrPacked() ? castDTypep->basicp()
-                                                                   : castDTypep);
+        out.opCleanTwoStateNumber(dtypep());
     }
     string emitVerilog() override { return "(%l)"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }

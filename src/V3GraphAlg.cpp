@@ -411,9 +411,7 @@ public:
         main(vertexp);
     }
     ~GraphAlgRLoops() = default;
-    string message() const {
-        return std::accumulate(m_msgs.begin(), m_msgs.end(), std::string{""});
-    }
+    string message() const { return std::accumulate(m_msgs.begin(), m_msgs.end(), ""s); }
 };
 
 string V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {

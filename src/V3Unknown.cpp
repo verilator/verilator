@@ -480,7 +480,7 @@ class UnknownVisitor final : public VNVisitor {
             AstNodeDType* const dtypep = nodep->fromp()->dtypep()->skipRefp();
             UASSERT_OBJ(dtypep, nodep, "Select of non-selectable type");
             const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType);
-            UASSERT_OBJ(adtypep, nodep, "Select from non-array " << dtypep->prettyTypeName());
+            UASSERT_OBJ(adtypep, nodep, "Select from non-array " << dtypep->prettyTypeNameQ());
             declElements = adtypep->elementsConst();
             UINFOTREE(9, nodep, "", "arraysel_old");
 

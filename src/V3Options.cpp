@@ -617,6 +617,7 @@ int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
         {"protect-lib", 2},
         {"protect-key", 2},
         {"threads", 2},
+        {"top", 2},
         {"top-module", 2},
         //
         {"build", 1},
