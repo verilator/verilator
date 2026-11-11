@@ -129,6 +129,92 @@ module fsm_oneblock_reset_nonconst_ok (
   end
 endmodule
 
+module fsm_reset_active_low (
+    input logic clk,
+    input logic rst_n
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+
+  state_t sync_q;
+  state_t sync_d;
+  state_t async_q;
+  state_t async_d;
+  state_t oneblock_q;
+  state_t chain_q;
+  logic [1:0] count;
+  logic busy;
+
+  // V3Const writes 'if (!rst_n) R; else C' as 'if (rst_n) C; else R', and without other
+  // coverage folds this one into 'sync_q <= rst_n ? sync_d : S0'
+  always_ff @(posedge clk) begin
+    if (!rst_n) sync_q <= S0;
+    else sync_q <= sync_d;
+  end
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      async_q <= S0;
+      count <= '0;
+    end
+    else begin
+      async_q <= async_d;
+      count <= count + 1'b1;
+    end
+  end
+
+  always_comb begin
+    sync_d = sync_q;
+    case (sync_q)
+      S0: sync_d = S1;
+      S1: sync_d = S2;
+      default: sync_d = S0;
+    endcase
+  end
+
+  always_comb begin
+    async_d = async_q;
+    case (async_q)
+      S0: async_d = S1;
+      S1: async_d = S2;
+      default: async_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    if (!rst_n) oneblock_q <= S0;
+    else
+      case (oneblock_q)
+        S0: oneblock_q <= S1;
+        S1: oneblock_q <= S2;
+        default: oneblock_q <= S0;
+      endcase
+  end
+
+  // Two statements per branch keep the chain from folding into one assignment
+  always_ff @(posedge clk) begin
+    if (!rst_n) begin
+      chain_q <= S0;
+      busy <= 1'b0;
+    end
+    else if (chain_q == S0) begin
+      chain_q <= S1;
+      busy <= 1'b1;
+    end
+    else if (chain_q == S1) begin
+      chain_q <= S2;
+      busy <= 1'b1;
+    end
+    else begin
+      chain_q <= S0;
+      busy <= 1'b0;
+    end
+  end
+endmodule
+
 module t (
     input logic clk
 );
@@ -151,6 +237,10 @@ module t (
   fsm_oneblock_reset_nonconst_ok oneblock_reset_nonconst_ok_u (
       .clk(clk),
       .rst(rst)
+  );
+  fsm_reset_active_low reset_active_low_u (
+      .clk(clk),
+      .rst_n(!rst)
   );
 
   initial begin

@@ -548,6 +548,28 @@ module fsm_direct_active_low_dynamic_reset_bad (
     state_q <= rst_n ? state_d : state_t'(dyn_reset);
   end
 endmodule
+module fsm_positive_compound_reset_bad (
+    input logic clk,
+    input logic rst_n,
+    input logic flush
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1
+  } state_t;
+  state_t state_q  /*verilator fsm_state*/;
+  state_t state_d;
+  always_comb begin
+    state_d = state_q;
+    if (state_q == S0) state_d = S1;
+    else state_d = S0;
+  end
+  // An active-low reset in the else branch is only recognized on a plain signal
+  always_ff @(posedge clk) begin
+    if (rst_n && !flush) state_q <= state_d;
+    else state_q <= S0;
+  end
+endmodule
 module fsm_reg_enable_no_else_bad (
     input logic clk,
     input logic start
@@ -728,6 +750,11 @@ module t (
       .clk(clk),
       .rst_n(cyc != 0),
       .dyn_reset(dyn_case[1:0])
+  );
+  fsm_positive_compound_reset_bad positive_compound_reset_u (
+      .clk(clk),
+      .rst_n(cyc != 0),
+      .flush(start)
   );
   fsm_reg_enable_no_else_bad reg_enable_no_else_u (
       .clk(clk),
