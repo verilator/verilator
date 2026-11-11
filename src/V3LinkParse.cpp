@@ -935,6 +935,8 @@ class LinkParseVisitor final : public VNVisitor {
         } else if (nodep->name() == "" && (VN_IS(backp, GenCaseItem) || VN_IS(backp, GenIf))
                    && !nestedIf) {
             assignGenBlkNum = m_genblkAbove;
+            // A generate block even without begin-end, so a hierarchy level (IEEE 1800-2023 27.5)
+            nodep->implied(false);
         }
         if (assignGenBlkNum != -1) {
             nodep->name("genblk" + cvtToStr(assignGenBlkNum));
