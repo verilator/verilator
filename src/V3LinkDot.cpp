@@ -5652,19 +5652,22 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     } else {
                         const AstClassRefDType* const classDtp
                             = VN_CAST(resolvedDtp, ClassRefDType);
-                        if (!classDtp)
+                        if (!classDtp) {
                             nodep->v3error("'randomize() with' on a non-class-instance "
                                            << fromDtp->prettyNameQ());
-                        else if (m_statep->forPrimary()
-                                 && m_extendsParam.count(classDtp->classp())) {
-                            // Inherited members are unavailable until the base class is
-                            // specialized. Defer lookup rather than incorrectly binding names in
-                            // the caller.
-                            m_ds.m_unresolvedClass = true;
                         } else {
                             // Import inherited members in case the class was not visited yet.
-                            if (!m_statep->forPrimary()) classExtendImport(classDtp->classp());
-                            m_randSymp = m_statep->getNodeSym(classDtp->classp());
+                            // This also records whether it has a parameterized base class.
+                            classExtendImport(classDtp->classp());
+                            if (m_statep->forPrimary()
+                                && m_extendsParam.count(classDtp->classp())) {
+                                // Inherited members are unavailable until the base class is
+                                // specialized. Defer lookup rather than incorrectly binding
+                                // names in the caller.
+                                m_ds.m_unresolvedClass = true;
+                            } else {
+                                m_randSymp = m_statep->getNodeSym(classDtp->classp());
+                            }
                         }
                     }
                 }
