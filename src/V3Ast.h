@@ -197,7 +197,10 @@ public:
         m_u.up = nullptr;
         m_u.uq = i;
     }
-    explicit VNUser(void* p) { m_u.up = p; }
+    explicit VNUser(void* p) {
+        m_u.uq = 0;  // For 32-bit targets where up is 32-bits
+        m_u.up = p;
+    }
     ~VNUser() = default;
     // Casters
     template <typename T>
