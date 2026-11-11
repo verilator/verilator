@@ -98,7 +98,7 @@ AstIfaceRefDType* V3LinkDotIfaceCapture::ifaceRefFromVarDType(AstNodeDType* dtyp
         } else if (AstUnpackArrayDType* const unpackp = VN_CAST(curp, UnpackArrayDType)) {
             curp = unpackp->subDTypep();
         } else {
-            v3fatalSrc("ifaceRefFromVarDType: unexpected dtype " << curp->prettyTypeName()
+            v3fatalSrc("ifaceRefFromVarDType: unexpected dtype " << curp->prettyTypeNameQ()
                                                                  << " in chain");
         }
     }
@@ -396,11 +396,11 @@ void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPa
     UINFO(9, "addParamType: paramTypep subDTypep chain:");
     if (debug())
         paramTypep->foreach([&](AstRefDType* innerRefp) {
-            UINFO(9,
-                  "  inner RefDType: "
-                      << innerRefp << " refDTypep=" << innerRefp->refDTypep()
-                      << (innerRefp->refDTypep() ? " refDTypep->name=" : "")
-                      << (innerRefp->refDTypep() ? innerRefp->refDTypep()->prettyTypeName() : ""));
+            UINFO(9, "  inner RefDType: " << innerRefp << " refDTypep=" << innerRefp->refDTypep()
+                                          << (innerRefp->refDTypep() ? " refDTypep->name=" : "")
+                                          << (innerRefp->refDTypep()
+                                                  ? innerRefp->refDTypep()->prettyTypeNameQ()
+                                                  : ""));
         });
     tag(refp, ownerModp, VIfaceCaptureTag::Kind::PARAM_TYPE, cellPath, ptOwnerName);
 }

@@ -1327,7 +1327,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstRefDType* nodep) override {
         if (!nodep->subDTypep()) {
-            puts("\n???? // "s + nodep->prettyTypeName() + " -> UNLINKED\n");
+            puts("\n???? // "s + nodep->prettyTypeNameQ() + " -> UNLINKED\n");
             return;
         }
         if (const AstTypedef* const tdefp = nodep->typedefp()) {
@@ -1643,12 +1643,12 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstCell*) override {}  // Handled outside the Visit class
     // Default
     void visit(AstNode* nodep) override {
-        puts("\n???? // "s + nodep->prettyTypeName() + "\n");
+        puts("\n???? // "s + nodep->prettyTypeNameQ() + "\n");
         iterateChildrenConst(nodep);
         // Not v3fatalSrc so we keep processing
         if (!m_suppressUnknown) {
             nodep->v3error(
-                "Internal: Unknown node type reached emitter: " << nodep->prettyTypeName());
+                "Internal: Unknown node type reached emitter: " << nodep->prettyTypeNameQ());
         }
     }
     void visit(AstParamTypeDType* nodep) override { puts(nodep->prettyName()); }
