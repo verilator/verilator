@@ -104,6 +104,7 @@
 
 #include <algorithm>
 #include <set>
+#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -115,6 +116,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class DpiImportCallVisitor final : public VNVisitor {
     bool m_hasDpiHazard = false;  // Found a DPI import call.
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
+    std::unordered_set<const AstCFunc*> m_visitedps;  // Functions already visited
     // METHODS
     void visit(AstCFunc* nodep) override {
         if (!m_tracingCall) return;
@@ -124,16 +126,17 @@ class DpiImportCallVisitor final : public VNVisitor {
                                  : !v3Global.opt.threadsDpiUnpure()) {
                 // If hierarchical DPI wrapper cost is not found or is of a 0 cost,
                 // we have a normal DPI which induces DPI hazard by default.
-                m_hasDpiHazard = V3Control::getProfileData(nodep->cname()) == 0;
-                UINFO(9, "DPI wrapper '" << nodep->cname()
-                                         << "' has dpi hazard = " << m_hasDpiHazard);
+                const bool dpiHazard = V3Control::getProfileData(nodep->cname()) == 0;
+                m_hasDpiHazard |= dpiHazard;
+                UINFO(9, "DPI wrapper '" << nodep->cname() << "' has dpi hazard = " << dpiHazard);
             }
         }
         iterateChildren(nodep);
     }
     void visit(AstNodeCCall* nodep) override {
         iterateChildren(nodep);
-        // Enter the function and trace it
+        // Enter the function and trace it, once, as functions can be recursive
+        if (!m_visitedps.emplace(nodep->funcp()).second) return;
         m_tracingCall = true;
         iterate(nodep->funcp());
     }
