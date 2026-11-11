@@ -12,7 +12,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.clean_objs()
-if not re.search(r'\(GCC\)', test.cxx_version):
+if 'clang' in test.cxx_version.lower() or 'microsoft' in test.cxx_version.lower():
     test.skip('Requires GCC for C++ module builds')
 if not test.have_cxx_module_scan:
     test.skip('Requires a compiler with P1689 C++ module dependency scanning')

@@ -12,7 +12,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-if not re.search(r'\(GCC\)', test.cxx_version):
+if 'clang' in test.cxx_version.lower() or 'microsoft' in test.cxx_version.lower():
     test.skip('Requires GCC for -fmodules')
 
 test.compile(verilator_flags2=[
