@@ -277,8 +277,6 @@ class GraphAlgRank final : GraphAlg<> {
         // each raise, which is quadratic on long paths.
         // Vertex::m_user: number of predecessors not visited yet
         size_t nUnvisited = 0;
-        // This unmodified range-for cannot increment an end iterator; the inlined past-end
-        // debug assertion is unreachable.
         for (V3GraphVertex& vertex : m_graphp->vertices()) {
             vertex.rank(1);
             vertex.user(0);
