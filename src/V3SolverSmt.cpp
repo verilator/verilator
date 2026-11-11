@@ -403,7 +403,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                           "Unsupported: Nested array element access in global constraint");
         } else if (const AstCMethodHard* const cmethp = VN_CAST(nodep, CMethodHard)) {
             UASSERT_OBJ(cmethp->method() == VCMethod::ARRAY_AT, cmethp,
-                        "Unexpected CMethodHard: " << cmethp->prettyTypeName());
+                        "Unexpected CMethodHard: " << cmethp->prettyTypeNameQ());
             return newElementNamep(fl, namep, cmethp->pinsp());
         }
         return namep;
@@ -4280,7 +4280,7 @@ public:
                     } else {
                         fromp->v3warn(E_UNSUPPORTED, "Unsupported: Unsupported size constraint "
                                                      "inside 'with' statement of type "
-                                                         << fromp->dtypep()->prettyTypeName());
+                                                         << fromp->dtypep()->prettyTypeNameQ());
                     }
                 } else if (AstVarRef* const varRefp = VN_CAST(rootExprp, VarRef)) {
                     arrVarp = varRefp->varp();

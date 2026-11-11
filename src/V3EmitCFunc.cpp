@@ -110,7 +110,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
             case 'P':
                 if (nodep->isWide() && !usesQueue) {
                     UASSERT_OBJ(m_wideTempRefp, nodep,
-                                "Wide op " << nodep->prettyTypeName()
+                                "Wide op " << nodep->prettyTypeNameQ()
                                            << " w/ no temp, perhaps missing op in V3EmitC?");
                     commaOut();
                     putOut();
@@ -645,7 +645,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
             return out;
         }
     } else {  // LCOV_EXCL_BR_LINE
-        v3fatalSrc("Unknown node type in reset generator: " << varp->prettyTypeName());
+        v3fatalSrc("Unknown node type in reset generator: " << varp->prettyTypeNameQ());
     }
     return "";
 }

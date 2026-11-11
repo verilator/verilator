@@ -127,7 +127,7 @@ private:
             local = anodep->isHideLocal();
             prot = anodep->isHideProtected();
         } else {
-            nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeName());
+            nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeNameQ());
         }
         if (local || prot) {
             // In case of covergroup, the reference is to the enclosing class, not the covergroup

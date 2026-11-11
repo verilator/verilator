@@ -2989,7 +2989,7 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
                     nodep = subp;
                     continue;
                 }
-                if (assertOn) nodep->v3fatalSrc(nodep->prettyTypeName() << " not linked to type");
+                if (assertOn) nodep->v3fatalSrc(nodep->prettyTypeNameQ() << " not linked to type");
                 return nullptr;
             }
             return nodep;
@@ -3014,7 +3014,7 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
             if (depth < MAX_CHAIN_DISPLAY && !nodep->name().empty()) {
                 FileLine* const flp = nodep->fileline();
                 ss << '\n'
-                   << flp->warnOther() << "... Type chain: " << nodep->prettyTypeName() << '\n'
+                   << flp->warnOther() << "... Type chain: " << nodep->prettyTypeNameQ() << '\n'
                    << (!depth ? flp->warnContextPrimary() : flp->warnContextSecondary());
             }
             nodep = nodep->subDTypep();

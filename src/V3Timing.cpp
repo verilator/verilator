@@ -133,7 +133,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
                     return cvtToHex(nodep()) + ' ' + classp()->name() + "::" + nodep()->name();
                 }
             }
-            return cvtToHex(nodep()) + ' ' + nodep()->prettyTypeName();
+            return cvtToHex(nodep()) + ' ' + nodep()->prettyTypeNameQ();
         }
         FileLine* fileline() const override { return nodep()->fileline(); }
 
@@ -806,7 +806,7 @@ class TimingControlVisitor final : public VNVisitor {
             procp->v3fatalSrc(
                 procp->prettyNameQ()
                 << " is not of an expected type NodeProcedure/CFunc/ForkItem instead it is: "
-                << procp->prettyTypeName());
+                << procp->prettyTypeNameQ());
         }
     }
 

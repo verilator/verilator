@@ -186,7 +186,8 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
             ofp()->putsNoTracking("}");
             return;
         }
-        nodep->v3fatalSrc("Unknown node type in emitInitializerBody: " << nodep->prettyTypeName());
+        nodep->v3fatalSrc(
+            "Unknown node type in emitInitializerBody: " << nodep->prettyTypeNameQ());
     }
 
     // Emit the braced initializer for the given value '{...}'
