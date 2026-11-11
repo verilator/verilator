@@ -45,11 +45,20 @@ module pulled_array_port (
 );
 endmodule
 
+module pulled_pair_port (
+    output tri1 [1:0] pad
+);
+endmodule
+
 interface pulled_port_if;
   wire [8:0] pad;
 endinterface
 
 module t;
+  // Repeated destinations can be folded from a concatenation into a replication.
+  wire repeated;
+  pulled_pair_port repeated_pull (.pad({repeated, repeated}));
+
   // Stream truncation still requires support for matching data, enables, and pulls.
   wire [6:0] narrow_left, narrow_right;
   // verilator lint_off WIDTHEXPAND
