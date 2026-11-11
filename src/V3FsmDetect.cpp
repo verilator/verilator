@@ -1003,21 +1003,44 @@ class FsmDetectVisitor final : public VNVisitor {
         return assp;
     }
 
-    // Match 'state = reset ? CONST : next', an active high reset folded into the commit
-    static AstNodeAssign* directCondStateVarAssign(AstNode* nodep, AstVarScope*& stateVscp,
-                                                   AstVarScope*& fromVscp, AstNodeExpr*& condp,
-                                                   FsmStateValue& resetValue) {
-        AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
-        if (!assp) return nullptr;
+    // Match 'state = reset ? CONST : next', an active high reset folded into the commit.
+    // Branch coverage makes V3LiftExpr rewrite it as 'if (reset) tmp = CONST; else tmp =
+    // next; state = tmp;' on a temporary, so match that form too.
+    static AstNodeAssign* condStateVarAssign(AstNode* stmtsp, AstVarScope*& stateVscp,
+                                             AstVarScope*& fromVscp, AstNodeExpr*& condp,
+                                             AstNodeExpr*& resetValuep,
+                                             FsmStateValue& resetValue) {
+        AstNodeAssign* assp = VN_CAST(singleMeaningfulStmt(stmtsp), NodeAssign);
+        AstNodeExpr* nextp;
+        if (assp) {
+            AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
+            if (!rhsp) return nullptr;
+            condp = rhsp->condp();
+            resetValuep = rhsp->thenp();
+            nextp = rhsp->elsep();
+        } else {
+            AstIf* const ifp = VN_CAST(stmtsp, If);
+            if (!ifp) return nullptr;
+            assp = VN_CAST(singleMeaningfulStmt(ifp->nextp()), NodeAssign);
+            AstVarRef* const tmpRefp = assp ? VN_CAST(assp->rhsp(), VarRef) : nullptr;
+            if (!tmpRefp || !tmpRefp->varp()->isTemp()) return nullptr;
+            // V3LiftExpr assigns its temporary in both arms; other passes' temporaries may not
+            AstNodeAssign* const thenAssp
+                = directStateAssign(singleMeaningfulStmt(ifp->thensp()), tmpRefp->varScopep());
+            AstNodeAssign* const elseAssp
+                = directStateAssign(singleMeaningfulStmt(ifp->elsesp()), tmpRefp->varScopep());
+            if (!thenAssp || !elseAssp) return nullptr;
+            condp = ifp->condp();
+            resetValuep = thenAssp->rhsp();
+            nextp = elseAssp->rhsp();
+        }
         AstVarRef* const lhsp = VN_CAST(assp->lhsp()->baseFromp(true), VarRef);
-        AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
-        if (!rhsp || !lhsp) return nullptr;
-        AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef);
-        if (!elsep) return nullptr;
-        if (constValueStatus(rhsp->thenp(), resetValue) != ConstValueStatus::OK) return nullptr;
-        fromVscp = elsep->varScopep();
+        AstVarRef* const nextRefp = VN_CAST(nextp, VarRef);
+        if (!lhsp || !nextRefp) return nullptr;
+        if (constValueStatus(resetValuep, resetValue /*ref*/) != ConstValueStatus::OK)
+            return nullptr;
         stateVscp = lhsp->varScopep();
-        condp = rhsp->condp();
+        fromVscp = nextRefp->varScopep();
         return assp;
     }
 
@@ -1471,7 +1494,6 @@ class FsmDetectVisitor final : public VNVisitor {
 
         AstNode* const stmtsp = skipLeadingIgnorableStmt(alwaysp->stmtsp());
         AstNode* const nodep = singleMeaningfulStmt(stmtsp);
-        if (!nodep) return false;
 
         AstVarScope* stateVscp = nullptr;
         AstVarScope* nextVscp = nullptr;
@@ -1504,11 +1526,13 @@ class FsmDetectVisitor final : public VNVisitor {
             cand.hasResetCond(cand.resetCond().varScopep != nullptr);
         } else {
             AstNodeExpr* resetCondp = nullptr;
+            AstNodeExpr* resetValuep = nullptr;
             FsmStateValue resetValue;
             // Note the active low 'reset ? next : CONST' form is not accepted
-            if (AstNodeAssign* const assp
-                = directCondStateVarAssign(nodep, stateVscp, nextVscp, resetCondp, resetValue)) {
-                cand.resetArcs().emplace_back(resetValue, assp);
+            if (AstNodeAssign* const assp = condStateVarAssign(
+                    stmtsp, stateVscp /*ref*/, nextVscp /*ref*/, resetCondp /*ref*/,
+                    resetValuep /*ref*/, resetValue /*ref*/)) {
+                cand.resetArcs().emplace_back(resetValue, assp, resetValuep);
                 cand.resetCond() = describeResetCond(resetCondp);
                 cand.hasResetCond(cand.resetCond().varScopep != nullptr);
             } else if (!nodeStateVarAssign(nodep, stateVscp, nextVscp)) {
