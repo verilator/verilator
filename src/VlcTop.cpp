@@ -252,7 +252,7 @@ uint64_t keyNumber(const string& value) {
 // If a field of a record's name, '\001<key>\002<value>', has a key of the coverage computation
 bool isScoreField(const string& field) {
     for (const char* const keyp : {VL_CIK_THRESH, VL_CIK_WEIGHT, VL_CIK_GROUP_WEIGHT}) {
-        const string prefix = string{"\001"} + keyp + "\002";
+        const string prefix = "\001"s + keyp + "\002";
         if (field.compare(0, prefix.size(), prefix) == 0) return true;
     }
     return false;
