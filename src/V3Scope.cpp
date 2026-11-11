@@ -65,6 +65,7 @@ class ScopeVisitor final : public VNVisitor {
     // Varrefs-in-scopes needing fixup when done
     std::vector<std::pair<AstVarRef*, AstScope*>> m_varRefScopes;
     std::vector<AstScope*> m_scopes;  // Scopes awaiting attachment to their modules
+    std::vector<AstRtmdHier*> m_classRtmdps;  // Descriptors of classes, to place at the root
 
     // METHODS
 
@@ -138,6 +139,10 @@ class ScopeVisitor final : public VNVisitor {
         // Defer attachment until all instances are visited so cell collection and child
         // iteration do not rescan a growing list of completed scopes.
         for (AstScope* const scopep : m_scopes) scopep->modp()->addStmtsp(scopep);
+        // Classes are not per instance, so their descriptors are under the root
+        for (AstRtmdHier* const levelp : m_classRtmdps) {
+            nodep->topScopep()->rtmdp()->addItemsp(levelp);
+        }
         if (v3Global.opt.mtasks()) V3Control::applyThreadsGroupWorkers(m_scopes);
         cleanupVarRefs();
     }
@@ -277,6 +282,14 @@ class ScopeVisitor final : public VNVisitor {
         // A hierarchy level within the descriptor of a module (e.g. block/function/etc.)
         if (nodep != m_modp->rtmdp()) {
             iterateChildren(nodep);
+            return;
+        }
+
+        // A class has a single scope, so its descriptor is moved, then placed at the root
+        if (VN_IS(m_modp, Class)) {
+            nodep->unlinkFrBack();
+            iterateChildren(nodep);
+            m_classRtmdps.push_back(nodep);
             return;
         }
 

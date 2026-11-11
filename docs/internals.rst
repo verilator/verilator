@@ -1283,8 +1283,7 @@ storage in the model.
 
 Only static variables are described. Variables of types that cannot be
 described, e.g. strings, queues, dynamic and associative arrays, and class
-handles, are not described. Neither are SystemC variables, virtual
-interface references, class members, and primitives.
+handles, are not described.
 
 
 Descriptor Tables

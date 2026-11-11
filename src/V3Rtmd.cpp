@@ -34,13 +34,16 @@
 //      the ROOT are instead under a nested ROOTIO level, which is not part of any path. V3Scope
 //      then clones the levels per instance, and inlines each into the level of the instance above,
 //      leaving a single tree under the AstTopScope, which is emitted flattened as PUSH, items,
-//      POP.
+//      POP. A class has a CLASS level, named like '$unit::Cls'. V3Scope places it under the ROOT,
+//      once. Contrary to IEEE 1800, a class declared in a module is currently not elaborated per
+//      instance of the module, so all instances share its static variables, and have no class
+//      levels of their own.
 //
 //  Scoped (scopedAll, in V3RtmdScoped.cpp):
 //      After V3Scope, finishes the descriptors, knowing the hierarchical path of each variable.
 //
-// Only static variables are described. SystemC variables, virtual interface references,
-// classes and primitives are not.
+// Only static variables are described. SystemC variables, virtual interface references and
+// primitives are not.
 //
 //*************************************************************************
 
@@ -299,14 +302,15 @@ public:
 };
 
 //######################################################################
-// Builds the descriptor of each module, interface and package: a hierarchy level holding its
-// variables and instances, and the nested hierarchy levels of its named blocks
+// Builds the descriptor of each module, interface, package and class: a hierarchy level holding
+// its variables and instances, and the nested hierarchy levels of its named blocks
 
 class RtmdBuilder final : public VNVisitor {
     // STATE
     RtmdTypeBuilder m_typeBuilder;  // Builds the data type and var type descriptors
     AstRtmdHier* m_levelp = nullptr;  // Hierarchy level being built
     AstRtmdHier* m_rootIop = nullptr;  // The ROOTIO level of the root module being built
+    std::string m_classPrefix;  // Prefix of the names of classes declared here, e.g. '$unit'
 
     // METHODS
 
@@ -325,7 +329,9 @@ class RtmdBuilder final : public VNVisitor {
         AstRtmdHier* const levelp
             = new AstRtmdHier{flp, AstNode::prettyName(nodep->origName()), kind};
         VL_RESTORER(m_levelp);
+        VL_RESTORER_COPY(m_classPrefix);
         m_levelp = levelp;
+        m_classPrefix = rtmdName(nodep);
         iterateChildren(nodep);
         nodep->rtmdp(levelp);
     }
@@ -354,7 +360,16 @@ class RtmdBuilder final : public VNVisitor {
         nodep->v3fatalSrc("Unhandled NodeModule sub type");  // Everything handled explicitly
     }
     void visit(AstClass* nodep) override {
-        // TODO: static vars under classes should be included
+        // A class is not elaborated per instance of the module declaring it (see above), so it
+        // holds its own descriptor, which V3Scope places at the root
+        VL_RESTORER(m_levelp);
+        VL_RESTORER(m_rootIop);
+        VL_RESTORER_COPY(m_classPrefix);
+        m_classPrefix += "::" + rtmdName(nodep);
+        m_levelp = new AstRtmdHier{nodep->fileline(), m_classPrefix, VRtmdHierKind::CLASS};
+        m_rootIop = nullptr;
+        iterateChildren(nodep);
+        nodep->rtmdp(m_levelp);
     }
     void visit(AstClassPackage* nodep) override {
         nodep->v3fatalSrc("AstClassPackage should not exist at this stage");

@@ -339,6 +339,11 @@ void VlRtmdHierListener::walkRows(const VerilatedModel& model, const VlRtmdHierR
                         && enterInstance(InstanceKind::PACKAGE, instancep->m_namep, pushp->m_namep,
                                          pushp->m_flags);
                 break;
+            case VlRtmdHierRow::Push::Kind::CLASS:
+                // Omit classes in a partition's model, as for packages
+                enter = !inPartitionRoot
+                        && enterScope(ScopeKind::CLASS, pushp->m_namep, pushp->m_flags);
+                break;
             case VlRtmdHierRow::Push::Kind::FUNCTION:
                 enter = enterScope(ScopeKind::FUNCTION, pushp->m_namep, pushp->m_flags);
                 break;
@@ -397,6 +402,9 @@ void VlRtmdHierListener::walkRows(const VerilatedModel& model, const VlRtmdHierR
                 case VlRtmdHierRow::Push::Kind::PACKAGE:
                     exitInstance(InstanceKind::PACKAGE, instanceNamep(), pushp->m_namep,
                                  pushp->m_flags);
+                    break;
+                case VlRtmdHierRow::Push::Kind::CLASS:
+                    exitScope(ScopeKind::CLASS, pushp->m_namep, pushp->m_flags);
                     break;
                 case VlRtmdHierRow::Push::Kind::FUNCTION:
                     exitScope(ScopeKind::FUNCTION, pushp->m_namep, pushp->m_flags);
@@ -618,6 +626,7 @@ class VlRtmdHierDumper final : public VlRtmdHierListener {
     static std::string scopeEnd(ScopeKind kind) {
         switch (kind) {
         case ScopeKind::ROOTIO: return "endrootio"s;
+        case ScopeKind::CLASS: return "endclass"s;
         case ScopeKind::FUNCTION: return "endfunction"s;
         case ScopeKind::TASK: return "endtask"s;
         case ScopeKind::GENERATE: return "endgenerate"s;
@@ -629,6 +638,7 @@ class VlRtmdHierDumper final : public VlRtmdHierListener {
     static std::string scopeName(ScopeKind kind) {
         switch (kind) {
         case ScopeKind::ROOTIO: return "rootio"s;
+        case ScopeKind::CLASS: return "class"s;
         case ScopeKind::FUNCTION: return "function"s;
         case ScopeKind::TASK: return "task"s;
         case ScopeKind::GENERATE: return "generate"s;

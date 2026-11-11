@@ -686,6 +686,7 @@ public:
             MODULE,
             INTERFACE,
             PACKAGE,
+            CLASS,
             GENERATE,
             BEGIN,
             FORK,
@@ -914,7 +915,7 @@ public:
 protected:
     // TYPES
     enum class InstanceKind : uint8_t { MODULE, INTERFACE, PACKAGE };
-    enum class ScopeKind : uint8_t { ROOTIO, FUNCTION, TASK, GENERATE, BEGIN, FORK };
+    enum class ScopeKind : uint8_t { ROOTIO, CLASS, FUNCTION, TASK, GENERATE, BEGIN, FORK };
     using HierFlags = VlRtmdHierRow::HierFlags;
     using VarFlags = VlRtmdHierRow::VarFlags;
 

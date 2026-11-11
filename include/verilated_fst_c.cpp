@@ -206,9 +206,10 @@ void VerilatedFst::scopeOpen(ScopeKind kind, const char* namep) {
     beginOtherScope();
     // Other scopes are presented as modules, as before function and task scopes were traced
     const fst::Hierarchy::ScopeType type
-        = kind == ScopeKind::FUNCTION ? fst::Hierarchy::ScopeType::VCD_FUNCTION
-          : kind == ScopeKind::TASK   ? fst::Hierarchy::ScopeType::VCD_TASK
-                                      : fst::Hierarchy::ScopeType::VCD_MODULE;
+        = kind == ScopeKind::CLASS      ? fst::Hierarchy::ScopeType::VCD_CLASS
+          : kind == ScopeKind::FUNCTION ? fst::Hierarchy::ScopeType::VCD_FUNCTION
+          : kind == ScopeKind::TASK     ? fst::Hierarchy::ScopeType::VCD_TASK
+                                        : fst::Hierarchy::ScopeType::VCD_MODULE;
     vlFstBeginScope(m_fst, type, namep);
 }
 

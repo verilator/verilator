@@ -1599,6 +1599,7 @@ public:
         MODULE,
         INTERFACE,
         PACKAGE,
+        CLASS,
         GENERATE,
         BEGIN,
         FORK,
@@ -1612,7 +1613,7 @@ public:
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static constexpr const char* const names[]
-            = {"ROOT",     "ROOTIO", "MODULE", "INTERFACE", "PACKAGE",
+            = {"ROOT",     "ROOTIO", "MODULE", "INTERFACE", "PACKAGE", "CLASS",
                "GENERATE", "BEGIN",  "FORK",   "FUNCTION",  "TASK"};
         return names[m_e];
     }
