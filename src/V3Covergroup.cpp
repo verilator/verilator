@@ -2372,7 +2372,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                    << " is not allowed on a coverpoint of a non-integral "
                                       "expression (IEEE 1800-2023 19.5.1).");
                 } else if (cbinp->isArray()) {
-                    cbinp->v3warn(COVERIGN, "Unsupported: array of default cover bins "
+                    cbinp->v3warn(COVERIGN, "Unsupported: Array of default cover bins "
                                                 << cbinp->prettyNameQ()
                                                 << " (treated as one bin).");
                 }
