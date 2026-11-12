@@ -1205,8 +1205,13 @@ class AssertVisitor final : public VNVisitor {
                         propp = predp;
                     }
 
-                    // Record if this ends with an 'else' that does not have an if
-                    if (ifp->elsesp() && !nextifp) hasDefaultElse = true;
+                    // Record if this ends with an 'else' that does not have an if.  An else
+                    // holding only CoverIncs has no source statements: V3Coverage added it.
+                    if (!nextifp) {
+                        for (const AstNode* stmtp = ifp->elsesp(); stmtp; stmtp = stmtp->nextp()) {
+                            if (!VN_IS(stmtp, CoverInc)) hasDefaultElse = true;
+                        }
+                    }
 
                     ifp = nextifp;
                 } while (ifp);
