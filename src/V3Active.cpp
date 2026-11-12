@@ -435,6 +435,153 @@ public:
 };
 
 //######################################################################
+// Implicit sensitivity list of an always_latch with nonblocking assignments
+
+class ActiveLatchSenVisitor final : public VNVisitorConst {
+    // IEEE 1800-2023 9.2.2.3: the latch is sensitive to the longest static prefixes it, or a
+    // function it calls, reads but does not write. Each variable is tracked per bit of each
+    // unpacked element (a packed variable is one element), as narrowed by constant selects.
+    struct Parts final {
+        int m_width;  // Bits in each element
+        std::vector<bool> m_read;  // Each bit of each element read
+        std::vector<bool> m_written;  // Each bit of each element written
+    };
+
+    // STATE
+    std::vector<AstVarScope*> m_varps;  // Variables accessed, in order
+    std::unordered_map<const AstVarScope*, Parts> m_parts;  // Parts of each variable accessed
+    std::unordered_set<const AstCFunc*> m_funcps;  // Functions called
+    bool m_unsupported = false;  // A variable change detection can't compare is read
+
+    // METHODS
+    static AstUnpackArrayDType* arrayDTypep(const AstVarScope* vscp) {
+        return VN_CAST(vscp->dtypep()->skipRefp(), UnpackArrayDType);
+    }
+    // Record an access of the given element (all if negative) and bits (all if negative)
+    void record(const AstVarRef* refp, int elem, int lsb, int width) {
+        // Function arguments and locals are not sensitivities
+        if (refp->varp()->isFuncLocal()) return;
+        AstVarScope* const vscp = refp->varScopep();
+        const AstUnpackArrayDType* const arrayp = arrayDTypep(vscp);
+        const AstNodeDType* const elemp
+            = arrayp ? arrayp->subDTypep()->skipRefp() : vscp->dtypep()->skipRefp();
+        if (elemp->isCompound()) {
+            m_unsupported = true;
+            return;
+        }
+        const int elems = arrayp ? arrayp->elementsConst() : 1;
+        const auto pair = m_parts.emplace(vscp, Parts{elemp->width(), {}, {}});
+        Parts& parts = pair.first->second;
+        if (pair.second) {
+            m_varps.push_back(vscp);
+            parts.m_read.resize(elems * parts.m_width);
+            parts.m_written.resize(elems * parts.m_width);
+        }
+        if (elem >= elems || lsb + width > parts.m_width) elem = width = -1;  // Out of range
+        const int eLo = elem < 0 ? 0 : elem;
+        const int eHi = elem < 0 ? elems - 1 : elem;
+        const int bLo = width < 0 ? 0 : lsb;
+        const int bHi = width < 0 ? parts.m_width - 1 : lsb + width - 1;
+        for (int e = eLo; e <= eHi; ++e) {
+            for (int b = bLo; b <= bHi; ++b) {
+                if (refp->access().isReadOrRW()) parts.m_read[e * parts.m_width + b] = true;
+                if (refp->access().isWriteOrRW()) parts.m_written[e * parts.m_width + b] = true;
+            }
+        }
+    }
+    // The element a constant ArraySel of a variable selects, else -1, and the variable
+    static int constElement(const AstArraySel* aselp, const AstVarRef*& refpr) {
+        refpr = VN_CAST(aselp->fromp(), VarRef);
+        const AstConst* const constp = VN_CAST(aselp->bitp(), Const);
+        return refpr && constp ? constp->toSInt() : -1;
+    }
+
+    // VISITORS
+    void visit(AstVarRef* nodep) override { record(nodep, -1, 0, -1); }
+    void visit(AstArraySel* nodep) override {
+        const AstVarRef* refp;
+        const int elem = constElement(nodep, refp);
+        if (refp) {
+            record(refp, elem, 0, -1);
+            iterateConst(nodep->bitp());
+        } else {
+            iterateChildrenConst(nodep);
+        }
+    }
+    void visit(AstSel* nodep) override {
+        const AstConst* const lsbp = VN_CAST(nodep->lsbp(), Const);
+        const AstVarRef* refp = VN_CAST(nodep->fromp(), VarRef);
+        int elem = -1;
+        const AstArraySel* const aselp = VN_CAST(nodep->fromp(), ArraySel);
+        if (aselp) elem = constElement(aselp, refp);
+        if (!lsbp || !refp) {
+            iterateChildrenConst(nodep);
+            return;
+        }
+        record(refp, elem, lsbp->toSInt(), nodep->widthConst());
+        if (aselp) iterateConst(aselp->bitp());
+    }
+    void visit(AstNodeCCall* nodep) override {
+        iterateChildrenConst(nodep);
+        if (m_funcps.insert(nodep->funcp()).second) iterateConst(nodep->funcp());
+    }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    // Add a sensitivity to each run of bits of each element read but not written
+    void addSenItems(AstSenTree* senTreep, AstVarScope* vscp) const {
+        FileLine* const flp = senTreep->fileline();
+        const Parts& parts = m_parts.at(vscp);
+        const int bits = parts.m_read.size();
+        const auto changedp = [&](AstNodeExpr* exprp) {
+            senTreep->addSensesp(new AstSenItem{flp, VEdgeType::ET_CHANGED, exprp});
+        };
+        const auto refp = [&]() -> AstNodeExpr* {
+            return new AstVarRef{flp, vscp, VAccess::READ};
+        };
+        bool all = true;
+        for (int i = 0; i < bits; ++i) all &= parts.m_read[i] && !parts.m_written[i];
+        if (all) return changedp(refp());
+        const bool isArray = arrayDTypep(vscp);
+        for (int e = 0; e < bits / parts.m_width; ++e) {
+            const int base = e * parts.m_width;
+            for (int lo = 0; lo < parts.m_width;) {
+                const auto wanted = [&](int b) {
+                    return parts.m_read[base + b] && !parts.m_written[base + b];
+                };
+                if (!wanted(lo)) {
+                    ++lo;
+                    continue;
+                }
+                int hi = lo;
+                while (hi + 1 < parts.m_width && wanted(hi + 1)) ++hi;
+                AstNodeExpr* const elemp = isArray ? new AstArraySel{flp, refp(), e} : refp();
+                changedp(lo == 0 && hi == parts.m_width - 1
+                             ? elemp
+                             : new AstSel{flp, elemp, lo, hi - lo + 1});
+                lo = hi + 1;
+            }
+        }
+    }
+
+    // CONSTRUCTORS
+    explicit ActiveLatchSenVisitor(AstAlways* nodep) { iterateConst(nodep); }
+
+public:
+    // The sensitivity list, also sensitive to 'initp', or nullptr if change detection can't
+    // compare something the latch reads
+    static AstSenTree* apply(AstAlways* nodep, AstVarScope* initp) {
+        const ActiveLatchSenVisitor visitor{nodep};
+        if (visitor.m_unsupported) return nullptr;
+        FileLine* const flp = nodep->fileline();
+        AstSenTree* const senTreep = new AstSenTree{
+            flp,
+            new AstSenItem{flp, VEdgeType::ET_CHANGED, new AstVarRef{flp, initp, VAccess::READ}}};
+        for (AstVarScope* const vscp : visitor.m_varps) visitor.addSenItems(senTreep, vscp);
+        return senTreep;
+    }
+};
+
+//######################################################################
 // Active class functions
 
 class ActiveVisitor final : public VNVisitor {
@@ -450,8 +597,49 @@ class ActiveVisitor final : public VNVisitor {
     bool m_allChanged = false;  // Whether all SenItem in the SenTree are ET_CHANGED
     bool m_walkingBody = false;  // Walking body of a process
     bool m_canBeComb = false;  // Whether current clocked process can be turned into a comb process
+    AstVarScope* m_latchInitp = nullptr;  // Changes once at time zero, see latchSenTree
 
     // METHODS
+    // A variable statically 0 and set to 1 by an initial block. The change triggers are
+    // initialized after static initialization, so this triggers once, in the first evaluation.
+    AstVarScope* latchInitp() {
+        if (m_latchInitp) return m_latchInitp;
+        AstTopScope* const topScopep = v3Global.rootp()->topScopep();
+        FileLine* const flp = topScopep->fileline();
+        m_latchInitp = topScopep->createTemp("__VlatchInit", 1);
+        const auto addActive = [&](AstSenItem* senItemp, AstNodeProcedure* procp) {
+            AstActive* const activep = new AstActive{flp, "", new AstSenTree{flp, senItemp}};
+            activep->senTreeStorep(activep->sentreep());
+            activep->addProcsp(procp);
+            topScopep->scopep()->addBlocksp(activep);
+        };
+        const auto newAssign = [&](bool value) {
+            return new AstAssign{flp, new AstVarRef{flp, m_latchInitp, VAccess::WRITE},
+                                 new AstConst{flp, AstConst::BitTrue{}, value}};
+        };
+        addActive(new AstSenItem{flp, AstSenItem::Static{}},
+                  new AstInitialStatic{flp, newAssign(false)});
+        addActive(new AstSenItem{flp, AstSenItem::Initial{}},
+                  new AstInitial{flp, newAssign(true)});
+        return m_latchInitp;
+    }
+
+    // Nonblocking assignments in an always_latch keep their semantics: the latch runs when
+    // anything it reads changes, as with an explicit sensitivity list, and once at time zero.
+    // Returns that sensitivity list, or nullptr to treat the latch as combinational logic.
+    AstSenTree* latchSenTree(AstAlways* nodep) {
+        bool nonblocking = false;
+        bool timing = false;
+        nodep->foreach([&](const AstNode* np) {
+            if (VN_IS(np, AssignDly)) nonblocking = true;
+            if (const AstFireEvent* const firep = VN_CAST(np, FireEvent)) {
+                if (firep->isDelayed()) nonblocking = true;
+            }
+            if (np->isTimingControl()) timing = true;
+        });
+        if (!nonblocking || timing) return nullptr;
+        return ActiveLatchSenVisitor::apply(nodep, latchInitp());
+    }
     template <typename T>
     void moveUnderSpecial(AstNodeProcedure* nodep) {
         AstActive* const wantactivep = m_namer.getSpecialActive<T>(nodep->fileline());
@@ -550,6 +738,9 @@ class ActiveVisitor final : public VNVisitor {
             || nodep->keyword() == VAlwaysKwd::COVER_TOGGLE) {
             moveUnderSpecial<AstSenItem::Combo>(nodep);
             return;
+        }
+        if (nodep->keyword() == VAlwaysKwd::ALWAYS_LATCH && !nodep->sentreep()) {
+            if (AstSenTree* const senTreep = latchSenTree(nodep)) nodep->sentreep(senTreep);
         }
         visitSenItems(nodep);
         visitAlways(nodep, nodep->sentreep(), nodep->keyword());
