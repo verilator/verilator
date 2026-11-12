@@ -22,51 +22,9 @@
 #include "V3HierBlock.h"
 #include "V3Os.h"
 #include "V3SolverBackend.h"
+#include "V3String.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
-
-namespace {
-
-string makeEscape(const string& name) {
-    string result;
-    result.reserve(name.size());
-    for (const char ch : name) {
-        if (ch == '$') {
-            result += "$$";
-        } else if (ch == '\\' || ch == ' ' || ch == '\t' || ch == '#' || ch == ':' || ch == '*'
-                   || ch == '?' || ch == '[' || ch == ']') {
-            result += '\\';
-            result += ch;
-        } else {
-            result += ch;
-        }
-    }
-    return result;
-}
-
-string shellQuote(const string& name) {
-    string quoted = "'";
-    for (const char ch : name) {
-        if (ch == '\'') {
-            quoted += "'\\''";
-        } else {
-            quoted += ch;
-        }
-    }
-    quoted += "'";
-    string result;
-    result.reserve(quoted.size());
-    for (const char ch : quoted) {
-        if (ch == '$') {
-            result += "$$";
-        } else {
-            result += ch;
-        }
-    }
-    return result;
-}
-
-}  // namespace
 
 // Groups adjacent files in a list, evenly distributing sum of scores
 class EmitGroup final {
@@ -809,7 +767,8 @@ public:
             of.puts("$(VM_PREFIX)__modules.mk:");
             for (const auto& cppfile : cppFiles) {
                 of.puts(" "
-                        + makeEscape(V3Os::filenameRelativePath(cppfile, v3Global.opt.makeDir())));
+                        + VString::escapeForMake(
+                            V3Os::filenameRelativePath(cppfile, v3Global.opt.makeDir())));
             }
             of.puts(" $(VM_PREFIX).mk\n");
             of.puts(
@@ -820,7 +779,8 @@ public:
             of.puts("\t    --objdir . --output $@");
             for (const auto& cppfile : cppFiles) {
                 of.puts(" --source "
-                        + shellQuote(V3Os::filenameRelativePath(cppfile, v3Global.opt.makeDir())));
+                        + VString::quoteForMakeShell(
+                            V3Os::filenameRelativePath(cppfile, v3Global.opt.makeDir())));
             }
             of.puts("\n");
         }
