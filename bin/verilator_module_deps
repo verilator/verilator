@@ -303,7 +303,6 @@ def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]], ext
     for module in modules:
         direct: list[dict[str, Any]] = []
         header_deps: list[dict[str, Any]] = []
-        deps: set[str] = set()
         dep_names: set[str] = set()
         pending = list(module['requires'])
         seen: set[str] = set()
@@ -316,7 +315,6 @@ def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]], ext
                 provider = providers[name]
                 if provider not in direct:
                     direct.append(provider)
-                deps.add(provider['obj'])
                 dep_names.add(name)
                 pending.extend(provider['requires'])
             elif name in external:
@@ -338,7 +336,6 @@ def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]], ext
                       "=<path>")
         module['direct_deps'] = direct
         module['header_deps'] = header_deps
-        module['deps'] = sorted(deps)
         if args.backend == 'clang':
             module['dep_flags'] = sorted('-fmodule-file=' + name + '=' + providers[name]['pcm']
                                          for name in dep_names)
@@ -354,10 +351,16 @@ def module_flags_lines() -> list[str]:
     ]
 
 
-def gcc_module_target(module: dict[str, Any], module_only: bool) -> str:
-    if module_only and module['provides']:
-        return os.path.join('gcm.cache', str(module['provides'][0]) + '.gcm')
-    return str(module['obj'])
+def gcc_module_cmi(module: dict[str, Any]) -> str:
+    return os.path.join('gcm.cache', str(module['provides'][0]) + '.gcm')
+
+
+def gcc_compile_command(module: dict[str, Any], module_only: bool) -> str:
+    if module_only:
+        return ('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -fmodule-only -c ' +
+                shell_quote(module['source']))
+    return ('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -c ' +
+            shell_quote(module['source']) + ' -o ' + shell_quote(module['obj']))
 
 
 def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any]],
@@ -367,14 +370,11 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
         {module['obj']
          for module in modules if module['provides'] and not module_only})
     module_cmis = {header['cmi'] for header in headers.values()}
-    if module_only:
-        module_cmis.update(
-            gcc_module_target(module, module_only) for module in modules if module['provides'])
+    module_cmis.update(gcc_module_cmi(module) for module in modules if module['provides'])
     lines.append('VK_MODULE_OBJS = ' + ' '.join(make_escape(obj) for obj in module_objs))
     lines.append('VK_MODULE_CMIS = ' +
                  ' '.join(make_escape(cmi) for cmi in sorted(module_cmis)))
     if not module_only:
-        # Module sources are not in VM_USER_CLASSES, so add their objects here
         stems = sorted({
             module['stem']
             for module in modules if module['source'].endswith(MODULE_SOURCE_SUFFIXES)
@@ -393,19 +393,23 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
                      ' -x c++-header ' + shell_quote(header['path']))
         lines.append('')
     for module in sorted(modules, key=lambda entry: entry['obj']):
-        deps = [gcc_module_target(dep, module_only) for dep in module['direct_deps']]
+        deps = [gcc_module_cmi(dep) for dep in module['direct_deps']]
         deps.extend(header['cmi'] for header in module['header_deps'])
         prereqs = [make_escape(module['source']), '$(VM_PREFIX).mk']
         prereqs.extend(make_escape(dep) for dep in sorted(set(deps)))
         if module_only and module['provides']:
-            lines.append(make_escape(gcc_module_target(module, module_only)) + ': ' +
-                         ' '.join(prereqs))
-            lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -fmodule-only -c ' +
-                         shell_quote(module['source']))
+            cmi = gcc_module_cmi(module)
+            lines.append(make_escape(cmi) + ': ' + ' '.join(prereqs))
+            lines.append(gcc_compile_command(module, module_only=True))
         else:
+            command = gcc_compile_command(module, module_only=False)
+            if module['provides']:
+                cmi = gcc_module_cmi(module)
+                lines.append(make_escape(cmi) + ': ' + ' '.join(prereqs))
+                lines.append(command)
+                prereqs.append(make_escape(cmi))
             lines.append(make_escape(module['obj']) + ': ' + ' '.join(prereqs))
-            lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -c ' +
-                         shell_quote(module['source']) + ' -o ' + shell_quote(module['obj']))
+            lines.append(command)
         lines.append('')
     return '\n'.join(lines)
 
@@ -413,9 +417,9 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
 def generate_clang(modules: list[dict[str, Any]]) -> str:
     lines: list[str] = []
     module_objs = sorted({module['obj'] for module in modules if module['provides']})
+    module_cmis = sorted({module['pcm'] for module in modules if module['provides']})
     lines.append('VK_MODULE_OBJS = ' + ' '.join(make_escape(obj) for obj in module_objs))
-    lines.append('VK_MODULE_CMIS =')
-    # Module sources are not in VM_USER_CLASSES, so add their objects here
+    lines.append('VK_MODULE_CMIS = ' + ' '.join(make_escape(cmi) for cmi in module_cmis))
     stems = sorted({
         module['stem']
         for module in modules if module['source'].endswith(MODULE_SOURCE_SUFFIXES)
@@ -428,8 +432,7 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
     lines.append('')
     for module in sorted(modules, key=lambda entry: entry['obj']):
         prereqs = [make_escape(module['source']), '$(VM_PREFIX).mk']
-        prereqs.extend(make_escape(dep) for dep in module['deps'])
-        lines.append(make_escape(module['obj']) + ': ' + ' '.join(prereqs))
+        prereqs.extend(make_escape(dep['pcm']) for dep in module['direct_deps'])
         command = [
             '\t$(OBJCACHE)', '$(CXX)', '$(OPT_FAST)', '$(VK_MODULE_FLAGS)',
             *[shell_quote(flag) for flag in module['dep_flags']]
@@ -438,6 +441,12 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
             command.append(shell_quote('-fmodule-output=' + module['pcm']))
         command += clang_language_flags(module['source'])
         command += ['-c', shell_quote(module['source']), '-o', shell_quote(module['obj'])]
+        if module['provides']:
+            pcm = make_escape(module['pcm'])
+            lines.append(pcm + ': ' + ' '.join(prereqs))
+            lines.append(' '.join(command))
+            prereqs.append(pcm)
+        lines.append(make_escape(module['obj']) + ': ' + ' '.join(prereqs))
         lines.append(' '.join(command))
         lines.append('')
     return '\n'.join(lines)
@@ -466,7 +475,8 @@ def scan(args: argparse.Namespace) -> None:
     for source in args.source:
         abs_source = os.path.abspath(source)
         stem = os.path.splitext(os.path.basename(abs_source))[0]
-        obj = safe_stem(stem, abs_source) + '.o'
+        safe = safe_stem(stem, abs_source)
+        obj = safe + '.o'
         if obj in objects:
             fatal("Multiple C++ sources produce '" + obj + "': '" + objects[obj] + "' and '" +
                   abs_source + "'")
@@ -474,9 +484,9 @@ def scan(args: argparse.Namespace) -> None:
 
         modules.append({
             'source': abs_source,
-            'stem': obj[:-2],
+            'stem': safe,
             'obj': obj,
-            'pcm': stem + '.pcm',
+            'pcm': safe + '.pcm',
             'deps_file': os.path.join(args.objdir, stem + '.deps.json'),
         })
 

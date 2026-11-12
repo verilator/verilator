@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import glob
+import os
 import vltest_bootstrap
 
 test.scenarios('simulator')
@@ -39,5 +40,19 @@ artifacts = (glob.glob(test.obj_dir + '/gcm.cache/*.gcm')
              + glob.glob(test.obj_dir + '/*.pcm'))
 if not artifacts:
     test.error('No C++ module artifacts were generated')
+if 'clang' in test.cxx_version.lower():
+    artifact = test.obj_dir + '/t_flag_cxx_modules_chain_m1.pcm'
+else:
+    artifact = test.obj_dir + '/gcm.cache/m1.gcm'
+module_obj = test.obj_dir + '/t_flag_cxx_modules_chain_m1.o'
+if not os.path.exists(artifact):
+    test.error('Missing C++ module artifact: ' + artifact)
+if not os.path.exists(module_obj):
+    test.error('Missing C++ module object: ' + module_obj)
+os.remove(artifact)
+test.run_capture('cd ' + test.obj_dir + ' && ' + os.environ['MAKE'] + ' -f ' + test.vm_prefix +
+                 '.mk VM_PARALLEL_BUILDS=1')
+if not os.path.exists(artifact):
+    test.error('C++ module artifact was not rebuilt after deletion: ' + artifact)
 test.execute()
 test.passes()
