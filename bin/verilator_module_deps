@@ -20,6 +20,8 @@ import subprocess
 import sys
 from typing import Any, NoReturn, Optional
 
+MODULE_SOURCE_SUFFIXES = ('.cppm', '.ixx')
+
 
 def fatal(message: str) -> NoReturn:
     sys.stderr.write("%Error: " + message + "\n")
@@ -43,6 +45,15 @@ def shell_quote(name: str) -> str:
     """Quote a file name as a single shell word in a make recipe."""
     # Make expands '$' in recipes before the shell sees them, so double them.
     return "'" + name.replace("'", "'\\''").replace('$', '$$') + "'"
+
+
+def safe_stem(stem: str, abs_source: str) -> str:
+    """Return an object name stem that is safe to use in make rules."""
+    safe = re.sub(r'[^A-Za-z0-9_.+-]', '_', stem)
+    if safe != stem:
+        # Distinguish sources whose sanitized names collide
+        safe += '_' + hashlib.sha256(abs_source.encode('utf8')).hexdigest()[:8]
+    return safe
 
 
 def parse_flags(flags: str) -> list[str]:
@@ -362,13 +373,13 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
     lines.append('VK_MODULE_OBJS = ' + ' '.join(make_escape(obj) for obj in module_objs))
     lines.append('VK_MODULE_CMIS = ' +
                  ' '.join(make_escape(cmi) for cmi in sorted(module_cmis)))
-    if module_only:
-        # -fmodule-only does not produce objects, so do not ask make to link them.
+    if not module_only:
+        # Module sources are not in VM_USER_CLASSES, so add their objects here
         stems = sorted({
-            os.path.splitext(os.path.basename(module['source']))[0]
-            for module in modules if module['provides']
+            module['stem']
+            for module in modules if module['source'].endswith(MODULE_SOURCE_SUFFIXES)
         })
-        lines.append('VM_USER_CLASSES := $(filter-out ' + ' '.join(stems) + ',$(VM_USER_CLASSES))')
+        lines.append('VM_USER_CLASSES += ' + ' '.join(stems))
     lines.extend(module_flags_lines())
     lines.append('')
     lines.append('.PHONY: modules')
@@ -404,6 +415,12 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
     module_objs = sorted({module['obj'] for module in modules if module['provides']})
     lines.append('VK_MODULE_OBJS = ' + ' '.join(make_escape(obj) for obj in module_objs))
     lines.append('VK_MODULE_CMIS =')
+    # Module sources are not in VM_USER_CLASSES, so add their objects here
+    stems = sorted({
+        module['stem']
+        for module in modules if module['source'].endswith(MODULE_SOURCE_SUFFIXES)
+    })
+    lines.append('VM_USER_CLASSES += ' + ' '.join(stems))
     lines.extend(module_flags_lines())
     lines.append('')
     lines.append('.PHONY: modules')
@@ -449,7 +466,7 @@ def scan(args: argparse.Namespace) -> None:
     for source in args.source:
         abs_source = os.path.abspath(source)
         stem = os.path.splitext(os.path.basename(abs_source))[0]
-        obj = stem + '.o'
+        obj = safe_stem(stem, abs_source) + '.o'
         if obj in objects:
             fatal("Multiple C++ sources produce '" + obj + "': '" + objects[obj] + "' and '" +
                   abs_source + "'")
@@ -457,6 +474,7 @@ def scan(args: argparse.Namespace) -> None:
 
         modules.append({
             'source': abs_source,
+            'stem': obj[:-2],
             'obj': obj,
             'pcm': stem + '.pcm',
             'deps_file': os.path.join(args.objdir, stem + '.deps.json'),

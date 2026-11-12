@@ -792,7 +792,11 @@ public:
         of.puts("# User .cpp files (from .cpp's on Verilator command line)\n");
         of.puts("VM_USER_CLASSES = \\\n");
         const VStringSet& cppFiles = v3Global.opt.cppFiles();
+        const VStringSet& moduleFiles = v3Global.opt.moduleFiles();
         for (const auto& cppfile : cppFiles) {
+            // Module sources get safe object names from verilator_module_deps, which adds them
+            // to VM_USER_CLASSES in __modules.mk
+            if (moduleFiles.find(cppfile) != moduleFiles.end()) continue;
             of.puts("  " + V3Os::filenameNonDirExt(cppfile) + " \\\n");
             const string dir
                 = V3Os::filenameRelativePath(V3Os::filenameDir(cppfile), v3Global.opt.makeDir());
