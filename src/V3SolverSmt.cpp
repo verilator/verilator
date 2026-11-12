@@ -643,22 +643,91 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
     }
 
-    // Extract return expression from a simple function body, or nullptr if too complex.
-    // Uses foreach to walk all assigns regardless of body organization (JumpBlock nesting etc.).
-    // Takes the last assignment to the return variable -- the first is the initializer.
+    // Clone exprp, replacing references to variables for which valueps holds a value with a
+    // copy of that value. Returns a detached expression.
+    static AstNodeExpr* cloneSubstLocals(AstNodeExpr* exprp,
+                                         const std::map<const AstVar*, AstNodeExpr*>& valueps) {
+        AstNodeExpr* const clonedp = exprp->cloneTreePure(false);
+        // The root of a detached tree has no back pointer, so foreach cannot replace it
+        if (AstVarRef* const rootRefp = VN_CAST(clonedp, VarRef)) {
+            const auto it = valueps.find(rootRefp->varp());
+            if (it == valueps.end()) return clonedp;
+            AstNodeExpr* const valuep = it->second->cloneTreePure(false);
+            clonedp->deleteTree();
+            return valuep;
+        }
+        clonedp->foreach([&](AstVarRef* refp) {
+            const auto it = valueps.find(refp->varp());
+            if (it == valueps.end()) return;
+            refp->replaceWith(it->second->cloneTreePure(false));
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        });
+        return clonedp;
+    }
+
+    // Extract the value a function returns, or nullptr if the body is too complex. The
+    // returned expression is detached and references no variable declared inside the
+    // function, as the function body is discarded once the call is inlined.
+    //
+    // Only a straight-line body of assignments is handled: the value of each local assignment
+    // is substituted into the expressions that follow it, and the last assignment to the
+    // return variable is the return value (an earlier one is the default initializer).
     AstNodeExpr* extractReturnExpr(AstFunc* funcp) {
         AstVar* const retVarp = funcp->fvarp();
         if (!retVarp) return nullptr;
+        std::map<const AstVar*, AstNodeExpr*> localValueps;  // Substituted, owned values
         AstNodeExpr* retExprp = nullptr;
-        int assignCount = 0;
-        funcp->foreach([&](AstAssign* assignp) {
-            AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef);
-            if (!lhsp || lhsp->varp() != retVarp) return;
-            retExprp = assignp->rhsp();
-            ++assignCount;
+        int retAssignCount = 0;
+        bool simple = true;
+        AstNode* stmtp = funcp->stmtsp();
+        // A 'return' wraps the remaining body in a block for the jump to the function end
+        if (const AstJumpBlock* const blockp = VN_CAST(stmtp, JumpBlock)) stmtp = blockp->stmtsp();
+        for (; stmtp; stmtp = stmtp->nextp()) {
+            // Local variables' reset initializers carry no value the solver can use, and a
+            // local left unsubstituted is rejected below
+            if (VN_IS(stmtp, Comment) || VN_IS(stmtp, InitialAutomaticStmt)) continue;
+            // An unconditional jump out of the function ends the straight-line sequence;
+            // anything else means the value depends on control flow
+            if (VN_IS(stmtp, JumpGo)) break;
+            const AstAssign* const assignp = VN_CAST(stmtp, Assign);
+            const AstVarRef* const lhsp = assignp ? VN_CAST(assignp->lhsp(), VarRef) : nullptr;
+            if (!lhsp) {
+                simple = false;
+                break;
+            }
+            AstVar* const varp = lhsp->varp();
+            AstNodeExpr* const valuep = cloneSubstLocals(assignp->rhsp(), localValueps);
+            if (varp == retVarp) {
+                if (++retAssignCount > 2) {  // Initializer and return only
+                    valuep->deleteTree();
+                    simple = false;
+                    break;
+                }
+                if (retExprp) retExprp->deleteTree();
+                retExprp = valuep;
+            } else if (!localValueps.emplace(varp, valuep).second) {
+                // Assigned more than once, so it has no single value to substitute
+                valuep->deleteTree();
+                simple = false;
+                break;
+            }
+        }
+        for (const auto& pair : localValueps) pair.second->deleteTree();
+        if (!simple || !retExprp) {
+            if (retExprp) retExprp->deleteTree();
+            return nullptr;
+        }
+        // Anything local left unsubstituted would dangle once the function's variables are
+        // dead-code eliminated; ports are substituted with the actual arguments by the caller.
+        bool refsLocal = false;
+        retExprp->foreach([&](AstVarRef* refp) {
+            const AstVar* const varp = refp->varp();
+            refsLocal |= varp == retVarp || (varp->isFuncLocal() && !varp->isIO());
         });
-        // Simple function: initializer + return (2) or just return (1)
-        if (assignCount > 2 || !retExprp) return nullptr;
+        if (refsLocal) {
+            retExprp->deleteTree();
+            return nullptr;
+        }
         return retExprp;
     }
 
@@ -2843,12 +2912,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         const V3TaskConnects tconnects
             = V3Task::taskConnects(nodep, funcp->declsp(), nullptr, false);
 
-        // Clone return expression, substitute params with args.
+        // Substitute params with args in the extracted expression.
         // Track the root via a local pointer: when the root itself is a VarRef to a port
-        // (e.g. body `F = d;`), the cloned root has no back pointer, so foreach's
+        // (e.g. body `F = d;`), a detached root has no back pointer, so foreach's
         // replaceWith would trip the "no back" assertion -- substitute the root pointer
         // directly instead.
-        AstNodeExpr* inlinedp = retExprp->cloneTreePure(false);
+        AstNodeExpr* inlinedp = retExprp;
         for (const auto& tconnect : tconnects) {
             const AstVar* const portp = tconnect.first;
             AstArg* const argp = tconnect.second;
