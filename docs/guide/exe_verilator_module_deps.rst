@@ -31,6 +31,8 @@ verilator_module_deps Arguments
 
    Dependency scanning backend.  The generated makefile passes
    ``VK_MODULE_BACKEND``, which is detected from the C++ compiler in use.
+   If the detection is incorrect, set ``VK_MODULE_BACKEND=gcc`` or
+   ``VK_MODULE_BACKEND=clang`` explicitly on the make command line.
 
 .. option:: --cppflags <flags>
 
