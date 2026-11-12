@@ -340,6 +340,8 @@ public:
     // METHODS
     const char* filename() const { return m_filename; }
     int lineno() const { return m_lineno; }
+    void filename(const char* filename) { m_filename = filename; }
+    void lineno(int lineno) { m_lineno = lineno; }
 };
 
 #ifdef VL_DEBUG
@@ -1143,6 +1145,7 @@ class Verilated final {
     } t_s;
 
     friend struct VerilatedInitializer;
+    friend class VlDpiCall;  // Copies t_s between threads on DPI thread handoff
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(Verilated);

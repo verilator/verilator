@@ -911,10 +911,10 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
         && !descrp[4]) {
         return true;
     }
-    // Is a sequence of 'r'/'w'/'m' with an optional trailing '+'
+    // Is a sequence of 'r'/'w'/'m'/'f' with an optional trailing '+'
     for (const char* cp = descrp; *cp; ++cp) {
         if (*cp == '+') return cp != descrp && !cp[1];
-        if (*cp != 'r' && *cp != 'w' && *cp != 'm') return false;
+        if (*cp != 'r' && *cp != 'w' && *cp != 'm' && *cp != 'f') return false;
     }
     return true;
 }
@@ -929,6 +929,7 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
 // - 'w' written by the call (Use only if unconditionally and wholly written,
 //   that is: a preceding write can be removed. Otherwise use 'm'.)
 // - 'm' read and written (modified) by the call
+// - 'f' forwarded to another callable
 // - '+' repeats the entry before it for all remaining arguments, must be last
 // - "" if the method takes no arguments
 // - "TODO" if not yet checked due to existing issues
@@ -1222,9 +1223,14 @@ FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
 
 // clang-format off
 #define FOR_EACH_CFUNCTION(macro) \
-    /*    id,                                 function,                 pure,   args */ \
-    macro(_NONE,                              "_none",                  false,  "") \
-    macro(STRING_APPEND,                      "VL_APPENDN_NN",          false,  "mr")
+    /*    id,                                 function,                             pure,   args */ \
+    macro(_NONE,                              "_none",                              false,  "") \
+    macro(AWAIT_IMPORT_TASK,                  "VerilatedDpi::awaitImportTask",      false,  "r+") \
+    macro(CALL_EXPORT_FUNCTION,               "VerilatedDpi::callExportFunction",   false,  "rf+") \
+    macro(CALL_EXPORT_TASK,                   "VerilatedDpi::callExportTask",       false,  "rf+") \
+    macro(CALL_IMPORT_FUNCTION,               "VerilatedDpi::callImportFunction",   false,  "r+") \
+    macro(CALL_IMPORT_TASK,                   "VerilatedDpi::callImportTask",       false,  "r+") \
+    macro(STRING_APPEND,                      "VL_APPENDN_NN",                      false,  "mr")
 // clang-format on
 
 class VCFunction final {
@@ -1272,6 +1278,7 @@ public:
 constexpr bool operator==(const VCFunction& lhs, const VCFunction& rhs) {
     return lhs.m_e == rhs.m_e;
 }
+constexpr bool operator==(const VCFunction& lhs, VCFunction::en rhs) { return lhs.m_e == rhs; }
 
 // Static assert all argument descriptors are well formed
 #define VL_CFUNCTION_ARGS_CHECK(id, method, pure, args) \

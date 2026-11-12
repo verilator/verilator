@@ -2574,6 +2574,11 @@ List Of Warnings
    An error that a construct might be legal according to IEEE but is not
    currently supported by Verilator.
 
+   This includes DPI imported task calls in ``always`` processes when any DPI
+   exported task can suspend, even if the imported task does not call that
+   export. Calls through other tasks are also affected, as are ``always_comb``,
+   ``always_latch``, and ``always_ff`` processes.
+
    A typical workaround is to rewrite the construct into a more common
    alternative language construct.
 

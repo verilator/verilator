@@ -272,7 +272,7 @@ class AstCAwait final : public AstNodeStmt {
     // C++'s co_await. While this is an expression in C++, in Verilator it is only used
     // with void result types and always appears in statement position. There must never
     // be a suspendable process that returns a value, so modeling as a statement instead.
-    // @astgen op1 := exprp : AstNodeExpr<AstNodeCCall|AstCMethodHard>
+    // @astgen op1 := exprp : AstNodeExpr<AstNodeCCall|AstCFuncHard|AstCMethodHard>
     //
     // @astgen ptr := m_sentreep : Optional[AstSenTree]  // Sentree related to this await
 public:
