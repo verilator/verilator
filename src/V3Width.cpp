@@ -7749,7 +7749,7 @@ class WidthVisitor final : public VNVisitor {
                 }
                 // Variable references were checked above, this catches e.g. method call results
                 if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType() && !rhsRefp) {
-                    nodep->v3error("Illegal assignment betwen unpacked aggregate and "
+                    nodep->v3error("Illegal assignment between unpacked aggregate and "
                                    "integral type (IEEE 1800-2023 7.6)"
                                    << warnDTypes(nodep, lhsDtp, rhsDtp));
                 }
