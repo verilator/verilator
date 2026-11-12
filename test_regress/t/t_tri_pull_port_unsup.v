@@ -57,6 +57,10 @@ module t;
   } unpacked_pulled;
   pulled_stream_port member_pull (.pad(unpacked_pulled.pad));
 
+  // Pulled ports must also diagnose unsupported unpacked element connections.
+  wire [8:0] pulled_elements [1:0];
+  pulled_stream_port element_pull (.pad(pulled_elements[0]));
+
   // An unpacked array slice reaches pull propagation as a SliceSel.
   wire [6:0] pulled_array [3:0];
   pulled_array_port slice_pull (.pad(pulled_array[2:1]));
