@@ -1,0 +1,14 @@
+%Error: t/t_opt_coalesce_cycle_bad.v:15:12: Wire inputs its own output, creating circular logic (wire x=x)
+   15 |   assign a = a;
+      |            ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_opt_coalesce_cycle_bad.v:14:9: Wire inputs its own output, creating circular logic (wire x=x)
+   14 |   logic a;
+      |         ^
+%Error: t/t_opt_coalesce_cycle_bad.v:18:9: Wire inputs its own output, creating circular logic (wire x=x)
+   18 |   logic b, c;
+      |         ^
+%Error: t/t_opt_coalesce_cycle_bad.v:23:9: Wire inputs its own output, creating circular logic (wire x=x)
+   23 |   logic d, e, f;
+      |         ^
+%Error: Exiting due to

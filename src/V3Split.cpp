@@ -454,7 +454,10 @@ class SplitVisitor final : public VNVisitor {
 
     // CONSTRUCTORS
     explicit SplitVisitor(AstNetlist* nodep) { iterate(nodep); }
-    ~SplitVisitor() override { V3Stats::addStat("Optimizations, Split always", m_statSplits); }
+    ~SplitVisitor() override {
+        V3Stats::addStat(
+            V3Statistic{"*", "Optimizations, Split always", m_statSplits, 0, true, false});
+    }
     VL_UNCOPYABLE(SplitVisitor);
 
 public:
