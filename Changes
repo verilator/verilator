@@ -123,6 +123,7 @@ Verilator 5.055 devel
 * Fix internal fault on typedef from parameterized class (#9141). [Pawel Kojma, Antmicro Ltd.]
 * Fix uninitialized data on 32-bit hosts (#9146). [Aliaksei Chapyzhenka]
 * Fix --top with --hierarchical (#9147). [Patrick O'Neill]
+* Fix mis-sign extension on extended 1-bit compare (#9170).
 * Fix quadratic gate deduplication across clock domains (#9179). [Michael Wrighton]
 * Fix quadratic lifetime analysis on deeply nested blocks (#9181). [Michael Wrighton]
 

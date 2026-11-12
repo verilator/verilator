@@ -3854,8 +3854,11 @@ class WidthVisitor final : public VNVisitor {
                                           valuep->dtypep()->skipRefToEnump());
         AstAssign* const assignp
             = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, valuep};
-        userIterateAndNext(assignp, nullptr);
-        bits.m_stmtsp = AstNode::addNext(bits.m_stmtsp, assignp);
+        // Width the assignment under a holder, as iterating requires a node with a parent
+        AstBegin* const holderp = new AstBegin{fl, "[EditWrapper]", assignp, false};
+        userIterateAndNext(holderp->stmtsp(), nullptr);
+        bits.m_stmtsp = AstNode::addNext(bits.m_stmtsp, holderp->stmtsp()->unlinkFrBack());
+        VL_DO_DANGLING(holderp->deleteTree(), holderp);
         return new AstVarRef{fl, varp, VAccess::READ};
     }
     // Return 'valuep' evaluated after the assignments to temporaries of 'bits'
