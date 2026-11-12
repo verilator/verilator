@@ -9,36 +9,63 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
 // verilog_format: on
 
-interface inner_if #(parameter int W = 8);
+interface inner_if #(
+    parameter int W = 8
+);
   logic [W-1:0] data;
   logic [W-1:0] response;
 endinterface
 
-interface outer_if #(parameter int W = 7);
-  inner_if #(W) inner[2]();
+interface outer_if #(
+    parameter int W = 7
+);
+  inner_if #(W) inner[2] ();
 endinterface
 
-module reader #(parameter int W = 8, parameter bit DRIVE = 1)(
-    inner_if p, output logic [W-1:0] y
+module reader #(
+    parameter int W = 8,
+    parameter bit DRIVE = 1
+) (
+    inner_if p,
+    output logic [W-1:0] y
 );
   assign y = p.data;
   if (DRIVE) assign p.response = ~p.data;
   initial `checkh($bits(p.data), W);
 endmodule
 
-module parent_port #(parameter int W = 7)(outer_if p, output wire [W-1:0] y);
-  reader #(W, 0) r(.p(p.inner[1]), .y(y));
+module parent_port #(
+    parameter int W = 7
+) (
+    outer_if p,
+    output wire [W-1:0] y
+);
+  reader #(W, 0) r (
+      .p(p.inner[1]),
+      .y(y)
+  );
 endmodule
 
-interface ranged_outer_if #(parameter int W = 7, L = 3, R = 1);
-  inner_if #(W) inner[L:R]();
+interface ranged_outer_if #(
+    parameter int W = 7,
+    L = 3,
+    R = 1
+);
+  inner_if #(W) inner[L:R] ();
 endinterface
 
-module ranged_case #(parameter int W = 7, L = 3, R = 1);
-  ranged_outer_if #(W, L, R) parent();
+module ranged_case #(
+    parameter int W = 7,
+    L = 3,
+    R = 1
+);
+  ranged_outer_if #(W, L, R) parent ();
   for (genvar i = 1; i <= 3; ++i) begin : g
     wire [W-1:0] result;
-    reader #(W) r(.p(parent.inner[i]), .y(result));
+    reader #(W) r (
+        .p(parent.inner[i]),
+        .y(result)
+    );
     initial begin
       for (int cycle = 0; cycle < 4; ++cycle) begin
         parent.inner[i].data = W'(i * 17 + cycle);
@@ -50,34 +77,57 @@ module ranged_case #(parameter int W = 7, L = 3, R = 1);
   end
 endmodule
 
-interface parent_holder #(parameter int W = 7);
-  outer_if #(W) parent();
+interface parent_holder #(
+    parameter int W = 7
+);
+  outer_if #(W) parent ();
 endinterface
 
 module test_case;
-  outer_if left();
-  outer_if #(13) right();
+  outer_if left ();
+  outer_if #(13) right ();
   wire [6:0] l[2];
   wire [12:0] r[2];
 
   for (genvar i = 0; i < 2; ++i) begin : g
-    reader #(7) a(.p(left.inner[i]), .y(l[i]));
-    reader #(13) b(.p(right.inner[i]), .y(r[i]));
+    reader #(7) a (
+        .p(left.inner[i]),
+        .y(l[i])
+    );
+    reader #(13) b (
+        .p(right.inner[i]),
+        .y(r[i])
+    );
   end
   wire [12:0] constant_result;
-  reader #(13, 0) c(.p(right.inner[1]), .y(constant_result));
-  outer_if #(7) explicit_default();
+  reader #(13, 0) c (
+      .p(right.inner[1]),
+      .y(constant_result)
+  );
+  outer_if #(7) explicit_default ();
   wire [6:0] default_result;
-  reader #(7) d(.p(explicit_default.inner[1]), .y(default_result));
+  reader #(7) d (
+      .p(explicit_default.inner[1]),
+      .y(default_result)
+  );
 
   wire [12:0] port_result;
-  parent_port #(13) via_port(.p(right), .y(port_result));
-  parent_holder deep();
-  parent_holder #(13) deep_override();
+  parent_port #(13) via_port (
+      .p(right),
+      .y(port_result)
+  );
+  parent_holder deep ();
+  parent_holder #(13) deep_override ();
   wire [6:0] deep_result;
-  reader #(7) deep_reader(.p(deep.parent.inner[1]), .y(deep_result));
+  reader #(7) deep_reader (
+      .p(deep.parent.inner[1]),
+      .y(deep_result)
+  );
   wire [12:0] deep_override_result;
-  reader #(13) deep_override_reader(.p(deep_override.parent.inner[1]), .y(deep_override_result));
+  reader #(13) deep_override_reader (
+      .p(deep_override.parent.inner[1]),
+      .y(deep_override_result)
+  );
 
   initial begin
     for (int cycle = 0; cycle < 4; ++cycle) begin
@@ -110,10 +160,10 @@ module test_case;
 endmodule
 
 module t;
-  test_case a();
-  test_case b();
-  ranged_case descending();
-  ranged_case #(13, 1, 3) ascending();
+  test_case a ();
+  test_case b ();
+  ranged_case descending ();
+  ranged_case #(13, 1, 3) ascending ();
   initial begin
     #10;
     $write("*-* All Finished *-*\n");
