@@ -10,7 +10,7 @@
 //*************************************************************************
 
 // Generated header
-#include "Vt_threads_context_default.h"
+#include VM_PREFIX_INCLUDE
 // General headers
 #include "verilated.h"
 
@@ -20,8 +20,7 @@ int main(int argc, char** argv) {
     // Deliberately no contextp->threads() call, so the context thread count is the default
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     contextp->commandArgs(argc, argv);
-    const std::unique_ptr<Vt_threads_context_default> topp{
-        new Vt_threads_context_default{contextp.get(), "top"}};
+    const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(), "top"}};
 
     topp->clk = 0;
     while (contextp->time() < 1100 && !contextp->gotFinish()) {

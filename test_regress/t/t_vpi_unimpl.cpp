@@ -12,7 +12,7 @@
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 
-#include "Vt_vpi_unimpl.h"
+#include VM_PREFIX_INCLUDE
 #include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 // No verilated_vpi.h, make sure can link without it
