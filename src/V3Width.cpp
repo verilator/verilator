@@ -4041,12 +4041,13 @@ class WidthVisitor final : public VNVisitor {
                 } else if (nodep->valuep()->isString()) {
                     nodep->dtypeSetString();
                     VL_DANGLING(bdtypep);
+                } else if (!nodep->valuep()->dtypep()->basicp()) {
+                    // Untyped parameter takes the type of its value e.g. struct
+                    nodep->dtypep(nodep->valuep()->dtypep());
+                    VL_DANGLING(bdtypep);
                 } else {
                     int width = 0;
-                    AstNodeDType* const valueDTypep = nodep->valuep()->dtypep();
-                    UASSERT_OBJ(valueDTypep, nodep->valuep(),
-                                "Null dtype on implicit param value");
-                    const AstBasicDType* const valueBdtypep = valueDTypep->basicp();
+                    const AstBasicDType* const valueBdtypep = nodep->valuep()->dtypep()->basicp();
                     bool issigned = false;
                     if (bdtypep->isNosign()) {
                         if (valueBdtypep && valueBdtypep->isSigned()) issigned = true;
