@@ -497,8 +497,9 @@ Summary:
 
    With MSVC, C++ modules are supported only through CMake.  Pass ``.ixx``
    interface files on the Verilator command line and build with CMake 3.28 or
-   newer, which adds them as a ``CXX_MODULES`` file set.  GNU make with MSVC is
-   not supported.
+   newer, which adds them as a ``CXX_MODULES`` file set.  CMake targets with
+   module interface files need C++20 or newer; ``verilate()`` sets that as a
+   lower bound automatically.  GNU make with MSVC is not supported.
 
    Changing compiler flags or the C++ compiler does not automatically
    invalidate existing CMIs.  Remove the model object directory before

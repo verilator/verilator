@@ -640,6 +640,8 @@ function(verilate TARGET)
                 list(APPEND MODULE_INTERFACE_DIRS "${MODULE_INTERFACE_DIR}")
             endforeach()
             list(REMOVE_DUPLICATES MODULE_INTERFACE_DIRS)
+            # Module interface units require C++20 or newer
+            target_compile_features(${TARGET} PRIVATE cxx_std_20)
             target_sources(
                 ${TARGET}
                 PRIVATE
