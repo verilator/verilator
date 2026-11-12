@@ -2766,9 +2766,20 @@ private:
         ap = getAlias(ap);
         bp = getAlias(bp);
         if (ap == bp) return;
+        AstVar* const aVarp = ap->varp();
+        AstVar* const bVarp = bp->varp();
+        // V3Const constified one side before aliasing, as it cannot know about strengths.
+        // Undo that here, where both the alias and the strength assignment are known.
+        if (aVarp->hasStrengthAssignment() || bVarp->hasStrengthAssignment()) {
+            // Propagate, so later aliases of this set are covered
+            for (AstVar* const varp : {aVarp, bVarp}) {
+                varp->hasStrengthAssignment(true);
+                varp->isConst(false);
+                // A leftover value would still be propagated by V3Const
+                if (AstNode* const valuep = varp->valuep()) valuep->unlinkFrBack()->deleteTree();
+            }
+        }
         const bool aWins = [&]() {
-            const AstVar* const aVarp = ap->varp();
-            const AstVar* const bVarp = bp->varp();
             // A primary IO is accessed directly by the user of the model, so must survive
             UASSERT_OBJ(!aVarp->isPrimaryIO() || !bVarp->isPrimaryIO(), ap,
                         "Alias of two primary IOs");

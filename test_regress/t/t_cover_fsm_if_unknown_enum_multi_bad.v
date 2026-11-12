@@ -282,6 +282,33 @@ module unknown_wide_direct (
   end
 endmodule
 
+module unknown_guarded_target (
+    input logic clk
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1
+  } state_t;
+
+  logic sel;
+  state_t state_q  /*verilator fsm_state*/;
+  state_t state_d;
+
+  always_comb begin
+    state_d = state_q;
+    case (state_q)
+      /* verilator lint_off ENUMVALUE */
+      S0: if (sel) state_d = 2'd3;
+      /* verilator lint_on ENUMVALUE */
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    state_q <= state_d;
+  end
+endmodule
+
 module t;
   logic clk;
   unknown_then unknown_then_u (.clk(clk));
@@ -294,4 +321,5 @@ module t;
   unknown_if_then_target unknown_if_then_target_u (.clk(clk));
   unknown_if_else_target unknown_if_else_target_u (.clk(clk));
   unknown_wide_direct unknown_wide_direct_u (.clk(clk));
+  unknown_guarded_target unknown_guarded_target_u (.clk(clk));
 endmodule

@@ -337,7 +337,10 @@ module t;
     begin
       automatic FailDerived d = new;
       automatic FailBase b = d;
-      r = b.randomize() with {c > 100; c < 50;};
+      r = b.randomize() with {
+        c > 100;
+        c < 50;
+      };
       `checkd(r, 0);
       `checkd(d.post_count, 0);
       r = b.randomize() with {c == 5;};
