@@ -73,7 +73,9 @@
 -000003  point: type=expr comment=(cyc[1]==0 && cyc[3]==0) => 0 hier=top.t
 -000002  point: type=expr comment=(cyc[2]==0 && cyc[3]==1) => 1 hier=top.t
 -000004  point: type=branch comment=if hier=top.t
+-000004  point: type=line comment=if hier=top.t
 -000005  point: type=branch comment=else hier=top.t
+-000005  point: type=line comment=else hier=top.t
 %000005     if ((~cyc2[32] && cyc2[33]) || (~cyc2[34] && cyc2[35])) $write("");
 -000002  point: type=expr comment=(cyc2[32]==0 && cyc2[33]==1) => 1 hier=top.t
 -000002  point: type=expr comment=(cyc2[32]==1 && cyc2[34]==1) => 0 hier=top.t
@@ -82,7 +84,9 @@
 -000003  point: type=expr comment=(cyc2[33]==0 && cyc2[35]==0) => 0 hier=top.t
 -000002  point: type=expr comment=(cyc2[34]==0 && cyc2[35]==1) => 1 hier=top.t
 -000004  point: type=branch comment=if hier=top.t
+-000004  point: type=line comment=if hier=top.t
 -000005  point: type=branch comment=else hier=top.t
+-000005  point: type=line comment=else hier=top.t
 %000005     if ((~the_intfs[0].t && the_intfs[1].t) || (~the_intfs[2].t && the_intfs[3].t)) $write("");
 -000002  point: type=expr comment=(the_intfs[0].t==0 && the_intfs[1].t==1) => 1 hier=top.t
 -000002  point: type=expr comment=(the_intfs[0].t==1 && the_intfs[2].t==1) => 0 hier=top.t
@@ -91,7 +95,9 @@
 -000003  point: type=expr comment=(the_intfs[1].t==0 && the_intfs[3].t==0) => 0 hier=top.t
 -000002  point: type=expr comment=(the_intfs[2].t==0 && the_intfs[3].t==1) => 1 hier=top.t
 -000004  point: type=branch comment=if hier=top.t
+-000004  point: type=line comment=if hier=top.t
 -000005  point: type=branch comment=else hier=top.t
+-000005  point: type=line comment=else hier=top.t
 %000005     if ((~t1 && t2) || (~t3 && t4)) $write("");
 -000002  point: type=expr comment=(t1==0 && t2==1) => 1 hier=top.t
 -000002  point: type=expr comment=(t1==1 && t3==1) => 0 hier=top.t
@@ -100,19 +106,25 @@
 -000003  point: type=expr comment=(t2==0 && t4==0) => 0 hier=top.t
 -000002  point: type=expr comment=(t3==0 && t4==1) => 1 hier=top.t
 -000004  point: type=branch comment=if hier=top.t
+-000004  point: type=line comment=if hier=top.t
 -000005  point: type=branch comment=else hier=top.t
+-000005  point: type=line comment=else hier=top.t
 %000007     if (t3 && (t1 == t2)) $write("");
 -000005  point: type=expr comment=((t1 == t2)==0) => 0 hier=top.t
 -000005  point: type=expr comment=(t3==0) => 0 hier=top.t
 -000002  point: type=expr comment=(t3==1 && (t1 == t2)==1) => 1 hier=top.t
 -000002  point: type=branch comment=if hier=top.t
+-000002  point: type=line comment=if hier=top.t
 -000007  point: type=branch comment=else hier=top.t
+-000007  point: type=line comment=else hier=top.t
 %000007     if (123 == (124 - 32'(t1 || t2))) $write("");
 -000002  point: type=expr comment=(t1==0 && t2==0) => 0 hier=top.t
 -000005  point: type=expr comment=(t1==1) => 1 hier=top.t
 -000004  point: type=expr comment=(t2==1) => 1 hier=top.t
 -000007  point: type=branch comment=if hier=top.t
+-000007  point: type=line comment=if hier=top.t
 -000002  point: type=branch comment=else hier=top.t
+-000002  point: type=line comment=else hier=top.t
 %000009     some_int <= (t2 || t3) ? 345 : 567;
 -000009  point: type=line comment=block hier=top.t
 -000003  point: type=expr comment=(t2==0 && t3==0) => 0 hier=top.t
@@ -130,7 +142,9 @@
 -000002  point: type=expr comment=(t1==1 && t2==1) => 1 hier=top.t
 -000005  point: type=expr comment=(t2==0) => 0 hier=top.t
 -000002  point: type=branch comment=if hier=top.t
+-000002  point: type=line comment=if hier=top.t
 -000007  point: type=branch comment=else hier=top.t
+-000007  point: type=line comment=else hier=top.t
 %000005     if ((!t1 && t2) | (~t3 && t4)) $write("");
 -000002  point: type=expr comment=(t1==0 && t2==1) => 1 hier=top.t
 -000002  point: type=expr comment=(t1==1 && t3==1) => 0 hier=top.t
@@ -139,17 +153,23 @@
 -000003  point: type=expr comment=(t2==0 && t4==0) => 0 hier=top.t
 -000002  point: type=expr comment=(t3==0 && t4==1) => 1 hier=top.t
 -000004  point: type=branch comment=if hier=top.t
+-000004  point: type=line comment=if hier=top.t
 -000005  point: type=branch comment=else hier=top.t
+-000005  point: type=line comment=else hier=top.t
 %000005     if (t1 ^ t2) $write("");
 -000002  point: type=expr comment=(t1==0 && t2==0) => 0 hier=top.t
 -000002  point: type=expr comment=(t1==0 && t2==1) => 1 hier=top.t
 -000003  point: type=expr comment=(t1==1 && t2==0) => 1 hier=top.t
 -000002  point: type=expr comment=(t1==1 && t2==1) => 0 hier=top.t
 -000005  point: type=branch comment=if hier=top.t
+-000005  point: type=line comment=if hier=top.t
 -000004  point: type=branch comment=else hier=top.t
+-000004  point: type=line comment=else hier=top.t
 %000007     if (~(t1 & t2)) $write("");
 -000007  point: type=branch comment=if hier=top.t
+-000007  point: type=line comment=if hier=top.t
 -000002  point: type=branch comment=else hier=top.t
+-000002  point: type=line comment=else hier=top.t
 -000004  point: type=expr comment=(t1==0) => 1 hier=top.t
 -000002  point: type=expr comment=(t1==1 && t2==1) => 0 hier=top.t
 -000005  point: type=expr comment=(t2==0) => 1 hier=top.t
@@ -158,37 +178,49 @@
 -000003  point: type=expr comment=(t1==1 && t2==0) => 0 hier=top.t
 -000004  point: type=expr comment=(t2==1) => 1 hier=top.t
 -000006  point: type=branch comment=if hier=top.t
+-000006  point: type=line comment=if hier=top.t
 -000003  point: type=branch comment=else hier=top.t
+-000003  point: type=line comment=else hier=top.t
 %000005     if (t1 <-> t2) $write("");
 -000002  point: type=expr comment=(t1==0 && t2==0) => 1 hier=top.t
 -000002  point: type=expr comment=(t1==0 && t2==1) => 0 hier=top.t
 -000003  point: type=expr comment=(t1==1 && t2==0) => 0 hier=top.t
 -000002  point: type=expr comment=(t1==1 && t2==1) => 1 hier=top.t
 -000004  point: type=branch comment=if hier=top.t
+-000004  point: type=line comment=if hier=top.t
 -000005  point: type=branch comment=else hier=top.t
+-000005  point: type=line comment=else hier=top.t
 %000008     if (&cyc[2:0]) $write("");
 -000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
 -000008  point: type=branch comment=else hier=top.t
+-000008  point: type=line comment=else hier=top.t
 -000004  point: type=expr comment=(cyc[2:0][0]==0) => 0 hier=top.t
 -000001  point: type=expr comment=(cyc[2:0][0]==1 && cyc[2:0][1]==1 && cyc[2:0][2]==1) => 1 hier=top.t
 -000005  point: type=expr comment=(cyc[2:0][1]==0) => 0 hier=top.t
 -000005  point: type=expr comment=(cyc[2:0][2]==0) => 0 hier=top.t
 %000009     if (&cyc[3:2]) $write("");
 -000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
 -000009  point: type=branch comment=else hier=top.t
+-000009  point: type=line comment=else hier=top.t
 -000005  point: type=expr comment=(cyc[3:2][0]==0) => 0 hier=top.t
 -000000  point: type=expr comment=(cyc[3:2][0]==1 && cyc[3:2][1]==1) => 1 hier=top.t
 -000007  point: type=expr comment=(cyc[3:2][1]==0) => 0 hier=top.t
 %000008     if (|cyc[2:0]) $write("");
 -000008  point: type=branch comment=if hier=top.t
+-000008  point: type=line comment=if hier=top.t
 -000001  point: type=branch comment=else hier=top.t
+-000001  point: type=line comment=else hier=top.t
 -000001  point: type=expr comment=(cyc[2:0][0]==0 && cyc[2:0][1]==0 && cyc[2:0][2]==0) => 0 hier=top.t
 -000005  point: type=expr comment=(cyc[2:0][0]==1) => 1 hier=top.t
 -000004  point: type=expr comment=(cyc[2:0][1]==1) => 1 hier=top.t
 -000004  point: type=expr comment=(cyc[2:0][2]==1) => 1 hier=top.t
 %000005     if (^cyc[2:0]) $write("");
 -000005  point: type=branch comment=if hier=top.t
+-000005  point: type=line comment=if hier=top.t
 -000004  point: type=branch comment=else hier=top.t
+-000004  point: type=line comment=else hier=top.t
 -000001  point: type=expr comment=(cyc[2:0][0]==0 && cyc[2:0][1]==0 && cyc[2:0][2]==0) => 0 hier=top.t
 -000001  point: type=expr comment=(cyc[2:0][0]==0 && cyc[2:0][1]==0 && cyc[2:0][2]==1) => 1 hier=top.t
 -000001  point: type=expr comment=(cyc[2:0][0]==0 && cyc[2:0][1]==1 && cyc[2:0][2]==0) => 1 hier=top.t
@@ -204,35 +236,45 @@
 -000004  point: type=expr comment=(cyc[2:0][2]==1) => 1 hier=top.t
 -000002  point: type=expr comment=(cyc[3]==1) => 1 hier=top.t
 -000009  point: type=branch comment=if hier=top.t
+-000009  point: type=line comment=if hier=top.t
 -000000  point: type=branch comment=else hier=top.t
+-000000  point: type=line comment=else hier=top.t
 %000007     if (t1 & t2 & 1'b1) $write("");
 -000000  point: type=expr comment=(1'h1==0) => 0 hier=top.t
 -000004  point: type=expr comment=(t1==0) => 0 hier=top.t
 -000002  point: type=expr comment=(t1==1 && t2==1 && 1'h1==1) => 1 hier=top.t
 -000005  point: type=expr comment=(t2==0) => 0 hier=top.t
 -000002  point: type=branch comment=if hier=top.t
+-000002  point: type=line comment=if hier=top.t
 -000007  point: type=branch comment=else hier=top.t
+-000007  point: type=line comment=else hier=top.t
 %000009     if (t1 & t2 & 1'b0) $write("");
 -000009  point: type=expr comment=(1'h0==0) => 0 hier=top.t
 -000004  point: type=expr comment=(t1==0) => 0 hier=top.t
 -000000  point: type=expr comment=(t1==1 && t2==1 && 1'h0==1) => 1 hier=top.t
 -000005  point: type=expr comment=(t2==0) => 0 hier=top.t
 -000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
 -000009  point: type=branch comment=else hier=top.t
+-000009  point: type=line comment=else hier=top.t
 %000007     if (t1 & t2 & ONE) $write("");
 -000000  point: type=expr comment=(ONE==0) => 0 hier=top.t
 -000004  point: type=expr comment=(t1==0) => 0 hier=top.t
 -000002  point: type=expr comment=(t1==1 && t2==1 && ONE==1) => 1 hier=top.t
 -000005  point: type=expr comment=(t2==0) => 0 hier=top.t
 -000002  point: type=branch comment=if hier=top.t
+-000002  point: type=line comment=if hier=top.t
 -000007  point: type=branch comment=else hier=top.t
+-000007  point: type=line comment=else hier=top.t
 %000009     if (t1 & t2 & ZERO) $write("");
 -000009  point: type=expr comment=(ZERO==0) => 0 hier=top.t
 -000004  point: type=expr comment=(t1==0) => 0 hier=top.t
 -000000  point: type=expr comment=(t1==1 && t2==1 && ZERO==1) => 1 hier=top.t
 -000005  point: type=expr comment=(t2==0) => 0 hier=top.t
 -000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
 -000009  point: type=branch comment=else hier=top.t
+-000009  point: type=line comment=else hier=top.t
 %000005     if (t1 && t2) begin
 -000004  point: type=expr comment=(t1==0) => 0 hier=top.t
 -000002  point: type=expr comment=(t1==1 && t2==1) => 1 hier=top.t
@@ -243,47 +285,63 @@
             end
 %000005     else if (t1 || t2) begin
 -000005  point: type=branch comment=if hier=top.t
+-000005  point: type=line comment=if hier=top.t
 -000002  point: type=branch comment=else hier=top.t
+-000002  point: type=line comment=else hier=top.t
 -000002  point: type=expr comment=(t1==0 && t2==0) => 0 hier=top.t
 -000003  point: type=expr comment=(t1==1) => 1 hier=top.t
 -000002  point: type=expr comment=(t2==1) => 1 hier=top.t
 %000005       $write("");
 -000005  point: type=branch comment=if hier=top.t
+-000005  point: type=line comment=if hier=top.t
             end
 %000007     if (invert(t1) && t2) $write("");
 -000005  point: type=expr comment=(invert(t1)==0) => 0 hier=top.t
 -000002  point: type=expr comment=(invert(t1)==1 && t2==1) => 1 hier=top.t
 -000005  point: type=expr comment=(t2==0) => 0 hier=top.t
 -000002  point: type=branch comment=if hier=top.t
+-000002  point: type=line comment=if hier=top.t
 -000007  point: type=branch comment=else hier=top.t
+-000007  point: type=line comment=else hier=top.t
 %000007     if (and_oper(t1, t2)) $write("");
 -000002  point: type=branch comment=if hier=top.t
+-000002  point: type=line comment=if hier=top.t
 -000007  point: type=branch comment=else hier=top.t
+-000007  point: type=line comment=else hier=top.t
 %000007     if (t2 && t3) begin
 -000005  point: type=expr comment=(t2==0) => 0 hier=top.t
 -000002  point: type=expr comment=(t2==1 && t3==1) => 1 hier=top.t
 -000005  point: type=expr comment=(t3==0) => 0 hier=top.t
 -000002  point: type=branch comment=if hier=top.t
+-000002  point: type=line comment=if hier=top.t
 -000007  point: type=branch comment=else hier=top.t
+-000007  point: type=line comment=else hier=top.t
 %000001       if (t1 && t2) $write("");
 -000001  point: type=expr comment=(t1==0) => 0 hier=top.t
 -000001  point: type=expr comment=(t1==1 && t2==1) => 1 hier=top.t
 -000000  point: type=expr comment=(t2==0) => 0 hier=top.t
 -000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
 -000001  point: type=branch comment=else hier=top.t
+-000001  point: type=line comment=else hier=top.t
             end
 %000009     if (0 == 1) begin
 -000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
 -000009  point: type=branch comment=else hier=top.t
+-000009  point: type=line comment=else hier=top.t
 %000000       for (int loop_var = 0; loop_var < 1; loop_var++) begin
 -000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
 -000000  point: type=line comment=block hier=top.t
 %000000         if (cyc[loop_var] && t2) $write("");
 -000000  point: type=branch comment=else hier=top.t
+-000000  point: type=line comment=else hier=top.t
 -000000  point: type=expr comment=(cyc[loop_var[4:0]+:1]==0) => 0 hier=top.t
 -000000  point: type=expr comment=(cyc[loop_var[4:0]+:1]==1 && t2==1) => 1 hier=top.t
 -000000  point: type=expr comment=(t2==0) => 0 hier=top.t
 -000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
               end
             end
 ~000144     for (int loop_var_2 = 0; loop_var_2 < 32; loop_var_2 += 2) begin
@@ -294,15 +352,19 @@
 +000131  point: type=expr comment=(cyc[loop_var_2[4:0]+:1]==0 && cyc[$unsigned(5'((loop_var_2 + 32'sh1)))+:1]==0) => 0 hier=top.t
 -000009  point: type=expr comment=(cyc[loop_var_2[4:0]+:1]==1) => 1 hier=top.t
 +000013  point: type=branch comment=if hier=top.t
++000013  point: type=line comment=if hier=top.t
 +000131  point: type=branch comment=else hier=top.t
++000131  point: type=line comment=else hier=top.t
             end
             // stop at the first layer even if there's more to find
 %000007     if ((cyc[3+32'(t1&&t2)+:2] == cyc[5+32'(t3||t4)+:2]) || cyc[31]) $write("");
 -000007  point: type=branch comment=if hier=top.t
+-000007  point: type=line comment=if hier=top.t
 -000002  point: type=expr comment=((cyc[$unsigned(5'((32'sh3 + (t1 && t2))))+:2] == cyc[$unsigned(5'((32'sh5 + (t3 || t4))))+:2])==0 && cyc[31]==0) => 0 hier=top.t
 -000007  point: type=expr comment=((cyc[$unsigned(5'((32'sh3 + (t1 && t2))))+:2] == cyc[$unsigned(5'((32'sh5 + (t3 || t4))))+:2])==1) => 1 hier=top.t
 -000000  point: type=expr comment=(cyc[31]==1) => 1 hier=top.t
 -000002  point: type=branch comment=else hier=top.t
+-000002  point: type=line comment=else hier=top.t
             // impossible branches and redundant terms
 %000008     if ((t1 && t2) && ~(t1 && t3) && (t1 || t4)) $write("");
 -000003  point: type=expr comment=(t1==0 && t4==0) => 0 hier=top.t
@@ -312,9 +374,12 @@
 -000002  point: type=expr comment=(t1==1 && t3==1) => 0 hier=top.t
 -000005  point: type=expr comment=(t2==0) => 0 hier=top.t
 -000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
 -000008  point: type=branch comment=else hier=top.t
+-000008  point: type=line comment=else hier=top.t
 %000008     if ((cyc[0] && cyc[1]) && ~(cyc[0] && cyc[2]) && (cyc[0] || cyc[3])) $write("");
 -000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
 -000003  point: type=expr comment=(cyc[0]==0 && cyc[3]==0) => 0 hier=top.t
 -000004  point: type=expr comment=(cyc[0]==0) => 0 hier=top.t
 -000000  point: type=expr comment=(cyc[0]==1 && cyc[1]==1 && cyc[2]==0 && cyc[3]==1) => 1 hier=top.t
@@ -322,9 +387,11 @@
 -000002  point: type=expr comment=(cyc[0]==1 && cyc[2]==1) => 0 hier=top.t
 -000005  point: type=expr comment=(cyc[1]==0) => 0 hier=top.t
 -000008  point: type=branch comment=else hier=top.t
+-000008  point: type=line comment=else hier=top.t
             // demonstrate current limitations of term matching scheme
 %000008     if ((cyc[0] && cyc[1]) && ~(cyc[1-1] && cyc[2]) && (cyc[2-2] || cyc[3])) $write("");
 -000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
 -000002  point: type=expr comment=(cyc[$unsigned(5'((32'sh1 - 32'sh1)))+:1]==1 && cyc[2]==1) => 0 hier=top.t
 -000003  point: type=expr comment=(cyc[$unsigned(5'((32'sh2 - 32'sh2)))+:1]==0 && cyc[3]==0) => 0 hier=top.t
 -000004  point: type=expr comment=(cyc[0]==0) => 0 hier=top.t
@@ -334,6 +401,7 @@
 -000000  point: type=expr comment=(cyc[0]==1 && cyc[1]==1 && cyc[2]==0 && cyc[3]==1) => 1 hier=top.t
 -000005  point: type=expr comment=(cyc[1]==0) => 0 hier=top.t
 -000008  point: type=branch comment=else hier=top.t
+-000008  point: type=line comment=else hier=top.t
             //verilator coverage_off
             if (t1 && t2) $write("");
             //verilator coverage_on
@@ -345,14 +413,18 @@
 -000003  point: type=expr comment=(t2==0 && t4==0) => 0 hier=top.t
 -000002  point: type=expr comment=(t3==0 && t4==1) => 1 hier=top.t
 -000004  point: type=branch comment=if hier=top.t
+-000004  point: type=line comment=if hier=top.t
 -000005  point: type=branch comment=else hier=top.t
+-000005  point: type=line comment=else hier=top.t
             // intentionally testing wonkified expression terms
 %000007     if (cyc[0] & cyc[1]) $write("");
 -000004  point: type=expr comment=(cyc[0]==0) => 0 hier=top.t
 -000002  point: type=expr comment=(cyc[0]==1 && cyc[1]==1) => 1 hier=top.t
 -000005  point: type=expr comment=(cyc[1]==0) => 0 hier=top.t
 -000002  point: type=branch comment=if hier=top.t
+-000002  point: type=line comment=if hier=top.t
 -000007  point: type=branch comment=else hier=top.t
+-000007  point: type=line comment=else hier=top.t
             // for now each ternary condition is considered in isolation
 %000009     other_int <= t1 ? t2 ? 1 : 2 : 3;
 -000004  point: type=expr comment=(t1==0) => 0 hier=top.t
@@ -365,22 +437,32 @@
             // no expression coverage for multi-bit expressions
 %000009     if ((cyc[1:0] & cyc[3:2]) == 2'b11) $write("");
 -000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
 -000009  point: type=branch comment=else hier=top.t
+-000009  point: type=line comment=else hier=top.t
             // truth table is too large
 %000005     if (^cyc[6:0]) $write("");
 -000005  point: type=branch comment=if hier=top.t
+-000005  point: type=line comment=if hier=top.t
 -000004  point: type=branch comment=else hier=top.t
+-000004  point: type=line comment=else hier=top.t
             // this one is too big even for t_cover_expr_max
 %000005     if (^cyc) $write("");
 -000005  point: type=branch comment=if hier=top.t
+-000005  point: type=line comment=if hier=top.t
 -000004  point: type=branch comment=else hier=top.t
+-000004  point: type=line comment=else hier=top.t
 %000008     if (cyc == 9) begin
 -000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
 -000008  point: type=branch comment=else hier=top.t
+-000008  point: type=line comment=else hier=top.t
 %000001       $write("*-* All Finished *-*\n");
 -000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
 %000001       $finish;
 -000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
             end
           end
         
@@ -391,7 +473,9 @@
 -000002  point: type=expr comment=(t1==1 && t2==1) => 1 hier=top.t
 -000005  point: type=expr comment=(t2==0) => 0 hier=top.t
 -000002  point: type=branch comment=if hier=top.t
+-000002  point: type=line comment=if hier=top.t
 -000008  point: type=branch comment=else hier=top.t
+-000008  point: type=line comment=else hier=top.t
           end
         
 %000005   assign assign_lhs[0] = t1 && t2;
@@ -446,10 +530,14 @@
             end
 %000001     if (!bit'(obj.randomize() with {x < 100;})) $write("");
 -000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
 -000000  point: type=branch comment=else hier=top.t
+-000000  point: type=line comment=else hier=top.t
 %000001     if (null_obj != null && null_obj.x == 5) $write("");
 -000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
 -000001  point: type=branch comment=else hier=top.t
+-000001  point: type=line comment=else hier=top.t
           end
         
           sub the_sub_1 (
@@ -492,7 +580,9 @@
 -000002  point: type=expr comment=(p==1 && q==1) => 1 hier=top.t.the_sub_*
 +000019  point: type=expr comment=(q==0) => 0 hier=top.t.the_sub_*
 -000002  point: type=branch comment=if hier=top.t.the_sub_*
+-000002  point: type=line comment=if hier=top.t.the_sub_*
 +000028  point: type=branch comment=else hier=top.t.the_sub_*
++000028  point: type=line comment=else hier=top.t.the_sub_*
           end
         
         endmodule

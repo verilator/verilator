@@ -557,10 +557,20 @@ void VlcTop::writeInfo(const string& filename) {
             VlcSourceCount& sc = li.second;
             uint64_t daCount = 0;
             std::vector<const VlcPoint*> infoPoints;
+            std::set<std::string> branchComments;
             for (const auto& point : sc.points()) {
                 daCount = std::max(daCount, point->count());
                 infoPoints.push_back(point);
+                if (point->type() == "branch") branchComments.insert(point->comment());
             }
+            // An if/else gets both line and branch points for its blocks, so leave out
+            // the line points that repeat a branch point
+            infoPoints.erase(std::remove_if(infoPoints.begin(), infoPoints.end(),
+                                            [&](const VlcPoint* pointp) {
+                                                return pointp->type() == "line"
+                                                       && branchComments.count(pointp->comment());
+                                            }),
+                             infoPoints.end());
             os << "DA:" << sc.lineno() << "," << daCount << "\n";
             if (opt.countOk(daCount)) ++linesHit;
             if (infoPoints.size() <= 1) continue;

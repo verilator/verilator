@@ -339,7 +339,8 @@ Branch Coverage
 
 With :vlopt:`--coverage`, or :vlopt:`--coverage-branch`, Verilator will
 automatically add coverage analysis at each code flow change point (e.g.,
-at branches).
+at branches). Branch points are in addition to line coverage points, so
+line coverage results do not depend on whether branch coverage is enabled.
 
 .. _toggle coverage:
 
