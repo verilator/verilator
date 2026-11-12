@@ -26,6 +26,25 @@ def fatal(message: str) -> NoReturn:
     sys.exit(1)
 
 
+def make_escape(name: str) -> str:
+    """Escape a file name for use as a make target or prerequisite."""
+    escaped = []
+    for char in name:
+        if char == '$':
+            escaped.append('$$')
+        elif char in '\\ \t#:*?[]':
+            escaped.append('\\' + char)
+        else:
+            escaped.append(char)
+    return ''.join(escaped)
+
+
+def shell_quote(name: str) -> str:
+    """Quote a file name as a single shell word in a make recipe."""
+    # Make expands '$' in recipes before the shell sees them, so double them.
+    return "'" + name.replace("'", "'\\''").replace('$', '$$') + "'"
+
+
 def parse_flags(flags: str) -> list[str]:
     return [flag for flag in shlex.split(flags) if flag not in ('-MMD', '-MP')]
 
@@ -340,8 +359,9 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
     if module_only:
         module_cmis.update(
             gcc_module_target(module, module_only) for module in modules if module['provides'])
-    lines.append('VK_MODULE_OBJS = ' + ' '.join(module_objs))
-    lines.append('VK_MODULE_CMIS = ' + ' '.join(sorted(module_cmis)))
+    lines.append('VK_MODULE_OBJS = ' + ' '.join(make_escape(obj) for obj in module_objs))
+    lines.append('VK_MODULE_CMIS = ' +
+                 ' '.join(make_escape(cmi) for cmi in sorted(module_cmis)))
     if module_only:
         # -fmodule-only does not produce objects, so do not ask make to link them.
         stems = sorted({
@@ -355,24 +375,26 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
     lines.append('modules: $(VK_MODULE_OBJS) $(VK_MODULE_CMIS)')
     lines.append('')
     for header in sorted(headers.values(), key=lambda entry: entry['cmi']):
-        dep_str = ' '.join(['$(VM_PREFIX).mk'] + [dep['cmi'] for dep in header['deps']])
-        lines.append(header['cmi'] + ': ' + header['path'] + ' ' + dep_str)
+        prereqs = [make_escape(header['path']), '$(VM_PREFIX).mk']
+        prereqs.extend(make_escape(dep['cmi']) for dep in header['deps'])
+        lines.append(make_escape(header['cmi']) + ': ' + ' '.join(prereqs))
         lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -fmodule-header'
-                     ' -x c++-header ' + header['path'])
+                     ' -x c++-header ' + shell_quote(header['path']))
         lines.append('')
     for module in sorted(modules, key=lambda entry: entry['obj']):
-        deps = ['$(VM_PREFIX).mk']
-        deps.extend(gcc_module_target(dep, module_only) for dep in module['direct_deps'])
+        deps = [gcc_module_target(dep, module_only) for dep in module['direct_deps']]
         deps.extend(header['cmi'] for header in module['header_deps'])
-        prereqs = module['source'] + ' ' + ' '.join(sorted(set(deps)))
+        prereqs = [make_escape(module['source']), '$(VM_PREFIX).mk']
+        prereqs.extend(make_escape(dep) for dep in sorted(set(deps)))
         if module_only and module['provides']:
-            lines.append(gcc_module_target(module, module_only) + ': ' + prereqs)
+            lines.append(make_escape(gcc_module_target(module, module_only)) + ': ' +
+                         ' '.join(prereqs))
             lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -fmodule-only -c ' +
-                         module['source'])
+                         shell_quote(module['source']))
         else:
-            lines.append(module['obj'] + ': ' + prereqs)
+            lines.append(make_escape(module['obj']) + ': ' + ' '.join(prereqs))
             lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -c ' +
-                         module['source'] + ' -o ' + module['obj'])
+                         shell_quote(module['source']) + ' -o ' + shell_quote(module['obj']))
         lines.append('')
     return '\n'.join(lines)
 
@@ -380,7 +402,7 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
 def generate_clang(modules: list[dict[str, Any]]) -> str:
     lines: list[str] = []
     module_objs = sorted({module['obj'] for module in modules if module['provides']})
-    lines.append('VK_MODULE_OBJS = ' + ' '.join(module_objs))
+    lines.append('VK_MODULE_OBJS = ' + ' '.join(make_escape(obj) for obj in module_objs))
     lines.append('VK_MODULE_CMIS =')
     lines.extend(module_flags_lines())
     lines.append('')
@@ -388,15 +410,17 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
     lines.append('modules: $(VK_MODULE_OBJS) $(VK_MODULE_CMIS)')
     lines.append('')
     for module in sorted(modules, key=lambda entry: entry['obj']):
-        dep_str = ' '.join(['$(VM_PREFIX).mk'] + module['deps'])
-        lines.append(module['obj'] + ': ' + module['source'] + ' ' + dep_str)
+        prereqs = [make_escape(module['source']), '$(VM_PREFIX).mk']
+        prereqs.extend(make_escape(dep) for dep in module['deps'])
+        lines.append(make_escape(module['obj']) + ': ' + ' '.join(prereqs))
         command = [
-            '\t$(OBJCACHE)', '$(CXX)', '$(OPT_FAST)', '$(VK_MODULE_FLAGS)', *module['dep_flags']
+            '\t$(OBJCACHE)', '$(CXX)', '$(OPT_FAST)', '$(VK_MODULE_FLAGS)',
+            *[shell_quote(flag) for flag in module['dep_flags']]
         ]
         if module['provides']:
-            command.append('-fmodule-output=' + module['pcm'])
+            command.append(shell_quote('-fmodule-output=' + module['pcm']))
         command += clang_language_flags(module['source'])
-        command += ['-c', module['source'], '-o', module['obj']]
+        command += ['-c', shell_quote(module['source']), '-o', shell_quote(module['obj'])]
         lines.append(' '.join(command))
         lines.append('')
     return '\n'.join(lines)

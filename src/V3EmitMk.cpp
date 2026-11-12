@@ -25,6 +25,54 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+namespace {
+
+// Escape a file name for use as a make target or prerequisite.
+// '%' is left alone: it is not special in prerequisites, and GNU make does not
+// allow escaping it in targets.
+string makeEscape(const string& name) {
+    string result;
+    result.reserve(name.size());
+    for (const char ch : name) {
+        if (ch == '$') {
+            result += "$$";
+        } else if (ch == '\\' || ch == ' ' || ch == '\t' || ch == '#' || ch == ':' || ch == '*'
+                   || ch == '?' || ch == '[' || ch == ']') {
+            result += '\\';
+            result += ch;
+        } else {
+            result += ch;
+        }
+    }
+    return result;
+}
+
+// Quote a file name as a single shell word for a make recipe.
+// Make expands '$' in recipes before the shell sees them, so each '$' is doubled.
+string shellQuote(const string& name) {
+    string quoted = "'";
+    for (const char ch : name) {
+        if (ch == '\'') {
+            quoted += "'\\''";
+        } else {
+            quoted += ch;
+        }
+    }
+    quoted += "'";
+    string result;
+    result.reserve(quoted.size());
+    for (const char ch : quoted) {
+        if (ch == '$') {
+            result += "$$";
+        } else {
+            result += ch;
+        }
+    }
+    return result;
+}
+
+}  // namespace
+
 // Groups adjacent files in a list, evenly distributing sum of scores
 class EmitGroup final {
 public:
@@ -761,18 +809,22 @@ public:
 
         if (v3Global.opt.cxxModules()) {
             of.puts("# User C++ module sources\n");
-            of.puts("VM_USER_SOURCES = \\\n");
-            for (const auto& cppfile : cppFiles)
-                of.puts("  " + V3Os::filenameRelativePath(cppfile, v3Global.opt.makeDir())
-                        + " \\\n");
-            of.puts("\n");
-            of.puts("$(VM_PREFIX)__modules.mk: $(VM_USER_SOURCES) $(VM_PREFIX).mk\n");
+            of.puts("$(VM_PREFIX)__modules.mk:");
+            for (const auto& cppfile : cppFiles) {
+                of.puts(" "
+                        + makeEscape(V3Os::filenameRelativePath(cppfile, v3Global.opt.makeDir())));
+            }
+            of.puts(" $(VM_PREFIX).mk\n");
             of.puts(
                 "\t$(VERILATOR_MODULE_DEPS) --backend $(VK_MODULE_BACKEND) --cxx \"$(CXX)\" \\\n");
             of.puts("\t    --cxxflags='$(subst ','\\'',$(CXXFLAGS))' \\\n");
             of.puts("\t    --cppflags='$(subst ','\\'',$(CPPFLAGS))' \\\n");
             of.puts("\t    --opt-fast='$(subst ','\\'',$(OPT_FAST))' \\\n");
-            of.puts("\t    --objdir . --output $@ $(addprefix --source ,$(VM_USER_SOURCES))\n");
+            of.puts("\t    --objdir . --output $@");
+            for (const auto& cppfile : cppFiles) {
+                of.puts(" --source "
+                        + shellQuote(V3Os::filenameRelativePath(cppfile, v3Global.opt.makeDir())));
+            }
             of.puts("\n");
         }
 
