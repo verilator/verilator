@@ -23,8 +23,49 @@
 
 #include "verilated_timing.h"
 
+#if VM_DPI
+//======================================================================
+// Aborted calls must resume their blocked imports before their workers can be released.
+namespace VerilatedDpiCall {
+static VerilatedMutex s_mutex;
+static std::vector<std::function<void()>> s_aborted VL_GUARDED_BY(s_mutex);
+
+void enqueueAborted(std::function<void()> resume) VL_MT_SAFE {
+    const VerilatedLockGuard lock{s_mutex};
+    s_aborted.push_back(std::move(resume));
+}
+
+// This function calls resume() which contains call to handoffWorker(), therefore it is marked
+// VL_MT_UNSAFE_ONE
+void resumeAborted() VL_MT_UNSAFE_ONE {
+    while (true) {
+        std::function<void()> resume;
+        {
+            const VerilatedLockGuard lock{s_mutex};
+            if (s_aborted.empty()) return;
+            resume = std::move(s_aborted.back());
+            s_aborted.pop_back();
+        }
+        resume();
+    }
+}
+}  // namespace VerilatedDpiCall
+#endif
+
 //======================================================================
 // VlCoroutineHandle:: Methods
+
+void VlCoroutineHandle::destroy() {
+    // Usually these coroutines should get resumed; we only need to clean up if we destroy a
+    // model with some coroutines suspended
+    if (m_process && m_process->state() != VlProcess::KILLED && !m_coro.promise().m_forever) {
+        m_process->state(VlProcess::FINISHED);
+    }
+    m_coro.destroy();
+#if VM_DPI
+    VerilatedDpiCall::resumeAborted();
+#endif
+}
 
 void VlCoroutineHandle::resume() {
     // Only null if we have a fork..join_any and one of the other child processes resumed the
@@ -34,6 +75,13 @@ void VlCoroutineHandle::resume() {
         if (m_process) {  // If process state is managed with std::process
             if (m_process->state() == VlProcess::KILLED) {
                 m_coro.destroy();
+                m_coro = nullptr;
+#if VM_DPI
+                // Killing a process might leak a thread if
+                // it was in the middle of executing a DPI import.
+                // This function resumes those threads.
+                VerilatedDpiCall::resumeAborted();
+#endif
             } else {
                 m_process->state(VlProcess::RUNNING);
                 VlProcess::currentp(m_process.get());

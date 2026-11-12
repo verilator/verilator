@@ -819,6 +819,8 @@ void AstBegin::dumpJson(std::ostream& str) const {
 const char* AstCAwait::broken() const {
     if (const AstCMethodHard* const methodp = VN_CAST(exprp(), CMethodHard)) {
         BROKEN_RTN(!methodp->method().isAwaitable());
+    } else if (const AstCFuncHard* const funcp = VN_CAST(exprp(), CFuncHard)) {
+        BROKEN_RTN(!(funcp->function() == VCFunction::AWAIT_IMPORT_TASK));
     } else {
         BROKEN_RTN(!VN_AS(exprp(), NodeCCall)->funcp()->isCoroutine());
     }

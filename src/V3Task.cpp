@@ -29,6 +29,7 @@
 
 #include "V3Task.h"
 
+#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3ConstPool.h"
 #include "V3Control.h"
@@ -38,6 +39,7 @@
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
 
+#include <string>
 #include <tuple>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -1155,6 +1157,11 @@ class TaskVisitor final : public VNVisitor {
         m_topScopep->scopep()->addBlocksp(funcp);
         makePortList(nodep, funcp);
 
+        // Aborted imports must not re-enter SystemVerilog while unwinding.
+        const std::string abortedRtn = rtnvarp ? "std::decay_t<" + rtnType + ">{}" : "void()";
+        funcp->addStmtsp(new AstIf{flp, new AstCExpr{flp, "VerilatedDpi::exportAborted()", 1},
+                                   new AstCReturn{flp, new AstCExpr{flp, abortedRtn}}, nullptr});
+
         // Note this function may dispatch on a different class.
         // Thus we need to be careful not to assume a particular function layout.
         //
@@ -1184,7 +1191,11 @@ class TaskVisitor final : public VNVisitor {
                   + ">(VerilatedScope::exportFind(__Vscopep, __Vfuncnum));");
 
         // Convert input/inout DPI arguments to Internal types, and construct the call
-        AstCStmt* const callp = new AstCStmt{flp};
+        AstCFuncHard* const callExportp = new AstCFuncHard{
+            nodep->fileline(), nodep->verilogTask() ? VCFunction::CALL_EXPORT_TASK
+                                                    : VCFunction::CALL_EXPORT_FUNCTION};
+        callExportp->dtypeSetVoid();
+        AstVarRef* argsp = nullptr;
         const auto addFuncArg = [&](AstVar* portp) -> AstVarScope* {
             // No createDpiTemp; we make a real internal variable instead
             AstVarScope* const vscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
@@ -1193,14 +1204,16 @@ class TaskVisitor final : public VNVisitor {
             portp->protect(false);
             // Add argument to call
             const VAccess access = portp->direction().pinAccess();
-            callp->add(", ");
-            callp->add(new AstVarRef{portp->fileline(), vscp, access});
+            argsp = AstNode::addNext(argsp, new AstVarRef{portp->fileline(), vscp, access});
             return vscp;
         };
-        // Call callback
-        callp->add("(*__Vcb)(");
+
+        callExportp->addPinsp(new AstCExpr{nodep->fileline(), "__Vcb"});
+
         // First argument is the Syms
-        callp->add("(" + EmitCUtil::symClassName() + "*)(__Vscopep->symsp())");
+        callExportp->addPinsp(new AstCExpr{nodep->fileline(), "(" + EmitCUtil::symClassName()
+                                                                  + "*)(__Vscopep->symsp())"});
+
         // Add function arguments
         AstNodeStmt* outCvtsp = nullptr;  // Conversions of output/inout arguments, after the call
         for (AstNode* const declp : nodep->declspList()) {
@@ -1229,10 +1242,8 @@ class TaskVisitor final : public VNVisitor {
         }
         // Return value argument goes last
         if (rtnvarp) addFuncArg(rtnvarp);
-        // Close statement
-        callp->add(");");
-        // Call the user function
-        funcp->addStmtsp(callp);
+        callExportp->addPinsp(argsp);
+        funcp->addStmtsp(callExportp->makeStmt());
         // Convert output/inout arguments back to internal type
         if (outCvtsp) funcp->addStmtsp(outCvtsp);
         // Convert return value
@@ -1435,6 +1446,18 @@ class TaskVisitor final : public VNVisitor {
         return allOk;
     }
 
+    static void addDpiFunctionLocation(AstCFuncHard* funcp) {
+        FileLine* const flp = funcp->fileline();
+        const bool protectIds = v3Global.opt.protectIds();
+        AstCExpr* const filenamep = new AstCExpr{flp, protectIds ? "VL_UNKNOWN_FILENAME"
+                                                                 : '"' + flp->filenameEsc() + '"'};
+        filenamep->dtypeSetString();
+        funcp->addPinsp(filenamep);
+        AstConst* const linenop
+            = new AstConst{flp, protectIds ? 0 : static_cast<uint32_t>(flp->lineno())};
+        funcp->addPinsp(linenop);
+    }
+
     void bodyDpiImportFunc(AstNodeFTask* nodep, AstVarScope* rtnvscp, AstCFunc* cfuncp,
                            AstCFunc* dpiFuncp) {
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
@@ -1532,24 +1555,32 @@ class TaskVisitor final : public VNVisitor {
             cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
         }
 
-        {  // Call the imported function
-            AstCCall* const callp = new AstCCall{nodep->fileline(), dpiFuncp};
-            callp->dtypeSetVoid();
-            callp->argTypes(args);
-            if (rtnvscp) {
-                // If it has a return value, capture it
-                cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
-                const std::string sel = rtnvscp->varp()->dtypep()->isDpiPrimitive() ? "" : "[0]";
-                AstCStmt* const cstmtp = new AstCStmt{nodep->fileline()};
-                cstmtp->add(rtnvscp->varp()->name() + tmpSuffixp + sel);  // LHS
-                cstmtp->add(" = ");
-                cstmtp->add(callp);  // RHS
-                cstmtp->add(";");
-                cfuncp->addStmtsp(cstmtp);
-            } else {
-                // Othervise just call it
-                cfuncp->addStmtsp(callp->makeStmt());
-            }
+        AstCFuncHard* const callImportp = new AstCFuncHard{
+            nodep->fileline(), nodep->verilogTask() ? VCFunction::CALL_IMPORT_TASK
+                                                    : VCFunction::CALL_IMPORT_FUNCTION};
+        callImportp->dtypeSetVoid();
+        // Add arguments
+        // V3Timing supplies the caller's process after process requirements have been resolved.
+        callImportp->addPinsp(new AstCExpr{nodep->fileline(), "nullptr"});
+        if (!nodep->verilogTask()) addDpiFunctionLocation(callImportp);
+        // Pass name of the DPI imported function to call
+        callImportp->addPinsp(new AstAddrOfCFunc{nodep->fileline(), dpiFuncp});
+        if (!args.empty()) callImportp->addPinsp(new AstCExpr{nodep->fileline(), args});
+
+        if (rtnvscp) {
+            UASSERT_OBJ(nodep->verilogFunction(), nodep,
+                        "Only functions should have return values");
+            // If it has a return value, capture it
+            cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
+            const std::string sel = rtnvscp->varp()->dtypep()->isDpiPrimitive() ? "" : "[0]";
+            AstCStmt* const funcAssignp = new AstCStmt{nodep->fileline()};
+            funcAssignp->add(rtnvscp->varp()->name() + tmpSuffixp + sel);  // LHS
+            funcAssignp->add(" = ");
+            funcAssignp->add(callImportp);  // RHS
+            funcAssignp->add(";");
+            cfuncp->addStmtsp(funcAssignp);
+        } else {
+            cfuncp->addStmtsp(callImportp->makeStmt());
         }
         if (copyBacksp) cfuncp->addStmtsp(copyBacksp);
 
