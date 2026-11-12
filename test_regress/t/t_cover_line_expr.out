@@ -25,6 +25,7 @@
           integer some_int;
           integer other_int;
           logic some_bool;
+          logic case_bool;
           logic [1:0] assign_lhs;
         
           wire t1 = cyc[0];
@@ -272,6 +273,40 @@
 -000001  point: type=branch comment=if hier=top.t
 -000001  point: type=branch comment=else hier=top.t
             end
+            // expressions in case items, counted only when their item runs
+%000009     case (cyc[3:2])
+-000009  point: type=line comment=block hier=top.t
+%000003       2'b00: if (t1 && t2) $write("");
+-000003  point: type=line comment=case hier=top.t
+-000001  point: type=branch comment=if hier=top.t
+-000002  point: type=branch comment=else hier=top.t
+-000001  point: type=expr comment=(t1==0) => 0 hier=top.t
+-000001  point: type=expr comment=(t1==1 && t2==1) => 1 hier=top.t
+-000001  point: type=expr comment=(t2==0) => 0 hier=top.t
+%000004       2'b01: case_bool <= t1 || t2;
+-000004  point: type=line comment=case hier=top.t
+-000001  point: type=expr comment=(t1==0 && t2==0) => 0 hier=top.t
+-000002  point: type=expr comment=(t1==1) => 1 hier=top.t
+-000002  point: type=expr comment=(t2==1) => 1 hier=top.t
+%000000       2'b11: if (t1 || t2) $write("");  // cyc stops at 9, so never runs
+-000000  point: type=line comment=case hier=top.t
+-000000  point: type=branch comment=if hier=top.t
+-000000  point: type=branch comment=else hier=top.t
+-000000  point: type=expr comment=(t1==0 && t2==0) => 0 hier=top.t
+-000000  point: type=expr comment=(t1==1) => 1 hier=top.t
+-000000  point: type=expr comment=(t2==1) => 1 hier=top.t
+%000002       default: ;
+-000002  point: type=line comment=case hier=top.t
+            endcase
+            // nothing after a $stop is covered, including inside case items
+%000009     if (cyc == 100) begin
+-000009  point: type=line comment=else hier=top.t
+              $stop;
+              case (cyc[0])
+                1'b0: if (t1 && t2) $write("");
+                default: ;
+              endcase
+            end
 %000009     if (0 == 1) begin
 -000000  point: type=branch comment=if hier=top.t
 -000009  point: type=branch comment=else hier=top.t
@@ -287,8 +322,8 @@
               end
             end
 ~000144     for (int loop_var_2 = 0; loop_var_2 < 32; loop_var_2 += 2) begin
--000009  point: type=line comment=block hier=top.t
 +000144  point: type=line comment=block hier=top.t
+-000009  point: type=line comment=block hier=top.t
 ~000131       if (cyc[loop_var_2] | cyc[loop_var_2+1]) $write("");
 -000006  point: type=expr comment=(cyc[$unsigned(5'((loop_var_2 + 32'sh1)))+:1]==1) => 1 hier=top.t
 +000131  point: type=expr comment=(cyc[loop_var_2[4:0]+:1]==0 && cyc[$unsigned(5'((loop_var_2 + 32'sh1)))+:1]==0) => 0 hier=top.t

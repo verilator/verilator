@@ -68,6 +68,10 @@ module Test
 
   always_ff @ (posedge clk) begin
     labeled_icov: cover (cyc==3 || cyc==4);
+    case (cyc[0])
+      1'b0: labeled_case_icov: cover (cyc == 4);
+      default: ;
+    endcase
   end
 
   // Immediate cover

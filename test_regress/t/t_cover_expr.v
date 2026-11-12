@@ -21,6 +21,7 @@ module t (
   integer some_int;
   integer other_int;
   logic some_bool;
+  logic case_bool;
   logic [1:0] assign_lhs;
 
   wire t1 = cyc[0];
@@ -81,6 +82,21 @@ module t (
     if (and_oper(t1, t2)) $write("");
     if (t2 && t3) begin
       if (t1 && t2) $write("");
+    end
+    // expressions in case items, counted only when their item runs
+    case (cyc[3:2])
+      2'b00: if (t1 && t2) $write("");
+      2'b01: case_bool <= t1 || t2;
+      2'b11: if (t1 || t2) $write("");  // cyc stops at 9, so never runs
+      default: ;
+    endcase
+    // nothing after a $stop is covered, including inside case items
+    if (cyc == 100) begin
+      $stop;
+      case (cyc[0])
+        1'b0: if (t1 && t2) $write("");
+        default: ;
+      endcase
     end
     if (0 == 1) begin
       for (int loop_var = 0; loop_var < 1; loop_var++) begin
