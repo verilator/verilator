@@ -63,7 +63,6 @@ class BeginVisitor final : public VNVisitor {
     string m_ftaskNamedScope;  // m_namedScope outside of current function/task
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
     int m_ifDepth = 0;  // Current if depth
-    bool m_keepBegins = false;  // True if begins should not be inlined
 
     // METHODS
 
@@ -130,13 +129,6 @@ class BeginVisitor final : public VNVisitor {
         if (nodep->user1SetOnce()) return;
         VL_DO_DANGLING(V3Begin::convertToWhile(nodep), nodep);
     }
-    void visit(AstNodeAssign* nodep) override {
-        if (nodep->user1SetOnce()) return;
-        // Keep begin under assignment (in nodep->timingControlp())
-        VL_RESTORER(m_keepBegins);
-        m_keepBegins = true;
-        iterateChildren(nodep);
-    }
     void visit(AstNodeModule* nodep) override {
         if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_modp);
@@ -200,7 +192,6 @@ class BeginVisitor final : public VNVisitor {
         VL_RESTORER_COPY(m_displayScope);
         VL_RESTORER_COPY(m_namedScope);
         VL_RESTORER_COPY(m_unnamedScope);
-        UASSERT_OBJ(!m_keepBegins, nodep, "Should be able to eliminate all AstGenBlock");
         dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
         iterateAndNextNull(nodep->itemsp());
         // Repalce node with body then delete
@@ -234,18 +225,10 @@ class BeginVisitor final : public VNVisitor {
         VL_RESTORER_COPY(m_displayScope);
         VL_RESTORER_COPY(m_namedScope);
         VL_RESTORER_COPY(m_unnamedScope);
-        {
-            VL_RESTORER(m_keepBegins);
-            m_keepBegins = false;
-            dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
-            iterateChildren(nodep);
-        }
+        dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
+        iterateChildren(nodep);
 
         // Cleanup
-        if (m_keepBegins) {
-            nodep->name("");
-            return;
-        }
         if (AstNode* const declsp = nodep->declsp()) {
             // Only blocks made after V3LinkDot keep declarations to here, in functions; lift them
             // to the function
@@ -411,8 +394,6 @@ class BeginVisitor final : public VNVisitor {
     // VISITORS - LINT CHECK
     void visit(AstIf* nodep) override {
         if (nodep->user1SetOnce()) return;
-        VL_RESTORER(m_keepBegins);
-        m_keepBegins = false;
         // Check IFDEPTH warning - could be in other transform files if desire
         VL_RESTORER(m_ifDepth);
         if (m_ifDepth == -1 || v3Global.opt.ifDepth() < 1) {  // Turned off
@@ -428,8 +409,6 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstNode* nodep) override {
         if (nodep->user1SetOnce()) return;
-        VL_RESTORER(m_keepBegins);
-        m_keepBegins = false;
         iterateChildren(nodep);
     }
 

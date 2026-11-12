@@ -699,6 +699,7 @@ class AstEventControl final : public AstNodeStmt {
     // Parents: stmtlist
     // @astgen op1 := sentreep : Optional[AstSenTree]
     // @astgen op2 := stmtsp : List[AstNodeStmt]
+    // @astgen op3 := countp : Optional[AstNodeExpr]  // Events to wait for, if not one (##N)
 public:
     AstEventControl(FileLine* fl, AstSenTree* sentreep, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_EventControl(fl) {
