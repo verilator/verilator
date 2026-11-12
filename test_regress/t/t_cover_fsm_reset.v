@@ -144,6 +144,8 @@ module fsm_reset_active_low (
   state_t async_q;
   state_t async_d;
   state_t oneblock_q;
+  state_t tern_q;
+  state_t tern_d;
   state_t chain_q;
   logic [1:0] count;
   logic busy;
@@ -153,6 +155,20 @@ module fsm_reset_active_low (
   always_ff @(posedge clk) begin
     if (!rst_n) sync_q <= S0;
     else sync_q <= sync_d;
+  end
+
+  // Branch coverage lifts the '?:' into an if/else on a temporary
+  always_ff @(posedge clk) begin
+    tern_q <= !rst_n ? S0 : tern_d;
+  end
+
+  always_comb begin
+    tern_d = tern_q;
+    case (tern_q)
+      S0: tern_d = S1;
+      S1: tern_d = S2;
+      default: tern_d = S0;
+    endcase
   end
 
   always_ff @(posedge clk or negedge rst_n) begin
@@ -238,9 +254,11 @@ module t (
       .clk(clk),
       .rst(rst)
   );
+  // A second reset from S1 hits the active-low FSMs' reset arc S1->S0, which their
+  // next-state logic never takes
   fsm_reset_active_low reset_active_low_u (
       .clk(clk),
-      .rst_n(!rst)
+      .rst_n(!rst && cyc != 6)
   );
 
   initial begin
@@ -251,7 +269,7 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 1) rst <= 1'b0;
-    if (cyc == 5) begin
+    if (cyc == 8) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end
