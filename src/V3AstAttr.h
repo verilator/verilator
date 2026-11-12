@@ -966,6 +966,7 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
     macro(ARRAY_R_XOR,                        "r_xor",                  PURE,   CLEAN,  false,      "", "") \
     macro(ARRAY_SHUFFLE,                      "shuffle",                false,  CLEAN,  false,      "", "") \
     macro(ARRAY_SLICE,                        "slice",                  PURE,   CLEAN,  false,      "r", "") \
+    macro(ARRAY_SLICE_REF,                    "sliceRef",               false,  CLEAN,  false,      "r", "") \
     macro(ARRAY_SORT,                         "sort",                   false,  CLEAN,  false,      "", "") \
     macro(ARRAY_UNIQUE,                       "unique",                 PURE,   CLEAN,  false,      "", "") \
     macro(ARRAY_UNIQUE_INDEX,                 "unique_index",           PURE,   CLEAN,  false,      "", "") \
