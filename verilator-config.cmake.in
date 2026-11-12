@@ -636,7 +636,11 @@ function(verilate TARGET)
         if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.28)
             set(MODULE_INTERFACE_DIRS "")
             foreach(MODULE_INTERFACE ${${VERILATE_PREFIX}_MODULE_INTERFACES})
-                get_filename_component(MODULE_INTERFACE_DIR "${MODULE_INTERFACE}" DIRECTORY)
+                get_filename_component(
+                    MODULE_INTERFACE_DIR
+                    "${MODULE_INTERFACE}"
+                    DIRECTORY
+                )
                 list(APPEND MODULE_INTERFACE_DIRS "${MODULE_INTERFACE_DIR}")
             endforeach()
             list(REMOVE_DUPLICATES MODULE_INTERFACE_DIRS)
@@ -645,16 +649,18 @@ function(verilate TARGET)
                 ${TARGET}
                 PRIVATE
                     FILE_SET CXX_MODULES
-                    BASE_DIRS ${MODULE_INTERFACE_DIRS}
-                    FILES ${${VERILATE_PREFIX}_MODULE_INTERFACES}
+                        BASE_DIRS ${MODULE_INTERFACE_DIRS}
+                        FILES ${${VERILATE_PREFIX}_MODULE_INTERFACES}
             )
             list(
-                REMOVE_ITEM
-                ${VERILATE_PREFIX}_USER_CLASSES
+                REMOVE_ITEM ${VERILATE_PREFIX}_USER_CLASSES
                 ${${VERILATE_PREFIX}_MODULE_INTERFACES}
             )
         else()
-            message(FATAL_ERROR "C++ module interface files require CMake 3.28 or newer")
+            message(
+                FATAL_ERROR
+                "C++ module interface files require CMake 3.28 or newer"
+            )
         endif()
     endif()
 

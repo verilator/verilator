@@ -5,25 +5,25 @@
 verilator_module_deps
 =====================
 
-Verilator_module_deps scans user C++ sources for C++20 module interface units
-and writes the make rules that build them in dependency order.  It is
-installed privately for the generated makefiles and is normally run by ``make``,
-not by hand; see :vlopt:`--cxx-modules`.
+Verilator_module_deps scans user C++ sources for C++20 module interface
+units and writes the make rules that build them in dependency order. It is
+installed privately for the generated makefiles and is normally run by
+``make``, not by hand; see :vlopt:`--cxx-modules`.
 
 When C++ modules are built, the generated makefile for a model calls this
-program to write a make fragment (``<prefix>__modules.mk``).  The fragment
+program to write a make fragment (``<prefix>__modules.mk``). The fragment
 builds the module interface units, their CMIs, and any GCC header units
 imported by user sources, and orders the remaining compilation after them.
 
 The helper scans user sources with the dependency format of the selected
-backend.  The ``gcc`` backend uses GCC's P1689 output, and the ``clang``
-backend uses :command:`clang-scan-deps`.  GCC refuses to scan a source that
+backend. The ``gcc`` backend uses GCC's P1689 output, and the ``clang``
+backend uses :command:`clang-scan-deps`. GCC refuses to scan a source that
 imports a header unit (``import "header.h";``) until the header unit's CMI
 exists, so the helper builds any missing header unit CMIs before scanning.
 The generated make rules still rebuild those CMIs when the header changes.
 
 verilator_module_deps Arguments
-------------------------------
+-------------------------------
 
 .. program:: verilator_module_deps
 

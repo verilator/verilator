@@ -205,8 +205,8 @@ class Capabilities:
     def have_cxx_module_scan() -> bool:  # pylint: disable=no-method-argument
         if Capabilities._cached_have_cxx_module_scan is None:
             if 'clang' in Capabilities.cxx_version.lower():
-                Capabilities._cached_have_cxx_module_scan = (
-                    shutil.which('clang-scan-deps') is not None)
+                Capabilities._cached_have_cxx_module_scan = (shutil.which('clang-scan-deps')
+                                                             is not None)
             else:
                 cxx = os.environ.get('CXX', 'c++')
                 with tempfile.TemporaryDirectory() as tmpdir:
@@ -216,8 +216,8 @@ class Capabilities:
                                      ' -fdeps-format=p1689r5 -fdeps-file=empty.deps.json'
                                      ' -fdeps-target=empty.o -fsyntax-only empty.cpp',
                                      check=False)
-                    Capabilities._cached_have_cxx_module_scan = os.path.exists(
-                        tmpdir + '/empty.deps.json')
+                    Capabilities._cached_have_cxx_module_scan = os.path.exists(tmpdir +
+                                                                               '/empty.deps.json')
         return bool(Capabilities._cached_have_cxx_module_scan)
 
     @staticproperty
