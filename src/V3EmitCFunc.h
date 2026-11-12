@@ -938,7 +938,8 @@ public:
         if (nodep->method() == VCMethod::FORCE_READ_SEL) {
             emitIQW(nodep);
             if (nodep->isWide()) puts("<" + cvtToStr(nodep->dtypep()->widthWords()) + ">");
-        } else if (nodep->method() == VCMethod::ARRAY_SLICE) {
+        } else if (nodep->method() == VCMethod::ARRAY_SLICE
+                   || nodep->method() == VCMethod::ARRAY_SLICE_REF) {
             // VlUnpacked::slice<N_Out>(loIdx) - N_Out is the (fixed) result array size
             const AstUnpackArrayDType* const adtypep
                 = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
@@ -1953,7 +1954,8 @@ public:
     void visit(AstAddrOfCFunc* nodep) override {
         // Note: Can be thought to handle more, but this is all that is needed right now
         const AstCFunc* const funcp = nodep->funcp();
-        UASSERT_OBJ(funcp->isLoose(), nodep, "Cannot take address of non-loose method");
+        UASSERT_OBJ(funcp->isLoose() || funcp->dpiImportPrototype(), nodep,
+                    "Cannot take address of non-loose method");
         putns(nodep, "&");
         puts(funcNameProtect(funcp));
     }

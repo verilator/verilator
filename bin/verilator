@@ -366,9 +366,9 @@ Verilator - Lint, compile and simulate SystemVerilog code using C++/SystemC
 
     verilator --help
     verilator --version
-    verilator --binary -j 0 [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
-    verilator --cc [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
-    verilator --sc [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
+    verilator --binary -j 0 [options] [source_files.v]... [opt_c_files.cpp/cppm/ixx/c/cc/a/o/so]
+    verilator --cc [options] [source_files.v]... [opt_c_files.cpp/cppm/ixx/c/cc/a/o/so]
+    verilator --sc [options] [source_files.v]... [opt_c_files.cpp/cppm/ixx/c/cc/a/o/so]
     verilator --lint-only -Wall [source_files.v]...
 
 
@@ -391,7 +391,7 @@ detailed descriptions of these arguments.
 =for VL_SPHINX_EXTRACT "_build/gen/args_verilator.rst"
 
     <file.v>                    Verilog package, module, and top module filenames
-    <file.c/cc/cpp>             Optional C++ files to compile in
+    <file.c/cc/cpp/cppm/ixx>    Optional C++ files to compile in
     <file.a/o/so>               Optional C++ files to link in
 
      +1364-1995ext+<ext>        Use Verilog 1995 with file extension <ext>
@@ -435,6 +435,7 @@ detailed descriptions of these arguments.
     --coverage-toggle           Enable toggle coverage
     --coverage-underscore       Enable coverage of _signals
     --coverage-user             Enable SVL user coverage
+    --cxx-modules               Build C++ module interface units
      -D<var>[=<value>]          Set preprocessor define
     --debug                     Enable debugging
     --debug-check               Enable debugging assertions

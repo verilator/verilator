@@ -22,6 +22,7 @@
 #include "V3HierBlock.h"
 #include "V3Os.h"
 #include "V3SolverBackend.h"
+#include "V3String.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -744,7 +745,9 @@ public:
         of.puts("# User .cpp files (from .cpp's on Verilator command line)\n");
         of.puts("VM_USER_CLASSES = \\\n");
         const VStringSet& cppFiles = v3Global.opt.cppFiles();
+        const VStringSet& moduleFiles = v3Global.opt.moduleFiles();
         for (const auto& cppfile : cppFiles) {
+            if (moduleFiles.find(cppfile) != moduleFiles.end()) continue;
             of.puts("  " + V3Os::filenameNonDirExt(cppfile) + " \\\n");
             const string dir
                 = V3Os::filenameRelativePath(V3Os::filenameDir(cppfile), v3Global.opt.makeDir());
@@ -759,6 +762,29 @@ public:
         for (const auto& i : dirs) of.puts("  " + i + " \\\n");
         of.puts("\n");
 
+        if (v3Global.opt.cxxModules()) {
+            of.puts("# User C++ module sources\n");
+            of.puts("$(VM_PREFIX)__modules.mk:");
+            for (const auto& cppfile : cppFiles) {
+                of.puts(" "
+                        + VString::escapeForMake(
+                            V3Os::filenameRelativePath(cppfile, v3Global.opt.makeDir())));
+            }
+            of.puts(" $(VM_PREFIX).mk\n");
+            of.puts(
+                "\t$(VERILATOR_MODULE_DEPS) --backend $(VK_MODULE_BACKEND) --cxx \"$(CXX)\" \\\n");
+            of.puts("\t    --cxxflags='$(subst ','\\'',$(CXXFLAGS))' \\\n");
+            of.puts("\t    --cppflags='$(subst ','\\'',$(CPPFLAGS))' \\\n");
+            of.puts("\t    --opt-fast='$(subst ','\\'',$(OPT_FAST))' \\\n");
+            of.puts("\t    --objdir . --output $@");
+            for (const auto& cppfile : cppFiles) {
+                of.puts(" --source "
+                        + VString::quoteForMakeShell(
+                            V3Os::filenameRelativePath(cppfile, v3Global.opt.makeDir())));
+            }
+            of.puts("\n");
+        }
+
         of.puts("### Default rules...\n");
         of.puts("# Include list of all generated classes\n");
         of.puts("include " + v3Global.opt.prefix() + "_classes.mk\n");
@@ -766,8 +792,13 @@ public:
             of.puts("# Include rules for hierarchical blocks\n");
             of.puts("include " + v3Global.opt.prefix() + "_hier.mk\n");
         }
+        if (v3Global.opt.cxxModules()) {
+            of.puts("# Include C++ module build rules\n");
+            of.puts("-include $(VM_PREFIX)__modules.mk\n");
+        }
         of.puts("# Include global rules\n");
         of.puts("include $(VERILATOR_ROOT)/include/verilated.mk\n");
+        of.puts("\n");
 
         if (v3Global.opt.exe()) {
             of.puts("\n### Executable rules... (from --exe)\n");
@@ -790,15 +821,19 @@ public:
             = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_USER_PCH_FAST)";
         const string compilerIncludeFlag
             = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_USER_PCH_I_FAST)";
-        for (const string& cppfile : cppFiles) {
-            const string basename = V3Os::filenameNonDirExt(cppfile);
-            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-            of.puts(basename + ".o: " + cppfile + " " + compilerIncludePch + "\n");
+        if (!v3Global.opt.cxxModules()) {
+            for (const string& cppfile : cppFiles) {
+                const string basename = V3Os::filenameNonDirExt(cppfile);
+                // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+                of.puts(basename + ".o: " + cppfile + " " + compilerIncludePch + "\n");
 
-            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) "
-                    + compilerIncludeFlag + " -c -o $@ $<\n");
+                // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+                of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) "
+                        + compilerIncludeFlag + " -c -o $@ $<\n");
+            }
         }
+
+        const string archiveDep = v3Global.opt.cxxModules() ? " | $(VM_PREFIX)__ALL.a" : "";
 
         if (v3Global.opt.exe()) {
             of.puts("\n### Link rules... (from --exe)\n");
@@ -812,7 +847,8 @@ public:
             of.puts("\n");
         } else if (!v3Global.opt.libCreate().empty()) {
             const string libCreateDeps = "$(VK_OBJS) $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) "
-                                         + v3Global.opt.libCreate() + ".o $(VM_HIER_LIBS)";
+                                         + v3Global.opt.libCreate() + ".o $(VM_HIER_LIBS)"
+                                         + archiveDep;
             of.puts("\n### Library rules from --lib-create\n");
             // The rule to create .a is defined in verilated.mk, so just define dependency here.
             of.puts(v3Global.opt.libCreateName(false) + ": " + libCreateDeps + "\n");
@@ -842,7 +878,7 @@ public:
             const string libname = "lib" + v3Global.opt.prefix() + ".a";
             of.puts("\n### Library rules (default lib mode)\n");
             // The rule to create .a is defined in verilated.mk, so just define dependency here.
-            of.puts(libname + ": $(VK_OBJS) $(VK_USER_OBJS) $(VM_HIER_LIBS)\n");
+            of.puts(libname + ": $(VK_OBJS) $(VK_USER_OBJS) $(VM_HIER_LIBS)" + archiveDep + "\n");
             of.puts("libverilated.a: $(VK_GLOBAL_OBJS)\n");
             // let default rule depend on '{prefix}__ALL.a', for compatibility
             of.puts("lib" + v3Global.opt.prefix() + ": " + libname

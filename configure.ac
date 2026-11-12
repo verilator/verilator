@@ -559,6 +559,14 @@ AC_SUBST(HAVE_DEV_GCOV)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PROFILE,-pg)
 AC_SUBST(CFG_CXXFLAGS_PROFILE)
 
+# Compiler flag to disable C++ modules, matching the enabled module flag
+CFG_CXXFLAGS_NO_MODULES=
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_NO_MODULES,-fno-modules)
+if test "$CFG_CXXFLAGS_NO_MODULES" = ""; then
+  _MY_CXX_CHECK_SET(CFG_CXXFLAGS_NO_MODULES,-fno-modules-ts)
+fi
+AC_SUBST(CFG_CXXFLAGS_NO_MODULES)
+
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take
 # Currently enable c++17/c++14 due to packaged SystemC dependency
