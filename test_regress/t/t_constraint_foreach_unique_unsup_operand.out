@@ -16,12 +16,28 @@
                                                                            : ... note: In instance 't'
    29 |   constraint c2 {foreach (a[i]) unique {a[i]};}
       |                                 ^~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:36:39: Unsupported: Unique constraint on a slice of a non-random array at a random index
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:39:18: Unsupported: Unique constraint on an array in an element of a class handle array
                                                                            : ... note: In instance 't'
-   36 |   constraint c1 {ri inside {[0 : 2]}; unique {s[ri]};}
+   39 |   constraint c1 {unique {objs[0].row};}
+      |                  ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:40:18: Unsupported: Unique constraint on an array in an element of a class handle array
+                                                                           : ... note: In instance 't'
+   40 |   constraint c2 {unique {sobjs[1].row};}
+      |                  ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:41:18: Unsupported: Unique constraint on an array in an element of a class handle array
+                                                                           : ... note: In instance 't'
+   41 |   constraint c3 {unique {objs[1].row[1:2]};}
+      |                  ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:42:18: Unsupported: Unique constraint on an array in an element of a class handle array
+                                                                           : ... note: In instance 't'
+   42 |   constraint c4 {unique {objs[0].grid[1]};}
+      |                  ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:53:39: Unsupported: Unique constraint on a slice of a non-random array at a random index
+                                                                           : ... note: In instance 't'
+   53 |   constraint c1 {ri inside {[0 : 2]}; unique {s[ri]};}
       |                                       ^~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:37:18: Unsupported: Unique constraint on a slice of a non-random array at a random index
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:54:18: Unsupported: Unique constraint on a slice of a non-random array at a random index
                                                                            : ... note: In instance 't'
-   37 |   constraint c2 {unique {s3[ri][1]};}
+   54 |   constraint c2 {unique {s3[ri][1]};}
       |                  ^~~~~~
 %Error: Exiting due to

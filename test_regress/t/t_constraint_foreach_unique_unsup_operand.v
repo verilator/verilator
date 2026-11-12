@@ -29,6 +29,23 @@ class ContainerRows;
   constraint c2 {foreach (a[i]) unique {a[i]};}
 endclass
 
+class HandleRow;
+  rand bit [2:0] row[4];
+  rand bit [2:0] grid[2][4];
+endclass
+class HandleArrayRows;
+  rand HandleRow objs[2];
+  HandleRow sobjs[2];
+  constraint c1 {unique {objs[0].row};}
+  constraint c2 {unique {sobjs[1].row};}
+  constraint c3 {unique {objs[1].row[1:2]};}
+  constraint c4 {unique {objs[0].grid[1]};}
+  function new();
+    foreach (objs[k]) objs[k] = new;
+    foreach (sobjs[k]) sobjs[k] = new;
+  endfunction
+endclass
+
 class StateRowAtRandIndex;
   rand int ri;
   bit [2:0] s[3][4];
@@ -42,10 +59,12 @@ module t;
     automatic FuncItem fi = new;
     automatic StructRows sr = new;
     automatic ContainerRows cr = new;
+    automatic HandleArrayRows har = new;
     automatic StateRowAtRandIndex srri = new;
     void'(fi.randomize());
     void'(sr.randomize());
     void'(cr.randomize());
+    void'(har.randomize());
     void'(srri.randomize());
   end
 endmodule

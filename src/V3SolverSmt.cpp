@@ -149,6 +149,19 @@ public:
         if (const AstMemberRef* const mselp = VN_CAST(exprp, MemberRef)) return mselp->varp();
         return nullptr;
     }
+    // A member of a class handle array element can't be named in the solver yet (#8964)
+    static bool isInHandleArrayElement(const AstNodeExpr* exprp) {
+        if (const AstMemberRef* const mrefp = VN_CAST(exprp, MemberRef)) {
+            return mrefp->fromp()->exists([](const AstArraySel*) { return true; });
+        }
+        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+            return isInHandleArrayElement(selp->fromp());
+        }
+        if (const AstSliceSel* const sselp = VN_CAST(exprp, SliceSel)) {
+            return isInHandleArrayElement(sselp->fromp());
+        }
+        return false;
+    }
     static bool hasSolverVarIndex(const AstNodeExpr* exprp) {
         if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
             bool found = false;
@@ -175,7 +188,8 @@ public:
         }
         return "";
     }
-    // Warning for a sole member slice that can't be lowered yet, or empty if it can
+    // Warning for a sole member slice that can't be lowered yet, or empty if it can be
+    // lowered or holds a single leaf, which needs none
     static std::string uniqueSliceUnsupported(const AstNodeExpr* soleItemp) {
         const AstNodeDType* const dtypep = soleItemp->dtypep()->skipRefp();
         if (isSingleLeafIfStatic(dtypep)) return "";
@@ -196,6 +210,10 @@ public:
             }
             return "Unsupported: Unique constraint on an array slice with an operand that isn't "
                    "a variable, member, or constant-indexed slice";
+        }
+        if (isInHandleArrayElement(soleItemp)) {
+            return "Unsupported: Unique constraint on an array in an element of a class handle "
+                   "array";
         }
         if (!isSolverVar(rootVarp) && hasSolverVarIndex(soleItemp)) {
             return "Unsupported: Unique constraint on a slice of a non-random array at a random "

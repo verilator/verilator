@@ -55,6 +55,23 @@ class StructRows;
   constraint c1 {foreach (s[i]) unique {s[i].r};}
 endclass
 
+class HandleRow;
+  rand bit [2:0] row[4];
+  rand bit [2:0] grid[2][4];
+endclass
+class HandleArrayRows;
+  rand HandleRow objs[2];
+  HandleRow sobjs[2];
+  constraint c1 {unique {objs[0].row};}
+  constraint c2 {unique {sobjs[1].row};}
+  constraint c3 {unique {objs[1].row[1:2]};}
+  constraint c4 {unique {objs[0].grid[1]};}
+  function new();
+    foreach (objs[k]) objs[k] = new;
+    foreach (sobjs[k]) sobjs[k] = new;
+  endfunction
+endclass
+
 class StateRowAtRandIndex;
   rand int ri;
   bit [2:0] s[3][4];
@@ -81,6 +98,7 @@ module t;
     automatic QueueRows qr = new;
     automatic DynRows dr = new;
     automatic StructRows sr = new;
+    automatic HandleArrayRows har = new;
     automatic StateRowAtRandIndex srri = new;
     int ok;
     repeat (20) begin
@@ -105,6 +123,8 @@ module t;
       ok = dr.randomize();
       `checkd(ok, 1)
       ok = sr.randomize();
+      `checkd(ok, 1)
+      ok = har.randomize();
       `checkd(ok, 1)
       ok = srri.randomize();
       `checkd(ok, 1)
