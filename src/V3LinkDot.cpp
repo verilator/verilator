@@ -3305,6 +3305,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     VSymEnt* m_pinSymp = nullptr;  // SymEnt for pin lookups
     VSymEnt* m_randSymp = nullptr;  // SymEnt for randomize target class's lookups
     const AstCell* m_cellp = nullptr;  // Current cell
+    const AstPin* m_pinp = nullptr;  // Current pin
     AstNodeModule* m_modp = nullptr;  // Current module
     AstGenBlock* m_genBlockp = nullptr;  // Current generate block
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -4193,7 +4194,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Pin: Link to submodule's port
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
-        iterateChildren(nodep);
+        {
+            VL_RESTORER(m_pinp);
+            m_pinp = nodep;
+            iterateChildren(nodep);
+        }
         if (!nodep->modVarp()) {
             UASSERT_OBJ(m_pinSymp, nodep, "Pin not under instance?");
             VSymEnt* const foundp = m_pinSymp->findIdFlat(nodep->name());
@@ -5887,7 +5892,21 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Pass dot state down to only fromp()
         iterateAndNextNull(nodep->fromp());
         symIterateNull(nodep->bitp(), m_curSymp);
-        if (m_ds.m_unresolvedCell && (m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST)) {
+        // Preserve the selected interface and its parent path for parameterization.
+        const AstVarXRef* const xrefp = VN_CAST(nodep->fromp(), VarXRef);
+        const VSymEnt* const scopep
+            = xrefp && m_modSymp ? m_modSymp->findIdFlat(xrefp->dotted()) : nullptr;
+        const VSymEnt* const portSymp
+            = m_pinp && m_pinSymp ? m_pinSymp->findIdFlat(m_pinp->name()) : nullptr;
+        const AstVar* const portp = m_pinp && m_pinp->modVarp() ? m_pinp->modVarp()
+                                    : portSymp                  ? VN_CAST(portSymp->nodep(), Var)
+                                                                : nullptr;
+        const bool ifacePinSelect = portp && portp->isIfaceRef() && xrefp && xrefp->varp()
+                                    && xrefp->varp()->isIfaceRef() && scopep
+                                    && VN_IS(scopep->nodep(), Cell)
+                                    && VN_IS(VN_AS(scopep->nodep(), Cell)->modp(), Iface);
+        if (m_ds.m_unresolvedCell && (m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST)
+            && !ifacePinSelect) {
             AstNodeExpr* const exprp = nodep->bitp()->unlinkFrBack();
             if (AstCellArrayRef* const fromArrRefp = VN_CAST(nodep->fromp(), CellArrayRef)) {
                 // Multi-dim iface array access: append this select to the existing chain
