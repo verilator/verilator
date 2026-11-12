@@ -191,7 +191,7 @@ def prepare_gcc_headers(args: argparse.Namespace, cppflags: list[str], cxxflags:
         for name in header_imports(path):
             dep = resolve_header(name, path, include_dirs)
             if dep is None:
-                fatal("Can not find C++ header unit '" + name + "' imported by '" + path + "'")
+                fatal("Cannot find C++ header unit '" + name + "' imported by '" + path + "'")
             entry['deps'].append(add(dep))
         return entry
 
@@ -200,7 +200,7 @@ def prepare_gcc_headers(args: argparse.Namespace, cppflags: list[str], cxxflags:
         for name in header_imports(module['source']):
             dep = resolve_header(name, module['source'], include_dirs)
             if dep is None:
-                fatal("Can not find C++ header unit '" + name + "' imported by '" +
+                fatal("Cannot find C++ header unit '" + name + "' imported by '" +
                       module['source'] + "'")
             module['headers'].append(add(dep))
 

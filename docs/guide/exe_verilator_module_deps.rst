@@ -7,7 +7,7 @@ verilator_module_deps
 
 Verilator_module_deps scans user C++ sources for C++20 module interface units
 and writes the make rules that build them in dependency order.  It is
-installed privately for the generated makefiles and is normally run by make,
+installed privately for the generated makefiles and is normally run by ``make``,
 not by hand; see :vlopt:`--cxx-modules`.
 
 When C++ modules are built, the generated makefile for a model calls this

@@ -16,14 +16,16 @@ project(t_flag_cxx_modules_cmake CXX)
 find_package(verilator REQUIRED)
 
 add_executable(
-    t_flag_cxx_modules_cmake ../t_flag_cxx_modules_build_main.cpp
+    t_flag_cxx_modules_cmake ../t_flag_cxx_modules_chain_main.cpp
 )
 verilate(
     t_flag_cxx_modules_cmake
-    SOURCES ../t_flag_cxx_modules_build.v
+    SOURCES ../t_flag_cxx_modules.v
     VERILATOR_ARGS
         --cxx-modules
         -CFLAGS -std=c++23
         ../t_flag_cxx_modules_build.ixx
+        ../t_flag_cxx_modules_chain_m1.cppm
+        ../t_flag_cxx_modules_chain_m2.cppm
 )
 target_compile_features(t_flag_cxx_modules_cmake PRIVATE cxx_std_23)

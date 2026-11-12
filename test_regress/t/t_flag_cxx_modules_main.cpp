@@ -9,12 +9,22 @@
 #include "verilated.h"
 
 #include VM_PREFIX_INCLUDE
-import std; //this is a C++23 std module, if GNU or LLVM maybe need give compilation product, ok, perfect
+
+#ifdef _MSC_VER
+import t_flag_cxx_modules_msvc;
+#else
+import std;
+#endif
+
 int main(int argc, char** argv) {
     VerilatedContext context;
     context.commandArgs(argc, argv);
-    Vt_flag_cxx_modules top{&context};
+    VM_PREFIX top{&context};
     top.eval();
+#ifdef _MSC_VER
+    return module_value() == 42 ? 0 : 1;
+#else
     std::cout << "C++23 std module OK" << std::endl;
     return 0;
+#endif
 }

@@ -16,11 +16,11 @@ project(t_flag_cxx_modules_msvc CXX)
 find_package(verilator REQUIRED)
 
 add_executable(
-    t_flag_cxx_modules_msvc ../t_flag_cxx_modules_msvc_main.cpp
+    t_flag_cxx_modules_msvc ../t_flag_cxx_modules_main.cpp
 )
 verilate(
     t_flag_cxx_modules_msvc
-    SOURCES ../t_flag_cxx_modules_msvc.v
+    SOURCES ../t_flag_cxx_modules.v
     VERILATOR_ARGS
         --compiler msvc
         ../t_flag_cxx_modules_msvc.ixx

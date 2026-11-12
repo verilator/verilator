@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 test.clean_objs()
+test.top_filename = test.t_dir + '/t_flag_cxx_modules.v'
 
 common = [
     '--cc',

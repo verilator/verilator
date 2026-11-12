@@ -12,6 +12,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.clean_objs()
+test.top_filename = test.t_dir + '/t_flag_cxx_modules.v'
 if 'clang' in test.cxx_version.lower() or 'microsoft' in test.cxx_version.lower():
     test.skip('Requires GCC for C++ module builds')
 if not test.have_cxx_module_scan:

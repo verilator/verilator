@@ -12,6 +12,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.clean_objs()
+test.top_filename = test.t_dir + '/t_flag_cxx_modules.v'
 if not test.have_cxx_module_scan:
     test.skip('Requires a compiler with P1689 C++ module dependency scanning')
 flags = [

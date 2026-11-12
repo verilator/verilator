@@ -13,6 +13,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.clean_objs()
+test.top_filename = test.t_dir + '/t_flag_cxx_modules.v'
 cxx = os.path.basename(os.environ.get('CXX', 'c++'))
 if cxx.lower() not in ('cl', 'cl.exe'):
     test.skip('Requires MSVC')

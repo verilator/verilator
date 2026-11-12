@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = test.t_dir + '/t_flag_cxx_modules_msvc.v'
+test.top_filename = test.t_dir + '/t_flag_cxx_modules.v'
 test.clean_objs()
 
 test.lint(verilator_flags2=[

@@ -8,13 +8,14 @@
 
 #include "verilated.h"
 
-#include "Vt_flag_cxx_modules_header.h"
+#include VM_PREFIX_INCLUDE
+
 import "t_flag_cxx_modules_header.h";
 
 int main(int argc, char** argv) {
     VerilatedContext context;
     context.commandArgs(argc, argv);
-    Vt_flag_cxx_modules_header top{&context};
+    VM_PREFIX top{&context};
     top.eval();
     return header_unit_value() == 42 ? 0 : 1;
 }

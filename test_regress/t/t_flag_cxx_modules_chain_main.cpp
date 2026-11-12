@@ -16,7 +16,7 @@ import m2;
 int main(int argc, char** argv) {
     VerilatedContext context;
     context.commandArgs(argc, argv);
-    Vt_flag_cxx_modules_chain top{&context};
+    VM_PREFIX top{&context};
     top.eval();
     return g() == 2 && module_value() == 42 ? 0 : 1;
 }

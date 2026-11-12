@@ -809,6 +809,12 @@ function(verilate TARGET)
             )
         endif()
     endif()
+    if(NOT VERILATE_DEFINITIONS MATCHES "(^|;)VM_PREFIX=")
+        target_compile_definitions(
+            ${TARGET}
+            PRIVATE "VM_PREFIX=${VERILATE_PREFIX}"
+        )
+    endif()
 
     target_link_libraries(${TARGET} PUBLIC ${${VERILATE_PREFIX}_USER_LDLIBS})
 
