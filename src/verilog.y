@@ -3675,7 +3675,7 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                           newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
                           callp->fileline(newfl);
                           $$ = exprp->makeStmt(); }
-        |       yVOID yP_TICK '(' expr '.' task_subroutine_callNoMethod ')' ';'
+        |       yVOID yP_TICK '(' expr '.' task_method_call_body ')' ';'
                         { AstNodeExpr* const exprp = new AstDot{$5, false, $4, $6};
                           FileLine* const newfl = new FileLine{$6->fileline()};
                           newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
@@ -4185,7 +4185,7 @@ task_subroutine_callNoSemi<nodeStmtp>:  // similar to IEEE task_subroutine_call 
         //                      // Expr included here to resolve our not knowing what is a method call
         //                      // Expr here must result in a subroutine_call
                 task_subroutine_callNoMethod            { $$ = $1->makeStmt(); }
-        |       fexpr '.' task_subroutine_callNoMethod  { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
+        |       fexpr '.' task_method_call_body         { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
         |       system_t_stmt_call                      { $$ = $1; }
         //                      // Any system function as a task
         |       system_f_or_t_expr_call                 { $$ = new AstStmtExpr{$<fl>1, $1}; }
@@ -4194,6 +4194,12 @@ task_subroutine_callNoSemi<nodeStmtp>:  // similar to IEEE task_subroutine_call 
         //                      // Way over-permissive;
         //                      // IEEE: [ ySUPER '.' yNEW [ '(' list_of_arguments ')' ] ';' ]
         |       fexpr '.' class_newNoScope              { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
+        ;
+
+task_method_call_body<nodeExprp>:  // IEEE: method_call_body (as task)
+                task_subroutine_callNoMethod            { $$ = $1; }
+        //                      // IEEE: randomize_call
+        |       randomize_callNoParen                   { $$ = $1; }
         ;
 
 task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod (as task)
@@ -4240,6 +4246,19 @@ function_subroutine_callNoMethodNoWith<nodeExprp>:  // IEEE: part of function_su
                                                               = new AstWithParse{$2, $1, $4, $6};
                                                           withParsep->restricted(true);
                                                           $$ = withParsep; }
+        ;
+
+randomize_callNoParen<nodeExprp>:  // IEEE: part of randomize_call
+        //                      // Method call with a 'with' clause but no argument parentheses.
+        //                      // Scope randomize requires the parentheses (IEEE 1800-2023 18.12
+        //                      // Syntax 18-11) and the parser cannot tell a bare call from one.
+                idRandomize yWITH__CUR constraint_block
+                        { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1}, nullptr, $3}; }
+        |       idRandomize yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
+                        { AstWithParse* const withParsep
+                              = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1}, $4, $6};
+                          withParsep->restricted(true);
+                          $$ = withParsep; }
         ;
 
 system_t_stmt_call<nodeStmtp>:  // IEEE: part of system_tf_call (as task returning statement)
@@ -5214,6 +5233,9 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
                         { $$ = new AstDot{$2, false, $1, $3}; }
         |       ~l~expr '.' function_subroutine_callNoMethod part_select_rangeList
                         { $$ = GRAMMARP->scrubSel(new AstDot{$2, false, $1, $3}, $4); }
+        //                      // method_call: randomize_call
+        |       ~l~expr '.' randomize_callNoParen
+                        { $$ = new AstDot{$2, false, $1, $3}; }
         //                      // method_call:array_method requires a '.'
         |       ~l~expr '.' array_methodWith
                         { $$ = new AstDot{$2, false, $1, $3}; }

@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2024 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 `define check_rand(cl, field) \
 begin \
    automatic longint prev_result; \
@@ -77,6 +82,9 @@ class Baz2;
   rand int v;
   function bit test_this_randomize;
     return this.randomize() with { v == 5; } == 1;
+  endfunction
+  function bit test_randomize_noparen;
+    return this.randomize with { v == 6; } == 1 && v == 6;
   endfunction
 endclass
 
@@ -161,6 +169,30 @@ module mwith ();
     if (!foo.test_this_randomize()) $stop;
     // Check this.randomize() with no constraints
     if (!baz2.test_this_randomize()) $stop;
+
+    // Check randomize with a constraint block and no argument parentheses
+    // verilog_format: off
+    begin
+      automatic int a = 7;  // Same name as a member of Cls
+      `checkd(cls.randomize with {a == 4; b == a;}, 1);
+      `checkd(cls.b, 4);  // Unrestricted: 'a' is the member
+      `checkd(cls.randomize with (b) {cls.a == 4; b == a;}, 1);
+      `checkd(cls.b, 7);  // Restricted: 'a' is the caller's variable
+      `checkd(cls.randomize with () {cls.a == 4; cls.b == a + 1;}, 1);
+      `checkd(cls.b, 8);
+      // verilator lint_off IGNOREDRETURN
+      cls.randomize with {b == 9;};
+      // verilator lint_on IGNOREDRETURN
+      `checkd(cls.b, 9);
+      // verilator lint_off IGNOREDRETURN
+      cls.randomize with (b) {cls.a == 4; b == a + 3;};
+      // verilator lint_on IGNOREDRETURN
+      `checkd(cls.b, 10);
+      void'(cls.randomize with (b) {cls.a == 4; b == a + 4;});
+      `checkd(cls.b, 11);
+      `checkd(baz2.test_randomize_noparen(), 1);
+    end
+    // verilog_format: on
 
     $write("*-* All Finished *-*\n");
     $finish();
