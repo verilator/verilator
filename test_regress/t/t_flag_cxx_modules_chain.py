@@ -6,6 +6,7 @@
 # or the Perl Artistic License Version 2.0.
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
 import glob
 import vltest_bootstrap
 
@@ -27,7 +28,12 @@ flags = [
     test.t_dir + '/t_flag_cxx_modules_build.ixx',
 ]
 test.compile(make_main=False, verilator_flags2=flags, make_flags=['VM_PARALLEL_BUILDS=1'])
-test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'export VK_SCAN_CXXFLAGS')
+test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--backend')
+test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--cxx ')
+test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--cxxflags')
+test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--cppflags')
+test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--opt-fast')
+test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--objdir')
 artifacts = (glob.glob(test.obj_dir + '/gcm.cache/*.gcm')
              + glob.glob(test.obj_dir + '/*.pcm'))
 if not artifacts:

@@ -1227,48 +1227,6 @@ the mode state is passed, which AST the back-end may rewrite) is documented
 at the top of ``V3SolverBackend.cpp``.
 
 
-C++ module dependency helper
-----------------------------
-
-When C++ modules are built, the generated makefile calls
-``bin/verilator_module_deps`` to scan the user C++ sources and write a make
-fragment (``<prefix>__modules.mk``) with the rules that build the module
-interface units and their CMIs in dependency order.  The helper is installed
-privately for the generated makefiles and is not normally run by hand.
-
-``bin/verilator_module_deps`` arguments:
-
-.. program:: verilator_module_deps
-
-.. option:: --backend <gcc|clang>
-
-   Dependency scanning back-end.  The generated makefile passes
-   ``VK_MODULE_BACKEND``, which is detected from the C++ compiler in use.
-
-.. option:: --cxx <compiler>
-
-   C++ compiler used for scanning and for the rules written to the output
-   fragment.
-
-.. option:: --objdir <directory>
-
-   Directory for generated dependency files and CMIs.  Defaults to the
-   current directory.
-
-.. option:: --output <filename>
-
-   Make fragment to write.
-
-.. option:: --source <filename>
-
-   C++ source file to scan.  May be repeated.
-
-The helper scans with the compiler's dependency format (P1689 for GCC,
-``clang-scan-deps`` for Clang).  GCC needs header unit CMIs to exist before
-its scanner will parse ``import "header.h";``, so missing ones are built
-before scanning; make owns rebuilding them when the header changes.
-
-
 Coding Conventions
 ==================
 

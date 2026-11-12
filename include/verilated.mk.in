@@ -65,7 +65,7 @@ VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
 VERILATOR_INCLUDER = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_includer
 VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
 
-VK_MODULE_DEPS = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_module_deps
+VERILATOR_MODULE_DEPS = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_module_deps
 VK_MODULE_BACKEND ?= $(if $(findstring clang,$(shell $(CXX) --version 2>/dev/null)),clang,$(if $(findstring cl.exe,$(CXX)),msvc,gcc))
 
 ######################################################################

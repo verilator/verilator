@@ -8,7 +8,7 @@
 
 #include "verilated.h"
 
-#include "Vt_flag_cxx_modules_chain.h"
+#include VM_PREFIX_INCLUDE
 
 import buildmod;
 import m2;

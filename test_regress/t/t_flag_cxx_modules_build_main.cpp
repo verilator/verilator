@@ -8,7 +8,7 @@
 
 #include "verilated.h"
 
-#include "Vt_flag_cxx_modules_build.h"
+#include VM_PREFIX_INCLUDE
 import buildmod;
 
 int main(int argc, char** argv) {

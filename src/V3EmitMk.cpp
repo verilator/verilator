@@ -764,13 +764,12 @@ public:
                 of.puts("  " + V3Os::filenameRelativePath(cppfile, v3Global.opt.makeDir())
                         + " \\\n");
             of.puts("\n");
-
-            of.puts("export VK_SCAN_CXXFLAGS = $(CXXFLAGS)\n");
-            of.puts("export VK_SCAN_CPPFLAGS = $(CPPFLAGS)\n");
-            of.puts("export VK_SCAN_OPT_FAST = $(OPT_FAST)\n");
-            of.puts("\n");
             of.puts("$(VM_PREFIX)__modules.mk: $(VM_USER_SOURCES) $(VM_PREFIX).mk\n");
-            of.puts("\t$(VK_MODULE_DEPS) --backend $(VK_MODULE_BACKEND) --cxx \"$(CXX)\" \\\n");
+            of.puts(
+                "\t$(VERILATOR_MODULE_DEPS) --backend $(VK_MODULE_BACKEND) --cxx \"$(CXX)\" \\\n");
+            of.puts("\t    --cxxflags='$(subst ','\\'',$(CXXFLAGS))' \\\n");
+            of.puts("\t    --cppflags='$(subst ','\\'',$(CPPFLAGS))' \\\n");
+            of.puts("\t    --opt-fast='$(subst ','\\'',$(OPT_FAST))' \\\n");
             of.puts("\t    --objdir . --output $@ $(addprefix --source ,$(VM_USER_SOURCES))\n");
             of.puts("\n");
         }

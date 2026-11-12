@@ -8,7 +8,7 @@
 
 #include "verilated.h"
 
-#include "Vt_flag_cxx_modules.h"
+#include VM_PREFIX_INCLUDE
 import std; //this is a C++23 std module, if GNU or LLVM maybe need give compilation product, ok, perfect
 int main(int argc, char** argv) {
     VerilatedContext context;

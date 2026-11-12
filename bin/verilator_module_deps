@@ -161,7 +161,7 @@ def gcc_header_cmi(path: str) -> str:
 
 def compile_header(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
                    header: dict[str, Any]) -> None:
-    opt_flags = parse_flags(os.environ.get('VK_SCAN_OPT_FAST', ''))
+    opt_flags = parse_flags(args.opt_fast)
     command = (shlex.split(args.cxx) + opt_flags + cppflags + cxxflags
                + gcc_module_flags(cxxflags)
                + ['-fmodule-header', '-x', 'c++-header', header['path']])
@@ -363,8 +363,8 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
 
 
 def scan(args: argparse.Namespace) -> None:
-    cppflags = parse_flags(os.environ.get('VK_SCAN_CPPFLAGS', ''))
-    cxxflags = parse_flags(os.environ.get('VK_SCAN_CXXFLAGS', ''))
+    cppflags = parse_flags(args.cppflags)
+    cxxflags = parse_flags(args.cxxflags)
     external = external_modules(cppflags + cxxflags)
 
     if args.backend not in ('gcc', 'clang'):
@@ -448,7 +448,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument('--backend', required=True, help='dependency backend')
     parser.add_argument('--cxx', required=True, help='C++ compiler')
+    parser.add_argument('--cxxflags', default='', help='C++ compiler flags')
+    parser.add_argument('--cppflags', default='', help='C preprocessor flags')
     parser.add_argument('--objdir', default='.', help='object directory')
+    parser.add_argument('--opt-fast', default='', help='fast optimization flags')
     parser.add_argument('--output', required=True, help='output make fragment')
     parser.add_argument('--source', action='append', default=[], help='C++ source file')
     args = parser.parse_args()

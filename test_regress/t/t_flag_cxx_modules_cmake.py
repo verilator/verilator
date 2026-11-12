@@ -6,6 +6,7 @@
 # or the Perl Artistic License Version 2.0.
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
 import os
 import shutil
 import vltest_bootstrap
@@ -13,7 +14,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.clean_objs()
 if not test.have_cxx_module_scan:
-    test.skip('Requires a compiler with P1689 C++ module dependency scanning')
+    test.skip('Requires a compiler with C++ module dependency scanning')
 if not test.have_cmake:
     test.skip('Requires CMake')
 cmake_version = tuple(int(part) for part in test.cmake_version.split('.'))
