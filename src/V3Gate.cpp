@@ -843,7 +843,8 @@ class GateDedupeHash final : public V3DupFinderUserSame {
     AuxAstNodeExpr m_auxCurRhsp;  // Aux of current node
 
     const V3Hasher m_hasher;  // Hasher for the duplicate finders
-    // Duplicate finder for rhs of assigns, per AstActive of the assign
+    // Duplicate finder for rhs of assigns, per AstActive of the assign.
+    // GateDedupe only rewrites variable reads; it never deletes or creates an AstActive.
     std::unordered_map<const AstActive*, V3DupFinder> m_dupFinders;
 
     static bool same(AstNode* node1p, AstNode* node2p) {
@@ -864,10 +865,11 @@ public:
 
     const AstNodeAssign* hashAndFindDupe(AstNodeAssign* assignp, AstActive* activep,
                                          AstNodeExpr* condp) {
-        // Only assigns under the same AstActive are duplicates, so each has its own finder.
-        // A different AstActive with the same logic would mean a second driver of the lhs, so
-        // comparing AstActives by identity is the same as comparing their trees. Legal for
-        // activep to be nullptr, we'll compare with other assigns with also nullptr.
+        // The old Active comparison included the complete process trees, not just sensitivity.
+        // Different scopes have different scoped references. Equal trees of distinct Actives
+        // would also write the same lhs, which inSize1() excludes before this lookup. Thus
+        // separate finders only remove comparisons that could never match an eligible assign.
+        // A null activep groups assignments without an Active, as before.
         V3DupFinder& dupFinder = m_dupFinders.emplace(activep, m_hasher).first->second;
         m_currRhsp = assignp->rhsp();
         m_auxCurRhsp.condp = condp;
