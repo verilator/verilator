@@ -12,7 +12,8 @@ import os
 import re
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
+
 test.clean_objs()
 cxx = os.environ.get('CXX', 'c++')
 cxx_version = test.cxx_version

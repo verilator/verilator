@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 test.top_filename = test.t_dir + '/t_flag_cxx_modules.v'
 
 if 'clang' in test.cxx_version.lower() or 'microsoft' in test.cxx_version.lower():
