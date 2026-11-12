@@ -1846,9 +1846,21 @@ class ParamProcessor final {
                     while (const AstNodePreSel* const selp = VN_CAST(basep, NodePreSel)) {
                         basep = selp->fromp();
                     }
-                    if (const AstVarRef* const vrp = VN_CAST(basep, VarRef)) {
-                        if (vrp->varp()) {
-                            pinIrefp = VN_CAST(arraySubDTypeDeepp(vrp->varp()->subDTypep()),
+                    if (const AstNodeVarRef* const vrp = VN_CAST(basep, NodeVarRef)) {
+                        const AstVar* selectedVarp = vrp->varp();
+                        if (const AstVarXRef* const xrefp = VN_CAST(vrp, VarXRef)) {
+                            // Resolve through the actual parent interface specialization.
+                            AstNodeModule* const ownerp
+                                = V3LinkDotIfaceCapture::followCellPath(m_modp, xrefp->dotted());
+                            if (const AstIface* const ifacep = VN_CAST(ownerp, Iface)) {
+                                if (const AstVar* const varp
+                                    = VN_CAST(m_memberMap.findMember(ifacep, vrp->name()), Var)) {
+                                    selectedVarp = varp;
+                                }
+                            }
+                        }
+                        if (selectedVarp) {
+                            pinIrefp = VN_CAST(arraySubDTypeDeepp(selectedVarp->subDTypep()),
                                                IfaceRefDType);
                         }
                     }
@@ -3040,11 +3052,9 @@ class ParamVisitor final : public VNVisitor {
                     // Add to the hierarchy registry
                     m_state.m_parentps[newModp].insert(modp);
 
-                    // Eagerly specialize nested iface cells so their types
-                    // have correct widths before sibling module cells run.
-                    if (VN_IS(newModp, Iface) && newModp != srcModp) {
-                        specializeNestedIfaceCells(newModp);
-                    }
+                    // Eagerly specialize nested iface cells, even when the parent uses defaults,
+                    // so their types have correct widths before sibling module cells run.
+                    if (VN_IS(newModp, Iface)) { specializeNestedIfaceCells(newModp); }
                 }
             }
         }
@@ -3315,8 +3325,8 @@ class ParamVisitor final : public VNVisitor {
                 if (V3LinkDotIfaceCapture::enabled() && cellp->modp() != srcModp) {
                     m_processor.retargetIfaceRefs(m_modp, cellp->name());
                 }
-                // Specialize nested iface cells so their types are correct.
-                if (newModp && newModp != srcModp) { specializeNestedIfaceCells(newModp); }
+                // Specialize nested iface cells even when the parent uses default parameters.
+                if (newModp) { specializeNestedIfaceCells(newModp); }
             }
         }
 
