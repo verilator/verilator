@@ -136,6 +136,60 @@ def scan_clang(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str
             os.remove(compile_database)
 
 
+def scan_cache_path(objdir: str, stem: str) -> str:
+    return os.path.join(objdir, stem + '.scan.json')
+
+
+def scan_flags_key(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str]) -> str:
+    payload = {
+        'backend': args.backend,
+        'cxx': args.cxx,
+        'cppflags': cppflags,
+        'cxxflags': cxxflags,
+        'opt_fast': args.opt_fast,
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode('utf8')).hexdigest()
+
+
+def cached_scan(args: argparse.Namespace, module: dict[str, Any], flags_key: str) -> bool:
+    try:
+        with open(scan_cache_path(args.objdir, module['stem']), 'r', encoding='utf8') as fh:
+            cache = json.load(fh)
+        source_stat = os.stat(module['source'])
+    except (OSError, ValueError):
+        return False
+    return (cache.get('source') == module['source']
+            and cache.get('mtime_ns') == source_stat.st_mtime_ns
+            and cache.get('size') == source_stat.st_size
+            and cache.get('flags_key') == flags_key
+            and cache.get('deps') == os.path.basename(module['deps_file'])
+            and os.path.exists(module['deps_file']))
+
+
+def write_scan_cache(args: argparse.Namespace, module: dict[str, Any], flags_key: str) -> None:
+    source_stat = os.stat(module['source'])
+    with open(scan_cache_path(args.objdir, module['stem']), 'w', encoding='utf8') as fh:
+        json.dump({
+            'source': module['source'],
+            'mtime_ns': source_stat.st_mtime_ns,
+            'size': source_stat.st_size,
+            'flags_key': flags_key,
+            'deps': os.path.basename(module['deps_file']),
+        }, fh, indent=2)
+        fh.write('\n')
+
+
+def ensure_scan(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
+                module: dict[str, Any], flags_key: str) -> None:
+    if cached_scan(args, module, flags_key):
+        return
+    if args.backend == 'gcc':
+        scan_gcc(args, cppflags, cxxflags, module['source'], module['obj'], module['deps_file'])
+    else:
+        scan_clang(args, cppflags, cxxflags, module['source'], module['deps_file'])
+    write_scan_cache(args, module, flags_key)
+
+
 HEADER_IMPORT_RE = re.compile(r'^\s*(?:export\s+)?import\s+"([^"]+)"\s*;', re.MULTILINE)
 
 
@@ -483,12 +537,10 @@ def scan(args: argparse.Namespace) -> None:
 
     if args.backend == 'gcc':
         headers = prepare_gcc_headers(args, cppflags, cxxflags, modules)
-        for module in modules:
-            scan_gcc(args, cppflags, cxxflags, module['source'], module['obj'],
-                     module['deps_file'])
-    else:
-        for module in modules:
-            scan_clang(args, cppflags, cxxflags, module['source'], module['deps_file'])
+
+    flags_key = scan_flags_key(args, cppflags, cxxflags)
+    for module in modules:
+        ensure_scan(args, cppflags, cxxflags, module, flags_key)
 
     for module in modules:
         with open(module['deps_file'], 'r', encoding='utf8') as fh:
