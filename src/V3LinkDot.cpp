@@ -5529,6 +5529,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             // the caller.
                             m_ds.m_unresolvedClass = true;
                         } else {
+                            // In the parameterized pass classes can be reached before they were
+                            // visited, so their inherited members are not imported yet. Import
+                            // them before resolving names in the inline constraint against this
+                            // class.
+                            if (!m_statep->forPrimary()) classExtendImport(classDtp->classp());
                             m_randSymp = m_statep->getNodeSym(classDtp->classp());
                         }
                     }
