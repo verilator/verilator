@@ -30,8 +30,7 @@ module t(sum,a,b,c,d,clk,shared0,shared1);
   l l(left,a,b,c,d,clk);
   r r(right,a,b,c,d,clk);
 
-  // Shared sensitivity does not make these two scopes' complete Active trees equal.
-  // Each retained instance still has one duplicate pair of sequential assignments.
+  // Each instance has its own Active, so only the pair within each instance is deduped.
   shared_flops u0(clk,d,shared0);
   shared_flops u1(clk,d,shared1);
 endmodule

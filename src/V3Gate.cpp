@@ -865,11 +865,8 @@ public:
 
     const AstNodeAssign* hashAndFindDupe(AstNodeAssign* assignp, AstActive* activep,
                                          AstNodeExpr* condp) {
-        // The old Active comparison included the complete process trees, not just sensitivity.
-        // Different scopes have different scoped references. Equal trees of distinct Actives
-        // would also write the same lhs, which inSize1() excludes before this lookup. Thus
-        // separate finders only remove comparisons that could never match an eligible assign.
-        // A null activep groups assignments without an Active, as before.
+        // Only assignments under the same AstActive can be duplicates, so each has its own
+        // finder. A null activep groups assignments without an Active.
         V3DupFinder& dupFinder = m_dupFinders.emplace(activep, m_hasher).first->second;
         m_currRhsp = assignp->rhsp();
         m_auxCurRhsp.condp = condp;
