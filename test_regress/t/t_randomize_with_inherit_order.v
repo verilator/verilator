@@ -44,6 +44,11 @@ package user_pkg;
       item = new;
       return item.randomize() with {len == want;};
     endfunction
+    function int send_inline();
+      item = new;
+      // Inline random variable control references the inherited 'len' too.
+      return item.randomize(len);
+    endfunction
   endclass
 endpackage
 
@@ -57,8 +62,11 @@ module t;
     for (int i = 0; i < 20; ++i) begin
       automatic bit [14:0] want = 15'(i * 1237 + 3);
       automatic int ok = agent.drv.send(want);
+      automatic int ok_inline;
       `checkd(ok, 1);
       `checkd(agent.drv.item.len, want);
+      ok_inline = agent.drv.send_inline();
+      `checkd(ok_inline, 1);
     end
     $write("*-* All Finished *-*\n");
     $finish;
