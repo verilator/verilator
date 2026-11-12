@@ -34,6 +34,7 @@
 #include <map>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -176,9 +177,12 @@ static std::unique_ptr<OrderMTaskGraph> partition(OrderMoveGraph& moveGraph) {
 
 class DpiThreadsVisitor final : public VNVisitorConst {
     int m_threads = 1;  // Max number of threads used by this mtask
+    std::unordered_set<const AstCFunc*> m_visitedps;  // Functions already visited
 
     // METHODS
     void visit(AstCFunc* nodep) override {
+        // Visit once, as functions can be recursive
+        if (!m_visitedps.emplace(nodep).second) return;
         m_threads = std::max(m_threads, V3Control::getHierWorkers(nodep->cname()));
         iterateChildrenConst(nodep);
     }

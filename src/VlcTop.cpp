@@ -562,7 +562,7 @@ void VlcTop::writeInfo(const string& filename) {
                 infoPoints.push_back(point);
             }
             os << "DA:" << sc.lineno() << "," << daCount << "\n";
-            if (daCount) ++linesHit;
+            if (opt.countOk(daCount)) ++linesHit;
             if (infoPoints.size() <= 1) continue;
             branchesFound += static_cast<int>(infoPoints.size());
             int point_num = 0;

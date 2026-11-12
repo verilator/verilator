@@ -269,6 +269,57 @@ public:
 
 //======================================================================
 
+// Observe the specified cycle callback without invoking the production fatal diagnostic.
+class V3GraphTestRankGraph final : public V3Graph {
+    bool m_loopDetected = false;
+
+public:
+    bool loopDetected() const { return m_loopDetected; }
+    void loopsMessageCb(V3GraphVertex*, V3EdgeFuncP) override VL_MT_DISABLED {
+        m_loopDetected = true;
+    }
+};
+
+class V3GraphTestRank final {
+public:
+    void run() const {
+        {
+            V3GraphTestRankGraph graph;
+            graph.rank();
+            UASSERT(graph.empty() && !graph.loopDetected(), "SelfTest: Empty graph ranking");
+        }
+        {
+            V3GraphTestRankGraph graph;
+            // Reverse vertex creation, parallel paths, and a disconnected vertex must not affect
+            // the longest ranks. Zero-weight and cutable back edges are not followed here.
+            V3GraphTestVertex* const qp = new V3GraphTestVertex{&graph, "q"};
+            V3GraphTestVertex* const bp = new V3GraphTestVertex{&graph, "b"};
+            V3GraphTestVertex* const ap = new V3GraphTestVertex{&graph, "a"};
+            const V3GraphTestVertex* const ip = new V3GraphTestVertex{&graph, "isolated"};
+            new V3GraphEdge{&graph, ap, bp, 1};
+            new V3GraphEdge{&graph, ap, bp, 1};
+            new V3GraphEdge{&graph, bp, qp, 1};
+            new V3GraphEdge{&graph, ap, qp, 1};
+            new V3GraphEdge{&graph, qp, bp, 0};
+            new V3GraphEdge{&graph, qp, ap, 1, true};
+            graph.rank(&V3GraphEdge::followNotCutable);
+            UASSERT(!graph.loopDetected() && ap->rank() == 1 && bp->rank() == 2 && qp->rank() == 3
+                        && ip->rank() == 1,
+                    "SelfTest: Longest ranks with parallel and filtered edges");
+            // Following the same cutable back edge makes a real cycle; rank must report it.
+            graph.rank();
+            UASSERT(graph.loopDetected(), "SelfTest: Rank did not report a cycle");
+        }
+        {
+            V3GraphTestRankGraph graph;
+            V3GraphTestVertex* const vp = new V3GraphTestVertex{&graph, "self"};
+            new V3GraphEdge{&graph, vp, vp, 1};
+            graph.rank();
+            UASSERT(graph.loopDetected(), "SelfTest: Rank did not report a self-loop");
+        }
+    }
+};
+
 class V3GraphTestImport final : public V3GraphTest {
 
 #ifdef GRAPH_IMPORT
@@ -304,5 +355,6 @@ void V3Graph::selfTest() {
     { V3GraphTestStrong{}.run(); }
     { V3GraphTestAcyc{}.run(); }
     { V3GraphTestVars{}.run(); }
+    { V3GraphTestRank{}.run(); }
     { V3GraphTestImport{}.run(); }
 }
