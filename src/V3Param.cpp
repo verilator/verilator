@@ -1752,7 +1752,7 @@ class ParamProcessor final {
                         skipWidthForTemplateStruct = true;
                         V3Stats::addStatSum("Param, Template struct width skips", 1);
                         UINFO(9, "SKIP-WIDTH-TEMPLATE: struct="
-                                     << resolvedp->prettyTypeName() << " templateOwner="
+                                     << resolvedp->prettyTypeNameQ() << " templateOwner="
                                      << ownerModp->prettyNameQ() << " pin=" << pinp->prettyNameQ()
                                      << " of " << nodep->prettyNameQ()
                                      << " srcMod=" << srcModp->prettyNameQ());

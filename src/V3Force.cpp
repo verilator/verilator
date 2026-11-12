@@ -101,7 +101,7 @@ public:
                 return;
             }
             nodep->v3fatalSrc("Unsupported: opaque force path selector "
-                              << nodep->prettyTypeName());
+                              << nodep->prettyTypeNameQ());
         }
 
         static string forcePathKey(AstNodeExpr* nodep) {

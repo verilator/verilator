@@ -321,33 +321,36 @@ public:
 #endif
 };
 
-// Internals: VlFileLineDebug stores a SystemVerilog source code location. Used in
-// VlCoroutineHandle for debugging purposes, and to locate covergroup weight errors.
+// Internals: VlFileLine and VlFileLineDebug store a SystemVerilog source code location.
+// VlFileLineDebug is used in VlCoroutineHandle for debugging purposes, and to locate covergroup
+// weight errors.
 
-class VlFileLineDebug final {
+class VlFileLine final {
     // MEMBERS
-#ifdef VL_DEBUG
-    const char* m_filename = nullptr;  // Filename from sources, nullptr for unlnown
+    const char* m_filename = nullptr;  // Filename from sources, nullptr for unknown
     int m_lineno = 0;  // Line number from sources
-#endif
 
 public:
     // CONSTRUCTORS
-    VlFileLineDebug() = default;
-    VlFileLineDebug(const char* filename, int lineno)
-#ifdef VL_DEBUG
+    VlFileLine() = default;
+    VlFileLine(const char* filename, int lineno)
         : m_filename{filename}
-        , m_lineno{lineno}
-#endif
-    {
-    }
+        , m_lineno{lineno} {}
 
     // METHODS
-#ifdef VL_DEBUG
     const char* filename() const { return m_filename; }
     int lineno() const { return m_lineno; }
-#endif
 };
+
+#ifdef VL_DEBUG
+using VlFileLineDebug = VlFileLine;
+#else
+class VlFileLineDebug final {
+public:
+    VlFileLineDebug() = default;
+    VlFileLineDebug(const char*, int) {}
+};
+#endif
 
 class VlExecutionProfilerBase;
 

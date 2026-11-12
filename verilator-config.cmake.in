@@ -162,6 +162,13 @@ define_property(
 
 define_property(
     TARGET
+    PROPERTY VERILATOR_DPI
+    BRIEF_DOCS "Verilator DPI enabled"
+    FULL_DOCS "Verilator DPI enabled"
+)
+
+define_property(
+    TARGET
     PROPERTY VERILATOR_TRACE
     BRIEF_DOCS "Verilator trace enabled"
     FULL_DOCS "Verilator trace enabled"
@@ -653,6 +660,11 @@ function(verilate TARGET)
         set_property(TARGET ${TARGET} PROPERTY VERILATOR_COVERAGE ON)
     endif()
 
+    if(${VERILATE_PREFIX}_DPI)
+        # If any verilate() call generates DPI, define VM_DPI in the final build
+        set_property(TARGET ${TARGET} PROPERTY VERILATOR_DPI ON)
+    endif()
+
     if(${VERILATE_PREFIX}_SC)
         # If any verilate() call specifies SYSTEMC, define VM_SC in the final build
         set_property(TARGET ${TARGET} PROPERTY VERILATOR_SYSTEMC ON)
@@ -745,6 +757,7 @@ function(verilate TARGET)
         ${TARGET}
         PRIVATE
             VM_COVERAGE=$<BOOL:$<TARGET_PROPERTY:VERILATOR_COVERAGE>>
+            VM_DPI=$<BOOL:$<TARGET_PROPERTY:VERILATOR_DPI>>
             VM_SC=$<BOOL:$<TARGET_PROPERTY:VERILATOR_SYSTEMC>>
             VM_TRACE=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE>>
             VM_TRACE_VCD=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_VCD>>

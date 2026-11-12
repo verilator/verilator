@@ -252,7 +252,7 @@ uint64_t keyNumber(const string& value) {
 // If a field of a record's name, '\001<key>\002<value>', has a key of the coverage computation
 bool isScoreField(const string& field) {
     for (const char* const keyp : {VL_CIK_THRESH, VL_CIK_WEIGHT, VL_CIK_GROUP_WEIGHT}) {
-        const string prefix = string{"\001"} + keyp + "\002";
+        const string prefix = "\001"s + keyp + "\002";
         if (field.compare(0, prefix.size(), prefix) == 0) return true;
     }
     return false;
@@ -552,6 +552,7 @@ void VlcTop::writeInfo(const string& filename) {
         VlcSource::LinenoMap& lines = source.lines();
         int branchesFound = 0;
         int branchesHit = 0;
+        int linesHit = 0;
         for (auto& li : lines) {
             VlcSourceCount& sc = li.second;
             uint64_t daCount = 0;
@@ -561,6 +562,7 @@ void VlcTop::writeInfo(const string& filename) {
                 infoPoints.push_back(point);
             }
             os << "DA:" << sc.lineno() << "," << daCount << "\n";
+            if (opt.countOk(daCount)) ++linesHit;
             if (infoPoints.size() <= 1) continue;
             branchesFound += static_cast<int>(infoPoints.size());
             int point_num = 0;
@@ -586,6 +588,8 @@ void VlcTop::writeInfo(const string& filename) {
         }
         os << "BRF:" << branchesFound << '\n';
         os << "BRH:" << branchesHit << '\n';
+        os << "LF:" << lines.size() << '\n';
+        os << "LH:" << linesHit << '\n';
 
         os << "end_of_record\n";
     }

@@ -713,7 +713,7 @@ private:
             static std::set<VNType> s_typePrinted;
             const auto pair = s_typePrinted.emplace(nodep->type());
             if (pair.second)
-                UINFO(0, "Unknown node type in SimulateVisitor: " << nodep->prettyTypeName());
+                UINFO(0, "Unknown node type in SimulateVisitor: " << nodep->prettyTypeNameQ());
 #endif
         }
     }
