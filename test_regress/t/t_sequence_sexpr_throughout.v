@@ -126,14 +126,14 @@ module t (
       // (propagating isTopLevelStep causes double-counting; fix is future work).
       `checkd(count_fail5, 25);  // All other sims: 36
       `checkd(count_fail6, 33);
-      `checkd(count_fail7, count_fail7_ref);
-      `checkd(count_fail8, count_fail8_ref);
-      `checkd(count_fail9, count_fail9_ref);
-      `checkd(count_fail10, count_fail10_ref);
-`ifdef TEST_VERBOSE
-      $write("fail7=%0d fail8=%0d fail9=%0d fail10=%0d\n", count_fail7, count_fail8, count_fail9,
-             count_fail10);
-`endif
+      `checkd(count_fail7, 8);
+      `checkd(count_fail7_ref, 8);
+      `checkd(count_fail8, 2);
+      `checkd(count_fail8_ref, 2);
+      `checkd(count_fail9, 23);
+      `checkd(count_fail9_ref, 23);
+      `checkd(count_fail10, 3);
+      `checkd(count_fail10_ref, 3);
       $write("*-* All Finished *-*\n");
       $finish;
     end

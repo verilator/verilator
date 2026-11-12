@@ -1715,16 +1715,17 @@ public:
     BuildResult buildImplicationEdges(AstNodeExpr* antExprp, AstNodeExpr* bodyExprp,
                                       SvaStateVertex* entryVtxp, bool isOverlapped,
                                       bool isFollowedBy, AstNode* errorNodep, FileLine* flp) {
-        std::unordered_set<const V3GraphVertex*> preExisting;
-        for (const V3GraphVertex& vtxr : m_graph.m_graph.vertices()) preExisting.insert(&vtxr);
+        // Vertices are appended, so those after the current tail belong to the antecedent
+        V3GraphVertex::List& vertices = m_graph.m_graph.vertices();
+        const V3GraphVertex* const lastPrep = vertices.backp();
         const BuildResult antResult = buildExpr(antExprp, entryVtxp);
         if (!antResult.valid()) return antResult;
         entryVtxp->m_isAntecedent = true;
-        for (V3GraphVertex& vtxr : m_graph.m_graph.vertices()) {
-            if (preExisting.count(&vtxr)) continue;
-            SvaStateVertex* const vtxp = static_cast<SvaStateVertex*>(&vtxr);
-            vtxp->m_isAntecedent = true;
-        }
+        auto it = vertices.rbegin();
+        for (; it != vertices.rend() && &*it != lastPrep; ++it)
+            static_cast<SvaStateVertex*>(&*it)->m_isAntecedent = true;
+        UASSERT_OBJ(it != vertices.rend(), antExprp,
+                    "Pre-antecedent vertex removed while building antecedent");
 
         // Followed-by requires pure-boolean antecedent for non-vacuous-fail at
         // the attempt-start cycle. IEEE 1800-2023 16.12.9 permits a multi-cycle
