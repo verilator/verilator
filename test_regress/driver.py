@@ -27,6 +27,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 
 from functools import lru_cache  # Eventually use python 3.9's cache
@@ -162,6 +163,7 @@ class Capabilities:
     _cached_cmake_version = None
     _cached_cxx_version = None
     _cached_have_coroutines = None
+    _cached_have_cxx_module_scan = None
     _cached_have_dev_asan = None
     _cached_have_dev_gcov = None
     _cached_have_gdb = None
@@ -198,6 +200,25 @@ class Capabilities:
             Capabilities._cached_have_coroutines = bool(
                 Capabilities._verilator_get_supported('COROUTINES'))
         return Capabilities._cached_have_coroutines
+
+    @staticproperty
+    def have_cxx_module_scan() -> bool:  # pylint: disable=no-method-argument
+        if Capabilities._cached_have_cxx_module_scan is None:
+            if 'clang' in Capabilities.cxx_version.lower():
+                Capabilities._cached_have_cxx_module_scan = (
+                    shutil.which('clang-scan-deps') is not None)
+            else:
+                cxx = os.environ.get('CXX', 'c++')
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    with open(tmpdir + '/empty.cpp', 'w', encoding='utf8'):
+                        pass
+                    VtOs.run_capture('cd ' + tmpdir + ' && ' + cxx + ' -std=c++23 -fmodules -MM'
+                                     ' -fdeps-format=p1689r5 -fdeps-file=empty.deps.json'
+                                     ' -fdeps-target=empty.o -fsyntax-only empty.cpp',
+                                     check=False)
+                    Capabilities._cached_have_cxx_module_scan = os.path.exists(
+                        tmpdir + '/empty.deps.json')
+        return bool(Capabilities._cached_have_cxx_module_scan)
 
     @staticproperty
     def have_dev_asan() -> bool:  # pylint: disable=no-method-argument
@@ -1865,6 +1886,10 @@ class VlTest:
     @property
     def have_coroutines(self) -> bool:
         return Capabilities.have_coroutines
+
+    @property
+    def have_cxx_module_scan(self) -> bool:
+        return Capabilities.have_cxx_module_scan
 
     @property
     def have_dbg(self) -> bool:

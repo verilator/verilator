@@ -168,6 +168,18 @@ else()
     set(CFG_CXXFLAGS_PCH_I -include)
     set(CFG_GCH_IF_CLANG "")
 endif()
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-fno-modules" CFG_HAVE_NO_MODULES)
+if(CFG_HAVE_NO_MODULES)
+    set(CFG_CXXFLAGS_NO_MODULES -fno-modules)
+else()
+    check_cxx_compiler_flag("-fno-modules-ts" CFG_HAVE_NO_MODULES_TS)
+    if(CFG_HAVE_NO_MODULES_TS)
+        set(CFG_CXXFLAGS_NO_MODULES -fno-modules-ts)
+    else()
+        set(CFG_CXXFLAGS_NO_MODULES "")
+    endif()
+endif()
 
 configure_file(include/verilated_config.h.in include/verilated_config.h @ONLY)
 configure_file(include/verilated.mk.in include/verilated.mk @ONLY)
@@ -208,6 +220,7 @@ foreach(
     verilator_difftree
     verilator_gantt
     verilator_includer
+    verilator_module_deps
     verilator_profcfunc
 )
     install(PROGRAMS bin/${program} TYPE BIN)

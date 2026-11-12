@@ -45,6 +45,8 @@ Tests = {}
 
 def read_sums():
     for filename in test.glob_some(test.root + "/bin/*"):
+        if os.path.isdir(filename):  # Skip e.g. __pycache__
+            continue
         with open(filename, "r", encoding="latin-1") as fh:
             on = False
             lineno = 0
