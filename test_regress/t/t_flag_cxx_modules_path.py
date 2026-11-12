@@ -21,7 +21,6 @@ if not test.have_cxx_module_scan:
 
 
 def shell_quote(path):
-    # Quote a path as one shell word for the length of the Verilator command line
     return "'" + path.replace("'", "'\\''") + "'"
 
 

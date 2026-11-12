@@ -27,9 +27,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 namespace {
 
-// Escape a file name for use as a make target or prerequisite.
-// '%' is left alone: it is not special in prerequisites, and GNU make does not
-// allow escaping it in targets.
 string makeEscape(const string& name) {
     string result;
     result.reserve(name.size());
@@ -47,8 +44,6 @@ string makeEscape(const string& name) {
     return result;
 }
 
-// Quote a file name as a single shell word for a make recipe.
-// Make expands '$' in recipes before the shell sees them, so each '$' is doubled.
 string shellQuote(const string& name) {
     string quoted = "'";
     for (const char ch : name) {
@@ -794,8 +789,6 @@ public:
         const VStringSet& cppFiles = v3Global.opt.cppFiles();
         const VStringSet& moduleFiles = v3Global.opt.moduleFiles();
         for (const auto& cppfile : cppFiles) {
-            // Module sources get safe object names from verilator_module_deps, which adds them
-            // to VM_USER_CLASSES in __modules.mk
             if (moduleFiles.find(cppfile) != moduleFiles.end()) continue;
             of.puts("  " + V3Os::filenameNonDirExt(cppfile) + " \\\n");
             const string dir
@@ -880,8 +873,6 @@ public:
             }
         }
 
-        // In C++ module builds the final link must wait for the module CMIs, which are
-        // order-only prerequisites of the archive.
         const string archiveDep = v3Global.opt.cxxModules() ? " | $(VM_PREFIX)__ALL.a" : "";
 
         if (v3Global.opt.exe()) {

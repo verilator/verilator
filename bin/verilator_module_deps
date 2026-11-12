@@ -29,7 +29,6 @@ def fatal(message: str) -> NoReturn:
 
 
 def make_escape(name: str) -> str:
-    """Escape a file name for use as a make target or prerequisite."""
     escaped = []
     for char in name:
         if char == '$':
@@ -42,16 +41,12 @@ def make_escape(name: str) -> str:
 
 
 def shell_quote(name: str) -> str:
-    """Quote a file name as a single shell word in a make recipe."""
-    # Make expands '$' in recipes before the shell sees them, so double them.
     return "'" + name.replace("'", "'\\''").replace('$', '$$') + "'"
 
 
 def safe_stem(stem: str, abs_source: str) -> str:
-    """Return an object name stem that is safe to use in make rules."""
     safe = re.sub(r'[^A-Za-z0-9_.+-]', '_', stem)
     if safe != stem:
-        # Distinguish sources whose sanitized names collide
         safe += '_' + hashlib.sha256(abs_source.encode('utf8')).hexdigest()[:8]
     return safe
 
@@ -233,9 +228,6 @@ def compile_header(args: argparse.Namespace, cppflags: list[str], cxxflags: list
 
 def prepare_gcc_headers(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
                         modules: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    # GCC's P1689 scanner refuses to parse 'import "header.h";' unless the
-    # header unit CMI already exists, so build missing CMIs before scanning.
-    # The generated make rules still rebuild them when the header changes.
     include_dirs = include_directories(cppflags + cxxflags)
     headers: dict[str, dict[str, Any]] = {}
 
@@ -246,8 +238,6 @@ def prepare_gcc_headers(args: argparse.Namespace, cppflags: list[str], cxxflags:
         entry: dict[str, Any] = {'key': key, 'path': path, 'cmi': '', 'deps': []}
         headers[key] = entry
         for name in header_imports(path):
-            # Unresolvable imports may be in inactive preprocessor branches.
-            # Let the compiler report them if the import is actually compiled.
             dep = resolve_header(name, path, include_dirs)
             if dep is not None:
                 entry['deps'].append(add(dep))
