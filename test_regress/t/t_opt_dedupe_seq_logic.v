@@ -22,13 +22,25 @@
    a   b   c   d                     a   b   c   d
 */
 
-module t(sum,a,b,c,d,clk);
-  output sum;
+module t(sum,a,b,c,d,clk,shared0,shared1);
+  output sum,shared0,shared1;
   input a,b,c,d,clk;
   wire left,right;
   add add(sum,left,right,clk);
   l l(left,a,b,c,d,clk);
   r r(right,a,b,c,d,clk);
+
+  // Each instance has its own Active, so only the pair within each instance is deduped.
+  shared_flops u0(clk,d,shared0);
+  shared_flops u1(clk,d,shared1);
+endmodule
+
+module shared_flops(input clk, input d, output q);
+  /*verilator no_inline_module*/
+  logic q1, q2;
+  always_ff @(posedge clk) q1 <= d;
+  always_ff @(posedge clk) q2 <= d;
+  assign q = q1 ^ q2;
 endmodule
 
 module l(sum,a,b,c,d,clk);
