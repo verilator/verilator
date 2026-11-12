@@ -5870,6 +5870,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
     }
+    // Keep the parent path whenever an interface port selects a referenced interface array.
+    bool isIfacePinSelect(const AstSelBit* nodep) {
+        const VSymEnt* const portSymp
+            = m_pinp && m_pinSymp ? m_pinSymp->findIdFlat(m_pinp->name()) : nullptr;
+        const AstVar* const portp = portSymp ? VN_CAST(portSymp->nodep(), Var) : nullptr;
+        const AstVarXRef* const xrefp = VN_CAST(nodep->fromp(), VarXRef);
+        return portp && portp->isIfaceRef() && xrefp && xrefp->varp()
+               && xrefp->varp()->isIfaceRef();
+    }
     void visit(AstSelBit* nodep) override {
         if (nodep->user3SetOnce()) return;
         LINKDOT_VISIT_START();
@@ -5892,21 +5901,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Pass dot state down to only fromp()
         iterateAndNextNull(nodep->fromp());
         symIterateNull(nodep->bitp(), m_curSymp);
-        // Preserve the selected interface and its parent path for parameterization.
-        const AstVarXRef* const xrefp = VN_CAST(nodep->fromp(), VarXRef);
-        const VSymEnt* const scopep
-            = xrefp && m_modSymp ? m_modSymp->findIdFlat(xrefp->dotted()) : nullptr;
-        const VSymEnt* const portSymp
-            = m_pinp && m_pinSymp ? m_pinSymp->findIdFlat(m_pinp->name()) : nullptr;
-        const AstVar* const portp = m_pinp && m_pinp->modVarp() ? m_pinp->modVarp()
-                                    : portSymp                  ? VN_CAST(portSymp->nodep(), Var)
-                                                                : nullptr;
-        const bool ifacePinSelect = portp && portp->isIfaceRef() && xrefp && xrefp->varp()
-                                    && xrefp->varp()->isIfaceRef() && scopep
-                                    && VN_IS(scopep->nodep(), Cell)
-                                    && VN_IS(VN_AS(scopep->nodep(), Cell)->modp(), Iface);
         if (m_ds.m_unresolvedCell && (m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST)
-            && !ifacePinSelect) {
+            && !isIfacePinSelect(nodep)) {
             AstNodeExpr* const exprp = nodep->bitp()->unlinkFrBack();
             if (AstCellArrayRef* const fromArrRefp = VN_CAST(nodep->fromp(), CellArrayRef)) {
                 // Multi-dim iface array access: append this select to the existing chain

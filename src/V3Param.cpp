@@ -1850,16 +1850,12 @@ class ParamProcessor final {
                         const AstVar* selectedVarp = vrp->varp();
                         if (const AstVarXRef* const xrefp = VN_CAST(vrp, VarXRef)) {
                             // Resolve through the actual parent interface specialization.
-                            AstNodeModule* const ownerp = V3LinkDotIfaceCapture::followCellPath(
-                                const_cast<AstNodeModule*>(m_modp), xrefp->dotted());
-                            if (ownerp) {
-                                for (AstNode* const stmtp : ownerp->stmtspList()) {
-                                    if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
-                                        if (varp->name() == vrp->name()) {
-                                            selectedVarp = varp;
-                                            break;
-                                        }
-                                    }
+                            AstNodeModule* const ownerp
+                                = V3LinkDotIfaceCapture::followCellPath(m_modp, xrefp->dotted());
+                            if (const AstIface* const ifacep = VN_CAST(ownerp, Iface)) {
+                                if (const AstVar* const varp
+                                    = VN_CAST(m_memberMap.findMember(ifacep, vrp->name()), Var)) {
+                                    selectedVarp = varp;
                                 }
                             }
                         }
