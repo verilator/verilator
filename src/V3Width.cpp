@@ -7748,7 +7748,10 @@ class WidthVisitor final : public VNVisitor {
                                    << warnDTypes(nodep, lhsDtp, rhsDtp));
                 }
                 // Variable references were checked above, this catches e.g. method call results
-                if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType() && !rhsRefp) {
+                // and member selects, such as a clockvar through a virtual interface.
+                // A streaming target legally unpacks an aggregate (IEEE 1800-2023 11.4.14)
+                if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType()
+                    && (!lhsRefp || !rhsRefp) && !VN_IS(nodep->lhsp(), NodeStream)) {
                     nodep->v3error("Illegal assignment between unpacked aggregate and "
                                    "integral type (IEEE 1800-2023 7.6)"
                                    << warnDTypes(nodep, lhsDtp, rhsDtp));

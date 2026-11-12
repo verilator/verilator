@@ -46,6 +46,7 @@ Verilator 5.055 devel
 * Fix width warnings in type casts (#3923) (#9048). [Guangyuan Xu]
 * Fix missing IEEE errors on NBA/assign to dynamically sized variables. [Geza Lore, Testorrent USA, Inc.]
 * Fix writing a character of a string array element. [Geza Lore, Testorrent USA, Inc.]
+* Fix error on assignments to clocking in virtual interface (#5266). [Alex Solomatnikov]
 * Fix type check of associative array traversal arguments (#5439) (#8954). [Ethan Sifferman]
 * Fix unordered NBAs executing in wrong order (#5485) (#9030) (#7541) (#8214) (#8346). [Geza Lore, Testorrent USA, Inc.]
 * Fix `q[1:$]` when queue has only one item in it (#7355). [Bryan Murdock]
