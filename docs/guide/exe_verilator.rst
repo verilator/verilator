@@ -500,6 +500,10 @@ Summary:
    newer, which adds them as a ``CXX_MODULES`` file set.  GNU make with MSVC is
    not supported.
 
+   Changing compiler flags or the C++ compiler does not automatically
+   invalidate existing CMIs.  Remove the model object directory before
+   rebuilding after such changes.
+
    Existing :command:`-CFLAGS -fmodules` style flags remain supported,
    including :command:`-fmodule-header` and
    :command:`-fmodule-only` for GCC.  They do not by themselves enable module
