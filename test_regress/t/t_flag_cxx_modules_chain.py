@@ -50,8 +50,10 @@ if not os.path.exists(artifact):
 if not os.path.exists(module_obj):
     test.error('Missing C++ module object: ' + module_obj)
 os.remove(artifact)
-test.run_capture('cd ' + test.obj_dir + ' && ' + os.environ['MAKE'] + ' -f ' + test.vm_prefix +
-                 '.mk VM_PARALLEL_BUILDS=1')
+make_out = test.run_capture('cd ' + test.obj_dir + ' && ' + os.environ['MAKE'] + ' -f ' +
+                            test.vm_prefix + '.mk VM_PARALLEL_BUILDS=1 2>&1')
+if 'Circular' in make_out:
+    test.error('Circular dependency in C++ module make rules')
 if not os.path.exists(artifact):
     test.error('C++ module artifact was not rebuilt after deletion: ' + artifact)
 test.execute()

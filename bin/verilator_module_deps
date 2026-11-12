@@ -347,9 +347,9 @@ def gcc_module_cmi(module: dict[str, Any]) -> str:
 
 def gcc_compile_command(module: dict[str, Any], module_only: bool) -> str:
     if module_only:
-        return ('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -fmodule-only -c ' +
+        return ('$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -fmodule-only -c ' +
                 shell_quote(module['source']))
-    return ('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -c ' +
+    return ('$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -c ' +
             shell_quote(module['source']) + ' -o ' + shell_quote(module['obj']))
 
 
@@ -390,16 +390,16 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
         if module_only and module['provides']:
             cmi = gcc_module_cmi(module)
             lines.append(make_escape(cmi) + ': ' + ' '.join(prereqs))
-            lines.append(gcc_compile_command(module, module_only=True))
+            lines.append('\t' + gcc_compile_command(module, module_only=True))
         else:
             command = gcc_compile_command(module, module_only=False)
             if module['provides']:
                 cmi = gcc_module_cmi(module)
-                lines.append(make_escape(cmi) + ': ' + ' '.join(prereqs))
-                lines.append(command)
-                prereqs.append(make_escape(cmi))
+                lines.append(make_escape(cmi) + ': ' + ' '.join(prereqs)
+                             + ' | ' + make_escape(module['obj']))
+                lines.append('\ttest -f ' + shell_quote(cmi) + ' || ' + command)
             lines.append(make_escape(module['obj']) + ': ' + ' '.join(prereqs))
-            lines.append(command)
+            lines.append('\t' + command)
         lines.append('')
     return '\n'.join(lines)
 
@@ -424,7 +424,7 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
         prereqs = [make_escape(module['source']), '$(VM_PREFIX).mk']
         prereqs.extend(make_escape(dep['pcm']) for dep in module['direct_deps'])
         command = [
-            '\t$(OBJCACHE)', '$(CXX)', '$(OPT_FAST)', '$(VK_MODULE_FLAGS)',
+            '$(OBJCACHE)', '$(CXX)', '$(OPT_FAST)', '$(VK_MODULE_FLAGS)',
             *[shell_quote(flag) for flag in module['dep_flags']]
         ]
         if module['provides']:
@@ -433,11 +433,12 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
         command += ['-c', shell_quote(module['source']), '-o', shell_quote(module['obj'])]
         if module['provides']:
             pcm = make_escape(module['pcm'])
-            lines.append(pcm + ': ' + ' '.join(prereqs))
-            lines.append(' '.join(command))
-            prereqs.append(pcm)
+            lines.append(pcm + ': ' + ' '.join(prereqs) + ' | '
+                         + make_escape(module['obj']))
+            lines.append('\ttest -f ' + shell_quote(module['pcm']) + ' || '
+                         + ' '.join(command))
         lines.append(make_escape(module['obj']) + ': ' + ' '.join(prereqs))
-        lines.append(' '.join(command))
+        lines.append('\t' + ' '.join(command))
         lines.append('')
     return '\n'.join(lines)
 
