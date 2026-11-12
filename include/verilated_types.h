@@ -47,6 +47,8 @@ class VlClassRef;
 class VlProcess;
 template <typename T_Value, std::size_t N_Depth>
 class VlUnpacked;
+template <typename T_Value, std::size_t N_Depth>
+class VlUnpackedSliceRef;
 
 //=========================================================================
 // Debug functions
@@ -1591,6 +1593,12 @@ public:
         return out;
     }
 
+    // Runtime slice as an assignment target, v[loIdx +: N_Out] = ...
+    template <std::size_t N_Out>
+    VlUnpackedSliceRef<T_Value, N_Out> sliceRef(int32_t loIdx) {
+        return VlUnpackedSliceRef<T_Value, N_Out>{&m_storage[loIdx]};
+    }
+
     void fill(const T_Value& value) {
         std::fill(std::begin(m_storage), std::end(m_storage), value);
     }
@@ -1917,6 +1925,22 @@ private:
         return a != b;
     }
 };
+
+//===================================================================
+// Target of an assignment to a slice of an unpacked array
+
+template <typename T_Value, std::size_t N_Depth>
+class VlUnpackedSliceRef final {
+    T_Value* const m_datap;  // First element of the slice
+
+public:
+    explicit VlUnpackedSliceRef(T_Value* datap)
+        : m_datap{datap} {}
+    void operator=(const VlUnpacked<T_Value, N_Depth>& src) const {
+        for (std::size_t i = 0; i < N_Depth; ++i) m_datap[i] = src.m_storage[i];
+    }
+};
+
 // Trait to detect VlUnpacked types
 template <typename T>
 struct IsVlUnpacked : std::false_type {};

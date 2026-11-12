@@ -31,6 +31,32 @@ module t (
 `endif
   end
 
+  initial begin
+    logic [4:0] a;
+    a = 5'b11000;
+`ifdef VERILATOR
+    // Reversed part select is an error in other simulators, Verilator swaps the bounds
+    // verilator lint_off SELRANGE
+    if (a[0:2] !== a[2:0]) $stop;
+    if (a[1:2] !== a[2:1]) $stop;
+    begin
+      // verilator lint_off ASCRANGE
+      logic [1:5] asc;
+      // verilator lint_on ASCRANGE
+      logic [3:0][7:0] pack;
+      struct packed {logic [6:0] hi; logic [8:0] lo;} st;
+      asc = 5'b11000;
+      pack = 32'h12345678;
+      st = 16'hbeef;
+      if (asc[2:1] !== asc[1:2]) $stop;
+      if (asc[4:2] !== asc[2:4]) $stop;
+      if (pack[2:1] !== pack[1:2]) $stop;
+      if (st[5:2] !== st[2:5]) $stop;
+    end
+    // verilator lint_on SELRANGE
+`endif
+  end
+
   integer cyc;
   initial cyc = 1;
   always @(posedge clk) begin
