@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import glob
+import json
 import os
 import vltest_bootstrap
 
@@ -22,13 +23,20 @@ flags = [
     '--exe',
     '--cxx-modules',
     test.t_dir + '/t_flag_cxx_modules_header.cpp',
-    '-CFLAGS',
-    '-std=c++23',
+    '-CFLAGS "-std=c++23 -isystem ' + test.t_dir + '/t_flag_cxx_modules_header_isystem"',
 ]
 test.compile(make_main=False, verilator_flags2=flags, make_flags=['VM_PARALLEL_BUILDS=1'])
 cmis = glob.glob(test.obj_dir + '/gcm.cache/**/t_flag_cxx_modules_header.h.gcm', recursive=True)
 if not cmis:
     test.error('No C++ header unit CMI generated')
+sidecars = glob.glob(test.obj_dir + '/*.cmi')
+if len(sidecars) != 2:
+    test.error('Expected two C++ header unit CMI sidecar files, found ' + str(len(sidecars)))
+for sidecar in sidecars:
+    with open(sidecar, encoding='utf8') as fh:
+        cmi = json.load(fh)['cmi']
+    if not os.path.exists(os.path.join(test.obj_dir, cmi)):
+        test.error('C++ header unit CMI sidecar refers to missing file: ' + cmi)
 # The make rule must rebuild the CMI when the imported header changes.
 before = os.stat(cmis[0]).st_mtime_ns
 os.utime(test.t_dir + '/t_flag_cxx_modules_header.h', None)

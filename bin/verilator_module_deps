@@ -10,6 +10,7 @@
 ######################################################################
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -124,15 +125,17 @@ def header_imports(path: str) -> list[str]:
 def include_directories(flags: list[str]) -> list[str]:
     dirs: list[str] = []
     index = 0
+    prefixes = ('-I', '-iquote', '-isystem', '-idirafter')
     while index < len(flags):
         flag = flags[index]
-        if flag in ('-I', '-iquote') and index + 1 < len(flags):
+        if flag in prefixes and index + 1 < len(flags):
             dirs.append(flags[index + 1])
             index += 1
-        elif flag.startswith('-I') and len(flag) > 2:
-            dirs.append(flag[2:])
-        elif flag.startswith('-iquote') and len(flag) > 7:
-            dirs.append(flag[7:])
+        else:
+            for prefix in prefixes:
+                if flag.startswith(prefix) and len(flag) > len(prefix):
+                    dirs.append(flag[len(prefix):])
+                    break
         index += 1
     return dirs
 
@@ -151,27 +154,51 @@ def resolve_header(name: str, importer: str,
     return None
 
 
-def gcc_header_cmi(path: str) -> str:
-    parts = [part for part in os.path.normpath(path).split(os.sep) if part]
-    if not os.path.isabs(path):
-        parts.insert(0, '.')
-    encoded = [',' if part == '.' else ',,' if part == '..' else part for part in parts]
-    return os.path.join('gcm.cache', *encoded) + '.gcm'
+def header_sidecar(objdir: str, header: str) -> str:
+    digest = hashlib.sha256(header.encode('utf8')).hexdigest()[:16]
+    return os.path.join(objdir, digest + '.cmi')
+
+
+def cached_header_cmi(objdir: str, header: str) -> Optional[str]:  # noqa: UP045
+    try:
+        with open(header_sidecar(objdir, header), 'r', encoding='utf8') as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    if data.get('header') != header or not isinstance(data.get('cmi'), str):
+        return None
+    return str(data['cmi'])
+
+
+def write_header_sidecar(objdir: str, header: str, cmi: str) -> None:
+    with open(header_sidecar(objdir, header), 'w', encoding='utf8') as fh:
+        json.dump({'header': header, 'cmi': cmi}, fh, indent=2)
+        fh.write('\n')
+
+
+COMPILER_CMI_RE = re.compile("writing CMI ['\u2018]([^'\u2019]+)['\u2019]")
 
 
 def compile_header(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
-                   header: dict[str, Any]) -> None:
+                   header: dict[str, Any]) -> str:
     opt_flags = parse_flags(args.opt_fast)
     command = (shlex.split(args.cxx) + opt_flags + cppflags + cxxflags
                + gcc_module_flags(cxxflags)
-               + ['-fmodule-header', '-x', 'c++-header', header['path']])
+               + ['-flang-info-module-cmi', '-fmodule-header', '-x', 'c++-header', header['path']])
     result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         sys.stderr.write(result.stdout)
         sys.stderr.write(result.stderr)
         fatal("C++ header unit build failed for '" + header['path'] + "'")
-    if not os.path.exists(header['cmi']):
-        fatal("C++ header unit build produced no CMI at '" + header['cmi'] + "'")
+    match = COMPILER_CMI_RE.search(result.stdout + '\n' + result.stderr)
+    if match is None:
+        fatal("C++ header unit build for '" + header['path'] +
+              "' did not report a CMI path; this GCC requires -flang-info-module-cmi support")
+    cmi = os.path.normpath(match.group(1))
+    if not os.path.exists(cmi):
+        fatal("C++ header unit build reported a CMI at '" + cmi + "' that does not exist")
+    write_header_sidecar(args.objdir, header['key'], cmi)
+    return cmi
 
 
 def prepare_gcc_headers(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
@@ -186,34 +213,47 @@ def prepare_gcc_headers(args: argparse.Namespace, cppflags: list[str], cxxflags:
         key = os.path.abspath(path)
         if key in headers:
             return headers[key]
-        entry: dict[str, Any] = {'path': path, 'cmi': gcc_header_cmi(path), 'deps': []}
+        entry: dict[str, Any] = {'key': key, 'path': path, 'cmi': '', 'deps': []}
         headers[key] = entry
         for name in header_imports(path):
+            # Unresolvable imports may be in inactive preprocessor branches.
+            # Let the compiler report them if the import is actually compiled.
             dep = resolve_header(name, path, include_dirs)
-            if dep is None:
-                fatal("Cannot find C++ header unit '" + name + "' imported by '" + path + "'")
-            entry['deps'].append(add(dep))
+            if dep is not None:
+                entry['deps'].append(add(dep))
         return entry
 
     for module in modules:
         module['headers'] = []
         for name in header_imports(module['source']):
             dep = resolve_header(name, module['source'], include_dirs)
-            if dep is None:
-                fatal("Cannot find C++ header unit '" + name + "' imported by '" +
-                      module['source'] + "'")
-            module['headers'].append(add(dep))
+            if dep is not None:
+                module['headers'].append(add(dep))
 
     built: set[str] = set()
 
+    def up_to_date(entry: dict[str, Any]) -> Optional[str]:  # noqa: UP045
+        cmi = cached_header_cmi(args.objdir, entry['key'])
+        if cmi is None or not os.path.exists(cmi):
+            return None
+        cmi_time = os.stat(cmi).st_mtime_ns
+        if os.stat(entry['path']).st_mtime_ns > cmi_time:
+            return None
+        for dep in entry['deps']:
+            if os.stat(dep['cmi']).st_mtime_ns > cmi_time:
+                return None
+        return cmi
+
     def build(entry: dict[str, Any]) -> None:
-        if entry['path'] in built:
+        if entry['key'] in built:
             return
-        built.add(entry['path'])
+        built.add(entry['key'])
         for dep in entry['deps']:
             build(dep)
-        if not os.path.exists(entry['cmi']):
-            compile_header(args, cppflags, cxxflags, entry)
+        cmi = up_to_date(entry)
+        if cmi is None:
+            cmi = compile_header(args, cppflags, cxxflags, entry)
+        entry['cmi'] = cmi
 
     for entry in headers.values():
         build(entry)
