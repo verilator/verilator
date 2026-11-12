@@ -1,0 +1,38 @@
+%Warning-WIDTH: t/t_func_task_arguments_size_bad.v:17:18: Function output argument 'values' requires matching unpacked array sizes (IEEE 1800-2023 7.6).
+                                                        : ... note: In instance 't'
+                                                        : ... Port data type: 'int$[0:2]'
+                                                        : ... Connection data type: 'int$[0:3]'
+   17 |     update_array(values);
+      |                  ^~~~~~
+                ... For warning description see https://verilator.org/warn/WIDTH?v=latest
+                ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
+%Error: t/t_func_task_arguments_size_bad.v:17:5: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                               : ... note: In instance 't'
+                                               : ... Left-hand data type: 'int$[0:2]'
+                                               : ... Right-hand data type: 'int$[0:3]'
+   17 |     update_array(values);
+      |     ^~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Warning-WIDTH: t/t_func_task_arguments_size_bad.v:27:17: Function output argument 'values' requires matching unpacked array sizes (IEEE 1800-2023 7.6).
+                                                        : ... note: In instance 't'
+                                                        : ... Port data type: 'bit[6:0]$[2:1][5:3]'
+                                                        : ... Connection data type: 'bit[14:0]$[1:2][3:6]'
+   27 |     update_rows(values);
+      |                 ^~~~~~
+%Error: t/t_func_task_arguments_size_bad.v:27:5: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                               : ... note: In instance 't'
+                                               : ... Left-hand data type: 'bit[6:0]$[2:1][5:3]'
+                                               : ... Right-hand data type: 'bit[14:0]$[1:2][3:6]'
+   27 |     update_rows(values);
+      |     ^~~~~~~~~~~
+%Warning-WIDTHTRUNC: t/t_func_task_arguments_size_bad.v:32:17: Function output argument 'values' requires 7 bits, but connection's VARREF 'values' generates 15 bits.
+                                                             : ... note: In instance 't'
+   32 |     update_rows(values);
+      |                 ^~~~~~
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Warning-WIDTHTRUNC: t/t_func_task_arguments_size_bad.v:32:5: Operator TASKREF 'update_rows' expects 7 bits on the Function Argument, but Function Argument's VARREF 'values' generates 15 bits.
+                                                            : ... note: In instance 't'
+   32 |     update_rows(values);
+      |     ^~~~~~~~~~~
+%Error: Exiting due to

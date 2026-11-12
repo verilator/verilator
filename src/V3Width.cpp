@@ -9007,16 +9007,36 @@ class WidthVisitor final : public VNVisitor {
                                   << portp->prettyNameQ()
                                   << " requires a compatible interface type, parameters, and "
                                      "modport.");
-                } else if (portp->isWritable() && pinp->width() != portp->width()) {
-                    pinp->v3widthWarn(portp->width(), pinp->width(),
-                                      "Function output argument "
-                                          << portp->prettyNameQ() << " requires " << portp->width()
-                                          << " bits, but connection's " << pinp->prettyTypeNameQ()
-                                          << " generates " << pinp->width() << " bits.");
-                    VNRelinker relinkHandle;
-                    pinp->unlinkFrBack(&relinkHandle);
-                    AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
-                    relinkHandle.relink(newp);
+                } else if (portp->isWritable()) {
+                    // Compare element widths, not the container widths of queues/dynamic arrays.
+                    const int portWidth = portDTypep->elemDTypep()->width();
+                    const int pinWidth = pinDTypep->elemDTypep()->width();
+                    const bool sizesMatch = unpackedArraySizesMatch(portDTypep, pinDTypep);
+                    if (portWidth != pinWidth || !sizesMatch) {
+                        if (!sizesMatch) {
+                            pinp->v3warn(WIDTH, "Function output argument "
+                                                    << portp->prettyNameQ()
+                                                    << " requires matching unpacked array sizes "
+                                                       "(IEEE 1800-2023 7.6)."
+                                                    << warnDTypes(pinp, portDTypep, pinDTypep,
+                                                                  "Port", "Connection"));
+                        } else {
+                            pinp->v3widthWarn(portWidth, pinWidth,
+                                              "Function output argument "
+                                                  << portp->prettyNameQ() << " requires "
+                                                  << portWidth << " bits, but connection's "
+                                                  << pinp->prettyTypeNameQ() << " generates "
+                                                  << pinWidth << " bits.");
+                        }
+                        // Unpacked arguments use array assignment conversions, not packed
+                        // resizing.
+                        if (!(portDTypep->isNonPackedArray() && pinDTypep->isNonPackedArray())) {
+                            VNRelinker relinkHandle;
+                            pinp->unlinkFrBack(&relinkHandle);
+                            AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
+                            relinkHandle.relink(newp);
+                        }
+                    }
                 }
                 if (portp->direction() != VDirection::REF
                     && ((VN_IS(portDTypep, BasicDType) && pinDTypep->isNonPackedArray())
@@ -10957,6 +10977,7 @@ class WidthVisitor final : public VNVisitor {
                 && !unpackedArraySizesMatch(expDtp, underDtp)) {
                 parentp->v3error("Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)"
                                  << warnDTypes(parentp, expDtp, underDtp));
+                warnOn = false;  // Suppress cascading warnings for the incompatible assignment
             }
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
