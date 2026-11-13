@@ -179,6 +179,41 @@ module fsm_prim (
   );
 endmodule
 
+// Resets to S0, encoded 1; S2 is encoded 0, so it isn't entered before the reset
+module fsm_prim_nonzero_reset (
+    input logic clk,
+    input logic rst_n,
+    input logic start
+);
+  typedef enum logic [1:0] {
+    S2 = 2'd0,
+    S0 = 2'd1,
+    S1 = 2'd2
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+
+  always_comb begin
+    state_d = state_q;
+    unique case (state_q)
+      S0: state_d = start ? S1 : S0;
+      S1: state_d = S2;
+      default: state_d = S0;
+    endcase
+  end
+
+  prim_flop #(
+      .Width($bits(state_t)),
+      .ResetValue(S0)
+  ) u_state_regs (
+      .clk_i(clk),
+      .rst_ni(rst_n),
+      .d_i(state_d),
+      .q_o(state_q)
+  );
+endmodule
+
 module fsm_sparse_prim (
     input logic clk,
     input logic rst_n,
@@ -454,6 +489,11 @@ module t (
       .start(start)
   );
   fsm_prim prim_u (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(start)
+  );
+  fsm_prim_nonzero_reset prim_nonzero_reset_u (
       .clk(clk),
       .rst_n(rst_n),
       .start(start)

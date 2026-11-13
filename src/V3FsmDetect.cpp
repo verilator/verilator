@@ -2355,6 +2355,19 @@ class FsmCoverIncBuilder final {
         if (!(m_isComplete || undefRolled)) rollUndefs();
     }
 
+    // Whether a declaration initializer or an initial block assigns the variable
+    static bool assignedAtTimeZero(AstScope* scopep, const AstVarScope* vscp) {
+        for (AstNode* const blockp : scopep->blockspList()) {
+            if (!VN_IS(blockp, Initial) && !VN_IS(blockp, InitialStatic)) continue;
+            if (blockp->exists([&](const AstVarRef* refp) {
+                    return refp->access().isWriteOrRW() && refp->varScopep() == vscp;
+                })) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     AstNodeExpr* buildResetCond() const {
         AstNodeExpr* const refp
             = new AstVarRef{m_flp, m_graph.resetCond().varScopep, VAccess::READ};
@@ -2563,9 +2576,10 @@ public:
         for (const V3GraphEdge& edge : m_resetVertexp->outEdges()) {
             resetTargets.emplace(edge.top()->as<FsmStateVertex>());
         }
-        // A logic register is X until reset, so only a reset target counts as its first state
-        m_waitForReset
-            = !resetTargets.empty() && !graph.sampleVarScopep()->dtypep()->basicp()->isZeroInit();
+        // A logic register is X until reset, so only a reset target counts as its first state,
+        // unless the register is given a value at time 0
+        m_waitForReset = !resetTargets.empty() && !sampleVscp->dtypep()->basicp()->isZeroInit()
+                         && !assignedAtTimeZero(graph.scopep(), sampleVscp);
         const bool isFullExpansion = expand == VFsmExpandType::FULL;
         if (isFullExpansion) initUndefinedStates();
         for (const FsmStateVertex* const statep : m_states) {

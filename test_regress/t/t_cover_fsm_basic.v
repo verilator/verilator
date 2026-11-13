@@ -74,4 +74,36 @@ module t (
     end
   end
 
+  // Given a value at time 0, so that value is the first state, as without a reset
+  hi_t state_decl = H_IDLE;
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      state_decl <= H_RUN;
+    end
+    else begin
+      case (state_decl)
+        H_IDLE: state_decl <= H_RUN;
+        H_RUN: state_decl <= H_DONE;
+        default: state_decl <= H_IDLE;
+      endcase
+    end
+  end
+
+  // An initial block may also give it (always_ff state can't be written by another process).
+  // Its time-0 value isn't counted, as the coverage sample runs before this initial block.
+  hi_t state_init;
+  initial state_init = H_IDLE;
+  always @(posedge clk) begin
+    if (rst) begin
+      state_init <= H_RUN;
+    end
+    else begin
+      case (state_init)
+        H_IDLE: state_init <= H_RUN;
+        H_RUN: state_init <= H_DONE;
+        default: state_init <= H_IDLE;
+      endcase
+    end
+  end
+
 endmodule
