@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage of reset arcs, with branch coverage
+# DESCRIPTION: Verilator: FSM coverage of reset arcs, with all coverage on
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -14,7 +14,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_cover_fsm_reset.v"
 
-test.compile(verilator_flags2=["--cc --coverage-fsm --coverage-branch"])
+test.compile(verilator_flags2=["--cc --coverage"])
 
 test.execute()
 
