@@ -43,19 +43,19 @@
                                                            : ... note: In instance 't'
   105 |   constraint c { get_holder().target == frame; }
       |                                      ^~
-%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:122:24: Unsupported: array comparison in constraint against a non-random operand indexed by a random variable
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:122:24: Unsupported: array comparison in constraint against an operand indexed by a random variable, from an array that is non-random or has rand_mode() called on it
                                                            : ... note: In instance 't'
   122 |   constraint c { probe == cube[idx]; }
       |                        ^~
-%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:132:28: Unsupported: array comparison in constraint against a non-random operand indexed by a random variable
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:132:28: Unsupported: array comparison in constraint against an operand indexed by a random variable, from an array that is non-random or has rand_mode() called on it
                                                            : ... note: In instance 't'
   132 |   constraint c { cube[idx] == probe; }
       |                            ^~
-%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:148:24: Unsupported: array comparison in constraint against a non-random operand indexed by a random variable
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:148:24: Unsupported: array comparison in constraint against an operand indexed by a random variable, from an array that is non-random or has rand_mode() called on it
                                                            : ... note: In instance 't'
   148 |   constraint c { probe == h[idx].target; }
       |                        ^~
-%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:164:24: Unsupported: array comparison in constraint against a non-random operand indexed by a random variable
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:164:24: Unsupported: array comparison in constraint against an operand indexed by a random variable, from an array that is non-random or has rand_mode() called on it
                                                            : ... note: In instance 't'
   164 |   constraint c { probe == nra[i][j]; }
       |                        ^~
@@ -63,7 +63,7 @@
                                                            : ... note: In instance 't'
   181 |   constraint c { frame == target[getIdx()]; }
       |                        ^~
-%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:192:24: Unsupported: array comparison in constraint against a non-random operand indexed by a random variable
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:192:24: Unsupported: array comparison in constraint against an operand indexed by a random variable, from an array that is non-random or has rand_mode() called on it
                                                            : ... note: In instance 't'
   192 |   constraint c { probe == cube[idx]; }
       |                        ^~
@@ -71,7 +71,7 @@
                                                            : ... note: In instance 't'
   206 |   constraint c { frame == target[getIdx()]; }
       |                        ^~
-%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:220:24: Unsupported: array comparison in constraint against a non-random operand indexed by a random variable
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:220:24: Unsupported: array comparison in constraint against an operand indexed by a random variable, from an array that is non-random or has rand_mode() called on it
                                                            : ... note: In instance 't'
   220 |   constraint c { probe == cube[i][0]; }
       |                        ^~
@@ -99,4 +99,12 @@
                                                            : ... note: In instance 't'
   279 |   constraint c { frame == target[1:2]; }
       |                        ^~
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:287:34: Unsupported: array comparison in constraint against an operand indexed by a random variable, from an array that is non-random or has rand_mode() called on it
+                                                           : ... note: In instance 't'
+  287 |   constraint c { idx == 1; frame == target[idx]; }
+      |                                  ^~
+%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:295:40: Unsupported: array comparison in constraint against an operand indexed by a random variable, from an array that is non-random or has rand_mode() called on it
+                                                           : ... note: In instance 't'
+  295 |   constraint c { idx == 1; target[idx] == frame; }
+      |                                        ^~
 %Error: Exiting due to

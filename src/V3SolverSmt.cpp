@@ -1908,11 +1908,16 @@ class ConstraintExprVisitor final : public VNVisitor {
                 discardUnsupportedCompare(nodep);
                 return;
             }
-            if ((!lhsIsRand && selChainHasRandIndex(nodep->lhsp()))
-                || (!rhsIsRand && selChainHasRandIndex(nodep->rhsp()))) {
+            const auto modeSelected = [](const AstVar* varp) {
+                return RandomizeMode{.asUQuad = varp->user1()}.usesMode;
+            };
+            if (((!lhsIsRand || modeSelected(lhsRootVarp)) && selChainHasRandIndex(nodep->lhsp()))
+                || ((!rhsIsRand || modeSelected(rhsRootVarp))
+                    && selChainHasRandIndex(nodep->rhsp()))) {
                 nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: array comparison in constraint against a "
-                              "non-random operand indexed by a random variable");
+                              "Unsupported: array comparison in constraint against an operand "
+                              "indexed by a random variable, from an array that is non-random "
+                              "or has rand_mode() called on it");
                 discardUnsupportedCompare(nodep);
                 return;
             }
