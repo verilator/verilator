@@ -475,6 +475,7 @@ class FsmState final {
     // rediscover or serialize the extracted machine.
     std::vector<DetectedFsm> m_fsms;
     std::map<const AstVarScope*, size_t> m_fsmIndex;
+    std::unordered_set<const AstVarScope*> m_timeZeroVscps;  // Written at time 0
 
 public:
     DetectedFsm& fsmFor(AstVarScope* stateVscp) {
@@ -486,6 +487,9 @@ public:
         return m_fsms.back();
     }
     const std::vector<DetectedFsm>& fsms() const { return m_fsms; }
+    // Variables a declaration initializer or initial block writes
+    std::unordered_set<const AstVarScope*>& timeZeroVscps() { return m_timeZeroVscps; }
+    bool isTimeZeroWritten(const AstVarScope* vscp) const { return m_timeZeroVscps.count(vscp); }
 };
 
 // Detection runs while the original clocked/case structure is still intact and
@@ -498,6 +502,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
     // STATE - for current visit position (use VL_RESTORER)
     FsmState& m_state;
     AstScope* m_scopep = nullptr;  // Current scope
+    bool m_inInitial = false;  // Under a declaration initializer or initial block
     // Candidate state registers found so far
     std::vector<FsmRegisterCandidate> m_registerCandidates;
     // Deferring one-block detection avoids making continuous alias support
@@ -2241,6 +2246,19 @@ class FsmDetectVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
     }
 
+    void visit(AstInitial* nodep) override { visitInitial(nodep); }
+    void visit(AstInitialStatic* nodep) override { visitInitial(nodep); }
+    void visitInitial(AstNodeProcedure* nodep) {
+        VL_RESTORER(m_inInitial);
+        m_inInitial = true;
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstVarRef* nodep) override {
+        if (m_inInitial && nodep->access().isWriteOrRW()) {
+            m_state.timeZeroVscps().emplace(nodep->varScopep());
+        }
+    }
+
     // Continue the walk through the rest of the design hierarchy.
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
@@ -2355,19 +2373,6 @@ class FsmCoverIncBuilder final {
         if (!(m_isComplete || undefRolled)) rollUndefs();
     }
 
-    // Whether a declaration initializer or an initial block assigns the variable
-    static bool assignedAtTimeZero(AstScope* scopep, const AstVarScope* vscp) {
-        for (AstNode* const blockp : scopep->blockspList()) {
-            if (!VN_IS(blockp, Initial) && !VN_IS(blockp, InitialStatic)) continue;
-            if (blockp->exists([&](const AstVarRef* refp) {
-                    return refp->access().isWriteOrRW() && refp->varScopep() == vscp;
-                })) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     AstNodeExpr* buildResetCond() const {
         AstNodeExpr* const refp
             = new AstVarRef{m_flp, m_graph.resetCond().varScopep, VAccess::READ};
@@ -2396,12 +2401,10 @@ class FsmCoverIncBuilder final {
                                              * m_defaultVertexp->outEdges().size();
                 }
             }
-            if (m_resetVertexp) {
-                UASSERT_OBJ(m_states.size() >= m_resetVertexp->outEdges().size(),
-                            m_graph.sampleVarScopep(),
-                            "Reset has more out edges than possible states?");
-                arcCountWithExpansion += m_states.size() - m_resetVertexp->outEdges().size();
-            }
+            UASSERT_OBJ(m_states.size() >= m_resetVertexp->outEdges().size(),
+                        m_graph.sampleVarScopep(),
+                        "Reset has more out edges than possible states?");
+            arcCountWithExpansion += m_states.size() - m_resetVertexp->outEdges().size();
             break;
         }
         case VFsmExpandType::AUTO_EXPAND: {
@@ -2530,7 +2533,7 @@ class FsmCoverIncBuilder final {
     }
 
 public:
-    FsmCoverIncBuilder(const FsmGraph& graph, AstVarScope* const prevVscp)
+    FsmCoverIncBuilder(const FsmGraph& graph, AstVarScope* const prevVscp, bool timeZeroWritten)
         : m_graph{graph}
         , m_prevVscp{prevVscp}
         , m_flp{graph.fileline()}
@@ -2579,7 +2582,7 @@ public:
         // A logic register is X until reset, so only a reset target counts as its first state,
         // unless the register is given a value at time 0
         m_waitForReset = !resetTargets.empty() && !sampleVscp->dtypep()->basicp()->isZeroInit()
-                         && !assignedAtTimeZero(graph.scopep(), sampleVscp);
+                         && !timeZeroWritten;
         const bool isFullExpansion = expand == VFsmExpandType::FULL;
         if (isFullExpansion) initUndefinedStates();
         for (const FsmStateVertex* const statep : m_states) {
@@ -2716,7 +2719,8 @@ class FsmLowerVisitor final {
 
         {
             // Create and increment proper AstNodeCoverDecls
-            const FsmCoverIncBuilder coverIncBuilder{graph, prevVscp};
+            const FsmCoverIncBuilder coverIncBuilder{graph, prevVscp,
+                                                     m_state.isTimeZeroWritten(sampleVscp)};
             modp->addStmtsp(coverIncBuilder.getCoverDeclsp());
             AstIf* const changeIfp
                 = new AstIf{flp,
@@ -2735,7 +2739,7 @@ class FsmLowerVisitor final {
                 seenVscp->varp()->setIgnorePostRead();
                 AstCase* const entryCasep = VN_AS(coverIncBuilder.getInitialCoverIncp(), Case);
                 for (AstCaseItem* const itemp : entryCasep->itemspList()) {
-                    if (!itemp->stmtsp()) continue;  // The default
+                    if (itemp->isDefault()) continue;
                     itemp->addStmtsp(new AstAssign{flp,
                                                    new AstVarRef{flp, seenVscp, VAccess::WRITE},
                                                    new AstConst{flp, AstConst::BitTrue{}}});

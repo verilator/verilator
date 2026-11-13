@@ -20,13 +20,6 @@
           logic start;
           integer cyc;
           state_t state  /*verilator fsm_state*/;
-          // Resets to H_RUN and 0 isn't a state, so nothing is entered before the reset
-          typedef enum logic [1:0] {
-            H_RUN = 2'd1,
-            H_DONE = 2'd2,
-            H_IDLE = 2'd3
-          } hi_t;
-          hi_t state_hi  /*verilator fsm_state_full*/;
         
           initial begin
             rst = 1'b1;
@@ -71,6 +64,13 @@
             end
           end
         
+          // Resets to H_RUN and 0 isn't a state, so nothing is entered before the reset
+          typedef enum logic [1:0] {
+            H_RUN = 2'd1,
+            H_DONE = 2'd2,
+            H_IDLE = 2'd3
+          } hi_t;
+          hi_t state_hi  /*verilator fsm_state_full*/;
           always_ff @(posedge clk) begin
             if (rst) begin
               state_hi <= H_RUN;
