@@ -1167,9 +1167,9 @@ The run time model descriptors (RTMD) describe the state of a Verilated
 model as data: its hierarchy, its variables, their types, and where their
 values are in memory. They are created with :vlopt:`--rtmd`, which the
 tracing options imply. Tracing is built entirely on them: the trace runtime
-walks the descriptors to declare the variables, and reads the values through
-them, so no code specific to tracing is generated, other than recording
-activity.
+walks the descriptors to declare the variables, and reads the values
+through them, so no code specific to tracing is generated, other than
+recording activity.
 
 The descriptors are built early from the source hierarchy, are carried
 through the passes as AST nodes, transformed by optimizations if needed and
@@ -1206,10 +1206,9 @@ There are three kinds of descriptors, defined in ``V3AstNodeRtmd.h``:
   as Verilator stores them, so they can be presented accurately. Each
   distinct type has a single descriptor, interned by the ``AstTypeTable``.
 
-- Var types, ``AstRtmdVarType``: a data type, with the kind of
-  declaration (e.g. variable, wire, parameter) and its port direction. Each
-  distinct var type also has a single interned descriptor in the
-  ``AstTypeTable``.
+- Var types, ``AstRtmdVarType``: a data type, with the kind of declaration
+  (e.g. variable, wire, parameter) and its port direction. Each distinct
+  var type also has a single interned descriptor in the ``AstTypeTable``.
 
 - Hierarchy items, ``AstNodeRtmdItem`` and its subclasses. A hierarchy
   level, ``AstRtmdHier``, holds the variables (``AstRtmdVar``), instances
@@ -1308,8 +1307,8 @@ Descriptor Tables
   ``Partition`` row names an instance of a separately Verilated model.
 
 Rows refer to rows of other tables by index. A ``Var`` row refers to its
-var type and its activity set, and holds where its value is: the offset
-of the variable from the symbol table, or the index of its global for a
+var type and its activity set, and holds where its value is: the offset of
+the variable from the symbol table, or the index of its global for a
 constant. A variable without a value has neither. For the example above:
 
 ::
@@ -1407,12 +1406,12 @@ was Verilated with that affect how it is presented, e.g.
                                   m_opt               the options
 
 ``VlRtmdHierListener`` walks the descriptors of all models in a context,
-calling its virtual methods for each hierarchy level, each variable, and the
-components (elements and members) of the variables it walks into. The
+calling its virtual methods for each hierarchy level, each variable, and
+the components (elements and members) of the variables it walks into. The
 ``enter`` methods return whether to walk into a level, so a listener can
-skip what it does not need, and ``onVar`` returns whether to walk into
-the components of an array, struct or union. A component of a packed value
-is reported as a bit offset within the outermost packed value.
+skip what it does not need, and ``onVar`` returns whether to walk into the
+components of an array, struct or union. A component of a packed value is
+reported as a bit offset within the outermost packed value.
 
 For debugging, ``VlRtmd::hierDump`` writes the descriptors of all models in
 a context to a stream, one line per hierarchy level and variable, using
