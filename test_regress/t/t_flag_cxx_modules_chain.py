@@ -9,6 +9,7 @@
 
 import glob
 import os
+import shlex
 import sys
 import vltest_bootstrap
 
@@ -59,7 +60,7 @@ test.run(
         '--backend',
         'clang' if 'clang' in test.cxx_version.lower() else 'gcc',
         '--cxx',
-        os.environ.get('CXX', 'c++'),
+        shlex.quote(os.environ.get('CXX', 'c++')),
         '--cxxflags=-std=c++23',
         '--cppflags=',
         '--opt-fast=-O0',

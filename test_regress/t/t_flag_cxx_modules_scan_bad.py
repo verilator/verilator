@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import os
+import shlex
 import shutil
 import sys
 import vltest_bootstrap
@@ -27,7 +28,7 @@ def run_scan(sources, logfile, extra=(), fails=True):
         '--backend',
         'gcc',
         '--cxx',
-        os.environ.get('CXX', 'c++'),
+        shlex.quote(os.environ.get('CXX', 'c++')),
         '--cxxflags=-std=c++23',
         '--cppflags=',
         '--opt-fast=-O0',
@@ -75,7 +76,7 @@ if clang is not None and shutil.which('clang-scan-deps') is not None:
                 '--backend',
                 'clang',
                 '--cxx',
-                clang,
+                shlex.quote(clang),
                 '--cxxflags=' + cxxflags,
                 '--cppflags=',
                 '--opt-fast=-O0',
@@ -96,7 +97,7 @@ if clang is not None and shutil.which('clang-scan-deps') is not None:
 
 test.run(logfile=test.obj_dir + '/no_action.log',
          cmd=[sys.executable, test.root + '/bin/verilator_module_deps', '--backend', 'gcc', '--cxx',
-              os.environ.get('CXX', 'c++')],
+              shlex.quote(os.environ.get('CXX', 'c++'))],
          fails=True)
 test.file_grep(test.obj_dir + '/no_action.log', r'required: --output')
 
