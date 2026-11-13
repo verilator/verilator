@@ -79,6 +79,35 @@ interface bind_target_if (
 );
 endinterface
 
+// Scenario: bind into a recursive module, reaching every recursion level
+interface rec_drv_if (
+    input wire [6:0] cnt,
+    output logic [6:0] o
+);
+  assign o = cnt * 7'd11;
+endinterface
+
+module bind_rec #(
+    parameter int N = 1
+) (
+    input logic [6:0] cnt_i,
+    input logic [6:0] data_i
+);
+  if (N > 0) begin : g
+    bind_rec #(
+        .N(N - 1)
+    ) sub (
+        .cnt_i(cnt_i),
+        .data_i()
+    );
+  end
+endmodule
+
+bind bind_rec rec_drv_if u_drv (
+    .cnt(cnt_i),
+    .o(data_i)
+);
+
 module t;
   logic clk = 0;
   always #5 clk = ~clk;
@@ -103,7 +132,7 @@ module t;
   ifc_status sif (.busy());
   dut_wrap u_wrap (.sif(sif));
 
-  // Bind scenarios, into a module and into an interface
+  // Bind scenarios, into a module, an interface and a recursive module
   bind_target u_target (
       .data_i(),
       .elems_i()
@@ -120,10 +149,16 @@ module t;
       .elem()
   );
   assign u_target_if.u_bound.data = 7'(cyc * 7);
+  bind_rec u_rec (
+      .cnt_i(7'(cyc)),
+      .data_i()
+  );
   always @(posedge clk) begin
     `checkh(u_target.data_i, 7'(cyc * 3));
     `checkh(u_target.elems_i[2], 7'(cyc * 5));
     `checkh(u_target_if.data_i, 7'(cyc * 7));
+    `checkh(u_rec.data_i, 7'(cyc * 11));
+    `checkh(u_rec.g.sub.data_i, 7'(cyc * 11));
   end
 
   always @(posedge clk) begin

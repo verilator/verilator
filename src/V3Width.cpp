@@ -391,7 +391,7 @@ class WidthVisitor final : public VNVisitor {
     AstNodeModule* m_modep = nullptr;  // Current module
     const AstConstraint* m_constraintp = nullptr;  // Current constraint
     AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
-    const AstNode* m_writerp = nullptr;  // Assignment, release or pin whose lvalue is iterated
+    const AstNode* m_writerp = nullptr;  // Assign, release or driving pin whose lvalue is iterated
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
@@ -8337,9 +8337,13 @@ class WidthVisitor final : public VNVisitor {
             m_inParamOverride = isOverridePattern(nodep->exprp());
             userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         } else if (!m_paramsOnly) {
-            // Unlike a parameter value, a port connection may be written
+            // Very much like like an assignment, but which side is LH/RHS
+            // depends on pin being a in/output/inout.
+            const VDirection pinDirection = nodep->modVarp()->direction();
+            // Only output and inout connections drive the connected expression,
+            // a ref connection or a parameter value does not
             VL_RESTORER(m_writerp);
-            m_writerp = nodep;
+            if (pinDirection.isOutput() || pinDirection.isInout()) m_writerp = nodep;
             if (!nodep->modVarp()->didWidth()) {
                 // Var hasn't been widthed, so make it so.
                 userIterate(nodep->modVarp(), nullptr);
@@ -8348,9 +8352,6 @@ class WidthVisitor final : public VNVisitor {
                 if (nodep->modVarp()->isIfaceArraySplit()) expandIfaceArrayPin(nodep);
                 return;
             }
-            // Very much like like an assignment, but which side is LH/RHS
-            // depends on pin being a in/output/inout.
-            const VDirection pinDirection = nodep->modVarp()->direction();
             if (VN_IS(nodep->exprp(), NodeStream) && pinDirection.isInoutOrRef()) {
                 nodep->exprp()->v3error("Streaming concatenation cannot be connected to '"
                                         << pinDirection.prettyName()

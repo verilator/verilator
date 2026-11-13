@@ -41,6 +41,20 @@ endmodule
 
 bind var_target out_if oif (.o(i));  // ASSIGNIN: bind instance drives var input
 
+// Case: Connecting a bind instance ref port to a net-type input port (illegal).
+// A ref port does not drive, and requires a variable (IEEE 1800-2023 23.3.3.2).
+module ref_port (
+    ref logic r
+);
+endmodule
+
+module ref_target (
+    input wire i
+);
+endmodule
+
+bind ref_target ref_port rp (.r(i));  // ASSIGNIN: bind instance ref port on net input
+
 module t;
   logic sig;
   internal_if iif (.clk(sig));
@@ -48,6 +62,7 @@ module t;
   assign vif.clk = sig;  // ASSIGNIN: external assign to var input
   own_inst u_own (.i(sig));
   var_target u_var (.i());
+  ref_target u_ref (.i());
   initial begin
     $write("*-* All Finished *-*\n");
     $finish;

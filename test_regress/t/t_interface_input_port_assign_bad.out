@@ -1,8 +1,12 @@
+%Error-ASSIGNIN: t/t_interface_input_port_assign_bad.v:56:33: Assigning to input/const variable: 'i'
+                                                            : ... note: In instance 't.u_ref'
+   56 | bind ref_target ref_port rp (.r(i));   
+      |                                 ^
+                 ... For error description see https://verilator.org/warn/ASSIGNIN?v=latest
 %Error-ASSIGNIN: t/t_interface_input_port_assign_bad.v:42:32: Assigning to input/const variable: 'i'
                                                             : ... note: In instance 't.u_var'
    42 | bind var_target out_if oif (.o(i));   
       |                                ^
-                 ... For error description see https://verilator.org/warn/ASSIGNIN?v=latest
 %Error-ASSIGNIN: t/t_interface_input_port_assign_bad.v:33:18: Assigning to input/const variable: 'i'
                                                             : ... note: In instance 't.u_own'
    33 |   out_if oif (.o(i));   
@@ -11,8 +15,8 @@
                                                             : ... note: In instance 't'
    20 |   assign clk = 1'b0;   
       |          ^~~
-%Error-ASSIGNIN: t/t_interface_input_port_assign_bad.v:48:14: Assigning to input/const variable: 'clk'
+%Error-ASSIGNIN: t/t_interface_input_port_assign_bad.v:62:14: Assigning to input/const variable: 'clk'
                                                             : ... note: In instance 't'
-   48 |   assign vif.clk = sig;   
+   62 |   assign vif.clk = sig;   
       |              ^~~
 %Error: Exiting due to
