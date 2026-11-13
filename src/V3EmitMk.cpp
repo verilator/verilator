@@ -764,19 +764,25 @@ public:
 
         if (v3Global.opt.cxxModules()) {
             of.puts("# User C++ module sources\n");
-            of.puts("$(VM_PREFIX)__modules.mk:");
+            of.puts("VM_MODULE_DEPS_ARGS = --backend $(VK_MODULE_BACKEND) --cxx \"$(CXX)\" \\\n");
+            of.puts("\t    --cxxflags='$(subst ','\\'',$(CXXFLAGS))' \\\n");
+            of.puts("\t    --cppflags='$(subst ','\\'',$(CPPFLAGS))' \\\n");
+            of.puts("\t    --opt-fast='$(subst ','\\'',$(OPT_FAST))' \\\n");
+            of.puts("\t    --objdir .\n");
+            of.puts("$(VM_PREFIX)__modules.stamp: $(VM_PREFIX)__modules.stamp.force\n");
+            of.puts("\t$(VERILATOR_MODULE_DEPS) $(VM_MODULE_DEPS_ARGS) --stamp $@\n");
+            of.puts(".PHONY: $(VM_PREFIX)__modules.stamp.force\n");
+            of.puts("$(VM_PREFIX)__modules.mk: $(VM_PREFIX)__modules.stamp");
             for (const auto& cppfile : cppFiles) {
                 of.puts(" "
                         + VString::escapeForMake(
                             V3Os::filenameRelativePath(cppfile, v3Global.opt.makeDir())));
             }
             of.puts(" $(VM_PREFIX).mk\n");
-            of.puts(
-                "\t$(VERILATOR_MODULE_DEPS) --backend $(VK_MODULE_BACKEND) --cxx \"$(CXX)\" \\\n");
-            of.puts("\t    --cxxflags='$(subst ','\\'',$(CXXFLAGS))' \\\n");
-            of.puts("\t    --cppflags='$(subst ','\\'',$(CPPFLAGS))' \\\n");
-            of.puts("\t    --opt-fast='$(subst ','\\'',$(OPT_FAST))' \\\n");
-            of.puts("\t    --objdir . --output $@");
+            of.puts("\t$(VERILATOR_MODULE_DEPS) $(VM_MODULE_DEPS_ARGS) \\\n");
+            of.puts("\t    --json $(VM_PREFIX)__modules.json \\\n");
+            of.puts("\t    --dot $(VM_PREFIX)__modules.dot \\\n");
+            of.puts("\t    --output $@");
             for (const auto& cppfile : cppFiles) {
                 of.puts(" --source "
                         + VString::quoteForMakeShell(

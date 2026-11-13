@@ -14,6 +14,9 @@ When C++ modules are built, the generated makefile for a model calls this
 program to write a make fragment (``<prefix>__modules.mk``). The fragment
 builds the module interface units, their CMIs, and any GCC header units
 imported by user sources, and orders the remaining compilation after them.
+After each scan it also writes ``<prefix>__modules.json`` and
+``<prefix>__modules.dot``, which describe the module and header unit
+dependency graph.
 
 The helper scans user sources with the dependency format of the selected
 backend. The ``gcc`` backend uses GCC's P1689 output, and the ``clang``
@@ -21,6 +24,14 @@ backend uses :command:`clang-scan-deps`. GCC refuses to scan a source that
 imports a header unit (``import "header.h";``) until the header unit's CMI
 exists, so the helper builds any missing header unit CMIs before scanning.
 The generated make rules still rebuild those CMIs when the header changes.
+
+The helper also writes ``<prefix>__modules.stamp``, which records the backend,
+the compiler and its version, ``CXXFLAGS``, ``CPPFLAGS``, ``OPT_FAST``, the
+include search paths, and the path and modification time of the ``std``
+module when it exists.  The stamp is only rewritten when its contents change,
+and the generated module objects and CMIs depend on it.  Changing any recorded
+build input therefore rebuilds the module CMIs, PCMs, header unit CMIs, and
+module objects without rebuilding them on an unchanged build.
 
 verilator_module_deps Arguments
 -------------------------------
@@ -49,6 +60,17 @@ verilator_module_deps Arguments
    C++ compiler flags to pass when scanning and building module interfaces.
    The generated makefile passes ``$(CXXFLAGS)``.
 
+.. option:: --dot <filename>
+
+   DOT dependency graph to write.  Each module import edge has the label
+   ``module``, and each header unit edge has the label ``header``.
+
+.. option:: --json <filename>
+
+   JSON dependency graph to write.  The top-level keys are ``backend``,
+   ``modules``, and ``edges``.  Each module entry has ``name``, ``source``,
+   ``object``, ``cmi``, ``pcm``, ``provides``, and ``requires``.
+
 .. option:: --objdir <directory>
 
    Directory for generated dependency files and CMIs.  Defaults to the
@@ -66,3 +88,8 @@ verilator_module_deps Arguments
 .. option:: --source <filename>
 
    C++ source file to scan.  May be repeated.
+
+.. option:: --stamp <filename>
+
+   Build input stamp to write.  The file is only rewritten when its
+   contents change.

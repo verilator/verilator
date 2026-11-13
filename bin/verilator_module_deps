@@ -51,6 +51,22 @@ def safe_stem(stem: str, abs_source: str) -> str:
     return safe
 
 
+def write_if_changed(path: str, content: str) -> None:
+    old_content = None
+    try:
+        with open(path, 'r', encoding='utf8') as fh:
+            old_content = fh.read()
+    except OSError:
+        pass
+    if content == old_content:
+        return
+    directory = os.path.dirname(path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+    with open(path, 'w', encoding='utf8') as fh:
+        fh.write(content)
+
+
 def parse_flags(flags: str) -> list[str]:
     return [flag for flag in shlex.split(flags) if flag not in ('-MMD', '-MP')]
 
@@ -220,6 +236,75 @@ def include_directories(flags: list[str]) -> list[str]:
                     break
         index += 1
     return dirs
+
+
+def compiler_version(cxx: str) -> str:
+    result = subprocess.run(shlex.split(cxx) + ['--version'], capture_output=True, text=True,
+                            check=False)
+    version = result.stdout.strip() or result.stderr.strip()
+    return ' '.join(version.split()) or 'unknown'
+
+
+def std_module_path(args: argparse.Namespace, flags: list[str]) -> str:
+    if args.backend == 'gcc':
+        return os.path.join(args.objdir, 'gcm.cache', 'std.gcm')
+    prefix = '-fmodule-file=std='
+    for flag in flags:
+        if flag.startswith(prefix):
+            return flag[len(prefix):]
+    return ''
+
+
+def stamp_content(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str]) -> str:
+    lines = [
+        'backend ' + args.backend,
+        'cxx ' + args.cxx,
+        'cxx_version ' + compiler_version(args.cxx),
+        'cxxflags ' + args.cxxflags,
+        'cppflags ' + args.cppflags,
+        'opt_fast ' + args.opt_fast,
+    ]
+    for directory in include_directories(cppflags + cxxflags):
+        lines.append('include ' + os.path.abspath(directory))
+    std_path = std_module_path(args, cppflags + cxxflags)
+    if std_path:
+        try:
+            std_stat = os.stat(std_path)
+            lines.append('std ' + os.path.abspath(std_path) + ' ' +
+                         str(std_stat.st_mtime_ns) + ' ' + str(std_stat.st_size))
+        except OSError:
+            lines.append('std ' + os.path.abspath(std_path) + ' missing')
+    else:
+        lines.append('std - missing')
+    return '\n'.join(lines) + '\n'
+
+
+def write_stamp(args: argparse.Namespace) -> None:
+    cppflags = parse_flags(args.cppflags)
+    cxxflags = parse_flags(args.cxxflags)
+    write_if_changed(args.stamp, stamp_content(args, cppflags, cxxflags))
+
+
+def check_std_module(args: argparse.Namespace, external: dict[str, str], flags: list[str]) -> None:
+    if args.backend == 'gcc':
+        path = std_module_path(args, flags)
+        if os.path.exists(path):
+            return
+        fatal("C++ module 'std' is required, but the gcc backend cannot find '" + path + "'.\n"
+              "Precompile the GCC std module in the object directory, for example:\n"
+              "  cd " + args.objdir + " && g++ -std=c++23 -fmodules --compile-std-module"
+              " -c -x c++ /dev/null -o /dev/null")
+    path = external.get('std', '')
+    if not path:
+        fatal("C++ module 'std' is required, but the clang backend has no std PCM.\n"
+              "Precompile libc++ std.cppm and pass -CFLAGS -fmodule-file=std=<path>, for example:\n"
+              "  clang++ -std=c++23 -stdlib=libc++ --precompile -x c++-module std.cppm"
+              " -o std.pcm")
+    if not os.path.exists(path):
+        fatal("C++ module 'std' is required, but the clang std PCM '" + path + "' does not exist.\n"
+              "Recompile libc++ std.cppm and pass -CFLAGS -fmodule-file=std=<path>, for example:\n"
+              "  clang++ -std=c++23 -stdlib=libc++ --precompile -x c++-module std.cppm"
+              " -o std.pcm")
 
 
 def resolve_header(name: str, importer: str,
@@ -430,6 +515,7 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
     lines.append('')
     lines.append('.PHONY: modules')
     lines.append('modules: $(VK_MODULE_OBJS) $(VK_MODULE_CMIS)')
+    lines.append('$(VK_MODULE_OBJS) $(VK_MODULE_CMIS): $(VM_PREFIX)__modules.stamp')
     lines.append('')
     for header in sorted(headers.values(), key=lambda entry: entry['cmi']):
         prereqs = [make_escape(header['path']), '$(VM_PREFIX).mk']
@@ -476,6 +562,7 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
     lines.append('')
     lines.append('.PHONY: modules')
     lines.append('modules: $(VK_MODULE_OBJS) $(VK_MODULE_CMIS)')
+    lines.append('$(VK_MODULE_OBJS) $(VK_MODULE_CMIS): $(VM_PREFIX)__modules.stamp')
     lines.append('')
     for module in sorted(modules, key=lambda entry: entry['obj']):
         prereqs = [make_escape(module['source']), '$(VM_PREFIX).mk']
@@ -586,12 +673,20 @@ def main() -> None:
     parser.add_argument('--cxx', required=True, help='C++ compiler')
     parser.add_argument('--cxxflags', default='', help='C++ compiler flags')
     parser.add_argument('--cppflags', default='', help='C preprocessor flags')
+    parser.add_argument('--dot', default='', help='DOT dependency graph file')
+    parser.add_argument('--json', default='', help='JSON dependency graph file')
     parser.add_argument('--objdir', default='.', help='object directory')
     parser.add_argument('--opt-fast', default='', help='fast optimization flags')
-    parser.add_argument('--output', required=True, help='output make fragment')
     parser.add_argument('--source', action='append', default=[], help='C++ source file')
+    parser.add_argument('--output', default='', help='output make fragment')
+    parser.add_argument('--stamp', default='', help='build input stamp file')
     args = parser.parse_args()
-    scan(args)
+    if not args.output and not args.stamp:
+        parser.error("one of --output or --stamp is required")
+    if args.stamp:
+        write_stamp(args)
+    if args.output:
+        scan(args)
 
 
 if __name__ == '__main__':
