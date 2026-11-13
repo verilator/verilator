@@ -501,11 +501,11 @@ Summary:
    module interface files need C++20 or newer; ``verilate()`` sets that as a
    lower bound automatically.  GNU make with MSVC is not supported.
 
-   Changing the C++ compiler, compiler flags, optimization flags, include
-   search paths, or the precompiled ``std`` module automatically rebuilds the
-   user module CMIs, PCMs, header unit CMIs, and module objects.  The build
-   also writes ``<prefix>__modules.stamp``, ``<prefix>__modules.json``, and
-   ``<prefix>__modules.dot`` in the model object directory.
+   Changing compiler flags or the C++ compiler does not automatically
+   invalidate existing CMIs.  Remove the model object directory before
+   rebuilding after such changes.  The build writes
+   ``<prefix>__modules.json`` and ``<prefix>__modules.dot`` in the model
+   object directory.
 
    Existing :command:`-CFLAGS -fmodules` style flags remain supported,
    including :command:`-fmodule-header` and

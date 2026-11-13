@@ -34,12 +34,10 @@ flags = [
 test.compile(make_main=False, verilator_flags2=flags, make_flags=['VM_PARALLEL_BUILDS=1'])
 
 
-def run_make(extra=''):
+def run_make():
     return test.run_capture('cd ' + test.obj_dir + ' && ' + os.environ['MAKE'] + ' -f ' +
-                            test.vm_prefix + '.mk VM_PARALLEL_BUILDS=1' + extra + ' 2>&1')
+                            test.vm_prefix + '.mk VM_PARALLEL_BUILDS=1 2>&1')
 
-
-stamp = test.obj_dir + '/' + test.vm_prefix + '__modules.stamp'
 modules_json = test.obj_dir + '/' + test.vm_prefix + '__modules.json'
 modules_dot = test.obj_dir + '/' + test.vm_prefix + '__modules.dot'
 module_obj = test.obj_dir + '/t_flag_cxx_modules_chain_m1.o'
@@ -71,8 +69,6 @@ test.run(
         direct_dir + '/graph.json',
         '--dot',
         direct_dir + '/graph.dot',
-        '--stamp',
-        direct_dir + '/graph.stamp',
         '--output',
         direct_dir + '/graph.mk',
         '--source',
@@ -80,67 +76,12 @@ test.run(
     ])
 test.file_grep(direct_dir + '/graph.json', r'"m1"')
 test.file_grep(direct_dir + '/graph.dot', r'digraph modules')
-if not os.path.exists(direct_dir + '/graph.stamp'):
-    test.error('Missing C++ module graph stamp')
 
 run_make()
-if not os.path.exists(stamp):
-    test.error('Missing C++ module build stamp: ' + stamp)
 if not os.path.exists(artifact):
     test.error('Missing C++ module artifact: ' + artifact)
 if not os.path.exists(module_obj):
     test.error('Missing C++ module object: ' + module_obj)
-stamp_time = os.stat(stamp).st_mtime_ns
-obj_time = os.stat(module_obj).st_mtime_ns
-artifact_time = os.stat(artifact).st_mtime_ns
-
-run_make()
-if os.stat(stamp).st_mtime_ns != stamp_time:
-    test.error('C++ module build stamp changed without input changes')
-if os.stat(module_obj).st_mtime_ns != obj_time or os.stat(artifact).st_mtime_ns != artifact_time:
-    test.error('C++ module outputs were rebuilt without input changes')
-
-extra = ' OPT_FAST=-O1'
-run_make(extra)
-if os.stat(stamp).st_mtime_ns == stamp_time:
-    test.error('C++ module build stamp did not change after OPT_FAST changed')
-if os.stat(module_obj).st_mtime_ns == obj_time or os.stat(artifact).st_mtime_ns == artifact_time:
-    test.error('C++ module outputs were not rebuilt after OPT_FAST changed')
-stamp_time = os.stat(stamp).st_mtime_ns
-obj_time = os.stat(module_obj).st_mtime_ns
-artifact_time = os.stat(artifact).st_mtime_ns
-
-run_make(extra)
-if os.stat(stamp).st_mtime_ns != stamp_time:
-    test.error('C++ module build stamp changed without input changes')
-if os.stat(module_obj).st_mtime_ns != obj_time or os.stat(artifact).st_mtime_ns != artifact_time:
-    test.error('C++ module outputs were rebuilt without input changes')
-
-extra += ' CXXFLAGS=-DTEST_STAMP=1'
-run_make(extra)
-if os.stat(stamp).st_mtime_ns == stamp_time:
-    test.error('C++ module build stamp did not change after CXXFLAGS changed')
-if os.stat(module_obj).st_mtime_ns == obj_time or os.stat(artifact).st_mtime_ns == artifact_time:
-    test.error('C++ module outputs were not rebuilt after CXXFLAGS changed')
-stamp_time = os.stat(stamp).st_mtime_ns
-
-std_gcm = test.obj_dir + '/gcm.cache/std.gcm'
-test.write_wholefile(std_gcm, 'std\n')
-run_make(extra)
-if os.stat(stamp).st_mtime_ns == stamp_time:
-    test.error('C++ module build stamp did not change after the std module appeared')
-stamp_time = os.stat(stamp).st_mtime_ns
-std_stat = os.stat(std_gcm)
-os.utime(std_gcm, ns=(std_stat.st_atime_ns, std_stat.st_mtime_ns + 1000000000))
-run_make(extra)
-if os.stat(stamp).st_mtime_ns == stamp_time:
-    test.error('C++ module build stamp did not change after the std module changed')
-stamp_time = os.stat(stamp).st_mtime_ns
-
-os.remove(stamp)
-run_make(extra)
-if not os.path.exists(stamp) or os.stat(stamp).st_mtime_ns == stamp_time:
-    test.error('C++ module build stamp was not rebuilt after deletion')
 test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--backend')
 test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--cxx ')
 test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--cxxflags')
@@ -151,7 +92,7 @@ artifacts = (glob.glob(test.obj_dir + '/gcm.cache/*.gcm') + glob.glob(test.obj_d
 if not artifacts:
     test.error('No C++ module artifacts were generated')
 os.remove(artifact)
-make_out = run_make(extra)
+make_out = run_make()
 if 'Circular' in make_out:
     test.error('Circular dependency in C++ module make rules')
 if not os.path.exists(artifact):
@@ -166,12 +107,12 @@ for path in (deps_1, deps_2, scan_cache):
 deps_1_time = os.stat(deps_1).st_mtime_ns
 deps_2_time = os.stat(deps_2).st_mtime_ns
 os.remove(test.obj_dir + '/' + test.vm_prefix + '__modules.mk')
-run_make(extra)
+run_make()
 if os.stat(deps_1).st_mtime_ns != deps_1_time or os.stat(deps_2).st_mtime_ns != deps_2_time:
     test.error('C++ module scan was not reused from cache')
 
 os.utime(test.t_dir + '/t_flag_cxx_modules_chain_m2.cppm', None)
-run_make(extra)
+run_make()
 if os.stat(deps_2).st_mtime_ns == deps_2_time:
     test.error('C++ module scan cache was not invalidated by a source change')
 if os.stat(deps_1).st_mtime_ns != deps_1_time:

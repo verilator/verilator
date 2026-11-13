@@ -25,14 +25,6 @@ imports a header unit (``import "header.h";``) until the header unit's CMI
 exists, so the helper builds any missing header unit CMIs before scanning.
 The generated make rules still rebuild those CMIs when the header changes.
 
-The helper also writes ``<prefix>__modules.stamp``, which records the backend,
-the compiler and its version, ``CXXFLAGS``, ``CPPFLAGS``, ``OPT_FAST``, the
-include search paths, and the path and modification time of the ``std``
-module when it exists.  The stamp is only rewritten when its contents change,
-and the generated module objects and CMIs depend on it.  Changing any recorded
-build input therefore rebuilds the module CMIs, PCMs, header unit CMIs, and
-module objects without rebuilding them on an unchanged build.
-
 verilator_module_deps Arguments
 -------------------------------
 
@@ -90,8 +82,3 @@ verilator_module_deps Arguments
 .. option:: --source <filename>
 
    C++ source file to scan.  May be repeated.
-
-.. option:: --stamp <filename>
-
-   Build input stamp to write.  The file is only rewritten when its
-   contents change.

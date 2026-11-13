@@ -769,10 +769,7 @@ public:
             of.puts("\t    --cppflags='$(subst ','\\'',$(CPPFLAGS))' \\\n");
             of.puts("\t    --opt-fast='$(subst ','\\'',$(OPT_FAST))' \\\n");
             of.puts("\t    --objdir .\n");
-            of.puts("$(VM_PREFIX)__modules.stamp: $(VM_PREFIX)__modules.stamp.force\n");
-            of.puts("\t$(VERILATOR_MODULE_DEPS) $(VM_MODULE_DEPS_ARGS) --stamp $@\n");
-            of.puts(".PHONY: $(VM_PREFIX)__modules.stamp.force\n");
-            of.puts("$(VM_PREFIX)__modules.mk: $(VM_PREFIX)__modules.stamp");
+            of.puts("$(VM_PREFIX)__modules.mk:");
             for (const auto& cppfile : cppFiles) {
                 of.puts(" "
                         + VString::escapeForMake(

@@ -98,6 +98,6 @@ test.run(logfile=test.obj_dir + '/no_action.log',
          cmd=[sys.executable, test.root + '/bin/verilator_module_deps', '--backend', 'gcc', '--cxx',
               os.environ.get('CXX', 'c++')],
          fails=True)
-test.file_grep(test.obj_dir + '/no_action.log', r'one of --output or --stamp is required')
+test.file_grep(test.obj_dir + '/no_action.log', r'required: --output')
 
 test.passes()

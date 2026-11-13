@@ -240,13 +240,6 @@ def include_directories(flags: list[str]) -> list[str]:
     return dirs
 
 
-def compiler_version(cxx: str) -> str:
-    result = subprocess.run(shlex.split(cxx) + ['--version'], capture_output=True, text=True,
-                            check=False)
-    version = result.stdout.strip() or result.stderr.strip()
-    return ' '.join(version.split()) or 'unknown'
-
-
 def std_module_path(args: argparse.Namespace, flags: list[str]) -> str:
     if args.backend == 'gcc':
         return os.path.join(args.objdir, 'gcm.cache', 'std.gcm')
@@ -255,36 +248,6 @@ def std_module_path(args: argparse.Namespace, flags: list[str]) -> str:
         if flag.startswith(prefix):
             return flag[len(prefix):]
     return ''
-
-
-def stamp_content(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str]) -> str:
-    lines = [
-        'backend ' + args.backend,
-        'cxx ' + args.cxx,
-        'cxx_version ' + compiler_version(args.cxx),
-        'cxxflags ' + args.cxxflags,
-        'cppflags ' + args.cppflags,
-        'opt_fast ' + args.opt_fast,
-    ]
-    for directory in include_directories(cppflags + cxxflags):
-        lines.append('include ' + os.path.abspath(directory))
-    std_path = std_module_path(args, cppflags + cxxflags)
-    if std_path:
-        try:
-            std_stat = os.stat(std_path)
-            lines.append('std ' + os.path.abspath(std_path) + ' ' +
-                         str(std_stat.st_mtime_ns) + ' ' + str(std_stat.st_size))
-        except OSError:
-            lines.append('std ' + os.path.abspath(std_path) + ' missing')
-    else:
-        lines.append('std - missing')
-    return '\n'.join(lines) + '\n'
-
-
-def write_stamp(args: argparse.Namespace) -> None:
-    cppflags = parse_flags(args.cppflags)
-    cxxflags = parse_flags(args.cxxflags)
-    write_if_changed(args.stamp, stamp_content(args, cppflags, cxxflags))
 
 
 def check_std_module(args: argparse.Namespace, external: dict[str, str], flags: list[str]) -> None:
@@ -515,7 +478,6 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
     lines.append('')
     lines.append('.PHONY: modules')
     lines.append('modules: $(VK_MODULE_OBJS) $(VK_MODULE_CMIS)')
-    lines.append('$(VK_MODULE_OBJS) $(VK_MODULE_CMIS): $(VM_PREFIX)__modules.stamp')
     lines.append('')
     for header in sorted(headers.values(), key=lambda entry: entry['cmi']):
         prereqs = [make_escape(header['path']), '$(VM_PREFIX).mk']
@@ -562,7 +524,6 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
     lines.append('')
     lines.append('.PHONY: modules')
     lines.append('modules: $(VK_MODULE_OBJS) $(VK_MODULE_CMIS)')
-    lines.append('$(VK_MODULE_OBJS) $(VK_MODULE_CMIS): $(VM_PREFIX)__modules.stamp')
     lines.append('')
     for module in sorted(modules, key=lambda entry: entry['obj']):
         prereqs = [make_escape(module['source']), '$(VM_PREFIX).mk']
@@ -747,16 +708,10 @@ def main() -> None:
     parser.add_argument('--json', default='', help='JSON dependency graph file')
     parser.add_argument('--objdir', default='.', help='object directory')
     parser.add_argument('--opt-fast', default='', help='fast optimization flags')
-    parser.add_argument('--output', default='', help='output make fragment')
+    parser.add_argument('--output', required=True, help='output make fragment')
     parser.add_argument('--source', action='append', default=[], help='C++ source file')
-    parser.add_argument('--stamp', default='', help='build input stamp file')
     args = parser.parse_args()
-    if not args.output and not args.stamp:
-        parser.error("one of --output or --stamp is required")
-    if args.stamp:
-        write_stamp(args)
-    if args.output:
-        scan(args)
+    scan(args)
 
 
 if __name__ == '__main__':
