@@ -28,9 +28,6 @@ $timescale 1ps $end
     $var wire 8 2 in [7:0] $end
     $var wire 8 3 out [7:0] $end
     $var wire 8 4 tmp [7:0] $end
-    $scope module $libroot $end
-     $var wire 1 7 global_flag $end
-    $upscope $end
     $scope module genblk1 $end
      $scope module i_delay $end
       $var wire 32 ; N [31:0] $end
@@ -39,9 +36,6 @@ $timescale 1ps $end
       $var wire 8 9 in [7:0] $end
       $var wire 8 : out [7:0] $end
       $var wire 8 : tmp [7:0] $end
-      $scope module $libroot $end
-       $var wire 1 = global_flag $end
-      $upscope $end
      $upscope $end
     $upscope $end
    $upscope $end
@@ -52,9 +46,6 @@ $timescale 1ps $end
     $var wire 8 ? in [7:0] $end
     $var wire 8 @ out [7:0] $end
     $var wire 8 A tmp [7:0] $end
-    $scope module $libroot $end
-     $var wire 1 D global_flag $end
-    $upscope $end
     $scope module genblk1 $end
      $scope module i_delay $end
       $var wire 32 I N [31:0] $end
@@ -63,9 +54,6 @@ $timescale 1ps $end
       $var wire 8 F in [7:0] $end
       $var wire 8 G out [7:0] $end
       $var wire 8 H tmp [7:0] $end
-      $scope module $libroot $end
-       $var wire 1 K global_flag $end
-      $upscope $end
       $scope module genblk1 $end
        $scope module i_delay $end
         $var wire 32 O N [31:0] $end
@@ -74,9 +62,6 @@ $timescale 1ps $end
         $var wire 8 M in [7:0] $end
         $var wire 8 N out [7:0] $end
         $var wire 8 N tmp [7:0] $end
-        $scope module $libroot $end
-         $var wire 1 Q global_flag $end
-        $upscope $end
        $upscope $end
       $upscope $end
      $upscope $end
@@ -91,9 +76,6 @@ $timescale 1ps $end
      $var wire 8 S in [7:0] $end
      $var wire 8 T out [7:0] $end
      $var wire 8 T ff [7:0] $end
-     $scope module $libroot $end
-      $var wire 1 U global_flag $end
-     $upscope $end
     $upscope $end
    $upscope $end
    $scope module i_sub1 $end
@@ -102,9 +84,6 @@ $timescale 1ps $end
     $var wire 8 X out [7:0] $end
     $var wire 8 X ff [7:0] $end
     $var wire 2 Y enum_v [1:0] $end
-    $scope module $libroot $end
-     $var wire 1 Z global_flag $end
-    $upscope $end
    $upscope $end
    $scope module i_sub2 $end
     $var wire 1 [ clk $end
@@ -112,9 +91,6 @@ $timescale 1ps $end
     $var wire 8 ] out [7:0] $end
     $var wire 8 ^ ff [7:0] $end
     $var wire 2 _ alt_enum_v [1:0] $end
-    $scope module $libroot $end
-     $var wire 1 a global_flag $end
-    $upscope $end
     $scope module i_sub3 $end
      $var wire 8 ^ in_wire [7:0] $end
      $var wire 8 ] out_1 [7:0] $end
@@ -131,9 +107,6 @@ $timescale 1ps $end
       $var wire 8 e ff [7:0] $end
       $var wire 8 d out4 [7:0] $end
       $var wire 8 f out4_2 [7:0] $end
-      $scope module $libroot $end
-       $var wire 1 l global_flag $end
-      $upscope $end
       $scope module i_sub4_0 $end
        $var wire 32 1! P0 [31:0] $end
        $var real 64 2! P1 $end
@@ -156,9 +129,6 @@ $timescale 1ps $end
        $var wire 8 .! sub5_out[1][2] [7:0] $end
        $var wire 32 (! count [31:0] $end
        $var wire 32 6! driven_from_bind [31:0] $end
-       $scope module $libroot $end
-        $var wire 1 8! global_flag $end
-       $upscope $end
        $scope module i_sub4_bound $end
         $var real 64 2! P1 $end
         $var wire 32 7! driven_from_bind [31:0] $end
@@ -186,44 +156,29 @@ $timescale 1ps $end
         $var wire 8 >! val2[1] [7:0] $end
         $var wire 8 ?! val3[0] [7:0] $end
         $var wire 8 @! val3[1] [7:0] $end
-        $scope module $libroot $end
-         $var wire 1 a! global_flag $end
-        $upscope $end
         $scope module i_sub0 $end
          $var wire 32 d! P0 [31:0] $end
          $var wire 32 e! P1 [31:0] $end
          $var wire 8 b! out[0] [7:0] $end
          $var wire 8 c! out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 f! global_flag $end
-         $upscope $end
         $upscope $end
         $scope module i_sub1 $end
          $var wire 32 i! P0 [31:0] $end
          $var wire 32 j! P1 [31:0] $end
          $var wire 8 g! out[0] [7:0] $end
          $var wire 8 h! out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 k! global_flag $end
-         $upscope $end
         $upscope $end
         $scope module i_sub2 $end
          $var wire 32 n! P0 [31:0] $end
          $var wire 32 o! P1 [31:0] $end
          $var wire 8 l! out[0] [7:0] $end
          $var wire 8 m! out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 p! global_flag $end
-         $upscope $end
         $upscope $end
         $scope module i_sub3 $end
          $var wire 32 s! P0 [31:0] $end
          $var wire 32 t! P1 [31:0] $end
          $var wire 8 q! out[0] [7:0] $end
          $var wire 8 r! out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 u! global_flag $end
-         $upscope $end
         $upscope $end
        $upscope $end
       $upscope $end
@@ -249,9 +204,6 @@ $timescale 1ps $end
        $var wire 8 7" sub5_out[1][2] [7:0] $end
        $var wire 32 1" count [31:0] $end
        $var wire 32 ?" driven_from_bind [31:0] $end
-       $scope module $libroot $end
-        $var wire 1 A" global_flag $end
-       $upscope $end
        $scope module i_sub4_bound $end
         $var real 64 ;" P1 $end
         $var wire 32 @" driven_from_bind [31:0] $end
@@ -279,44 +231,29 @@ $timescale 1ps $end
         $var wire 8 G" val2[1] [7:0] $end
         $var wire 8 H" val3[0] [7:0] $end
         $var wire 8 I" val3[1] [7:0] $end
-        $scope module $libroot $end
-         $var wire 1 j" global_flag $end
-        $upscope $end
         $scope module i_sub0 $end
          $var wire 32 m" P0 [31:0] $end
          $var wire 32 n" P1 [31:0] $end
          $var wire 8 k" out[0] [7:0] $end
          $var wire 8 l" out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 o" global_flag $end
-         $upscope $end
         $upscope $end
         $scope module i_sub1 $end
          $var wire 32 r" P0 [31:0] $end
          $var wire 32 s" P1 [31:0] $end
          $var wire 8 p" out[0] [7:0] $end
          $var wire 8 q" out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 t" global_flag $end
-         $upscope $end
         $upscope $end
         $scope module i_sub2 $end
          $var wire 32 w" P0 [31:0] $end
          $var wire 32 x" P1 [31:0] $end
          $var wire 8 u" out[0] [7:0] $end
          $var wire 8 v" out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 y" global_flag $end
-         $upscope $end
         $upscope $end
         $scope module i_sub3 $end
          $var wire 32 |" P0 [31:0] $end
          $var wire 32 }" P1 [31:0] $end
          $var wire 8 z" out[0] [7:0] $end
          $var wire 8 {" out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 ~" global_flag $end
-         $upscope $end
         $upscope $end
        $upscope $end
       $upscope $end
@@ -333,9 +270,6 @@ $timescale 1ps $end
       $var wire 8 $# ff [7:0] $end
       $var wire 8 ## out4 [7:0] $end
       $var wire 8 %# out4_2 [7:0] $end
-      $scope module $libroot $end
-       $var wire 1 +# global_flag $end
-      $upscope $end
       $scope module i_sub4_0 $end
        $var wire 32 N# P0 [31:0] $end
        $var real 64 O# P1 $end
@@ -358,9 +292,6 @@ $timescale 1ps $end
        $var wire 8 K# sub5_out[1][2] [7:0] $end
        $var wire 32 E# count [31:0] $end
        $var wire 32 S# driven_from_bind [31:0] $end
-       $scope module $libroot $end
-        $var wire 1 U# global_flag $end
-       $upscope $end
        $scope module i_sub4_bound $end
         $var real 64 O# P1 $end
         $var wire 32 T# driven_from_bind [31:0] $end
@@ -388,44 +319,29 @@ $timescale 1ps $end
         $var wire 8 [# val2[1] [7:0] $end
         $var wire 8 \# val3[0] [7:0] $end
         $var wire 8 ]# val3[1] [7:0] $end
-        $scope module $libroot $end
-         $var wire 1 ~# global_flag $end
-        $upscope $end
         $scope module i_sub0 $end
          $var wire 32 #$ P0 [31:0] $end
          $var wire 32 $$ P1 [31:0] $end
          $var wire 8 !$ out[0] [7:0] $end
          $var wire 8 "$ out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 %$ global_flag $end
-         $upscope $end
         $upscope $end
         $scope module i_sub1 $end
          $var wire 32 ($ P0 [31:0] $end
          $var wire 32 )$ P1 [31:0] $end
          $var wire 8 &$ out[0] [7:0] $end
          $var wire 8 '$ out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 *$ global_flag $end
-         $upscope $end
         $upscope $end
         $scope module i_sub2 $end
          $var wire 32 -$ P0 [31:0] $end
          $var wire 32 .$ P1 [31:0] $end
          $var wire 8 +$ out[0] [7:0] $end
          $var wire 8 ,$ out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 /$ global_flag $end
-         $upscope $end
         $upscope $end
         $scope module i_sub3 $end
          $var wire 32 2$ P0 [31:0] $end
          $var wire 32 3$ P1 [31:0] $end
          $var wire 8 0$ out[0] [7:0] $end
          $var wire 8 1$ out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 4$ global_flag $end
-         $upscope $end
         $upscope $end
        $upscope $end
       $upscope $end
@@ -451,9 +367,6 @@ $timescale 1ps $end
        $var wire 8 T$ sub5_out[1][2] [7:0] $end
        $var wire 32 N$ count [31:0] $end
        $var wire 32 \$ driven_from_bind [31:0] $end
-       $scope module $libroot $end
-        $var wire 1 ^$ global_flag $end
-       $upscope $end
        $scope module i_sub4_bound $end
         $var real 64 X$ P1 $end
         $var wire 32 ]$ driven_from_bind [31:0] $end
@@ -481,44 +394,29 @@ $timescale 1ps $end
         $var wire 8 d$ val2[1] [7:0] $end
         $var wire 8 e$ val3[0] [7:0] $end
         $var wire 8 f$ val3[1] [7:0] $end
-        $scope module $libroot $end
-         $var wire 1 )% global_flag $end
-        $upscope $end
         $scope module i_sub0 $end
          $var wire 32 ,% P0 [31:0] $end
          $var wire 32 -% P1 [31:0] $end
          $var wire 8 *% out[0] [7:0] $end
          $var wire 8 +% out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 .% global_flag $end
-         $upscope $end
         $upscope $end
         $scope module i_sub1 $end
          $var wire 32 1% P0 [31:0] $end
          $var wire 32 2% P1 [31:0] $end
          $var wire 8 /% out[0] [7:0] $end
          $var wire 8 0% out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 3% global_flag $end
-         $upscope $end
         $upscope $end
         $scope module i_sub2 $end
          $var wire 32 6% P0 [31:0] $end
          $var wire 32 7% P1 [31:0] $end
          $var wire 8 4% out[0] [7:0] $end
          $var wire 8 5% out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 8% global_flag $end
-         $upscope $end
         $upscope $end
         $scope module i_sub3 $end
          $var wire 32 ;% P0 [31:0] $end
          $var wire 32 <% P1 [31:0] $end
          $var wire 8 9% out[0] [7:0] $end
          $var wire 8 :% out[1] [7:0] $end
-         $scope module $libroot $end
-          $var wire 1 =% global_flag $end
-         $upscope $end
         $upscope $end
        $upscope $end
       $upscope $end
@@ -553,9 +451,6 @@ $timescale 1ps $end
     $var wire 8 A% ff [7:0] $end
     $var wire 8 @% out4 [7:0] $end
     $var wire 8 B% out4_2 [7:0] $end
-    $scope module $libroot $end
-     $var wire 1 H% global_flag $end
-    $upscope $end
     $scope module i_sub4_0 $end
      $var wire 32 k% P0 [31:0] $end
      $var real 64 l% P1 $end
@@ -578,9 +473,6 @@ $timescale 1ps $end
      $var wire 8 h% sub5_out[1][2] [7:0] $end
      $var wire 32 b% count [31:0] $end
      $var wire 32 p% driven_from_bind [31:0] $end
-     $scope module $libroot $end
-      $var wire 1 r% global_flag $end
-     $upscope $end
      $scope module i_sub4_bound $end
       $var real 64 l% P1 $end
       $var wire 32 q% driven_from_bind [31:0] $end
@@ -608,44 +500,29 @@ $timescale 1ps $end
       $var wire 8 x% val2[1] [7:0] $end
       $var wire 8 y% val3[0] [7:0] $end
       $var wire 8 z% val3[1] [7:0] $end
-      $scope module $libroot $end
-       $var wire 1 =& global_flag $end
-      $upscope $end
       $scope module i_sub0 $end
        $var wire 32 @& P0 [31:0] $end
        $var wire 32 A& P1 [31:0] $end
        $var wire 8 >& out[0] [7:0] $end
        $var wire 8 ?& out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 B& global_flag $end
-       $upscope $end
       $upscope $end
       $scope module i_sub1 $end
        $var wire 32 E& P0 [31:0] $end
        $var wire 32 F& P1 [31:0] $end
        $var wire 8 C& out[0] [7:0] $end
        $var wire 8 D& out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 G& global_flag $end
-       $upscope $end
       $upscope $end
       $scope module i_sub2 $end
        $var wire 32 J& P0 [31:0] $end
        $var wire 32 K& P1 [31:0] $end
        $var wire 8 H& out[0] [7:0] $end
        $var wire 8 I& out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 L& global_flag $end
-       $upscope $end
       $upscope $end
       $scope module i_sub3 $end
        $var wire 32 O& P0 [31:0] $end
        $var wire 32 P& P1 [31:0] $end
        $var wire 8 M& out[0] [7:0] $end
        $var wire 8 N& out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 Q& global_flag $end
-       $upscope $end
       $upscope $end
      $upscope $end
     $upscope $end
@@ -671,9 +548,6 @@ $timescale 1ps $end
      $var wire 8 q& sub5_out[1][2] [7:0] $end
      $var wire 32 k& count [31:0] $end
      $var wire 32 y& driven_from_bind [31:0] $end
-     $scope module $libroot $end
-      $var wire 1 {& global_flag $end
-     $upscope $end
      $scope module i_sub4_bound $end
       $var real 64 u& P1 $end
       $var wire 32 z& driven_from_bind [31:0] $end
@@ -701,44 +575,29 @@ $timescale 1ps $end
       $var wire 8 #' val2[1] [7:0] $end
       $var wire 8 $' val3[0] [7:0] $end
       $var wire 8 %' val3[1] [7:0] $end
-      $scope module $libroot $end
-       $var wire 1 F' global_flag $end
-      $upscope $end
       $scope module i_sub0 $end
        $var wire 32 I' P0 [31:0] $end
        $var wire 32 J' P1 [31:0] $end
        $var wire 8 G' out[0] [7:0] $end
        $var wire 8 H' out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 K' global_flag $end
-       $upscope $end
       $upscope $end
       $scope module i_sub1 $end
        $var wire 32 N' P0 [31:0] $end
        $var wire 32 O' P1 [31:0] $end
        $var wire 8 L' out[0] [7:0] $end
        $var wire 8 M' out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 P' global_flag $end
-       $upscope $end
       $upscope $end
       $scope module i_sub2 $end
        $var wire 32 S' P0 [31:0] $end
        $var wire 32 T' P1 [31:0] $end
        $var wire 8 Q' out[0] [7:0] $end
        $var wire 8 R' out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 U' global_flag $end
-       $upscope $end
       $upscope $end
       $scope module i_sub3 $end
        $var wire 32 X' P0 [31:0] $end
        $var wire 32 Y' P1 [31:0] $end
        $var wire 8 V' out[0] [7:0] $end
        $var wire 8 W' out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 Z' global_flag $end
-       $upscope $end
       $upscope $end
      $upscope $end
     $upscope $end
@@ -755,9 +614,6 @@ $timescale 1ps $end
     $var wire 8 ^' ff [7:0] $end
     $var wire 8 ]' out4 [7:0] $end
     $var wire 8 _' out4_2 [7:0] $end
-    $scope module $libroot $end
-     $var wire 1 e' global_flag $end
-    $upscope $end
     $scope module i_sub4_0 $end
      $var wire 32 *( P0 [31:0] $end
      $var real 64 +( P1 $end
@@ -780,9 +636,6 @@ $timescale 1ps $end
      $var wire 8 '( sub5_out[1][2] [7:0] $end
      $var wire 32 !( count [31:0] $end
      $var wire 32 /( driven_from_bind [31:0] $end
-     $scope module $libroot $end
-      $var wire 1 1( global_flag $end
-     $upscope $end
      $scope module i_sub4_bound $end
       $var real 64 +( P1 $end
       $var wire 32 0( driven_from_bind [31:0] $end
@@ -810,44 +663,29 @@ $timescale 1ps $end
       $var wire 8 7( val2[1] [7:0] $end
       $var wire 8 8( val3[0] [7:0] $end
       $var wire 8 9( val3[1] [7:0] $end
-      $scope module $libroot $end
-       $var wire 1 Z( global_flag $end
-      $upscope $end
       $scope module i_sub0 $end
        $var wire 32 ]( P0 [31:0] $end
        $var wire 32 ^( P1 [31:0] $end
        $var wire 8 [( out[0] [7:0] $end
        $var wire 8 \( out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 _( global_flag $end
-       $upscope $end
       $upscope $end
       $scope module i_sub1 $end
        $var wire 32 b( P0 [31:0] $end
        $var wire 32 c( P1 [31:0] $end
        $var wire 8 `( out[0] [7:0] $end
        $var wire 8 a( out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 d( global_flag $end
-       $upscope $end
       $upscope $end
       $scope module i_sub2 $end
        $var wire 32 g( P0 [31:0] $end
        $var wire 32 h( P1 [31:0] $end
        $var wire 8 e( out[0] [7:0] $end
        $var wire 8 f( out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 i( global_flag $end
-       $upscope $end
       $upscope $end
       $scope module i_sub3 $end
        $var wire 32 l( P0 [31:0] $end
        $var wire 32 m( P1 [31:0] $end
        $var wire 8 j( out[0] [7:0] $end
        $var wire 8 k( out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 n( global_flag $end
-       $upscope $end
       $upscope $end
      $upscope $end
     $upscope $end
@@ -873,9 +711,6 @@ $timescale 1ps $end
      $var wire 8 0) sub5_out[1][2] [7:0] $end
      $var wire 32 *) count [31:0] $end
      $var wire 32 8) driven_from_bind [31:0] $end
-     $scope module $libroot $end
-      $var wire 1 :) global_flag $end
-     $upscope $end
      $scope module i_sub4_bound $end
       $var real 64 4) P1 $end
       $var wire 32 9) driven_from_bind [31:0] $end
@@ -903,44 +738,29 @@ $timescale 1ps $end
       $var wire 8 @) val2[1] [7:0] $end
       $var wire 8 A) val3[0] [7:0] $end
       $var wire 8 B) val3[1] [7:0] $end
-      $scope module $libroot $end
-       $var wire 1 c) global_flag $end
-      $upscope $end
       $scope module i_sub0 $end
        $var wire 32 f) P0 [31:0] $end
        $var wire 32 g) P1 [31:0] $end
        $var wire 8 d) out[0] [7:0] $end
        $var wire 8 e) out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 h) global_flag $end
-       $upscope $end
       $upscope $end
       $scope module i_sub1 $end
        $var wire 32 k) P0 [31:0] $end
        $var wire 32 l) P1 [31:0] $end
        $var wire 8 i) out[0] [7:0] $end
        $var wire 8 j) out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 m) global_flag $end
-       $upscope $end
       $upscope $end
       $scope module i_sub2 $end
        $var wire 32 p) P0 [31:0] $end
        $var wire 32 q) P1 [31:0] $end
        $var wire 8 n) out[0] [7:0] $end
        $var wire 8 o) out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 r) global_flag $end
-       $upscope $end
       $upscope $end
       $scope module i_sub3 $end
        $var wire 32 u) P0 [31:0] $end
        $var wire 32 v) P1 [31:0] $end
        $var wire 8 s) out[0] [7:0] $end
        $var wire 8 t) out[1] [7:0] $end
-       $scope module $libroot $end
-        $var wire 1 w) global_flag $end
-       $upscope $end
       $upscope $end
      $upscope $end
     $upscope $end
@@ -953,9 +773,6 @@ $timescale 1ps $end
    $scope module sub7_i $end
     $var wire 1 x) clk $end
     $var wire 32 y) status [31:0] $end
-    $scope module $libroot $end
-     $var wire 1 {) global_flag $end
-    $upscope $end
     $scope module m_blk $end
      $scope module i $end
       $var wire 1 |) x $end
@@ -992,7 +809,6 @@ b0 A
 0R
 b0 S
 b0 T
-0U
 0V
 b0 W
 b0 X
@@ -1407,198 +1223,138 @@ b0 +
 0,
 b1 ;
 b1000 <
-0=
 b10 5
 b1000 6
-07
 b1 O
 b1000 P
-0Q
 b10 I
 b1000 J
-0K
 b11 B
 b1000 C
-0D
-0Z
 b1 d!
 b10 e!
-0f!
 b1 i!
 b10 j!
-0k!
 b1 n!
 b10 o!
-0p!
 b1 s!
 b11 t!
-0u!
-0a!
 b10 1!
 r3.1 2!
 r4.1 4!
 b110 6!
 b110 7!
-08!
 b1 m"
 b10 n"
-0o"
 b1 r"
 b10 s"
-0t"
 b1 w"
 b10 x"
-0y"
 b1 |"
 b11 }"
-0~"
-0j"
 b10 :"
 r3.1 ;"
 r5 ="
 b110 ?"
 b110 @"
-0A"
 b11 g
 b0 h
 b1 i
 b1111111111111101 j
 b11 k
-0l
 b1 #$
 b10 $$
-0%$
 b1 ($
 b10 )$
-0*$
 b1 -$
 b10 .$
-0/$
 b1 2$
 b11 3$
-04$
-0~#
 b10 N#
 r3.1 O#
 r4.1 Q#
 b110 S#
 b110 T#
-0U#
 b1 ,%
 b10 -%
-0.%
 b1 1%
 b10 2%
-03%
 b1 6%
 b10 7%
-08%
 b1 ;%
 b11 <%
-0=%
-0)%
 b10 W$
 r3.1 X$
 r5 Z$
 b110 \$
 b110 ]$
-0^$
 b11 &#
 b0 '#
 b1 (#
 b1111111111111101 )#
 b11 *#
-0+#
-0a
 b1 @&
 b10 A&
-0B&
 b1 E&
 b10 F&
-0G&
 b1 J&
 b10 K&
-0L&
 b1 O&
 b11 P&
-0Q&
-0=&
 b10 k%
 r3.1 l%
 r4.1 n%
 b110 p%
 b110 q%
-0r%
 b1 I'
 b10 J'
-0K'
 b1 N'
 b10 O'
-0P'
 b1 S'
 b10 T'
-0U'
 b1 X'
 b11 Y'
-0Z'
-0F'
 b10 t&
 r3.1 u&
 r5 w&
 b110 y&
 b110 z&
-0{&
 b1 C%
 b0 D%
 b1 E%
 b1111111111111101 F%
 b0 G%
-0H%
 b1 ](
 b10 ^(
-0_(
 b1 b(
 b10 c(
-0d(
 b1 g(
 b10 h(
-0i(
 b1 l(
 b11 m(
-0n(
-0Z(
 b10 *(
 r3.1 +(
 r4.1 -(
 b110 /(
 b110 0(
-01(
 b1 f)
 b10 g)
-0h)
 b1 k)
 b10 l)
-0m)
 b1 p)
 b10 q)
-0r)
 b1 u)
 b11 v)
-0w)
-0c)
 b10 3)
 r3.1 4)
 r5 6)
 b110 8)
 b110 9)
-0:)
 b1 `'
 b0 a'
 b1 b'
 b1111111111111101 c'
 b0 d'
-0e'
-0{)
 0|)
 b100001 -
 b101100 .
@@ -2445,7 +2201,6 @@ b10 A
 1R
 b1000 S
 b101 T
-1U
 1V
 b101 W
 b100 X
@@ -2757,7 +2512,6 @@ b11 A
 1R
 b1010 S
 b1000 T
-0U
 1V
 b1000 W
 b110 X
@@ -3686,7 +3440,6 @@ b101 @
 b1010 A
 1R
 b1101 S
-1U
 1V
 b1100 X
 b0 Y
@@ -4318,7 +4071,6 @@ b1010 @
 1R
 b10000 S
 b1110 T
-0U
 1V
 b1110 W
 b1110 X
@@ -5254,7 +5006,6 @@ b10000 A
 1R
 b10110 S
 b10101 T
-1U
 1V
 b10101 W
 b10100 X
@@ -5568,7 +5319,6 @@ b1110 @
 b10011 A
 1R
 b10110 T
-0U
 1V
 b10110 W
 b10110 X

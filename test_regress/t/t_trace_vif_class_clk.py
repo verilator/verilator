@@ -15,8 +15,10 @@ test.compile(verilator_flags2=['--binary --trace-vcd'])
 
 test.execute()
 
-# Expect 5 posedges and 5 low samples in VCD for the class-driven interface clock.
-test.file_grep_count(test.trace_filename, r'(?m)^1[!-~]$', 5)
-test.file_grep_count(test.trace_filename, r'(?m)^0[!-~]$', 5)
+# Expect 5 posedges and 5 low samples in VCD for the class-driven interface clock, plus
+# 2 highs and 3 lows (including the initial value) for the sub-interface member toggled on the
+# 4 negedges.
+test.file_grep_count(test.trace_filename, r'(?m)^1[!-~]$', 7)
+test.file_grep_count(test.trace_filename, r'(?m)^0[!-~]$', 8)
 
 test.passes()

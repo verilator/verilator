@@ -8,7 +8,7 @@ $end
   $attrbegin misc 07 t.enumed_t 4 ZERO ONE TWO THREE 00000000000000000000000000000000 00000000000000000000000000000001 00000000000000000000000000000010 00000000000000000000000000000011 1 $end
   $attrbegin misc 07 t.enumb_t 4 BZERO BONE BTWO BTHREE 000 001 010 011 2 $end
   $var wire 1 ! clk $end
-  $scope module $unit $end
+  $scope package $unit $end
    $var bit 1 " global_bit $end
   $upscope $end
   $scope module t $end

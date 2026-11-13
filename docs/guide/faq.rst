@@ -166,10 +166,11 @@ B. Or, for finer-grained control, or C++ files with multiple Verilated
           tfp->close();
       }
 
-You also need to compile :file:`verilated_vcd_c.cpp` and add it to your
-link, preferably by adding the dependencies in your Makefile's
-``$(VK_GLOBAL_OBJS)`` link rule. This is done for you if you are using the
-Verilator :vlopt:`--binary` or :vlopt:`--exe` option.
+You also need to compile :file:`verilated_vcd_c.cpp` and
+:file:`verilated_rtmd.cpp` and add them to your link, preferably by adding
+the dependencies in your Makefile's ``$(VK_GLOBAL_OBJS)`` link rule. This
+is done for you if you are using the Verilator :vlopt:`--binary` or
+:vlopt:`--exe` option.
 
 you can call ``trace_object->trace()`` on multiple Verilated objects with
 the same trace file if you want all data to land in the same output file.
@@ -213,11 +214,11 @@ C. Alternatively, you may use the C++ trace mechanism described in the
           tfp->close();
       }
 
-You also need to compile :file:`verilated_vcd_sc.cpp` and
-:file:`verilated_vcd_c.cpp` and add them to your link, preferably by adding
-the dependencies in your Makefile's ``$(VK_GLOBAL_OBJS)`` link rule. This
-is done for you if you are using the Verilator :vlopt:`--binary` or
-:vlopt:`--exe` option.
+You also need to compile :file:`verilated_vcd_sc.cpp`,
+:file:`verilated_vcd_c.cpp` and :file:`verilated_rtmd.cpp` and add them to
+your link, preferably by adding the dependencies in your Makefile's
+``$(VK_GLOBAL_OBJS)`` link rule. This is done for you if you are using the
+Verilator :vlopt:`--binary` or :vlopt:`--exe` option.
 
 You can call ``->trace()`` on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
@@ -247,9 +248,11 @@ Or, in SystemC, change the include described in the VCD example above:
    #include "verilated_fst_sc.h"
    VerilatedFstC* tfp = new VerilatedFstSc;
 
-Currently, supporting FST and VCD in a single simulation is not supported,
-but such usage should be unlikely. You can however ifdef around the trace
-format in your C++ main loop, and select VCD or FST at compile time.
+FST and VCD traces can be written in the same simulation, by opening a
+trace object of each format. The Verilator-generated Makefiles build only
+the trace runtime of the selected format, so Verilate with
+:vlopt:`--trace-fst`, which also links the libraries FST needs, and add
+:file:`verilated_vcd_c.cpp` to your link.
 
 
 How do I view waveforms (aka dumps or traces)?

@@ -336,7 +336,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     // excluding $unit package stuff
     // @astgen op1 := stmtsp : List[AstNode]
     // @astgen op2 := scSectionsp : List[AstSystemCSection]
-    // op3: Reserved, do not use (including in subclasses)
+    // @astgen op3 := rtmdp : Optional[AstRtmdHier]  // Its RTMD, until V3Scope
     string m_name;  // Name of the module
     const string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
     // dist-ast-dump-suppress  // For some user errors messages only, visible where used
@@ -590,7 +590,6 @@ class AstCFunc final : public AstNode {
     string m_dpiCDecl;  // Custom DPI-C function declaration
     VBoolOrUnknown m_isConst;  // Function is declared const (*this not changed)
     bool m_isStatic : 1;  // Function is static (no need for a 'this' pointer)
-    bool m_isTrace : 1;  // Function is related to tracing
     bool m_dontCombine : 1;  // V3Combine shouldn't compare this func tree, it's special
     bool m_declPrivate : 1;  // Declare it private
     bool m_keepIfEmpty : 1;  // Keep declaration and definition separate, even if empty
@@ -627,7 +626,6 @@ public:
         m_name = name;
         m_rtnType = rtnType;
         m_isStatic = false;
-        m_isTrace = false;
         m_dontCombine = false;
         m_declPrivate = false;
         m_keepIfEmpty = false;
@@ -660,9 +658,8 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
     bool sameNode(const AstNode* samep) const override {
         const AstCFunc* const asamep = VN_DBG_AS(samep, CFunc);
-        return ((isTrace() == asamep->isTrace()) && (rtnTypeVoid() == asamep->rtnTypeVoid())
-                && (argTypes() == asamep->argTypes()) && isLoose() == asamep->isLoose()
-                && voidSelf() == asamep->voidSelf()
+        return ((rtnTypeVoid() == asamep->rtnTypeVoid()) && (argTypes() == asamep->argTypes())
+                && isLoose() == asamep->isLoose() && voidSelf() == asamep->voidSelf()
                 && (!(dpiImportPrototype() || dpiExportImpl()) || name() == asamep->name()));
     }
     //
@@ -673,15 +670,13 @@ public:
     void isConst(VBoolOrUnknown flag) { m_isConst = flag; }
     bool isStatic() const { return m_isStatic; }
     void isStatic(bool flag) { m_isStatic = flag; }
-    bool isTrace() const VL_MT_SAFE { return m_isTrace; }
-    void isTrace(bool flag) { m_isTrace = flag; }
     void cname(const string& name) { m_cname = name; }
     string cname() const { return m_cname; }
     AstScope* scopep() const { return m_scopep; }
     void scopep(AstScope* nodep) { m_scopep = nodep; }
     string rtnTypeVoid() const { return ((m_rtnType == "") ? "void" : m_rtnType); }
     void rtnType(const string& rtnType) { m_rtnType = rtnType; }
-    bool dontCombine() const { return m_dontCombine || isTrace() || entryPoint(); }
+    bool dontCombine() const { return m_dontCombine || entryPoint(); }
     void dontCombine(bool flag) { m_dontCombine = flag; }
     bool declPrivate() const { return m_declPrivate; }
     void declPrivate(bool flag) { m_declPrivate = flag; }
@@ -768,7 +763,7 @@ class AstCell final : public AstNode {
     // From V3Param to V3Width: ranges of the arrayed cell this element cell was expanded from
     // After V3Width: nullptr
     // @astgen op3 := rangep : List[AstRange]
-    // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for tracing/VPI
+    // @astgen op4 := intfRefsp : List[AstIntfRef] // List of interface references, for VPI
     //
     // @astgen ptr := m_modp : Optional[AstNodeModule]  // [AfterLink] Pointer to module instanced
     FileLine* m_modNameFileline;  // Where module the cell instances token was
@@ -1626,6 +1621,7 @@ class AstNetlist final : public AstNode {
     // @astgen ptr := m_stdPackageProcessp : Optional[AstClass]  // SystemVerilog std process class
     // @astgen ptr := m_dpiExportTriggerp : Optional[AstVarScope]  // DPI export trigger variable
     // @astgen ptr := m_delaySchedulerp : Optional[AstVar]  // Delay scheduler variable
+    // @astgen ptr := m_activityp : Optional[AstVar]  // Trace activity flags
     // @astgen ptr := m_nbaQueuep : Optional[AstVarScope]  // Global queue of NBAs (V3Delayed)
     // @astgen ptr := m_topScopep : Optional[AstTopScope]  // Singleton AstTopScope
     // @astgen ptr := m_stlFirstIterationp: Optional[AstVarScope]  // Settle first iteration flag
@@ -1634,7 +1630,6 @@ class AstNetlist final : public AstNode {
     std::string m_resolvedTopModuleName;  // Selected design top before wrapping under $root
     std::vector<std::string> m_l2Names;  // Pretty names of top module instances (l2 names)
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
-    uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
     // V3Param-deferred params awaiting V3LinkDot::linkDotParamed scope-resolution.
     std::set<AstVar*> m_deferredParamVarps;
     // Sparse metadata for constants produced from named parameters/localparams. Keep this off
@@ -1647,6 +1642,8 @@ class AstNetlist final : public AstNode {
     std::array<AstCFunc*, VEval::_ENUM_END> m_evalFuncps{};
     // The trigger dump function of each region if exists, otherwise nullptr
     std::array<AstCFunc*, VEval::_ENUM_END> m_dumpTriggersFuncps{};
+    // Activity flag sets of the design, built by V3Trace for the RTMD.
+    std::vector<std::vector<uint32_t>> m_actSets;
 
 public:
     AstNetlist();
@@ -1682,6 +1679,8 @@ public:
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstVar* delaySchedulerp() const { return m_delaySchedulerp; }
     void delaySchedulerp(AstVar* const varScopep) { m_delaySchedulerp = varScopep; }
+    AstVar* activityp() const { return m_activityp; }
+    void activityp(AstVar* const varp) { m_activityp = varp; }
     AstVarScope* nbaQueuep() const { return m_nbaQueuep; }
     void nbaQueuep(AstVarScope* varScopep) { m_nbaQueuep = varScopep; }
     void stdPackagep(AstPackage* const packagep) { m_stdPackagep = packagep; }
@@ -1689,6 +1688,12 @@ public:
     void stdPackageProcessp(AstClass* const classp) { m_stdPackageProcessp = classp; }
     AstClass* stdPackageProcessp() const { return m_stdPackageProcessp; }
     AstFuncRef* stdPackageProcessSelfp(FileLine*) const;
+    const std::vector<std::vector<uint32_t>>& actSets() const { return m_actSets; }
+    // Add an activity set, and return its index
+    uint32_t addActSet(std::vector<uint32_t>&& flags) {
+        m_actSets.emplace_back(std::move(flags));
+        return static_cast<uint32_t>(m_actSets.size() - 1);
+    }
     AstTopScope* topScopep() const { return m_topScopep; }
     void createTopScope(AstScope* scopep);
     VTimescale timeunit() const { return m_timeunit; }
@@ -1705,8 +1710,6 @@ public:
     void resolvedTopModuleName(const std::string& value) { m_resolvedTopModuleName = value; }
     const std::vector<std::string>& l2Names() const { return m_l2Names; }
     void addL2Name(const std::string& name) { m_l2Names.push_back(name); }
-    uint32_t nTraceCodes() const { return m_nTraceCodes; }
-    void nTraceCodes(uint32_t value) { m_nTraceCodes = value; }
     AstVarScope* stlFirstIterationp();
     void clearStlFirstIterationp() { m_stlFirstIterationp = nullptr; }
 
@@ -1963,6 +1966,7 @@ class AstScope final : public AstNode {
     // @astgen ptr := m_aboveScopep : Optional[AstScope]  // Scope above this one in the hierarchy
     // @astgen ptr := m_aboveCellp : Optional[AstCell]  // Cell above this in the hierarchy
     // @astgen ptr := m_modp : AstNodeModule  // Module scope corresponds to
+    // @astgen ptr := m_rtmdp : Optional[AstRtmdHier] // Its RTMD, from V3Scope to linkDotScope
 
     // An AstScope->name() is special: . indicates an uninlined scope, __DOT__ an inlined scope
     string m_name;  // Name
@@ -1996,6 +2000,8 @@ public:
     void aboveScopep(AstScope* nodep) { m_aboveScopep = nodep; }
     AstCell* aboveCellp() const { return m_aboveCellp; }
     void aboveCellp(AstCell* nodep) { m_aboveCellp = nodep; }
+    AstRtmdHier* rtmdp() const { return m_rtmdp; }
+    void rtmdp(AstRtmdHier* nodep) { m_rtmdp = nodep; }
     bool isTop() const VL_MT_SAFE { return aboveScopep() == nullptr; }  // At top of hierarchy
     int threadsGroupWorker() const { return m_threadsGroupWorker; }
     void threadsGroupWorker(int worker) { m_threadsGroupWorker = worker; }
@@ -2179,6 +2185,7 @@ class AstTopScope final : public AstNode {
     //
     // @astgen op1 := senTreesp : List[AstSenTree] // Globally unique sensitivity lists
     // @astgen op2 := scopep : AstScope // The AstScope of the top-leveL
+    // @astgen op3 := rtmdp : Optional[AstRtmdHier] // Descriptor of the top scope
 
     friend class AstNetlist;  // Only the AstNetlist can create one
     AstTopScope(FileLine* fl, AstScope* ascopep)
@@ -2196,6 +2203,8 @@ public:
 class AstTypeTable final : public AstNode {
     // Container for hash of standard data types
     // @astgen op1 := typesp : List[AstNodeDType]
+    // @astgen op2 := rtmdDataTypesp : List[AstNodeRtmdDataType] // Data type descriptors
+    // @astgen op3 := rtmdVarTypesp : List[AstRtmdVarType] // Var type descriptors
     //
     // @astgen ptr := m_constraintRefp : Optional[AstConstraintRefDType]
     // @astgen ptr := m_emptyQueuep : Optional[AstEmptyQueueDType]

@@ -118,6 +118,7 @@ class BitBlastVisitor final : public VNVisitorConst, public VNDeleter {
     //  AstVarScope::user1()        -> VscpInfo, via m_vscpInfos
     //  AstVar::user2()             -> Fragment AstVars by LSB and MSB, via m_fragmentVarps
     //  AstScope::user2p()          -> AstActive*: combinational active, see comboActive
+    //  AstVarScope::user2()        -> bool: original variable that must be kept
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
 
@@ -428,6 +429,10 @@ class BitBlastVisitor final : public VNVisitorConst, public VNDeleter {
         // Record whole access
         record(nodep, nodep, 0, nodep->varp()->width() - 1);
     }
+    void visit(AstRtmdVar* nodep) override {
+        // Ignore reference for splitting, but need to reconstruct the variable
+        if (nodep->refp()) nodep->vscp()->user2(true);
+    }
     void visit(AstMemberRef* nodep) override {
         iterateChildrenConst(nodep);
         // The AstVarScope is not known, so all of them are blocked, by making it ineligible
@@ -463,7 +468,7 @@ class BitBlastVisitor final : public VNVisitorConst, public VNDeleter {
         for (AstVarScope* const vscp : m_vscps) {
             const VscpInfo& info = m_vscpInfos(vscp);
             if (info.fragments.empty()) continue;
-            if (!(vscp->varp()->isTrace() && vscp->isTrace())) continue;
+            if (!vscp->user2()) continue;
             AstActive* const activep = comboActive(vscp->scopep());
             FileLine* const flp = vscp->fileline();
             for (const Fragment& fragment : info.fragments) {

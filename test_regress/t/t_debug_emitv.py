@@ -22,6 +22,7 @@ test.lint(
         "--Wno-COVERIGN",
         "--bbox-unsup",  # Continue after the set-expression bin to cover its dump and emission
         "--timing",
+        "--rtmd",  # Also dump the run time model descriptors
         "--dumpi-tree 9 --dumpi-V3EmitV 9 --debug-emitv",  # Dev coverage of the V3EmitV code
         "--dump-graph --dumpi-tree-json 9 --no-json-ids"
     ])

@@ -225,6 +225,7 @@ RAW_OBJS_PCH_ASTMT = \
   V3EmitCImp.o \
   V3EmitCInlines.o \
   V3EmitCPch.o \
+  V3EmitCRtmd.o \
   V3EmitV.o \
   V3File.o \
   V3FuncOpt.o \
@@ -336,6 +337,8 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Randomize.o \
   V3Reloop.o \
   V3Reorder.o \
+  V3Rtmd.o \
+  V3RtmdScoped.o \
   V3Sampled.o \
   V3Sched.o \
   V3SchedAcyclic.o \
@@ -358,7 +361,6 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Task.o \
   V3Timing.o \
   V3Trace.o \
-  V3TraceDecl.o \
   V3Tristate.o \
   V3Udp.o \
   V3Undriven.o \
@@ -380,6 +382,7 @@ NON_STANDALONE_HEADERS = \
   V3AstNodeDType.h \
   V3AstNodeExpr.h \
   V3AstNodeOther.h \
+  V3AstNodeRtmd.h \
   V3AstNodeStmt.h \
   V3DebugBisect.h \
   V3DfgVertices.h \
@@ -390,6 +393,7 @@ AST_DEFS := \
   V3AstNodeDType.h \
   V3AstNodeExpr.h \
   V3AstNodeOther.h \
+  V3AstNodeRtmd.h \
   V3AstNodeStmt.h \
 
 DFG_DEFS := \

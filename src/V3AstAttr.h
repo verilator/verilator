@@ -771,44 +771,45 @@ public:
         }
     }
 
-    const char* traceSigType() const {
-        // VerilatedTraceSigType to used in trace signal declaration
+    const char* rtmdAtomKind() const {
+        // VlRtmdDataTypeRow::Atom::Kind of this keyword
         static constexpr const char* const lut[] = {
-            /* UNKNOWN:                   */ "",  // Should not be traced
+            /* UNKNOWN:                   */ "",  // Not described
             /* BIT:                       */ "BIT",
             /* BYTE:                      */ "BYTE",
-            /* CHANDLE:                   */ "LONGINT",
-            /* CVOID:                     */ "",  // Should not be traced
-            /* NULLTYPE:                  */ "",  // Should not be traced
+            /* CHANDLE:                   */ "CHANDLE",
+            /* CVOID:                     */ "",  // Not described
+            /* NULLTYPE:                  */ "",  // Not described
             /* EVENT:                     */ "EVENT",
             /* INT:                       */ "INT",
             /* INTEGER:                   */ "INTEGER",
-            /* INTEGER2STATE              */ "INTEGER",
+            /* INTEGER2STATE              */ "",  // Not described
             /* LOGIC:                     */ "LOGIC",
-            /* LOGIC2STATE:               */ "LOGIC",
+            /* LOGIC2STATE:               */ "",  // Not described
             /* LONGINT:                   */ "LONGINT",
             /* DOUBLE:                    */ "DOUBLE",
             /* SHORTINT:                  */ "SHORTINT",
             /* TIME:                      */ "TIME",
-            /* TIME2STATE                 */ "TIME",
+            /* TIME2STATE                 */ "",  // Not described
             /* STRING:                    */ "",
-            /* UNTYPED:                   */ "",  // Should not be traced
-            /* SCOPEPTR:                  */ "",  // Should not be traced
-            /* CHARPTR:                   */ "",  // Should not be traced
-            /* DELAY_SCHEDULER:           */ "",  // Should not be traced
-            /* TRIGGER_SCHEDULER:         */ "",  // Should not be traced
-            /* DYNAMIC_TRIGGER_SCHEDULER: */ "",  // Should not be traced
-            /* NBA_GENERIC_QUEUE:         */ "",  // Should not be traced
-            /* FORK_SYNC:                 */ "",  // Should not be traced
-            /* PROCESS_REFERENCE:         */ "",  // Should not be traced
-            /* RANDOM_GENERATOR:          */ "",  // Should not be traced
-            /* RANDOM_STD_GENERATOR:      */ "",  // Should not be traced
-            /* COVERGROUP_INSTHANDLE:     */ "",  // Should not be traced
-            /* UINT32:                    */ "BIT",
-            /* UINT64:                    */ "BIT",
-            /* LOGIC_IMPLICIT:            */ "",  // Should not be traced
+            /* UNTYPED:                   */ "",  // Not described
+            /* SCOPEPTR:                  */ "",  // Not described
+            /* CHARPTR:                   */ "",  // Not described
+            /* DELAY_SCHEDULER:           */ "",  // Not described
+            /* TRIGGER_SCHEDULER:         */ "",  // Not described
+            /* DYNAMIC_TRIGGER_SCHEDULER: */ "",  // Not described
+            /* NBA_GENERIC_QUEUE:         */ "",  // Not described
+            /* FORK_SYNC:                 */ "",  // Not described
+            /* PROCESS_REFERENCE:         */ "",  // Not described
+            /* RANDOM_GENERATOR:          */ "",  // Not described
+            /* RANDOM_STD_GENERATOR:      */ "",  // Not described
+            /* COVERGROUP_INSTHANDLE:     */ "",  // Not described
+            /* UINT32:                    */ "",  // Not an atom, see V3Rtmd
+            /* UINT64:                    */ "",  // Not an atom, see V3Rtmd
+            /* LOGIC_IMPLICIT:            */ "",  // Not described
         };
-        static_assert(sizeof(lut) / sizeof(lut[0]) == _ENUM_MAX, "Missing trace signal type");
+        static_assert(sizeof(lut) / sizeof(lut[0]) == _ENUM_MAX,
+                      "rtmdAtomKind lut must cover every VBasicDTypeKwd");
         return lut[m_e];
     }
 };
@@ -1548,6 +1549,90 @@ public:
 
 //######################################################################
 
+class VRtmdVarKind final {
+public:
+    // Kind of variable or net. Note: Entries must match VlRtmdVarTypeRow::Var::Kind (by
+    // name)
+    enum en : uint8_t {
+        VAR,
+        WIRE,
+        WREAL,
+        TRI,
+        TRI0,
+        TRI1,
+        TRIAND,
+        TRIOR,
+        SUPPLY0,
+        SUPPLY1,
+        GPARAM,
+        LPARAM,
+        SPECPARAM,
+        GENVAR,
+    };
+    enum en m_e;
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VRtmdVarKind(en _e)
+        : m_e{_e} {}
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const {
+        static constexpr const char* const names[]
+            = {"VAR",   "WIRE",    "WREAL",   "TRI",    "TRI0",   "TRI1",      "TRIAND",
+               "TRIOR", "SUPPLY0", "SUPPLY1", "GPARAM", "LPARAM", "SPECPARAM", "GENVAR"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VRtmdVarKind& lhs, const VRtmdVarKind& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VRtmdVarKind& lhs, VRtmdVarKind::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VRtmdVarKind::en lhs, const VRtmdVarKind& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VRtmdVarKind& rhs) {
+    return os << rhs.ascii();
+}
+
+class VRtmdHierKind final {
+public:
+    // Kind of hierarchy level. Note: Entries must match VlRtmdHierRow::Push::Kind (by name)
+    enum en : uint8_t {
+        ROOT,  // The root module
+        ROOTIO,  // Wraps the variables of the root module
+        MODULE,
+        INTERFACE,
+        PACKAGE,
+        CLASS,
+        GENERATE,
+        BEGIN,
+        FORK,
+        FUNCTION,
+        TASK,
+    };
+    enum en m_e;
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VRtmdHierKind(en _e)
+        : m_e{_e} {}
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const {
+        static constexpr const char* const names[]
+            = {"ROOT",     "ROOTIO", "MODULE", "INTERFACE", "PACKAGE", "CLASS",
+               "GENERATE", "BEGIN",  "FORK",   "FUNCTION",  "TASK"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VRtmdHierKind& lhs, const VRtmdHierKind& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VRtmdHierKind& lhs, VRtmdHierKind::en rhs) {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VRtmdHierKind::en lhs, const VRtmdHierKind& rhs) {
+    return lhs == rhs.m_e;
+}
+inline std::ostream& operator<<(std::ostream& os, const VRtmdHierKind& rhs) {
+    return os << rhs.ascii();
+}
+
+//######################################################################
+
 class VDirection final {
 public:
     enum en : uint8_t { NONE, INPUT, OUTPUT, INOUT, REF, CONSTREF };
@@ -1583,16 +1668,6 @@ public:
     bool isWritable() const VL_MT_SAFE { return m_e == OUTPUT || m_e == INOUT || m_e == REF; }
     bool isRef() const VL_MT_SAFE { return m_e == REF; }
     bool isConstRef() const VL_MT_SAFE { return m_e == CONSTREF; }
-    string traceSigDirection() const {
-        if (isInout()) {
-            return "VerilatedTraceSigDirection::INOUT";
-        } else if (isWritable()) {
-            return "VerilatedTraceSigDirection::OUTPUT";
-        } else if (isNonOutput()) {
-            return "VerilatedTraceSigDirection::INPUT";
-        }
-        return "VerilatedTraceSigDirection::NONE";
-    }
     VAccess pinAccess() const {
         switch (m_e) {
         case NONE: return VAccess::NOCHANGE;
@@ -2347,81 +2422,6 @@ public:
 
 //######################################################################
 
-class VTracePrefixType final {
-public:
-    enum en : uint8_t {
-        // Note: Entries must match VerilatedTracePrefixType
-        ARRAY_PACKED,
-        ARRAY_UNPACKED,
-        SCOPE_MODULE,
-        SCOPE_INTERFACE,
-        STRUCT_PACKED,
-        STRUCT_UNPACKED,
-        UNION_PACKED,
-    };
-    enum en m_e;
-    // cppcheck-suppress noExplicitConstructor
-    constexpr VTracePrefixType(en _e)
-        : m_e{_e} {}
-    constexpr operator en() const { return m_e; }
-    const char* ascii() const {
-        static constexpr const char* const names[]
-            = {"ARRAY_PACKED",  "ARRAY_UNPACKED",  "SCOPE_MODULE", "SCOPE_INTERFACE",
-               "STRUCT_PACKED", "STRUCT_UNPACKED", "UNION_PACKED"};
-        return names[m_e];
-    }
-};
-constexpr bool operator==(const VTracePrefixType& lhs, const VTracePrefixType& rhs) {
-    return lhs.m_e == rhs.m_e;
-}
-constexpr bool operator==(const VTracePrefixType& lhs, VTracePrefixType::en rhs) {
-    return lhs.m_e == rhs;
-}
-constexpr bool operator==(VTracePrefixType::en lhs, const VTracePrefixType& rhs) {
-    return lhs == rhs.m_e;
-}
-inline std::ostream& operator<<(std::ostream& os, const VTracePrefixType& rhs) {
-    return os << rhs.ascii();
-}
-
-//######################################################################
-
-class VTraceType final {
-public:
-    enum en : uint8_t {
-        CONSTANT,  // Constant value dump (once at the beginning)
-        FULL,  // Full value dump (always emitted)
-        CHANGE  // Incremental value dump (emitted only if the value changed)
-    };
-    enum en m_e;
-    VTraceType()
-        : m_e{CONSTANT} {}
-    // cppcheck-suppress noExplicitConstructor
-    constexpr VTraceType(en _e)
-        : m_e{_e} {}
-    explicit VTraceType(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    constexpr operator en() const { return m_e; }
-    const char* ascii() const {
-        static constexpr const char* const names[] = {"CONSTANT", "FULL", "CHANGE"};
-        return names[m_e];
-    }
-    const char* func_prefix() const {
-        static constexpr const char* const names[] = {"trace_const", "trace_full", "trace_chg"};
-        return names[m_e];
-    }
-};
-constexpr bool operator==(const VTraceType& lhs, const VTraceType& rhs) {
-    return lhs.m_e == rhs.m_e;
-}
-constexpr bool operator==(const VTraceType& lhs, VTraceType::en rhs) { return lhs.m_e == rhs; }
-constexpr bool operator==(VTraceType::en lhs, const VTraceType& rhs) { return lhs == rhs.m_e; }
-inline std::ostream& operator<<(std::ostream& os, const VTraceType& rhs) {
-    return os << rhs.ascii();
-}
-
-//######################################################################
-
 class VUseType final {
 public:
     enum en : uint8_t {
@@ -2531,32 +2531,35 @@ public:
                 || m_e == WIRE || m_e == TRI0 || m_e == TRI1);
     }
 
-    const char* traceSigKind() const {
-        // VerilatedTraceSigKind to used in trace signal declaration
-        static constexpr const char* const lut[] = {
-            /* UNKNOWN:      */ "",  // Should not be traced
-            /* GPARAM:       */ "PARAMETER",
-            /* LPARAM:       */ "PARAMETER",
-            /* SPECPARAM:    */ "PARAMETER",
-            /* GENVAR:       */ "PARAMETER",
-            /* VAR:          */ "VAR",
-            /* SUPPLY0:      */ "SUPPLY0",
-            /* SUPPLY1:      */ "SUPPLY1",
-            /* WIRE:         */ "WIRE",
-            /* WREAL:        */ "WIRE",
-            /* TRIAND:       */ "TRIAND",
-            /* TRIOR:        */ "TRIOR",
-            /* TRIWIRE:      */ "TRI",
-            /* TRI0:         */ "TRI0",
-            /* TRI1:         */ "TRI1",
-            /* PORT:         */ "WIRE",
-            /* BLOCKTEMP:    */ "VAR",
-            /* MODULETEMP:   */ "VAR",
-            /* STMTTEMP:     */ "VAR",
-            /* XTEMP:        */ "VAR",
-            /* IFACEREF:     */ "",  // Should not be traced directly
-            /* MEMBER:       */ "VAR",
+    // VRtmdVarKind of this variable type
+    VRtmdVarKind rtmdVarKind() const {
+        static constexpr VRtmdVarKind::en lut[] = {
+            /* UNKNOWN:      */ VRtmdVarKind::VAR,  // Not described
+            /* GPARAM:       */ VRtmdVarKind::GPARAM,
+            /* LPARAM:       */ VRtmdVarKind::LPARAM,
+            /* SPECPARAM:    */ VRtmdVarKind::SPECPARAM,
+            /* GENVAR:       */ VRtmdVarKind::GENVAR,
+            /* VAR:          */ VRtmdVarKind::VAR,
+            /* SUPPLY0:      */ VRtmdVarKind::SUPPLY0,
+            /* SUPPLY1:      */ VRtmdVarKind::SUPPLY1,
+            /* WIRE:         */ VRtmdVarKind::WIRE,
+            /* WREAL:        */ VRtmdVarKind::WREAL,
+            /* TRIAND:       */ VRtmdVarKind::TRIAND,
+            /* TRIOR:        */ VRtmdVarKind::TRIOR,
+            /* TRIWIRE:      */ VRtmdVarKind::TRI,
+            /* TRI0:         */ VRtmdVarKind::TRI0,
+            /* TRI1:         */ VRtmdVarKind::TRI1,
+            // A port with no net or variable type is a net
+            /* PORT:         */ VRtmdVarKind::WIRE,
+            /* BLOCKTEMP:    */ VRtmdVarKind::VAR,
+            /* MODULETEMP:   */ VRtmdVarKind::VAR,
+            /* STMTTEMP:     */ VRtmdVarKind::VAR,
+            /* XTEMP:        */ VRtmdVarKind::VAR,
+            /* IFACEREF:     */ VRtmdVarKind::VAR,  // Unused: Traced through its own scope
+            /* MEMBER:       */ VRtmdVarKind::VAR,
         };
+        static_assert(sizeof(lut) / sizeof(lut[0]) == MEMBER + 1,
+                      "rtmdVarKind lut must cover every VVarType");
         return lut[m_e];
     }
 };

@@ -430,7 +430,6 @@ void inlineScope(AstScope* scopep, AstCell* cellp, const std::string& prefix,
             vscp->varp(newVarp);
             vscp->dtypeFrom(newVarp);
         }
-        if (!cellp->isTrace()) vscp->trace(false);
         parentScopep->addVarsp(vscp->unlinkFrBack());
     }
 

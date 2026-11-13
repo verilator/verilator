@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Interface references for tracing and VPI
+// DESCRIPTION: Verilator: Interface references for VPI
 //
 // Code available from: https://verilator.org
 //

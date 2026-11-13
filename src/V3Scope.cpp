@@ -29,7 +29,6 @@
 #include "V3Control.h"
 
 #include <unordered_map>
-#include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -41,6 +40,7 @@ class ScopeVisitor final : public VNVisitor {
     // AstVar::user1p           -> AstVarScope*.  Replacement for this variable
     // AstCell::user2p          -> AstScope*.  The scope created inside the cell
     // AstTask::user2p          -> AstTask*.  Replacement task
+    // AstRtmdHier::user2()     -> bool.  Iterated already, under the scope of its instance
     // AstNodeModule::user3()   -> uint64_t.  Pending instantiations of this module
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
@@ -65,6 +65,7 @@ class ScopeVisitor final : public VNVisitor {
     // Varrefs-in-scopes needing fixup when done
     std::vector<std::pair<AstVarRef*, AstScope*>> m_varRefScopes;
     std::vector<AstScope*> m_scopes;  // Scopes awaiting attachment to their modules
+    std::vector<AstRtmdHier*> m_classRtmdps;  // Descriptors of classes, to place at the root
 
     // METHODS
 
@@ -138,6 +139,10 @@ class ScopeVisitor final : public VNVisitor {
         // Defer attachment until all instances are visited so cell collection and child
         // iteration do not rescan a growing list of completed scopes.
         for (AstScope* const scopep : m_scopes) scopep->modp()->addStmtsp(scopep);
+        // Classes are not per instance, so their descriptors are under the root
+        for (AstRtmdHier* const levelp : m_classRtmdps) {
+            nodep->topScopep()->rtmdp()->addItemsp(levelp);
+        }
         if (v3Global.opt.mtasks()) V3Control::applyThreadsGroupWorkers(m_scopes);
         cleanupVarRefs();
     }
@@ -181,10 +186,8 @@ class ScopeVisitor final : public VNVisitor {
                 AstNodeModule* const modp = cellp->modp();
                 UASSERT_OBJ(modp, cellp, "Unlinked mod");
                 iterate(modp);  // Recursive call to visit(AstNodeModule)
-                if (VN_IS(modp, Iface)) {
-                    // Remember newly created scope
-                    cellp->user2p(m_scopep);
-                }
+                // Remember newly created scope
+                cellp->user2p(m_scopep);
             }
         }
 
@@ -270,6 +273,47 @@ class ScopeVisitor final : public VNVisitor {
         UINFO(4, "    Move " << nodep);
         // We iterate under the *clone*
         iterateChildren(cloneOrMove(nodep));
+    }
+    void visit(AstRtmdHier* nodep) override {
+        // The level of an instance, spliced in after its instance entry,
+        // was iterated already when the instance was scoped
+        if (nodep->user2()) return;
+
+        // A hierarchy level within the descriptor of a module (e.g. block/function/etc.)
+        if (nodep != m_modp->rtmdp()) {
+            iterateChildren(nodep);
+            return;
+        }
+
+        // A class has a single scope, so its descriptor is moved, then placed at the root
+        if (VN_IS(m_modp, Class)) {
+            nodep->unlinkFrBack();
+            iterateChildren(nodep);
+            m_classRtmdps.push_back(nodep);
+            return;
+        }
+
+        // The descriptor of the module itself
+        AstRtmdHier* const clonep = m_last ? nodep->unlinkFrBack() : nodep->cloneTree(false);
+        // Iterate under the *clone*, which inlines the descriptors of sub-instances
+        iterateChildren(clonep);
+
+        // The descriptor of the top scope is the root, all others were inlined into it
+        if (m_modp->isTop()) {
+            v3Global.rootp()->topScopep()->rtmdp(clonep);
+            return;
+        }
+
+        // The instance entry in the parent inlines it
+        clonep->user2(true);
+        m_scopep->rtmdp(clonep);
+    }
+    void visit(AstRtmdInstance* nodep) override {
+        // Inline the Rtmd of the instance after this descriptor
+        AstRtmdHier* const levelp = VN_AS(nodep->cellp()->user2p(), Scope)->rtmdp();
+        nodep->addNextHere(levelp);
+        // It's independent of the cell from here on
+        nodep->cellp(nullptr);
     }
     void visit(AstCFunc* nodep) override {
         // Add to list of blocks under this scope
@@ -375,6 +419,7 @@ class ScopeCleanupVisitor final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstAlias* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstAliasScope* nodep) override { movedDeleteOrIterate(nodep); }
+    void visit(AstRtmdHier*) override {}  // Nothing to clean up in descriptors
     void visit(AstNodeFTask* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstCFunc* nodep) override { movedDeleteOrIterate(nodep); }
 

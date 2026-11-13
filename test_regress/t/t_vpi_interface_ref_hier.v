@@ -10,7 +10,7 @@
 // downward hierarchical reference.  Interface references are only registered
 // under the scope that instantiates the interface, so these are not visible
 // through VPI, and scopesDump() shows no IFACEREF entries.  See the TODO in
-// V3TraceDecl.
+// V3EmitCSyms::collectIfaceRefs.
 
 interface SomeIntf;
 

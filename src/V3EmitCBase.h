@@ -122,6 +122,12 @@ public:
         UASSERT_OBJ(varp->constPoolEntry(), varp, "Not a constant pool variable");
         return topClassName() + "__ConstPool__" + varp->nameProtect();
     }
+    // Names of the run time model descriptor tables, which are also the names of their files
+    static std::string rtmdDataTypeTableName() { return topClassName() + "__RtmdDataTypeTable"; }
+    static std::string rtmdGlobalTableName() { return topClassName() + "__RtmdGlobalTable"; }
+    static std::string rtmdVarTypeTableName() { return topClassName() + "__RtmdVarTypeTable"; }
+    static std::string rtmdHierTableName() { return topClassName() + "__RtmdHierTable"; }
+    static std::string rtmdActSetTableName() { return topClassName() + "__RtmdActSetTable"; }
     // Return C++ class name for a module/class object
     static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE;
 };
@@ -264,8 +270,7 @@ public:
     void splitSizeInc(const AstNode* nodep) {
         splitSizeInc(static_cast<size_t>(nodep->nodeCount()));
     }
-    bool splitNeeded(size_t splitLimit) const { return m_splitSize >= splitLimit; }
-    bool splitNeeded() const { return splitNeeded(m_splitLimit); }
+    bool splitNeeded() const { return m_splitSize >= m_splitLimit; }
 
     // If the given constructor/destructor statements, plus 'baseCost', exceed the
     // --output-split-cfuncs limit, split them into loose sub-functions
@@ -333,6 +338,10 @@ public:
         }
         // Otherwise they should be available in the local scope where emitted
         return name;
+    }
+    // Name of the instance member for the given scope
+    static std::string instName(const AstScope* scopep) {
+        return "vlInst." + VIdProtect::protectIf(scopep->nameDotless(), scopep->protect());
     }
     // Argument list; if 'cpp', C++ rather than a C header
     string cFuncArgs(const AstCFunc* nodep, bool cpp = true);

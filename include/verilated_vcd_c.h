@@ -41,6 +41,7 @@ public:
 
 private:
     friend VerilatedVcdBuffer;  // Give the buffer access to the private bits
+    friend Super;  // Calls 'declareSignal' and 'declareEnum' through 'self()'
 
     //=========================================================================
     // VCD-specific internals
@@ -63,9 +64,9 @@ private:
 
     std::vector<char> m_suffixes;  // VCD line end string codes + metadata
 
-    // Prefixes to add to signal names/scope types
-    std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
-        {"", VerilatedTracePrefixType::SCOPE_MODULE}};
+    // For each open level, the prefix of the names declared in it: the names of the arrays
+    // enclosing it within the innermost scope, as arrays are not scopes, e.g. 'mem[3]'
+    std::vector<std::string> m_namePrefixes{""};
 
     // Vector of free trace buffers as (pointer, size) pairs.
     std::vector<std::pair<char*, size_t>> m_freeBuffers;
@@ -83,8 +84,13 @@ private:
     void closeErr();
     void printIndent(int level_change);
     void printStr(const char* str);
-    void declare(uint32_t code, const char* name, const char* wirep, bool array, int arraynum,
-                 bool bussed, int msb, int lsb);
+
+    // Open and close a scope
+    void beginScope(const char* namep, const char* typep = "module");
+    void endScope();
+    // Open and close an array, whose name prefixes the names within it
+    void beginArray(const char* namep) { m_namePrefixes.push_back(m_namePrefixes.back() + namep); }
+    void endArray() { m_namePrefixes.pop_back(); }
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcd);
@@ -101,11 +107,44 @@ protected:
     bool preChangeDump() override;
 
     // Trace buffer management
-    Buffer* getTraceBuffer(uint32_t fidx) override;
+    Buffer* getTraceBuffer() override;
     void commitTraceBuffer(Buffer*) override;
+    bool parallelCapable() const override { return true; }
 
-    // Configure sub-class
-    void configure(const VerilatedTraceConfig&) override {};
+    //=========================================================================
+    // Implementation of VerilatedTrace interface - declarations
+
+    void ifaceRefOpen(const char* namep, const char*) override final { beginScope(namep); }
+    void ifaceRefClose() override final { endScope(); }
+    void instanceOpen(InstanceKind, const char* namep, const char*) override final {
+        beginScope(namep);
+    }
+    void instanceClose() override final { endScope(); }
+    void packedArrayOpen(const char* namep, int, int) override final { beginArray(namep); }
+    void packedArrayClose() override final { endArray(); }
+    void packedStructOpen(const char* namep, uint32_t) override final { beginScope(namep); }
+    void packedStructClose() override final { endScope(); }
+    void packedUnionOpen(const char* namep, uint32_t) override final { beginScope(namep); }
+    void packedUnionClose() override final { endScope(); }
+    void rootOpen(const char* namep) override final { beginScope(namep); }
+    void rootClose() override final { endScope(); }
+    void scopeOpen(ScopeKind kind, const char* namep) override final {
+        // Other scopes are presented as modules, as before function and task scopes were traced
+        beginScope(namep, kind == ScopeKind::FUNCTION ? "function"
+                          : kind == ScopeKind::TASK   ? "task"
+                                                      : "module");
+    }
+    void scopeClose() override final { endScope(); }
+    void unpackedArrayOpen(const char* namep, int, int) override final { beginArray(namep); }
+    void unpackedArrayClose() override final { endArray(); }
+    void unpackedStructOpen(const char* namep, uint32_t) override final { beginScope(namep); }
+    void unpackedStructClose() override final { endScope(); }
+
+    void declareSignal(uint32_t code, const char* namep, const VlRtmdVarType& varType,
+                       const VlRtmdDataType& dtype) override final;
+
+    // This format does not show enums
+    void declareEnum(const VlRtmdDataType&) override final {}
 
 public:
     //=========================================================================
@@ -130,62 +169,7 @@ public:
     void flush() VL_MT_SAFE_EXCLUDES(m_mutex);
     // Return if file is open
     bool isOpen() const VL_MT_SAFE { return m_isOpen; }
-
-    //=========================================================================
-    // Internal interface to Verilator generated code
-
-    void pushPrefix(const char*, VerilatedTracePrefixType);
-    void popPrefix();
-
-    // versions to call when the sig is not array member
-    void declEvent(uint32_t code, const char* name);
-    void declBit(uint32_t code, const char* name);
-    void declBus(uint32_t code, const char* name, int msb, int lsb);
-    void declQuad(uint32_t code, const char* name, int msb, int lsb);
-    void declWide(uint32_t code, const char* name, int msb, int lsb);
-    void declDouble(uint32_t code, const char* name);
-
-    // versions to call when the sig is array member
-    void declEventArray(uint32_t code, const char* name, int arraynum);
-    void declBitArray(uint32_t code, const char* name, int arraynum);
-    void declBusArray(uint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declQuadArray(uint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declWideArray(uint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declDoubleArray(uint32_t code, const char* name, int arraynum);
 };
-
-// We use macros to drop unused arguments at compile time. This saves code size.
-#define VL_TRACE_PUSH_PREFIX(tracep, name, type, left, right) tracep->pushPrefix(name, type);
-#define VL_TRACE_POP_PREFIX(tracep) tracep->popPrefix();
-
-#define VL_TRACE_DECL_EVENT(tracep, code, fidx, name, dtypenum, dir, kind, type) \
-    tracep->declEvent(code, name)
-#define VL_TRACE_DECL_BIT(tracep, code, fidx, name, dtypenum, dir, kind, type) \
-    tracep->declBit(code, name)
-#define VL_TRACE_DECL_BUS(tracep, code, fidx, name, dtypenum, dir, kind, type, msb, lsb) \
-    tracep->declBus(code, name, msb, lsb)
-#define VL_TRACE_DECL_QUAD(tracep, code, fidx, name, dtypenum, dir, kind, type, msb, lsb) \
-    tracep->declQuad(code, name, msb, lsb)
-#define VL_TRACE_DECL_WIDE(tracep, code, fidx, name, dtypenum, dir, kind, type, msb, lsb) \
-    tracep->declWide(code, name, msb, lsb)
-#define VL_TRACE_DECL_DOUBLE(tracep, code, fidx, name, dtypenum, dir, kind, type) \
-    tracep->declDouble(code, name)
-
-#define VL_TRACE_DECL_EVENT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
-    tracep->declEventArray(code, name, arraynum)
-#define VL_TRACE_DECL_BIT_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
-    tracep->declBitArray(code, name, arraynum)
-#define VL_TRACE_DECL_BUS_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
-                                msb, lsb) \
-    tracep->declBusArray(code, name, arraynum, msb, lsb)
-#define VL_TRACE_DECL_QUAD_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
-                                 msb, lsb) \
-    tracep->declQuadArray(code, name, arraynum, msb, lsb)
-#define VL_TRACE_DECL_WIDE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum, \
-                                 msb, lsb) \
-    tracep->declWideArray(code, name, arraynum, msb, lsb)
-#define VL_TRACE_DECL_DOUBLE_ARRAY(tracep, code, fidx, name, dtypenum, dir, kind, type, arraynum) \
-    tracep->declDoubleArray(code, name, arraynum)
 
 #ifndef DOXYGEN
 // Declare specialization here as it's used in VerilatedFstC just below
@@ -299,6 +283,9 @@ public:
 
     /// Return if file is open
     bool isOpen() const override VL_MT_SAFE { return m_sptrace.isOpen(); }
+    // The context being traced
+    VerilatedContext* contextp() const override { return m_sptrace.contextp(); }
+    void contextp(VerilatedContext* contextp) override { m_sptrace.contextp(contextp); }
     /// Open a new VCD file
     /// This includes a complete header dump each time it is called,
     /// just as if this object was deleted and reconstructed.
@@ -314,10 +301,7 @@ public:
     /// first may be removed.  Cat files together to create viewable vcd.
     void rolloverSize(size_t size) VL_MT_SAFE { m_sptrace.rolloverSize(size); }
     /// Close dump
-    void close() VL_MT_SAFE {
-        m_sptrace.close();
-        modelConnected(false);
-    }
+    void close() VL_MT_SAFE { m_sptrace.close(); }
     /// Flush dump
     void flush() VL_MT_SAFE { m_sptrace.flush(); }
     /// Write one cycle of dump data

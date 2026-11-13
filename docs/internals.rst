@@ -1154,10 +1154,303 @@ For SystemC code, the ``eval()`` function is wrapped in a SystemC
 sensitive to clocks and combo inputs, but tracing requires all signals to
 cause evaluation, and the performance difference is small.)
 
-If tracing is enabled, a callback examines all variables in the design for
-changes, and writes the trace for each change. To accelerate this process,
-the evaluation process records a bitmask of variables that might have
-changed; if clear, checking those signals for changes may be skipped.
+If tracing is enabled, the trace runtime reads the values to trace using
+the run time model descriptors, see below. The evaluation records which
+values might have changed, so values that cannot have changed since the
+last dump are not checked.
+
+
+Run Time Model Descriptors
+--------------------------
+
+The run time model descriptors (RTMD) describe the state of a Verilated
+model as data: its hierarchy, its variables, their types, and where their
+values are in memory. They are created with :vlopt:`--rtmd`, which the
+tracing options imply. Tracing is built entirely on them: the trace runtime
+walks the descriptors to declare the variables, and reads the values
+through them, so no code specific to tracing is generated, other than
+recording activity.
+
+The descriptors are built early from the source hierarchy, are carried
+through the passes as AST nodes, transformed by optimizations if needed and
+are emitted as constant C++ tables. At run time, each model holds a
+``VlRtmd`` instance pointing to its tables.
+
+::
+
+   V3LinkLevel::wrapTop
+          |
+   V3Rtmd::buildAll         a descriptor per module, the data types and
+          |                 var types in the AstTypeTable
+          :                 (passes keep the variables they reference)
+   V3Scope::scopeAll        a single tree under the AstTopScope
+   V3LinkDot::linkDotScope  interface references resolved
+   V3Rtmd::scopedAll        what is traced per scope, which values are needed
+          :
+   V3Trace::traceAll        activity flags and sets, when tracing
+          :
+   V3Descope::descopeAll    the scope holding each value recorded
+          :
+   V3EmitC::emitcRtmd       the tables, in {prefix}__Rtmd*Table*.cpp
+   V3EmitC::emitcModel      the model constructor creates the VlRtmd
+
+
+Descriptors in the AST
+~~~~~~~~~~~~~~~~~~~~~~
+
+There are three kinds of descriptors, defined in ``V3AstNodeRtmd.h``:
+
+- Data types, ``AstNodeRtmdDataType`` and its subclasses: atoms such as
+  ``logic`` or ``int``, enums, packed and unpacked arrays, structs, and
+  packed unions. They describe types as written in the source, rather than
+  as Verilator stores them, so they can be presented accurately. Each
+  distinct type has a single descriptor, interned by the ``AstTypeTable``.
+
+- Var types, ``AstRtmdVarType``: a data type, with the kind of declaration
+  (e.g. variable, wire, parameter) and its port direction. Each distinct
+  var type also has a single interned descriptor in the ``AstTypeTable``.
+
+- Hierarchy items, ``AstNodeRtmdItem`` and its subclasses. A hierarchy
+  level, ``AstRtmdHier``, holds the variables (``AstRtmdVar``), instances
+  (``AstRtmdInstance``), interface references (``AstRtmdIfaceRef``),
+  instances of separately Verilated models (``AstRtmdPartition``), and
+  nested levels within it.
+
+``V3Rtmd::buildAll`` runs while the source hierarchy is still intact, so
+named generate and begin blocks, forks, and the statics of functions and
+tasks become levels of their own. Each module holds the level describing
+it. The variables of the root module, ``$root``, which are the primary
+inputs and outputs, are in a nested ``ROOTIO`` level, which is not part of
+any hierarchical name. For example:
+
+.. code-block:: sv
+
+   module t (input clk);
+     sub a (.clk);
+     sub b (.clk);
+   endmodule
+
+   module sub (input clk);
+     logic [7:0] cnt;
+     if (1) begin : gen
+       logic flag;
+     end
+   endmodule
+
+is described before ``V3Scope`` as:
+
+::
+
+   $root                  t                   sub
+   Hier ROOT "$root"      Hier MODULE "t"     Hier MODULE "sub"
+     Hier ROOTIO "$rootio"  Var "clk"           Var "clk"
+       Var "clk"            Instance "a"        Var "cnt"
+     Instance "t"           Instance "b"        Hier GENERATE "gen"
+                                                  Var "flag"
+
+``V3Scope`` clones the level of a module for each of its instances, and
+inlines it after the instance, leaving a single tree under the
+``AstTopScope``:
+
+::
+
+   Hier ROOT "$root"
+     Hier ROOTIO "$rootio"
+       Var "clk"
+     Instance "t"
+     Hier MODULE "t"
+       Var "clk"
+       Instance "a"
+       Hier MODULE "sub"          for t.a
+         Var "clk"
+         Var "cnt"
+         Hier GENERATE "gen"
+           Var "flag"
+       Instance "b"
+       Hier MODULE "sub"          for t.b
+         ...
+
+An ``AstRtmdVar`` references the variable holding its value, so passes that
+delete, split, or replace variables keep the descriptors valid, which is
+why several passes handle the descriptor nodes. After ``V3Scope``,
+``V3Rtmd::scopedAll`` walks the tree, knowing the hierarchical name of each
+variable. It stops tracing variables of instances not traced, or turned off
+by control directives, and drops the references of variables not traced,
+which are then described without a value. Constants, e.g. parameters,
+instead reference the constant pool entry of their value, so they need no
+storage in the model.
+
+Only static variables are described. Variables of types that cannot be
+described, e.g. strings, queues, dynamic and associative arrays, and class
+handles, are not described.
+
+
+Descriptor Tables
+~~~~~~~~~~~~~~~~~
+
+``V3EmitCRtmd`` emits the descriptors as five constant tables:
+
+- The data type table, a row per data type. The items of an enum, and the
+  members of a struct or union, are the rows following it.
+
+- The var type table, a row per var type.
+
+- The global table, the constant pool entries holding the values of the
+  described constants.
+
+- The activity set table, see below.
+
+- The hierarchy table, the tree flattened into rows, with a ``Push`` and a
+  ``Pop`` around the items of each level. An ``Instance`` row is followed
+  by the ``Push`` of the instantiated level. An ``IfaceRef`` row holds the
+  row index of the ``Push`` of the referenced interface instance. A
+  ``Partition`` row names an instance of a separately Verilated model.
+
+Rows refer to rows of other tables by index. A ``Var`` row refers to its
+var type and its activity set, and holds where its value is: the offset of
+the variable from the symbol table, or the index of its global for a
+constant. A variable without a value has neither. For the example above:
+
+::
+
+   Hierarchy table               Var type table       Data type table
+    0 Push ROOT "$root"           0 WIRE input, #0      0 Atom logic
+    1 Push ROOTIO "$rootio"       1 VAR, #1             1 PackedArray
+    2 Var "clk", #0               2 VAR, #0               [7:0] of #0
+    3 Pop
+    4 Instance "t"
+    5 Push MODULE "t"
+    6 Var "clk", #0
+    7 Instance "a"
+    8 Push MODULE "sub"
+    9 Var "clk", #0
+   10 Var "cnt", #1
+   11 Push GENERATE "gen"
+   12 Var "flag", #2
+   13 Pop
+   14 Pop
+   15 Instance "b"
+      ...
+      Pop                         the last row, ending "$root"
+
+All tables but the activity set table are split into chunks based on
+:vlopt:`--output-split-rtmd`, each chunk in its own file, so large tables
+compile in parallel. A table is then an array of its chunks:
+
+::
+
+   extern const VlRtmdHierRow* const Vt__RtmdHierTable[] = {chunk 0,
+                                                            chunk 1, ...};
+   row i is Vt__RtmdHierTable[i >> N][i & (2^N - 1)]
+   with 2^N the rows per chunk, --output-split-rtmd rounded down to a power of 2
+
+
+Activity
+~~~~~~~~
+
+When tracing, ``V3Trace`` works out which code can change each described
+variable, so the trace only reads the values that might have changed since
+its last dump. It inserts statements setting activity flags, held in the
+``__Vactivity`` array of the model, where code that may write described
+variables is entered. Each variable gets an activity set, the flags of all
+the code that may write it. Variables with the same flags share a set, and
+the activity set table holds the flags of each set.
+
+- Flag 0 is set by every evaluation. It covers variables that can change
+  without any code running, e.g. primary inputs.
+
+- Rarely run code, e.g. initialization, sets all flags. Flag 1 covers the
+  variables written only by such code.
+
+- Each other flag is set where some code that writes variables is entered.
+
+- A variable with an empty set never changes, e.g. a constant, and is only
+  dumped by full dumps.
+
+The model clears the flags at its first evaluation after a dump, so all
+trace files dumped at the same time see the same activity:
+
+::
+
+            eval()                               dump()
+   +-------------------------+         +---------------------------+
+   | traced since the last   |         | for each group of values: |
+   |   evaluation: clear all |         |   if any flag of its set  |
+   |   flags                 |  flags  |   is set: compare the     |
+   | set flag 0              | ------> |   values with the last    |
+   | entering code writing   |         |   dump, write the changes |
+   |   'cnt': set its flag   |         | mark the models traced    |
+   +-------------------------+         +---------------------------+
+
+
+Walking the Descriptors at Run Time
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The constructor of the model creates its ``VlRtmd``, holding the tables,
+the base of the symbol table, the activity flags, and the options the model
+was Verilated with that affect how it is presented, e.g.
+:vlopt:`--trace-structs`. Each model is registered with its
+``VerilatedContext`` under its hierarchical name.
+
+::
+
+   VerilatedContext
+     models()
+       "TOP" ---> model
+                    rtmd() ---> VlRtmd
+                                  m_symsp ----------> symbol table
+                                  m_activityFlagsp -> __Vactivity
+                                  m_hierTabpp ------> hierarchy table
+                                  m_dataTypesTabpp, m_varTypesTabpp,
+                                  m_globalSymsTabpp, m_actSetsTabp
+                                  m_opt               the options
+
+``VlRtmdHierListener`` walks the descriptors of all models in a context,
+calling its virtual methods for each hierarchy level, each variable, and
+the components (elements and members) of the variables it walks into. The
+``enter`` methods return whether to walk into a level, so a listener can
+skip what it does not need, and ``onVar`` returns whether to walk into the
+components of an array, struct or union. A component of a packed value is
+reported as a bit offset within the outermost packed value.
+
+For debugging, ``VlRtmd::hierDump`` writes the descriptors of all models in
+a context to a stream, one line per hierarchy level and variable, using
+such a listener.
+
+The models are walked in the order of their hierarchical names. A
+``Partition`` row is an instance of a separately Verilated model, e.g. a
+hierarchical block, which is registered under the hierarchical name of the
+instance. That model is walked in place of the ``Partition`` row, as if it
+was part of the parent model, so a hierarchical design is presented as a
+single hierarchy. Models not walked as a partition are roots.
+
+::
+
+   model "TOP"                       model "TOP.t.u_part"
+   Push ROOT "$root"                 Push ROOT "$root"        not entered
+     ...                               Push ROOTIO "$rootio"  skipped
+     Push MODULE "t"                   ...
+       Partition "u_part" ---------->  Instance "part"        as "u_part"
+       ...                             Push MODULE "part"
+                                         ...
+
+
+Tracing
+~~~~~~~
+
+``VerilatedTrace``, the base of the trace file classes, is a listener. When
+a trace file is opened, it walks the context, declares each traced level
+and signal in the trace file, and gives each value a trace code, shared by
+the values at the same location. It then groups the values by activity set,
+and by how they are stored, so each dump checks each set once, and dumps
+the values of a group in a loop specialized for their storage. A component
+of a packed value is dumped by extracting its bits from the packed value.
+
+When the model is Verilated with :vlopt:`--trace-vcd` and
+:vlopt:`--threads`, the groups are split into a contiguous range for each
+thread of the context. These are dumped in parallel into separate buffers,
+which are written in order, so the trace is the same as when dumped by a
+single thread.
 
 
 Constrained randomization

@@ -1651,11 +1651,23 @@ Summary:
 
 .. option:: --output-split-ctrace <statements>
 
+   Deprecated and has no effect.
+
+   In versions before 5.056:
+
    Similar to :vlopt:`--output-split-cfuncs`, it enables splitting trace
    functions in the output .cpp files into multiple functions.
 
    Defaults to the value of :vlopt:`--output-split`, unless explicitly
    specified.
+
+.. option:: --output-split-rtmd <rows>
+
+   Splits the run time model descriptor tables (see :vlopt:`--rtmd`) into
+   chunks of the given number of rows each, rounded down to a power of two,
+   every chunk in a separate .cpp file. A value of 0 disables splitting.
+
+   Defaults to 16384.
 
 .. option:: -P
 
@@ -1986,6 +1998,13 @@ Summary:
    Run Verilator and record with the :command:`rr` command. See
    `https://rr-project.org <https://rr-project.org>`_.
 
+.. option:: --rtmd
+
+   Create run time model descriptors (RTMD), tables describing the design
+   hierarchy, signals and their types, which the Verilated model provides
+   at run time. Implied by :vlopt:`--trace-fst`, :vlopt:`--trace-saif`
+   and :vlopt:`--trace-vcd`.
+
 .. option:: --runtime-debug
 
    Enable including debug assertions in the generated model. This may
@@ -2287,13 +2306,13 @@ Summary:
 
    Adds waveform tracing code to the model using VCD format.
 
-   Verilator will generate additional :file:`<prefix>__Trace*.cpp` files
-   must be compiled. In addition :file:`verilated_vcd_sc.cpp` (for SystemC
-   traces) or :file:`verilated_vcd_c.cpp` (for both) must be compiled and
-   linked in. If using the Verilator-generated Makefiles, these files will
-   be added to the source file lists for you. If you are not using the
-   Verilator Makefiles, you will need to add these to your Makefile
-   manually.
+   Verilator will generate additional :file:`<prefix>__Rtmd*.cpp` files
+   that must be compiled. In addition, :file:`verilated_rtmd.cpp`,
+   :file:`verilated_vcd_c.cpp`, and for SystemC traces also
+   :file:`verilated_vcd_sc.cpp`, must be compiled and linked in. If using
+   the Verilator-generated Makefiles, these files will be added to the
+   source file lists for you. If you are not using the Verilator
+   Makefiles, you will need to add these to your Makefile manually.
 
    Having tracing compiled in may result in small performance losses,
    even when tracing is not turned on during model execution.

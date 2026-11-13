@@ -328,11 +328,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return out + ')';
     }
 
-    // Name of the instance member for the given scope
-    static std::string instName(const AstScope* scopep) {
-        return "vlInst." + VIdProtect::protectIf(scopep->nameDotless(), scopep->protect());
-    }
-
     // A string parameter's VPI data is its runtime .c_str()
     static bool isScalarStringParam(const AstVar* const varp) {
         const AstBasicDType* const bdtypep = VN_CAST(varp->dtypeSkipRefp(), BasicDType);
@@ -787,8 +782,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
         for (AstIntfRef* const intfRefp : cellp->intfRefspList()) {
             const std::string refName = AstNode::vpiName(intfRefp->name());
-            // Assume only references under the same parent scope reference the
-            // same interface. Same limitation as the trace path in V3TraceDecl.
+            // Assume only references under the same parent scope reference the same interface.
+            // TODO: This is not actually correct. An interface can propagate upwards and
+            //       sideways when passed to a port via a downward hierarchical reference,
+            //       which we will miss here.
             if (!VString::startsWith(refName, parentPath)) continue;
             m_ifaceRefs.emplace_back(nodep, scopeSymString(intfRefp->parentName()), refName,
                                      AstNode::vpiName(intfRefp->baseName()),
@@ -1018,8 +1015,15 @@ void EmitCSyms::emitSymHdr() {
     ofp()->putsIntTopInclude();
     puts("#include \"verilated.h\"\n");
     if (v3Global.needTraceDumper()) {
-        for (const string& base : v3Global.opt.traceSourceLangs())
-            puts("#include \"" + base + ".h\"\n");
+        // $dump* writes the trace format the model is built with
+        const std::string fileSuffix = optSystemC() ? "_sc" : "_c";
+        const std::string classSuffix = optSystemC() ? "Sc" : "C";
+        for (const std::string& format : {"Fst"s, "Saif"s, "Vcd"s}) {
+            puts("#if VM_TRACE_" + VString::upcase(format) + "\n");
+            puts("#include \"verilated_" + VString::downcase(format) + fileSuffix + ".h\"\n");
+            puts("using __VDumper = Verilated" + format + classSuffix + ";\n");
+            puts("#endif\n");
+        }
     }
     if (v3Global.opt.usesProfiler()) puts("#include \"verilated_profiler.h\"\n");
 
@@ -1068,15 +1072,8 @@ void EmitCSyms::emitSymHdr() {
         // should call a global dumpperp
         puts("bool __Vm_dumping = false;  // Dumping is active\n");
         puts("VerilatedMutex __Vm_dumperMutex;  // Protect __Vm_dumperp\n");
-        puts(v3Global.opt.traceClassLang()
-             + "* __Vm_dumperp VL_GUARDED_BY(__Vm_dumperMutex) = nullptr;"
-               "  /// Trace class for $dump*\n");
-    }
-    if (v3Global.opt.trace()) {
-        puts("bool __Vm_activity = false;"
-             "  ///< Used by trace routines to determine change occurred\n");
-        puts("uint32_t __Vm_baseCode = 0;"
-             "  ///< Used by trace routines when tracing multiple models\n");
+        puts("__VDumper* __Vm_dumperp VL_GUARDED_BY(__Vm_dumperMutex) = nullptr;"
+             "  // Trace class for $dump*\n");
     }
     if (v3Global.hasEvents()) {
         if (v3Global.assignsEvents()) {
@@ -1760,7 +1757,7 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
         puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
         puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
         puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
-        puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
+        puts("__Vm_dumperp = new __VDumper();\n");
         puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
         puts("const std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
         puts("__Vm_dumperp->open(dumpfile.c_str());\n");
@@ -1782,7 +1779,6 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
             const std::string op = de ? ">>" : "<<";
             puts("\nvoid " + symClassName() + "::" + funcname + "(" + classname + "& os) {\n");
             puts("// Internal state\n");
-            if (v3Global.opt.trace()) puts("os" + op + "__Vm_activity;\n");
             puts("os " + op + " __Vm_didInit;\n");
             puts("// Module instance state\n");
             for (const ScopeModPair& itpair : m_scopes) {

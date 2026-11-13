@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Waves Tracing
+// DESCRIPTION: Verilator: Build the run time model descriptors (RTMD)
 //
 // Code available from: https://verilator.org
 //
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3TRACEDECL_H_
-#define VERILATOR_V3TRACEDECL_H_
+#ifndef VERILATOR_V3RTMD_H_
+#define VERILATOR_V3RTMD_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -24,9 +24,14 @@ class AstNetlist;
 
 //============================================================================
 
-class V3TraceDecl final {
+class V3Rtmd final {
 public:
-    static void traceDeclAll(AstNetlist* nodep) VL_MT_DISABLED;
+    // Build the descriptors
+    static void buildAll(AstNetlist* nodep) VL_MT_DISABLED;
+    // Finish the descriptors once scoped: untrace the signals of instances not traced, or
+    // excluded by control directives, clear the references no longer needed, and reference
+    // constants from the constant pool. Must run after V3Scope.
+    static void scopedAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard
