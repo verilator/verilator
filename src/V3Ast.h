@@ -163,18 +163,18 @@ class VNUser final {
 
 public:
 #ifdef VL_USER_TYPE_CHECKS
-    VNUser() = default;
+    VL_ATTR_ALWINLINE VNUser() = default;
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
-    VNUser(uint64_t i) {
+    VL_ATTR_ALWINLINE VNUser(uint64_t i) {
         // VNUser{0} represents the monostate
         if (i) m_u = i;
     }
-    explicit VNUser(void* p) {
+    VL_ATTR_ALWINLINE explicit VNUser(void* p) {
         // VNUser{nullptr} represents the monostate
         if (p) m_u = p;
     }
-    ~VNUser() = default;
+    VL_ATTR_ALWINLINE ~VNUser() = default;
     // Casters
     template <typename T>
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
@@ -190,18 +190,18 @@ public:
         return *uip;
     }
 #else
-    VNUser() = default;
+    VL_ATTR_ALWINLINE VNUser() = default;
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
-    VNUser(uint64_t i) {
+    VL_ATTR_ALWINLINE VNUser(uint64_t i) {
         m_u.up = nullptr;
         m_u.uq = i;
     }
-    explicit VNUser(void* p) {
+    VL_ATTR_ALWINLINE explicit VNUser(void* p) {
         m_u.uq = 0;  // For 32-bit targets where up is 32-bits
         m_u.up = p;
     }
-    ~VNUser() = default;
+    VL_ATTR_ALWINLINE ~VNUser() = default;
     // Casters
     template <typename T>
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
