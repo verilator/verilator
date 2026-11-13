@@ -35,6 +35,9 @@ class Cls;
     solve rarray[0] before rmember1;
     foreach (rarray[i]) rarray[i] == rmember1 + i;
   }
+  static constraint static_c {rmember2 > 0;}
+  constraint :initial init_c {rmember1 > 0;}
+  constraint :final final_c {rmember2 != 7;}
   covergroup cg_in_class @(posedge cg_clk);
     cp_m: coverpoint member {
       bins one = {1};
@@ -50,6 +53,7 @@ class Cls;
   function void method;
     if (this != this) $stop;
   endfunction
+  extern function int extf();
   task delay_method;
     #1;
   endtask
@@ -57,6 +61,10 @@ class Cls;
     delay_method();
   endtask
 endclass
+
+function int Cls::extf();
+  return 7;
+endfunction
 
 class ClsParam #(type T = int, int P = 1);
   T pval;
@@ -78,16 +86,20 @@ class ClsParam2 #(
 endclass
 
 virtual class VBase;
+  rand int pv;
   pure virtual function int vfunc();
+  pure constraint pure_c;
 endclass
 
 class VDer extends VBase;
   function int vfunc();
     return 1;
   endfunction
+  constraint pure_c {pv > 0;}
 endclass
 
 class ClsExt extends Cls;
+  constraint :extends init_c {rmember1 < 100;}
   function int inherited();
     return rmember1 + member;
   endfunction
@@ -694,6 +706,9 @@ module t (/*AUTOARG*/
     Cls obj;
     obj = new;
     obj.delay_caller();
+    if (obj.extf() != 7) $stop;
+    vder = new;
+    if (vder.randomize() != 1) $stop;
   end
 endmodule
 
