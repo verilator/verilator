@@ -7,6 +7,8 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+import shutil
+
 import vltest_bootstrap
 
 test.scenarios('vlt')
@@ -97,5 +99,15 @@ write_vcd(trace2, '1ns', 1, '0111', 'bad', include_msg=False)
 if run_diff([trace1, trace2], missing_log, missing_status) != '2':
     test.error("Expected exit code 2 for different signal sets")
 test.file_grep(missing_log, r'Signal only in .*trace1\.vcd: top\.msg')
+
+if shutil.which('fst2vcd') and shutil.which('vcd2fst'):
+    simple = test.obj_dir + "/simple.vcd"
+    fst = test.obj_dir + "/trace.fst"
+    write_vcd(simple, '1ns', 1, '0111', 'bad', include_msg=False, include_real=False)
+    test.run(cmd=[shutil.which('vcd2fst'), simple, fst])
+    if run_diff([simple, fst], fst_log, fst_status) != '0':
+        test.error("Expected exit code 0 for an FST generated from the same VCD")
+else:
+    print("- FST smoke test skipped: install GTKWave with fst2vcd and vcd2fst")
 
 test.passes()

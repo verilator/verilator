@@ -12,7 +12,10 @@
 import argparse
 import os
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import NoReturn
@@ -232,11 +235,34 @@ class VcdParser:
         return bits.rjust(signal.width, '0')
 
 
+def fst_to_vcd(filename: str) -> str:
+    executable = shutil.which('fst2vcd')
+    if executable is None:
+        fatal("fst2vcd not found; install GTKWave and put fst2vcd in PATH to read FST files")
+    descriptor, temp_path = tempfile.mkstemp(suffix='.vcd')
+    try:
+        with os.fdopen(descriptor, 'wb') as out:
+            result = subprocess.run((executable, filename),
+                                    stdout=out,
+                                    stderr=subprocess.PIPE,
+                                    check=False)
+        if result.returncode:
+            message = result.stderr.decode('utf8', 'replace').strip()
+            fatal("fst2vcd failed for '" + filename + "': " + message)
+        return temp_path
+    except BaseException:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+        raise
+
+
 def to_vcd(filename: str) -> str:
     suffix = os.path.splitext(filename)[1].lower()
     if suffix == '.vcd':
         return filename
-    fatal("Unsupported trace file '" + filename + "'; expected .vcd")
+    if suffix == '.fst':
+        return fst_to_vcd(filename)
+    fatal("Unsupported trace file '" + filename + "'; expected .vcd or .fst")
 
 
 def check_signals(trace1: Trace, trace2: Trace) -> None:
@@ -332,25 +358,35 @@ def main() -> int:
     parser.add_argument('trace2', metavar='<trace2>', help='second VCD or FST trace')
     args = parser.parse_args()
 
-    path1 = to_vcd(args.trace1)
-    path2 = to_vcd(args.trace2)
-    trace1 = VcdParser(path1).parse()
-    trace2 = VcdParser(path2).parse()
-    if (trace1.scale_fs != trace2.scale_fs and (not trace1.scale_fs or not trace2.scale_fs)):
-        missing = trace1 if not trace1.scale_fs else trace2
-        fatal("Trace '" + missing.filename + "' has no $timescale")
-    check_signals(trace1, trace2)
-    rises = clock_rises(trace1, args.clock) if args.clock else []
-    difference = first_difference(trace1, trace2)
-    if difference is None:
-        return 0
-    time, name, value1, value2 = difference
-    message = "First difference at time " + format_time(trace1, time)
-    if args.clock:
-        message += " (cycle " + str(sum(1 for rise in rises if rise <= time)) + ")"
-    message += ": " + name + " (trace1=" + value1 + ", trace2=" + value2 + ")"
-    print(message)
-    return 1
+    temps: list[str] = []
+    try:
+        path1 = to_vcd(args.trace1)
+        if path1 != args.trace1:
+            temps.append(path1)
+        path2 = to_vcd(args.trace2)
+        if path2 != args.trace2:
+            temps.append(path2)
+        trace1 = VcdParser(path1).parse()
+        trace2 = VcdParser(path2).parse()
+        if (trace1.scale_fs != trace2.scale_fs and (not trace1.scale_fs or not trace2.scale_fs)):
+            missing = trace1 if not trace1.scale_fs else trace2
+            fatal("Trace '" + missing.filename + "' has no $timescale")
+        check_signals(trace1, trace2)
+        rises = clock_rises(trace1, args.clock) if args.clock else []
+        difference = first_difference(trace1, trace2)
+        if difference is None:
+            return 0
+        time, name, value1, value2 = difference
+        message = "First difference at time " + format_time(trace1, time)
+        if args.clock:
+            message += " (cycle " + str(sum(1 for rise in rises if rise <= time)) + ")"
+        message += ": " + name + " (trace1=" + value1 + ", trace2=" + value2 + ")"
+        print(message)
+        return 1
+    finally:
+        for temp in temps:
+            if os.path.exists(temp):
+                os.unlink(temp)
 
 
 if __name__ == '__main__':
