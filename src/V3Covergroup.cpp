@@ -4249,7 +4249,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     // VISITORS
     static bool isEnclosingInstanceVar(const AstVar* varp) {
-        return varp->isClassMember() && !varp->lifetime().isStatic() && !varp->isParam();
+        return varp->isClassMember() && !varp->lifetime().isStatic();
     }
 
     void rewriteThisRef(AstThisRef* refp, AstVar* handleVarp) {

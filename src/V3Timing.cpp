@@ -546,6 +546,7 @@ class TimingControlVisitor final : public VNVisitor {
     V3UniqueNames m_intraLsbNames{"__Vintralsb"};  // Intra assign delay LSB var names
     V3UniqueNames m_trigSchedNames{"__VtrigSched"};  // Trigger scheduler name generator
     V3UniqueNames m_dynTrigNames{"__VdynTrigger"};  // Dynamic trigger name generator
+    V3UniqueNames m_eventCountNames{"__VeventCount"};  // Event control count var names
     // Module level temporary variables, shared by instances
     V3SharedTmps m_assignWTmps{"__VassignWtmp", VVarType::MODULETEMP};  // Delayed AssignW values
     V3SharedTmps m_assignWGens{"__VassignWgen", VVarType::MODULETEMP};  // AssignW generations
@@ -586,11 +587,11 @@ class TimingControlVisitor final : public VNVisitor {
             stmtp->replaceWith(eventControlp);
             eventControlp->addStmtsp(stmtp);
             stmtp = eventControlp;
-        } else if (AstBegin* const beginp = VN_CAST(controlp, Begin)) {
-            // Begin from V3AssertPre
-            stmtp->replaceWith(beginp->unlinkFrBack());
-            beginp->addStmtsp(stmtp);
-            stmtp = beginp;
+        } else if (AstEventControl* const eventControlp = VN_CAST(controlp, EventControl)) {
+            // Cycle delay from V3AssertPre
+            stmtp->replaceWith(eventControlp->unlinkFrBack());
+            eventControlp->addStmtsp(stmtp);
+            stmtp = eventControlp;
         }
         return stmtp == nodep ? nullptr : stmtp;
     }
@@ -1091,6 +1092,31 @@ class TimingControlVisitor final : public VNVisitor {
             return;
         }
         FileLine* const flp = nodep->fileline();
+        if (AstNodeExpr* const countp = nodep->countp()) {
+            // Wait for the event as many times, counted in a variable of this process, as a
+            // cycle delay of a pending synchronous drive runs in parallel with others
+            AstVarScope* const cntVscp
+                = createTemp(flp, m_eventCountNames.get(nodep), countp->dtypep());
+            localizeVars(m_procp, {cntVscp->varp()});
+            AstNode* const stmtsp
+                = nodep->stmtsp() ? nodep->stmtsp()->unlinkFrBackWithNext() : nullptr;
+            AstAssign* const initp = new AstAssign{
+                flp, new AstVarRef{flp, cntVscp, VAccess::WRITE}, countp->unlinkFrBack()};
+            nodep->replaceWith(initp);
+            AstLoop* const loopp = new AstLoop{flp};
+            loopp->addStmtsp(new AstLoopTest{
+                flp, loopp,
+                new AstGt{flp, new AstVarRef{flp, cntVscp, VAccess::READ}, new AstConst{flp, 0}}});
+            loopp->addStmtsp(nodep);
+            loopp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, cntVscp, VAccess::WRITE},
+                              new AstSub{flp, new AstVarRef{flp, cntVscp, VAccess::READ},
+                                         new AstConst{flp, 1}}});
+            initp->addNextHere(loopp);
+            if (stmtsp) loopp->addNextHere(stmtsp);
+            // The loop is visited next, as the replacement of this event control
+            return;
+        }
         // Relink child statements after the event control
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBackWithNext());
         if (needDynamicTrigger(nodep->sentreep())) {
@@ -1212,13 +1238,7 @@ class TimingControlVisitor final : public VNVisitor {
             AstFork* forkp = !nodep->nextp() ? VN_CAST(nodep->firstAbovep(), Fork) : nullptr;
             if (!forkp) forkp = new AstFork{flp, VJoinType::JOIN_NONE};
             controlp->replaceWith(forkp);
-            // The Begin from V3AssertPre is not needed to group the statements in the fork item
-            AstNodeStmt* stmtsp = controlp;
-            if (AstBegin* const beginp = VN_CAST(controlp, Begin)) {
-                stmtsp = beginp->stmtsp()->unlinkFrBackWithNext();
-                VL_DO_DANGLING(pushDeletep(beginp), beginp);
-            }
-            AstForkItem* const itemp = new AstForkItem{nodep->fileline(), stmtsp};
+            AstForkItem* const itemp = new AstForkItem{nodep->fileline(), controlp};
             forkp->addForksp(itemp);
             addFlags(itemp, T_NBA_UPDATE);
             controlp = forkp;
