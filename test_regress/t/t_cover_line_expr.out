@@ -336,7 +336,9 @@
 %000003       2'b00: if (t1 && t2) $write("");
 -000003  point: type=line comment=case hier=top.t
 -000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
 -000002  point: type=branch comment=else hier=top.t
+-000002  point: type=line comment=else hier=top.t
 -000001  point: type=expr comment=(t1==0) => 0 hier=top.t
 -000001  point: type=expr comment=(t1==1 && t2==1) => 1 hier=top.t
 -000001  point: type=expr comment=(t2==0) => 0 hier=top.t
@@ -348,7 +350,9 @@
 %000000       2'b11: if (t1 || t2) $write("");  // cyc stops at 9, so never runs
 -000000  point: type=line comment=case hier=top.t
 -000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
 -000000  point: type=branch comment=else hier=top.t
+-000000  point: type=line comment=else hier=top.t
 -000000  point: type=expr comment=(t1==0 && t2==0) => 0 hier=top.t
 -000000  point: type=expr comment=(t1==1) => 1 hier=top.t
 -000000  point: type=expr comment=(t2==1) => 1 hier=top.t
