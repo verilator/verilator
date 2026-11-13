@@ -873,6 +873,14 @@ public:
     void unique0Pragma(bool flag) { m_unique0Pragma = flag; }
     bool priorityPragma() const { return m_priorityPragma; }
     void priorityPragma(bool flag) { m_priorityPragma = flag; }
+    // Copy the attributes of another 'if', e.g. when rebuilding it with different branches
+    void cloneAttr(const AstIf* fromp) {
+        branchPred(fromp->branchPred());
+        isBoundsCheck(fromp->isBoundsCheck());
+        uniquePragma(fromp->uniquePragma());
+        unique0Pragma(fromp->unique0Pragma());
+        priorityPragma(fromp->priorityPragma());
+    }
 };
 class AstInitialAutomaticStmt final : public AstNodeStmt {
     // Automatic variable initialization in a statement position

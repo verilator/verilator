@@ -246,10 +246,9 @@ class SplitVisitor final : public VNVisitor {
                     // keeps the 'if' and all it holds in one component, so just once.
                     AstIf* const clonep = new AstIf{flp, ifp->condp()->cloneTree(true),
                                                     thens[color], elses[color]};
-                    // Preserve pragmas from unique if's so assertions work properly
-                    clonep->uniquePragma(ifp->uniquePragma());
-                    clonep->unique0Pragma(ifp->unique0Pragma());
-                    clonep->priorityPragma(ifp->priorityPragma());
+                    // Preserve all attributes, e.g. the branch prediction (assertions
+                    // mark their failure branch unlikely), and pragmas from unique if's
+                    clonep->cloneAttr(ifp);
                     result[color] = AstNode::addNext(result[color], clonep);
                 }
                 // There is nothing under the 'if' to guard. If its vertex was
