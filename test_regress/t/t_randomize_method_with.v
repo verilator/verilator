@@ -179,11 +179,16 @@ module mwith ();
     begin
       automatic NoParen np = new;
       automatic int a = 7;  // Same name as a member of NoParen
-      `checkd(np.randomize with {b == a;}, 1);
+      int randomize_result;
+      bit test_result;
+      randomize_result = np.randomize with {b == a;};
+      `checkd(randomize_result, 1);
       `checkd(np.b, 4);  // Unrestricted: 'a' is the member
-      `checkd(np.randomize with (b) {b == a;}, 1);
+      randomize_result = np.randomize with (b) {b == a;};
+      `checkd(randomize_result, 1);
       `checkd(np.b, 7);  // Restricted: 'a' is the caller's variable
-      `checkd(np.randomize with () {np.b == a + 1;}, 1);
+      randomize_result = np.randomize with () {np.b == a + 1;};
+      `checkd(randomize_result, 1);
       `checkd(np.b, 8);
       np.randomize with {b == 9;};
       `checkd(np.b, 9);
@@ -191,7 +196,8 @@ module mwith ();
       `checkd(np.b, 10);
       void'(np.randomize with (b) {b == a + 4;});
       `checkd(np.b, 11);
-      `checkd(baz2.test_randomize_noparen(), 1);
+      test_result = baz2.test_randomize_noparen();
+      `checkd(test_result, 1'b1);
     end
 
     $write("*-* All Finished *-*\n");
