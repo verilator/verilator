@@ -61,19 +61,6 @@ test.file_grep(test.obj_dir + '/std.log', r"gcc backend cannot find")
 test.file_grep(test.obj_dir + '/std.log', r'gcm.cache/std.gcm')
 test.file_grep(test.obj_dir + '/std.log', r'Precompile')
 
-ok = test.obj_dir + '/ok.cppm'
-test.write_wholefile(ok, 'export module ok;\n')
-run_scan(
-    [ok], test.obj_dir + '/ok.log', fails=False, extra=[
-        '--json', test.obj_dir + '/ok.json', '--dot', test.obj_dir + '/ok.dot'
-    ])
-run_scan([ok], test.obj_dir + '/ok_stamp.log', fails=False,
-         extra=['--stamp', test.obj_dir + '/ok.stamp'])
-test.file_grep(test.obj_dir + '/ok.json', r'"ok"')
-test.file_grep(test.obj_dir + '/ok.dot', r'digraph modules')
-if not os.path.exists(test.obj_dir + '/ok.stamp'):
-    test.error('Missing C++ module build stamp')
-
 clang = shutil.which('clang++')
 if clang is not None and shutil.which('clang-scan-deps') is not None:
     clang_std = test.obj_dir + '/clang_std.cppm'

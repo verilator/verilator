@@ -9,6 +9,7 @@
 
 import glob
 import os
+import sys
 import vltest_bootstrap
 
 test.scenarios('vlt')
@@ -50,6 +51,37 @@ test.file_grep(modules_json, r'"m1"')
 test.file_grep(modules_json, r'"m2"')
 test.file_grep(modules_json, r'"buildmod"')
 test.file_grep(modules_dot, r'm2 -> m1')
+
+direct_dir = test.obj_dir + '/direct'
+test.run(
+    logfile=test.obj_dir + '/direct.log',
+    cmd=[
+        sys.executable,
+        test.root + '/bin/verilator_module_deps',
+        '--backend',
+        'clang' if 'clang' in test.cxx_version.lower() else 'gcc',
+        '--cxx',
+        os.environ.get('CXX', 'c++'),
+        '--cxxflags=-std=c++23',
+        '--cppflags=',
+        '--opt-fast=-O0',
+        '--objdir',
+        direct_dir,
+        '--json',
+        direct_dir + '/graph.json',
+        '--dot',
+        direct_dir + '/graph.dot',
+        '--stamp',
+        direct_dir + '/graph.stamp',
+        '--output',
+        direct_dir + '/graph.mk',
+        '--source',
+        test.t_dir + '/t_flag_cxx_modules_chain_m1.cppm',
+    ])
+test.file_grep(direct_dir + '/graph.json', r'"m1"')
+test.file_grep(direct_dir + '/graph.dot', r'digraph modules')
+if not os.path.exists(direct_dir + '/graph.stamp'):
+    test.error('Missing C++ module graph stamp')
 
 run_make()
 if not os.path.exists(stamp):
