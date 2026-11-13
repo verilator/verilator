@@ -10,8 +10,8 @@ class Cls;
 
   function bit [7:0] local_ref_func(bit [7:0] m);
     bit [7:0] tmp;
-    tmp = m + 1;
-    return tmp + tmp;  // return expr references local 'tmp' -> would dangle
+    tmp = tmp + 1;  // reads 'tmp' before it has a value to substitute
+    return tmp;
   endfunction
 
   constraint c {x <= local_ref_func(y);}

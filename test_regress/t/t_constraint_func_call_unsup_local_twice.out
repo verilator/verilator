@@ -1,7 +1,6 @@
-1 | %Warning-CONSTRAINTIGN: t/t_constraint_func_call_unsup_local_twice.v:18:22: Unsupported: complex function in constraint, treating as state
-2 |    18 |   constraint c {x <= local_twice_func(y);}
-3 |       |                      ^~~~~~~~~~~~~~~~~
-3 |       |              ^~~~~~~~~~~~~~~~~~~~~~~~
-4 |                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
-5 |                         ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
-6 | %Error: Exiting due to
+%Warning-CONSTRAINTIGN: t/t_constraint_func_call_unsup_local_twice.v:18:22: Unsupported: complex function in constraint, treating as state
+   18 |   constraint c {x <= local_twice_func(y);}
+      |                      ^~~~~~~~~~~~~~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Error: Exiting due to

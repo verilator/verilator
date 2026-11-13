@@ -645,8 +645,9 @@ class ConstraintExprVisitor final : public VNVisitor {
 
     // Clone exprp, replacing references to variables for which valueps holds a value with a
     // copy of that value. Returns a detached expression.
-    static AstNodeExpr* cloneSubstLocals(AstNodeExpr* exprp,
-                                         const std::map<const AstVar*, AstNodeExpr*>& valueps) {
+    static AstNodeExpr*
+    cloneSubstLocals(AstNodeExpr* exprp,
+                     const std::unordered_map<const AstVar*, AstNodeExpr*>& valueps) {
         AstNodeExpr* const clonedp = exprp->cloneTreePure(false);
         // The root of a detached tree has no back pointer, so foreach cannot replace it
         if (AstVarRef* const rootRefp = VN_CAST(clonedp, VarRef)) {
@@ -675,43 +676,76 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstNodeExpr* extractReturnExpr(AstFunc* funcp) {
         AstVar* const retVarp = funcp->fvarp();
         if (!retVarp) return nullptr;
-        std::map<const AstVar*, AstNodeExpr*> localValueps;  // Substituted, owned values
+        std::unordered_map<const AstVar*, AstNodeExpr*> localValueps;  // Substituted, owned values
         AstNodeExpr* retExprp = nullptr;
         int retAssignCount = 0;
         bool simple = true;
-        AstNode* stmtp = funcp->stmtsp();
-        // A 'return' wraps the remaining body in a block for the jump to the function end
-        if (const AstJumpBlock* const blockp = VN_CAST(stmtp, JumpBlock)) stmtp = blockp->stmtsp();
-        for (; stmtp; stmtp = stmtp->nextp()) {
-            // Local variables' reset initializers carry no value the solver can use, and a
-            // local left unsubstituted is rejected below
-            if (VN_IS(stmtp, Comment) || VN_IS(stmtp, InitialAutomaticStmt)) continue;
-            // An unconditional jump out of the function ends the straight-line sequence;
-            // anything else means the value depends on control flow
-            if (VN_IS(stmtp, JumpGo)) break;
-            const AstAssign* const assignp = VN_CAST(stmtp, Assign);
-            const AstVarRef* const lhsp = assignp ? VN_CAST(assignp->lhsp(), VarRef) : nullptr;
-            if (!lhsp) {
-                simple = false;
-                break;
-            }
-            AstVar* const varp = lhsp->varp();
-            AstNodeExpr* const valuep = cloneSubstLocals(assignp->rhsp(), localValueps);
-            if (varp == retVarp) {
-                if (++retAssignCount > 2) {  // Initializer and return only
+        bool terminated = false;
+
+        // Walk a straight-line statement list. A return wraps the remaining body in a jump
+        // block, so nested blocks are flattened in place; a jump ends the reachable sequence.
+        const auto process = [&](auto&& self, AstNode* stmtp) -> void {
+            for (; stmtp && !terminated; stmtp = stmtp->nextp()) {
+                // Declarations and comments carry no value
+                if (VN_IS(stmtp, Comment) || VN_IS(stmtp, Var)) continue;
+                if (const AstInitialAutomaticStmt* const initp
+                    = VN_CAST(stmtp, InitialAutomaticStmt)) {
+                    self(self, initp->stmtsp());
+                    continue;
+                }
+                // A static local keeps its value across calls, so its initializer is not the
+                // value this call reads
+                if (const AstInitialStaticStmt* const initp = VN_CAST(stmtp, InitialStaticStmt)) {
+                    for (AstNode* itemp = initp->stmtsp(); itemp; itemp = itemp->nextp()) {
+                        const AstAssign* const assignp = VN_CAST(itemp, Assign);
+                        if (!assignp || !VN_IS(assignp->rhsp(), CReset)) {
+                            simple = false;
+                            return;
+                        }
+                    }
+                    continue;
+                }
+                if (const AstJumpBlock* const blockp = VN_CAST(stmtp, JumpBlock)) {
+                    self(self, blockp->stmtsp());
+                    continue;
+                }
+                if (const AstBegin* const beginp = VN_CAST(stmtp, Begin)) {
+                    self(self, beginp->stmtsp());
+                    continue;
+                }
+                // An unconditional jump out of the function ends the straight-line sequence;
+                // anything else means the value depends on control flow
+                if (VN_IS(stmtp, JumpGo)) {
+                    terminated = true;
+                    return;
+                }
+                const AstAssign* const assignp = VN_CAST(stmtp, Assign);
+                const AstVarRef* const lhsp = assignp ? VN_CAST(assignp->lhsp(), VarRef) : nullptr;
+                if (!lhsp) {
+                    simple = false;
+                    return;
+                }
+                // Every automatic local gets a reset initializer, which carries no value
+                if (VN_IS(assignp->rhsp(), CReset)) continue;
+                AstVar* const varp = lhsp->varp();
+                AstNodeExpr* const valuep = cloneSubstLocals(assignp->rhsp(), localValueps);
+                if (varp == retVarp) {
+                    if (++retAssignCount > 2) {  // Initializer and return only
+                        valuep->deleteTree();
+                        simple = false;
+                        return;
+                    }
+                    if (retExprp) retExprp->deleteTree();
+                    retExprp = valuep;
+                } else if (!localValueps.emplace(varp, valuep).second) {
+                    // Assigned more than once, so it has no single value to substitute
                     valuep->deleteTree();
                     simple = false;
-                    break;
+                    return;
                 }
-                if (retExprp) retExprp->deleteTree();
-                retExprp = valuep;
-            } else if (!localValueps.emplace(varp, valuep).second) {
-                // Assigned more than once, so it has no single value to substitute
-                valuep->deleteTree();
-                simple = false;
-                break;
             }
-        }
+        };
+        process(process, funcp->stmtsp());
         for (const auto& pair : localValueps) pair.second->deleteTree();
         if (!simple || !retExprp) {
             if (retExprp) retExprp->deleteTree();

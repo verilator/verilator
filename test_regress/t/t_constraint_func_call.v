@@ -37,6 +37,8 @@ class LocalVarFuncTest;
   rand int b;
   rand int max_val;
   rand int chained_val;
+  rand int init_val;
+  rand int block_val;
 
   function int max_of(int x, int y);
     int mv;
@@ -52,11 +54,26 @@ class LocalVarFuncTest;
     return t2 + y;
   endfunction
 
+  function int initialized(int x);
+    int t = x + 1;
+    return t;
+  endfunction
+
+  function int blocked(int x);
+    int t;
+    begin
+      t = x + 1;
+    end
+    return t;
+  endfunction
+
   constraint local_con {
     a inside {[0 : 9]};
     b inside {[0 : 9]};
     max_val == max_of(a, b);
     chained_val == chained(a, b);
+    init_val == initialized(a);
+    block_val == blocked(a);
   }
 endclass
 
@@ -85,6 +102,8 @@ module t;
       `checkd(rand_ok, 1)
       `checkd(lvf.max_val, (lvf.a > lvf.b) ? lvf.a : lvf.b)
       `checkd(lvf.chained_val, (lvf.a + 1) * 2 + lvf.b)
+      `checkd(lvf.init_val, lvf.a + 1)
+      `checkd(lvf.block_val, lvf.a + 1)
     end
 
     $write("*-* All Finished *-*\n");
