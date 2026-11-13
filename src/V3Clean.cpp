@@ -109,7 +109,7 @@ class CleanVisitor final : public VNVisitor {
         const CleanState clstate = getCleanState(nodep);
         if (clstate == CS_CLEAN) return true;
         if (clstate == CS_DIRTY) return false;
-        nodep->v3fatalSrc("Unknown clean state on node: " + nodep->prettyTypeName());
+        nodep->v3fatalSrc("Unknown clean state on node: " + nodep->prettyTypeNameQ());
         return false;
     }
     void setClean(AstNode* nodep, bool isClean) {
@@ -139,11 +139,8 @@ class CleanVisitor final : public VNVisitor {
         if (!isClean(nodep)) insertClean(nodep);
     }
     void ensureCleanAndNext(AstNode* nodep) {
-        // Editing list, careful looping!
-        for (AstNode* argp = nodep; argp;) {
-            AstNode* const nextp = argp->nextp();
+        for (AstNode* const argp : VNList<AstNode>{nodep}) {
             if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) ensureClean(exprp);
-            argp = nextp;
         }
     }
 

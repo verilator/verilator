@@ -93,7 +93,7 @@ void V3DfgPasses::addAstRefs(DfgGraph& dfg, AstNode* nodep,
     AstToDfgAddAstRefs::apply(dfg, nodep, getVarVertex);
 }
 
-class AstToDfgVisitor final : public VNVisitor {
+class AstToDfgVisitor final : public VNVisitorConst {
     // NODE STATE
     // AstVarScope::user2() -> DfgVertexVar* : the corresponding variable vertex
     // AstVarScope::user3() -> bool : Already gathered - used fine grained below
@@ -264,24 +264,24 @@ class AstToDfgVisitor final : public VNVisitor {
     void visit(AstNode* nodep) override { markReferenced(nodep); }
 
     // Containers to descend through to find logic constructs
-    void visit(AstNetlist* nodep) override { iterateAndNextNull(nodep->modulesp()); }
-    void visit(AstModule* nodep) override { iterateAndNextNull(nodep->stmtsp()); }
+    void visit(AstNetlist* nodep) override { iterateAndNextConstNull(nodep->modulesp()); }
+    void visit(AstModule* nodep) override { iterateAndNextConstNull(nodep->stmtsp()); }
     void visit(AstIface* nodep) override {
         if (!nodep->hasVirtualRef()) {
-            iterateAndNextNull(nodep->stmtsp());
+            iterateAndNextConstNull(nodep->stmtsp());
         } else {
             markReferenced(nodep);
         }
     }
-    void visit(AstTopScope* nodep) override { iterate(nodep->scopep()); }
+    void visit(AstTopScope* nodep) override { iterateConst(nodep->scopep()); }
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         m_scopep = nodep;
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstActive* nodep) override {
         if (nodep->hasCombo()) {
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         } else {
             markReferenced(nodep);
         }
@@ -300,7 +300,7 @@ class AstToDfgVisitor final : public VNVisitor {
     AstToDfgVisitor(DfgGraph& dfg, AstNetlist& root, V3DfgAstToDfgContext& ctx)
         : m_dfg{dfg}
         , m_ctx{ctx} {
-        iterate(&root);
+        iterateConst(&root);
     }
     VL_UNCOPYABLE(AstToDfgVisitor);
     VL_UNMOVABLE(AstToDfgVisitor);

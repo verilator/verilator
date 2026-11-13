@@ -14,9 +14,14 @@
 *.cmake
 *.d
 *.gch
+*.gcm
+*.ninja_deps
+*.ninja_log
 *.o
+*.scan.json
 *.so
 *.status
+CMakeCache.txt
 CMakeFiles
 
 # Simulation outputs and logs, checked by the tests themselves

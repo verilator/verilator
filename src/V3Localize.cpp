@@ -26,8 +26,8 @@
 
 #include "V3Localize.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3Stats.h"
+#include "V3VNUserAllocator.h"
 
 #include <vector>
 
@@ -48,8 +48,8 @@ class LocalizeVisitor final : public VNVisitor {
     const VNUser3InUse m_user3InUse;
     const VNUser4InUse m_user4InUse;
 
-    AstUser3Allocator<AstVarScope, std::unordered_set<AstCFunc*>> m_accessors;
-    AstUser4Allocator<AstCFunc, std::unordered_multimap<const AstVarScope*, AstVarRef*>>
+    VNUser3Allocator<AstVarScope, std::unordered_set<AstCFunc*>> m_accessors;
+    VNUser4Allocator<AstCFunc, std::unordered_multimap<const AstVarScope*, AstVarRef*>>
         m_references;
 
     // STATE - across all visitors

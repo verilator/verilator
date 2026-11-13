@@ -18,11 +18,11 @@
 
 #include "V3Assert.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3Const.h"
 #include "V3Stats.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
+#include "V3VNUserAllocator.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -412,7 +412,7 @@ class AssertVisitor final : public VNVisitor {
     //  AstIf::user2()           -> bool.  True for assertOn() checks inserted in this pass
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
-    AstUser2Allocator<AstAlways, std::vector<AstVar*>> m_delayed;
+    VNUser2Allocator<AstAlways, std::vector<AstVar*>> m_delayed;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Last module
@@ -449,11 +449,28 @@ class AssertVisitor final : public VNVisitor {
     V3UniqueNames m_caseTempNames{"__VCase"};  // Unique names for case temporaries
     V3UniqueNames m_matchCountNames{"__VnfaRemainingMatchCount"};  // Match replay counter names
     V3UniqueNames m_obsNames{"__VassertObs"};  // Observed deferred assertion temp names
+    // Key equality for the delayed value maps. AstNode::sameTree is not enough, as
+    // AstVar::sameNode compares only names, and before V3Begin distinct variables in
+    // different scopes (e.g. generate blocks) can have the same name.
+    struct SameTreeAndVars final {
+        static std::vector<const AstVar*> varps(const AstNode& node) {
+            std::vector<const AstVar*> varps;
+            node.foreach([&](const AstVarRef* refp) { varps.push_back(refp->varp()); });
+            return varps;
+        }
+        template <typename T_Node>
+        bool operator()(VNRef<T_Node> ar, VNRef<T_Node> br) const {
+            return ar.get().sameTree(&br.get()) && varps(ar.get()) == varps(br.get());
+        }
+    };
+    template <typename T_Node, typename T_Value>
+    using SameTreeAndVarsMap
+        = std::unordered_map<VNRef<T_Node>, T_Value, std::hash<VNRef<T_Node>>, SameTreeAndVars>;
     // Maps from (expression, senTree) to the AstAlways that computes its delayed values.
-    std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
+    SameTreeAndVarsMap<AstNodeExpr, SameTreeAndVarsMap<AstSenTree, AstAlways*>>
         m_modExpr2Sen2DelayedAlwaysp;
     // Source sampled-value history is initialized, unlike internal property-lowering history.
-    std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
+    SameTreeAndVarsMap<AstNodeExpr, SameTreeAndVarsMap<AstSenTree, AstAlways*>>
         m_modExpr2Sen2DefaultDelayedAlwaysp;
     // Map from delayed-value AstAlways to its last-sampling-tick time variable
     std::unordered_map<const AstAlways*, AstVar*> m_delayedAlways2TickTimep;

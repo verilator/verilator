@@ -29,9 +29,9 @@
 
 #include "V3Inline.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
+#include "V3VNUserAllocator.h"
 
 #include <unordered_map>
 #include <vector>
@@ -594,6 +594,7 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& 
                 varp->varType(VVarType::TRIWIRE);
             }
             varp->direction(VDirection::NONE);
+            varp->keepPort(false);
             if (!cellp->isTrace()) varp->trace(false);
         } else if (AstCell* const subCellp = VN_CAST(nodep, Cell)) {
             subCellp->name(prefix + subCellp->name());

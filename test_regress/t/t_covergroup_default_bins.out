@@ -30,6 +30,12 @@ t.cg_member.__Vcoverpoint0.auto_0: 1
 t.cg_member.__Vcoverpoint0.auto_1: 0
 t.cg_member.__Vcoverpoint1.auto_0: 0
 t.cg_member.__Vcoverpoint1.auto_1: 1
+t.cg_others.cp_real.low: 2
+t.cg_others.cp_real.mid [ignore]: 2
+t.cg_others.cp_real.other [illegal]: 0
+t.cg_others.cp_trans.other [default]: 3
+t.cg_others.cp_trans.rise: 1
+t.cg_others.cp_trans.zero: 1
 t.cg_plain.a.auto_0: 1
 t.cg_plain.a.auto_1: 0
 t.cg_plain.b.auto_0: 0

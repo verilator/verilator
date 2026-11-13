@@ -11,7 +11,7 @@
 
 #include "verilated.h"
 
-#include "Vt_comb_input_1.h"
+#include VM_PREFIX_INCLUDE
 #include "Vt_comb_input_1__Syms.h"
 
 #include <memory>

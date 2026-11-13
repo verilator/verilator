@@ -42,6 +42,24 @@ module t (
     && ($steady_gclk(signal) == $steady_gclk(cyc));
   endproperty
 
+  // Index formals remain untyped until property argument substitution.
+  int queue_values[$] = '{0, 1, 2, 3};
+  int dynamic_values[] = '{4, 5, 6, 7};
+
+  property queue_index(idx, expected);
+    @(posedge clk) queue_values[idx] == expected;
+  endproperty
+
+  property dynamic_index(idx, expected);
+    @(posedge clk) dynamic_values[idx] == expected;
+  endproperty
+
+  assert property (queue_index(cyc % 4, cyc % 4))
+  else $stop;
+
+  assert property (dynamic_index(cyc % 4, 4 + cyc % 4))
+  else $stop;
+
   assert property (sampled_values(cyc));
 
   assert property (check(0, 5'b11111))

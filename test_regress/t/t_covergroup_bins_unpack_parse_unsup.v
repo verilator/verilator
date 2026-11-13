@@ -17,13 +17,9 @@ module t;
       bins ranged = ([1 : 2], [3 : 4] => 5);
     }
     defaults: coverpoint value {
-      bins gated = default iff (gate);
-      ignore_bins ignored_gated[] = default iff (gate);
       illegal_bins illegal_gated[2] = default iff (gate);
       bins sequence_bin = default sequence;
       bins sequence_gated = default sequence iff (gate);
-      ignore_bins ignored_sequence = default sequence;
-      ignore_bins ignored_sequence_gated = default sequence iff (gate);
       illegal_bins illegal_sequence = default sequence;
       illegal_bins illegal_sequence_gated = default sequence iff (gate);
     }

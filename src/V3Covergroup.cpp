@@ -130,7 +130,7 @@ public:
 //######################################################################
 // Covergroup expression validation visitor
 
-class CovergroupExprValidVisitor final : public VNVisitor {
+class CovergroupExprValidVisitor final : public VNVisitorConst {
     const std::set<const AstVar*>& m_sampleMembers;
     const std::set<const AstVar*>& m_constructorRefMembers;
     bool m_inCoverageExpression = false;  // Under a coverage expression
@@ -140,34 +140,34 @@ class CovergroupExprValidVisitor final : public VNVisitor {
         if (!nodep) return;
         VL_RESTORER(m_sampleFormalAllowed);
         m_sampleFormalAllowed = true;
-        iterateAndNextNull(nodep);
+        iterateAndNextConstNull(nodep);
     }
 
     void scanCoverageExpression(AstNode* nodep) {
         if (!nodep) return;
         VL_RESTORER(m_inCoverageExpression);
         m_inCoverageExpression = true;
-        iterateAndNextNull(nodep);
+        iterateAndNextConstNull(nodep);
     }
 
     void visit(AstCoverpoint* nodep) override {
         scanSampleExpression(nodep->exprp());
         scanSampleExpression(nodep->iffp());
-        iterateAndNextNull(nodep->binsp());
-        iterateAndNextNull(nodep->optionsp());
+        iterateAndNextConstNull(nodep->binsp());
+        iterateAndNextConstNull(nodep->optionsp());
     }
     void visit(AstCoverCross* nodep) override {
-        iterateAndNextNull(nodep->itemsp());
+        iterateAndNextConstNull(nodep->itemsp());
         scanSampleExpression(nodep->iffp());
-        iterateAndNextNull(nodep->optionsp());
-        iterateAndNextNull(nodep->binsp());
+        iterateAndNextConstNull(nodep->optionsp());
+        iterateAndNextConstNull(nodep->binsp());
     }
     void visit(AstCoverCrossBin* nodep) override {
-        iterateAndNextNull(nodep->selectp());
+        iterateAndNextConstNull(nodep->selectp());
         scanSampleExpression(nodep->iffp());
     }
     void visit(AstCoverCrossWith* nodep) override {
-        iterateAndNextNull(nodep->selectp());
+        iterateAndNextConstNull(nodep->selectp());
         scanCoverageExpression(nodep->filterp());
         scanCoverageExpression(nodep->countp());
     }
@@ -209,16 +209,16 @@ class CovergroupExprValidVisitor final : public VNVisitor {
                                               "(IEEE 1800-2023 19.5).");
             }
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     CovergroupExprValidVisitor(const std::set<const AstVar*>& sampleMembers,
                                const std::set<const AstVar*>& constructorRefMembers)
         : m_sampleMembers{sampleMembers}
         , m_constructorRefMembers{constructorRefMembers} {}
-    void scan(AstNode* nodep) { iterate(nodep); }
+    void scan(AstNode* nodep) { iterateConst(nodep); }
 };
 
 //######################################################################
@@ -453,7 +453,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     uint32_t itemDatabaseWeight(AstNode* optionsp) const {
         const AstNodeExpr* weightp = nullptr;  // The option.weight in effect
         uint32_t typeWeight = 1;
-        for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{optionsp}) {
             const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
             if (!(optp->optType() == VCoverOptionType::WEIGHT)) continue;
             // V3Width left type_option.weight a non-negative constant
@@ -475,7 +475,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void lendItemWeight(FileLine* fl, AstNodeFuncCovItem* itemp, AstVar* itemVarp,
                         AstNode* optionsp) {
         FileLine* weightFl = fl;
-        for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{optionsp}) {
             const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
             if (optp->optType() == VCoverOptionType::WEIGHT && !optp->typeOption()) {
                 weightFl = optp->fileline();
@@ -493,7 +493,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     void generateItemWeight(FileLine* fl, AstNodeFuncCovItem* itemp, AstVar* itemVarp,
                             AstNode* optionsp) {
-        for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{optionsp}) {
             const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
             if (!(optp->optType() == VCoverOptionType::WEIGHT)) continue;
             if (!optp->typeOption()) {
@@ -798,7 +798,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (!binRangesp(binp)) runs = coverpointValues(binp, exprp);
         const auto constant
             = [](const AstNode* nodep) { return VN_IS(nodep, Const) || VN_IS(nodep, Unbounded); };
-        for (AstNode* rangep = binRangesp(binp); rangep; rangep = rangep->nextp()) {
+        for (AstNode* const rangep : VNList<AstNode>{binRangesp(binp)}) {
             const AstInsideRange* const irp = VN_CAST(rangep, InsideRange);
             // Else known when constructed
             if (irp ? !constant(irp->lhsp()) || !constant(irp->rhsp()) : !VN_IS(rangep, Const)) {
@@ -848,7 +848,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // filter's candidates, give, counted up to more than --coverage-max-bins
     static size_t sizedWildcardRuns(const AstCoverBin* binp, AstNodeExpr* exprp) {
         std::vector<std::pair<V3Number, V3Number>> runs;
-        for (AstNode* rangep = binRangesp(binp); rangep; rangep = rangep->nextp()) {
+        for (AstNode* const rangep : VNList<AstNode>{binRangesp(binp)}) {
             if (!VN_IS(rangep, Const)) continue;  // A range, or a value known at construction
             CrossValueRange range{rangep, resolveWidth(rangep, exprp)};
             if (resolveValue(rangep, exprp, true, true, range) && !crossRangeEmpty(range)) {
@@ -888,7 +888,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void extractItemOptions(AstNode* optionsp, int& atLeastOut, int& autoBinMaxOut) {
         atLeastOut = m_cgAtLeast;
         autoBinMaxOut = -1;  // -1 = not set at coverpoint level
-        for (AstNode* optionp = optionsp; optionp; optionp = optionp->nextp()) {
+        for (AstNode* const optionp : VNList<AstNode>{optionsp}) {
             AstCoverOption* const optp = VN_AS(optionp, CoverOption);
             // Weights may be non-constant; generateItemWeight() handles them.  A cross keeps
             // its unsupported options, which V3LinkParse warned of.
@@ -1055,17 +1055,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (m_cpGuardp) m_sampleFuncp->addStmtsp(m_cpGuardp);
     }
 
-    // Build the condition under which a default bin matches: NOT(OR of all normal bins).
+    // Build the condition under which a default bin matches: NOT(OR of the other bins of values;
+    // ignore and illegal ones too, as their values lie within defined bins).
     AstNodeExpr* buildDefaultCondition(AstCoverpoint* coverpointp, AstNodeExpr* exprp,
                                        FileLine* fl) {
         AstNodeExpr* anyBinMatchp = nullptr;
         for (AstNode* const binp : coverpointp->binspList()) {
             AstCoverBin* const cbinp = VN_AS(binp, CoverBin);
-            if (cbinp->binsType() == VCoverBinsType::BINS_DEFAULT
-                || cbinp->binsType() == VCoverBinsType::BINS_IGNORE
-                || cbinp->binsType() == VCoverBinsType::BINS_ILLEGAL)
-                continue;
-            // The values of constructed bins are known at construction; see emitSizedSample
+            // Transition bins hold sequences rather than values, whose rest only a 'default
+            // sequence' bin catches (IEEE 1800-2023 19.5)
+            if (cbinp->isDefault() || cbinp->transp()) continue;
+            // The values of constructed bins are known at construction; see emitSizedSample, and
+            // binCondition for those of ignore and illegal bins
             if (isConstructedBins(cbinp)) continue;
             if (isAutoBins(cbinp)) {
                 // Automatic bins partition the whole domain, leaving no default value
@@ -1073,8 +1074,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 return new AstConst{fl, AstConst::BitFalse{}};
             }
             AstNodeExpr* const binCondp = buildBinCondition(cbinp, exprp);
-            UASSERT_OBJ(binCondp, cbinp,
-                        "buildBinCondition returned nullptr for non-ignore/non-illegal bin");
+            if (!binCondp) {  // The bin's values are in error, or unsupported (--bbox-unsup)
+                UASSERT_OBJ(V3Error::errorCount() > 0 || v3Global.opt.bboxUnsup(), cbinp,
+                            "Bin of values without a condition");
+                continue;
+            }
             anyBinMatchp = anyBinMatchp ? new AstOr{fl, anyBinMatchp, binCondp} : binCondp;
         }
         return anyBinMatchp ? static_cast<AstNodeExpr*>(new AstNot{fl, anyBinMatchp})
@@ -1806,8 +1810,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (binp->iffp()) condp = new AstLogAnd{fl, binp->iffp()->cloneTree(false), condp};
         const auto excluded = m_excludedVars.find(cpVarp);
         if (excluded != m_excludedVars.end() && !binp->transp()
-            && (binp->binsType().binIsNormal()
-                || binp->binsType() == VCoverBinsType::BINS_DEFAULT)) {
+            && (binp->binsType().binIsNormal() || binp->isDefault())) {
             condp = new AstLogAnd{
                 fl, new AstNot{fl, new AstVarRef{fl, excluded->second, VAccess::READ}}, condp};
         }
@@ -1983,7 +1986,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
         }
         uint32_t element = 0;
-        for (AstNode* rangep = binRangesp(binp); rangep; rangep = rangep->nextp()) {
+        for (AstNode* const rangep : VNList<AstNode>{binRangesp(binp)}) {
             if (VN_IS(rangep, Unbounded)) {  // A parameter of '$'
                 binp->v3error("Bins value may not be '$', which may only bound a range "
                               "(IEEE 1800-2023 6.20.7)");
@@ -2360,7 +2363,19 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         for (AstNode* const binp : coverpointp->binspList()) {
             AstCoverBin* const cbinp = VN_AS(binp, CoverBin);
             const int errorsBefore = dynamic ? V3Error::errorCount() : 0;
-            if (cbinp->binsType() == VCoverBinsType::BINS_DEFAULT) {
+            if (cbinp->isDefault()) {
+                // An array of default bins has a bin for each value in no other bin, unless of a
+                // real coverpoint, where it is not allowed (IEEE 1800-2023 19.5.1)
+                if (cbinp->isArray() && !exprp->dtypep()->skipRefp()->isIntegralOrPacked()) {
+                    cbinp->v3error("Array of default bins "
+                                   << cbinp->prettyNameQ()
+                                   << " is not allowed on a coverpoint of a non-integral "
+                                      "expression (IEEE 1800-2023 19.5.1).");
+                } else if (cbinp->isArray()) {
+                    cbinp->v3warn(COVERIGN, "Unsupported: Array of default cover bins "
+                                                << cbinp->prettyNameQ()
+                                                << " (treated as one bin).");
+                }
                 defaultBins.push_back(cbinp);
                 continue;
             }
@@ -2444,8 +2459,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
             } else {
                 namerStmts.push_back(makeNamer(cpVarp, cbinp, -1, static_cast<uint32_t>(idx)));
-                // buildBinCondition is null for 'ignore_bins = default' (no ranges); the bin
-                // still gets a reserved slot (recorded, never incremented).
+                // buildBinCondition is null for values in error or unsupported; the bin still
+                // gets a reserved slot (recorded, never incremented).
                 if (AstNodeExpr* const condp = buildBinCondition(cbinp, exprp))
                     emitConvHitIf(coverpointp, cbinp, cpVarp,
                                   cnum(cbinp->fileline(), static_cast<uint32_t>(idx)), condp);
@@ -4234,7 +4249,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     // VISITORS
     static bool isEnclosingInstanceVar(const AstVar* varp) {
-        return varp->isClassMember() && !varp->lifetime().isStatic() && !varp->isParam();
+        return varp->isClassMember() && !varp->lifetime().isStatic();
     }
 
     void rewriteThisRef(AstThisRef* refp, AstVar* handleVarp) {

@@ -1376,6 +1376,10 @@ List Of Warnings
    ignores blocks with ``begin``/``end``, as the ``end`` visually indicates
    the earlier statement's end.
 
+   Verilator also warns when a statement follows an ``end`` that starts its
+   line, on that same line, and the following line is indented deeper, as
+   this suggests an ``else`` was intended between them.
+
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
@@ -1388,6 +1392,17 @@ List Of Warnings
       if (something)
         statement_in_if;
         statement_not_in_if;  //<--- Warning
+
+   or
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 3
+
+      if (something) begin
+      end begin  //<--- Warning, was 'end' indented to be 'end else'?
+        statement;
+      end
 
    Results in:
 
@@ -1629,7 +1644,11 @@ List Of Warnings
    Warns when a non-standard language feature is used that has a standard
    equivalent, which might behave differently in corner cases. For example
    ``$psprintf`` system function is replaced by its standard equivalent
-   ``$sformatf``.
+   ``$sformatf``, and a C-style packed dimension ``[size]``, as accepted by
+   other simulators, by the ascending range ``[0:size-1]``. Likewise, a
+   keyed assignment pattern without the leading apostrophe, such as
+   ``{default: 0}`` as accepted by other simulators, is replaced by
+   ``'{default: 0}``.
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
@@ -2558,6 +2577,11 @@ List Of Warnings
 
    An error that a construct might be legal according to IEEE but is not
    currently supported by Verilator.
+
+   This includes DPI imported task calls in ``always`` processes when any DPI
+   exported task can suspend, even if the imported task does not call that
+   export. Calls through other tasks are also affected, as are ``always_comb``,
+   ``always_latch``, and ``always_ff`` processes.
 
    A typical workaround is to rewrite the construct into a more common
    alternative language construct.

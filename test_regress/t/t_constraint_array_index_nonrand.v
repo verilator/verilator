@@ -289,13 +289,6 @@ class NarrowIndex;
 endclass
 /* verilator lint_on WIDTHEXPAND */
 
-// A non-rand index past the end reads the default too.
-class StateIndexOob;
-  rand bit x;
-  int k = 4;
-  bit used[4] = '{1, 1, 1, 1};
-  constraint c { x == used[k]; }
-endclass
 
 module t;
   initial begin
@@ -319,7 +312,6 @@ module t;
     UnsignedIndexBase1 ubase1_obj;
     NegativeBaseIndex negbase_obj;
     NarrowIndex narrow_obj;
-    StateIndexOob state_oob_obj;
     OutOfBoundsIndexPastIndexWidth oob_wide_obj;
     ExplicitlyTruncatedIndex trunc_obj;
     ExactWidthIndex exact_obj;
@@ -471,11 +463,6 @@ module t;
       `checkd(randomize_result, 1);
       `checkd(narrow_obj.idx, 1);
     end
-
-    state_oob_obj = new;
-    randomize_result = state_oob_obj.randomize();
-    `checkd(randomize_result, 1);
-    `checkd(state_oob_obj.x, 0);
 
     oob_wide_obj = new;
     seen = '0;

@@ -321,33 +321,38 @@ public:
 #endif
 };
 
-// Internals: VlFileLineDebug stores a SystemVerilog source code location. Used in
-// VlCoroutineHandle for debugging purposes, and to locate covergroup weight errors.
+// Internals: VlFileLine and VlFileLineDebug store a SystemVerilog source code location.
+// VlFileLineDebug is used in VlCoroutineHandle for debugging purposes, and to locate covergroup
+// weight errors.
 
-class VlFileLineDebug final {
+class VlFileLine final {
     // MEMBERS
-#ifdef VL_DEBUG
-    const char* m_filename = nullptr;  // Filename from sources, nullptr for unlnown
+    const char* m_filename = nullptr;  // Filename from sources, nullptr for unknown
     int m_lineno = 0;  // Line number from sources
-#endif
 
 public:
     // CONSTRUCTORS
-    VlFileLineDebug() = default;
-    VlFileLineDebug(const char* filename, int lineno)
-#ifdef VL_DEBUG
+    VlFileLine() = default;
+    VlFileLine(const char* filename, int lineno)
         : m_filename{filename}
-        , m_lineno{lineno}
-#endif
-    {
-    }
+        , m_lineno{lineno} {}
 
     // METHODS
-#ifdef VL_DEBUG
     const char* filename() const { return m_filename; }
     int lineno() const { return m_lineno; }
-#endif
+    void filename(const char* filename) { m_filename = filename; }
+    void lineno(int lineno) { m_lineno = lineno; }
 };
+
+#ifdef VL_DEBUG
+using VlFileLineDebug = VlFileLine;
+#else
+class VlFileLineDebug final {
+public:
+    VlFileLineDebug() = default;
+    VlFileLineDebug(const char*, int) {}
+};
+#endif
 
 class VlExecutionProfilerBase;
 
@@ -361,12 +366,13 @@ class VerilatedModel VL_NOT_FINAL {
     VL_UNCOPYABLE(VerilatedModel);
 
     VerilatedContext& m_context;  // The VerilatedContext this model is instantiated under
+    uint32_t m_id = ~0U;  // Unique id of the model in its context
 
 protected:
     bool m_didInit = false;  // Time 0 initialization has run
 
     explicit VerilatedModel(VerilatedContext& context);
-    virtual ~VerilatedModel() = default;
+    virtual ~VerilatedModel();
 
 public:
     /// Returns the VerilatedContext this model is instantiated under
@@ -378,11 +384,14 @@ public:
     virtual const char* modelName() const = 0;
     /// Returns the thread level parallelism, this model was Verilated with. Always 1 or higher.
     virtual unsigned threads() const = 0;
+    // Orders models in the order they were added to their context
+    bool operator<(const VerilatedModel& other) const { return m_id < other.m_id; }
 
 private:
     // The following are for use by Verilator internals only
     template <typename, typename>
     friend class VerilatedTrace;
+    friend class VerilatedContext;
     friend class VerilatedEvalLoop;
 
     // Run-time trace configuration requested by this model
@@ -863,7 +872,12 @@ public:
     }
 
     // Internal: Model and thread setup
-    void addModel(const VerilatedModel* modelp);
+    void addModel(VerilatedModel* modelp);
+    // Internal: Remove a model being destroyed
+    void removeModel(const VerilatedModel* modelp);
+    // Internal: Retrieve all models in the context, indexed by their hierarchical path
+    std::map<std::string, VerilatedModel*> models() const VL_MT_SAFE;
+
     // Get the thread pool, creating it if needed. 'modelThreads' is the parallelism of the model
     // being constructed, so that the context can grow to the number of threads it requires.
     VerilatedVirtualBase* threadPoolp(unsigned modelThreads = 1);
@@ -1131,6 +1145,7 @@ class Verilated final {
     } t_s;
 
     friend struct VerilatedInitializer;
+    friend class VlDpiCall;  // Copies t_s between threads on DPI thread handoff
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(Verilated);
@@ -1304,12 +1319,12 @@ public:
                                const char* delimiter = ".") VL_MT_SAFE;
 
     // Internal: Throw signal assertion
-    static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;
-    static void overWidthError(const char* signame) VL_ATTR_NORETURN VL_MT_SAFE;
+    [[noreturn]] static void nullPointerError(const char* filename, int linenum) VL_MT_SAFE;
+    [[noreturn]] static void overWidthError(const char* signame) VL_MT_SAFE;
     static void queueBoundError(size_t maxSize, size_t attemptedSize) VL_MT_SAFE;
-    static void scTimePrecisionError(int sc_prec, int vl_prec) VL_ATTR_NORETURN VL_MT_SAFE;
-    static void scTraceBeforeElaborationError() VL_ATTR_NORETURN VL_MT_SAFE;
-    static void sizeMismatchError() VL_ATTR_NORETURN VL_MT_SAFE;
+    [[noreturn]] static void scTimePrecisionError(int sc_prec, int vl_prec) VL_MT_SAFE;
+    [[noreturn]] static void scTraceBeforeElaborationError() VL_MT_SAFE;
+    [[noreturn]] static void sizeMismatchError() VL_MT_SAFE;
     static void stackCheck(QData needSize) VL_MT_UNSAFE;
 
     // Internal: Load a VPI shared library (+verilator+vpi+<lib>[:<bootstrap>])

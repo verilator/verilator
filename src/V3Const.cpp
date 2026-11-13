@@ -2914,7 +2914,7 @@ class ConstVisitor final : public VNVisitor {
                     // commented out to not fail v3error-coverage-checks.
                     // else {
                     // nodep->v3error("Stream block size must be constant (got " <<
-                    // streamp->rhsp()->prettyTypeName() << ")");
+                    // streamp->rhsp()->prettyTypeNameQ() << ")");
                     // }
                     int srcElementBits = 0;
                     if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
@@ -2982,9 +2982,9 @@ class ConstVisitor final : public VNVisitor {
             const AstNode* errorp = simvis.whyNotNodep();
             if (!errorp) errorp = nodep;
             nodep->v3error("Expecting expression to be constant, but can't determine constant for "
-                           << nodep->prettyTypeName() << '\n'
+                           << nodep->prettyTypeNameQ() << '\n'
                            << errorp->warnOther() << "... Location of non-constant "
-                           << errorp->prettyTypeName() << ": " << simvis.whyNotMessage());
+                           << errorp->prettyTypeNameQ() << ": " << simvis.whyNotMessage());
             VL_DO_DANGLING(replaceZero(nodep), nodep);
         } else {
             // Fetch the result
@@ -3116,6 +3116,15 @@ class ConstVisitor final : public VNVisitor {
         } else if (!VN_IS(nodep->lhsp(), Const)) {
             return false;
         }
+        replaceWithSimulation(nodep);
+        return true;
+    }
+    bool matchAggregateEqConst(AstNodeBiop* nodep) {
+        // Equality of constant unpacked arrays or structs. V3Width allows no other operators on
+        // them, and made both operands the same type.
+        if (!VN_IS(nodep->lhsp(), ConsArray) && !VN_IS(nodep->lhsp(), ConsStruct)) return false;
+        if (!nodep->lhsp()->isConstantTree()) return false;
+        if (!nodep->rhsp()->isConstantTree()) return false;
         replaceWithSimulation(nodep);
         return true;
     }
@@ -3841,7 +3850,7 @@ class ConstVisitor final : public VNVisitor {
                 // commented out to not fail v3error-coverage-checks.
                 // else {
                 //    nodep->v3error("Stream block size must be constant (got " <<
-                //    streamp->rhsp()->prettyTypeName() << ")");
+                //    streamp->rhsp()->prettyTypeNameQ() << ")");
                 // }
                 int srcElementBits = 0;
                 if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
@@ -4409,6 +4418,10 @@ class ConstVisitor final : public VNVisitor {
     TREEOPA("AstNodeBiop {$lhsp.castConst, $rhsp.castConst, nodep->isPredictOptimizable()}",  "replaceConst(nodep)");
     TREEOPA("AstNodeUniop{$lhsp.castConst, nodep->isPredictOptimizable()}",  "replaceConst(nodep)");
     TREEOPA("AstNodeQuadop{$lhsp.castConst, $rhsp.castConst, $thsp.castConst, $fhsp.castConst}",  "replaceConst(nodep)");
+    TREEOP ("AstEq     {matchAggregateEqConst(nodep)}",  "DONE");
+    TREEOP ("AstEqCase {matchAggregateEqConst(nodep)}",  "DONE");
+    TREEOP ("AstNeq    {matchAggregateEqConst(nodep)}",  "DONE");
+    TREEOP ("AstNeqCase{matchAggregateEqConst(nodep)}",  "DONE");
     // Zero on one side or the other
     TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
     TREEOP ("AstAnd   {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
@@ -4741,7 +4754,7 @@ class ConstVisitor final : public VNVisitor {
                 return;
             } else {
                 nodep->v3error("Expecting expression to be constant, but can't convert a "
-                               << nodep->prettyTypeName() << " to constant.");
+                               << nodep->prettyTypeNameQ() << " to constant.");
             }
         } else {
             if (nodep->isTimingControl()) m_hasJumpDelay = true;

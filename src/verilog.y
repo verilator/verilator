@@ -25,8 +25,8 @@
 #include "V3ParseGrammar.h"  // Defines YYTYPE; before including bison header
 
 #define YYERROR_VERBOSE 1  // For prior to Bison 3.6
-#define YYINITDEPTH 10000  // Older bisons ignore YYMAXDEPTH
-#define YYMAXDEPTH 10000
+#define YYINITDEPTH 10000
+#define YYMAXDEPTH 1000000  // Each else-if nesting level holds about 7 entries
 #define YYNEWLINE "\n"
 
 // Pick up new lexer
@@ -2608,7 +2608,6 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
 
         // IEEE 1800-2023 6.18.2 typedef with packed dimensions on an existing type identifier
         // Disambiguated from interface array access by requiring ':' inside the brackets
-        // (applies to both plain identifiers and type identifiers)
         |       yTYPEDEF id '[' constExpr ':' constExpr ']' packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
@@ -2616,13 +2615,13 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull(rangep, $8), true);
                           $$ = GRAMMARP->createTypedef($<fl>9, *$9, $11, dtp, $10); }
 
-        // Same as above but for type identifiers (parameter types, etc.)
-        |       yTYPEDEF idType '[' constExpr ':' constExpr ']' packed_dimensionListE
+        // Same as above but for type identifiers (parameter types, etc.), which cannot be an
+        // interface array access so need no disambiguation
+        |       yTYPEDEF idType packedRange packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
-                          AstNodeRange* const rangep = new AstRange{$3, $4, $6};
-                          AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull(rangep, $8), true);
-                          $$ = GRAMMARP->createTypedef($<fl>9, *$9, $11, dtp, $10); }
+                          AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull($3, $4), true);
+                          $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
 
         |       yTYPEDEF idAny parameter_value_assignmentClass packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
@@ -3164,12 +3163,20 @@ rangeListE<nodeRangep>:         // IEEE: [{packed_dimension}]
         ;
 
 rangeList<nodeRangep>:          // IEEE: {packed_dimension}
-                anyrange                                { $$ = $1; }
-        |       rangeList anyrange                      { $$ = $1->addNext($2); }
+                packedRange                             { $$ = $1; }
+        |       rangeList packedRange                   { $$ = $1->addNext($2); }
         ;
 
 anyrange<nodeRangep>:
                 '[' constExpr ':' constExpr ']'         { $$ = new AstRange{$1, $2, $4}; }
+        ;
+
+packedRange<nodeRangep>:        // IEEE: packed_dimension, excluding unsized_dimension
+                anyrange                                { $$ = $1; }
+        //                      // Non-standard C-style size (V3LinkParse warns), accepted as other simulators
+        //                      // do, meaning '[0:size-1]' as for an unpacked dimension (IEEE 1800-2023 7.4.2)
+        |       '[' constExpr ']'
+                        { $$ = new AstRange{$1, new AstConst{$1, 0}, new AstSub{$1, $2, new AstConst{$1, 1}}, true}; }
         ;
 
 part_select_rangeList<nodePreSelp>:  // IEEE: part_select_range (as used after function calls)
@@ -3199,7 +3206,7 @@ packed_dimensionList<nodeRangep>:       // IEEE: { packed_dimension }
         ;
 
 packed_dimension<nodeRangep>:   // ==IEEE: packed_dimension
-                anyrange                                { $$ = $1; }
+                packedRange                             { $$ = $1; }
         |       '[' ']'
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: [] dimensions"); }
         ;
@@ -5344,6 +5351,13 @@ exprPatternOrStream<nodeExprp>:  // IEEE: assignment_pattern_expression or strea
         //UNSUP ~l~exprScope assignment_pattern         { UNSUP }
                 data_type assignment_pattern            { $$ = $2; if ($2) $2->childDTypep($1); }
         |       assignment_pattern                      { $$ = $1; }
+        //                      // Non-standard keyed assignment pattern without the apostrophe, accepted
+        //                      // as other simulators do; a positional one is a concatenation
+        |       '{' patternMemberList '}'
+                        { $$ = new AstPattern{$1, $2};
+                          $1->v3warn(NONSTD, "Non-standard assignment pattern without leading apostrophe"
+                                             " (IEEE 1800-2023 10.9)\n"
+                                             << $1->warnMore() << "... Suggest use equivalent '{...}"); }
         |       streaming_concatenation                 { $$ = $1; }
         ;
 
@@ -7323,24 +7337,17 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
                         { $$ = nullptr; GRAMMARP->coverBinArrayUnsized($4); BBCOVERIGN($<fl>1, "Unsupported: 'wildcard' transition list in cover bin"); DEL($6, $7);}
         //
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' yDEFAULT iffE
-                        { GRAMMARP->coverBinArrayUnsized($3);
-                          $$ = new AstCoverBin{$<fl>2, *$2, VCoverBinsType::BINS_DEFAULT};
-                          if ($6) BBCOVERIGN($6->fileline(), "Unsupported: 'iff' in default cover bin (guard ignored)");
-                          DEL($6); }
+                        { const bool isArray = GRAMMARP->coverBinArrayUnsized($3);
+                          $$ = new AstCoverBin{$<fl>2, *$2, VCoverBinsType::BINS_DEFAULT, isArray, $6}; }
         |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' yDEFAULT iffE
-                        { GRAMMARP->coverBinArrayUnsized($3);
-                          $$ = new AstCoverBin{$<fl>2, *$2, VCoverBinsType::BINS_IGNORE};
-                          if ($6) BBCOVERIGN($6->fileline(), "Unsupported: 'iff' in default cover bin (guard ignored)");
-                          DEL($6); }
+                        { $$ = nullptr; GRAMMARP->coverBinIgnoredDefault($<fl>2, *$2); DEL($3, $6); }
         |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' yDEFAULT iffE
-                        { GRAMMARP->coverBinArrayUnsized($3);
-                          $$ = new AstCoverBin{$<fl>2, *$2, VCoverBinsType::BINS_ILLEGAL};
-                          if ($6) BBCOVERIGN($6->fileline(), "Unsupported: 'iff' in default cover bin (guard ignored)");
-                          DEL($6); }
+                        { const bool isArray = GRAMMARP->coverBinArrayUnsized($3);
+                          $$ = new AstCoverBin{$<fl>2, *$2, VCoverBinsType::BINS_ILLEGAL, isArray, $6}; }
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' yDEFAULT ySEQUENCE iffE
                         { $$ = nullptr; GRAMMARP->coverBinArrayUnsized($3); BBCOVERIGN($<fl>6, "Unsupported: 'sequence' in default cover bin"); DEL($7); }
         |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' yDEFAULT ySEQUENCE iffE
-                        { $$ = nullptr; GRAMMARP->coverBinArrayUnsized($3); BBCOVERIGN($<fl>6, "Unsupported: 'sequence' in default cover bin"); DEL($7); }
+                        { $$ = nullptr; GRAMMARP->coverBinIgnoredDefault($<fl>2, *$2); DEL($3, $7); }
         |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' yDEFAULT ySEQUENCE iffE
                         { $$ = nullptr; GRAMMARP->coverBinArrayUnsized($3); BBCOVERIGN($<fl>6, "Unsupported: 'sequence' in default cover bin"); DEL($7); }
         ;

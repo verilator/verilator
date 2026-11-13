@@ -10,7 +10,7 @@
 //*************************************************************************
 
 // Generated header
-#include "Vt_gantt_numa_default_threads.h"
+#include VM_PREFIX_INCLUDE
 // General headers
 #include "verilated.h"
 
