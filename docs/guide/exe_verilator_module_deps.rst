@@ -62,14 +62,16 @@ verilator_module_deps Arguments
 
 .. option:: --dot <filename>
 
-   DOT dependency graph to write.  Each module import edge has the label
-   ``module``, and each header unit edge has the label ``header``.
+   DOT dependency graph to write.  Module import edges have the label
+   ``module``.  Edges from a module to a header unit CMI, and from a header
+   unit CMI to its header source, have the label ``header``.
 
 .. option:: --json <filename>
 
    JSON dependency graph to write.  The top-level keys are ``backend``,
    ``modules``, and ``edges``.  Each module entry has ``name``, ``source``,
-   ``object``, ``cmi``, ``pcm``, ``provides``, and ``requires``.
+   ``object``, ``cmi``, ``pcm``, ``provides``, and ``requires``.  Each edge
+   has ``from``, ``to``, and ``kind``; ``kind`` is ``module`` or ``header``.
 
 .. option:: --objdir <directory>
 

@@ -610,6 +610,12 @@ def module_graph(args: argparse.Namespace, modules: list[dict[str, Any]],
                 'to': module_name(provider),
                 'kind': 'module',
             })
+        for header in module['header_deps']:
+            edges.append({
+                'from': module_name(module),
+                'to': header['cmi'],
+                'kind': 'header',
+            })
     for header in headers.values():
         entries.append({
             'name': header['cmi'],
