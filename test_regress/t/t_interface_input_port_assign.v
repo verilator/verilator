@@ -11,23 +11,24 @@
 
 // Driving interface net-type input ports from the instantiating scope is
 // legal via both continuous assignment and port connection when port kind
-// defaults to net (IEEE 1800-2023 23.2.2.3, 23.3.3.3).
+// defaults to net (IEEE 1800-2023 23.2.2.3, 23.3.3.3). Likewise for net-type
+// input ports driven by port connections of a bind instance.
 
-// Scenario 1: bare input (defaults to net)
+// Scenario: bare input (defaults to net)
 interface bare_if (
     input clk
 );
   logic data;
 endinterface
 
-// Scenario 2: input with explicit data type (still net for input)
+// Scenario: input with explicit data type (still net for input)
 interface logic_if (
     input logic clk
 );
   logic data;
 endinterface
 
-// Scenario 3: input with explicit net kind
+// Scenario: input with explicit net kind
 interface wire_if (
     input wire clk
 );
@@ -41,7 +42,7 @@ module consumer (
   always @(posedge cif.clk) sampled <= cif.data;
 endmodule
 
-// Scenario 4: port connection driving interface input (AstPin path)
+// Scenario: port connection driving interface input (AstPin path)
 interface ifc_status (
     input wire busy
 );
@@ -58,6 +59,25 @@ module dut_wrap (
 );
   dut u_dut (.sleep_o(sif.busy));
 endmodule
+
+// Scenario: bind instance outputs driving the bind target's own input ports,
+// as a bind instance is not the target's code (IEEE 1800-2023 23.11)
+interface bound_if (
+    output logic [6:0] data,
+    output logic [6:0] elem
+);
+endinterface
+
+module bind_target (
+    input logic [6:0] data_i,
+    input logic [3:1][6:0] elems_i
+);
+endmodule
+
+interface bind_target_if (
+    input logic [6:0] data_i
+);
+endinterface
 
 module t;
   logic clk = 0;
@@ -82,6 +102,29 @@ module t;
   // Port connection scenario
   ifc_status sif (.busy());
   dut_wrap u_wrap (.sif(sif));
+
+  // Bind scenarios, into a module and into an interface
+  bind_target u_target (
+      .data_i(),
+      .elems_i()
+  );
+  bind bind_target bound_if u_bound (
+      .data(data_i),
+      .elem(elems_i[2])
+  );
+  assign u_target.u_bound.data = 7'(cyc * 3);
+  assign u_target.u_bound.elem = 7'(cyc * 5);
+  bind_target_if u_target_if (.data_i());
+  bind bind_target_if bound_if u_bound (
+      .data(data_i),
+      .elem()
+  );
+  assign u_target_if.u_bound.data = 7'(cyc * 7);
+  always @(posedge clk) begin
+    `checkh(u_target.data_i, 7'(cyc * 3));
+    `checkh(u_target.elems_i[2], 7'(cyc * 5));
+    `checkh(u_target_if.data_i, 7'(cyc * 7));
+  end
 
   always @(posedge clk) begin
     cyc <= cyc + 1;

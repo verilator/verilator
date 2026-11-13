@@ -608,6 +608,9 @@ class LinkCellsVisitor final : public VNVisitor {
         AstNodeModule* const modp = resolveModule(nodep, name, m_modp->libname());
         if (modp && !modp->verilatorLib()) {
             AstNode* const cellsp = nodep->cellsp()->unlinkFrBackWithNext();
+            for (AstNode* cellp = cellsp; cellp; cellp = cellp->nextp()) {
+                VN_AS(cellp, Cell)->fromBind(true);
+            }
             // Module may have already linked, so need to pick up these new cells
             VL_RESTORER(m_modp);
             m_modp = modp;
