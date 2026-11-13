@@ -451,7 +451,8 @@ class ActiveLatchSenVisitor final : public VNVisitorConst {
     std::vector<AstVarScope*> m_varps;  // Variables accessed, in order
     std::unordered_map<const AstVarScope*, Parts> m_parts;  // Parts of each variable accessed
     std::unordered_set<const AstCFunc*> m_funcps;  // Functions called
-    bool m_unsupported = false;  // A variable change detection can't compare is read
+    bool m_nonblocking = false;  // Has a nonblocking assignment
+    bool m_combinational = false;  // Must stay combinational, see apply
 
     // METHODS
     static AstUnpackArrayDType* arrayDTypep(const AstVarScope* vscp) {
@@ -465,8 +466,9 @@ class ActiveLatchSenVisitor final : public VNVisitorConst {
         const AstUnpackArrayDType* const arrayp = arrayDTypep(vscp);
         const AstNodeDType* const elemp
             = arrayp ? arrayp->subDTypep()->skipRefp() : vscp->dtypep()->skipRefp();
-        if (elemp->isCompound()) {
-            m_unsupported = true;
+        // Change detection can't compare compound values; nested unpacked arrays aren't tracked
+        if (elemp->isCompound() || VN_IS(elemp, UnpackArrayDType)) {
+            m_combinational = true;
             return;
         }
         const int elems = arrayp ? arrayp->elementsConst() : 1;
@@ -477,7 +479,8 @@ class ActiveLatchSenVisitor final : public VNVisitorConst {
             parts.m_read.resize(elems * parts.m_width);
             parts.m_written.resize(elems * parts.m_width);
         }
-        if (elem >= elems || lsb + width > parts.m_width) elem = width = -1;  // Out of range
+        // Out of range
+        if (elem >= elems || lsb < 0 || lsb + width > parts.m_width) elem = width = -1;
         const int eLo = elem < 0 ? 0 : elem;
         const int eHi = elem < 0 ? elems - 1 : elem;
         const int bLo = width < 0 ? 0 : lsb;
@@ -497,6 +500,11 @@ class ActiveLatchSenVisitor final : public VNVisitorConst {
     }
 
     // VISITORS
+    void visit(AstAssignDly* nodep) override {
+        m_nonblocking = true;
+        if (nodep->isTimingControl()) m_combinational = true;
+        iterateChildrenConst(nodep);
+    }
     void visit(AstVarRef* nodep) override { record(nodep, -1, 0, -1); }
     void visit(AstArraySel* nodep) override {
         const AstVarRef* refp;
@@ -525,9 +533,12 @@ class ActiveLatchSenVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
         if (m_funcps.insert(nodep->funcp()).second) iterateConst(nodep->funcp());
     }
-    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstNode* nodep) override {
+        if (nodep->isTimingControl()) m_combinational = true;
+        iterateChildrenConst(nodep);
+    }
 
-    // Add a sensitivity to each run of bits of each element read but not written
+    // Add a sensitivity to each run of bits of each element read but not written.
     void addSenItems(AstSenTree* senTreep, AstVarScope* vscp) const {
         FileLine* const flp = senTreep->fileline();
         const Parts& parts = m_parts.at(vscp);
@@ -540,7 +551,10 @@ class ActiveLatchSenVisitor final : public VNVisitorConst {
         };
         bool all = true;
         for (int i = 0; i < bits; ++i) all &= parts.m_read[i] && !parts.m_written[i];
-        if (all) return changedp(refp());
+        if (all) {
+            changedp(refp());
+            return;
+        }
         const bool isArray = arrayDTypep(vscp);
         for (int e = 0; e < bits / parts.m_width; ++e) {
             const int base = e * parts.m_width;
@@ -567,15 +581,12 @@ class ActiveLatchSenVisitor final : public VNVisitorConst {
     explicit ActiveLatchSenVisitor(AstAlways* nodep) { iterateConst(nodep); }
 
 public:
-    // The sensitivity list, also sensitive to 'initp', or nullptr if change detection can't
-    // compare something the latch reads
-    static AstSenTree* apply(AstAlways* nodep, AstVarScope* initp) {
+    // The sensitivity list, or nullptr to keep the latch combinational: without nonblocking
+    // assignments, with timing controls, or reading something change detection can't compare
+    static AstSenTree* apply(AstAlways* nodep) {
         const ActiveLatchSenVisitor visitor{nodep};
-        if (visitor.m_unsupported) return nullptr;
-        FileLine* const flp = nodep->fileline();
-        AstSenTree* const senTreep = new AstSenTree{
-            flp,
-            new AstSenItem{flp, VEdgeType::ET_CHANGED, new AstVarRef{flp, initp, VAccess::READ}}};
+        if (!visitor.m_nonblocking || visitor.m_combinational) return nullptr;
+        AstSenTree* const senTreep = new AstSenTree{nodep->fileline(), nullptr};
         for (AstVarScope* const vscp : visitor.m_varps) visitor.addSenItems(senTreep, vscp);
         return senTreep;
     }
@@ -628,17 +639,13 @@ class ActiveVisitor final : public VNVisitor {
     // anything it reads changes, as with an explicit sensitivity list, and once at time zero.
     // Returns that sensitivity list, or nullptr to treat the latch as combinational logic.
     AstSenTree* latchSenTree(AstAlways* nodep) {
-        bool nonblocking = false;
-        bool timing = false;
-        nodep->foreach([&](const AstNode* np) {
-            if (VN_IS(np, AssignDly)) nonblocking = true;
-            if (const AstFireEvent* const firep = VN_CAST(np, FireEvent)) {
-                if (firep->isDelayed()) nonblocking = true;
-            }
-            if (np->isTimingControl()) timing = true;
-        });
-        if (!nonblocking || timing) return nullptr;
-        return ActiveLatchSenVisitor::apply(nodep, latchInitp());
+        AstSenTree* const senTreep = ActiveLatchSenVisitor::apply(nodep);
+        if (senTreep) {
+            FileLine* const flp = nodep->fileline();
+            senTreep->addSensesp(new AstSenItem{flp, VEdgeType::ET_CHANGED,
+                                                new AstVarRef{flp, latchInitp(), VAccess::READ}});
+        }
+        return senTreep;
     }
     template <typename T>
     void moveUnderSpecial(AstNodeProcedure* nodep) {
