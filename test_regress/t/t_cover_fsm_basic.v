@@ -19,6 +19,13 @@ module t (
   logic start;
   integer cyc;
   state_t state  /*verilator fsm_state*/;
+  // Resets to H_RUN and 0 isn't a state, so nothing is entered before the reset
+  typedef enum logic [1:0] {
+    H_RUN = 2'd1,
+    H_DONE = 2'd2,
+    H_IDLE = 2'd3
+  } hi_t;
+  hi_t state_hi  /*verilator fsm_state_full*/;
 
   initial begin
     rst = 1'b1;
@@ -49,6 +56,20 @@ module t (
         S_RUN: state <= S_DONE;
         S_DONE: state <= S_DONE;
         default: state <= S_ERR;
+      endcase
+    end
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      state_hi <= H_RUN;
+    end
+    else begin
+      case (state_hi)
+        H_IDLE: state_hi <= H_RUN;
+        H_RUN: state_hi <= H_DONE;
+        H_DONE: state_hi <= H_DONE;
+        default: state_hi <= H_IDLE;
       endcase
     end
   end

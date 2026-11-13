@@ -20,6 +20,13 @@
           logic start;
           integer cyc;
           state_t state  /*verilator fsm_state*/;
+          // Resets to H_RUN and 0 isn't a state, so nothing is entered before the reset
+          typedef enum logic [1:0] {
+            H_RUN = 2'd1,
+            H_DONE = 2'd2,
+            H_IDLE = 2'd3
+          } hi_t;
+          hi_t state_hi  /*verilator fsm_state_full*/;
         
           initial begin
             rst = 1'b1;
@@ -60,6 +67,37 @@
                 S_RUN: state <= S_DONE;
                 S_DONE: state <= S_DONE;
                 default: state <= S_ERR;
+              endcase
+            end
+          end
+        
+          always_ff @(posedge clk) begin
+            if (rst) begin
+              state_hi <= H_RUN;
+            end
+            else begin
+%000001       case (state_hi)
+        // [FSM coverage]
+%000000        // [fsm_arc t.state_hi::2'b00->H_DONE]
+%000000        // [fsm_arc t.state_hi::2'b00->H_IDLE]
+%000000        // [fsm_arc t.state_hi::2'b00->H_RUN]
+%000000        // [fsm_arc t.state_hi::H_DONE->2'b00]
+%000000        // [fsm_arc t.state_hi::H_DONE->H_IDLE]
+%000000        // [fsm_arc t.state_hi::H_DONE->H_RUN]
+%000000        // [fsm_arc t.state_hi::H_IDLE->2'b00]
+%000000        // [fsm_arc t.state_hi::H_IDLE->H_DONE]
+%000000        // [fsm_arc t.state_hi::H_IDLE->H_RUN]
+%000000        // [fsm_arc t.state_hi::H_RUN->2'b00]
+%000001        // [fsm_arc t.state_hi::H_RUN->H_DONE]
+%000000        // [fsm_arc t.state_hi::H_RUN->H_IDLE]
+%000000        // [fsm_state t.state_hi::2'b00] *** UNCOVERED ***
+%000001        // [fsm_state t.state_hi::H_DONE]
+%000000        // [fsm_state t.state_hi::H_IDLE] *** UNCOVERED ***
+%000001        // [fsm_state t.state_hi::H_RUN]
+                H_IDLE: state_hi <= H_RUN;
+                H_RUN: state_hi <= H_DONE;
+                H_DONE: state_hi <= H_DONE;
+                default: state_hi <= H_IDLE;
               endcase
             end
           end

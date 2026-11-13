@@ -2281,6 +2281,7 @@ class FsmCoverIncBuilder final {
     const std::string m_modPrettyName;  // Pretty fsm mode name
     AstNodeStmt* m_coverIncp = nullptr;  // Increments proper CoverDecl after each change
     AstNodeStmt* m_initialCoverIncp = nullptr;  // Increments CoverDecl at the beggining of the sim
+    bool m_waitForReset = false;  // Initial state is unknown until a reset target is reached
     AstCoverOtherDecl* m_declsp = nullptr;  // List of CoverDecls
     bool m_isComplete;  // Whether all possible values of state variable are covered by some state
     // (e.g.: when state variable has two bits this will be true if exactly
@@ -2558,23 +2559,26 @@ public:
                     defaultTargets.emplace(edge.top()->as<FsmStateVertex>());
                 }
             }
-            if (m_resetVertexp) {
-                for (const V3GraphEdge& edge : m_resetVertexp->outEdges()) {
-                    resetTargets.emplace(edge.top()->as<FsmStateVertex>());
-                }
-            }
         }
+        for (const V3GraphEdge& edge : m_resetVertexp->outEdges()) {
+            resetTargets.emplace(edge.top()->as<FsmStateVertex>());
+        }
+        // A logic register is X until reset, so only a reset target counts as its first state
+        m_waitForReset
+            = !resetTargets.empty() && !graph.sampleVarScopep()->dtypep()->basicp()->isZeroInit();
         const bool isFullExpansion = expand == VFsmExpandType::FULL;
         if (isFullExpansion) initUndefinedStates();
         for (const FsmStateVertex* const statep : m_states) {
             // State coverage fires when the FSM enters a state from any other
             // value, so repeated self-holds do not count as new entries.
             AstCoverOtherDecl* const declp = buildStateCoverDecl(statep->label());
-            initialStateCasep->addItemsp(
-                new AstCaseItem{m_flp, makeConst(statep->value().num().toUQuad()),
-                                new AstCoverInc{m_flp, declp, true}});
-            const bool expandAllOrReset
-                = expandAll || (resetTargets.find(statep) != resetTargets.end());
+            const bool isResetTarget = resetTargets.find(statep) != resetTargets.end();
+            if (!m_waitForReset || isResetTarget) {
+                initialStateCasep->addItemsp(
+                    new AstCaseItem{m_flp, makeConst(statep->value().num().toUQuad()),
+                                    new AstCoverInc{m_flp, declp, true}});
+            }
+            const bool expandAllOrReset = expandAll || isResetTarget;
             const bool defaultExpantion
                 = !expandAllOrReset && (defaultTargets.find(statep) != defaultTargets.end());
             arcCasep->addItemsp(new AstCaseItem{
@@ -2592,8 +2596,10 @@ public:
                 for (const uint64_t value : m_undefinedStates) {
                     const std::string& label = quadToBitStirngLabel(value);
                     AstCoverOtherDecl* const declp = buildStateCoverDecl(label);
-                    initialStateCasep->addItemsp(new AstCaseItem{
-                        m_flp, makeConst(value), new AstCoverInc{m_flp, declp, true}});
+                    if (!m_waitForReset) {
+                        initialStateCasep->addItemsp(new AstCaseItem{
+                            m_flp, makeConst(value), new AstCoverInc{m_flp, declp, true}});
+                    }
                     arcCasep->addItemsp(
                         new AstCaseItem{m_flp, makeConst(value),
                                         AstNode::addNext<AstNodeStmt>(
@@ -2603,8 +2609,11 @@ public:
             } else {
                 // No expansion
                 arcCasep->addItemsp(new AstCaseItem{m_flp, nullptr, nullptr});
-                initialStateCasep->addItemsp(new AstCaseItem{m_flp, nullptr, nullptr});
             }
+        }
+        // Needs a default when it doesn't list every value
+        if (m_waitForReset || (!m_isComplete && !isFullExpansion)) {
+            initialStateCasep->addItemsp(new AstCaseItem{m_flp, nullptr, nullptr});
         }
         m_coverIncp = arcCasep;
         m_initialCoverIncp = initialStateCasep;
@@ -2614,6 +2623,7 @@ public:
     AstNodeCoverDecl* getCoverDeclsp() const { return m_declsp; }
     AstNodeStmt* getCoverIncp() const { return m_coverIncp; }
     AstNodeStmt* getInitialCoverIncp() const { return m_initialCoverIncp; }
+    bool waitForReset() const { return m_waitForReset; }
 };
 
 // Lower the completed FSM graphs into the concrete coverage declarations,
@@ -2623,6 +2633,7 @@ class FsmLowerVisitor final {
     // STATE - across all visitors
     const FsmState& m_state;
     V3SharedTmps m_prevTmps{"__VfsmCovPrev", VVarType::MODULETEMP};  // Previous states
+    V3SharedTmps m_resetSeenTmps{"__VfsmCovResetSeen", VVarType::MODULETEMP};  // Reset reached
 
     // METHODS
     // Rebuild the original event control from the saved sense description so
@@ -2693,12 +2704,31 @@ class FsmLowerVisitor final {
             // Create and increment proper AstNodeCoverDecls
             const FsmCoverIncBuilder coverIncBuilder{graph, prevVscp};
             modp->addStmtsp(coverIncBuilder.getCoverDeclsp());
-            initActivep->addProcsp(new AstInitial{flp, coverIncBuilder.getInitialCoverIncp()});
-            covPostp->addStmtsp(
-                new AstIf{flp,
-                          new AstNeq{flp, new AstVarRef{flp, prevVscp, VAccess::READ},
-                                     new AstVarRef{flp, sampleVscp, VAccess::READ}},
-                          coverIncBuilder.getCoverIncp()});
+            AstIf* const changeIfp
+                = new AstIf{flp,
+                            new AstNeq{flp, new AstVarRef{flp, prevVscp, VAccess::READ},
+                                       new AstVarRef{flp, sampleVscp, VAccess::READ}},
+                            coverIncBuilder.getCoverIncp()};
+            if (!coverIncBuilder.waitForReset()) {
+                initActivep->addProcsp(new AstInitial{flp, coverIncBuilder.getInitialCoverIncp()});
+                covPostp->addStmtsp(changeIfp);
+            } else {
+                // Count nothing until the state first holds a reset target, then count that
+                // state's entry once
+                AstVarScope* const seenVscp
+                    = m_resetSeenTmps.make(flp, scopep, 1, stateVscp->varp()->shortName());
+                // Read and written only in this post logic, which would otherwise loop on it
+                seenVscp->varp()->setIgnorePostRead();
+                AstCase* const entryCasep = VN_AS(coverIncBuilder.getInitialCoverIncp(), Case);
+                for (AstCaseItem* const itemp : entryCasep->itemspList()) {
+                    if (!itemp->stmtsp()) continue;  // The default
+                    itemp->addStmtsp(new AstAssign{flp,
+                                                   new AstVarRef{flp, seenVscp, VAccess::WRITE},
+                                                   new AstConst{flp, AstConst::BitTrue{}}});
+                }
+                covPostp->addStmtsp(new AstIf{flp, new AstVarRef{flp, seenVscp, VAccess::READ},
+                                              changeIfp, entryCasep});
+            }
         }
 
         if (updatePrevAfterPost) {
