@@ -505,7 +505,7 @@ void V3PreProcImp::comment(const string& text) {
     } else if (VString::startsWith(cp, "ambit synthesis")) {
         cp += std::strlen("ambit synthesis");
         synth = true;
-    } else {
+    } else if (!VString::startsWith(cp, "coverage")) {  // "// coverage off/on" has no prefix
         return;
     }
 
@@ -513,7 +513,13 @@ void V3PreProcImp::comment(const string& text) {
     string cmd = commentCleanup(string{cp});
     // cmd now is comment without extra spaces and "verilator" prefix
 
-    if (synth) {
+    if (!vlcomment && (cmd == "coverage off" || cmd == "coverage on")) {
+        // As other simulators accept, alone or after a synthesis prefix
+        if (!printed) {
+            insertUnreadback(cmd == "coverage off" ? "/*verilator coverage_off*/"
+                                                   : "/*verilator coverage_on*/");
+        }
+    } else if (synth) {
         if (v3Global.opt.assertOn()) {
             // one_hot, one_cold, (full_case, parallel_case)
             if (commentTokenMatch(cmd /*ref*/, "full_case")) {

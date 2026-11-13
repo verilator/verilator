@@ -1540,3 +1540,12 @@ EXP: ja32 p q
 ja32 p q
 
 `line 783 "t/t_preproc.v" 0
+ 
+ 
+/*verilator coverage_off*/
+/*verilator coverage_on*/
+/*verilator coverage_off*/
+ 
+ 
+
+`line 791 "t/t_preproc.v" 0

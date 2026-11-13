@@ -1124,3 +1124,12 @@ EXP: ja32 p q
 ja32 p q
 
 `line 783 "t/t_preproc.v" 0
+//======================================================================
+// Other simulators' coverage off/on comments
+// coverage off
+/* pragma coverage on */
+// synopsys coverage off
+// coverage offset is not a pragma
+// coverage on -item s is not either
+
+`line 791 "t/t_preproc.v" 0
