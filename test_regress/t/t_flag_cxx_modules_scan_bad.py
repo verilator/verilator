@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import os
+import shutil
 import sys
 import vltest_bootstrap
 
@@ -72,6 +73,39 @@ test.file_grep(test.obj_dir + '/ok.json', r'"ok"')
 test.file_grep(test.obj_dir + '/ok.dot', r'digraph modules')
 if not os.path.exists(test.obj_dir + '/ok.stamp'):
     test.error('Missing C++ module build stamp')
+
+clang = shutil.which('clang++')
+if clang is not None and shutil.which('clang-scan-deps') is not None:
+    clang_std = test.obj_dir + '/clang_std.cppm'
+    test.write_wholefile(clang_std, 'export module usestd;\nimport std;\n')
+
+    def run_clang_scan(logfile, cxxflags):
+        test.run(
+            logfile=logfile,
+            cmd=[
+                sys.executable,
+                test.root + '/bin/verilator_module_deps',
+                '--backend',
+                'clang',
+                '--cxx',
+                clang,
+                '--cxxflags=' + cxxflags,
+                '--cppflags=',
+                '--opt-fast=-O0',
+                '--objdir',
+                test.obj_dir,
+                '--output',
+                test.obj_dir + '/scan_clang.mk',
+                '--source',
+                clang_std,
+            ],
+            fails=True)
+
+    run_clang_scan(test.obj_dir + '/clang_std.log', '-std=c++23')
+    test.file_grep(test.obj_dir + '/clang_std.log', r'clang backend has no std PCM')
+    run_clang_scan(test.obj_dir + '/clang_std_missing.log',
+                   '"-std=c++23 -fmodule-file=std=nope.pcm"')
+    test.file_grep(test.obj_dir + '/clang_std_missing.log', r'does not exist')
 
 test.run(logfile=test.obj_dir + '/no_action.log',
          cmd=[sys.executable, test.root + '/bin/verilator_module_deps', '--backend', 'gcc', '--cxx',
