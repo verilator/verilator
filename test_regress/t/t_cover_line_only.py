@@ -27,6 +27,6 @@ test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
               test.obj_dir + "/coverage.dat"],
          verilator_run=True)  # yapf:disable
 
-test.files_identical(test.obj_dir + "/annotated/t_cover_line.v", "t/t_cover_line_only.out")
+test.files_identical(test.obj_dir + "/annotated/t_cover_line.v", test.golden_filename)
 
 test.passes()

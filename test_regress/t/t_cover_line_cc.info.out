@@ -217,8 +217,14 @@ DA:373,10
 DA:374,9
 BRDA:374,0,if,1
 BRDA:374,0,else,9
-BRF:83
+DA:376,9
+BRDA:376,0,if,1
+BRDA:376,0,else,8
+BRDA:376,0,elsif,1
+BRDA:376,0,if,1
+BRDA:376,0,else,9
+BRF:88
 BRH:32
-LF:134
+LF:135
 LH:66
 end_of_record

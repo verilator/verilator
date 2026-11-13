@@ -30,6 +30,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 //######################################################################
@@ -557,18 +558,22 @@ void VlcTop::writeInfo(const string& filename) {
             VlcSourceCount& sc = li.second;
             uint64_t daCount = 0;
             std::vector<const VlcPoint*> infoPoints;
-            std::set<std::string> branchComments;
+            // With line and branch coverage, each leg of an if/else has a line point and a
+            // branch point at the same place; list the leg once, as its branch point
+            const auto legKey = [](const VlcPoint* pointp) {
+                return pointp->hier() + ' ' + std::to_string(pointp->lineno()) + ':'
+                       + std::to_string(pointp->column()) + ' ' + pointp->comment();
+            };
+            std::unordered_set<std::string> branchLegs;
             for (const auto& point : sc.points()) {
                 daCount = std::max(daCount, point->count());
                 infoPoints.push_back(point);
-                if (point->type() == "branch") branchComments.insert(point->comment());
+                if (point->type() == "branch") branchLegs.emplace(legKey(point));
             }
-            // An if/else gets both line and branch points for its blocks, so leave out
-            // the line points that repeat a branch point
             infoPoints.erase(std::remove_if(infoPoints.begin(), infoPoints.end(),
                                             [&](const VlcPoint* pointp) {
                                                 return pointp->type() == "line"
-                                                       && branchComments.count(pointp->comment());
+                                                       && branchLegs.count(legKey(pointp));
                                             }),
                              infoPoints.end());
             os << "DA:" << sc.lineno() << "," << daCount << "\n";
