@@ -99,7 +99,12 @@ class VcdParser:
                     elif command in ('$dumpall', '$dumpon', '$dumpoff', '$dumpvars'):
                         if command == '$dumpoff':
                             self.set_unknown()
-                        self.in_dump = '$end' not in tokens
+                        if '$end' in tokens:
+                            self.process_dump_tokens(lineno, tokens[1:tokens.index('$end')])
+                            self.in_dump = False
+                        else:
+                            self.process_dump_tokens(lineno, tokens[1:])
+                            self.in_dump = True
                     elif command == '$enddefinitions':
                         self.saw_enddefinitions = True
                     else:
@@ -152,7 +157,7 @@ class VcdParser:
             except ValueError:
                 self.error(lineno, "Invalid $var width '" + body[1] + "'")
             ident = body[2]
-            name = re.sub(r'\s*\[[^\]]*\]$', '', ' '.join(body[3:])).strip()
+            name = re.sub(r'\s*\[[^\]]*:[^\]]*\]$', '', ' '.join(body[3:])).strip()
             if not name:
                 self.error(lineno, "Invalid $var name")
             if var_type in ('real', 'realtime'):
@@ -180,6 +185,24 @@ class VcdParser:
         if signal.kind == SIGNAL_BITS:
             return 'x' * signal.width
         return 'x'
+
+    def process_dump_tokens(self, lineno: int, tokens: list[str]) -> None:
+        index = 0
+        while index < len(tokens):
+            token = tokens[index]
+            first = token[0].lower()
+            if first in '01xz':
+                if len(token) < 2:
+                    self.error(lineno, "Missing identifier in value change '" + token + "'")
+                self.process_change(lineno, token)
+                index += 1
+            elif first in 'brs':
+                if index + 1 >= len(tokens):
+                    self.error(lineno, "Invalid value change '" + token + "'")
+                self.process_change(lineno, token + ' ' + tokens[index + 1])
+                index += 2
+            else:
+                self.error(lineno, "Unsupported value change '" + token + "'")
 
     def process_change(self, lineno: int, line: str) -> None:
         first = line[0].lower()
@@ -215,7 +238,7 @@ class VcdParser:
             if first != 'r':
                 self.error(lineno, "Signal '" + name + "' requires a real value")
             try:
-                return str(Decimal(value))
+                return format(Decimal(value).normalize(), 'f')
             except InvalidOperation:
                 self.error(lineno, "Invalid real value '" + value + "'")
         if signal.kind == SIGNAL_STRING:

@@ -7,6 +7,7 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+import os
 import shutil
 
 import vltest_bootstrap
@@ -14,6 +15,11 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 prog = os.environ["VERILATOR_ROOT"] + "/bin/verilator_trace_diff"
+
+
+def write_text(filename, lines):
+    with open(filename, 'w', encoding='utf8') as fh:
+        fh.write("\n".join(lines) + "\n")
 
 
 def write_vcd(filename, timescale, time_factor, data, msg, include_msg=True, include_real=True):
@@ -50,8 +56,7 @@ def write_vcd(filename, timescale, time_factor, data, msg, include_msg=True, inc
         lines.append("r2.5 #")
     if include_msg:
         lines.append("s" + msg + " $")
-    with open(filename, 'w', encoding='utf8') as fh:
-        fh.write("\n".join(lines) + "\n")
+    write_text(filename, lines)
 
 
 def run_diff(extra_args, logfile, status):
@@ -71,6 +76,14 @@ missing_log = test.obj_dir + "/missing.log"
 missing_status = test.obj_dir + "/missing.status"
 fst_log = test.obj_dir + "/fst.log"
 fst_status = test.obj_dir + "/fst.status"
+array_log = test.obj_dir + "/array.log"
+array_status = test.obj_dir + "/array.status"
+dumpvars_log = test.obj_dir + "/dumpvars.log"
+dumpvars_status = test.obj_dir + "/dumpvars.status"
+dumpall_log = test.obj_dir + "/dumpall.log"
+dumpall_status = test.obj_dir + "/dumpall.status"
+real_log = test.obj_dir + "/real.log"
+real_status = test.obj_dir + "/real.status"
 
 write_vcd(trace1, '1ns', 1, '0111', 'bad')
 write_vcd(trace2, '1ps', 1000, '0110', 'bad')
@@ -99,6 +112,131 @@ write_vcd(trace2, '1ns', 1, '0111', 'bad', include_msg=False)
 if run_diff([trace1, trace2], missing_log, missing_status) != '2':
     test.error("Expected exit code 2 for different signal sets")
 test.file_grep(missing_log, r'Signal only in .*trace1\.vcd: top\.msg')
+
+write_text(trace1, [
+    "$timescale 1ns $end",
+    "$scope module top $end",
+    "$var wire 1 ! clk $end",
+    '$var wire 1 " arr[0] $end',
+    '$var wire 1 # arr[1] $end',
+    "$upscope $end",
+    "$enddefinitions $end",
+    "$dumpvars",
+    "0!",
+    '0"',
+    "0#",
+    "$end",
+    "#10",
+    "1!",
+])
+
+write_text(trace2, [
+    "$timescale 1ns $end",
+    "$scope module top $end",
+    "$var wire 1 ! clk $end",
+    '$var wire 1 " arr[0] $end',
+    '$var wire 1 # arr[1] $end',
+    "$upscope $end",
+    "$enddefinitions $end",
+    "$dumpvars",
+    "0!",
+    '0"',
+    "0#",
+    "$end",
+    "#10",
+    "1!",
+    '1"',
+])
+
+if run_diff(["--clock", "top.clk", trace1, trace2], array_log, array_status) != '1':
+    test.error("Expected exit code 1 for an array element difference")
+test.file_grep(array_log,
+               r'^First difference at time 10 \(cycle 1\): top\.arr\[0\] \(trace1=0, trace2=1\)$')
+
+write_text(trace1, [
+    "$timescale 1ns $end",
+    "$scope module top $end",
+    "$var wire 1 ! clk $end",
+    '$var wire 4 " data $end',
+    "$upscope $end",
+    "$enddefinitions $end",
+    '$dumpvars 0! b1010 " $end',
+])
+
+write_text(trace2, [
+    "$timescale 1ns $end",
+    "$scope module top $end",
+    "$var wire 1 ! clk $end",
+    '$var wire 4 " data $end',
+    "$upscope $end",
+    "$enddefinitions $end",
+    '$dumpvars 0! b1011 " $end',
+])
+
+if run_diff([trace1, trace2], dumpvars_log, dumpvars_status) != '1':
+    test.error("Expected exit code 1 for values on a $dumpvars line")
+test.file_grep(dumpvars_log,
+               r'^First difference at time 0: top\.data \(trace1=1010, trace2=1011\)$')
+
+write_text(trace1, [
+    "$timescale 1ns $end",
+    "$scope module top $end",
+    "$var wire 1 ! clk $end",
+    '$var wire 4 " data $end',
+    "$upscope $end",
+    "$enddefinitions $end",
+    "$dumpvars",
+    "0!",
+    'b0000 "',
+    "$end",
+    "#10",
+    '$dumpall 1! b1010 " $end',
+])
+
+write_text(trace2, [
+    "$timescale 1ns $end",
+    "$scope module top $end",
+    "$var wire 1 ! clk $end",
+    '$var wire 4 " data $end',
+    "$upscope $end",
+    "$enddefinitions $end",
+    "$dumpvars",
+    "0!",
+    'b0000 "',
+    "$end",
+    "#10",
+    '$dumpall 1! b1011 " $end',
+])
+
+if run_diff([trace1, trace2], dumpall_log, dumpall_status) != '1':
+    test.error("Expected exit code 1 for values on a $dumpall line")
+test.file_grep(dumpall_log,
+               r'^First difference at time 10: top\.data \(trace1=1010, trace2=1011\)$')
+
+write_text(trace1, [
+    "$timescale 1ns $end",
+    "$scope module top $end",
+    "$var real 1 ! value $end",
+    "$upscope $end",
+    "$enddefinitions $end",
+    "$dumpvars",
+    "r1.50 !",
+    "$end",
+])
+
+write_text(trace2, [
+    "$timescale 1ns $end",
+    "$scope module top $end",
+    "$var real 1 ! value $end",
+    "$upscope $end",
+    "$enddefinitions $end",
+    "$dumpvars",
+    "r1.5 !",
+    "$end",
+])
+
+if run_diff([trace1, trace2], real_log, real_status) != '0':
+    test.error("Expected equal real values with different formatting to match")
 
 if shutil.which('fst2vcd') and shutil.which('vcd2fst'):
     simple = test.obj_dir + "/simple.vcd"
