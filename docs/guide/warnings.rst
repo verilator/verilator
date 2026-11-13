@@ -1645,7 +1645,10 @@ List Of Warnings
    equivalent, which might behave differently in corner cases. For example
    ``$psprintf`` system function is replaced by its standard equivalent
    ``$sformatf``, and a C-style packed dimension ``[size]``, as accepted by
-   other simulators, by the ascending range ``[0:size-1]``.
+   other simulators, by the ascending range ``[0:size-1]``. Likewise, a
+   keyed assignment pattern without the leading apostrophe, such as
+   ``{default: 0}`` as accepted by other simulators, is replaced by
+   ``'{default: 0}``.
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.

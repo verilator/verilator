@@ -5351,6 +5351,13 @@ exprPatternOrStream<nodeExprp>:  // IEEE: assignment_pattern_expression or strea
         //UNSUP ~l~exprScope assignment_pattern         { UNSUP }
                 data_type assignment_pattern            { $$ = $2; if ($2) $2->childDTypep($1); }
         |       assignment_pattern                      { $$ = $1; }
+        //                      // Non-standard keyed assignment pattern without the apostrophe, accepted
+        //                      // as other simulators do; a positional one is a concatenation
+        |       '{' patternMemberList '}'
+                        { $$ = new AstPattern{$1, $2};
+                          $1->v3warn(NONSTD, "Non-standard assignment pattern without leading apostrophe"
+                                             " (IEEE 1800-2023 10.9)\n"
+                                             << $1->warnMore() << "... Suggest use equivalent '{...}"); }
         |       streaming_concatenation                 { $$ = $1; }
         ;
 
