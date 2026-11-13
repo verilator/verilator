@@ -18,4 +18,5 @@ options to each executable.
    exe_verilator_gantt.rst
    exe_verilator_module_deps.rst
    exe_verilator_profcfunc.rst
+   exe_verilator_trace_diff.rst
    exe_sim.rst
