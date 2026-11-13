@@ -917,9 +917,7 @@ class FsmDetectVisitor final : public VNVisitor {
         return skipLeadingIgnorableStmt(ifp->thensp());
     }
 
-    // The body of 'if (rst_n) body; else reset', which is how V3Const writes an active-low
-    // reset 'if (!rst_n) reset; else body'.  The else branch starts by assigning a constant;
-    // an active-high reset's then branch does instead, which callers never accept as a body.
+    // Body of 'if (rst_n) body; else reset', V3Const's form of 'if (!rst_n) reset; else body'
     static AstNode* activeLowResetBodyp(AstIf* ifp) {
         AstVarScope* vscp = nullptr;
         FsmStateValue value;
@@ -933,8 +931,8 @@ class FsmDetectVisitor final : public VNVisitor {
     // Normalize the reset condition into a compact description so the lowering
     // phase can regenerate the same predicate after detection. By the time
     // this pass runs, active-low source forms such as "!rst_n" have already
-    // been canonicalized to a positive-condition if/else shape with the reset in
-    // the else branch (activeLow), so only a plain VarRef survives here.
+    // been canonicalized to a positive-condition if/else shape, so only a
+    // plain VarRef survives here.
     static FsmResetCondDesc describeResetCond(AstNodeExpr* condp, bool activeLow = false) {
         FsmResetCondDesc desc;
         desc.activeLow = activeLow;
@@ -1052,10 +1050,10 @@ class FsmDetectVisitor final : public VNVisitor {
         return assp;
     }
 
-    // Match 'state = reset ? CONST : next', a reset folded into the commit, or the active-low
-    // 'state = reset_n ? next : CONST'.  Branch coverage makes V3LiftExpr rewrite it as
-    // 'if (reset) tmp = CONST; else tmp = next; state = tmp;' on a temporary, so match that
-    // form too.
+    // Match 'state = reset ? CONST : next', an active high reset folded into the commit,
+    // or active low 'state = reset_n ? next : CONST'.
+    // Branch coverage makes V3LiftExpr rewrite it as 'if (reset) tmp = CONST; else tmp =
+    // next; state = tmp;' on a temporary, so match that form too.
     static AstNodeAssign* condStateVarAssign(AstNode* stmtsp, AstVarScope*& stateVscp,
                                              AstVarScope*& fromVscp, AstNodeExpr*& condp,
                                              AstNodeExpr*& resetValuep, FsmStateValue& resetValue,
