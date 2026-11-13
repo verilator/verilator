@@ -4954,8 +4954,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // We drop __BRA__??__KET__ as cells don't have that naming yet
                     AstVar* const ifaceRefVarp
                         = findIfaceTopVarp(nodep, parentEntp, cellp->name());
-                    //
                     // Nested cell (e.g. 'o.l.mp'): reference ifaceRefVarp via the prefix
+                    // Modports only legal under `interface` so can just look back one dot
                     const size_t cellPos = m_ds.m_dotText.rfind('.');
                     const string cellScope
                         = cellPos == string::npos ? "" : m_ds.m_dotText.substr(0, cellPos);
@@ -4987,6 +4987,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         newp->user3(true);  // Don't process again
                         VL_DO_DANGLING(pushDeletep(cellarrayrefp->unlinkFrBack()), cellarrayrefp);
                         m_ds.m_unlinkedScopep = nullptr;
+                    } else if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep
+                               && lastStates.m_dotPos == DP_FINAL) {
+                        newp = new AstUnlinkedRef{nodep->fileline(), newp, newp->name(),
+                                                  m_ds.m_unlinkedScopep->unlinkFrBack()};
+                        m_ds.m_unlinkedScopep = nullptr;
+                        m_ds.m_unresolvedCell = false;
                     }
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);

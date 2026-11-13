@@ -62,6 +62,10 @@ interface l4_if #(
   l3_if #(W * 2, L0A_W) l3 ();  // derived
 endinterface
 
+interface la_if;
+  l1_if sub[2] ();
+endinterface
+
 module l0_reader (
     l0_if.rd l0,
     output logic [7:0] dout
@@ -294,6 +298,30 @@ module t;
       .dout(l0b_2a_rd)
   );
 
+  // Modport of a nested interface reached through an interface array
+  la_if arr_inst ();
+  logic [7:0] arr_rd;
+  l0_reader m_arr_rd (
+      .l0(arr_inst.sub[1].l0b.rd),
+      .dout(arr_rd)
+  );
+
+  // Modport of a nested interface reached through a generate block
+  if (1) begin : gblk
+    l1_if l1 ();
+  end
+  logic [7:0] gen_rd;
+  l0_reader m_gen_rd (
+      .l0(gblk.l1.l0b.rd),
+      .dout(gen_rd)
+  );
+
+  always_comb begin
+    arr_inst.sub[0].l0b.dut_out = 8'hA5;
+    arr_inst.sub[1].l0b.dut_out = cyc[7:0] + 8'd10;
+    gblk.l1.l0b.dut_out = cyc[7:0] + 8'd11;
+  end
+
   always #5 clk = ~clk;
 
   always_ff @(posedge clk) begin
@@ -363,6 +391,14 @@ module t;
       end
       if (l0b_2a_rd !== exp_l0b_2a) begin
         $display("FAIL cyc=%0d: l0b_2a_rd=%h expected %h", cyc, l0b_2a_rd, exp_l0b_2a);
+        $stop;
+      end
+      if (arr_rd !== cyc[7:0] + 8'd10) begin
+        $display("FAIL cyc=%0d: arr_rd=%h", cyc, arr_rd);
+        $stop;
+      end
+      if (gen_rd !== cyc[7:0] + 8'd11) begin
+        $display("FAIL cyc=%0d: gen_rd=%h", cyc, gen_rd);
         $stop;
       end
       if (l2b_dout !== exp_l2b) begin
