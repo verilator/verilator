@@ -21,9 +21,9 @@
 %000001   state_t state_next;
         
           always_ff @(posedge clk) begin
-%000006     if (rst) begin
+            if (rst) begin
             end
-%000006     else state <= state_next;
+            else state <= state_next;
           end
         
           always_comb begin
@@ -49,10 +49,10 @@
 %000003   state_t state = WAITING;
         
           always_ff @(posedge clk) begin
-%000006     if (rst) begin
+            if (rst) begin
             end
             else
-%000006       case (state)
+%000003       case (state)
         // [FSM coverage]
 %000001        // [fsm_arc t.oneblock_u.state::COLLECTING->SENDING]
 %000002        // [fsm_arc t.oneblock_u.state::SENDING->WAITING]
@@ -92,28 +92,28 @@
             if (rst) begin
             end
             else if (state == WAITING) begin
-%000003       if (input_valid) begin
-%000001         saved_data <= input_data;
+              if (input_valid) begin
+                saved_data <= input_data;
 %000001         state <= input_last ? SENDING : COLLECTING;
               end
-%000003       else begin
-%000003         state <= WAITING;
+              else begin
+                state <= WAITING;
               end
             end
             else if (state == COLLECTING) begin
 %000001       if (input_valid && input_last) begin
-%000001         state <= SENDING;
+                state <= SENDING;
               end
-%000000       else begin
-%000000         state <= COLLECTING;
+              else begin
+                state <= COLLECTING;
               end
             end
-%000001     else if (state == SENDING) begin
-%000001       if (output_ready) begin
-%000001         state <= WAITING;
+            else if (state == SENDING) begin
+              if (output_ready) begin
+                state <= WAITING;
               end
-%000000       else begin
-%000000         state <= SENDING;
+              else begin
+                state <= SENDING;
               end
             end
           end
@@ -139,9 +139,9 @@
 %000001   state_t state_next;
         
           always_ff @(posedge clk) begin
-%000006     if (rst) begin
+            if (rst) begin
             end
-%000006     else state <= state_next;
+            else state <= state_next;
           end
         
           always_comb begin
@@ -252,7 +252,7 @@
           always_ff @(posedge clk) begin
 %000005     if (rst || flush) begin
             end
-%000005     else state <= state_next;
+            else state <= state_next;
           end
         
           always_comb begin
@@ -346,30 +346,30 @@
         
           always @(posedge clk) begin
             cyc <= cyc + 1;
-%000007     if (cyc == 1) begin
-%000001       rst <= 1'b0;
-%000001       go <= 1'b1;
-%000001       take_alt <= 1'b0;
-%000001       input_valid <= 1'b1;
-%000001       input_last <= 1'b0;
+            if (cyc == 1) begin
+              rst <= 1'b0;
+              go <= 1'b1;
+              take_alt <= 1'b0;
+              input_valid <= 1'b1;
+              input_last <= 1'b0;
             end
-%000007     if (cyc == 2) begin
-%000001       go <= 1'b0;
-%000001       input_valid <= 1'b1;
-%000001       input_last <= 1'b1;
-%000001       input_data <= 7'h35;
+            if (cyc == 2) begin
+              go <= 1'b0;
+              input_valid <= 1'b1;
+              input_last <= 1'b1;
+              input_data <= 7'h35;
             end
-%000007     if (cyc == 3) begin
-%000001       input_valid <= 1'b0;
-%000001       output_ready <= 1'b1;
+            if (cyc == 3) begin
+              input_valid <= 1'b0;
+              output_ready <= 1'b1;
             end
-%000007     if (cyc == 4) begin
-%000001       output_ready <= 1'b0;
-%000001       take_alt <= 1'b1;
+            if (cyc == 4) begin
+              output_ready <= 1'b0;
+              take_alt <= 1'b1;
             end
-%000007     if (cyc == 7) begin
-%000001       $write("*-* All Finished *-*\n");
-%000001       $finish;
+            if (cyc == 7) begin
+              $write("*-* All Finished *-*\n");
+              $finish;
             end
           end
         endmodule
