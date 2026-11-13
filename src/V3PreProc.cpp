@@ -970,19 +970,17 @@ void V3PreProcImp::addLineComment(int enterExit) {
 }
 
 void V3PreProcImp::dumpDefines(std::ostream& os) {
-    for (DefinesMap::const_iterator it = m_defines.begin(); it != m_defines.end(); ++it) {
-        os << "`define " << it->first;
+    for (const auto& itr : m_defines) {
+        os << "`define " << itr.first;
         // No need to print "()" below as already part of params()
-        if (!it->second.params().empty()) os << it->second.params();
-        if (!it->second.value().empty()) os << " " << it->second.value();
+        if (!itr.second.params().empty()) os << itr.second.params();
+        if (!itr.second.value().empty()) os << " " << itr.second.value();
         os << '\n';
     }
 }
 
 void V3PreProcImp::candidateDefines(VSpellCheck* spellerp) {
-    for (DefinesMap::const_iterator it = m_defines.begin(); it != m_defines.end(); ++it) {
-        spellerp->pushCandidate("`"s + it->first);
-    }
+    for (const auto& itr : m_defines) spellerp->pushCandidate("`"s + itr.first);
 }
 
 int V3PreProcImp::getRawToken() {
@@ -1606,10 +1604,8 @@ int V3PreProcImp::getStateToken() {
             // `ifdef NEVER `DEFUN(`endif)
             const string name(yyourtext() + 1, yyourleng() - 1);
             UINFO(4, "DefRef " << name);
-            if (m_defPutJoin) {
-                m_defPutJoin = false;
-                unputString("``");
-            }
+            const bool putJoin = m_defPutJoin;
+            m_defPutJoin = false;
             if (m_defDepth++ > V3PreProc::DEFINE_RECURSION_LEVEL_MAX) {
                 fileline()->v3error("Recursive `define substitution: `" + name);
                 goto next_tok;
@@ -1629,6 +1625,9 @@ int V3PreProcImp::getStateToken() {
             } else {
                 const string params = defParams(name);
                 if (params == "0" || params == "") {  // Found, as simple substitution
+                    // Join the substitution with what follows. With arguments, the `` instead
+                    // only delimits the name from its '(' (IEEE 1800-2023 22.5.1)
+                    if (putJoin) unputString("``");
                     string out;
                     if (!m_off) {
                         VDefineRef tempref{name, ""};

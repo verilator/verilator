@@ -13,6 +13,10 @@ test.scenarios('simulator')
 
 test.compile(verilator_flags2=["--binary"])
 
+if test.vlt_all:
+    # Timing without DPI must not pull in the DPI worker implementation.
+    test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", r'verilated_dpi_call')
+
 test.execute()
 
 test.passes()

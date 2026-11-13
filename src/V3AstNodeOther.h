@@ -557,13 +557,14 @@ public:
 class AstBind final : public AstNode {
     // Parents: MODULE
     // Children: CELL
-    // @astgen op1 := cellsp : List[AstNode]
+    // @astgen op1 := targetp : AstNode
+    // @astgen op2 := cellsp : List[AstNode]
     string m_name;  // Binding to name
 public:
-    AstBind(FileLine* fl, const string& name, AstNode* cellsp)
-        : ASTGEN_SUPER_Bind(fl)
-        , m_name{name} {
+    AstBind(FileLine* fl, AstNode* targetp, AstNode* cellsp)
+        : ASTGEN_SUPER_Bind(fl) {
         UASSERT_OBJ(VN_IS(cellsp, Cell), cellsp, "Only instances allowed to be bound");
+        this->targetp(targetp);
         addCellsp(cellsp);
     }
     ASTGEN_MEMBERS_AstBind;
@@ -1090,6 +1091,7 @@ class AstCoverBin final : public AstNode {
     const VCoverBinsType m_binsType;  // Bin type (eg AUTO, IGNORE, ILLEGAL)
     bool m_isArray = false;  // Bin is an array: of a bin per value or transition, or of
                              // arraySizep() bins
+    bool m_isDefault = false;  // Bin is declared '= default', so holds the values of no other bins
     bool m_isWildcard = false;  // Bin uses wildcard matching (independent of ignore/illegal)
     bool m_isSetExpr = false;  // Ranges contain one set_covergroup_expression, not a braced list
 
@@ -1116,10 +1118,15 @@ public:
         this->arraySizep(arraySizep);
     }
     // Constructor for default bins (catch-all)
-    AstCoverBin(FileLine* fl, const string& name, VCoverBinsType type)
+    AstCoverBin(FileLine* fl, const string& name, VCoverBinsType type, bool isArray,
+                AstNodeExpr* iffp)
         : ASTGEN_SUPER_CoverBin(fl)
         , m_name{name}
-        , m_binsType{type} {}
+        , m_binsType{type}
+        , m_isArray{isArray}
+        , m_isDefault{true} {
+        this->iffp(iffp);
+    }
     // Constructor for transition bins
     AstCoverBin(FileLine* fl, const string& name, AstCoverTransSet* transp,
                 VCoverBinsType type = VCoverBinsType::BINS_TRANSITION, bool isArrayBin = false)
@@ -1135,11 +1142,18 @@ public:
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     VCoverBinsType binsType() const { return m_binsType; }
+    bool isDefault() const { return m_isDefault; }
     bool isWildcard() const { return m_isWildcard; }
     bool isArray() const { return m_isArray; }
     void isArray(bool flag) { m_isArray = flag; }
     bool isSetExpr() const { return m_isSetExpr; }
     void isSetExpr(bool flag) { m_isSetExpr = flag; }
+    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_START
+        const AstCoverBin* const asamep = VN_DBG_AS(samep, CoverBin);
+        return m_name == asamep->m_name && m_binsType.m_e == asamep->m_binsType.m_e
+               && m_isArray == asamep->m_isArray && m_isDefault == asamep->m_isDefault
+               && m_isWildcard == asamep->m_isWildcard && m_isSetExpr == asamep->m_isSetExpr;
+    }  // LCOV_EXCL_STOP
 };
 class AstCoverBinsof final : public AstNode {
     // A binsof selection of a coverpoint or one of its named bins
@@ -1363,15 +1377,14 @@ class AstDefParam final : public AstNode {
     // Parents: MODULE
     // @astgen op1 := rhsp : AstNodeExpr
     // @astgen op2 := pathp : AstNodeExpr
-    string m_name;  // Name of variable getting set
+    // @astgen op3 := targetp : AstNodeExpr
 public:
-    AstDefParam(FileLine* fl, AstNodeExpr* pathp, const string& name, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_DefParam(fl)
-        , m_name{name} {
+    AstDefParam(FileLine* fl, AstNodeExpr* pathp, AstNodeExpr* targetp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_DefParam(fl) {
         this->rhsp(rhsp);
         this->pathp(pathp);
+        this->targetp(targetp);
     }
-    string name() const override VL_MT_STABLE { return m_name; }  // * = Scope name
     ASTGEN_MEMBERS_AstDefParam;
     bool sameNode(const AstNode*) const override { return true; }
 };
@@ -2057,6 +2070,25 @@ public:
     bool hasCombo() const;  // Includes a COMBO SenItem
     bool hasHybrid() const;  // Includes a HYBRID SenItem
 };
+class AstSetuphold final : public AstNode {
+    // Verilog $setuphold
+    // Parents: MODULE
+    // @astgen op1 := refevp : AstNodeExpr
+    // @astgen op2 := dataevp : AstNodeExpr
+    // @astgen op3 := delrefp : Optional[AstNodeExpr]
+    // @astgen op4 := deldatap : Optional[AstNodeExpr]
+public:
+    AstSetuphold(FileLine* fl, AstNodeExpr* refevp, AstNodeExpr* dataevp,
+                 AstNodeExpr* delrefp = nullptr, AstNodeExpr* deldatap = nullptr)
+        : ASTGEN_SUPER_Setuphold(fl) {
+        this->refevp(refevp);
+        this->dataevp(dataevp);
+        this->delrefp(delrefp);
+        this->deldatap(deldatap);
+    }
+    ASTGEN_MEMBERS_AstSetuphold;
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
 class AstStrengthSpec final : public AstNode {
     VStrength m_s0;  // Drive 0 strength
     VStrength m_s1;  // Drive 1 strength
@@ -2403,6 +2435,7 @@ class AstVar final : public AstNode {
     bool m_noCReset : 1;  // Do not do automated CReset creation
     bool m_noReset : 1;  // Do not do automated reset/randomization
     bool m_noSubst : 1;  // Do not substitute out references
+    bool m_keepPort : 1;  // Input port of a non-inlined module, kept per instance
     bool m_sampled : 1;  // Sampled timing region
     bool m_substConstOnly : 1;  // Only substitute if constant
     bool m_overriddenParam : 1;  // Overridden parameter by #(...) or defparam
@@ -2470,6 +2503,7 @@ class AstVar final : public AstNode {
         m_noCReset = false;
         m_noReset = false;
         m_noSubst = false;
+        m_keepPort = false;
         m_sampled = false;
         m_substConstOnly = false;
         m_overriddenParam = false;
@@ -2664,6 +2698,8 @@ public:
     void noReset(bool flag) { m_noReset = flag; }
     bool noSubst() const { return m_noSubst; }
     void noSubst(bool flag) { m_noSubst = flag; }
+    bool keepPort() const { return m_keepPort; }
+    void keepPort(bool flag) { m_keepPort = flag; }
     bool processQueue() const { return m_processQueue; }
     void processQueue(bool flag) { m_processQueue = flag; }
     bool sampled() const { return m_sampled; }
@@ -2818,6 +2854,7 @@ public:
         noReset(fromp->noReset());
         noCReset(fromp->noCReset());
         attrSplitVar(fromp->attrSplitVar());
+        keepPort(fromp->keepPort());
     }
     // Reason why the properties of the variable prevent splitting it, nullptr if none
     const char* cannotSplitKindReason() const;
@@ -3244,7 +3281,7 @@ class AstGenBlock final : public AstNodeGen {
     // @astgen op2 := itemsp : List[AstNode]
     std::string m_name;  // Name of block
     const bool m_unnamed;  // Originally unnamed (name change does not affect this)
-    const bool m_implied;  // Not inserted by user
+    bool m_implied;  // Not inserted by user, after V3LinkParse not a hierarchy level
     AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff in this scope
 
 public:
@@ -3262,6 +3299,7 @@ public:
     void name(const std::string& name) override { m_name = name; }
     bool unnamed() const { return m_unnamed; }
     bool implied() const { return m_implied; }
+    void implied(bool flag) { m_implied = flag; }
     AstDefaultDisable* defaultDisablep() const { return m_defaultDisablep; }
     void defaultDisablep(AstDefaultDisable* nodep) { m_defaultDisablep = nodep; }
     // As AstNodeModule::dtypeNameInnerScope(), e.g. 'top.gen[0].'

@@ -37,7 +37,6 @@ class VerilatedFstSc final : VerilatedScTraceBase, public VerilatedFstC {
 
 public:
     VerilatedFstSc() {
-        spTrace()->set_time_unit(VerilatedScTraceBase::getScTimeUnit());
         spTrace()->set_time_resolution(VerilatedScTraceBase::getScTimeResolution());
     }
 

@@ -28,6 +28,7 @@
 
 #include "verilated.h"
 
+#include <functional>
 #include <limits>
 #include <vector>
 
@@ -61,8 +62,11 @@
 #endif
 // clang-format on
 
-// Placeholder for compiling with --protect-ids
-#define VL_UNKNOWN "<unknown>"
+namespace VerilatedDpiCall {
+/// Queue an aborted import for resumption after its exported coroutine is destroyed.
+void enqueueAborted(std::function<void()> resume) VL_MT_SAFE;
+void resumeAborted() VL_MT_UNSAFE_ONE;
+}  // namespace VerilatedDpiCall
 
 //=============================================================================
 // VlCoroutineHandle is a non-copyable (but movable) coroutine handle. On resume, the handle is
@@ -100,6 +104,8 @@ class VlCoroutineHandle final {
     VlProcessRef m_process;  // Data of the suspended process, null if not needed
     VlFileLineDebug m_fileline;  // Source location, for debug
 
+    void destroy();  // Clean up a nonempty handle
+
 public:
     // CONSTRUCTORS
     // Construct
@@ -124,17 +130,8 @@ public:
         : m_coro{std::exchange(moved.m_coro, nullptr)}
         , m_process{std::exchange(moved.m_process, nullptr)}
         , m_fileline{moved.m_fileline} {}
-    // Destroy if the handle isn't null
     ~VlCoroutineHandle() {
-        // Usually these coroutines should get resumed; we only need to clean up if we destroy a
-        // model with some coroutines suspended
-        if (VL_UNLIKELY(m_coro)) {
-            if (m_process && m_process->state() != VlProcess::KILLED
-                && !m_coro.promise().m_forever) {
-                m_process->state(VlProcess::FINISHED);
-            }
-            m_coro.destroy();
-        }
+        if (VL_UNLIKELY(m_coro)) destroy();
     }
     // METHODS
     // Move the handle, leaving a null handle
@@ -201,7 +198,7 @@ public:
     void dump() const;
 #endif
     // Used by coroutines for co_awaiting a certain simulation time
-    auto delay(uint64_t delay, VlProcessRef process, const char* filename = VL_UNKNOWN,
+    auto delay(uint64_t delay, VlProcessRef process, const char* filename = VL_UNKNOWN_FILENAME,
                int lineno = 0) {
         struct Awaitable final {
             VlProcessRef process;  // Data of the suspended process, null if not needed
@@ -238,7 +235,8 @@ public:
 
     // Helper awaitable func for suspending coroutines forever.
     // Used for constant wait statements.
-    auto waitForever(VlProcessRef process, const char* filename = VL_UNKNOWN, int lineno = 0) {
+    auto waitForever(VlProcessRef process, const char* filename = VL_UNKNOWN_FILENAME,
+                     int lineno = 0) {
         VL_DEBUG_IF(
             VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
         struct Awaitable final {
@@ -281,19 +279,20 @@ class VlTriggerScheduler final {
 public:
     // METHODS
     // Resumes all coroutines from the m_toResume
-    void resume(const char* eventDescription = VL_UNKNOWN);
+    void resume(const char* eventDescription = VL_UNKNOWN_FILENAME);
     // Moves all coroutines from m_fired to m_toResume
-    void moveToResumeQueue(const char* eventDescription = VL_UNKNOWN);
+    void moveToResumeQueue(const char* eventDescription = VL_UNKNOWN_FILENAME);
     // Moves all coroutines from m_awaiting to m_fired
-    void ready(const char* eventDescription = VL_UNKNOWN);
+    void ready(const char* eventDescription = VL_UNKNOWN_FILENAME);
     // Are there no coroutines awaiting?
     bool empty() const { return m_fired.empty() && m_awaiting.empty(); }
 #ifdef VL_DEBUG
     void dump(const char* eventDescription) const;
 #endif
     // Used by coroutines for co_awaiting a certain trigger
-    auto trigger(bool ready, VlProcessRef process, const char* eventDescription = VL_UNKNOWN,
-                 const char* filename = VL_UNKNOWN, int lineno = 0) {
+    auto trigger(bool ready, VlProcessRef process,
+                 const char* eventDescription = VL_UNKNOWN_FILENAME,
+                 const char* filename = VL_UNKNOWN_FILENAME, int lineno = 0) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Suspending process waiting for %s at %s:%d\n",
                                 eventDescription, filename, lineno););
         struct Awaitable final {
@@ -408,7 +407,7 @@ public:
 
     VlForkSyncState()  // Construct with a null coroutine handle
         : m_susp{VlProcessRef{}} {}
-    void done(const char* filename = VL_UNKNOWN, int lineno = 0);
+    void done(const char* filename = VL_UNKNOWN_FILENAME, int lineno = 0);
 };
 
 class VlForkSync final {
@@ -429,11 +428,11 @@ public:
     void onKill(VlProcessRef process);
     // Called whenever any of the forked processes finishes. If the join counter reaches 0, the
     // main process gets resumed
-    void done(const char* filename = VL_UNKNOWN, int lineno = 0) {
+    void done(const char* filename = VL_UNKNOWN_FILENAME, int lineno = 0) {
         m_state->done(filename, lineno);
     }
     // Used by coroutines for co_awaiting a join
-    auto join(VlProcessRef process, const char* filename = VL_UNKNOWN, int lineno = 0) {
+    auto join(VlProcessRef process, const char* filename = VL_UNKNOWN_FILENAME, int lineno = 0) {
         VL_DEBUG_IF(
             VL_DBG_MSGF("             Awaiting join of fork at: %s:%d\n", filename, lineno););
         struct Awaitable final {

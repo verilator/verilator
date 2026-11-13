@@ -37,6 +37,10 @@ Files Read/Written
 All output files are placed in the output directory specified with the
 :vlopt:`--Mdir` option, or "obj_dir" if not specified.
 
+Verilator reads SystemVerilog sources, and optionally C++ sources. C++20
+module interface units are given as ``.cppm`` or ``.ixx`` files on the
+command line; see :vlopt:`--cxx-modules`.
+
 Verilator creates the following files in the output directory:
 
 For --cc/--sc, it creates:

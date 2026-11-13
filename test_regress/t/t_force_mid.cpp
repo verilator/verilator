@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     contextp->commandArgs(argc, argv);
     contextp->debug(0);
     srand48(5);
-    topp.reset(new Vt_force_mid{"top"});
+    topp.reset(new VM_PREFIX{"top"});
     topp->topin = 0x9;
     topp->eval();
     {

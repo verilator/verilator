@@ -30,6 +30,11 @@
 #include "V3Lexer.yy.cpp"
 #undef yyFlexLexer
 
+#if YY_FLEX_MINOR_VERSION > 6 || (YY_FLEX_MINOR_VERSION == 6 && YY_FLEX_SUBMINOR_VERSION >= 5)
+// Flex 2.6.5 declares yyread in FlexLexer.h, but only defines it when YY_INPUT is not overridden
+int V3LexerBase::yyread(char*, size_t) { return 0; }
+#endif
+
 //######################################################################
 // Lex-derived class
 

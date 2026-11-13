@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_bind_list_unsup.v:15:3: Unsupported: Bind with instance list
+   15 |   bind moda: t.u_a1, t.u_a2 mycheck #(.CHECK('h90)) u_check ();
+      |   ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

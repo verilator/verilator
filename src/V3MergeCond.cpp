@@ -76,10 +76,10 @@
 
 #include "V3MergeCond.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3DupFinder.h"
 #include "V3Hasher.h"
 #include "V3Stats.h"
+#include "V3VNUserAllocator.h"
 
 #include <queue>
 #include <set>
@@ -154,8 +154,8 @@ struct StmtProperties final {
     }
 };
 
-// We store the statement properties in user3 via AstUser3Allocator
-using StmtPropertiesAllocator = AstUser3Allocator<AstNodeStmt, StmtProperties>;
+// We store the statement properties in user3 via VNUser3Allocator
+using StmtPropertiesAllocator = VNUser3Allocator<AstNodeStmt, StmtProperties>;
 
 //######################################################################
 // Code motion analysis and implementation

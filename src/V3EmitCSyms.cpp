@@ -1240,12 +1240,7 @@ void EmitCSyms::emitSymImpPreamble() {
 void EmitCSyms::emitVarTables() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()) return;
     puts("\n// VPI VARIABLE/SCOPE TABLES\n");
-    // offsetof on the (non-standard-layout) generated module/Syms classes is well
-    // defined on all supported compilers but warns; suppress just here.
-    puts("#if defined(__GNUC__)\n");
-    puts("# pragma GCC diagnostic push\n");
-    puts("# pragma GCC diagnostic ignored \"-Winvalid-offsetof\"\n");
-    puts("#endif\n");
+    putOffsetofPragmaPush();
     if (!m_varDims.empty()) {
         puts("static const int32_t " + varDimsTableName() + "[] = {\n");
         for (size_t i = 0; i < m_varDims.size(); i += 2) {
@@ -1299,9 +1294,7 @@ void EmitCSyms::emitVarTables() {
         }
         puts("};\n");
     }
-    puts("#if defined(__GNUC__)\n");
-    puts("# pragma GCC diagnostic pop\n");
-    puts("#endif\n");
+    putOffsetofPragmaPop();
 }
 
 void EmitCSyms::buildHierTableRows() {

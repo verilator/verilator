@@ -52,7 +52,6 @@ set(HEADERS
     V3AstNodeOther.h
     V3AstNodeStmt.h
     V3AstPatterns.h
-    V3AstUserAllocator.h
     V3Begin.h
     V3BitBlast.h
     V3Branch.h
@@ -65,6 +64,7 @@ set(HEADERS
     V3Cfg.h
     V3Class.h
     V3Clean.h
+    V3Coalesce.h
     V3Combine.h
     V3Common.h
     V3Const.h
@@ -204,6 +204,7 @@ set(HEADERS
     V3UniqueNames.h
     V3Unknown.h
     V3Unroll.h
+    V3VNUserAllocator.h
     V3VariableOrder.h
     V3Waiver.h
     V3Width.h
@@ -240,6 +241,7 @@ set(COMMON_SOURCES
     V3CfgLiveVariables.cpp
     V3Class.cpp
     V3Clean.cpp
+    V3Coalesce.cpp
     V3Combine.cpp
     V3Common.cpp
     V3ConstPool.cpp

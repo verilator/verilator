@@ -23,9 +23,9 @@
 
 #include "V3Combine.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3DupFinder.h"
 #include "V3Stats.h"
+#include "V3VNUserAllocator.h"
 
 #include <list>
 #include <vector>
@@ -53,8 +53,8 @@ class CombineVisitor final : VNVisitor {
     };
 
     // STATE
-    AstUser1Allocator<AstNodeModule, CFuncs> m_cfuncs;  // AstCFuncs under module
-    AstUser1Allocator<AstCFunc, CFuncInfo> m_cfuncInfo;  // Data associated with each AstCFunc
+    VNUser1Allocator<AstNodeModule, CFuncs> m_cfuncs;  // AstCFuncs under module
+    VNUser1Allocator<AstCFunc, CFuncInfo> m_cfuncInfo;  // Data associated with each AstCFunc
     AstNodeModule* m_modp = nullptr;  // Current module
     const V3Hasher m_hasher;  // For hashing
     VDouble0 m_cfuncsCombined;  // Statistic tracking

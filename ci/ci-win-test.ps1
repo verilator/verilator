@@ -55,6 +55,19 @@ $Env:MSYSTEM = "UCRT64"
 $Env:UVM_T = "$PWD/t"
 $Env:UVM_ROOT = "$PWD/../install"
 $Env:UVM_J = "$NPROC"
+# Compile the DPI source on its own with attribute warnings as errors.  Whether
+# svdpi.h declares the DPI functions as imports or exports depends on the macros
+# set in verilated_dpi.cpp; getting that wrong is only a warning in the model
+# build below, so fail here instead (regression test for #9104).  The same
+# mismatch is C4273 "inconsistent dll linkage" in MSVC, but that one needs a
+# Visual Studio environment this step does not set up, and the include order
+# that controls it is the same for both compilers.
+& C:\msys64\usr\bin\bash.exe -lc @'
+set -e
+ROOT="$(cygpath -m "$UVM_ROOT")"
+g++ -std=c++14 -fsyntax-only -Werror=attributes -I "$ROOT/include" -I "$ROOT/include/vltstd" "$ROOT/include/verilated_dpi.cpp"
+'@
+if ($LASTEXITCODE -ne 0) { exit 1 }
 & C:\msys64\usr\bin\bash.exe -lc @'
 set -e
 T="$(cygpath "$UVM_T")"

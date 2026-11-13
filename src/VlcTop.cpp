@@ -252,7 +252,7 @@ uint64_t keyNumber(const string& value) {
 // If a field of a record's name, '\001<key>\002<value>', has a key of the coverage computation
 bool isScoreField(const string& field) {
     for (const char* const keyp : {VL_CIK_THRESH, VL_CIK_WEIGHT, VL_CIK_GROUP_WEIGHT}) {
-        const string prefix = string{"\001"} + keyp + "\002";
+        const string prefix = "\001"s + keyp + "\002";
         if (field.compare(0, prefix.size(), prefix) == 0) return true;
     }
     return false;
@@ -392,9 +392,9 @@ void printTallyRow(const string& type, const Tally& tally, size_t indent, size_t
 
 size_t countWidth(const TypeTally& tally) {
     size_t width = cvtToStr(0).size();
-    for (TypeTally::const_iterator it = tally.begin(); it != tally.end(); ++it) {
-        width = std::max(width, cvtToStr(it->second.hit()).size());
-        width = std::max(width, cvtToStr(it->second.total()).size());
+    for (const auto& itr : tally) {
+        width = std::max(width, cvtToStr(itr.second.hit()).size());
+        width = std::max(width, cvtToStr(itr.second.total()).size());
     }
     return width;
 }
@@ -405,9 +405,7 @@ size_t typeWidth(const TypeTally& tally) {
         const string type = typep;
         typeWidth = std::max(typeWidth, type.size());
     }
-    for (TypeTally::const_iterator it = tally.begin(); it != tally.end(); ++it) {
-        typeWidth = std::max(typeWidth, it->first.size());
-    }
+    for (const auto& itr : tally) typeWidth = std::max(typeWidth, itr.first.size());
     return typeWidth;
 }
 
@@ -426,9 +424,9 @@ void printTypeTally(const TypeTally& tally, size_t indent, bool includeMissingOr
             printTallyRow(type, Tally{}, indent, typWidth, cntWidth);
         }
     }
-    for (TypeTally::const_iterator it = tally.begin(); it != tally.end(); ++it) {
-        if (!isOrderedType(it->first)) {
-            printTallyRow(it->first, it->second, indent, typWidth, cntWidth);
+    for (const auto& itr : tally) {
+        if (!isOrderedType(itr.first)) {
+            printTallyRow(itr.first, itr.second, indent, typWidth, cntWidth);
         }
     }
 }
@@ -552,6 +550,7 @@ void VlcTop::writeInfo(const string& filename) {
         VlcSource::LinenoMap& lines = source.lines();
         int branchesFound = 0;
         int branchesHit = 0;
+        int linesHit = 0;
         for (auto& li : lines) {
             VlcSourceCount& sc = li.second;
             uint64_t daCount = 0;
@@ -561,6 +560,7 @@ void VlcTop::writeInfo(const string& filename) {
                 infoPoints.push_back(point);
             }
             os << "DA:" << sc.lineno() << "," << daCount << "\n";
+            if (opt.countOk(daCount)) ++linesHit;
             if (infoPoints.size() <= 1) continue;
             branchesFound += static_cast<int>(infoPoints.size());
             int point_num = 0;
@@ -586,6 +586,8 @@ void VlcTop::writeInfo(const string& filename) {
         }
         os << "BRF:" << branchesFound << '\n';
         os << "BRH:" << branchesHit << '\n';
+        os << "LF:" << lines.size() << '\n';
+        os << "LH:" << linesHit << '\n';
 
         os << "end_of_record\n";
     }
@@ -841,8 +843,8 @@ void VlcTop::printHierarchyReport() {
         const string type = displayType(pt);
         const std::vector<string> parts = splitHier(hier);
         string path;
-        for (std::vector<string>::const_iterator it = parts.begin(); it != parts.end(); ++it) {
-            path = path.empty() ? *it : path + "." + *it;
+        for (const auto& itr : parts) {
+            path = path.empty() ? itr : path + "." + itr;
             tallyPoint(hierTallies[path], type, pt.count());
         }
         tallyPoint(duTallies[duName(pt)], type, pt.count());
@@ -866,24 +868,22 @@ void VlcTop::printHierarchyReport() {
                   << "it is not precise per-instance coverage.\n";
     }
     std::cout << "Hierarchy Coverage Summary:\n";
-    for (std::map<string, TypeTally>::const_iterator it = hierTallies.begin();
-         it != hierTallies.end(); ++it) {
-        const std::vector<string> parts = splitHier(it->first);
+    for (const auto& itr : hierTallies) {
+        const std::vector<string> parts = splitHier(itr.first);
         if (levels >= 0 && static_cast<int>(parts.size()) > levels + 1) continue;
         printIndent(s_summaryIndent);
-        std::cout << it->first << "\n";
+        std::cout << itr.first << "\n";
         // Hierarchy nodes can be numerous, so only print coverage types present
         // under this node instead of repeating absent zero-count rows.
-        printTypeTally(it->second, s_reportRowIndent, false);
+        printTypeTally(itr.second, s_reportRowIndent, false);
     }
     std::cout << "Design Unit Coverage Summary:\n";
-    for (std::map<string, TypeTally>::const_iterator it = duTallies.begin(); it != duTallies.end();
-         ++it) {
+    for (const auto& itr : duTallies) {
         printIndent(s_summaryIndent);
-        std::cout << it->first << "\n";
+        std::cout << itr.first << "\n";
         // Design-unit summaries follow the hierarchy report style: present
         // types only, but in the same stable order as the flat summary.
-        printTypeTally(it->second, s_reportRowIndent, false);
+        printTypeTally(itr.second, s_reportRowIndent, false);
     }
     if (!cgTallies.empty()) printCovergroupTallies(cgTallies, levels);
 }

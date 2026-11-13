@@ -89,13 +89,11 @@ class UndrivenVarEntry final {
 
 public:
     // CONSTRUCTORS
-    explicit UndrivenVarEntry(AstVar* varp)
-        : m_varp{varp} {  // Construction for when a var is used
+    explicit UndrivenVarEntry(AstVar* varp)  // Construction for when a var is used
+        : m_varp{varp}
+        , m_wholeFlags(FLAGS_PER_BIT, false)  // Need () for sized-constructor
+        , m_bitFlags(varp->width() * FLAGS_PER_BIT, false) {  // Need () for sized-constructor
         UINFO(9, "create " << varp);
-        m_wholeFlags.resize(FLAGS_PER_BIT);
-        for (int i = 0; i < FLAGS_PER_BIT; i++) m_wholeFlags[i] = false;
-        m_bitFlags.resize(varp->width() * FLAGS_PER_BIT);
-        for (int i = 0; i < varp->width() * FLAGS_PER_BIT; i++) m_bitFlags[i] = false;
     }
     ~UndrivenVarEntry() = default;
 

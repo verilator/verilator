@@ -1275,12 +1275,13 @@ bool V3Number::isNeqZero() const {
 bool V3Number::isTrue() const {
     if (isString()) return !m_data.str().empty();
     if (isDouble()) return isNeqZero();
-    bool result = false;
+    uint32_t result = 0;
     for (int word = 0; word < words(); ++word) {
-        if (m_data.num()[word].m_valueX) return false;
-        result |= m_data.num()[word].m_value;
+        const ValueAndX v = m_data.num()[word];
+        if (v.m_valueX) return false;  // Any X bit means the number is not known-true
+        result |= v.m_value;
     }
-    return result;
+    return result != 0;
 }
 bool V3Number::isBitsZero(int msb, int lsb) const {
     for (int i = lsb; i <= msb; ++i) {

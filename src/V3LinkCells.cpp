@@ -406,7 +406,7 @@ class LinkCellsVisitor final : public VNVisitor {
     }
 
     void assignParamNumbers(AstPin* const firstPinp) {
-        for (AstPin* pinp = firstPinp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+        for (AstPin* const pinp : VNList<AstPin>{firstPinp}) {
             pinp->param(true);
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
@@ -596,7 +596,16 @@ class LinkCellsVisitor final : public VNVisitor {
         // this move to post param, which would mean we do not auto-read modules
         // and means we cannot compute module levels until later.
         UINFO(4, "Link Bind: " << nodep);
-        AstNodeModule* const modp = resolveModule(nodep, nodep->name(), m_modp->libname());
+        AstParseRef* const targetp = VN_CAST(nodep->targetp(), ParseRef);
+        if (!targetp) {
+            nodep->targetp()->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: bind with dotted bind_target_scope");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        const std::string name = targetp->name();
+
+        AstNodeModule* const modp = resolveModule(nodep, name, m_modp->libname());
         if (modp && !modp->verilatorLib()) {
             AstNode* const cellsp = nodep->cellsp()->unlinkFrBackWithNext();
             // Module may have already linked, so need to pick up these new cells
@@ -891,8 +900,7 @@ class LinkCellsVisitor final : public VNVisitor {
         UASSERT((hierIt != hierBlocks.end()) == !!v3Global.opt.hierChild(),
                 "information of the top module must exist if --hierarchical-child is set");
         // Look at the new modules, and store pointers to their names
-        for (AstNodeModule *nextp, *nodep = firstp; nodep; nodep = nextp) {
-            nextp = VN_AS(nodep->nextp(), NodeModule);
+        for (AstNodeModule* const nodep : VNList<AstNodeModule>{firstp}) {
             ++m_statModsScanned;
             if (AstPackage* const pkgp = VN_CAST(nodep, Package)) {
                 // Packages have their own global name space (IEEE 1800-2023 3.13)

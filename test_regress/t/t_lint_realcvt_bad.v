@@ -30,4 +30,13 @@ module sub;
     i = {6{1.2}};  // Error, doesn't support real, not just warning
   end
 
+  // Dynamic-array and queue indices use the same real-to-integer warning path.
+  initial begin
+    int d[];
+    int q[$];
+    real r;
+    r = 0.6;
+    $write("%0d %0d", d[r], q[r]);
+  end
+
 endmodule

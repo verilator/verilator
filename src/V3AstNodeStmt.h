@@ -272,7 +272,7 @@ class AstCAwait final : public AstNodeStmt {
     // C++'s co_await. While this is an expression in C++, in Verilator it is only used
     // with void result types and always appears in statement position. There must never
     // be a suspendable process that returns a value, so modeling as a statement instead.
-    // @astgen op1 := exprp : AstNodeExpr<AstNodeCCall|AstCMethodHard>
+    // @astgen op1 := exprp : AstNodeExpr<AstNodeCCall|AstCFuncHard|AstCMethodHard>
     //
     // @astgen ptr := m_sentreep : Optional[AstSenTree]  // Sentree related to this await
 public:
@@ -699,6 +699,7 @@ class AstEventControl final : public AstNodeStmt {
     // Parents: stmtlist
     // @astgen op1 := sentreep : Optional[AstSenTree]
     // @astgen op2 := stmtsp : List[AstNodeStmt]
+    // @astgen op3 := countp : Optional[AstNodeExpr]  // Events to wait for, if not one (##N)
 public:
     AstEventControl(FileLine* fl, AstSenTree* sentreep, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_EventControl(fl) {
@@ -872,6 +873,14 @@ public:
     void unique0Pragma(bool flag) { m_unique0Pragma = flag; }
     bool priorityPragma() const { return m_priorityPragma; }
     void priorityPragma(bool flag) { m_priorityPragma = flag; }
+    // Copy the attributes of another 'if', e.g. when rebuilding it with different branches
+    void cloneAttr(const AstIf* fromp) {
+        branchPred(fromp->branchPred());
+        isBoundsCheck(fromp->isBoundsCheck());
+        uniquePragma(fromp->uniquePragma());
+        unique0Pragma(fromp->unique0Pragma());
+        priorityPragma(fromp->priorityPragma());
+    }
 };
 class AstInitialAutomaticStmt final : public AstNodeStmt {
     // Automatic variable initialization in a statement position
@@ -1238,24 +1247,6 @@ public:
     bool isOutputter() override { return false; }
     virtual bool cleanOut() const { return false; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
-};
-class AstSetuphold final : public AstNodeStmt {
-    // Verilog $setuphold
-    // @astgen op1 := refevp : AstNodeExpr
-    // @astgen op2 := dataevp : AstNodeExpr
-    // @astgen op3 := delrefp : Optional[AstNodeExpr]
-    // @astgen op4 := deldatap : Optional[AstNodeExpr]
-public:
-    AstSetuphold(FileLine* fl, AstNodeExpr* refevp, AstNodeExpr* dataevp,
-                 AstNodeExpr* delrefp = nullptr, AstNodeExpr* deldatap = nullptr)
-        : ASTGEN_SUPER_Setuphold(fl) {
-        this->refevp(refevp);
-        this->dataevp(dataevp);
-        this->delrefp(delrefp);
-        this->deldatap(deldatap);
-    }
-    ASTGEN_MEMBERS_AstSetuphold;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstStackTraceT final : public AstNodeStmt {

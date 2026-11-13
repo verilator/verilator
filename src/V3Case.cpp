@@ -54,7 +54,7 @@ class CaseLintVisitor final : public VNVisitorConst {
     template <typename CaseItem>
     static void detectMultipleDefaults(CaseItem* itemsp) {
         bool hitDefault = false;
-        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
+        for (CaseItem* const itemp : VNList<CaseItem>{itemsp}) {
             if (!itemp->isDefault()) continue;
             if (hitDefault) itemp->v3error("Multiple default statements in case statement.");
             hitDefault = true;
@@ -66,7 +66,7 @@ class CaseLintVisitor final : public VNVisitorConst {
         VL_RESTORER(m_casep);
         m_casep = casep;
         iterateConst(exprp);
-        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
+        for (CaseItem* const itemp : VNList<CaseItem>{itemsp}) {
             iterateAndNextConstNull(itemp->condsp());
         }
     }
@@ -840,7 +840,7 @@ class CaseVisitor final : public VNVisitor {
                 AstNodeExpr* const lhsp = lhsRecord.lhsp;
                 // Find the value assigned to this LHS in the clause's statements
                 AstConst* valConstp = nullptr;
-                for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+                for (AstNode* const stmtp : VNList<AstNode>{stmtsp}) {
                     AstNodeAssign* const assignp = VN_AS(stmtp, NodeAssign);
                     if (!lhsp->sameTree(assignp->lhsp())) continue;
                     valConstp = VN_AS(assignp->rhsp(), Const);
