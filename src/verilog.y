@@ -4214,12 +4214,7 @@ task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod 
         //                      // IEEE: randomize_call
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
-        |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, nullptr, $3}; }
-        |       funcRef yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
-                                                        { AstWithParse* const withParsep
-                                                              = new AstWithParse{$2, $1, $4, $6};
-                                                          withParsep->restricted(true);
-                                                          $$ = withParsep; }
+        |       funcRef randomize_callWith              { $$ = GRAMMARP->scrubWithParse($1, $2); }
         ;
 
 function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine_call (as function)
@@ -4240,25 +4235,24 @@ function_subroutine_callNoMethodNoWith<nodeExprp>:  // IEEE: part of function_su
         //                      // IEEE: randomize_call
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
-        |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, nullptr, $3}; }
-        |       funcRef yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
-                                                        { AstWithParse* const withParsep
-                                                              = new AstWithParse{$2, $1, $4, $6};
-                                                          withParsep->restricted(true);
-                                                          $$ = withParsep; }
+        |       funcRef randomize_callWith              { $$ = GRAMMARP->scrubWithParse($1, $2); }
         ;
 
 randomize_callNoParen<nodeExprp>:  // IEEE: part of randomize_call
         //                      // Method call with a 'with' clause but no argument parentheses.
         //                      // Scope randomize requires the parentheses (IEEE 1800-2023 18.12
         //                      // Syntax 18-11) and the parser cannot tell a bare call from one.
-                idRandomize yWITH__CUR constraint_block
-                        { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1}, nullptr, $3}; }
-        |       idRandomize yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
-                        { AstWithParse* const withParsep
-                              = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1}, $4, $6};
-                          withParsep->restricted(true);
-                          $$ = withParsep; }
+                idRandomize randomize_callWith
+                        { $$ = GRAMMARP->scrubWithParse(new AstFuncRef{$<fl>1, *$1}, $2); }
+        ;
+
+randomize_callWith<withParsep>:  // IEEE: part of randomize_call
+        //                      // with [ ( [ identifier_list ] ) ] constraint_block
+                yWITH__CUR constraint_block
+                        { $$ = new AstWithParse{$1, new AstParseHolder{$1}, nullptr, $2}; }
+        |       yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
+                        { $$ = new AstWithParse{$1, new AstParseHolder{$1}, $3, $5};
+                          $$->restricted(true); }
         ;
 
 system_t_stmt_call<nodeStmtp>:  // IEEE: part of system_tf_call (as task returning statement)

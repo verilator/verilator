@@ -105,6 +105,11 @@ class Cls2 extends Cls;
   rand int c;
 endclass
 
+class NoParen;
+  int a = 4;  // Not rand, so constraints only read it
+  rand int b;
+endclass
+
 module mwith ();
   submodule sub1 ();
   submodule sub2 ();
@@ -171,28 +176,23 @@ module mwith ();
     if (!baz2.test_this_randomize()) $stop;
 
     // Check randomize with a constraint block and no argument parentheses
-    // verilog_format: off
     begin
-      automatic int a = 7;  // Same name as a member of Cls
-      `checkd(cls.randomize with {a == 4; b == a;}, 1);
-      `checkd(cls.b, 4);  // Unrestricted: 'a' is the member
-      `checkd(cls.randomize with (b) {cls.a == 4; b == a;}, 1);
-      `checkd(cls.b, 7);  // Restricted: 'a' is the caller's variable
-      `checkd(cls.randomize with () {cls.a == 4; cls.b == a + 1;}, 1);
-      `checkd(cls.b, 8);
-      // verilator lint_off IGNOREDRETURN
-      cls.randomize with {b == 9;};
-      // verilator lint_on IGNOREDRETURN
-      `checkd(cls.b, 9);
-      // verilator lint_off IGNOREDRETURN
-      cls.randomize with (b) {cls.a == 4; b == a + 3;};
-      // verilator lint_on IGNOREDRETURN
-      `checkd(cls.b, 10);
-      void'(cls.randomize with (b) {cls.a == 4; b == a + 4;});
-      `checkd(cls.b, 11);
+      automatic NoParen np = new;
+      automatic int a = 7;  // Same name as a member of NoParen
+      `checkd(np.randomize with {b == a;}, 1);
+      `checkd(np.b, 4);  // Unrestricted: 'a' is the member
+      `checkd(np.randomize with (b) {b == a;}, 1);
+      `checkd(np.b, 7);  // Restricted: 'a' is the caller's variable
+      `checkd(np.randomize with () {np.b == a + 1;}, 1);
+      `checkd(np.b, 8);
+      np.randomize with {b == 9;};
+      `checkd(np.b, 9);
+      np.randomize with (b) {b == a + 3;};
+      `checkd(np.b, 10);
+      void'(np.randomize with (b) {b == a + 4;});
+      `checkd(np.b, 11);
       `checkd(baz2.test_randomize_noparen(), 1);
     end
-    // verilog_format: on
 
     $write("*-* All Finished *-*\n");
     $finish();
