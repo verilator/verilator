@@ -1,21 +1,41 @@
-%Error: t/t_string_cast_bad.v:16:14: Assign RHS of string type is not implicitly convertible to 'logic[119:0]' (IEEE 1800-2023 6.16)
+%Error: t/t_string_cast_bad.v:19:14: Assign RHS of string type is not implicitly convertible to 'logic[119:0]' (IEEE 1800-2023 6.16)
                                    : ... note: In instance 't'
                                    : ... Suggest use an explicit cast to the destination type
-   16 |   assign o = string'(i ? "a" : "b");
+   19 |   assign o = string'(i ? "a" : "b");
       |              ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_string_cast_bad.v:20:9: Assign RHS of string type is not implicitly convertible to 'logic[31:0]' (IEEE 1800-2023 6.16)
-                                  : ... note: In instance 't'
-                                  : ... Suggest use an explicit cast to the destination type
-   20 |     v = s;
-      |         ^
-%Error: t/t_string_cast_bad.v:21:17: Signing cast is not legal on string data types (IEEE 1800-2023 6.16)
+%Error: t/t_string_cast_bad.v:20:15: Assign RHS of string type is not implicitly convertible to 'logic[31:0]' (IEEE 1800-2023 6.16)
                                    : ... note: In instance 't'
-   21 |     v = signed'(s);
-      |                 ^
-%Error: t/t_string_cast_bad.v:22:9: Assign RHS of string type is not implicitly convertible to 'real' (IEEE 1800-2023 6.16)
+                                   : ... Suggest use an explicit cast to the destination type
+   20 |   assign po = P;
+      |               ^
+%Error: t/t_string_cast_bad.v:22:16: Pin connection of string type is not implicitly convertible to 'int' (IEEE 1800-2023 6.16)
+                                   : ... note: In instance 't'
+                                   : ... Suggest use an explicit cast to the destination type
+   22 |   sub u_sub(.x(s));
+      |                ^
+%Error: t/t_string_cast_bad.v:29:12: Assign RHS of string type is not implicitly convertible to 'int' (IEEE 1800-2023 6.16)
+                                   : ... note: In instance 't'
+                                   : ... Suggest use an explicit cast to the destination type
+   29 |     return s;
+      |            ^
+%Error: t/t_string_cast_bad.v:34:9: Assign RHS of string type is not implicitly convertible to 'logic[31:0]' (IEEE 1800-2023 6.16)
                                   : ... note: In instance 't'
                                   : ... Suggest use an explicit cast to the destination type
-   22 |     r = s;
+   34 |     v = s;
       |         ^
+%Error: t/t_string_cast_bad.v:35:17: Signing cast is not legal on string data types (IEEE 1800-2023 6.24.1)
+                                   : ... note: In instance 't'
+   35 |     v = signed'(s);
+      |                 ^
+%Error: t/t_string_cast_bad.v:36:9: Assign RHS of string type is not implicitly convertible to 'real' (IEEE 1800-2023 6.16)
+                                  : ... note: In instance 't'
+                                  : ... Suggest use an explicit cast to the destination type
+   36 |     r = s;
+      |         ^
+%Error: t/t_string_cast_bad.v:37:11: Function Argument of string type is not implicitly convertible to 'int' (IEEE 1800-2023 6.16)
+                                   : ... note: In instance 't'
+                                   : ... Suggest use an explicit cast to the destination type
+   37 |     v = f(s);
+      |           ^
 %Error: Exiting due to

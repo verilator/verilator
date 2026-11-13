@@ -72,6 +72,10 @@ module t (
     if (32'(str1) != 32'h6469756d) $stop;
     if (13'(str1) != 13'h156d) $stop;
     if (88'(str2) != 88'h696c6c7472756e63617465) $stop;
+    if (200'(str1) != {152'h0, 48'h6d656469756d}) $stop;
+    if (int'(str1) != 32'h6469756d) $stop;
+    if (real'(str1) != real'(48'h6d656469756d)) $stop;
+    if (logic_t'(str1) != 32'h6469756d) $stop;
   end
 
   // Test loop

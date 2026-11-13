@@ -5,7 +5,7 @@
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: t/t_dynarray_method_bad.v:34:11: Assign RHS of string type is not implicitly convertible to 'bit' (IEEE 1800-2023 6.16)
                                        : ... note: In instance 't'
-                                      : ... Suggest use an explicit cast to the destination type
+                                       : ... Suggest use an explicit cast to the destination type
    34 |     b = s.unknown_bad;
       |           ^~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

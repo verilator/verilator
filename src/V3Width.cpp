@@ -3488,7 +3488,14 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             } else if (AstBasicDType* const basicp = toDtp->basicp()) {
-                if (!basicp->isString() && fromDtp->isString()) {
+                if (basicp->isDouble() && fromDtp->isString()) {
+                    AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+                    const int width = fromp->width();
+                    AstNodeDType* const intDtp
+                        = nodep->findBitDType(width, width, VSigning::UNSIGNED);
+                    newp = new AstIToRD{nodep->fileline(),
+                                        new AstNToI{nodep->fileline(), fromp, intDtp}};
+                } else if (!basicp->isString() && fromDtp->isString()) {
                     newp = new AstNToI{nodep->fileline(), nodep->fromp()->unlinkFrBack(), toDtp};
                 } else if (!basicp->isDouble() && !fromDtp->isDouble()) {
                     AstNodeDType* const origDTypep = nodep->dtypep();
@@ -9828,7 +9835,7 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
             if (nodep->lhsp()->isString()) {
                 nodep->lhsp()->v3error("Signing cast is not legal on string data types (IEEE "
-                                       "1800-2023 6.16)");
+                                       "1800-2023 6.24.1)");
                 nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
@@ -10841,7 +10848,7 @@ class WidthVisitor final : public VNVisitor {
             underp->v3error(ucfirst(side)
                             << " of string type is not implicitly convertible to "
                             << expDTypep->prettyDTypeNameQ() << " (IEEE 1800-2023 6.16)\n"
-                            << parentp->warnMore()
+                            << underp->warnMore()
                             << "... Suggest use an explicit cast to the "
                                "destination type");
             AstNodeExpr* const exprp = VN_AS(underp, NodeExpr);
