@@ -3589,7 +3589,16 @@ class WidthVisitor final : public VNVisitor {
                 m_underCast = true;
                 userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM, STREAM_USE_CAST}.p());
             }
-            castSized(nodep, nodep->lhsp(), width);  // lhsp may change
+            if (nodep->lhsp()->isString()) {
+                AstNodeExpr* const fromp = nodep->lhsp()->unlinkFrBack();
+                const AstBasicDType* const fromBasicp = fromp->dtypep()->basicp();
+                AstNodeDType* const outDtp = nodep->findBitOrLogicDType(
+                    width, width, fromBasicp->numeric(), fromBasicp->isFourstate());
+                nodep->lhsp(new AstNToI{nodep->fileline(), fromp, outDtp});
+                nodep->dtypep(outDtp);
+            } else {
+                castSized(nodep, nodep->lhsp(), width);  // lhsp may change
+            }
         }
         if (m_vup->final()) {
             // CastSize not needed once sizes determined, but a stream stays the operand of a cast
@@ -9817,6 +9826,13 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+            if (nodep->lhsp()->isString()) {
+                nodep->lhsp()->v3error("Signing cast is not legal on string data types (IEEE "
+                                       "1800-2023 6.16)");
+                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
             checkCvtUS(nodep->lhsp(), true);
             const int width = nodep->lhsp()->width();
             AstNodeDType* const expDTypep = nodep->findBitOrLogicDType(
@@ -10820,6 +10836,21 @@ class WidthVisitor final : public VNVisitor {
         } else if (expDTypep == underp->dtypep()) {  // Perfect
             underp = userIterateSubtreeReturnEdits(underp,
                                                    WidthVP{expDTypep, FINAL, childStreamUse}.p());
+        } else if (determ == ASSIGN && underp->isString()
+                   && (expDTypep->skipRefp()->isIntegralOrPacked() || expDTypep->isDouble())) {
+            underp->v3error(ucfirst(side)
+                            << " of string type is not implicitly convertible to "
+                            << expDTypep->prettyDTypeNameQ() << " (IEEE 1800-2023 6.16)\n"
+                            << parentp->warnMore()
+                            << "... Suggest use an explicit cast to the "
+                               "destination type");
+            AstNodeExpr* const exprp = VN_AS(underp, NodeExpr);
+            AstConst* const newp = new AstConst{exprp->fileline(), AstConst::BitFalseErroring{}};
+            newp->dtypeFrom(expDTypep);
+            newp->didWidth(true);
+            exprp->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(exprp), exprp);
+            underp = newp;
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
             underp = userIterateSubtreeReturnEdits(underp,
                                                    WidthVP{expDTypep, FINAL, childStreamUse}.p());

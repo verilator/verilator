@@ -69,6 +69,9 @@ module t (
     `checks(wdata[1], "medium");
     `checks(wdata[2], "illtruncate");
     `checks(wdata[3], "");
+    if (32'(str1) != 32'h6469756d) $stop;
+    if (13'(str1) != 13'h156d) $stop;
+    if (88'(str2) != 88'h696c6c7472756e63617465) $stop;
   end
 
   // Test loop
