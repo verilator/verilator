@@ -26,6 +26,7 @@
 
 #include "verilated.h"
 
+#include <iosfwd>
 #include <map>
 #include <set>
 #include <vector>
@@ -33,12 +34,12 @@
 class VlRtmdActSetRow;
 class VlRtmdDataTypeRow;
 class VlRtmdGlobalSymRow;
-class VlRtmdSignalTypeRow;
+class VlRtmdVarTypeRow;
 class VlRtmdHierRow;
 
 class VlRtmdActSet;
 class VlRtmdDataType;
-class VlRtmdSignalType;
+class VlRtmdVarType;
 
 //=============================================================================
 // Registration structure - one per VerilatedModel
@@ -47,7 +48,7 @@ class VlRtmd final {
 public:
     // Index of what is not present
     static constexpr uint32_t NOIDX = ~0U;
-    // Location of a signal whose value is not accessible
+    // Location of a variable whose value is not accessible
     static constexpr size_t NOADDR = ~static_cast<size_t>(0);
 
     const VerilatedModel* m_modelp;  // The model *instance* this belongs to
@@ -66,7 +67,7 @@ public:
     const VlRtmdActSetRow* m_actSetsTabp = nullptr;  // Activity set table
     const VlRtmdDataTypeRow* const* m_dataTypesTabpp = nullptr;  // Data type table
     const VlRtmdGlobalSymRow* const* m_globalSymsTabpp = nullptr;  // Global symbols table
-    const VlRtmdSignalTypeRow* const* m_signalTypesTabpp = nullptr;  // Signal type table
+    const VlRtmdVarTypeRow* const* m_varTypesTabpp = nullptr;  // Var type table
     const VlRtmdHierRow* const* m_hierTabpp = nullptr;  // Hierarchy table
     uint32_t m_chunkShift = 0;  // Log2 of the rows per chunk of the tables split into chunks
 
@@ -87,22 +88,27 @@ public:
     const VlRtmdGlobalSymRow& globalSymRow(uint32_t index) const {
         return row(m_globalSymsTabpp, index);
     }
-    const VlRtmdSignalTypeRow& signalTypeRow(uint32_t index) const {
-        return row(m_signalTypesTabpp, index);
+    const VlRtmdVarTypeRow& varTypeRow(uint32_t index) const {
+        return row(m_varTypesTabpp, index);
     }
     const VlRtmdHierRow& hierRow(uint32_t index) const { return row(m_hierTabpp, index); }
     // Returns the activity set handle for given activity set index
     inline VlRtmdActSet actSet(uint32_t index) const;
     // Returns the data type handle for given type index
     inline VlRtmdDataType dataType(uint32_t index) const;
-    // Returns the signal type handle for given signal type index
-    inline VlRtmdSignalType signalType(uint32_t index) const;
-    // Returns the address of the value of the given Signal hierarchy row, or nullptr if the value
+    // Returns the var type handle for given var type index
+    inline VlRtmdVarType varType(uint32_t index) const;
+    // Returns the address of the value of the given Var hierarchy row, or nullptr if the value
     // is not accessible
-    inline const void* signalAddress(const VlRtmdHierRow& row) const;
+    inline const void* varAddress(const VlRtmdHierRow& row) const;
     // Ordering of the descriptors of different models, in the order the models were added to
     // their context, for stability
     bool operator<(const VlRtmd& other) const { return *m_modelp < *other.m_modelp; }
+
+    // Dump the descriptors of all models in 'context' to 'os', for debugging. With 'components',
+    // also the elements and members of arrays, structs and unions.
+    static void hierDump(std::ostream& os, const VerilatedContext& context,
+                         bool components = false);
 };
 
 //=============================================================================
@@ -164,12 +170,12 @@ class VlRtmdActSet final {
         , m_index{index} {}
 
 public:
-    // Number of activity flags in the set, 0 if the signal has no activity set
+    // Number of activity flags in the set, 0 if the variable has no activity set
     uint32_t size() const {
         if (m_index == VlRtmd::NOIDX) return 0;
         return row().range().m_end - row().range().m_begin;
     }
-    // Whether the signal might have changed since the activity flags were last cleared. Without
+    // Whether the variable might have changed since the activity flags were last cleared. Without
     // an activity set, it might change at any time. An empty set never changes.
     bool active() const {
         if (m_index == VlRtmd::NOIDX) return true;
@@ -519,16 +525,16 @@ public:
 };
 
 //=============================================================================
-// Signal types descriptors (corresponds to AstRtmdSignalType in the compiler)
+// Var type descriptors (corresponds to AstRtmdVarType in the compiler)
 
-// One entry in the signal type table: a descriptor. There is only one kind, so it needs no tag.
-class VlRtmdSignalTypeRow final {
+// One entry in the var type table: a descriptor. There is only one kind, so it needs no tag.
+class VlRtmdVarTypeRow final {
 public:
-    // How a signal is declared: kind, direction and the type of its value
-    struct Signal final {
-        // Kind of variable or net a signal is declared as
+    // How a variable is declared: kind, direction and the type of its value
+    struct Var final {
+        // Kind of variable or net it is declared as
         enum class Kind : uint8_t {
-            // Note: Entries must match VRtmdSignalKind (by name, not necessarily by value)
+            // Note: Entries must match VRtmdVarKind (by name, not necessarily by value)
             VAR,
             WIRE,
             WREAL,
@@ -556,50 +562,50 @@ public:
             CONSTREF,
         };
 
-        Kind m_kind;  // Signal kind, e.g. VAR, WIRE, PARAM
+        Kind m_kind;  // Kind, e.g. VAR, WIRE, PARAM
         Direction m_direction;  // NONE if it is not a port
         uint32_t m_typeIdx;  // Type of the value, as a type table index
     };
 
 private:
     union {
-        Signal m_signal;
+        Var m_var;
     };
 
 public:
     // cppcheck-suppress noExplicitConstructor
-    /* implicit */ constexpr VlRtmdSignalTypeRow(const Signal& d)
-        : m_signal{d} {}
+    /* implicit */ constexpr VlRtmdVarTypeRow(const Var& d)
+        : m_var{d} {}
 
     // The descriptor of the row
-    const Signal* signalp() const { return &m_signal; }
+    const Var* varp() const { return &m_var; }
 };
 
-// Handle to a signal type used by client code - this is unique for each model and type within it
-class VlRtmdSignalType final {
+// Handle to a var type used by client code - this is unique for each model and type within it
+class VlRtmdVarType final {
     const VlRtmd* m_rtmdp;  // The model's descriptor tables
-    uint32_t m_index;  // The index of the type in the signal type table
+    uint32_t m_index;  // The index of the type in the var type table
 
     // The row of this type
-    const VlRtmdSignalTypeRow& row() const { return m_rtmdp->signalTypeRow(m_index); }
+    const VlRtmdVarTypeRow& row() const { return m_rtmdp->varTypeRow(m_index); }
 
     // Created by VlRtmd only
     friend class VlRtmd;
-    VlRtmdSignalType(const VlRtmd* rtmdp, uint32_t index)
+    VlRtmdVarType(const VlRtmd* rtmdp, uint32_t index)
         : m_rtmdp{rtmdp}
         , m_index{index} {}
 
 public:
     // TYPES
-    using Kind = VlRtmdSignalTypeRow::Signal::Kind;
-    using Direction = VlRtmdSignalTypeRow::Signal::Direction;
+    using Kind = VlRtmdVarTypeRow::Var::Kind;
+    using Direction = VlRtmdVarTypeRow::Var::Direction;
 
-    // Kind of variable or net the signal is declared as
-    Kind kind() const { return row().signalp()->m_kind; }
+    // Kind of variable or net it is declared as
+    Kind kind() const { return row().varp()->m_kind; }
     // Declared direction, NONE if not a port
-    Direction direction() const { return row().signalp()->m_direction; }
+    Direction direction() const { return row().varp()->m_direction; }
     // Type of the value
-    VlRtmdDataType dataType() const { return m_rtmdp->dataType(row().signalp()->m_typeIdx); }
+    VlRtmdDataType dataType() const { return m_rtmdp->dataType(row().varp()->m_typeIdx); }
 };
 
 //=============================================================================
@@ -640,30 +646,30 @@ public:
 
     public:
         enum : uint32_t {
-            HAS_SIGNALS = 1 << 0,  // At least one signal is declared under the level
-            HAS_TRACED_SIGNALS = 1 << 1,  // At least one traced signal is declared under the level
+            HAS_VARS = 1 << 0,  // At least one variable is declared under the level
+            HAS_TRACED_VARS = 1 << 1,  // At least one traced variable is declared under the level
         };
 
         // cppcheck-suppress noExplicitConstructor
         /* implicit */ constexpr HierFlags(uint32_t flags)
             : m_flags{flags} {}
 
-        bool hasSignals() const { return m_flags & HAS_SIGNALS; }
-        bool hasTracedSignals() const { return m_flags & HAS_TRACED_SIGNALS; }
+        bool hasVars() const { return m_flags & HAS_VARS; }
+        bool hasTracedVars() const { return m_flags & HAS_TRACED_VARS; }
     };
 
-    // Flags for signal descriptors
-    class SignalFlags final {
+    // Flags for variable descriptors
+    class VarFlags final {
         const uint32_t m_flags;  // The flags
 
     public:
         enum : uint32_t {
             IS_GLOBAL = 1 << 0,  // The value is a global, e.g. a constant pool entry
-            IS_TRACED = 1 << 1,  // Signal is traced
+            IS_TRACED = 1 << 1,  // Variable is traced
         };
 
         // cppcheck-suppress noExplicitConstructor
-        /* implicit */ constexpr SignalFlags(uint32_t flags)
+        /* implicit */ constexpr VarFlags(uint32_t flags)
             : m_flags{flags} {}
 
         bool isGlobal() const { return m_flags & IS_GLOBAL; }
@@ -696,12 +702,12 @@ public:
     struct Pop final {};
 
     // A value, located by offset from the symbol table, or via the global table for globals
-    struct Signal final {
-        const char* m_namep;  // Name of the signal
-        uint32_t m_typeIdx;  // Signal type, as a signal type table index
+    struct Var final {
+        const char* m_namep;  // Name of the variable
+        uint32_t m_typeIdx;  // Var type, as a var type table index
         uint32_t m_actSetIdx;  // Activity set table index
         size_t m_addr;  // Offset from the symbol table/index in global table/VlRtmd::NOADDR
-        SignalFlags m_flags;  // Flags of the signal
+        VarFlags m_flags;  // Flags of the variable
     };
 
     // An instance: the level that follows is the instantiated scope
@@ -725,7 +731,7 @@ private:
     enum class Tag : uint8_t {
         PUSH,
         POP,
-        SIGNAL,
+        VAR,
         INSTANCE,
         IFACEREF,
         PARTITION,
@@ -735,7 +741,7 @@ private:
     union {
         Push m_push;
         Pop m_pop;
-        Signal m_signal;
+        Var m_var;
         Instance m_instance;
         IfaceRef m_ifaceRef;
         Partition m_partition;
@@ -751,9 +757,9 @@ public:
         : m_tag{Tag::POP}
         , m_pop{d} {}
     // cppcheck-suppress noExplicitConstructor
-    /* implicit */ constexpr VlRtmdHierRow(const Signal& d)
-        : m_tag{Tag::SIGNAL}
-        , m_signal{d} {}
+    /* implicit */ constexpr VlRtmdHierRow(const Var& d)
+        : m_tag{Tag::VAR}
+        , m_var{d} {}
     // cppcheck-suppress noExplicitConstructor
     /* implicit */ constexpr VlRtmdHierRow(const Instance& d)
         : m_tag{Tag::INSTANCE}
@@ -776,9 +782,9 @@ public:
         if (m_tag != Tag::POP) return nullptr;
         return &m_pop;
     }
-    const Signal* signalp() const {
-        if (m_tag != Tag::SIGNAL) return nullptr;
-        return &m_signal;
+    const Var* varp() const {
+        if (m_tag != Tag::VAR) return nullptr;
+        return &m_var;
     }
     const Instance* instancep() const {
         if (m_tag != Tag::INSTANCE) return nullptr;
@@ -827,19 +833,19 @@ VlRtmdDataType VlRtmdDataType::elemType() const {
     // LCOV_EXCL_STOP
 }
 
-VlRtmdSignalType VlRtmd::signalType(uint32_t index) const {  //
-    return VlRtmdSignalType{this, index};
+VlRtmdVarType VlRtmd::varType(uint32_t index) const {  //
+    return VlRtmdVarType{this, index};
 }
 
-const void* VlRtmd::signalAddress(const VlRtmdHierRow& row) const {
-    assert(row.signalp());
-    const VlRtmdHierRow::Signal& signal = *row.signalp();
+const void* VlRtmd::varAddress(const VlRtmdHierRow& row) const {
+    assert(row.varp());
+    const VlRtmdHierRow::Var& var = *row.varp();
     // No address if the value is not accessible
-    if (signal.m_addr == NOADDR) return nullptr;
+    if (var.m_addr == NOADDR) return nullptr;
     // A global is located via the global table
-    if (signal.m_flags.isGlobal()) return globalSymRow(signal.m_addr).constp()->m_datap;
+    if (var.m_flags.isGlobal()) return globalSymRow(var.m_addr).constp()->m_datap;
     // Others by offset from the symbol table
-    return static_cast<const uint8_t*>(m_symsp) + signal.m_addr;
+    return static_cast<const uint8_t*>(m_symsp) + var.m_addr;
 }
 
 //=============================================================================
@@ -894,8 +900,8 @@ class VlRtmdHierListener VL_NOT_FINAL {
     // Internal to 'walkContext': Walks the rows of 'model' from given row index
     void walkRows(const VerilatedModel& model, const VlRtmdHierRow* partitionRowp,
                   uint32_t rowIdx);
-    // Internal to 'walkContext': Reports the components of a signal recursively
-    void walkDtype(const char* namep, const VlRtmdSignalType& sigType, const VlRtmdDataType& dtype,
+    // Internal to 'walkContext': Reports the components of a variable recursively
+    void walkDtype(const char* namep, const VlRtmdVarType& varType, const VlRtmdDataType& dtype,
                    const VlRtmdActSet& actSet, const uint8_t* datap, uint32_t lsb);
 
 public:
@@ -910,7 +916,7 @@ protected:
     enum class InstanceKind : uint8_t { MODULE, INTERFACE, PACKAGE };
     enum class ScopeKind : uint8_t { ROOTIO, FUNCTION, TASK, GENERATE, BEGIN, FORK };
     using HierFlags = VlRtmdHierRow::HierFlags;
-    using SignalFlags = VlRtmdHierRow::SignalFlags;
+    using VarFlags = VlRtmdHierRow::VarFlags;
 
     // CONSTANTS
     // The 'lsb' of a component that is not within a packed value, see 'onComponent'
@@ -924,7 +930,7 @@ protected:
     // The 'enter' methods return whether to walk into the level. If false, nothing within it
     // is reported, including the matching 'exit'. The 'exit' methods are passed the same
     // arguments as the matching 'enter'. 'flags' tell whether anything within the level is a
-    // signal, and a traced signal, see HierFlags. A root is assumed to have both.
+    // variable, and a traced variable, see HierFlags. A root is assumed to have both.
 
     // Enter and exit a root model, called for all models not used as a partition
     virtual bool enterRoot(const VerilatedModel& model) = 0;
@@ -943,17 +949,17 @@ protected:
     // block scope
     virtual bool enterScope(ScopeKind kind, const char* namep, HierFlags flags) = 0;
     virtual void exitScope(ScopeKind kind, const char* namep, HierFlags flags) = 0;
-    // Called for each signal in the model. 'sigType' is that of the signal, 'dtype' that of the
-    // value reported. 'datap' is the address of the value, or nullptr if not accessible.
-    // 'flags' tell whether it is traced, see SignalFlags. Return whether to walk the components
+    // Called for each variable in the model. 'varType' is that of the variable, 'dtype' that of
+    // the value reported. 'datap' is the address of the value, or nullptr if not accessible.
+    // 'flags' tell whether it is traced, see VarFlags. Return whether to walk the components
     // of an array, struct or union value, otherwise the return value is ignored.
-    virtual bool onSignal(const char* namep, const VlRtmdSignalType& sigType,
-                          const VlRtmdDataType& dtype, const VlRtmdActSet& actSet,
-                          const void* datap, SignalFlags flags)
+    virtual bool onVar(const char* namep, const VlRtmdVarType& varType,
+                       const VlRtmdDataType& dtype, const VlRtmdActSet& actSet, const void* datap,
+                       VarFlags flags)
         = 0;
 
     // Enter and exit the components of an array, struct or union value, around their reports,
-    // if 'onSignal' or 'onComponent' returned true for it. 'namep' is the name it was reported as.
+    // if 'onVar' or 'onComponent' returned true for it. 'namep' is the name it was reported as.
     virtual void enterUnpackedArray(const char* namep, const VlRtmdDataType& dtype) = 0;
     virtual void exitUnpackedArray(const char* namep, const VlRtmdDataType& dtype) = 0;
     virtual void enterUnpackedStruct(const char* namep, const VlRtmdDataType& dtype) = 0;
@@ -966,10 +972,10 @@ protected:
     virtual void exitPackedUnion(const char* namep, const VlRtmdDataType& dtype) = 0;
 
     // Called for each component of an array, struct or union value that is being walked, as
-    // 'onSignal'. 'namep' is the name of a struct or union member, or the index of an array
+    // 'onVar'. 'namep' is the name of a struct or union member, or the index of an array
     // element, as e.g. "[3]". A component of a packed value is at bit offset 'lsb' of the value
     // at 'datap', which is that of the outermost packed value. Otherwise 'lsb' is NOLSB.
-    virtual bool onComponent(const char* namep, const VlRtmdSignalType& sigType,
+    virtual bool onComponent(const char* namep, const VlRtmdVarType& varType,
                              const VlRtmdDataType& dtype, const VlRtmdActSet& actSet,
                              const void* datap, uint32_t lsb)
         = 0;

@@ -429,7 +429,7 @@ class BitBlastVisitor final : public VNVisitorConst, public VNDeleter {
         // Record whole access
         record(nodep, nodep, 0, nodep->varp()->width() - 1);
     }
-    void visit(AstRtmdSignal* nodep) override {
+    void visit(AstRtmdVar* nodep) override {
         // Ignore reference for splitting, but need to reconstruct the variable
         if (nodep->refp()) nodep->vscp()->user2(true);
     }

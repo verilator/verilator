@@ -1720,9 +1720,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         fl->v3warn(DEPRECATED, "Option '--output-split-ctrace' is deprecated and has no effect.");
     });
     DECL_OPTION("-output-split-rtmd", CbVal, [this, fl](const char* valp) {
-        m_outputSplitRtmd = std::atoi(valp);
-        if (m_outputSplitRtmd < 0) { fl->v3error("--output-split-rtmd must be >= 0: " << valp); }
-        if (m_outputSplitRtmd <= 0 || m_outputSplitRtmd > 32) m_outputSplitRtmd = 32;
+        const int rows = std::atoi(valp);
+        if (rows < 0) fl->v3error("--output-split-rtmd must be >= 0: " << valp);
+        // Rounded down to a power of two, and not split if 0
+        m_outputSplitRtmdLog2 = 0;
+        while ((int64_t{2} << m_outputSplitRtmdLog2) <= rows) ++m_outputSplitRtmdLog2;
+        if (rows <= 0) m_outputSplitRtmdLog2 = 32;
     });
 
     DECL_OPTION("-P", Set, &m_preprocNoLine);

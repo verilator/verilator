@@ -125,9 +125,7 @@ public:
     // Names of the run time model descriptor tables, which are also the names of their files
     static std::string rtmdDataTypeTableName() { return topClassName() + "__RtmdDataTypeTable"; }
     static std::string rtmdGlobalTableName() { return topClassName() + "__RtmdGlobalTable"; }
-    static std::string rtmdSignalTypeTableName() {
-        return topClassName() + "__RtmdSignalTypeTable";
-    }
+    static std::string rtmdVarTypeTableName() { return topClassName() + "__RtmdVarTypeTable"; }
     static std::string rtmdHierTableName() { return topClassName() + "__RtmdHierTable"; }
     static std::string rtmdActSetTableName() { return topClassName() + "__RtmdActSetTable"; }
     // Return C++ class name for a module/class object

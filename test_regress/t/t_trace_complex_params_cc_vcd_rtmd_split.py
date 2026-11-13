@@ -13,8 +13,8 @@ import trace_complex_common
 test.scenarios('vlt_all')
 
 # Run time model descriptor tables in chunks of 2 rows, so all are split
-trace_complex_common.run(test, verilator_flags2=["--output-split-rtmd 1"])
+trace_complex_common.run(test, verilator_flags2=["--output-split-rtmd 2"])
 
 # Make sure they were split
-for table in ("DataType", "Global", "Hier", "SignalType"):
+for table in ("DataType", "Global", "Hier", "VarType"):
     test.glob_some(test.obj_dir + "/" + test.vm_prefix + "__Rtmd" + table + "Table__1*.cpp")

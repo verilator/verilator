@@ -21,14 +21,14 @@
 // statics) is still intact.
 //
 //  Data types:
-//      One AstNodeRtmdDataType per distinct data type, and one AstRtmdSignalType per distinct
-//      data type, signal kind and direction, all held by the AstTypeTable. Built bottom up, and
+//      One AstNodeRtmdDataType per distinct data type, and one AstRtmdVarType per distinct
+//      data type, variable kind and direction, all held by the AstTypeTable. Built bottom up, and
 //      deduplicated structurally. A data type that cannot be represented has no descriptor, and
-//      signals of that type are not described.
+//      variables of that type are not described.
 //
 //  Hierarchy levels:
 //      One AstRtmdHier per module, interface and package, except the constant pool. The level
-//      of the top module ($root) is the ROOT. Its items are, in source order, the signals, the
+//      of the top module ($root) is the ROOT. Its items are, in source order, the variables, the
 //      interface references, the instances (partitions for --lib-create models), and nested
 //      levels for named generate and begin blocks, forks, functions and tasks. The variables of
 //      the ROOT are instead under a nested ROOTIO level, which is not part of any path. V3Scope
@@ -36,12 +36,8 @@
 //      leaving a single tree under the AstTopScope, which is emitted flattened as PUSH, items,
 //      POP.
 //
-//  Scoped (scopedAll):
-//      After V3Scope, walks the tree from the root to know the hierarchical path of each
-//      signal. Signals of instances not traced, or turned off by control directives, are no
-//      longer traced. The references of signals not traced are cleared, so they are described
-//      without a value. Constants (variables with a value, e.g. parameters) instead reference
-//      the constant pool entry of the value, so the constant needs no storage in the model.
+//  Scoped (scopedAll, in V3RtmdScoped.cpp):
+//      After V3Scope, finishes the descriptors, knowing the hierarchical path of each variable.
 //
 // Only static variables are described. SystemC variables, virtual interface references,
 // classes and primitives are not.
@@ -53,11 +49,8 @@
 #include "V3Rtmd.h"
 
 #include "V3Ast.h"
-#include "V3ConstPool.h"
-#include "V3Control.h"
 #include "V3DupFinder.h"
 #include "V3Error.h"
-#include "V3Stats.h"
 #include "V3String.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -275,22 +268,22 @@ public:
         return VN_AS(dtypep->user2p(), NodeRtmdDataType);
     }
 
-    // Return the canonical signal type descriptor
-    AstRtmdSignalType* signalType(const AstVar* varp, AstNodeRtmdDataType* rtmdTypep) {
-        const VRtmdSignalKind kind = varp->varType().rtmdVarKind();
+    // Return the canonical var type descriptor
+    AstRtmdVarType* varType(const AstVar* varp, AstNodeRtmdDataType* rtmdTypep) {
+        const VRtmdVarKind kind = varp->varType().rtmdVarKind();
         const VDirection direction = varp->declDirection();
         FileLine* const flp = varp->fileline();
-        AstRtmdSignalType* const descp = new AstRtmdSignalType{flp, rtmdTypep, kind, direction};
+        AstRtmdVarType* const descp = new AstRtmdVarType{flp, rtmdTypep, kind, direction};
 
         // Reuse equivalent descriptor if there is one
         const auto it = m_dupFinder.findDuplicate(descp);
         if (it != m_dupFinder.end()) {
             VL_DO_DANGLING(descp->deleteTree(), descp);
-            return VN_AS(it->second, RtmdSignalType);
+            return VN_AS(it->second, RtmdVarType);
         }
 
         // Use the new descriptor
-        m_typeTablep->addRtmdSignalTypesp(descp);
+        m_typeTablep->addRtmdVarTypesp(descp);
         m_dupFinder.insert(descp);
         return descp;
     }
@@ -299,8 +292,7 @@ public:
     explicit RtmdTypeBuilder(AstNetlist* netlistp)
         : m_typeTablep{netlistp->typeTablep()} {
         UASSERT_OBJ(!m_typeTablep->rtmdDataTypesp(), netlistp, "Duplicate data type descriptors");
-        UASSERT_OBJ(!m_typeTablep->rtmdSignalTypesp(), netlistp,
-                    "Duplicate signal type descriptors");
+        UASSERT_OBJ(!m_typeTablep->rtmdVarTypesp(), netlistp, "Duplicate var type descriptors");
     }
     ~RtmdTypeBuilder() = default;
     VL_UNCOPYABLE(RtmdTypeBuilder);
@@ -308,11 +300,11 @@ public:
 
 //######################################################################
 // Builds the descriptor of each module, interface and package: a hierarchy level holding its
-// signals and instances, and the nested hierarchy levels of its named blocks
+// variables and instances, and the nested hierarchy levels of its named blocks
 
 class RtmdBuilder final : public VNVisitor {
     // STATE
-    RtmdTypeBuilder m_typeBuilder;  // Builds the data type and signal type descriptors
+    RtmdTypeBuilder m_typeBuilder;  // Builds the data type and var type descriptors
     AstRtmdHier* m_levelp = nullptr;  // Hierarchy level being built
     AstRtmdHier* m_rootIop = nullptr;  // The ROOTIO level of the root module being built
 
@@ -445,7 +437,7 @@ class RtmdBuilder final : public VNVisitor {
         visitScope(nodep, VRtmdHierKind::TASK, false);
     }
 
-    // Signals
+    // Variables
     void visit(AstVar* nodep) override {
         UASSERT_OBJ(m_levelp, nodep, "Var not under Module");
 
@@ -461,7 +453,7 @@ class RtmdBuilder final : public VNVisitor {
             = VN_CAST(nodep->dtypep()->skipRefp(), IfaceRefDType)) {
             // Virtual interface handles, or their targets, are excluded
             if (irdtypep->isVirtual()) return;
-            // The interface instance companion is not a design signal
+            // The interface instance companion is not a design variable
             if (nodep->isIfaceParent()) return;
 
             // Record the interface reference
@@ -474,13 +466,13 @@ class RtmdBuilder final : public VNVisitor {
         AstNodeRtmdDataType* const rtmdTypep = m_typeBuilder.dataType(nodep->dtypep());
         // Exclude if not representable
         if (!rtmdTypep) return;
-        // Build the signal type descriptor
-        AstRtmdSignalType* const sigTypep = m_typeBuilder.signalType(nodep, rtmdTypep);
-        // Build the signal descriptor
+        // Build the var type descriptor
+        AstRtmdVarType* const varTypep = m_typeBuilder.varType(nodep, rtmdTypep);
+        // Build the variable descriptor
         AstVarRef* const refp = nodep->isTrace()  //
                                     ? new AstVarRef{flp, nodep, VAccess::READ}
                                     : nullptr;
-        AstRtmdSignal* const sigp = new AstRtmdSignal{flp, rtmdName(nodep), sigTypep, refp};
+        AstRtmdVar* const sigp = new AstRtmdVar{flp, rtmdName(nodep), varTypep, refp};
         sigp->traced(nodep->isTrace());
         addItem(sigp, m_rootIop);
     }
@@ -490,7 +482,7 @@ class RtmdBuilder final : public VNVisitor {
     void visit(AstNodeSchema*) override {}
     void visit(AstNodeCoverOrAssert*) override {
         // Action blocks are cloned or deleted before V3Begin which messes up
-        // RtmdSignal references to them. Skip them for now. This means statics
+        // RtmdVar references to them. Skip them for now. This means statics
         // in assertion action blocks are not traced.
     }
 
@@ -512,71 +504,4 @@ void V3Rtmd::buildAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     RtmdBuilder::apply(nodep);
     V3Global::dumpCheckGlobalTree("rtmdbuild", 0, dumpTreeEitherLevel() >= 3);
-}
-
-//######################################################################
-// Post V3Scope Rtmd transformations
-
-class RtmdScoped final : public VNVisitor {
-    // STATE
-    std::string m_path;  // Trace path of the level being visited
-    const AstRtmdInstance* m_instancep = nullptr;  // Instance naming the level that follows it
-    VDouble0 m_statDropped;  // Statistic tracking
-
-    // VISITORS
-    void visit(AstRtmdInstance* nodep) override {  //
-        m_instancep = nodep;
-    }
-    void visit(AstRtmdHier* nodep) override {
-        VL_RESTORER_COPY(m_path);
-        // The ROOTIO level is not part of the path
-        if (nodep->kind() != VRtmdHierKind::ROOTIO) {
-            m_path += (m_instancep ? m_instancep->name() : nodep->name()) + ".";
-        }
-        m_instancep = nullptr;
-        iterateChildren(nodep);
-    }
-    void visit(AstRtmdSignal* nodep) override {
-        // Nothing to do if the value is not accessible
-        AstVarRef* const refp = nodep->refp();
-        if (!refp) return;
-        // Not traced if its instance is not, or the control directives turn it off
-        if (!nodep->vscp()->isTrace() || !V3Control::getScopeTraceOn(m_path + nodep->name())) {
-            nodep->traced(false);
-        }
-        // If the value is not needed at runtime, drop the reference
-        if (!nodep->needsRuntimeAccess()) {
-            ++m_statDropped;
-            VL_DO_DANGLING(pushDeletep(refp->unlinkFrBack()), refp);
-            return;
-        }
-        // A constant (e.g. parameter) would otherwise need storage only for this reference, so
-        // read the value from the constant pool instead
-        AstNodeExpr* const valuep = VN_AS(nodep->varp()->valuep(), NodeExpr);
-        if (valuep && valuep->isConstantTree()) {
-            refp->replaceWith(V3ConstPool::find(valuep));
-            VL_DO_DANGLING(pushDeletep(refp), refp);
-        }
-    }
-    // Interface references and partitions hold no signals of this model
-    void visit(AstNode*) override {}
-
-    // CONSTRUCTORS
-    explicit RtmdScoped(AstNetlist* netlistp) {
-        AstTopScope* const topScopep = netlistp->topScopep();
-        AstRtmdHier* const rootp = topScopep->rtmdp();
-        UASSERT_OBJ(rootp, netlistp, "Top scope has no run time model descriptor");
-        // The root level is not part of the path, so iterate its children
-        iterateChildren(rootp);
-    }
-    ~RtmdScoped() override { V3Stats::addStat("Rtmd, dropped signals post scope", m_statDropped); }
-
-public:
-    static void apply(AstNetlist* netlistp) { RtmdScoped{netlistp}; }
-};
-
-void V3Rtmd::scopedAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ":");
-    RtmdScoped::apply(nodep);
-    V3Global::dumpCheckGlobalTree("rtmdscoped", 0, dumpTreeEitherLevel() >= 3);
 }

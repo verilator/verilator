@@ -358,6 +358,7 @@ set(COMMON_SOURCES
     V3Reloop.cpp
     V3Reorder.cpp
     V3Rtmd.cpp
+    V3RtmdScoped.cpp
     V3Sampled.cpp
     V3Sched.cpp
     V3SchedAcyclic.cpp

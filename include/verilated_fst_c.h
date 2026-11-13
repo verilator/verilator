@@ -94,26 +94,26 @@ protected:
     //=========================================================================
     // Implementation of VerilatedTrace interface - declarations
 
-    void openRoot(const char* namep) override final;
-    void closeRoot() override final { endScope(); }
-    void openInstance(InstanceKind kind, const char* namep, const char*) override final;
-    void closeInstance() override final { endScope(); }
-    void openIfaceRef(const char* namep, const char*) override final;
-    void closeIfaceRef() override final { endScope(); }
-    void openScope(ScopeKind, const char* namep) override final;
-    void closeScope() override final { endScope(); }
-    void openUnpackedArray(const char* namep, int left, int right) override final;
-    void closeUnpackedArray() override final { endScope(); }
-    void openUnpackedStruct(const char* namep, uint32_t memberCount) override final;
-    void closeUnpackedStruct() override final { endScope(); }
-    void openPackedArray(const char* namep, int left, int right) override final;
-    void closePackedArray() override final { endScope(); }
-    void openPackedStruct(const char* namep, uint32_t memberCount) override final;
-    void closePackedStruct() override final { endScope(); }
-    void openPackedUnion(const char* namep, uint32_t memberCount) override final;
-    void closePackedUnion() override final { endScope(); }
+    void ifaceRefOpen(const char* namep, const char*) override final;
+    void ifaceRefClose() override final;
+    void instanceOpen(InstanceKind kind, const char* namep, const char*) override final;
+    void instanceClose() override final;
+    void packedArrayOpen(const char* namep, int left, int right) override final;
+    void packedArrayClose() override final;
+    void packedStructOpen(const char* namep, uint32_t memberCount) override final;
+    void packedStructClose() override final;
+    void packedUnionOpen(const char* namep, uint32_t memberCount) override final;
+    void packedUnionClose() override final;
+    void rootOpen(const char* namep) override final;
+    void rootClose() override final;
+    void scopeOpen(ScopeKind, const char* namep) override final;
+    void scopeClose() override final;
+    void unpackedArrayOpen(const char* namep, int left, int right) override final;
+    void unpackedArrayClose() override final;
+    void unpackedStructOpen(const char* namep, uint32_t memberCount) override final;
+    void unpackedStructClose() override final;
 
-    void declareSignal(uint32_t code, const char* namep, const VlRtmdSignalType& sigType,
+    void declareSignal(uint32_t code, const char* namep, const VlRtmdVarType& varType,
                        const VlRtmdDataType& dtype) override final;
 
     void declareEnum(const VlRtmdDataType& dtype) override final;

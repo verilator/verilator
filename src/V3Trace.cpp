@@ -21,7 +21,7 @@
 //
 //  This is tracked with activity flags (__Vactivity), set by statements
 //  inserted where code that may write described variables is entered. Each
-//  AstRtmdSignal gets an activity set: the flags that cover all its writers.
+//  AstRtmdVar gets an activity set: the flags that cover all its writers.
 //  The runtime reads a signal only if a flag in its set is set, and the
 //  model clears all flags at its first eval after a dump. EVAL_FLAG is set
 //  on every eval, SLOW_FLAG by slow code (which sets all flags), and each
@@ -144,12 +144,12 @@ class TraceVisitor final : public VNVisitor {
     VDouble0 m_statSettersSlow;  // Number of activity flag setters inserted in slow code
     VDouble0 m_statSignals;  // Number of traced signals
 
-    // Map from interface member Var to its VarScopes referenced by an AstRtmdSignal
+    // Map from interface member Var to its VarScopes referenced by an AstRtmdVar
     VNUser1Allocator<AstVar, std::vector<AstVarScope*>> m_ifaceMemberVscps;
 
     // METHODS
 
-    // Vertex of the given variable, or nullptr if no AstRtmdSignal reads it
+    // Vertex of the given variable, or nullptr if no AstRtmdVar reads it
     static TraceVarVertex* getVarVertexp(AstVarScope* nodep) {
         return nodep->user1u().to<TraceVarVertex*>();
     }
@@ -164,9 +164,9 @@ class TraceVisitor final : public VNVisitor {
         return vtxp;
     }
 
-    // Create a vertex for each variable read by an AstRtmdSignal
+    // Create a vertex for each variable read by an AstRtmdVar
     void createVarVertices(AstNetlist* netlistp) {
-        netlistp->topScopep()->rtmdp()->foreach([this](AstRtmdSignal* sigp) {
+        netlistp->topScopep()->rtmdp()->foreach([this](AstRtmdVar* sigp) {
             if (!sigp->traced()) return;
             ++m_statSignals;
             AstVarScope* const vscp = sigp->vscp();
@@ -332,7 +332,7 @@ class TraceVisitor final : public VNVisitor {
         }
 
         // Each signal takes the activity set of the variable it reads
-        netlistp->topScopep()->rtmdp()->foreach([&](AstRtmdSignal* sigp) {
+        netlistp->topScopep()->rtmdp()->foreach([&](AstRtmdVar* sigp) {
             if (!sigp->traced()) return;
             sigp->actSetIdx(getVarVertexp(sigp->vscp())->actSetIdx());
         });
@@ -340,7 +340,7 @@ class TraceVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstNetlist* nodep) override {
-        // Create the variable vertices, only for variables referenced by an AstRtmdSignal
+        // Create the variable vertices, only for variables referenced by an AstRtmdVar
         createVarVertices(nodep);
 
         // Build the rest of the graph

@@ -86,7 +86,7 @@ private:
     void printStr(const char* str);
 
     // Open and close a scope
-    void beginScope(const char* namep);
+    void beginScope(const char* namep, const char* typep = "module");
     void endScope();
     // Open and close an array, whose name prefixes the names within it
     void beginArray(const char* namep) { m_namePrefixes.push_back(m_namePrefixes.back() + namep); }
@@ -114,28 +114,33 @@ protected:
     //=========================================================================
     // Implementation of VerilatedTrace interface - declarations
 
-    void openRoot(const char* namep) override final { beginScope(namep); }
-    void closeRoot() override final { endScope(); }
-    void openInstance(InstanceKind, const char* namep, const char*) override final {
+    void ifaceRefOpen(const char* namep, const char*) override final { beginScope(namep); }
+    void ifaceRefClose() override final { endScope(); }
+    void instanceOpen(InstanceKind, const char* namep, const char*) override final {
         beginScope(namep);
     }
-    void closeInstance() override final { endScope(); }
-    void openIfaceRef(const char* namep, const char*) override final { beginScope(namep); }
-    void closeIfaceRef() override final { endScope(); }
-    void openScope(ScopeKind, const char* namep) override final { beginScope(namep); }
-    void closeScope() override final { endScope(); }
-    void openUnpackedArray(const char* namep, int, int) override final { beginArray(namep); }
-    void closeUnpackedArray() override final { endArray(); }
-    void openUnpackedStruct(const char* namep, uint32_t) override final { beginScope(namep); }
-    void closeUnpackedStruct() override final { endScope(); }
-    void openPackedArray(const char* namep, int, int) override final { beginArray(namep); }
-    void closePackedArray() override final { endArray(); }
-    void openPackedStruct(const char* namep, uint32_t) override final { beginScope(namep); }
-    void closePackedStruct() override final { endScope(); }
-    void openPackedUnion(const char* namep, uint32_t) override final { beginScope(namep); }
-    void closePackedUnion() override final { endScope(); }
+    void instanceClose() override final { endScope(); }
+    void packedArrayOpen(const char* namep, int, int) override final { beginArray(namep); }
+    void packedArrayClose() override final { endArray(); }
+    void packedStructOpen(const char* namep, uint32_t) override final { beginScope(namep); }
+    void packedStructClose() override final { endScope(); }
+    void packedUnionOpen(const char* namep, uint32_t) override final { beginScope(namep); }
+    void packedUnionClose() override final { endScope(); }
+    void rootOpen(const char* namep) override final { beginScope(namep); }
+    void rootClose() override final { endScope(); }
+    void scopeOpen(ScopeKind kind, const char* namep) override final {
+        // Other scopes are presented as modules, as before function and task scopes were traced
+        beginScope(namep, kind == ScopeKind::FUNCTION ? "function"
+                          : kind == ScopeKind::TASK   ? "task"
+                                                      : "module");
+    }
+    void scopeClose() override final { endScope(); }
+    void unpackedArrayOpen(const char* namep, int, int) override final { beginArray(namep); }
+    void unpackedArrayClose() override final { endArray(); }
+    void unpackedStructOpen(const char* namep, uint32_t) override final { beginScope(namep); }
+    void unpackedStructClose() override final { endScope(); }
 
-    void declareSignal(uint32_t code, const char* namep, const VlRtmdSignalType& sigType,
+    void declareSignal(uint32_t code, const char* namep, const VlRtmdVarType& varType,
                        const VlRtmdDataType& dtype) override final;
 
     // This format does not show enums

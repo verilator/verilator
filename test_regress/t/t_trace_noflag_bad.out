@@ -1,2 +1,2 @@
-%Error: Testbench C call to 'VerilatedContext::trace()' requires model(s) Verilated with --trace option
+%Error: Testbench C call to 'VerilatedContext::trace()' requires model(s) Verilated with a '--trace-*' option
 Aborting...

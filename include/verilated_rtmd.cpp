@@ -20,6 +20,8 @@
 
 #include "verilated_rtmd.h"
 
+#include <ostream>
+
 //=========================================================================
 // VlRtmdDataType
 
@@ -444,13 +446,13 @@ void VlRtmdHierListener::walkRows(const VerilatedModel& model, const VlRtmdHierR
             continue;
         }
 
-        if (const VlRtmdHierRow::Signal* const sp = rowp->signalp()) {
-            const VlRtmdSignalType sigType = rtmdp->signalType(sp->m_typeIdx);
-            const VlRtmdDataType dtype = sigType.dataType();
-            const uint8_t* const datap = static_cast<const uint8_t*>(rtmdp->signalAddress(*rowp));
+        if (const VlRtmdHierRow::Var* const sp = rowp->varp()) {
+            const VlRtmdVarType varType = rtmdp->varType(sp->m_typeIdx);
+            const VlRtmdDataType dtype = varType.dataType();
+            const uint8_t* const datap = static_cast<const uint8_t*>(rtmdp->varAddress(*rowp));
             const VlRtmdActSet actSet = rtmdp->actSet(sp->m_actSetIdx);
-            if (onSignal(sp->m_namep, sigType, dtype, actSet, datap, sp->m_flags)) {
-                walkDtype(sp->m_namep, sigType, dtype, actSet, datap, NOLSB);
+            if (onVar(sp->m_namep, varType, dtype, actSet, datap, sp->m_flags)) {
+                walkDtype(sp->m_namep, varType, dtype, actSet, datap, NOLSB);
             }
             continue;
         }
@@ -459,7 +461,7 @@ void VlRtmdHierListener::walkRows(const VerilatedModel& model, const VlRtmdHierR
     }
 }
 
-void VlRtmdHierListener::walkDtype(const char* namep, const VlRtmdSignalType& sigType,
+void VlRtmdHierListener::walkDtype(const char* namep, const VlRtmdVarType& varType,
                                    const VlRtmdDataType& dtype, const VlRtmdActSet& actSet,
                                    const uint8_t* datap, const uint32_t lsb) {
     // An array is its elements, in declaration order
@@ -490,8 +492,8 @@ void VlRtmdHierListener::walkDtype(const char* namep, const VlRtmdSignalType& si
                 const int32_t position = index - std::min(left, right);
                 elemp += static_cast<uint32_t>(position) * dtype.elemBytes();
             }
-            if (onComponent(name.c_str(), sigType, elemType, actSet, elemp, elemLsb)) {
-                walkDtype(name.c_str(), sigType, elemType, actSet, elemp, elemLsb);
+            if (onComponent(name.c_str(), varType, elemType, actSet, elemp, elemLsb)) {
+                walkDtype(name.c_str(), varType, elemType, actSet, elemp, elemLsb);
             }
         }
         if (isPacked) {
@@ -524,8 +526,8 @@ void VlRtmdHierListener::walkDtype(const char* namep, const VlRtmdSignalType& si
             } else if (datap) {
                 memberp += member.m_offset;
             }
-            if (onComponent(member.m_namep, sigType, memberType, actSet, memberp, memberLsb)) {
-                walkDtype(member.m_namep, sigType, memberType, actSet, memberp, memberLsb);
+            if (onComponent(member.m_namep, varType, memberType, actSet, memberp, memberLsb)) {
+                walkDtype(member.m_namep, varType, memberType, actSet, memberp, memberLsb);
             }
         }
         if (dtype.isPackedStruct()) {
@@ -542,4 +544,175 @@ void VlRtmdHierListener::walkDtype(const char* namep, const VlRtmdSignalType& si
     VL_FATAL_MT(__FILE__, __LINE__, "",
                 "VlRtmdHierListener::walkDtype called on a non compound data type");
     // LCOV_EXCL_STOP
+}
+
+//=============================================================================
+// Debug dump
+
+// Prints the hierarchy enumerated by the walker, one line per level and variable, see hierDump
+class VlRtmdHierDumper final : public VlRtmdHierListener {
+    std::ostream& m_os;  // Where to write
+    const bool m_components;  // Walk the components of arrays, structs and unions
+    int m_indent = 0;  // Current indentation level
+
+    void line(const std::string& text) const {
+        m_os << std::string(2 * m_indent, ' ') << text << '\n';
+    }
+    bool open(const std::string& text, bool hasVars) {
+        line(text + (hasVars ? "" : " (no variables)"));
+        ++m_indent;
+        return true;
+    }
+    void close(const std::string& text) {
+        --m_indent;
+        line(text);
+    }
+    // Print a value, and walk the parts of unpacked arrays and structs
+    bool value(const std::string& name, const VlRtmdDataType& dtype, const void* datap) {
+        line(name + " : " + dtype.toString() + (datap ? "" : " (no address)"));
+        if (!m_components) return false;
+        // Packed arrays of single bits, e.g. 'logic [7:0]', are not split, as too many
+        if (dtype.isPackedArray()) return dtype.elemType().width() > 1;
+        return dtype.isUnpackedArray() || dtype.isUnpackedStruct() || dtype.isPackedStruct()
+               || dtype.isPackedUnion();
+    }
+
+    static std::string kindName(VlRtmdVarType::Kind kind) {
+        switch (kind) {
+        case VlRtmdVarType::Kind::VAR: return "var"s;
+        case VlRtmdVarType::Kind::WIRE: return "wire"s;
+        case VlRtmdVarType::Kind::WREAL: return "wreal"s;
+        case VlRtmdVarType::Kind::TRI: return "tri"s;
+        case VlRtmdVarType::Kind::TRI0: return "tri0"s;
+        case VlRtmdVarType::Kind::TRI1: return "tri1"s;
+        case VlRtmdVarType::Kind::TRIAND: return "triand"s;
+        case VlRtmdVarType::Kind::TRIOR: return "trior"s;
+        case VlRtmdVarType::Kind::SUPPLY0: return "supply0"s;
+        case VlRtmdVarType::Kind::SUPPLY1: return "supply1"s;
+        case VlRtmdVarType::Kind::GPARAM: return "parameter"s;
+        case VlRtmdVarType::Kind::LPARAM: return "localparam"s;
+        case VlRtmdVarType::Kind::SPECPARAM: return "specparam"s;
+        case VlRtmdVarType::Kind::GENVAR: return "genvar"s;
+        }
+        return "?"s;
+    }
+    static std::string directionName(VlRtmdVarType::Direction direction) {
+        switch (direction) {
+        case VlRtmdVarType::Direction::NONE: return ""s;
+        case VlRtmdVarType::Direction::INPUT: return "input "s;
+        case VlRtmdVarType::Direction::OUTPUT: return "output "s;
+        case VlRtmdVarType::Direction::INOUT: return "inout "s;
+        case VlRtmdVarType::Direction::REF: return "ref "s;
+        case VlRtmdVarType::Direction::CONSTREF: return "const ref "s;
+        }
+        return "?"s;
+    }
+    static std::string instanceName(InstanceKind kind) {
+        switch (kind) {
+        case InstanceKind::MODULE: return "module"s;
+        case InstanceKind::INTERFACE: return "interface"s;
+        case InstanceKind::PACKAGE: return "package"s;
+        }
+        return "?"s;
+    }
+    static std::string scopeEnd(ScopeKind kind) {
+        switch (kind) {
+        case ScopeKind::ROOTIO: return "endrootio"s;
+        case ScopeKind::FUNCTION: return "endfunction"s;
+        case ScopeKind::TASK: return "endtask"s;
+        case ScopeKind::GENERATE: return "endgenerate"s;
+        case ScopeKind::BEGIN: return "end"s;
+        case ScopeKind::FORK: return "join"s;
+        }
+        return "?"s;
+    }
+    static std::string scopeName(ScopeKind kind) {
+        switch (kind) {
+        case ScopeKind::ROOTIO: return "rootio"s;
+        case ScopeKind::FUNCTION: return "function"s;
+        case ScopeKind::TASK: return "task"s;
+        case ScopeKind::GENERATE: return "generate"s;
+        case ScopeKind::BEGIN: return "begin"s;
+        case ScopeKind::FORK: return "fork"s;
+        }
+        return "?"s;
+    }
+
+    bool enterRoot(const VerilatedModel& model) override {
+        line("# Generated by VlRtmd::hierDump");
+        return open(model.hierName() + " : $root"s, true);
+    }
+    void exitRoot(const VerilatedModel& model) override {
+        close("end$root : "s + model.hierName());
+    }
+    bool enterInstance(InstanceKind kind, const char* namep, const char* modNamep,
+                       HierFlags flags) override {
+        return open(namep + " : "s + instanceName(kind) + " " + modNamep, flags.hasVars());
+    }
+    void exitInstance(InstanceKind kind, const char* namep, const char*, HierFlags) override {
+        close("end" + instanceName(kind) + " : " + namep);
+    }
+    bool enterIfaceRef(const char* namep, const char* modNamep, HierFlags flags) override {
+        return open(namep + " : interface reference "s + modNamep, flags.hasVars());
+    }
+    void exitIfaceRef(const char* namep, const char*, HierFlags) override {
+        close("endinterface reference : "s + namep);
+    }
+    bool enterScope(ScopeKind kind, const char* namep, HierFlags flags) override {
+        return open(namep + " : "s + scopeName(kind), flags.hasVars());
+    }
+    void exitScope(ScopeKind kind, const char* namep, HierFlags) override {
+        close(scopeEnd(kind) + " : " + namep);
+    }
+    bool onVar(const char* namep, const VlRtmdVarType& varType, const VlRtmdDataType& dtype,
+               const VlRtmdActSet&, const void* datap, VarFlags) override {
+        return value(directionName(varType.direction()) + kindName(varType.kind()) + " " + namep,
+                     dtype, datap);
+    }
+    void enterUnpackedArray(const char*, const VlRtmdDataType& dtype) override {
+        open("enterUnpackedArray ["s + std::to_string(dtype.left()) + ":"
+                 + std::to_string(dtype.right()) + "]",
+             true);
+    }
+    void exitUnpackedArray(const char*, const VlRtmdDataType&) override {
+        close("exitUnpackedArray");
+    }
+    void enterUnpackedStruct(const char*, const VlRtmdDataType& dtype) override {
+        open("enterUnpackedStruct, "s + std::to_string(dtype.memberCount()) + " members", true);
+    }
+    void exitUnpackedStruct(const char*, const VlRtmdDataType&) override {
+        close("exitUnpackedStruct");
+    }
+    void enterPackedArray(const char*, const VlRtmdDataType& dtype) override {
+        open("enterPackedArray ["s + std::to_string(dtype.left()) + ":"
+                 + std::to_string(dtype.right()) + "]",
+             true);
+    }
+    void exitPackedArray(const char*, const VlRtmdDataType&) override { close("exitPackedArray"); }
+    void enterPackedStruct(const char*, const VlRtmdDataType& dtype) override {
+        open("enterPackedStruct, "s + std::to_string(dtype.memberCount()) + " members", true);
+    }
+    void exitPackedStruct(const char*, const VlRtmdDataType&) override {
+        close("exitPackedStruct");
+    }
+    void enterPackedUnion(const char*, const VlRtmdDataType& dtype) override {
+        open("enterPackedUnion, "s + std::to_string(dtype.memberCount()) + " members", true);
+    }
+    void exitPackedUnion(const char*, const VlRtmdDataType&) override { close("exitPackedUnion"); }
+    bool onComponent(const char* namep, const VlRtmdVarType&, const VlRtmdDataType& dtype,
+                     const VlRtmdActSet&, const void* datap, uint32_t lsb) override {
+        // A component of a packed value is located by its bit offset
+        return value(namep + (lsb != NOLSB ? " @" + std::to_string(lsb) : ""s), dtype, datap);
+    }
+
+public:
+    VlRtmdHierDumper(std::ostream& os, const VerilatedContext& context, bool components)
+        : m_os{os}
+        , m_components{components} {
+        walkContext(context);
+    }
+};
+
+void VlRtmd::hierDump(std::ostream& os, const VerilatedContext& context, bool components) {
+    VlRtmdHierDumper{os, context, components};
 }

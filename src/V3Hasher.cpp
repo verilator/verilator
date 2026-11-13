@@ -581,7 +581,7 @@ class HasherVisitor final : public VNVisitorConst {
             iterateConstNull(nodep->rtmddtp());
         });
     }
-    void visit(AstRtmdSignalType* nodep) override {
+    void visit(AstRtmdVarType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {
             m_hash += nodep->kind();
             m_hash += nodep->direction();

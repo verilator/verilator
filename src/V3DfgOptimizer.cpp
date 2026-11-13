@@ -93,7 +93,7 @@ class DataflowOptimize final {
                 return;
             }
             // Variables read by descriptors are read externally
-            if (const AstRtmdSignal* const sigp = VN_CAST(nodep, RtmdSignal)) {
+            if (const AstRtmdVar* const sigp = VN_CAST(nodep, RtmdVar)) {
                 if (sigp->refp()) DfgVertexVar::setHasExtRdRefs(sigp->vscp());
                 return;
             }

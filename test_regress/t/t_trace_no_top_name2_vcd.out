@@ -4,7 +4,7 @@ $timescale 1ps $end
   $var wire 1 " clk $end
  $upscope $end
  $scope module foo_pkg $end
-  $scope module foo_func $end
+  $scope function foo_func $end
    $var wire 32 % b_current [31:0] $end
   $upscope $end
  $upscope $end

@@ -1661,13 +1661,13 @@ Summary:
    Defaults to the value of :vlopt:`--output-split`, unless explicitly
    specified.
 
-.. option:: --output-split-rtmd <log2>
+.. option:: --output-split-rtmd <rows>
 
    Splits the run time model descriptor tables (see :vlopt:`--rtmd`) into
-   chunks of 2 to the power of the given value rows each, every chunk in a
-   separate .cpp file. A value of 0 disables splitting.
+   chunks of the given number of rows each, rounded down to a power of two,
+   every chunk in a separate .cpp file. A value of 0 disables splitting.
 
-   Defaults to 14 (16384 rows per chunk).
+   Defaults to 16384.
 
 .. option:: -P
 

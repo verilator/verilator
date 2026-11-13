@@ -313,9 +313,11 @@ void VerilatedVcd::printIndent(int level_change) {
     if (level_change > 0) m_indent += level_change;
 }
 
-void VerilatedVcd::beginScope(const char* namep) {
+void VerilatedVcd::beginScope(const char* namep, const char* typep) {
     printIndent(1);
-    printStr("$scope module ");
+    printStr("$scope ");
+    printStr(typep);
+    printStr(" ");
     printStr((m_namePrefixes.back() + namep).c_str());
     printStr(" $end\n");
     m_namePrefixes.emplace_back();
@@ -327,7 +329,7 @@ void VerilatedVcd::endScope() {
     printStr("$upscope $end\n");
 }
 
-void VerilatedVcd::declareSignal(uint32_t code, const char* namep, const VlRtmdSignalType&,
+void VerilatedVcd::declareSignal(uint32_t code, const char* namep, const VlRtmdVarType&,
                                  const VlRtmdDataType& dtype) {
     const VlRtmdDataType::StorageKind storage = dtype.storageKind();
     const char* const wirep = storage == VlRtmdDataType::StorageKind::EVENT    ? "event"

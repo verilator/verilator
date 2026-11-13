@@ -316,7 +316,7 @@ class ReloopVisitor final : public VNVisitor {
     void visit(AstVar*) override {}  // Accelerate
     void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNodeRtmdDataType*) override {}  // Accelerate
-    void visit(AstRtmdSignalType*) override {}  // Accelerate
+    void visit(AstRtmdVarType*) override {}  // Accelerate
     void visit(AstNodeRtmdItem*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

@@ -338,6 +338,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Reloop.o \
   V3Reorder.o \
   V3Rtmd.o \
+  V3RtmdScoped.o \
   V3Sampled.o \
   V3Sched.o \
   V3SchedAcyclic.o \

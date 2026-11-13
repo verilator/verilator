@@ -64,8 +64,7 @@ static double timescaleToDouble(const char* unitp) VL_PURE {
 // Hierarchy building
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addSignal(const char* namep,
-                                                   const VlRtmdSignalType& sigType,
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addSignal(const char* namep, const VlRtmdVarType& varType,
                                                    const VlRtmdDataType& dtype,
                                                    const VlRtmdActSet& actSet, const void* datap,
                                                    uint32_t lsb) VL_MT_UNSAFE {
@@ -108,7 +107,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addSignal(const char* namep,
         }
     }
 
-    self()->declareSignal(code, namep, sigType, dtype);
+    self()->declareSignal(code, namep, varType, dtype);
 }
 
 template <>
@@ -174,7 +173,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     if (!anyTraced) {
         VL_FATAL_MT("", 0, "",
                     "Testbench C call to 'VerilatedContext::trace()' requires model(s) "
-                    "Verilated with --trace option");
+                    "Verilated with a '--trace-*' option");
     }
 
     // Declare the hierarchy of all models, see the VlRtmdHierListener methods in verilated_trace.h

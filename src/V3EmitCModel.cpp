@@ -318,7 +318,7 @@ class EmitCModel final : public EmitCFunc {
             puts("extern const VlRtmdGlobalSymRow* const " + EmitCUtil::rtmdGlobalTableName()
                  + "[];\n");
             puts("extern const VlRtmdHierRow* const " + EmitCUtil::rtmdHierTableName() + "[];\n");
-            puts("extern const VlRtmdSignalTypeRow* const " + EmitCUtil::rtmdSignalTypeTableName()
+            puts("extern const VlRtmdVarTypeRow* const " + EmitCUtil::rtmdVarTypeTableName()
                  + "[];\n");
             puts("\n");
         }
@@ -395,12 +395,12 @@ class EmitCModel final : public EmitCFunc {
                  + ";\n");
             puts("rtmdp->m_opt.m_traceMaxWidth = " + std::to_string(v3Global.opt.traceMaxWidth())
                  + ";\n");
-            puts("rtmdp->m_chunkShift = " + std::to_string(v3Global.opt.outputSplitRtmd())
+            puts("rtmdp->m_chunkShift = " + std::to_string(v3Global.opt.outputSplitRtmdLog2())
                  + ";\n");
             puts("rtmdp->m_dataTypesTabpp = " + EmitCUtil::rtmdDataTypeTableName() + ";\n");
             puts("rtmdp->m_globalSymsTabpp = " + EmitCUtil::rtmdGlobalTableName() + ";\n");
             puts("rtmdp->m_hierTabpp = " + EmitCUtil::rtmdHierTableName() + ";\n");
-            puts("rtmdp->m_signalTypesTabpp = " + EmitCUtil::rtmdSignalTypeTableName() + ";\n");
+            puts("rtmdp->m_varTypesTabpp = " + EmitCUtil::rtmdVarTypeTableName() + ";\n");
             puts("m_rtmdp = rtmdp;\n");
         }
 

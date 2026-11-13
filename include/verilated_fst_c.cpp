@@ -150,63 +150,87 @@ static uint64_t vlFstBounds(int left, int right) {
            | static_cast<uint64_t>(static_cast<uint32_t>(right));
 }
 
-void VerilatedFst::openRoot(const char* namep) {
-    beginOtherScope();
-    vlFstBeginScope(m_fst, fst::Hierarchy::ScopeType::VCD_MODULE, namep);
-}
-
-void VerilatedFst::openInstance(InstanceKind kind, const char* namep, const char*) {
-    beginOtherScope();
-    vlFstBeginScope(m_fst,
-                    kind == InstanceKind::INTERFACE ? fst::Hierarchy::ScopeType::VCD_INTERFACE
-                                                    : fst::Hierarchy::ScopeType::VCD_MODULE,
-                    namep);
-}
-
-void VerilatedFst::openIfaceRef(const char* namep, const char*) {
+void VerilatedFst::ifaceRefOpen(const char* namep, const char*) {
     beginOtherScope();
     vlFstBeginScope(m_fst, fst::Hierarchy::ScopeType::VCD_INTERFACE, namep);
 }
 
-void VerilatedFst::openScope(ScopeKind, const char* namep) {
+void VerilatedFst::ifaceRefClose() { endScope(); }
+
+void VerilatedFst::instanceOpen(InstanceKind kind, const char* namep, const char*) {
     beginOtherScope();
-    vlFstBeginScope(m_fst, fst::Hierarchy::ScopeType::VCD_MODULE, namep);
+    vlFstBeginScope(m_fst,
+                    kind == InstanceKind::INTERFACE ? fst::Hierarchy::ScopeType::VCD_INTERFACE
+                    : kind == InstanceKind::PACKAGE ? fst::Hierarchy::ScopeType::VCD_PACKAGE
+                                                    : fst::Hierarchy::ScopeType::VCD_MODULE,
+                    namep);
 }
 
-void VerilatedFst::openUnpackedArray(const char* namep, int left, int right) {
-    beginArrayScope(namep);
-    vlFstBeginScope(m_fst, fst::Hierarchy::ScopeType::SV_ARRAY, namep,
-                    fst::Hierarchy::AttrType::ARRAY, fst::Hierarchy::AttrSubType::ARRAY_UNPACKED,
-                    "bounds", vlFstBounds(left, right));
-}
+void VerilatedFst::instanceClose() { endScope(); }
 
-void VerilatedFst::openUnpackedStruct(const char* namep, uint32_t memberCount) {
-    beginOtherScope();
-    vlFstBeginScope(m_fst, fst::Hierarchy::ScopeType::VCD_STRUCT, namep,
-                    fst::Hierarchy::AttrType::PACK, fst::Hierarchy::AttrSubType::PACK_UNPACKED,
-                    "members", memberCount);
-}
-
-void VerilatedFst::openPackedArray(const char* namep, int left, int right) {
+void VerilatedFst::packedArrayOpen(const char* namep, int left, int right) {
     beginArrayScope(namep);
     vlFstBeginScope(m_fst, fst::Hierarchy::ScopeType::SV_ARRAY, namep,
                     fst::Hierarchy::AttrType::ARRAY, fst::Hierarchy::AttrSubType::ARRAY_PACKED,
                     "bounds", vlFstBounds(left, right));
 }
 
-void VerilatedFst::openPackedStruct(const char* namep, uint32_t memberCount) {
+void VerilatedFst::packedArrayClose() { endScope(); }
+
+void VerilatedFst::packedStructOpen(const char* namep, uint32_t memberCount) {
     beginOtherScope();
     vlFstBeginScope(m_fst, fst::Hierarchy::ScopeType::VCD_STRUCT, namep,
                     fst::Hierarchy::AttrType::PACK, fst::Hierarchy::AttrSubType::PACK_PACKED,
                     "members", memberCount);
 }
 
-void VerilatedFst::openPackedUnion(const char* namep, uint32_t memberCount) {
+void VerilatedFst::packedStructClose() { endScope(); }
+
+void VerilatedFst::packedUnionOpen(const char* namep, uint32_t memberCount) {
     beginOtherScope();
     vlFstBeginScope(m_fst, fst::Hierarchy::ScopeType::VCD_UNION, namep,
                     fst::Hierarchy::AttrType::PACK, fst::Hierarchy::AttrSubType::PACK_PACKED,
                     "members", memberCount);
 }
+
+void VerilatedFst::packedUnionClose() { endScope(); }
+
+void VerilatedFst::rootOpen(const char* namep) {
+    beginOtherScope();
+    vlFstBeginScope(m_fst, fst::Hierarchy::ScopeType::VCD_MODULE, namep);
+}
+
+void VerilatedFst::rootClose() { endScope(); }
+
+void VerilatedFst::scopeOpen(ScopeKind kind, const char* namep) {
+    beginOtherScope();
+    // Other scopes are presented as modules, as before function and task scopes were traced
+    const fst::Hierarchy::ScopeType type
+        = kind == ScopeKind::FUNCTION ? fst::Hierarchy::ScopeType::VCD_FUNCTION
+          : kind == ScopeKind::TASK   ? fst::Hierarchy::ScopeType::VCD_TASK
+                                      : fst::Hierarchy::ScopeType::VCD_MODULE;
+    vlFstBeginScope(m_fst, type, namep);
+}
+
+void VerilatedFst::scopeClose() { endScope(); }
+
+void VerilatedFst::unpackedArrayOpen(const char* namep, int left, int right) {
+    beginArrayScope(namep);
+    vlFstBeginScope(m_fst, fst::Hierarchy::ScopeType::SV_ARRAY, namep,
+                    fst::Hierarchy::AttrType::ARRAY, fst::Hierarchy::AttrSubType::ARRAY_UNPACKED,
+                    "bounds", vlFstBounds(left, right));
+}
+
+void VerilatedFst::unpackedArrayClose() { endScope(); }
+
+void VerilatedFst::unpackedStructOpen(const char* namep, uint32_t memberCount) {
+    beginOtherScope();
+    vlFstBeginScope(m_fst, fst::Hierarchy::ScopeType::VCD_STRUCT, namep,
+                    fst::Hierarchy::AttrType::PACK, fst::Hierarchy::AttrSubType::PACK_UNPACKED,
+                    "members", memberCount);
+}
+
+void VerilatedFst::unpackedStructClose() { endScope(); }
 
 // The builtin type of a value: that of the base of an enum, or of the elements of a packed array.
 // Packed structs and unions, traced whole without --trace-structs, are 'logic' if any of their
@@ -227,7 +251,7 @@ static VlRtmdDataType::AtomKind vlFstAtomKind(const VlRtmdDataType& dtype) {
     return AtomKind::BIT;
 }
 
-void VerilatedFst::declareSignal(uint32_t code, const char* namep, const VlRtmdSignalType& sigType,
+void VerilatedFst::declareSignal(uint32_t code, const char* namep, const VlRtmdVarType& varType,
                                  const VlRtmdDataType& dtype) {
     int msb;
     int lsb;
@@ -240,9 +264,9 @@ void VerilatedFst::declareSignal(uint32_t code, const char* namep, const VlRtmdS
 
     if (dtype.isEnum()) m_fst->emitEnumTableRef(m_enumHandles.at(dtype));
 
-    using Direction = VlRtmdSignalType::Direction;
+    using Direction = VlRtmdVarType::Direction;
     fst::Hierarchy::VarDirection varDir = fst::Hierarchy::VarDirection::IMPLICIT;
-    switch (sigType.direction()) {
+    switch (varType.direction()) {
     case Direction::INPUT:
     case Direction::CONSTREF: varDir = fst::Hierarchy::VarDirection::INPUT; break;
     case Direction::OUTPUT:
@@ -252,40 +276,40 @@ void VerilatedFst::declareSignal(uint32_t code, const char* namep, const VlRtmdS
     }
 
     // Nets by their kind, parameters, and variables by the type of their value
-    using Kind = VlRtmdSignalType::Kind;
+    using Kind = VlRtmdVarType::Kind;
     using AtomKind = VlRtmdDataType::AtomKind;
     const AtomKind atomKind = vlFstAtomKind(dtype);
     bool isParam = false;
-    fst::Hierarchy::VarType varType = fst::Hierarchy::VarType::SV_LOGIC;
-    switch (sigType.kind()) {
+    fst::Hierarchy::VarType fstVarType = fst::Hierarchy::VarType::SV_LOGIC;
+    switch (varType.kind()) {
     case Kind::GPARAM:
     case Kind::LPARAM:
     case Kind::SPECPARAM:
     case Kind::GENVAR:
         isParam = true;
-        varType = fst::Hierarchy::VarType::VCD_PARAMETER;
+        fstVarType = fst::Hierarchy::VarType::VCD_PARAMETER;
         break;
     case Kind::WIRE:
-    case Kind::WREAL: varType = fst::Hierarchy::VarType::VCD_WIRE; break;
-    case Kind::TRI: varType = fst::Hierarchy::VarType::VCD_TRI; break;
-    case Kind::TRI0: varType = fst::Hierarchy::VarType::VCD_TRI0; break;
-    case Kind::TRI1: varType = fst::Hierarchy::VarType::VCD_TRI1; break;
-    case Kind::TRIAND: varType = fst::Hierarchy::VarType::VCD_TRIAND; break;
-    case Kind::TRIOR: varType = fst::Hierarchy::VarType::VCD_TRIOR; break;
-    case Kind::SUPPLY0: varType = fst::Hierarchy::VarType::VCD_SUPPLY0; break;
-    case Kind::SUPPLY1: varType = fst::Hierarchy::VarType::VCD_SUPPLY1; break;
+    case Kind::WREAL: fstVarType = fst::Hierarchy::VarType::VCD_WIRE; break;
+    case Kind::TRI: fstVarType = fst::Hierarchy::VarType::VCD_TRI; break;
+    case Kind::TRI0: fstVarType = fst::Hierarchy::VarType::VCD_TRI0; break;
+    case Kind::TRI1: fstVarType = fst::Hierarchy::VarType::VCD_TRI1; break;
+    case Kind::TRIAND: fstVarType = fst::Hierarchy::VarType::VCD_TRIAND; break;
+    case Kind::TRIOR: fstVarType = fst::Hierarchy::VarType::VCD_TRIOR; break;
+    case Kind::SUPPLY0: fstVarType = fst::Hierarchy::VarType::VCD_SUPPLY0; break;
+    case Kind::SUPPLY1: fstVarType = fst::Hierarchy::VarType::VCD_SUPPLY1; break;
     case Kind::VAR:
         switch (atomKind) {
-        case AtomKind::INTEGER: varType = fst::Hierarchy::VarType::VCD_INTEGER; break;
-        case AtomKind::BIT: varType = fst::Hierarchy::VarType::SV_BIT; break;
-        case AtomKind::INT: varType = fst::Hierarchy::VarType::SV_INT; break;
-        case AtomKind::SHORTINT: varType = fst::Hierarchy::VarType::SV_SHORTINT; break;
+        case AtomKind::INTEGER: fstVarType = fst::Hierarchy::VarType::VCD_INTEGER; break;
+        case AtomKind::BIT: fstVarType = fst::Hierarchy::VarType::SV_BIT; break;
+        case AtomKind::INT: fstVarType = fst::Hierarchy::VarType::SV_INT; break;
+        case AtomKind::SHORTINT: fstVarType = fst::Hierarchy::VarType::SV_SHORTINT; break;
         // A chandle is traced as its 64 bit value
         case AtomKind::CHANDLE:
-        case AtomKind::LONGINT: varType = fst::Hierarchy::VarType::SV_LONGINT; break;
-        case AtomKind::BYTE: varType = fst::Hierarchy::VarType::SV_BYTE; break;
-        case AtomKind::EVENT: varType = fst::Hierarchy::VarType::VCD_EVENT; break;
-        case AtomKind::TIME: varType = fst::Hierarchy::VarType::VCD_TIME; break;
+        case AtomKind::LONGINT: fstVarType = fst::Hierarchy::VarType::SV_LONGINT; break;
+        case AtomKind::BYTE: fstVarType = fst::Hierarchy::VarType::SV_BYTE; break;
+        case AtomKind::EVENT: fstVarType = fst::Hierarchy::VarType::VCD_EVENT; break;
+        case AtomKind::TIME: fstVarType = fst::Hierarchy::VarType::VCD_TIME; break;
         case AtomKind::DOUBLE:
         case AtomKind::LOGIC: break;
         }
@@ -293,17 +317,17 @@ void VerilatedFst::declareSignal(uint32_t code, const char* namep, const VlRtmdS
     }
     // Doubles have special decoding properties, so must indicate if a double
     if (atomKind == AtomKind::DOUBLE) {
-        varType = isParam ? fst::Hierarchy::VarType::VCD_REAL_PARAMETER
-                          : fst::Hierarchy::VarType::VCD_REAL;
+        fstVarType = isParam ? fst::Hierarchy::VarType::VCD_REAL_PARAMETER
+                             : fst::Hierarchy::VarType::VCD_REAL;
     }
 
     // Room for the handle of this code, doubling the table if needed
     if (m_code2symbol.size() <= code) m_code2symbol.resize((code + 1) * 2, 0);
     vlFstHandle& handle = m_code2symbol[code];
     if (!handle) {  // New
-        handle = m_fst->createVar(varType, varDir, bits, name_str.c_str(), 0);
+        handle = m_fst->createVar(fstVarType, varDir, bits, name_str.c_str(), 0);
     } else {  // Alias
-        m_fst->createVar(varType, varDir, bits, name_str.c_str(), handle);
+        m_fst->createVar(fstVarType, varDir, bits, name_str.c_str(), handle);
     }
 }
 

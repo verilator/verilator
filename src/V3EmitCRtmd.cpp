@@ -19,12 +19,12 @@
 // - Data type table (VlRtmdDataTypeRow), one row per type descriptor, each holding the
 //   descriptor itself. The members of a struct or union, and the items of an enum, are the rows
 //   following it.
-// - Global table (VlRtmdGlobalSymRow), the global variables of Signal rows flagged IS_GLOBAL,
+// - Global table (VlRtmdGlobalSymRow), the global variables of Var rows flagged IS_GLOBAL,
 //   which are constant pool entries. Index 0 is not used, and is nullptr.
-// - Signal type table (VlRtmdSignalTypeRow), one row per signal type descriptor.
+// - Var type table (VlRtmdVarTypeRow), one row per var type descriptor.
 // - Activity set table (VlRtmdActSetRow). The first rows are the row range of each set, by set
-//   index, so a signal's set index is its row. The rest are the flag numbers of all sets, each
-//   set's following the previous. An empty set means the signal never changes.
+//   index, so a variable's set index is its row. The rest are the flag numbers of all sets, each
+//   set's following the previous. An empty set means the variable never changes.
 // - Hierarchy table (VlRtmdHierRow), one row per descriptor entry, ending with the Pop of the
 //   root level. Values are located by offset from the symbol table, or, for constant pool
 //   entries, via the global table.
@@ -43,6 +43,18 @@
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
+
+//######################################################################
+// State shared by the table emitters
+
+class EmitCRtmdState final {
+    // NODE STATE
+    // AstNodeRtmdDataType::user2()   // uint32_t; Index of its row in the data type table
+    // AstRtmdVarType::user2()        // uint32_t; Index of its row in the var type table
+    // AstVar::user2()                // uint32_t; Index of its row in the global table, 0 if none
+    // AstRtmdHier::user2()           // uint32_t; Index of its Push row in the hierarchy table
+    const VNUser2InUse m_user2InUse;
+};
 
 //######################################################################
 // Base of the emitters of a run time model descriptor table
@@ -144,6 +156,7 @@ protected:
         puts(arg);
         m_needComma = true;
     }
+    void putArgBool(bool flag) { putArg(flag ? "true" : "false"); }
     void endRow(const std::string& comment = "") {
         puts("}");
         const bool hasComment
@@ -223,7 +236,7 @@ class EmitCRtmdDataTypes final : public EmitCRtmdTableBase {
     void visit(AstRtmdDTAtom* nodep) override {
         beginRow("Atom");
         putArg("VlRtmdDataTypeRow::Atom::Kind::"s + nodep->keyword().rtmdAtomKind());
-        putArg(nodep->isSigned() ? "true" : "false");
+        putArgBool(nodep->isSigned());
         putArg(std::to_string(nodep->bits()));
         endRow(nodep->keyword().ascii() + (nodep->isSigned() ? " signed"s : ""s));
     }
@@ -251,7 +264,7 @@ class EmitCRtmdDataTypes final : public EmitCRtmdTableBase {
         putArg(lStr);
         putArg(rStr);
         putArg(elemIdx);
-        putArg(nodep->isSigned() ? "true" : "false");
+        putArgBool(nodep->isSigned());
         endRow((nodep->isSigned() ? "signed "s : ""s) + "[" + lStr + ":" + rStr + "] of #"
                + elemIdx);
     }
@@ -259,7 +272,7 @@ class EmitCRtmdDataTypes final : public EmitCRtmdTableBase {
     void visit(AstRtmdDTPackedStruct* nodep) override {
         beginRow("PackedStruct");
         putArg(std::to_string(nodep->memberspList().size()));
-        putArg(nodep->isSigned() ? "true" : "false");
+        putArgBool(nodep->isSigned());
         endRow("struct packed"s + (nodep->isSigned() ? " signed" : ""));
         for (const AstRtmdMember* const mp : nodep->memberspList()) {
             const std::string memberIdx = std::to_string(mp->rtmddtp()->user2());
@@ -274,7 +287,7 @@ class EmitCRtmdDataTypes final : public EmitCRtmdTableBase {
     void visit(AstRtmdDTPackedUnion* nodep) override {
         beginRow("PackedUnion");
         putArg(std::to_string(nodep->memberspList().size()));
-        putArg(nodep->isSigned() ? "true" : "false");
+        putArgBool(nodep->isSigned());
         endRow("union packed"s + (nodep->isSigned() ? " signed" : ""));
         // The members, with the bit offset of their LSB
         for (const AstRtmdMember* const mp : nodep->memberspList()) {
@@ -321,7 +334,7 @@ class EmitCRtmdDataTypes final : public EmitCRtmdTableBase {
     // CONSTRUCTORS
     explicit EmitCRtmdDataTypes(AstNetlist* netlistp)
         : EmitCRtmdTableBase{"VlRtmdDataTypeRow", EmitCUtil::rtmdDataTypeTableName(),
-                             "RTMD data type table", v3Global.opt.outputSplitRtmd()} {
+                             "RTMD data type table", v3Global.opt.outputSplitRtmdLog2()} {
         beginTable();
         for (AstNodeRtmdDataType* const typep : netlistp->typeTablep()->rtmdDataTypespList()) {
             // Record the row index of this type
@@ -365,9 +378,9 @@ class EmitCRtmdGlobalSyms final : public EmitCRtmdTableBase {
     // CONSTRUCTORS
     explicit EmitCRtmdGlobalSyms(AstNetlist* netlistp)
         : EmitCRtmdTableBase{"VlRtmdGlobalSymRow", EmitCUtil::rtmdGlobalTableName(),
-                             "RTMD global symbol table", v3Global.opt.outputSplitRtmd()} {
+                             "RTMD global symbol table", v3Global.opt.outputSplitRtmdLog2()} {
         // Gather the globals, recording the index of each
-        netlistp->topScopep()->rtmdp()->foreach([&](AstRtmdSignal* sigp) {
+        netlistp->topScopep()->rtmdp()->foreach([&](AstRtmdVar* sigp) {
             if (!sigp->refp()) return;
             AstVar* const varp = sigp->varp();
             if (!varp->constPoolEntry() || varp->user2()) return;
@@ -394,32 +407,32 @@ public:
 };
 
 //######################################################################
-// Rtmd signal type table emitter
+// Rtmd var type table emitter
 
-class EmitCRtmdSignalTypes final : public EmitCRtmdTableBase {
+class EmitCRtmdVarTypes final : public EmitCRtmdTableBase {
     // METHODS
     void putPrologue() override { puts("\n#include \"verilated_rtmd.h\"\n"); }
     void putEpilogue() override {}
 
     // CONSTRUCTORS
-    explicit EmitCRtmdSignalTypes(AstNetlist* netlistp)
-        : EmitCRtmdTableBase{"VlRtmdSignalTypeRow", EmitCUtil::rtmdSignalTypeTableName(),
-                             "RTMD signal type table", v3Global.opt.outputSplitRtmd()} {
+    explicit EmitCRtmdVarTypes(AstNetlist* netlistp)
+        : EmitCRtmdTableBase{"VlRtmdVarTypeRow", EmitCUtil::rtmdVarTypeTableName(),
+                             "RTMD var type table", v3Global.opt.outputSplitRtmdLog2()} {
         beginTable();
-        for (AstRtmdSignalType* const sigTypep : netlistp->typeTablep()->rtmdSignalTypespList()) {
-            sigTypep->user2(nRows());
-            beginRow("Signal");
-            putArg("VlRtmdSignalTypeRow::Signal::Kind::"s + sigTypep->kind().ascii());
-            putArg("VlRtmdSignalTypeRow::Signal::Direction::"s + sigTypep->direction().ascii());
-            putArg(std::to_string(sigTypep->rtmddtp()->user2()));
+        for (AstRtmdVarType* const varTypep : netlistp->typeTablep()->rtmdVarTypespList()) {
+            varTypep->user2(nRows());
+            beginRow("Var");
+            putArg("VlRtmdVarTypeRow::Var::Kind::"s + varTypep->kind().ascii());
+            putArg("VlRtmdVarTypeRow::Var::Direction::"s + varTypep->direction().ascii());
+            putArg(std::to_string(varTypep->rtmddtp()->user2()));
             endRow();
         }
         endTable();
-        V3Stats::addStat("Emit, Rtmd signal type table rows", nRows());
+        V3Stats::addStat("Emit, Rtmd var type table rows", nRows());
     }
 
 public:
-    static void apply(AstNetlist* netlistp) { EmitCRtmdSignalTypes{netlistp}; }
+    static void apply(AstNetlist* netlistp) { EmitCRtmdVarTypes{netlistp}; }
 };
 
 //######################################################################
@@ -427,11 +440,11 @@ public:
 
 class EmitCRtmdHier final : public EmitCRtmdTableBase {
     // NODE STATE
-    //  AstRtmdHier::user1()  // int; 0: unknown, else EVALUATED, HAS_SIGNALS, HAS_TRACED
+    //  AstRtmdHier::user1()  // int; 0: unknown, else EVALUATED, HAS_VARS, HAS_TRACED
     const VNUser1InUse m_user1InUse;
     static constexpr int EVALUATED = 1;  // The other flags are known
-    static constexpr int HAS_SIGNALS = 2;  // Some signals are under it
-    static constexpr int HAS_TRACED = 4;  // Some traced signals are under it
+    static constexpr int HAS_VARS = 2;  // Some variables are under it
+    static constexpr int HAS_TRACED = 4;  // Some traced variables are under it
 
     // METHODS
 
@@ -448,26 +461,26 @@ class EmitCRtmdHier final : public EmitCRtmdTableBase {
         putOffsetofPragmaPop();
     }
 
-    // Computes the offset of a signal's storage from the model symbol table
-    static std::string valueOffset(const AstRtmdSignal* sigp) {
+    // Computes the offset of a variable's storage from the model symbol table
+    static std::string valueOffset(const AstRtmdVar* sigp) {
         const AstScope* const scopep = sigp->refScopep();
         return "VL_RTMD_OFFSETOF(" + EmitCUtil::prefixNameProtect(scopep->modp()) + ", "
                + instName(scopep) + ", " + varName(sigp->varp()) + ")";
     }
 
-    // What is present under levelp: some signals, and some traced signals, see m_user1InUse
-    static int signalsUnder(AstRtmdHier* levelp) {
+    // What is present under levelp: some variables, and some traced variables, see m_user1InUse
+    static int varsUnder(AstRtmdHier* levelp) {
         if (levelp->user1()) return levelp->user1();
         int flags = EVALUATED;
         for (AstNodeRtmdItem* const itemp : levelp->itemspList()) {
             if (AstRtmdHier* const subp = VN_CAST(itemp, RtmdHier)) {
-                flags |= signalsUnder(subp);
+                flags |= varsUnder(subp);
             } else if (AstRtmdIfaceRef* const ifaceRefp = VN_CAST(itemp, RtmdIfaceRef)) {
-                flags |= signalsUnder(ifaceRefp->ifaceRtmdp());
+                flags |= varsUnder(ifaceRefp->ifaceRtmdp());
             } else if (VN_IS(itemp, RtmdPartition)) {
-                flags |= HAS_SIGNALS | HAS_TRACED;  // Assume partitions are not empty
-            } else if (const AstRtmdSignal* const sigp = VN_CAST(itemp, RtmdSignal)) {
-                flags |= HAS_SIGNALS | (sigp->traced() ? HAS_TRACED : 0);
+                flags |= HAS_VARS | HAS_TRACED;  // Assume partitions are not empty
+            } else if (const AstRtmdVar* const sigp = VN_CAST(itemp, RtmdVar)) {
+                flags |= HAS_VARS | (sigp->traced() ? HAS_TRACED : 0);
             }
         }
         levelp->user1(flags);
@@ -507,10 +520,10 @@ class EmitCRtmdHier final : public EmitCRtmdTableBase {
         beginRow("Push");
         putArg(nameLiteral(nodep));
         putArg("VlRtmdHierRow::Push::Kind::"s + nodep->kind().ascii());
-        const int flags = signalsUnder(nodep);
+        const int flags = varsUnder(nodep);
         putArg(flagsArg("VlRtmdHierRow::HierFlags",
-                        {flags & HAS_SIGNALS ? "HAS_SIGNALS" : nullptr,
-                         flags & HAS_TRACED ? "HAS_TRACED_SIGNALS" : nullptr}));
+                        {flags & HAS_VARS ? "HAS_VARS" : nullptr,
+                         flags & HAS_TRACED ? "HAS_TRACED_VARS" : nullptr}));
         endRow("push");
         iterateAndNextConstNull(nodep->itemsp());
         beginRow("Pop");
@@ -530,22 +543,22 @@ class EmitCRtmdHier final : public EmitCRtmdTableBase {
         endRow();
     }
 
-    void visit(AstRtmdSignal* nodep) override {
+    void visit(AstRtmdVar* nodep) override {
         // A global is located via the global table, others by offset from the symbol table. A
-        // signal whose value is not accessible has no location.
+        // variable whose value is not accessible has no location.
         const AstVar* const varp = nodep->refp() ? nodep->varp() : nullptr;
         const bool isGlobal = varp && varp->constPoolEntry();
         const std::string location = !varp      ? "VlRtmd::NOADDR"s
                                      : isGlobal ? std::to_string(varp->user2())
                                                 : valueOffset(nodep);
-        beginRow("Signal");
+        beginRow("Var");
         putArg(nameLiteral(nodep));
         putArg(std::to_string(nodep->typeDescp()->user2()));
         // No activity set without tracing, or without a value
         putArg(nodep->hasActSet() ? std::to_string(nodep->actSetIdx()) : "VlRtmd::NOIDX"s);
         putArg(location);
-        putArg(flagsArg("VlRtmdHierRow::SignalFlags", {isGlobal ? "IS_GLOBAL" : nullptr,
-                                                       nodep->traced() ? "IS_TRACED" : nullptr}));
+        putArg(flagsArg("VlRtmdHierRow::VarFlags", {isGlobal ? "IS_GLOBAL" : nullptr,
+                                                    nodep->traced() ? "IS_TRACED" : nullptr}));
         endRow();
     }
 
@@ -558,7 +571,7 @@ class EmitCRtmdHier final : public EmitCRtmdTableBase {
     // CONSTRUCTORS
     explicit EmitCRtmdHier(AstNetlist* netlistp)
         : EmitCRtmdTableBase{"VlRtmdHierRow", EmitCUtil::rtmdHierTableName(),
-                             "RTMD hierarchy table", v3Global.opt.outputSplitRtmd()} {
+                             "RTMD hierarchy table", v3Global.opt.outputSplitRtmdLog2()} {
         AstRtmdHier* const rootp = netlistp->topScopep()->rtmdp();
         UASSERT_OBJ(rootp->kind() == VRtmdHierKind::ROOT, rootp, "Top scope is not the root");
         const uint32_t nRowsExpected = numberRows(rootp, 0);
@@ -580,17 +593,12 @@ void V3EmitC::emitcRtmd() {
     if (!v3Global.opt.rtmd()) return;
 
     UINFO(2, __FUNCTION__ << ":");
-    // NODE STATE
-    // AstNodeRtmdDataType::user2()   // uint32_t; Index of its row in the data type table
-    // AstRtmdSignalType::user2()     // uint32_t; Index of its row in the signal type table
-    // AstVar::user2()                // uint32_t; Index of its row in the global table, 0 if none
-    // AstRtmdHier::user2()           // uint32_t; Index of its Push row in the hierarchy table
-    const VNUser2InUse user2InUse;
+    const EmitCRtmdState state;
 
     // Activity sets are only meaningful with the activity flags
     if (v3Global.rootp()->activityp()) EmitCRtmdActSets::apply(v3Global.rootp());
     EmitCRtmdDataTypes::apply(v3Global.rootp());
     EmitCRtmdGlobalSyms::apply(v3Global.rootp());
-    EmitCRtmdSignalTypes::apply(v3Global.rootp());
+    EmitCRtmdVarTypes::apply(v3Global.rootp());
     EmitCRtmdHier::apply(v3Global.rootp());
 }

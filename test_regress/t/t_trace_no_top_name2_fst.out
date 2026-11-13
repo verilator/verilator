@@ -11,8 +11,8 @@ $end
  $scope module $rootio $end
   $var wire 1 ! clk $end
  $upscope $end
- $scope module foo_pkg $end
-  $scope module foo_func $end
+ $scope package foo_pkg $end
+  $scope function foo_func $end
    $var int 32 " b_current [31:0] $end
   $upscope $end
  $upscope $end

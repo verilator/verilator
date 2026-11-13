@@ -1164,10 +1164,10 @@ Run Time Model Descriptors
 --------------------------
 
 The run time model descriptors (RTMD) describe the state of a Verilated
-model as data: its hierarchy, its signals, their types, and where their
+model as data: its hierarchy, its variables, their types, and where their
 values are in memory. They are created with :vlopt:`--rtmd`, which the
 tracing options imply. Tracing is built entirely on them: the trace runtime
-walks the descriptors to declare the signals, and reads the values through
+walks the descriptors to declare the variables, and reads the values through
 them, so no code specific to tracing is generated, other than recording
 activity.
 
@@ -1181,7 +1181,7 @@ are emitted as constant C++ tables. At run time, each model holds a
    V3LinkLevel::wrapTop
           |
    V3Rtmd::buildAll         a descriptor per module, the data types and
-          |                 signal types in the AstTypeTable
+          |                 var types in the AstTypeTable
           :                 (passes keep the variables they reference)
    V3Scope::scopeAll        a single tree under the AstTopScope
    V3LinkDot::linkDotScope  interface references resolved
@@ -1206,13 +1206,13 @@ There are three kinds of descriptors, defined in ``V3AstNodeRtmd.h``:
   as Verilator stores them, so they can be presented accurately. Each
   distinct type has a single descriptor, interned by the ``AstTypeTable``.
 
-- Signal types, ``AstRtmdSignalType``: a data type, with the kind of the
-  signal (e.g. variable, wire, parameter) and its port direction. Each
-  distinct signal type also has a single interned descriptor in the
+- Var types, ``AstRtmdVarType``: a data type, with the kind of
+  declaration (e.g. variable, wire, parameter) and its port direction. Each
+  distinct var type also has a single interned descriptor in the
   ``AstTypeTable``.
 
 - Hierarchy items, ``AstNodeRtmdItem`` and its subclasses. A hierarchy
-  level, ``AstRtmdHier``, holds the signals (``AstRtmdSignal``), instances
+  level, ``AstRtmdHier``, holds the variables (``AstRtmdVar``), instances
   (``AstRtmdInstance``), interface references (``AstRtmdIfaceRef``),
   instances of separately Verilated models (``AstRtmdPartition``), and
   nested levels within it.
@@ -1244,10 +1244,10 @@ is described before ``V3Scope`` as:
 
    $root                  t                   sub
    Hier ROOT "$root"      Hier MODULE "t"     Hier MODULE "sub"
-     Hier ROOTIO "$rootio"  Signal "clk"        Signal "clk"
-       Signal "clk"         Instance "a"        Signal "cnt"
+     Hier ROOTIO "$rootio"  Var "clk"           Var "clk"
+       Var "clk"            Instance "a"        Var "cnt"
      Instance "t"           Instance "b"        Hier GENERATE "gen"
-                                                  Signal "flag"
+                                                  Var "flag"
 
 ``V3Scope`` clones the level of a module for each of its instances, and
 inlines it after the instance, leaving a single tree under the
@@ -1257,31 +1257,31 @@ inlines it after the instance, leaving a single tree under the
 
    Hier ROOT "$root"
      Hier ROOTIO "$rootio"
-       Signal "clk"
+       Var "clk"
      Instance "t"
      Hier MODULE "t"
-       Signal "clk"
+       Var "clk"
        Instance "a"
        Hier MODULE "sub"          for t.a
-         Signal "clk"
-         Signal "cnt"
+         Var "clk"
+         Var "cnt"
          Hier GENERATE "gen"
-           Signal "flag"
+           Var "flag"
        Instance "b"
        Hier MODULE "sub"          for t.b
          ...
 
-A signal references the variable holding its value, so passes that delete,
-split, or replace variables keep the descriptors valid, which is why
-several passes handle the descriptor nodes. After ``V3Scope``,
+An ``AstRtmdVar`` references the variable holding its value, so passes that
+delete, split, or replace variables keep the descriptors valid, which is
+why several passes handle the descriptor nodes. After ``V3Scope``,
 ``V3Rtmd::scopedAll`` walks the tree, knowing the hierarchical name of each
-signal. It stops tracing signals of instances not traced, or turned off by
-control directives, and drops the references of signals not traced, which
-are then described without a value. Constants, e.g. parameters, instead
-reference the constant pool entry of their value, so they need no storage
-in the model.
+variable. It stops tracing variables of instances not traced, or turned off
+by control directives, and drops the references of variables not traced,
+which are then described without a value. Constants, e.g. parameters,
+instead reference the constant pool entry of their value, so they need no
+storage in the model.
 
-Only static variables are described. Signals of types that cannot be
+Only static variables are described. Variables of types that cannot be
 described, e.g. strings, queues, dynamic and associative arrays, and class
 handles, are not described. Neither are SystemC variables, virtual
 interface references, class members, and primitives.
@@ -1295,7 +1295,7 @@ Descriptor Tables
 - The data type table, a row per data type. The items of an enum, and the
   members of a struct or union, are the rows following it.
 
-- The signal type table, a row per signal type.
+- The var type table, a row per var type.
 
 - The global table, the constant pool entries holding the values of the
   described constants.
@@ -1308,65 +1308,65 @@ Descriptor Tables
   row index of the ``Push`` of the referenced interface instance. A
   ``Partition`` row names an instance of a separately Verilated model.
 
-Rows refer to rows of other tables by index. A ``Signal`` row refers to its
-signal type and its activity set, and holds where its value is: the offset
+Rows refer to rows of other tables by index. A ``Var`` row refers to its
+var type and its activity set, and holds where its value is: the offset
 of the variable from the symbol table, or the index of its global for a
-constant. A signal without a value has neither. For the example above:
+constant. A variable without a value has neither. For the example above:
 
 ::
 
-   Hierarchy table               Signal type table    Data type table
+   Hierarchy table               Var type table       Data type table
     0 Push ROOT "$root"           0 WIRE input, #0      0 Atom logic
     1 Push ROOTIO "$rootio"       1 VAR, #1             1 PackedArray
-    2 Signal "clk", #0            2 VAR, #0               [7:0] of #0
+    2 Var "clk", #0               2 VAR, #0               [7:0] of #0
     3 Pop
     4 Instance "t"
     5 Push MODULE "t"
-    6 Signal "clk", #0
+    6 Var "clk", #0
     7 Instance "a"
     8 Push MODULE "sub"
-    9 Signal "clk", #0
-   10 Signal "cnt", #1
+    9 Var "clk", #0
+   10 Var "cnt", #1
    11 Push GENERATE "gen"
-   12 Signal "flag", #2
+   12 Var "flag", #2
    13 Pop
    14 Pop
    15 Instance "b"
       ...
       Pop                         the last row, ending "$root"
 
-All tables but the activity set table are split into chunks of 2 to the
-power of :vlopt:`--output-split-rtmd` rows, each in its own file, so large
-tables compile in parallel. A table is then an array of its chunks:
+All tables but the activity set table are split into chunks based on
+:vlopt:`--output-split-rtmd`, each chunk in its own file, so large tables
+compile in parallel. A table is then an array of its chunks:
 
 ::
 
    extern const VlRtmdHierRow* const Vt__RtmdHierTable[] = {chunk 0,
                                                             chunk 1, ...};
    row i is Vt__RtmdHierTable[i >> N][i & (2^N - 1)]
-   with N the value of --output-split-rtmd
+   with 2^N the rows per chunk, --output-split-rtmd rounded down to a power of 2
 
 
 Activity
 ~~~~~~~~
 
 When tracing, ``V3Trace`` works out which code can change each described
-signal, so the trace only reads the values that might have changed since
+variable, so the trace only reads the values that might have changed since
 its last dump. It inserts statements setting activity flags, held in the
 ``__Vactivity`` array of the model, where code that may write described
-variables is entered. Each signal gets an activity set, the flags of all
-the code that may write it. Signals with the same flags share a set, and
+variables is entered. Each variable gets an activity set, the flags of all
+the code that may write it. Variables with the same flags share a set, and
 the activity set table holds the flags of each set.
 
-- Flag 0 is set by every evaluation. It covers signals that can change
+- Flag 0 is set by every evaluation. It covers variables that can change
   without any code running, e.g. primary inputs.
 
 - Rarely run code, e.g. initialization, sets all flags. Flag 1 covers the
-  signals written only by such code.
+  variables written only by such code.
 
-- Each other flag is set where some code that writes signals is entered.
+- Each other flag is set where some code that writes variables is entered.
 
-- A signal with an empty set never changes, e.g. a constant, and is only
+- A variable with an empty set never changes, e.g. a constant, and is only
   dumped by full dumps.
 
 The model clears the flags at its first evaluation after a dump, so all
@@ -1403,17 +1403,21 @@ was Verilated with that affect how it is presented, e.g.
                                   m_symsp ----------> symbol table
                                   m_activityFlagsp -> __Vactivity
                                   m_hierTabpp ------> hierarchy table
-                                  m_dataTypesTabpp, m_signalTypesTabpp,
+                                  m_dataTypesTabpp, m_varTypesTabpp,
                                   m_globalSymsTabpp, m_actSetsTabp
                                   m_opt               the options
 
 ``VlRtmdHierListener`` walks the descriptors of all models in a context,
-calling its virtual methods for each hierarchy level, each signal, and the
-components (elements and members) of the signals it walks into. The
+calling its virtual methods for each hierarchy level, each variable, and the
+components (elements and members) of the variables it walks into. The
 ``enter`` methods return whether to walk into a level, so a listener can
-skip what it does not need, and ``onSignal`` returns whether to walk into
+skip what it does not need, and ``onVar`` returns whether to walk into
 the components of an array, struct or union. A component of a packed value
 is reported as a bit offset within the outermost packed value.
+
+For debugging, ``VlRtmd::hierDump`` writes the descriptors of all models in
+a context to a stream, one line per hierarchy level and variable, using
+such a listener.
 
 The models are walked in the order of their hierarchical names. A
 ``Partition`` row is an instance of a separately Verilated model, e.g. a

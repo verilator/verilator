@@ -2204,7 +2204,7 @@ class AstTypeTable final : public AstNode {
     // Container for hash of standard data types
     // @astgen op1 := typesp : List[AstNodeDType]
     // @astgen op2 := rtmdDataTypesp : List[AstNodeRtmdDataType] // Data type descriptors
-    // @astgen op3 := rtmdSignalTypesp : List[AstRtmdSignalType] // Signal type descriptors
+    // @astgen op3 := rtmdVarTypesp : List[AstRtmdVarType] // Var type descriptors
     //
     // @astgen ptr := m_constraintRefp : Optional[AstConstraintRefDType]
     // @astgen ptr := m_emptyQueuep : Optional[AstEmptyQueueDType]

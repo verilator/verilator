@@ -1018,16 +1018,12 @@ void EmitCSyms::emitSymHdr() {
         // $dump* writes the trace format the model is built with
         const std::string fileSuffix = optSystemC() ? "_sc" : "_c";
         const std::string classSuffix = optSystemC() ? "Sc" : "C";
-        puts("#if VM_TRACE_FST\n");
-        puts("#include \"verilated_fst" + fileSuffix + ".h\"\n");
-        puts("using __VDumper = VerilatedFst" + classSuffix + ";\n");
-        puts("#elif VM_TRACE_SAIF\n");
-        puts("#include \"verilated_saif" + fileSuffix + ".h\"\n");
-        puts("using __VDumper = VerilatedSaif" + classSuffix + ";\n");
-        puts("#else\n");
-        puts("#include \"verilated_vcd" + fileSuffix + ".h\"\n");
-        puts("using __VDumper = VerilatedVcd" + classSuffix + ";\n");
-        puts("#endif\n");
+        for (const std::string& format : {"Fst"s, "Saif"s, "Vcd"s}) {
+            puts("#if VM_TRACE_" + VString::upcase(format) + "\n");
+            puts("#include \"verilated_" + VString::downcase(format) + fileSuffix + ".h\"\n");
+            puts("using __VDumper = Verilated" + format + classSuffix + ";\n");
+            puts("#endif\n");
+        }
     }
     if (v3Global.opt.usesProfiler()) puts("#include \"verilated_profiler.h\"\n");
 

@@ -26,7 +26,7 @@
 //   so they can be presented to the user accurately. RTMD data types are
 //   completely interned via AstTypeTable::rtmdDataTypesp(), so there is only
 //   ever one descriptor representing a unique type.
-// - AstRtmdSignalType represents the type of a signal, which is a data
+// - AstRtmdVarType represents the type of a variable, which is a data
 //   type + extra info (e.g. Var/Wire/Param + Input/Output/Inout/Nonport).
 // - AstNodeRtmdItem and its sub-types represent the static scope hierarchy
 //   of the design. It is stored as tree rooted on AstRtmdHier, which loosely
@@ -122,31 +122,31 @@ public:
     uint32_t lsb() const { return m_lsb; }
     AstNodeRtmdDataType* rtmddtp() const { return m_rtmddtp; }
 };
-class AstRtmdSignalType final : public AstNode {
-    // How a signal is declared: its data type, kind and direction. Not an AstNodeRtmdDataType,
+class AstRtmdVarType final : public AstNode {
+    // How a variable is declared: its data type, kind and direction. Not an AstNodeRtmdDataType,
     // as it does not compose.
     // @astgen ptr := m_rtmddtp : AstNodeRtmdDataType  // Type of the value
-    const VRtmdSignalKind m_kind;  // Kind of variable or net
+    const VRtmdVarKind m_kind;  // Kind of variable or net
     const VDirection m_direction;  // Declared direction, or NONE if it is not a port
 public:
-    AstRtmdSignalType(FileLine* fl, AstNodeRtmdDataType* rtmddtp, VRtmdSignalKind kind,
-                      VDirection direction)
-        : ASTGEN_SUPER_RtmdSignalType(fl)
+    AstRtmdVarType(FileLine* fl, AstNodeRtmdDataType* rtmddtp, VRtmdVarKind kind,
+                   VDirection direction)
+        : ASTGEN_SUPER_RtmdVarType(fl)
         , m_kind{kind}
         , m_direction{direction}
         , m_rtmddtp{rtmddtp} {}
-    ASTGEN_MEMBERS_AstRtmdSignalType;
+    ASTGEN_MEMBERS_AstRtmdVarType;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     bool sameNode(const AstNode* samep) const override {
-        const AstRtmdSignalType* const asamep = VN_DBG_AS(samep, RtmdSignalType);
+        const AstRtmdVarType* const asamep = VN_DBG_AS(samep, RtmdVarType);
         return rtmddtp() == asamep->rtmddtp()  //
                && kind() == asamep->kind()  //
                && direction() == asamep->direction();
     }
     AstNodeRtmdDataType* rtmddtp() const { return m_rtmddtp; }
-    VRtmdSignalKind kind() const { return m_kind; }
+    VRtmdVarKind kind() const { return m_kind; }
     VDirection direction() const { return m_direction; }
 };
 
@@ -367,27 +367,26 @@ public:
     bool sameNode(const AstNode* samep) const override;
     std::string name() const override VL_MT_STABLE { return m_name; }
 };
-class AstRtmdSignal final : public AstNodeRtmdItem {
-    // A signal
+class AstRtmdVar final : public AstNodeRtmdItem {
+    // A variable
     // @astgen op1 := refp : Optional[AstVarRef]  // Reference to the variable holding the value,
     //                                              // if the value is accessible at run time
-    // @astgen ptr := m_typeDescp : AstRtmdSignalType  // Signal type
+    // @astgen ptr := m_typeDescp : AstRtmdVarType  // Var type
     // Scope holding the variable, which might differ from the described scope. Set by V3Descope.
     // @astgen ptr := m_refScopep : Optional[AstScope]
-    const std::string m_name;  // Name of the signal in the hierarchy
+    const std::string m_name;  // Name of the variable in the hierarchy
     uint32_t m_actSetIdx = ~0U;  // Index of its set in AstNetlist::actSets(), from V3Trace
     bool m_traced = false;  // Traced, as its variable, unless turned off by V3Rtmd::scopedAll
 public:
-    AstRtmdSignal(FileLine* fl, const std::string& name, AstRtmdSignalType* typeDescp,
-                  AstVarRef* refp)
-        : ASTGEN_SUPER_RtmdSignal(fl)
+    AstRtmdVar(FileLine* fl, const std::string& name, AstRtmdVarType* typeDescp, AstVarRef* refp)
+        : ASTGEN_SUPER_RtmdVar(fl)
         , m_name{name}
         , m_typeDescp{typeDescp} {
         this->refp(refp);
     }
-    ASTGEN_MEMBERS_AstRtmdSignal;
+    ASTGEN_MEMBERS_AstRtmdVar;
     const char* broken() const override {
-        BROKEN_RTN(m_traced && !refp());  // The value of a traced signal must be accessible
+        BROKEN_RTN(m_traced && !refp());  // The value of a traced variable must be accessible
         return nullptr;
     }
     void dump(std::ostream& str) const override;
@@ -397,7 +396,7 @@ public:
     // The variable and its scope, only if the value is accessible
     AstVar* varp() const { return refp()->varp(); }
     AstVarScope* vscp() const { return refp()->varScopep(); }
-    AstRtmdSignalType* typeDescp() const { return m_typeDescp; }
+    AstRtmdVarType* typeDescp() const { return m_typeDescp; }
     bool hasActSet() const { return m_actSetIdx != ~0U; }
     uint32_t actSetIdx() const { return m_actSetIdx; }
     void actSetIdx(uint32_t idx) { m_actSetIdx = idx; }

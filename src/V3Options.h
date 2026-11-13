@@ -388,7 +388,7 @@ private:
     int64_t     m_outputGroupsSize = 512 * 1024 * 1024;  // main switch: --output-groups-size
     int         m_outputSplit = 20000;  // main switch: --output-split
     int         m_outputSplitCFuncs = -1;  // main switch: --output-split-cfuncs
-    int         m_outputSplitRtmd = 14;  // main switch: --output-split-rtmd
+    int         m_outputSplitRtmdLog2 = 14;  // main switch: --output-split-rtmd, log2 of it
     int         m_pinsBv = 65;       // main switch: --pins-bv
     int         m_preprocTokenLimit = 40000; // main switch: --preproc-token-limit
     int         m_publicDepth = 0;   // main switch: --public-depth
@@ -703,7 +703,7 @@ public:
     int moduleRecursionDepth() const { return m_moduleRecursion; }
     int outputSplit() const { return m_outputSplit; }
     int outputSplitCFuncs() const { return m_outputSplitCFuncs; }
-    uint32_t outputSplitRtmd() const { return m_outputSplitRtmd; }
+    uint32_t outputSplitRtmdLog2() const { return m_outputSplitRtmdLog2; }
     int outputGroups() const { return m_outputGroups; }
     int64_t outputGroupsSize() const { return m_outputGroupsSize; }
     int pinsBv() const VL_MT_SAFE { return m_pinsBv; }

@@ -3916,7 +3916,7 @@ bool AstRtmdPartition::sameNode(const AstNode* samep) const {
     const AstRtmdPartition* const asamep = VN_DBG_AS(samep, RtmdPartition);
     return name() == asamep->name();
 }
-void AstRtmdSignal::dump(std::ostream& str) const {
+void AstRtmdVar::dump(std::ostream& str) const {
     Super::dump(str);
     str << " [actSet=" << actSetIdx() << "]";
     if (traced()) str << " [TRACED]";
@@ -3924,18 +3924,18 @@ void AstRtmdSignal::dump(std::ostream& str) const {
     str << " -> ";
     typeDescp()->dump(str);
 }
-void AstRtmdSignal::dumpJson(std::ostream& str) const {
+void AstRtmdVar::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, actSetIdx);
     dumpJsonBoolFuncIf(str, traced);
     dumpJsonGen(str);
 }
-bool AstRtmdSignal::sameNode(const AstNode* samep) const {
-    const AstRtmdSignal* const asamep = VN_DBG_AS(samep, RtmdSignal);
+bool AstRtmdVar::sameNode(const AstNode* samep) const {
+    const AstRtmdVar* const asamep = VN_DBG_AS(samep, RtmdVar);
     return name() == asamep->name() && actSetIdx() == asamep->actSetIdx()
            && typeDescp() == asamep->typeDescp() && traced() == asamep->traced()
            && refScopep() == asamep->refScopep();
 }
-void AstRtmdSignalType::dump(std::ostream& str) const {
+void AstRtmdVarType::dump(std::ostream& str) const {
     Super::dump(str);
     str << " [" << kind().ascii();
     if (direction().isAny()) str << " " << direction().ascii();
@@ -3943,7 +3943,7 @@ void AstRtmdSignalType::dump(std::ostream& str) const {
     str << " -> ";
     rtmddtp()->dump(str);
 }
-void AstRtmdSignalType::dumpJson(std::ostream& str) const {
+void AstRtmdVarType::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "kind", kind().ascii());
     dumpJsonStr(str, "direction", direction().ascii());
     dumpJsonGen(str);

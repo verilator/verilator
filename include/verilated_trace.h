@@ -266,8 +266,8 @@ private:
 
     // Whether the signal 'namep' in the current hierarchy level is selected by 'dumpvars'
     bool dumpvarsSelected(const char* namep) const;
-    // Declare a value reported by 'onSignal' or 'onComponent', which is not split further
-    void addSignal(const char* namep, const VlRtmdSignalType& sigType, const VlRtmdDataType& dtype,
+    // Declare a value reported by 'onVar' or 'onComponent', which is not split further
+    void addSignal(const char* namep, const VlRtmdVarType& varType, const VlRtmdDataType& dtype,
                    const VlRtmdActSet& actSet, const void* datap, uint32_t lsb) VL_MT_UNSAFE;
 
     //=========================================================================
@@ -308,47 +308,46 @@ private:
         m_traceUnderscore = rtmdp->m_opt.m_traceUnderscore;
         m_traceMaxArray = rtmdp->m_opt.m_traceMaxArray;
         m_traceMaxWidth = rtmdp->m_opt.m_traceMaxWidth;
-        if (m_namedRoot) openRoot(model.hierName());
+        if (m_namedRoot) rootOpen(model.hierName());
         return true;
     }
     void exitRoot(const VerilatedModel&) override final {
-        if (m_namedRoot) closeRoot();
+        if (m_namedRoot) rootClose();
     }
     bool enterInstance(InstanceKind kind, const char* namep, const char* modNamep,
                        HierFlags flags) override final {
-        if (!flags.hasTracedSignals()) return false;  // Nothing to trace in it
+        if (!flags.hasTracedVars()) return false;  // Nothing to trace in it
         if (hidden(namep)) return false;
-        openInstance(kind, namep, modNamep);
+        instanceOpen(kind, namep, modNamep);
         return true;
     }
     void exitInstance(InstanceKind, const char*, const char*, HierFlags) override final {
-        closeInstance();
+        instanceClose();
     }
     bool enterIfaceRef(const char* namep, const char* modNamep, HierFlags flags) override final {
-        if (!flags.hasTracedSignals()) return false;  // Nothing to trace in it
+        if (!flags.hasTracedVars()) return false;  // Nothing to trace in it
         if (hidden(namep)) return false;
-        openIfaceRef(namep, modNamep);
+        ifaceRefOpen(namep, modNamep);
         return true;
     }
     void exitIfaceRef(const char*, const char*, HierFlags) override final {  //
-        closeIfaceRef();
+        ifaceRefClose();
     }
     bool enterScope(ScopeKind kind, const char* namep, HierFlags flags) override final {
-        if (!flags.hasTracedSignals()) return false;  // Nothing to trace in it
+        if (!flags.hasTracedVars()) return false;  // Nothing to trace in it
         if (hidden(namep)) return false;
         // The root IO of a named model is in the root scope, otherwise in a scope of its own
         if (kind == ScopeKind::ROOTIO && m_namedRoot) return true;
-        openScope(kind, namep);
+        scopeOpen(kind, namep);
         return true;
     }
     void exitScope(ScopeKind kind, const char*, HierFlags) override final {
         if (kind == ScopeKind::ROOTIO && m_namedRoot) return;
-        closeScope();
+        scopeClose();
     }
 
-    bool onSignal(const char* namep, const VlRtmdSignalType& sigType, const VlRtmdDataType& dtype,
-                  const VlRtmdActSet& actSet, const void* datap,
-                  SignalFlags flags) override final {
+    bool onVar(const char* namep, const VlRtmdVarType& varType, const VlRtmdDataType& dtype,
+               const VlRtmdActSet& actSet, const void* datap, VarFlags flags) override final {
         if (!flags.isTraced()) return false;
         if (hidden(namep)) return false;
         if (m_traceMaxWidth && vlTraceTotalWidth(dtype) > m_traceMaxWidth) return false;
@@ -361,44 +360,43 @@ private:
             }
             return true;
         }
-        addSignal(namep, sigType, dtype, actSet, datap, NOLSB);
+        addSignal(namep, varType, dtype, actSet, datap, NOLSB);
         return false;
     }
 
     void enterUnpackedArray(const char* namep, const VlRtmdDataType& dtype) override final {
-        openUnpackedArray(namep, dtype.left(), dtype.right());
+        unpackedArrayOpen(namep, dtype.left(), dtype.right());
     }
     void exitUnpackedArray(const char*, const VlRtmdDataType&) override final {
-        closeUnpackedArray();
+        unpackedArrayClose();
     }
     void enterUnpackedStruct(const char* namep, const VlRtmdDataType& dtype) override final {
-        openUnpackedStruct(namep, dtype.memberCount());
+        unpackedStructOpen(namep, dtype.memberCount());
     }
     void exitUnpackedStruct(const char*, const VlRtmdDataType&) override final {
-        closeUnpackedStruct();
+        unpackedStructClose();
     }
     void enterPackedArray(const char* namep, const VlRtmdDataType& dtype) override final {
-        openPackedArray(namep, dtype.left(), dtype.right());
+        packedArrayOpen(namep, dtype.left(), dtype.right());
     }
     void exitPackedArray(const char*, const VlRtmdDataType&) override final {  //
-        closePackedArray();
+        packedArrayClose();
     }
     void enterPackedStruct(const char* namep, const VlRtmdDataType& dtype) override final {
-        openPackedStruct(namep, dtype.memberCount());
+        packedStructOpen(namep, dtype.memberCount());
     }
     void exitPackedStruct(const char*, const VlRtmdDataType&) override final {
-        closePackedStruct();
+        packedStructClose();
     }
     void enterPackedUnion(const char* namep, const VlRtmdDataType& dtype) override final {
-        openPackedUnion(namep, dtype.memberCount());
+        packedUnionOpen(namep, dtype.memberCount());
     }
     void exitPackedUnion(const char*, const VlRtmdDataType&) override final {  //
-        closePackedUnion();
+        packedUnionClose();
     }
 
-    bool onComponent(const char* namep, const VlRtmdSignalType& sigType,
-                     const VlRtmdDataType& dtype, const VlRtmdActSet& actSet, const void* datap,
-                     uint32_t lsb) override final {
+    bool onComponent(const char* namep, const VlRtmdVarType& varType, const VlRtmdDataType& dtype,
+                     const VlRtmdActSet& actSet, const void* datap, uint32_t lsb) override final {
         if (tooManyElements(dtype)) return false;
         if (splitSignal(dtype)) {
             // The components of the outermost packed value are slices of it
@@ -407,7 +405,7 @@ private:
             }
             return true;
         }
-        addSignal(namep, sigType, dtype, actSet, datap, lsb);
+        addSignal(namep, varType, dtype, actSet, datap, lsb);
         return false;
     }
 
@@ -418,40 +416,41 @@ protected:
     // Declare a hierarchy level, the signals within it, and enums. The open and close hooks are
     // called virtually. 'declareEnum' and 'declareSignal' are called through 'self()', and the
     // overrides are final, so these calls are resolved statically.
+    // Open and close an interface reference, to an instance of interface 'modNamep'
+    virtual void ifaceRefOpen(const char* namep, const char* modNamep) = 0;
+    virtual void ifaceRefClose() = 0;
+    // Open and close an instance of module 'modNamep'
+    virtual void instanceOpen(InstanceKind kind, const char* namep, const char* modNamep) = 0;
+    virtual void instanceClose() = 0;
+    // Open and close a packed array, holding the elements declared within
+    virtual void packedArrayOpen(const char* namep, int left, int right) = 0;
+    virtual void packedArrayClose() = 0;
+    // Open and close a packed struct, holding the members declared within
+    virtual void packedStructOpen(const char* namep, uint32_t memberCount) = 0;
+    virtual void packedStructClose() = 0;
+    // Open and close a packed union, holding the members declared within
+    virtual void packedUnionOpen(const char* namep, uint32_t memberCount) = 0;
+    virtual void packedUnionClose() = 0;
     // Open and close the root of a model. Not called for a model with an empty name, whose
     // contents are at the top level.
-    virtual void openRoot(const char* namep) = 0;
-    virtual void closeRoot() = 0;
-    // Open and close an instance of module 'modNamep'
-    virtual void openInstance(InstanceKind kind, const char* namep, const char* modNamep) = 0;
-    virtual void closeInstance() = 0;
-    // Open and close an interface reference, to an instance of interface 'modNamep'
-    virtual void openIfaceRef(const char* namep, const char* modNamep) = 0;
-    virtual void closeIfaceRef() = 0;
+    virtual void rootOpen(const char* namep) = 0;
+    virtual void rootClose() = 0;
     // Open and close a scope within an instance
-    virtual void openScope(ScopeKind kind, const char* namep) = 0;
-    virtual void closeScope() = 0;
+    virtual void scopeOpen(ScopeKind kind, const char* namep) = 0;
+    virtual void scopeClose() = 0;
     // Open and close an unpacked array, holding the elements declared within
-    virtual void openUnpackedArray(const char* namep, int left, int right) = 0;
-    virtual void closeUnpackedArray() = 0;
+    virtual void unpackedArrayOpen(const char* namep, int left, int right) = 0;
+    virtual void unpackedArrayClose() = 0;
     // Open and close an unpacked struct, holding the members declared within
-    virtual void openUnpackedStruct(const char* namep, uint32_t memberCount) = 0;
-    virtual void closeUnpackedStruct() = 0;
-    // Open and close a packed array, holding the elements declared within
-    virtual void openPackedArray(const char* namep, int left, int right) = 0;
-    virtual void closePackedArray() = 0;
-    // Open and close a packed struct or union, holding the members declared within
-    virtual void openPackedStruct(const char* namep, uint32_t memberCount) = 0;
-    virtual void closePackedStruct() = 0;
-    virtual void openPackedUnion(const char* namep, uint32_t memberCount) = 0;
-    virtual void closePackedUnion() = 0;
+    virtual void unpackedStructOpen(const char* namep, uint32_t memberCount) = 0;
+    virtual void unpackedStructClose() = 0;
 
     // Declare an enum type, given by its data type handle
     virtual void declareEnum(const VlRtmdDataType& dtype) = 0;
     // Declare a signal or a component of one, traced with the codes from 'code', one per word.
-    // 'sigType' is the signal's declaration, 'dtype' the type of the value. An enum type was
+    // 'varType' is the signal's declaration, 'dtype' the type of the value. An enum type was
     // declared with 'declareEnum' already.
-    virtual void declareSignal(uint32_t code, const char* namep, const VlRtmdSignalType& sigType,
+    virtual void declareSignal(uint32_t code, const char* namep, const VlRtmdVarType& varType,
                                const VlRtmdDataType& dtype)
         = 0;
 

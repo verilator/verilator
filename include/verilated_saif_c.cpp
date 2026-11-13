@@ -485,7 +485,7 @@ void VerilatedSaif::endScope() {
     m_currentScopep = m_currentScopep->parentScope();
 }
 
-void VerilatedSaif::declareSignal(uint32_t code, const char* namep, const VlRtmdSignalType&,
+void VerilatedSaif::declareSignal(uint32_t code, const char* namep, const VlRtmdVarType&,
                                   const VlRtmdDataType& dtype) {
     VerilatedSaifActivityAccumulator& accumulator = *m_activityAccumulatorp;
 

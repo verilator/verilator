@@ -650,7 +650,7 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
         // whole of the Place it references, mark as such.
         if (Place* const placep = placeOf(nodep)) referencedWhole(nodep, placep);
     }
-    void visit(AstRtmdSignal* nodep) override {
+    void visit(AstRtmdVar* nodep) override {
         // Ignore reference for splitting, but need to reconstruct the variable
         if (nodep->refp()) nodep->vscp()->user3(true);
     }

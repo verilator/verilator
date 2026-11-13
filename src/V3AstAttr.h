@@ -1549,9 +1549,9 @@ public:
 
 //######################################################################
 
-class VRtmdSignalKind final {
+class VRtmdVarKind final {
 public:
-    // Kind of variable or net. Note: Entries must match VlRtmdSignalTypeRow::Signal::Kind (by
+    // Kind of variable or net. Note: Entries must match VlRtmdVarTypeRow::Var::Kind (by
     // name)
     enum en : uint8_t {
         VAR,
@@ -1571,7 +1571,7 @@ public:
     };
     enum en m_e;
     // cppcheck-suppress noExplicitConstructor
-    constexpr VRtmdSignalKind(en _e)
+    constexpr VRtmdVarKind(en _e)
         : m_e{_e} {}
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
@@ -1581,16 +1581,12 @@ public:
         return names[m_e];
     }
 };
-constexpr bool operator==(const VRtmdSignalKind& lhs, const VRtmdSignalKind& rhs) {
+constexpr bool operator==(const VRtmdVarKind& lhs, const VRtmdVarKind& rhs) {
     return lhs.m_e == rhs.m_e;
 }
-constexpr bool operator==(const VRtmdSignalKind& lhs, VRtmdSignalKind::en rhs) {
-    return lhs.m_e == rhs;
-}
-constexpr bool operator==(VRtmdSignalKind::en lhs, const VRtmdSignalKind& rhs) {
-    return lhs == rhs.m_e;
-}
-inline std::ostream& operator<<(std::ostream& os, const VRtmdSignalKind& rhs) {
+constexpr bool operator==(const VRtmdVarKind& lhs, VRtmdVarKind::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VRtmdVarKind::en lhs, const VRtmdVarKind& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VRtmdVarKind& rhs) {
     return os << rhs.ascii();
 }
 
@@ -2534,32 +2530,32 @@ public:
                 || m_e == WIRE || m_e == TRI0 || m_e == TRI1);
     }
 
-    // VRtmdSignalKind of this variable type
-    VRtmdSignalKind rtmdVarKind() const {
-        static constexpr VRtmdSignalKind::en lut[] = {
-            /* UNKNOWN:      */ VRtmdSignalKind::VAR,  // Not described
-            /* GPARAM:       */ VRtmdSignalKind::GPARAM,
-            /* LPARAM:       */ VRtmdSignalKind::LPARAM,
-            /* SPECPARAM:    */ VRtmdSignalKind::SPECPARAM,
-            /* GENVAR:       */ VRtmdSignalKind::GENVAR,
-            /* VAR:          */ VRtmdSignalKind::VAR,
-            /* SUPPLY0:      */ VRtmdSignalKind::SUPPLY0,
-            /* SUPPLY1:      */ VRtmdSignalKind::SUPPLY1,
-            /* WIRE:         */ VRtmdSignalKind::WIRE,
-            /* WREAL:        */ VRtmdSignalKind::WREAL,
-            /* TRIAND:       */ VRtmdSignalKind::TRIAND,
-            /* TRIOR:        */ VRtmdSignalKind::TRIOR,
-            /* TRIWIRE:      */ VRtmdSignalKind::TRI,
-            /* TRI0:         */ VRtmdSignalKind::TRI0,
-            /* TRI1:         */ VRtmdSignalKind::TRI1,
+    // VRtmdVarKind of this variable type
+    VRtmdVarKind rtmdVarKind() const {
+        static constexpr VRtmdVarKind::en lut[] = {
+            /* UNKNOWN:      */ VRtmdVarKind::VAR,  // Not described
+            /* GPARAM:       */ VRtmdVarKind::GPARAM,
+            /* LPARAM:       */ VRtmdVarKind::LPARAM,
+            /* SPECPARAM:    */ VRtmdVarKind::SPECPARAM,
+            /* GENVAR:       */ VRtmdVarKind::GENVAR,
+            /* VAR:          */ VRtmdVarKind::VAR,
+            /* SUPPLY0:      */ VRtmdVarKind::SUPPLY0,
+            /* SUPPLY1:      */ VRtmdVarKind::SUPPLY1,
+            /* WIRE:         */ VRtmdVarKind::WIRE,
+            /* WREAL:        */ VRtmdVarKind::WREAL,
+            /* TRIAND:       */ VRtmdVarKind::TRIAND,
+            /* TRIOR:        */ VRtmdVarKind::TRIOR,
+            /* TRIWIRE:      */ VRtmdVarKind::TRI,
+            /* TRI0:         */ VRtmdVarKind::TRI0,
+            /* TRI1:         */ VRtmdVarKind::TRI1,
             // A port with no net or variable type is a net
-            /* PORT:         */ VRtmdSignalKind::WIRE,
-            /* BLOCKTEMP:    */ VRtmdSignalKind::VAR,
-            /* MODULETEMP:   */ VRtmdSignalKind::VAR,
-            /* STMTTEMP:     */ VRtmdSignalKind::VAR,
-            /* XTEMP:        */ VRtmdSignalKind::VAR,
-            /* IFACEREF:     */ VRtmdSignalKind::VAR,  // Unused: Traced through its own scope
-            /* MEMBER:       */ VRtmdSignalKind::VAR,
+            /* PORT:         */ VRtmdVarKind::WIRE,
+            /* BLOCKTEMP:    */ VRtmdVarKind::VAR,
+            /* MODULETEMP:   */ VRtmdVarKind::VAR,
+            /* STMTTEMP:     */ VRtmdVarKind::VAR,
+            /* XTEMP:        */ VRtmdVarKind::VAR,
+            /* IFACEREF:     */ VRtmdVarKind::VAR,  // Unused: Traced through its own scope
+            /* MEMBER:       */ VRtmdVarKind::VAR,
         };
         static_assert(sizeof(lut) / sizeof(lut[0]) == MEMBER + 1,
                       "rtmdVarKind lut must cover every VVarType");

@@ -200,7 +200,7 @@ class LocalizeVisitor final : public VNVisitor {
         // No iterate; Don't want varrefs under it (e.g.: in child dtype?)
     }
 
-    void visit(AstRtmdSignal* nodep) override {
+    void visit(AstRtmdVar* nodep) override {
         // Descriptors read variables by address, so they cannot be localized
         if (!nodep->refp()) return;
         UINFO(4, "Not optimizable (rtmd): " << nodep);
