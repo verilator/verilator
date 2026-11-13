@@ -67,6 +67,40 @@ test.file_grep(logfile, r'NPASS=(\d+)', 11)
 test.file_grep_not(logfile, r'Solver failed repeatedly')
 test.file_grep_not(logfile, r'Solver died')
 
+# A command rejected ahead of a status fails only that call, and the session stays
+logfile = test.obj_dir + '/sim_err_extra.log'
+latch = test.obj_dir + '/err_extra.latch'
+if os.path.exists(latch):
+    os.unlink(latch)
+test.execute(logfile=logfile,
+             run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+             'TAMPER=err_extra TAMPER_AT=2 TAMPER_ONCE="' + latch + '" ')
+test.file_grep(logfile, r'NPASS=(\d+)', 11)
+test.file_grep_not(logfile, r'Solver died')
+
+# A solver that rejects a command and then stops answering is replaced
+logfile = test.obj_dir + '/sim_err_mute.log'
+latch = test.obj_dir + '/err_mute.latch'
+if os.path.exists(latch):
+    os.unlink(latch)
+test.execute(logfile=logfile,
+             run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+             'TAMPER=err_mute TAMPER_AT=2 TAMPER_ONCE="' + latch + '" ')
+test.file_grep(logfile, r'NPASS=(\d+)', 11)
+test.file_grep(logfile, r'Solver died or replied unreadably')
+
+# A solver that rejects a phase diversity round and then stops answering fails that
+# call, leaving its variables alone, and is replaced
+logfile = test.obj_dir + '/sim_phase_mute.log'
+latch = test.obj_dir + '/phase_mute.latch'
+if os.path.exists(latch):
+    os.unlink(latch)
+test.execute(logfile=logfile,
+             run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+             'TAMPER=err_mute TAMPER_AT=9 TAMPER_ONCE="' + latch + '" ')
+test.file_grep(logfile, r'NPASS=(\d+)', 11)
+test.file_grep(logfile, r'Solver died or replied unreadably')
+
 # A reply the unigen2 sampler can't read while it measures the solution space.
 # Falls back to the plain solve, so every randomize still succeeds
 logfile = test.obj_dir + '/sim_ug2_estimate.log'
@@ -75,13 +109,40 @@ test.execute(logfile=logfile,
              'TAMPER=model_trunc TAMPER_AT=8 ')
 test.file_grep(logfile, r'NPASS=(\d+)', 12)
 
-# A value the sampler can't parse, and a status it can't use, seen while it
-# enumerates a cell.
+# A value the sampler can't parse while it measures the solution space.
+# Falls back to the plain solve, so every randomize still succeeds
 logfile = test.obj_dir + '/sim_ug2_value.log'
 test.execute(logfile=logfile,
              run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+             'TAMPER=bad_base TAMPER_AT=11 ')
+test.file_grep(logfile, r'NPASS=(\d+)', 12)
+
+# A status the sampler can't use while it measures the solution space, likewise
+logfile = test.obj_dir + '/sim_ug2_status.log'
+test.execute(logfile=logfile,
+             run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+             'TAMPER=err_once TAMPER_AT=15 ')
+test.file_grep(logfile, r'NPASS=(\d+)', 12)
+
+# A command rejected at the first status of the sampler's cell enumeration fails it.
+# Every randomize still succeeds, and the solver is not restarted
+logfile = test.obj_dir + '/sim_ug2_error.log'
+latch = test.obj_dir + '/ug2_error.latch'
+if os.path.exists(latch):
+    os.unlink(latch)
+test.execute(logfile=logfile,
+             run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+             'TAMPER=err_extra TAMPER_AT=673 TAMPER_ONCE="' + latch + '" ')
+test.file_grep(logfile, r'NPASS=(\d+)', 12)
+test.file_grep(logfile, r'Solver did not answer with a status')
+test.file_grep_not(logfile, r'Solver died')
+
+# A malformed phase value reply fails that one call; later calls still pass
+logfile = test.obj_dir + '/sim_phase_value.log'
+test.execute(logfile=logfile,
+             run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
              'TAMPER=bad_base TAMPER_AT=5 ')
-test.file_grep(logfile, r'NPASS=(\d+)', 9)
+test.file_grep(logfile, r'NPASS=(\d+)', 11)
 
 # A reply naming a variable the sampler didn't ask for.
 logfile = test.obj_dir + '/sim_ug2_var.log'

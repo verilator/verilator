@@ -53,8 +53,10 @@ module t;
       else `checkd(p.a, 8'd5);
       rc = s.randomize();
       if (rc != 0) npass++;
+      ph.y = 4'd0;
       rc = ph.randomize();
       if (rc != 0) npass++;
+      else `checkd(ph.y, 4'd0);
     end
     $write("NPASS=%0d\n", npass);
     $write("*-* All Finished *-*\n");
