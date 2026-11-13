@@ -902,10 +902,8 @@ class FsmDetectVisitor final : public VNVisitor {
     // this pass after earlier normalization.
     static bool isSimpleResetCond(AstNodeExpr* condp) { return VN_IS(condp, VarRef); }
 
-    // The body of 'if (!rst) body', which is how V3Const writes an empty reset branch
-    // 'if (rst) ; else body' when no other coverage keeps it.  Any negated condition is
-    // accepted, as line coverage already accepts 'if (cond) ; else body' for any condition,
-    // and turns a hand-written 'if (!c) body' into that form by adding a counted else.
+    // Body of 'if (!rst) body', V3Const's fold of an empty reset 'if (rst) ; else body'.
+    // Any negation matches, as line coverage accepts any 'if (c) ; else body'.
     static AstNode* emptyResetBodyp(AstIf* ifp) {
         if (ifp->elsesp() || !VN_IS(ifp->condp(), Not)) return nullptr;
         return skipLeadingIgnorableStmt(ifp->thensp());
@@ -1577,7 +1575,6 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarScope* nextVscp = nullptr;
         if (AstIf* const ifp = VN_CAST(nodep, If)) {
             // Any reset condition is accepted; only a plain signal is described
-            // V3Const writes an empty reset branch 'if (rst) ; else body' as 'if (!rst) body'
             AstNode* const resetsp = ifp->elsesp() ? ifp->thensp() : nullptr;
             AstNode* const commitp = ifp->elsesp() ? ifp->elsesp() : emptyResetBodyp(ifp);
             if (!commitp) return false;
