@@ -970,19 +970,17 @@ void V3PreProcImp::addLineComment(int enterExit) {
 }
 
 void V3PreProcImp::dumpDefines(std::ostream& os) {
-    for (DefinesMap::const_iterator it = m_defines.begin(); it != m_defines.end(); ++it) {
-        os << "`define " << it->first;
+    for (const auto& itr : m_defines) {
+        os << "`define " << itr.first;
         // No need to print "()" below as already part of params()
-        if (!it->second.params().empty()) os << it->second.params();
-        if (!it->second.value().empty()) os << " " << it->second.value();
+        if (!itr.second.params().empty()) os << itr.second.params();
+        if (!itr.second.value().empty()) os << " " << itr.second.value();
         os << '\n';
     }
 }
 
 void V3PreProcImp::candidateDefines(VSpellCheck* spellerp) {
-    for (DefinesMap::const_iterator it = m_defines.begin(); it != m_defines.end(); ++it) {
-        spellerp->pushCandidate("`"s + it->first);
-    }
+    for (const auto& itr : m_defines) spellerp->pushCandidate("`"s + itr.first);
 }
 
 int V3PreProcImp::getRawToken() {

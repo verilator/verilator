@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import os
+import shlex
 import sys
 import vltest_bootstrap
 
@@ -26,7 +27,7 @@ def run_scan(sources, logfile):
         '--backend',
         'gcc',
         '--cxx',
-        os.environ.get('CXX', 'c++'),
+        shlex.quote(os.environ.get('CXX', 'c++')),
         '--cxxflags=-std=c++23',
         '--cppflags=',
         '--opt-fast=-O0',

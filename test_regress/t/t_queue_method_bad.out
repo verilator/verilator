@@ -35,25 +35,25 @@
                                     : ... note: In instance 't'
    32 |     qi = q.size with (1);   
       |                 ^~~~
-%Error: t/t_queue_method_bad.v:34:7: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+%Error: t/t_queue_method_bad.v:34:7: Illegal assignment between unpacked aggregate and integral type (IEEE 1800-2023 7.6)
                                    : ... note: In instance 't'
                                    : ... Left-hand data type: 'int'
                                    : ... Right-hand data type: 'int$[$]'
    34 |     i = q.find_index(x) with (x == 2);   
       |       ^
-%Error: t/t_queue_method_bad.v:35:7: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+%Error: t/t_queue_method_bad.v:35:7: Illegal assignment between unpacked aggregate and integral type (IEEE 1800-2023 7.6)
                                    : ... note: In instance 't'
                                    : ... Left-hand data type: 'int'
                                    : ... Right-hand data type: 'int$[$]'
    35 |     i = q.find(x) with (x == 2);   
       |       ^
-%Error: t/t_queue_method_bad.v:36:8: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+%Error: t/t_queue_method_bad.v:36:8: Illegal assignment between unpacked aggregate and integral type (IEEE 1800-2023 7.6)
                                    : ... note: In instance 't'
                                    : ... Left-hand data type: 'int'
                                    : ... Right-hand data type: 'IData$[$]'
    36 |     it = q.find_first_index(x) with (x == 2);   
       |        ^
-%Error: t/t_queue_method_bad.v:37:7: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+%Error: t/t_queue_method_bad.v:37:7: Illegal assignment between unpacked aggregate and integral type (IEEE 1800-2023 7.6)
                                    : ... note: In instance 't'
                                    : ... Left-hand data type: 'int'
                                    : ... Right-hand data type: 'string$[$]'

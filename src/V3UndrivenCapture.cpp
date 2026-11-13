@@ -147,6 +147,7 @@ const std::vector<AstVar*>& V3UndrivenCapture::computeWriteSummary(const AstNode
     info.state = State::VISITING;
 
     info.writeSummary.clear();
+    info.writeSummary.reserve(info.directWrites.size());
 
     // Prevent duplicates across all sources that can contribute to a write summary (direct writes
     // and call chains)

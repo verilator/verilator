@@ -16,6 +16,6 @@ test.compile(verilator_flags2=['--stats'])
 test.execute()
 
 # The logic of the 3 instances of 'sub' is shared
-test.file_grep(test.stats, r'Optimizations, Combined CFuncs\s+(\d+)', 8 if test.vltmt else 4)
+test.file_grep(test.stats, r'Optimizations, Combined CFuncs\s+(\d+)', 12 if test.vltmt else 10)
 
 test.passes()
