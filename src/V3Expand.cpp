@@ -539,7 +539,8 @@ class ExpandVisitor final : public VNVisitor {
             } else {  // Long
                 UASSERT_OBJ(!(lhsp->isQuad() || lhsp->isWide()), nodep,
                             "extending larger thing into smaller?");
-                lhsp->dtypeFrom(nodep);  // Just mark it, else nop
+                // Cast, as C++ would promote a narrower value to signed int, e.g. under '~'
+                newp = new AstCCast{nodep->fileline(), lhsp, nodep};
             }
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }

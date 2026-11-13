@@ -237,6 +237,7 @@ private:
 
     // clang-format off
     VStringSet m_cppFiles;     // argument: C++ files to link against
+    VStringSet m_moduleFiles;  // argument: C++ module interface files
     VStringList m_cFlags;      // argument: user CFLAGS
     VStringList m_ldLibs;      // argument: user LDFLAGS
     VStringList m_ldLibFiles;  // argument: library files, subset of m_ldLibs
@@ -277,6 +278,7 @@ private:
     bool m_coverageToggle = false;  // main switch: --coverage-toggle
     bool m_coverageUnderscore = false;  // main switch: --coverage-underscore
     bool m_coverageUser = false;    // main switch: --coverage-func
+    bool m_cxxModules = false;      // main switch: --cxx-modules
     bool m_debugCheck = false;      // main switch: --debug-check
     bool m_debugCollision = false;  // main switch: --debug-collision
     bool m_debugEmitV = false;      // main switch: --debug-emitv
@@ -408,6 +410,7 @@ private:
     int         m_constraintArrayLimit = 64;  // main switch: --constraint-array-limit
     int         m_verilateJobs = -1;  // main switch: --verilate-jobs
 
+    bool        m_compilerMsvc = false;  // compiler selection: --compiler msvc
     int         m_compLimitBlocks = 0;  // compiler selection; number of nested blocks
     int         m_compLimitMembers = 64;  // compiler selection; number of members in struct before make anon array
     int         m_compLimitParens = 240;  // compiler selection; number of nested parens
@@ -445,6 +448,7 @@ private:
     bool m_fCaseDecoder; // main switch: -fno-case-decoder: case decoder conversion
     bool m_fCaseTable;   // main switch: -fno-case-table: case table conversion
     bool m_fCaseTree;    // main switch: -fno-case-tree: case tree conversion
+    bool m_fCoalesce;    // main switch: -fno-coalesce: coalesce copied variables
     bool m_fCombine;     // main switch: -fno-combine: common icode packing
     bool m_fConst;       // main switch: -fno-const: constant folding
     bool m_fConstBeforeDfg = true;  // main switch: -fno-const-before-dfg for testing only!
@@ -767,6 +771,8 @@ public:
     string xInitial() const { return m_xInitial; }
 
     const VStringSet& cppFiles() const { return m_cppFiles; }
+    const VStringSet& moduleFiles() const { return m_moduleFiles; }
+    bool cxxModules() const { return m_cxxModules || !m_moduleFiles.empty(); }
     const VStringList& cFlags() const { return m_cFlags; }
     const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
     const VStringList& ldLibFiles() const { return m_ldLibFiles; }
@@ -795,6 +801,7 @@ public:
     bool fCaseDecoder() const { return m_fCaseDecoder; }
     bool fCaseTable() const { return m_fCaseTable; }
     bool fCaseTree() const { return m_fCaseTree; }
+    bool fCoalesce() const { return m_fCoalesce; }
     bool fCombine() const { return m_fCombine; }
     bool fConst() const { return m_fConst; }
     bool fConstBeforeDfg() const { return m_fConstBeforeDfg; }

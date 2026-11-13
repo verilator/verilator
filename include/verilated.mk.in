@@ -38,6 +38,8 @@ CFG_CXXFLAGS_STD = @CFG_CXXFLAGS_STD@
 CFG_CXXFLAGS_STD_NEWEST = @CFG_CXXFLAGS_STD_NEWEST@
 # Compiler flags to use to turn off unused and generated code warnings, such as -Wno-div-by-zero
 CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
+# Compiler flag to disable C++ modules for generated code and the runtime
+CFG_CXXFLAGS_NO_MODULES = @CFG_CXXFLAGS_NO_MODULES@
 # Compiler flags that turn on extra warnings
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
 # Compiler flags that enable coroutine support
@@ -62,6 +64,9 @@ CFG_LDLIBS_DYNAMIC = @CFG_LDLIBS_DYNAMIC@
 VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
 VERILATOR_INCLUDER = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_includer
 VERILATOR_CCACHE_REPORT = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_ccache_report
+
+VERILATOR_MODULE_DEPS = $(PYTHON3) $(VERILATOR_ROOT)/bin/verilator_module_deps
+VK_MODULE_BACKEND ?= $(if $(findstring clang,$(shell $(CXX) --version 2>/dev/null)),clang,$(if $(or $(findstring cl.exe,$(CXX)),$(filter cl cl.exe,$(notdir $(CXX)))),msvc,gcc))
 
 ######################################################################
 # CCACHE flags (via environment as no command line option available)
@@ -103,6 +108,11 @@ VK_CPPFLAGS_ALWAYS += \
 # Left undefined when there is no generated model, so misuse fails at compile time
 ifneq ($(VM_PREFIX_INCLUDE),)
   VK_CPPFLAGS_ALWAYS += -DVM_PREFIX_INCLUDE="$(VM_PREFIX_INCLUDE)"
+endif
+
+# Left undefined when there is no generated model, so misuse fails at compile time
+ifneq ($(VM_PREFIX),)
+  VK_CPPFLAGS_ALWAYS += -DVM_PREFIX=$(VM_PREFIX)
 endif
 
 # Left undefined when the design has no DPI, so misuse fails at compile time
@@ -214,15 +224,13 @@ VK_PCH_SLOW = $(VK_PCH_H).slow.gch
 VK_PCH_I_FAST = $(CFG_CXXFLAGS_PCH_I) $(VM_PREFIX)__pch.h.fast$(CFG_GCH_IF_CLANG)
 VK_PCH_I_SLOW = $(CFG_CXXFLAGS_PCH_I) $(VM_PREFIX)__pch.h.slow$(CFG_GCH_IF_CLANG)
 
-ifneq ($(filter -fmodule-header% -fmodule-only,$(CPPFLAGS) $(CXXFLAGS)),)
-  $(error Unsupported: -fmodule-header/-fmodule-only; use -fmodules, -fmodules-ts, or -fmodule-file for user C++ files)
-endif
 VK_MODULES = $(filter -fmodules -fmodules-ts -fmodule-file%,$(CPPFLAGS) $(CXXFLAGS))
+VK_MODEL_CPPFLAGS = $(filter-out -fmodule-header% -fmodule-only,$(CXXFLAGS) $(CPPFLAGS))
 VK_MODEL_CXXFLAGS =
 VK_USER_PCH_FAST = $(VK_PCH_FAST)
 VK_USER_PCH_I_FAST = $(VK_PCH_I_FAST)
 ifneq ($(VK_MODULES),)
-  VK_MODEL_CXXFLAGS = -fno-modules
+  VK_MODEL_CXXFLAGS = $(CFG_CXXFLAGS_NO_MODULES)
   VK_USER_PCH_FAST =
   VK_USER_PCH_I_FAST =
 endif
@@ -300,7 +308,10 @@ endif
 %.verilator_deplist.tmp:
 	@echo "" > $@
 
-$(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
+# Module-only builds have no object rules, so this is what builds their CMIs.
+# Otherwise module objects are built by __modules.mk; the model objects above
+# are compiled with modules disabled.
+$(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS) | $(VK_MODULE_CMIS)
 
 ######################################################################
 ### Compile rules
@@ -313,24 +324,24 @@ ifneq ($(VM_DEFAULT_RULES),0)
 # These rules put OPT_FAST/OPT_SLOW/OPT_GLOBAL before the other flags to
 # allow USER_CPPFLAGS to override them
   %.o: %.cpp
-	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) -c -o $@ $<
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) -c -o $@ $<
 
   $(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_FAST)
-	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(VK_PCH_I_FAST) -c $<
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(VK_PCH_I_FAST) -c $<
 
   $(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_SLOW)
-	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(VK_PCH_I_SLOW) -c $<
+	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(VK_PCH_I_SLOW) -c $<
 
   $(VK_GLOBAL_OBJS): %.o: %.cpp
-	$(OBJCACHE) $(CXX) $(OPT_GLOBAL) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) -c -o $@ $<
+	$(OBJCACHE) $(CXX) $(OPT_GLOBAL) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) -c -o $@ $<
 
 # Precompile a header file
 # PCH's compiler flags must match exactly the rules' above FAST/SLOW
 # arguments used for the .cpp files, or the PCH file won't be used.
   %.fast.gch: %
-	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
   %.slow.gch: %
-	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
+	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
 
 endif
 
@@ -392,7 +403,8 @@ debug-make::
 	@echo VM_SUPPORT_SLOW: $(VM_SUPPORT_SLOW)
 	@echo
 
-ifneq ($(VK_MODULES),)
+# GCC module dependencies refer to '.c++-module' prerequisites
+ifneq ($(VK_MODULES)$(VK_MODULE_CMIS)$(VK_MODULE_OBJS),)
 %.c++-module:
 	@:
 endif

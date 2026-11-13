@@ -113,7 +113,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // DpiImportCallVisitor
 
 // Scan node, indicate whether it contains a call to a DPI imported routine.
-class DpiImportCallVisitor final : public VNVisitor {
+class DpiImportCallVisitor final : public VNVisitorConst {
     bool m_hasDpiHazard = false;  // Found a DPI import call.
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     std::unordered_set<const AstCFunc*> m_visitedps;  // Functions already visited
@@ -131,19 +131,19 @@ class DpiImportCallVisitor final : public VNVisitor {
                 UINFO(9, "DPI wrapper '" << nodep->cname() << "' has dpi hazard = " << dpiHazard);
             }
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstNodeCCall* nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         // Enter the function and trace it, once, as functions can be recursive
         if (!m_visitedps.emplace(nodep->funcp()).second) return;
         m_tracingCall = true;
-        iterate(nodep->funcp());
+        iterateConst(nodep->funcp());
     }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
     // CONSTRUCTORS
-    explicit DpiImportCallVisitor(AstNode* nodep) { iterate(nodep); }
+    explicit DpiImportCallVisitor(AstNode* nodep) { iterateConst(nodep); }
 
 public:
     static bool hasDpiHazard(AstNode* nodep) { return DpiImportCallVisitor{nodep}.m_hasDpiHazard; }

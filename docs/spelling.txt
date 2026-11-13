@@ -735,6 +735,7 @@ dehash
 demangling
 dep
 deparametrized
+deps
 deque
 der
 dereference

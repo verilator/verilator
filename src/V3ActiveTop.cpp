@@ -85,6 +85,13 @@ class ActiveTopVisitor final : public VNVisitor {
         }
         // Delete actives that can never execute
         if (!sentreep->sensesp()) {
+            // Their NBA commits are deleted too, so V3LifePost must not pair what they commit
+            for (AstNode* const procp : nodep->procspList()) {
+                if (!VN_IS(procp, AlwaysPost)) continue;
+                procp->foreach([](AstVarRef* refp) {
+                    if (refp->access().isWriteOrRW()) refp->varScopep()->optimizeLifePost(false);
+                });
+            }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }

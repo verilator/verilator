@@ -1325,6 +1325,8 @@ class WidthVisitor final : public VNVisitor {
             while (VN_IS(basep, Range)) basep = basep->backp();
             if (nodep->ascending() && !VN_IS(basep, UnpackArrayDType)
                 && !VN_IS(basep, Cell)  // For cells we warn when connecting pins
+                // A packed C-style '[size]' has no written direction, and warns as NONSTD
+                && !(nodep->fromBracket() && VN_IS(basep, NodeDType))
                 && !m_paramsOnly  // Skip during parameter evaluation
                 && !inDeadModule && !inParameterizedTemplate && !inTypeTable) {
                 nodep->v3warn(ASCRANGE, "Ascending bit range vector: left < right of bit range: ["
@@ -3852,8 +3854,11 @@ class WidthVisitor final : public VNVisitor {
                                           valuep->dtypep()->skipRefToEnump());
         AstAssign* const assignp
             = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, valuep};
-        userIterateAndNext(assignp, nullptr);
-        bits.m_stmtsp = AstNode::addNext(bits.m_stmtsp, assignp);
+        // Width the assignment under a holder, as iterating requires a node with a parent
+        AstBegin* const holderp = new AstBegin{fl, "[EditWrapper]", assignp, false};
+        userIterateAndNext(holderp->stmtsp(), nullptr);
+        bits.m_stmtsp = AstNode::addNext(bits.m_stmtsp, holderp->stmtsp()->unlinkFrBack());
+        VL_DO_DANGLING(holderp->deleteTree(), holderp);
         return new AstVarRef{fl, varp, VAccess::READ};
     }
     // Return 'valuep' evaluated after the assignments to temporaries of 'bits'
@@ -4907,7 +4912,7 @@ class WidthVisitor final : public VNVisitor {
             if (AstNode* const foundp = m_memberMap.findMember(classp, nodep->name())) {
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
                     if (!varp->didWidth()) userIterate(varp, nullptr);
-                    if (varp->lifetime().isStatic() || varp->isParam()) {
+                    if (varp->lifetime().isStatic()) {
                         // Static members are moved outside the class, so they shouldn't be
                         // accessed by member select on a class object
                         AstVarRef* const varRefp
@@ -7746,8 +7751,11 @@ class WidthVisitor final : public VNVisitor {
                                    << warnDTypes(nodep, lhsDtp, rhsDtp));
                 }
                 // Variable references were checked above, this catches e.g. method call results
-                if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType() && !rhsRefp) {
-                    nodep->v3error("Illegal assignment betwen unpacked aggregate and "
+                // and member selects, such as a clockvar through a virtual interface.
+                // A streaming target legally unpacks an aggregate (IEEE 1800-2023 11.4.14)
+                if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType()
+                    && (!lhsRefp || !rhsRefp) && !VN_IS(nodep->lhsp(), NodeStream)) {
+                    nodep->v3error("Illegal assignment between unpacked aggregate and "
                                    "integral type (IEEE 1800-2023 7.6)"
                                    << warnDTypes(nodep, lhsDtp, rhsDtp));
                 }
