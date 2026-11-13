@@ -522,6 +522,7 @@ PY_PROGRAMS = \
   bin/verilator_includer \
   bin/verilator_module_deps \
   bin/verilator_profcfunc \
+  bin/verilator_trace_diff \
   docs/bin/vl_sphinx_extract \
   docs/bin/vl_sphinx_fix \
   docs/guide/conf.py \

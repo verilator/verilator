@@ -30,6 +30,7 @@ check(os.environ["VERILATOR_ROOT"] + "/bin/verilator_module_deps")
 check(os.environ["VERILATOR_ROOT"] + "/bin/verilator_ccache_report")
 check(os.environ["VERILATOR_ROOT"] + "/bin/verilator_gantt")
 check(os.environ["VERILATOR_ROOT"] + "/bin/verilator_profcfunc")
+check(os.environ["VERILATOR_ROOT"] + "/bin/verilator_trace_diff")
 
 if os.path.exists(os.environ["VERILATOR_ROOT"] + "/bin/verilator_difftree"):
     check(os.environ["VERILATOR_ROOT"] + "/bin/verilator_difftree")

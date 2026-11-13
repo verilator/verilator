@@ -1,0 +1,357 @@
+#!/usr/bin/env python3
+# mypy: disallow-untyped-defs
+# pylint: disable=C0114,C0115,C0116,C0209,R0902,R0911,R0912,R0913,R0914,R0915,R0917
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+######################################################################
+
+import argparse
+import os
+import re
+import sys
+from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
+from typing import NoReturn
+
+TIME_SCALE_FS = {
+    's': 10**15,
+    'ms': 10**12,
+    'us': 10**9,
+    'ns': 10**6,
+    'ps': 10**3,
+    'fs': 1,
+}
+
+SIGNAL_BITS = 'bits'
+SIGNAL_REAL = 'real'
+SIGNAL_STRING = 'string'
+
+
+def fatal(message: str) -> NoReturn:
+    sys.stderr.write("%Error: " + message + "\n")
+    sys.exit(2)
+
+
+@dataclass
+class Signal:
+    width: int
+    kind: str
+
+
+@dataclass
+class Trace:
+    filename: str
+    signals: dict[str, Signal]
+    events: list[tuple[int, str, str]]
+    scale_fs: int
+
+
+class VcdParser:
+
+    def __init__(self, filename: str) -> None:
+        self.filename = filename
+        self.scope: list[str] = []
+        self.signals: dict[str, Signal] = {}
+        self.names_by_id: dict[str, list[str]] = {}
+        self.events: list[tuple[int, str, str]] = []
+        self.time = 0
+        self.scale_fs = 0
+        self.in_dump = False
+        self.saw_enddefinitions = False
+
+    def error(self, lineno: int, message: str) -> NoReturn:
+        fatal(self.filename + ":" + str(lineno) + ": " + message)
+
+    def parse(self) -> Trace:
+        pending: list[str] | None = None
+        pending_lineno = 0
+        with open(self.filename, encoding='utf8', errors='replace') as fh:
+            for lineno, raw in enumerate(fh, 1):
+                line = raw.strip()
+                if not line:
+                    continue
+                if pending is not None:
+                    pending.append(line)
+                    tokens = line.split()
+                    if '$end' in tokens:
+                        self.process_header(pending_lineno, ' '.join(pending).split())
+                        pending = None
+                    continue
+                tokens = line.split()
+                if line.startswith('$'):
+                    command = tokens[0]
+                    if command == '$end':
+                        self.in_dump = False
+                    elif command in ('$comment', '$date', '$scope', '$timescale', '$upscope',
+                                     '$var', '$version'):
+                        if '$end' in tokens:
+                            self.process_header(lineno, tokens)
+                        else:
+                            pending = [line]
+                            pending_lineno = lineno
+                    elif command in ('$dumpall', '$dumpon', '$dumpoff', '$dumpvars'):
+                        if command == '$dumpoff':
+                            self.set_unknown()
+                        self.in_dump = '$end' not in tokens
+                    elif command == '$enddefinitions':
+                        self.saw_enddefinitions = True
+                    else:
+                        self.error(lineno, "Unsupported VCD directive '" + command + "'")
+                    continue
+                if self.in_dump:
+                    if tokens == ['$end']:
+                        self.in_dump = False
+                    else:
+                        self.process_change(lineno, line)
+                elif line.startswith('#'):
+                    try:
+                        self.time = int(line[1:])
+                    except ValueError:
+                        self.error(lineno, "Invalid time stamp '" + line + "'")
+                else:
+                    self.process_change(lineno, line)
+        if pending is not None:
+            self.error(pending_lineno, "Unterminated VCD directive")
+        if not self.saw_enddefinitions:
+            self.error(1, "Missing $enddefinitions")
+        self.events.sort(key=lambda event: event[0])
+        return Trace(self.filename, self.signals, self.events, self.scale_fs)
+
+    def process_header(self, lineno: int, tokens: list[str]) -> None:
+        if tokens[-1] != '$end':
+            self.error(lineno, "Missing $end")
+        body = tokens[1:-1]
+        command = tokens[0]
+        if command == '$timescale':
+            scale = re.sub(r'\s+', '', ''.join(body))
+            match = re.fullmatch(r'(\d+)(s|ms|us|ns|ps|fs)', scale, re.IGNORECASE)
+            if not match:
+                self.error(lineno, "Invalid $timescale '" + scale + "'")
+            self.scale_fs = int(match.group(1)) * TIME_SCALE_FS[match.group(2).lower()]
+        elif command == '$scope':
+            if len(body) < 2:
+                self.error(lineno, "Invalid $scope")
+            self.scope.append(' '.join(body[1:]))
+        elif command == '$upscope':
+            if not self.scope:
+                self.error(lineno, "$upscope without $scope")
+            self.scope.pop()
+        elif command == '$var':
+            if len(body) < 4:
+                self.error(lineno, "Invalid $var")
+            var_type = body[0].lower()
+            try:
+                width = int(body[1])
+            except ValueError:
+                self.error(lineno, "Invalid $var width '" + body[1] + "'")
+            ident = body[2]
+            name = re.sub(r'\s*\[[^\]]*\]$', '', ' '.join(body[3:])).strip()
+            if not name:
+                self.error(lineno, "Invalid $var name")
+            if var_type in ('real', 'realtime'):
+                kind = SIGNAL_REAL
+            elif var_type == 'string':
+                kind = SIGNAL_STRING
+            else:
+                kind = SIGNAL_BITS
+            full_name = '.'.join(self.scope + [name])
+            if full_name in self.signals:
+                self.error(lineno, "Duplicate signal '" + full_name + "'")
+            self.signals[full_name] = Signal(width, kind)
+            self.names_by_id.setdefault(ident, []).append(full_name)
+
+    def event_time(self) -> int:
+        return self.time * (self.scale_fs or 1)
+
+    def set_unknown(self) -> None:
+        time = self.event_time()
+        for name in sorted(self.signals):
+            self.events.append((time, name, self.unknown(self.signals[name])))
+
+    @staticmethod
+    def unknown(signal: Signal) -> str:
+        if signal.kind == SIGNAL_BITS:
+            return 'x' * signal.width
+        return 'x'
+
+    def process_change(self, lineno: int, line: str) -> None:
+        first = line[0].lower()
+        if first in '01xz':
+            value = first
+            ident = line[1:].strip()
+        elif first == 's':
+            rest = line[1:]
+            if ' ' not in rest:
+                self.error(lineno, "Invalid string value change '" + line + "'")
+            value, ident = rest.rsplit(' ', 1)
+            ident = ident.strip()
+        elif first in 'br':
+            fields = line.split()
+            if len(fields) != 2:
+                self.error(lineno, "Invalid value change '" + line + "'")
+            value = fields[0][1:]
+            ident = fields[1]
+        else:
+            self.error(lineno, "Unsupported value change '" + line + "'")
+        if not ident:
+            self.error(lineno, "Missing identifier in value change '" + line + "'")
+        names = self.names_by_id.get(ident)
+        if names is None:
+            self.error(lineno, "Unknown identifier '" + ident + "'")
+        time = self.event_time()
+        for name in names:
+            self.events.append((time, name, self.convert(lineno, name, first, value)))
+
+    def convert(self, lineno: int, name: str, first: str, value: str) -> str:
+        signal = self.signals[name]
+        if signal.kind == SIGNAL_REAL:
+            if first != 'r':
+                self.error(lineno, "Signal '" + name + "' requires a real value")
+            try:
+                return str(Decimal(value))
+            except InvalidOperation:
+                self.error(lineno, "Invalid real value '" + value + "'")
+        if signal.kind == SIGNAL_STRING:
+            if first != 's':
+                self.error(lineno, "Signal '" + name + "' requires a string value")
+            return value
+        if first in '01xz':
+            bits = first
+        elif first == 'b':
+            bits = value.lower()
+        else:
+            self.error(lineno, "Signal '" + name + "' requires a binary value")
+        if any(bit not in '01xz' for bit in bits):
+            self.error(lineno, "Invalid binary value '" + value + "'")
+        if len(bits) > signal.width:
+            self.error(lineno, "Value '" + value + "' is wider than signal '" + name + "'")
+        return bits.rjust(signal.width, '0')
+
+
+def to_vcd(filename: str) -> str:
+    suffix = os.path.splitext(filename)[1].lower()
+    if suffix == '.vcd':
+        return filename
+    fatal("Unsupported trace file '" + filename + "'; expected .vcd")
+
+
+def check_signals(trace1: Trace, trace2: Trace) -> None:
+    names1 = set(trace1.signals)
+    names2 = set(trace2.signals)
+    messages = []
+    for name in sorted(names1 - names2):
+        messages.append("Signal only in " + trace1.filename + ": " + name)
+    for name in sorted(names2 - names1):
+        messages.append("Signal only in " + trace2.filename + ": " + name)
+    for name in sorted(names1 & names2):
+        signal1 = trace1.signals[name]
+        signal2 = trace2.signals[name]
+        if signal1.kind == SIGNAL_BITS and signal1.width != signal2.width:
+            messages.append("Signal '" + name + "' width differs: " + str(signal1.width) +
+                            " and " + str(signal2.width))
+        if signal1.kind != signal2.kind:
+            messages.append("Signal '" + name + "' type differs: " + signal1.kind + " and " +
+                            signal2.kind)
+    if messages:
+        sys.stderr.write("%Error: Trace signal sets differ\n")
+        for message in messages:
+            sys.stderr.write("%Error: " + message + "\n")
+        sys.exit(2)
+
+
+def first_difference(trace1: Trace, trace2: Trace) -> tuple[int, str, str, str] | None:
+    states1 = {name: VcdParser.unknown(signal) for name, signal in trace1.signals.items()}
+    states2 = {name: VcdParser.unknown(signal) for name, signal in trace2.signals.items()}
+    events1 = trace1.events
+    events2 = trace2.events
+    index1 = 0
+    index2 = 0
+    while index1 < len(events1) or index2 < len(events2):
+        time1 = events1[index1][0] if index1 < len(events1) else None
+        time2 = events2[index2][0] if index2 < len(events2) else None
+        if time2 is None or (time1 is not None and time1 < time2):
+            assert time1 is not None
+            time = time1
+        else:
+            assert time2 is not None
+            time = time2
+        changed = set()
+        while index1 < len(events1) and events1[index1][0] == time:
+            _, name, value = events1[index1]
+            states1[name] = value
+            changed.add(name)
+            index1 += 1
+        while index2 < len(events2) and events2[index2][0] == time:
+            _, name, value = events2[index2]
+            states2[name] = value
+            changed.add(name)
+            index2 += 1
+        for name in sorted(changed):
+            if states1[name] != states2[name]:
+                return time, name, states1[name], states2[name]
+    return None
+
+
+def clock_rises(trace: Trace, clock: str) -> list[int]:
+    signal = trace.signals.get(clock)
+    if signal is None:
+        fatal("Clock signal '" + clock + "' not found in " + trace.filename)
+    if signal.kind != SIGNAL_BITS or signal.width != 1:
+        fatal("Clock signal '" + clock + "' must be a 1-bit signal")
+    state = 'x'
+    rises = []
+    for time, name, value in trace.events:
+        if name == clock:
+            if state == '0' and value == '1':
+                rises.append(time)
+            state = value
+    return rises
+
+
+def format_time(trace: Trace, time_fs: int) -> str:
+    scale = trace.scale_fs if trace.scale_fs else 1
+    text = format(Decimal(time_fs) / Decimal(scale), 'f')
+    if '.' in text:
+        text = text.rstrip('0').rstrip('.')
+    return text
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        prog='verilator_trace_diff',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description='Compare two VCD or FST traces and report the first difference.')
+    parser.add_argument('--clock',
+                        metavar='<signal>',
+                        help='clock signal used to report the cycle of the difference')
+    parser.add_argument('trace1', metavar='<trace1>', help='first VCD or FST trace')
+    parser.add_argument('trace2', metavar='<trace2>', help='second VCD or FST trace')
+    args = parser.parse_args()
+
+    path1 = to_vcd(args.trace1)
+    path2 = to_vcd(args.trace2)
+    trace1 = VcdParser(path1).parse()
+    trace2 = VcdParser(path2).parse()
+    if (trace1.scale_fs != trace2.scale_fs and (not trace1.scale_fs or not trace2.scale_fs)):
+        missing = trace1 if not trace1.scale_fs else trace2
+        fatal("Trace '" + missing.filename + "' has no $timescale")
+    check_signals(trace1, trace2)
+    rises = clock_rises(trace1, args.clock) if args.clock else []
+    difference = first_difference(trace1, trace2)
+    if difference is None:
+        return 0
+    time, name, value1, value2 = difference
+    message = "First difference at time " + format_time(trace1, time)
+    if args.clock:
+        message += " (cycle " + str(sum(1 for rise in rises if rise <= time)) + ")"
+    message += ": " + name + " (trace1=" + value1 + ", trace2=" + value2 + ")"
+    print(message)
+    return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())
