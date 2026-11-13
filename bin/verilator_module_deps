@@ -585,6 +585,71 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
     return '\n'.join(lines)
 
 
+def module_name(module: dict[str, Any]) -> str:
+    return str(module['provides'][0]) if module['provides'] else str(module['stem'])
+
+
+def module_graph(args: argparse.Namespace, modules: list[dict[str, Any]],
+                 headers: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    entries: list[dict[str, Any]] = []
+    edges: list[dict[str, str]] = []
+    for module in sorted(modules, key=module_name):
+        provides = list(module['provides'])
+        entries.append({
+            'name': module_name(module),
+            'source': module['source'],
+            'object': module['obj'],
+            'cmi': gcc_module_cmi(module) if args.backend == 'gcc' and provides else '',
+            'pcm': module['pcm'] if args.backend == 'clang' and provides else '',
+            'provides': provides,
+            'requires': list(module['requires']),
+        })
+        for provider in module['direct_deps']:
+            edges.append({
+                'from': module_name(module),
+                'to': module_name(provider),
+                'kind': 'module',
+            })
+    for header in headers.values():
+        entries.append({
+            'name': header['cmi'],
+            'source': header['path'],
+            'object': '',
+            'cmi': header['cmi'],
+            'pcm': '',
+            'provides': [],
+            'requires': [],
+        })
+        edges.append({
+            'from': header['cmi'],
+            'to': header['path'],
+            'kind': 'header',
+        })
+    entries.sort(key=lambda entry: (entry['name'], entry['source']))
+    edges.sort(key=lambda edge: (edge['from'], edge['to'], edge['kind']))
+    return {'backend': args.backend, 'modules': entries, 'edges': edges}
+
+
+def dot_id(name: str) -> str:
+    if re.match(r'^[A-Za-z_][A-Za-z0-9_.]*$', name):
+        return name
+    return json.dumps(name)
+
+
+def dot_graph(graph: dict[str, Any]) -> str:
+    lines = ['digraph modules {']
+    lines.append('  graph [label=' + json.dumps('backend: ' + str(graph['backend'])) + '];')
+    nodes = sorted({entry['name'] for entry in graph['modules']}
+                   | {edge['to'] for edge in graph['edges']})
+    for node in nodes:
+        lines.append('  ' + dot_id(node) + ';')
+    for edge in graph['edges']:
+        lines.append('  ' + dot_id(edge['from']) + ' -> ' + dot_id(edge['to']) + ' [label=' +
+                     json.dumps(edge['kind']) + '];')
+    lines.append('}')
+    return '\n'.join(lines) + '\n'
+
+
 def scan(args: argparse.Namespace) -> None:
     cppflags = parse_flags(args.cppflags)
     cxxflags = parse_flags(args.cxxflags)
@@ -658,13 +723,12 @@ def scan(args: argparse.Namespace) -> None:
     else:
         content = generate_clang(modules)
 
-    old_content = None
-    if os.path.exists(args.output):
-        with open(args.output, 'r', encoding='utf8') as fh:
-            old_content = fh.read()
-    if content != old_content:
-        with open(args.output, 'w', encoding='utf8') as fh:
-            fh.write(content)
+    graph = module_graph(args, modules, headers)
+    if args.json:
+        write_if_changed(args.json, json.dumps(graph, indent=2, sort_keys=True) + '\n')
+    if args.dot:
+        write_if_changed(args.dot, dot_graph(graph))
+    write_if_changed(args.output, content)
 
 
 def main() -> None:
