@@ -125,7 +125,8 @@ void* VlWorkerThread::start(void* argp) {
 //=============================================================================
 // VlThreadPool
 
-VlThreadPool::VlThreadPool(VerilatedContext* contextp, unsigned nThreads) {
+VlThreadPool::VlThreadPool(VerilatedContext* contextp, unsigned nThreads)
+    : m_contextp{contextp} {
     for (unsigned i = 0; i < nThreads; ++i) {
         m_workers.push_back(new VlWorkerThread{contextp});
         m_unassignedWorkers.push(i);
@@ -136,6 +137,24 @@ VlThreadPool::VlThreadPool(VerilatedContext* contextp, unsigned nThreads) {
 VlThreadPool::~VlThreadPool() {
     // Each ~WorkerThread will wait for its thread to exit.
     for (auto& i : m_workers) delete i;
+    for (VlWorkerThread* const workerp : m_idleWorkers) delete workerp;
+}
+
+VlWorkerThread* VlThreadPool::acquireWorker() VL_MT_SAFE_EXCLUDES(m_mutex) {
+    {
+        const VerilatedLockGuard lock{m_mutex};
+        if (!m_idleWorkers.empty()) {
+            VlWorkerThread* const workerp = m_idleWorkers.back();
+            m_idleWorkers.pop_back();
+            return workerp;
+        }
+    }
+    return new VlWorkerThread{m_contextp};
+}
+
+void VlThreadPool::releaseWorker(VlWorkerThread* workerp) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock{m_mutex};
+    m_idleWorkers.push_back(workerp);
 }
 
 std::string VlThreadPool::numaAssign(VerilatedContext* contextp) {

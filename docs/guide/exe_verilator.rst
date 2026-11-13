@@ -25,12 +25,16 @@ Summary:
    rule that uses these files when linking the module's executable. This
    generally is only useful when used with the :vlopt:`--exe` option.
 
-.. option:: <file.c/.cc/.cpp/.cxx>
+.. option:: <file.c/.cc/.cpp/.cppm/.ixx/.cxx>
 
    Used with :vlopt:`--exe` to specify optional C++ files to be linked in
    with the Verilog code. The file path should either be absolute, or
    relative to where the make will be executed from, or add to your
    makefile's VPATH the appropriate directory to find the file.
+
+   ``.cppm`` and ``.ixx`` files are C++20 module interface units.  Pass
+   :vlopt:`--cxx-modules`; listing a ``.cppm``/``.ixx`` file on the command
+   line enables the module build by itself.
 
    See also :vlopt:`-CFLAGS` and :vlopt:`-LDFLAGS` options, which are
    useful when the C++ files need special compiler flags. The compiler
@@ -213,34 +217,10 @@ Summary:
    When make is run on the generated makefile, these will be passed to the
    C++ compiler (g++/clang++/msvc++).
 
-   C++ modules may be used in user-provided C++ files.  Verilator compiles
-   its generated code with modules disabled, so the precompiled header (PCH)
-   remains usable, and keeps the module flags for user files.  Verilator does
-   not build module interface units or module CMIs; imported modules must be
-   prebuilt before building the Verilated model.
-
-   With GCC, pass :command:`-CFLAGS -fmodules` and prebuild the standard
-   library module in the model object directory:
-
-   .. code-block:: bash
-
-      cd obj_dir
-      g++ -std=c++23 -fmodules --compile-std-module -c -x c++ /dev/null -o /dev/null
-
-   With Clang, precompile libc++'s ``std.cppm`` and pass
-   :command:`-CFLAGS -fmodule-file=std=std.pcm`.  Clang's
-   :command:`-fmodules` enables Clang modules, not C++20 modules.
-   The :command:`-fmodule-header` and :command:`-fmodule-only` options are not
-   supported.
-
-   For modules defined by the user, precompile the module interface unit and
-   pass the resulting object file to Verilator as a ``.o`` input.  Keep the
-   module CMI in the model object directory, or pass it with
-   :command:`-CFLAGS -fmodule-file` when using Clang.
-
-   User translation units that use modules do not use the PCH; include the
-   Verilator headers explicitly.  ``--compiler-include`` headers must also be
-   included explicitly in those translation units.
+   For C++ modules, prefer :vlopt:`--cxx-modules`.
+   :command:`-CFLAGS` remains available for passing compiler flags
+   directly, including module flags such as
+   :command:`-fmodule-file=name=path`.
 
 .. option:: --clk <signal-name>
 
@@ -483,6 +463,53 @@ Summary:
 
    Enables adding user-inserted functional covergroup coverage. See
    :ref:`Covergroup Coverage`.
+
+.. option:: --cxx-modules
+
+   Build C++ module interface units passed on the command line.  Interface
+   units may be ``.cppm`` or ``.ixx`` files.  Verilator generates make rules
+   that build the interface units, and order the user C++ compilation after
+   them.  GCC header units imported by user files are also built.  Modules not
+   built from user files must be precompiled before building the Verilated
+   model, and their CMIs kept in the model object directory or passed with
+   :command:`-CFLAGS -fmodule-file=name=path`.  The generated model and runtime
+   keep the precompiled header (PCH), so user translation units that use
+   modules must include the Verilator headers explicitly.
+   ``--compiler-include`` headers must also be included explicitly in those
+   translation units.
+
+   The module backend follows the C++ compiler.  GCC emits CMIs under
+   ``gcm.cache``, including the CMIs of header units imported with
+   ``import "header.h";``.  With GCC, :command:`-fmodule-only` builds only the
+   module interface CMIs and does not link the interface units.  Precompile
+   the standard library module in the model object directory:
+
+   .. code-block:: bash
+
+      cd obj_dir
+      g++ -std=c++23 -fmodules --compile-std-module -c -x c++ /dev/null -o /dev/null
+
+   Clang writes ``.pcm`` files.  Its :command:`-fmodules` option enables
+   Clang modules, not C++20 modules, so Verilator does not pass it.  Precompile
+   libc++'s ``std.cppm`` and pass it with
+   :command:`-CFLAGS -fmodule-file=std=<path>`.  Clang header units are not
+   supported.
+
+   With MSVC, C++ modules are supported only through CMake.  Pass ``.ixx``
+   interface files on the Verilator command line and build with CMake 3.28 or
+   newer, which adds them as a ``CXX_MODULES`` file set.  CMake targets with
+   module interface files need C++20 or newer; ``verilate()`` sets that as a
+   lower bound automatically.  GNU make with MSVC is not supported.
+
+   Changing compiler flags or the C++ compiler does not automatically
+   invalidate existing CMIs.  Remove the model object directory before
+   rebuilding after such changes.
+
+   Existing :command:`-CFLAGS -fmodules` style flags remain supported,
+   including :command:`-fmodule-header` and
+   :command:`-fmodule-only` for GCC.  They do not by themselves enable module
+   scanning; pass :vlopt:`--cxx-modules` or module interface files to enable
+   the generated module rules.
 
 .. option:: -D<var>=<value>
 
@@ -830,6 +857,11 @@ Summary:
 .. option:: -fno-case-tree
 
    Rarely needed. Disable converting case statements into bit-wise branch trees.
+
+.. option:: -fno-coalesce
+
+   Rarely needed. Disable coalescing variables connected by whole-variable copy
+   assignments.
 
 .. option:: -fno-combine
 

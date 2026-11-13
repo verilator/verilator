@@ -145,6 +145,15 @@ AstNodePreSel* V3ParseGrammar::scrubSel(AstNodeExpr* fromp, AstNodePreSel* selp)
     return selp;
 }
 
+AstWithParse* V3ParseGrammar::scrubWithParse(AstNodeExpr* funcrefp,
+                                             AstWithParse* withParsep) VL_MT_DISABLED {
+    // WITHPARSE(PARSEHOLDER, ...) -> WITHPARSE(funcrefp, ...)
+    AstNode* holderp = withParsep->funcrefp();
+    holderp->replaceWith(funcrefp);
+    VL_DO_DANGLING(holderp->deleteTree(), holderp);
+    return withParsep;
+}
+
 AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nrangep,
                                           bool isPacked) {
     // Split RANGE0-RANGE1-RANGE2

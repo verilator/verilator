@@ -68,6 +68,7 @@ test.compile(verilator_flags2=[
     "--build",
     "-fno-dfg",
     "-fno-gate",
+    "-fno-coalesce",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_ref",
     "--prefix", "Vref",

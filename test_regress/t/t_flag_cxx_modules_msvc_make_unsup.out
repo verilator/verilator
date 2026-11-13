@@ -1,0 +1,3 @@
+%Error: Unsupported: the MSVC C++ module backend requires CMake; use --make json and build with CMake
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

@@ -494,7 +494,7 @@ public:
 // small set of transition/selector forms that are already stable in the
 // normalized AST we see here. The remaining reject branches are therefore
 // mostly future-feature boundaries, not accidental dead code.
-class FsmDetectVisitor final : public VNVisitor {
+class FsmDetectVisitor final : public VNVisitorConst {
     // STATE - for current visit position (use VL_RESTORER)
     FsmState& m_state;
     AstScope* m_scopep = nullptr;  // Current scope
@@ -649,6 +649,9 @@ class FsmDetectVisitor final : public VNVisitor {
                                             FsmDetectVisitor::isSimpleResetCond(firstIfp->condp())
                                                 ? firstIfp->condp()
                                                 : nullptr);
+                } else if (AstCase* const casep
+                           = VN_CAST(FsmDetectVisitor::emptyResetBodyp(firstIfp), Case)) {
+                    candidates.emplace_back(casep, nullptr);
                 }
             }
             for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
@@ -665,12 +668,15 @@ class FsmDetectVisitor final : public VNVisitor {
             // Reset-else FSMs should behave like the existing case path: reset
             // information is metadata, not part of steady-state dispatch.
             if (AstIf* const firstIfp = VN_CAST(stmtsp, If)) {
-                if (AstIf* const chainp
-                    = VN_CAST(FsmDetectVisitor::singleMeaningfulBranch(firstIfp->elsesp()), If)) {
+                if (AstIf* const chainp = VN_CAST(
+                        FsmDetectVisitor::skipLeadingIgnorableStmt(firstIfp->elsesp()), If)) {
                     candidates.emplace_back(chainp,
                                             FsmDetectVisitor::isSimpleResetCond(firstIfp->condp())
                                                 ? firstIfp->condp()
                                                 : nullptr);
+                } else if (AstIf* const chainp
+                           = VN_CAST(FsmDetectVisitor::emptyResetBodyp(firstIfp), If)) {
+                    candidates.emplace_back(chainp, nullptr);
                 }
             }
             for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
@@ -895,6 +901,13 @@ class FsmDetectVisitor final : public VNVisitor {
     // Reset arcs are only modeled for the simple signal form that survives to
     // this pass after earlier normalization.
     static bool isSimpleResetCond(AstNodeExpr* condp) { return VN_IS(condp, VarRef); }
+
+    // Body of 'if (!rst) body', V3Const's fold of an empty reset 'if (rst) ; else body'.
+    // Any negation matches, as line coverage accepts any 'if (c) ; else body'.
+    static AstNode* emptyResetBodyp(AstIf* ifp) {
+        if (ifp->elsesp() || !VN_IS(ifp->condp(), Not)) return nullptr;
+        return skipLeadingIgnorableStmt(ifp->thensp());
+    }
 
     // Normalize the reset condition into a compact description so the lowering
     // phase can regenerate the same predicate after detection. By the time
@@ -1562,10 +1575,12 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarScope* nextVscp = nullptr;
         if (AstIf* const ifp = VN_CAST(nodep, If)) {
             // Any reset condition is accepted; only a plain signal is described
-            if (!ifp->elsesp()) return false;
+            AstNode* const resetsp = ifp->elsesp() ? ifp->thensp() : nullptr;
+            AstNode* const commitp = ifp->elsesp() ? ifp->elsesp() : emptyResetBodyp(ifp);
+            if (!commitp) return false;
             AstVarScope* resetStateVscp = nullptr;
             const ResetAssignStatus resetStatus
-                = collectConstStateAssigns(ifp->thensp(), resetStateVscp, cand.resetArcs());
+                = collectConstStateAssigns(resetsp, resetStateVscp, cand.resetArcs());
             const bool emptyResetBranch = resetStatus == ResetAssignStatus::EMPTY;
             if (emptyResetBranch) {
                 cand.resetArcs().clear();
@@ -1581,7 +1596,7 @@ class FsmDetectVisitor final : public VNVisitor {
             } else if (resetStatus == ResetAssignStatus::MULTI_SAME_STATE) {
                 cand.resetArcs().clear();
             }
-            AstNode* const elseNodep = singleMeaningfulBranch(ifp->elsesp());
+            AstNode* const elseNodep = singleMeaningfulBranch(commitp);
             UASSERT_OBJ(elseNodep, ifp, "register reset match requires a non-empty commit branch");
             if (!nodeStateVarAssign(elseNodep, stateVscp, nextVscp)) return false;
             if (!emptyResetBranch && resetStateVscp != stateVscp) return false;
@@ -2176,14 +2191,14 @@ class FsmDetectVisitor final : public VNVisitor {
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         m_scopep = nodep;
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
     // Collect processes first, then analyze FSM candidates once all alias and
     // register information is available.
     void visit(AstAlways* nodep) override {
         if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
             return;
         }
         // This avoids making one-block if-chain detection sensitive to whether
@@ -2216,18 +2231,18 @@ class FsmDetectVisitor final : public VNVisitor {
         // order should not affect whether an if-chain FSM is recognized.
         collectAliasFromAssign(nodep, m_stateAliases, m_ambiguousStateAliases);
         collectCellPortAlias(nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
     void visit(AstCell* nodep) override {
         // Cells are matched after the full traversal because linkdot lowers
         // uninlined port connections into sibling continuous assignments.
         if (m_scopep && fsmRegisterWrapperDesc(nodep)) addWrapperCell(m_scopep, nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
     // Continue the walk through the rest of the design hierarchy.
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -2235,7 +2250,7 @@ public:
     // phase starts mutating the AST with coverage machinery.
     FsmDetectVisitor(FsmState& state, AstNetlist* rootp)
         : m_state{state} {
-        iterate(rootp);
+        iterateConst(rootp);
         for (const std::pair<AstScope*, AstCell*>& wrapperCell : m_wrapperCells) {
             FsmRegisterCandidate reg;
             if (matchFsmWrapperCell(wrapperCell.first, wrapperCell.second, reg)) {

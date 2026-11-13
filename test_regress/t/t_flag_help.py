@@ -25,6 +25,7 @@ def check(prog):
 
 check(os.environ["VERILATOR_ROOT"] + "/bin/verilator")
 check(os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage")
+check(os.environ["VERILATOR_ROOT"] + "/bin/verilator_module_deps")
 
 check(os.environ["VERILATOR_ROOT"] + "/bin/verilator_ccache_report")
 check(os.environ["VERILATOR_ROOT"] + "/bin/verilator_gantt")
