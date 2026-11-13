@@ -76,12 +76,14 @@ def is_module_control_flag(flag: str) -> bool:
             or flag.startswith('-fmodule-header='))
 
 
-def external_modules(flags: list[str]) -> set[str]:
+def external_modules(flags: list[str]) -> dict[str, str]:
     prefix = '-fmodule-file='
-    modules = set()
+    modules: dict[str, str] = {}
     for flag in flags:
         if flag.startswith(prefix):
-            modules.add(flag[len(prefix):].split('=', 1)[0])
+            spec = flag[len(prefix):]
+            name, separator, path = spec.partition('=')
+            modules[name] = path if separator else ''
     return modules
 
 
@@ -422,8 +424,9 @@ def prepare_gcc_headers(args: argparse.Namespace, cppflags: list[str], cxxflags:
     return headers
 
 
-def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]], external: set[str],
-                    headers: dict[str, dict[str, Any]]) -> None:
+def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]],
+                    external: dict[str, str], headers: dict[str, dict[str, Any]],
+                    flags: list[str]) -> None:
     providers: dict[str, dict[str, Any]] = {}
     for module in modules:
         for name in module['provides']:
@@ -449,6 +452,8 @@ def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]], ext
                     direct.append(provider)
                 dep_names.add(name)
                 pending.extend(provider['requires'])
+            elif name == 'std':
+                check_std_module(args, external, flags)
             elif name in external:
                 continue
             elif '/' in name or '\\' in name:
@@ -457,11 +462,6 @@ def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]], ext
                 header = headers.get(os.path.abspath(name))
                 if header is not None and header not in header_deps:
                     header_deps.append(header)
-            elif name == 'std':
-                if args.backend == 'gcc' and not os.path.exists(
-                        os.path.join(args.objdir, 'gcm.cache', 'std.gcm')):
-                    fatal("C++ module 'std' is required, but gcm.cache/std.gcm was not found; "
-                          "precompile the std module before building")
             else:
                 fatal("C++ module '" + name + "' required by '" + module['source'] +
                       "' has no provider; precompile it and pass -fmodule-file=" + name +
@@ -651,7 +651,7 @@ def scan(args: argparse.Namespace) -> None:
         module['provides'] = provides
         module['requires'] = requires
 
-    resolve_modules(args, modules, external, headers)
+    resolve_modules(args, modules, external, headers, cppflags + cxxflags)
 
     if args.backend == 'gcc':
         content = generate_gcc(modules, headers, module_only)
