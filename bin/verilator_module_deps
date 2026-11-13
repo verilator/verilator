@@ -747,8 +747,8 @@ def main() -> None:
     parser.add_argument('--json', default='', help='JSON dependency graph file')
     parser.add_argument('--objdir', default='.', help='object directory')
     parser.add_argument('--opt-fast', default='', help='fast optimization flags')
-    parser.add_argument('--source', action='append', default=[], help='C++ source file')
     parser.add_argument('--output', default='', help='output make fragment')
+    parser.add_argument('--source', action='append', default=[], help='C++ source file')
     parser.add_argument('--stamp', default='', help='build input stamp file')
     args = parser.parse_args()
     if not args.output and not args.stamp:
