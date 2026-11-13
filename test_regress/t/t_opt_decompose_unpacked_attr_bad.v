@@ -38,7 +38,7 @@ module t (
   logic [6:0] whole[2]  /*verilator split_var*/;
   // Public, not split
   logic [6:0] pub[2]  /*verilator public_flat_rw*/  /*verilator split_var*/;
-  // Not a signal, not split
+  // Parameter, not warned as references read the constant pool
   localparam logic [6:0] LP[2]  /*verilator split_var*/ = '{7'd1, 7'd2};
   // Forceable, not split
   logic [6:0] fv[2]  /*verilator forceable*/  /*verilator split_var*/;
