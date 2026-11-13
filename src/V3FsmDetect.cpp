@@ -649,6 +649,9 @@ class FsmDetectVisitor final : public VNVisitorConst {
                                             FsmDetectVisitor::isSimpleResetCond(firstIfp->condp())
                                                 ? firstIfp->condp()
                                                 : nullptr);
+                } else if (AstCase* const casep
+                           = VN_CAST(FsmDetectVisitor::emptyResetBodyp(firstIfp), Case)) {
+                    candidates.emplace_back(casep, nullptr);
                 }
             }
             for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
@@ -665,12 +668,15 @@ class FsmDetectVisitor final : public VNVisitorConst {
             // Reset-else FSMs should behave like the existing case path: reset
             // information is metadata, not part of steady-state dispatch.
             if (AstIf* const firstIfp = VN_CAST(stmtsp, If)) {
-                if (AstIf* const chainp
-                    = VN_CAST(FsmDetectVisitor::singleMeaningfulBranch(firstIfp->elsesp()), If)) {
+                if (AstIf* const chainp = VN_CAST(
+                        FsmDetectVisitor::skipLeadingIgnorableStmt(firstIfp->elsesp()), If)) {
                     candidates.emplace_back(chainp,
                                             FsmDetectVisitor::isSimpleResetCond(firstIfp->condp())
                                                 ? firstIfp->condp()
                                                 : nullptr);
+                } else if (AstIf* const chainp
+                           = VN_CAST(FsmDetectVisitor::emptyResetBodyp(firstIfp), If)) {
+                    candidates.emplace_back(chainp, nullptr);
                 }
             }
             for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
@@ -895,6 +901,13 @@ class FsmDetectVisitor final : public VNVisitorConst {
     // Reset arcs are only modeled for the simple signal form that survives to
     // this pass after earlier normalization.
     static bool isSimpleResetCond(AstNodeExpr* condp) { return VN_IS(condp, VarRef); }
+
+    // Body of 'if (!rst) body', V3Const's fold of an empty reset 'if (rst) ; else body'.
+    // Any negation matches, as line coverage accepts any 'if (c) ; else body'.
+    static AstNode* emptyResetBodyp(AstIf* ifp) {
+        if (ifp->elsesp() || !VN_IS(ifp->condp(), Not)) return nullptr;
+        return skipLeadingIgnorableStmt(ifp->thensp());
+    }
 
     // Normalize the reset condition into a compact description so the lowering
     // phase can regenerate the same predicate after detection. By the time
@@ -1562,10 +1575,12 @@ class FsmDetectVisitor final : public VNVisitorConst {
         AstVarScope* nextVscp = nullptr;
         if (AstIf* const ifp = VN_CAST(nodep, If)) {
             // Any reset condition is accepted; only a plain signal is described
-            if (!ifp->elsesp()) return false;
+            AstNode* const resetsp = ifp->elsesp() ? ifp->thensp() : nullptr;
+            AstNode* const commitp = ifp->elsesp() ? ifp->elsesp() : emptyResetBodyp(ifp);
+            if (!commitp) return false;
             AstVarScope* resetStateVscp = nullptr;
             const ResetAssignStatus resetStatus
-                = collectConstStateAssigns(ifp->thensp(), resetStateVscp, cand.resetArcs());
+                = collectConstStateAssigns(resetsp, resetStateVscp, cand.resetArcs());
             const bool emptyResetBranch = resetStatus == ResetAssignStatus::EMPTY;
             if (emptyResetBranch) {
                 cand.resetArcs().clear();
@@ -1581,7 +1596,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
             } else if (resetStatus == ResetAssignStatus::MULTI_SAME_STATE) {
                 cand.resetArcs().clear();
             }
-            AstNode* const elseNodep = singleMeaningfulBranch(ifp->elsesp());
+            AstNode* const elseNodep = singleMeaningfulBranch(commitp);
             UASSERT_OBJ(elseNodep, ifp, "register reset match requires a non-empty commit branch");
             if (!nodeStateVarAssign(elseNodep, stateVscp, nextVscp)) return false;
             if (!emptyResetBranch && resetStateVscp != stateVscp) return false;
