@@ -3428,6 +3428,14 @@ void AstNodeProcedure::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, needsVlProcess);
     dumpJsonGen(str);
 }
+void AstInitial::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (isFromClockedAlways()) str << " [FROMCLKALWAYS]";
+}
+void AstInitial::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isFromClockedAlways);
+    Super::dumpJson(str);
+}
 const char* AstNodeQuadop::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;

@@ -953,6 +953,8 @@ class TimingControlVisitor final : public VNVisitor {
         AstInitial* const initialp = new AstInitial{flp, loopp};
         initialp->user1(true);  // Already processed
         initialp->setSuspendable();
+        // Starts by awaiting its sensitivity list, see V3Sched createInitial
+        if (sentreep->hasClocked()) initialp->setFromClockedAlways();
         ++m_statSuspendableProcs;
         if (nodep->needsVlProcess()) initialp->setNeedsVlProcess();
         auto* const activep = new AstActive{

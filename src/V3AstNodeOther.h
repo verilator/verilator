@@ -3657,10 +3657,18 @@ public:
     ASTGEN_MEMBERS_AstFinal;
 };
 class AstInitial final : public AstNodeProcedure {
+    // Lowered by V3Timing from a suspendable 'always' that starts by awaiting its
+    // sensitivity list
+    bool m_fromClockedAlways = false;
+
 public:
     AstInitial(FileLine* fl, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_Initial(fl, stmtsp) {}
     ASTGEN_MEMBERS_AstInitial;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool isFromClockedAlways() const { return m_fromClockedAlways; }
+    void setFromClockedAlways() { m_fromClockedAlways = true; }
 };
 class AstInitialAutomatic final : public AstNodeProcedure {
     // Automatic variable initialization

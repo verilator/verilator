@@ -261,12 +261,23 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
     for (const auto& entry : lbs) {
         AstScope* const scopep = entry.m_scopep;
         AstActive* const activep = entry.m_activep;
-        // Create a sub-function per scope so we can V3Combine them later
-        if (!scopep->user1p()) scopep->user1p(createNewSubFuncp(scopep));
+        // Create a sub-function per scope so we can V3Combine them later. A process lowered
+        // from a suspendable clocked 'always' is a coroutine of its own, so it does not need
+        // one, and creating it here would order the scope's other logic before the coroutine.
+        const bool allFromClockedAlways = [&]() {
+            for (const AstNodeProcedure* const procp : activep->procspList()) {
+                const AstInitial* const initp = VN_CAST(procp, Initial);
+                if (!initp || !initp->isFromClockedAlways()) return false;
+            }
+            return true;
+        }();
+        if (!allFromClockedAlways && !scopep->user1p()) scopep->user1p(createNewSubFuncp(scopep));
         // Add statements to sub-function
         for (AstNodeProcedure* const procp : activep->procspList()) {
-            auto* subFuncp = VN_AS(scopep->user1p(), CFunc);
+            auto* subFuncp = VN_CAST(scopep->user1p(), CFunc);
             if (AstNodeStmt* const bodyp = procp->stmtsp()) {
+                UASSERT_OBJ(subFuncp || procp->isSuspendable(), procp,
+                            "Non-suspendable process without a sub-function");
                 bodyp->unlinkFrBackWithNext();
                 // If the process is suspendable, we need a separate function (a coroutine)
                 if (procp->isSuspendable()) {
@@ -333,7 +344,24 @@ AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
 
 void createInitial(AstNetlist* netlistp, const LogicClasses& logicClasses) {
     AstCFunc* const funcp = netlistp->evalFuncp(VEval::INITIAL);
-    orderSequentially(funcp, logicClasses.m_initial);
+
+    // Start the processes lowered from suspendable clocked 'always' blocks before the
+    // 'initial' blocks. They then await their sensitivity before any 'initial' block changes
+    // a variable at time 0, and see that change, as a non-suspendable 'always' does (#9066).
+    const auto isFromClockedAlways = [](const AstActive* activep) {
+        const AstInitial* const initp = VN_CAST(activep->procsp(), Initial);
+        return initp && initp->isFromClockedAlways();
+    };
+    const LogicByScope& orig = logicClasses.m_initial;
+    LogicByScope sorted;
+    for (const auto& entry : orig) {
+        if (isFromClockedAlways(entry.m_activep)) sorted.add(entry.m_scopep, entry.m_activep);
+    }
+    for (const auto& entry : orig) {
+        if (!isFromClockedAlways(entry.m_activep)) sorted.add(entry.m_scopep, entry.m_activep);
+    }
+
+    orderSequentially(funcp, sorted);
     util::splitCheck(funcp);
 }
 
