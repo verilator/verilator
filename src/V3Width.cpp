@@ -9834,8 +9834,8 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
             if (nodep->lhsp()->isString()) {
-                nodep->lhsp()->v3error("Signing cast is not legal on string data types (IEEE "
-                                       "1800-2023 6.24.1)");
+                nodep->lhsp()->v3error("Signing cast is not legal on string data types"
+                                       " (IEEE 1800-2023 6.24.1)");
                 nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
@@ -10846,11 +10846,14 @@ class WidthVisitor final : public VNVisitor {
         } else if (determ == ASSIGN && underp->isString()
                    && (expDTypep->skipRefp()->isIntegralOrPacked() || expDTypep->isDouble())) {
             underp->v3error(ucfirst(side)
-                            << " of string type is not implicitly convertible to "
-                            << expDTypep->prettyDTypeNameQ() << " (IEEE 1800-2023 6.16)\n"
+                            << " of string type is not implicitly convertible to the "
+                               "destination data type (IEEE 1800-2023 6.16)\n"
+                            << underp->warnMore() << "... Source data type: "
+                            << underp->dtypep()->prettyDTypeNameQ() << '\n'
+                            << underp->warnMore() << "... Destination data type: "
+                            << expDTypep->prettyDTypeNameQ() << '\n'
                             << underp->warnMore()
-                            << "... Suggest use an explicit cast to the "
-                               "destination type");
+                            << "... Suggest use an explicit cast to the destination type");
             AstNodeExpr* const exprp = VN_AS(underp, NodeExpr);
             AstConst* const newp = new AstConst{exprp->fileline(), AstConst::BitFalseErroring{}};
             newp->dtypeFrom(expDTypep);

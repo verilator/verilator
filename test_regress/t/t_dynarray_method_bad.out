@@ -3,8 +3,10 @@
    34 |     b = s.unknown_bad;
       |           ^~~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_dynarray_method_bad.v:34:11: Assign RHS of string type is not implicitly convertible to 'bit' (IEEE 1800-2023 6.16)
+%Error: t/t_dynarray_method_bad.v:34:11: Assign RHS of string type is not implicitly convertible to the destination data type (IEEE 1800-2023 6.16)
                                        : ... note: In instance 't'
+                                       : ... Source data type: 'string'
+                                       : ... Destination data type: 'bit'
                                        : ... Suggest use an explicit cast to the destination type
    34 |     b = s.unknown_bad;
       |           ^~~~~~~~~~~
