@@ -4,6 +4,10 @@
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+// verilog_format: on
+
 class cls;
   rand int x;
 endclass
@@ -21,7 +25,6 @@ module t (
   integer some_int;
   integer other_int;
   logic some_bool;
-  logic case_bool;
   logic [1:0] assign_lhs;
 
   wire t1 = cyc[0];
@@ -47,6 +50,7 @@ module t (
     always_comb the_intfs[intf_i].t = cyc[intf_i];
   end
 
+  logic case_bool;  // Assigned in a case item below
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if ((~cyc[0] && cyc[1]) || (~cyc[2] && cyc[3])) $write("");
@@ -92,7 +96,7 @@ module t (
     endcase
     // nothing after a $stop is covered, including inside case items
     if (cyc == 100) begin
-      $stop;
+      `stop;
       case (cyc[0])
         1'b0: if (t1 && t2) $write("");
         default: ;

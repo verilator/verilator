@@ -5,6 +5,10 @@
         // SPDX-FileCopyrightText: 2024 Wilson Snyder
         // SPDX-License-Identifier: CC0-1.0
         
+        // verilog_format: off
+        `define stop $stop
+        // verilog_format: on
+        
 %000001 class cls;
 -000001  point: type=line comment=block hier=top.$unit::cls__Vclpkg
           rand int x;
@@ -25,7 +29,6 @@
           integer some_int;
           integer other_int;
           logic some_bool;
-          logic case_bool;
           logic [1:0] assign_lhs;
         
           wire t1 = cyc[0];
@@ -62,6 +65,7 @@
 -000004  point: type=line comment=block hier=top.t
           end
         
+          logic case_bool;  // Assigned in a case item below
 %000009   always @(posedge clk) begin
 -000009  point: type=line comment=block hier=top.t
 %000009     cyc <= cyc + 1;
@@ -301,7 +305,7 @@
             // nothing after a $stop is covered, including inside case items
 %000009     if (cyc == 100) begin
 -000009  point: type=line comment=else hier=top.t
-              $stop;
+              `stop;
               case (cyc[0])
                 1'b0: if (t1 && t2) $write("");
                 default: ;
