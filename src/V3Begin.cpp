@@ -30,6 +30,7 @@
 
 #include "V3Begin.h"
 
+#include "V3ConstPool.h"
 #include "V3Stats.h"
 #include "V3String.h"
 #include "V3UniqueNames.h"
@@ -38,31 +39,18 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 
-class BeginState final {
-    // NODE STATE
-    // Entire netlist:
-    // AstNodeFTask::user1      -> bool, 1=processed
-    const VNUser1InUse m_inuser1;
-    bool m_anyFuncInBegin = false;  // Any function found inside a begin block
-
-public:
-    BeginState() = default;
-    ~BeginState() = default;
-    void userMarkChanged(AstNode* nodep) {
-        nodep->user1(true);
-        m_anyFuncInBegin = true;
-    }
-    bool anyFuncInBegin() const { return m_anyFuncInBegin; }
-};
-
-//######################################################################
-
 class BeginVisitor final : public VNVisitor {
     // NODE STATE
-    // AstCase::user1   -> bool, if already purified
+    // AstNode::user1      -> bool, mark processed to avoid repeated traversals
+    // AstVar::user2p      -> AstVarRef*, const pool entry of a parameter
+    const VNUser1InUse m_user1InUse;
+    const VNUser2InUse m_user2InUse;
 
-    // STATE - across all visitors
-    BeginState* const m_statep;  // Current global state
+    // STATE - nodes to fix up at the end, when all renames are done
+    std::vector<AstNodeVarRef*> m_paramRefps;  // References to parameters
+    std::vector<AstMemberRef*> m_paramMemberRefps;  // Member references to parameters
+    std::vector<AstNodeFTaskRef*> m_ftaskRefps;  // References to tasks
+    std::vector<AstIfaceRefDType*> m_ifaceRefDTypeps;  // Interface types of cells
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -120,24 +108,43 @@ class BeginVisitor final : public VNVisitor {
         }
     }
 
+    void moveToConstPool(AstNodeExpr* nodep, AstVar* varp) {
+        // Parameters are constants, so repoint references to a constant pool entry.
+        // The variable itself stays, e.g. for VPI, until V3Dead finds it unused.
+        if (!varp->user2p()) {
+            AstNodeExpr* const valuep = VN_AS(varp->valuep(), NodeExpr);
+            UASSERT_OBJ(valuep, varp, "Parameter without a value");
+            UASSERT_OBJ(valuep->isConstantTree(), varp, "Parameter with a non-constant value");
+            AstVarRef* const refp = V3ConstPool::find(valuep);
+            pushDeletep(refp);  // Always cloned, delete at the end
+            varp->user2p(refp);
+        }
+        AstNode* const newp = varp->user2p()->cloneTree(false);
+        newp->fileline(nodep->fileline());
+        nodep->replaceWithKeepDType(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
     // VISITORS
     void visit(AstForeach* nodep) override {
+        if (nodep->user1SetOnce()) return;
         VL_DO_DANGLING(V3Begin::convertToWhile(nodep), nodep);
     }
     void visit(AstNodeAssign* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // Keep begin under assignment (in nodep->timingControlp())
         VL_RESTORER(m_keepBegins);
         m_keepBegins = true;
         iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
+        if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_modp);
         m_modp = nodep;
         // Rename it (e.g. class under a generate)
         if (m_unnamedScope != "") {
             nodep->name(dot(m_unnamedScope, nodep->name()));
             UINFO(8, "     rename to " << nodep->name());
-            m_statep->userMarkChanged(nodep);
         }
         VL_RESTORER_CLEAR(m_displayScope);
         VL_RESTORER_CLEAR(m_namedScope);
@@ -149,17 +156,18 @@ class BeginVisitor final : public VNVisitor {
         nodep->prependStmtsp(m_inlinesp);
     }
     void visit(AstNodeProcedure* nodep) override {
+        if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_procedurep);
         m_procedurep = nodep;
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
+        if (nodep->user1SetOnce()) return;
         UINFO(8, "  " << nodep);
         // Rename it
         if (m_unnamedScope != "") {
             nodep->name(dot(m_unnamedScope, nodep->name()));
             UINFO(8, "     rename to " << nodep->name());
-            m_statep->userMarkChanged(nodep);
         }
         // BEGIN wrapping a function rename that function, but don't affect
         // the inside function's variables.  We then restart with empty
@@ -186,6 +194,7 @@ class BeginVisitor final : public VNVisitor {
         nodep->prependDeclsp(m_liftedp);
     }
     void visit(AstGenBlock* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // GenBlocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);
         VL_RESTORER_COPY(m_displayScope);
@@ -201,6 +210,7 @@ class BeginVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstFork* nodep) override {
+        if (nodep->user1SetOnce()) return;
         dotNames(nodep->name(), nodep->fileline(), "__FORK__");
         iterateChildren(nodep);
         if (AstNode* const declsp = nodep->declsp()) {
@@ -218,6 +228,7 @@ class BeginVisitor final : public VNVisitor {
         nodep->name("");
     }
     void visit(AstBegin* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // Begin blocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);
         VL_RESTORER_COPY(m_displayScope);
@@ -254,7 +265,7 @@ class BeginVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstVar* nodep) override {
-        if (nodep->user1SetOnce()) { return; }
+        if (nodep->user1SetOnce()) return;
         // If static variable, move it outside a function.
         if (nodep->lifetime().isStatic() && m_ftaskp) {
             const std::string newName
@@ -269,19 +280,24 @@ class BeginVisitor final : public VNVisitor {
                 // variable
                 AstVar* const portp = nodep->cloneTreePure(false);
                 nodep->replaceWith(portp);
+                // The clone has user1 set, as cloning copies it, so the port is skipped when
+                // visited next in place of this variable. So visit its children here.
+                iterateChildren(portp);
 
+                FileLine* const flp = nodep->fileline();
+
+                // Copy in
                 if (nodep->isInput() || nodep->isInout()) {
-                    AstAssign* const initAssignp = new AstAssign{
-                        nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
-                        new AstVarRef{portp->fileline(), portp, VAccess::READ}};
-                    m_ftaskp->prependStmtsp(initAssignp);
+                    m_ftaskp->prependStmtsp(
+                        new AstAssign{flp, new AstVarRef{flp, nodep, VAccess::WRITE},
+                                      new AstVarRef{flp, portp, VAccess::READ}});
                 }
 
+                // Copy out
                 if (nodep->isWritable()) {
-                    AstAssign* const endAssignp = new AstAssign{
-                        nodep->fileline(), new AstVarRef{portp->fileline(), portp, VAccess::WRITE},
-                        new AstVarRef{nodep->fileline(), nodep, VAccess::READ}};
-                    m_ftaskp->addStmtsp(endAssignp);
+                    m_ftaskp->addStmtsp(new AstAssign{flp,
+                                                      new AstVarRef{flp, portp, VAccess::WRITE},
+                                                      new AstVarRef{flp, nodep, VAccess::READ}});
                 }
             } else {
                 nodep->unlinkFrBack();
@@ -292,19 +308,21 @@ class BeginVisitor final : public VNVisitor {
         } else if (m_unnamedScope != "") {
             // Rename it
             nodep->name(dot(m_unnamedScope, nodep->name()));
-            m_statep->userMarkChanged(nodep);
             // Move it under enclosing tree
             liftNode(nodep);
         }
+        // Only now, as the port cloned above would otherwise copy user1 of the visited children
+        iterateChildren(nodep);
     }
     void visit(AstInitialAutomaticStmt* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // Automatic sets go at the current location
         nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstInitialStaticStmt* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // As we moved static variables, move static initializers too
-        if (nodep->user1SetOnce()) return;  // Don't double-add text's
         AstNode* wasUnderp = m_ftaskp;
         if (!m_ftaskp) wasUnderp = m_procedurep;
         if (wasUnderp) {
@@ -320,20 +338,20 @@ class BeginVisitor final : public VNVisitor {
         }
     }
     void visit(AstTypedef* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // Lift out of functions too, as later passes expect typedefs only under the module
         const std::string scope
             = m_ftaskp ? dot(m_ftaskp->name(), m_unnamedScope) : m_unnamedScope;
         if (scope.empty()) return;
         // Rename it
         nodep->name(dot(scope, nodep->name()));
-        m_statep->userMarkChanged(nodep);
         // Move it under enclosing module
         m_modp->addStmtsp(nodep->unlinkFrBack());
     }
     void visit(AstCell* nodep) override {
+        if (nodep->user1SetOnce()) return;
         UINFO(8, "   CELL " << nodep);
         if (m_namedScope != "") {
-            m_statep->userMarkChanged(nodep);
             // Rename it
             nodep->name(dot(m_namedScope, nodep->name()));
             UINFO(8, "     rename to " << nodep->name());
@@ -343,27 +361,37 @@ class BeginVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstVarRef* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        if (nodep->varp()->isParam()) m_paramRefps.push_back(nodep);
+    }
     void visit(AstVarXRef* nodep) override {
-        UINFO(9, "   VARXREF " << nodep);
+        if (nodep->user1SetOnce()) return;
+        if (nodep->varp()->isParam()) m_paramRefps.push_back(nodep);
         const std::string& scope = m_ftaskp ? m_ftaskNamedScope : m_namedScope;
-        if (scope != "" && nodep->inlinedDots() == "") {
-            nodep->inlinedDots(scope);
-            UINFO(9, "    rescope to " << nodep);
-        }
+        if (scope != "" && nodep->inlinedDots() == "") nodep->inlinedDots(scope);
+    }
+    void visit(AstMemberRef* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        if (nodep->varp()->isParam()) m_paramMemberRefps.push_back(nodep);
+        iterateChildren(nodep);
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        UINFO(9, "   FTASKREF " << nodep);
+        if (nodep->user1SetOnce()) return;
+        m_ftaskRefps.push_back(nodep);
         const std::string& scope = m_ftaskp ? m_ftaskNamedScope : m_namedScope;
-        if (scope != "" && nodep->inlinedDots() == "") {
-            nodep->inlinedDots(scope);
-            UINFO(9, "    rescope to " << nodep);
-        }
+        if (scope != "" && nodep->inlinedDots() == "") nodep->inlinedDots(scope);
+        iterateChildren(nodep);
+    }
+    void visit(AstIfaceRefDType* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        if (nodep->cellp()) m_ifaceRefDTypeps.push_back(nodep);
         iterateChildren(nodep);
     }
     void visit(AstScopeName* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // If there's a %m in the display text, we add a special node that will contain the name()
         // Similar code in V3Inline
-        if (nodep->user1SetOnce()) return;  // Don't double-add text's
         // DPI svGetScope doesn't include function name, but %m does
         const std::string scname = nodep->forFormat() ? m_displayScope : m_namedScope;
         // To keep correct visual order, must add before exising
@@ -371,13 +399,18 @@ class BeginVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeCoverDecl* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // Don't need to fix path in coverage statements, they're not under
         // any BEGINs, but V3Coverage adds them all under the module itself.
         iterateChildren(nodep);
     }
-    void visit(AstCase* nodep) override { iterateChildren(nodep); }
+    void visit(AstCase* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+    }
     // VISITORS - LINT CHECK
     void visit(AstIf* nodep) override {
+        if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_keepBegins);
         m_keepBegins = false;
         // Check IFDEPTH warning - could be in other transform files if desire
@@ -394,59 +427,26 @@ class BeginVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override {
+        if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_keepBegins);
         m_keepBegins = false;
         iterateChildren(nodep);
     }
 
-public:
     // CONSTRUCTORS
-    BeginVisitor(AstNetlist* nodep, BeginState* statep)
-        : m_statep{statep} {
+    explicit BeginVisitor(AstNetlist* nodep) {
         iterate(nodep);
-    }
-    ~BeginVisitor() override = default;
-};
-
-//######################################################################
-
-class BeginRelinkVisitor final : public VNVisitorConst {
-    // Replace tasks with new pointer
-private:
-    // NODE STATE
-    //  Input:
-    //   AstNodeFTask::user1p           // bool.  Node replaced, rename it
-
-    // VISITORS
-    void visit(AstNodeFTaskRef* nodep) override {
-        UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");
-        if (nodep->taskp()->user1()) {  // It was converted
-            UINFO(9, "    relinkFTask " << nodep);
-            nodep->name(nodep->taskp()->name());
+        // Fix up references, now that all renames are done
+        for (AstNodeVarRef* const refp : m_paramRefps) moveToConstPool(refp, refp->varp());
+        for (AstMemberRef* const refp : m_paramMemberRefps) moveToConstPool(refp, refp->varp());
+        for (AstNodeFTaskRef* const refp : m_ftaskRefps) refp->name(refp->taskp()->name());
+        for (AstIfaceRefDType* const dtypep : m_ifaceRefDTypeps) {
+            dtypep->cellName(dtypep->cellp()->name());
         }
-        iterateChildrenConst(nodep);
     }
-    void visit(AstVarRef* nodep) override {
-        if (nodep->varp()->user1()) {  // It was converted
-            UINFO(9, "    relinVarRef " << nodep);
-        }
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstIfaceRefDType* nodep) override {
-        // May have changed cell names
-        // TypeTable is always after all modules, so names are stable
-        UINFO(8, "   IFACEREFDTYPE " << nodep);
-        if (nodep->cellp()) nodep->cellName(nodep->cellp()->name());
-        UINFO(8, "       rename to " << nodep);
-        iterateChildrenConst(nodep);
-    }
-    //--------------------
-    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
-    // CONSTRUCTORS
-    BeginRelinkVisitor(AstNetlist* nodep, BeginState*) { iterateConst(nodep); }
-    ~BeginRelinkVisitor() override = default;
+    static void apply(AstNetlist* nodep) { BeginVisitor{nodep}; }
 };
 
 //######################################################################
@@ -454,11 +454,7 @@ public:
 
 void V3Begin::debeginAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    {
-        BeginState state;
-        { BeginVisitor{nodep, &state}; }
-        if (state.anyFuncInBegin()) BeginRelinkVisitor{nodep, &state};
-    }  // Destruct before checking
+    BeginVisitor::apply(nodep);
     V3Global::dumpCheckGlobalTree("begin", 0, dumpTreeEitherLevel() >= 3);
 }
 
