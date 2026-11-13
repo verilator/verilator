@@ -400,11 +400,13 @@ class LinkParseVisitor final : public VNVisitor {
             refp->name(AstClass::embeddedCovergroupTypeName(refp->name()));
         }
         if (nodep->valuep()) nodep->hasUserInit(true);
+        // Lifetime is of variables (IEEE 1800-2023 6.21). Parameters and genvars are constants,
+        // so static, also in classes and automatic functions.
+        if (nodep->isParam() || nodep->isGenVar()) nodep->lifetime(VLifetime::STATIC_IMPLICIT);
         // IEEE 1800-2023 6.21: for loop variables are automatic. verilog.y is
         // responsible for marking those.
         if (nodep->valuep() && nodep->lifetime().isNone() && m_lifetime.isStatic()
             && !nodep->isIO()
-            && !nodep->isParam()
             // In task, or a procedure but not Initial/Final as executed only once
             && ((m_ftaskp && !m_ftaskp->lifetime().isStaticExplicit()) || m_procedurep)) {
             if (VN_IS(m_modp, Module) && m_ftaskp) {

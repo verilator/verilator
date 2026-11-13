@@ -699,6 +699,7 @@ class AstEventControl final : public AstNodeStmt {
     // Parents: stmtlist
     // @astgen op1 := sentreep : Optional[AstSenTree]
     // @astgen op2 := stmtsp : List[AstNodeStmt]
+    // @astgen op3 := countp : Optional[AstNodeExpr]  // Events to wait for, if not one (##N)
 public:
     AstEventControl(FileLine* fl, AstSenTree* sentreep, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_EventControl(fl) {
@@ -872,6 +873,14 @@ public:
     void unique0Pragma(bool flag) { m_unique0Pragma = flag; }
     bool priorityPragma() const { return m_priorityPragma; }
     void priorityPragma(bool flag) { m_priorityPragma = flag; }
+    // Copy the attributes of another 'if', e.g. when rebuilding it with different branches
+    void cloneAttr(const AstIf* fromp) {
+        branchPred(fromp->branchPred());
+        isBoundsCheck(fromp->isBoundsCheck());
+        uniquePragma(fromp->uniquePragma());
+        unique0Pragma(fromp->unique0Pragma());
+        priorityPragma(fromp->priorityPragma());
+    }
 };
 class AstInitialAutomaticStmt final : public AstNodeStmt {
     // Automatic variable initialization in a statement position
