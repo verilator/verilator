@@ -1568,7 +1568,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             puts("protected ");
         }
         if (isConstDecl(nodep) && !nodep->isParam()) puts("const ");
-        if (m_activeClassp && nodep->lifetime().isStatic()) puts("static ");
+        if (m_activeClassp && nodep->lifetime().isStatic() && !nodep->isParam()) puts("static ");
         if (nodep->rand().isRand()) puts(nodep->rand().isRandC() ? "randc " : "rand ");
         if (nodep->isParam()) puts(nodep->isGParam() ? "parameter " : "localparam ");
 
