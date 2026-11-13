@@ -1900,6 +1900,22 @@ class ConstraintExprVisitor final : public VNVisitor {
         muxp->user1(true);
         return muxp;
     }
+    // V3WidthSel offsets the index of a range not starting at 0 (idx - lo) with an unsigned
+    // constant, which zero-extends a signed index and turns a negative one into an in-range one
+    static void signExtendBiasedIndex(AstNodeExpr* idxp) {
+        AstNodeBiop* const biasp
+            = VN_IS(idxp, Sub) || VN_IS(idxp, Add) ? VN_AS(idxp, NodeBiop) : nullptr;
+        if (!biasp) return;
+        for (AstNodeExpr* const opp : {biasp->lhsp(), biasp->rhsp()}) {
+            AstExtend* const extendp = VN_CAST(opp, Extend);
+            if (!extendp || !extendp->lhsp()->isSigned()) continue;
+            AstExtendS* const newp = new AstExtendS{
+                extendp->fileline(), extendp->lhsp()->unlinkFrBack(), extendp->width()};
+            newp->user1(extendp->user1());
+            extendp->replaceWith(newp);
+            VL_DO_DANGLING(extendp->deleteTree(), extendp);
+        }
+    }
     void handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl) {
         const bool nestedElement
             = VN_IS(nodep->fromp(), NodeSel) || VN_IS(nodep->fromp(), CMethodHard);
@@ -1936,12 +1952,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
 
         AstNodeExpr* idxp = nodep->bitp()->unlinkFrBack();
-        // V3Width's implicit truncation (no declRange) would alias an out-of-range idx in range.
-        if (AstSel* const truncp = VN_CAST(idxp, Sel)) {
-            if (!truncp->declRange().ranged()) {
-                idxp = truncp->fromp()->unlinkFrBack();
-                VL_DO_DANGLING(truncp->deleteTree(), truncp);
-            }
+        if (arrDtp->lo() != 0) signExtendBiasedIndex(idxp);
+        // Widened by its own signedness, so a negative index falls out of range
+        if (idxp->width() < 32) {
+            idxp = idxp->isSigned() ? static_cast<AstNodeExpr*>(new AstExtendS{fl, idxp, 32})
+                                    : new AstExtend{fl, idxp, 32};
+            idxp->user1(true);
         }
         const int elements = arrDtp->elementsConst();
         // Out-of-range idx reads the element default (IEEE 1800-2023 7.4.5), not the last one.

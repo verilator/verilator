@@ -245,6 +245,58 @@ class StructFieldPoolOob;
   endfunction
 endclass
 
+// An explicit size cast does truncate, so idx == 4 reads used[0].
+class ExplicitlyCastIndex;
+  rand int unsigned idx;
+  bit used[4] = '{1, 1, 1, 1};
+  constraint c { idx == 4; used[2'(idx)] == 0; }
+endclass
+
+// A negative signed index is out of range, so the read is the default.
+class SignedNegativeIndex;
+  rand bit signed [1:0] idx;
+  bit used[3] = '{1, 1, 1};
+  constraint c { idx == -2; used[idx] == 0; }
+endclass
+
+// Same, into an array whose range doesn't start at 0
+class SignedNegativeIndexBase1;
+  rand bit signed [1:0] idx;
+  bit used[1:3] = '{1, 1, 1};
+  constraint c { used[idx] == 0; }
+endclass
+
+// An unsigned index into the same kind of range
+class UnsignedIndexBase1;
+  rand bit [1:0] idx;
+  bit used[1:3] = '{1, 0, 1};
+  constraint c { used[idx] == 0; }
+endclass
+
+// A range below 0, which offsets the index by adding rather than subtracting
+class NegativeBaseIndex;
+  rand int idx;
+  bit used[-1:1] = '{1, 0, 1};
+  constraint c { idx inside {[-3:3]}; used[idx] == 0; idx > -2; idx < 2; }
+endclass
+
+// An index narrower than the array's index width still reaches every element.
+/* verilator lint_off WIDTHEXPAND */
+class NarrowIndex;
+  rand bit idx;
+  bit used[4] = '{1, 0, 1, 1};
+  constraint c { used[idx] == 0; }
+endclass
+/* verilator lint_on WIDTHEXPAND */
+
+// A non-rand index past the end reads the default too.
+class StateIndexOob;
+  rand bit x;
+  int k = 4;
+  bit used[4] = '{1, 1, 1, 1};
+  constraint c { x == used[k]; }
+endclass
+
 module t;
   initial begin
     UniqueIdPool obj;
@@ -261,6 +313,13 @@ module t;
     OutOfBoundsIndex oob_obj;
     OutOfBoundsIndexNegative oob_neg_obj;
     OutOfBoundsIndexNonZeroBase oob_nzb_obj;
+    ExplicitlyCastIndex cast_obj;
+    SignedNegativeIndex sneg_obj;
+    SignedNegativeIndexBase1 sneg1_obj;
+    UnsignedIndexBase1 ubase1_obj;
+    NegativeBaseIndex negbase_obj;
+    NarrowIndex narrow_obj;
+    StateIndexOob state_oob_obj;
     OutOfBoundsIndexPastIndexWidth oob_wide_obj;
     ExplicitlyTruncatedIndex trunc_obj;
     ExactWidthIndex exact_obj;
@@ -377,6 +436,46 @@ module t;
     randomize_result = oob_nzb_obj.randomize();
     `checkd(randomize_result, 1);
     `checkd(oob_nzb_obj.idx, 4);
+
+    cast_obj = new;
+    randomize_result = cast_obj.randomize();
+    `checkd(randomize_result, 0);
+
+    sneg_obj = new;
+    randomize_result = sneg_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(sneg_obj.idx, -2);
+
+    sneg1_obj = new;
+    for (int i = 0; i < 10; i++) begin
+      randomize_result = sneg1_obj.randomize();
+      `checkd(randomize_result, 1);
+      if (sneg1_obj.idx > 0) `stop;
+    end
+
+    ubase1_obj = new;
+    randomize_result = ubase1_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(ubase1_obj.idx, 2);
+
+    negbase_obj = new;
+    for (int i = 0; i < 10; i++) begin
+      randomize_result = negbase_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(negbase_obj.idx, 0);
+    end
+
+    narrow_obj = new;
+    for (int i = 0; i < 10; i++) begin
+      randomize_result = narrow_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(narrow_obj.idx, 1);
+    end
+
+    state_oob_obj = new;
+    randomize_result = state_oob_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(state_oob_obj.x, 0);
 
     oob_wide_obj = new;
     seen = '0;

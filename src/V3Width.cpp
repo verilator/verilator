@@ -397,6 +397,7 @@ class WidthVisitor final : public VNVisitor {
     AstProperty* m_propertyp = nullptr;  // Current property
     AstNodeModule* m_modep = nullptr;  // Current module
     const AstConstraint* m_constraintp = nullptr;  // Current constraint
+    bool m_inConstraintItem = false;  // Under a constraint item, inline ones included
     AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
     const AstNode* m_writerp = nullptr;  // Assignment, release or pin whose lvalue is iterated
     const AstWith* m_withp = nullptr;  // Current 'with' statement
@@ -1571,12 +1572,30 @@ class WidthVisitor final : public VNVisitor {
                         }
                     }
                 }
-                widthCheckSized(nodep, "Extract Range", nodep->bitp(), selwidthDTypep, EXTEND_EXP,
-                                false /*NOWARN*/);
+                if (!keepConstraintIndexWidth(nodep)) {
+                    widthCheckSized(nodep, "Extract Range", nodep->bitp(), selwidthDTypep,
+                                    EXTEND_EXP, false /*NOWARN*/);
+                }
             }
         }
     }
 
+    // In a constraint, a select from a non-rand array keeps its index's own width and
+    // signedness. The constraint lowering reads an out-of-range index as the element default
+    // (IEEE 1800-2023 7.4.5), and can't tell a truncation added here from an explicit 2'(idx).
+    bool keepConstraintIndexWidth(const AstArraySel* nodep) const {
+        if (!m_inConstraintItem) return false;
+        const AstNodeExpr* basep = nodep->fromp();
+        while (const AstStructSel* const sselp = VN_CAST(basep, StructSel)) basep = sselp->fromp();
+        const AstVar* varp = nullptr;
+        if (const AstNodeVarRef* const refp = VN_CAST(basep, NodeVarRef)) {
+            varp = refp->varp();
+        } else if (const AstMemberRef* const mrefp = VN_CAST(basep, MemberRef)) {
+            varp = mrefp->varp();
+        }
+        if (!varp || varp->rand().isRandomizable()) return false;
+        return nodep->dtypep()->skipRefp()->isIntegralOrPacked();
+    }
     void visit(AstAssocSel* nodep) override {
         // Signed/Real: Output type based on array-declared type; binary operator
         assertAtExpr(nodep);
@@ -3921,6 +3940,8 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->rhssp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstConstraintExpr* nodep) override {
+        VL_RESTORER(m_inConstraintItem);
+        m_inConstraintItem = true;
         userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstConstraintForeach* nodep) override {
@@ -3930,11 +3951,15 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->bodyp(), nullptr);
     }
     void visit(AstConstraintIf* nodep) override {
+        VL_RESTORER(m_inConstraintItem);
+        m_inConstraintItem = true;
         userIterateAndNext(nodep->thensp(), nullptr);
         userIterateAndNext(nodep->elsesp(), nullptr);
         iterateCheckBool(nodep, "If", nodep->condp(), BOTH);
     }
     void visit(AstConstraintUnique* nodep) override {
+        VL_RESTORER(m_inConstraintItem);
+        m_inConstraintItem = true;
         userIterateAndNext(nodep->rangesp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstDistItem* nodep) override {
