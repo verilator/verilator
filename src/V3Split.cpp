@@ -86,7 +86,7 @@ protected:
         , m_nodep{nodep} {}
     // ACCESSORS
     std::string name() const override {
-        return cvtToHex(m_nodep) + ' ' + m_nodep->prettyTypeName();
+        return cvtToHex(m_nodep) + ' ' + m_nodep->prettyTypeNameQ();
     }
 
 public:
@@ -162,7 +162,7 @@ class SplitVisitor final : public VNVisitor {
     // Iterate the given list of statements, building the dependency graph
     void scanBlock(AstNode* stmtsp) {
         if (m_noSplitWhy) return;
-        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : VNList<AstNode>{stmtsp}) {
             // Skip comments. They have no dependencies at all, so would always
             // form an independent component, and hence a split block, of their
             // own, which would be subsequently deleted as it does nothing.
@@ -225,9 +225,7 @@ class SplitVisitor final : public VNVisitor {
     // Take the statements of the given list, and return them distributed into one list per color.
     static std::vector<AstNodeStmt*> splitStatements(AstNode* stmtsp, uint32_t numColors) {
         std::vector<AstNodeStmt*> result{numColors, nullptr};
-        for (AstNode *stmtp = stmtsp, *nextp = nullptr; stmtp; stmtp = nextp) {
-            nextp = stmtp->nextp();  // 'stmtp' is unlinked below
-
+        for (AstNode* const stmtp : VNList<AstNode>{stmtsp}) {
             // Comments are dropped if the block is split
             if (VN_IS(stmtp, Comment)) continue;
 
@@ -248,10 +246,9 @@ class SplitVisitor final : public VNVisitor {
                     // keeps the 'if' and all it holds in one component, so just once.
                     AstIf* const clonep = new AstIf{flp, ifp->condp()->cloneTree(true),
                                                     thens[color], elses[color]};
-                    // Preserve pragmas from unique if's so assertions work properly
-                    clonep->uniquePragma(ifp->uniquePragma());
-                    clonep->unique0Pragma(ifp->unique0Pragma());
-                    clonep->priorityPragma(ifp->priorityPragma());
+                    // Preserve all attributes, e.g. the branch prediction (assertions
+                    // mark their failure branch unlikely), and pragmas from unique if's
+                    clonep->cloneAttr(ifp);
                     result[color] = AstNode::addNext(result[color], clonep);
                 }
                 // There is nothing under the 'if' to guard. If its vertex was
@@ -456,7 +453,10 @@ class SplitVisitor final : public VNVisitor {
 
     // CONSTRUCTORS
     explicit SplitVisitor(AstNetlist* nodep) { iterate(nodep); }
-    ~SplitVisitor() override { V3Stats::addStat("Optimizations, Split always", m_statSplits); }
+    ~SplitVisitor() override {
+        V3Stats::addStat(
+            V3Statistic{"*", "Optimizations, Split always", m_statSplits, 0, true, false});
+    }
     VL_UNCOPYABLE(SplitVisitor);
 
 public:

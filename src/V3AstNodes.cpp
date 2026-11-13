@@ -435,8 +435,8 @@ VDTypeNameScopes::VDTypeNameScopes(AstNetlist* nodep)
     s_currentp = this;
 }
 VDTypeNameScopes::~VDTypeNameScopes() { s_currentp = m_prevp; }
-void VDTypeNameScopes::index(AstNode* nodep, AstNode* scopep) {
-    for (; nodep; nodep = nodep->nextp()) {
+void VDTypeNameScopes::index(AstNode* nodesp, AstNode* scopep) {
+    for (AstNode* const nodep : VNList<AstNode>{nodesp}) {
         // Only statements declare types
         if (VN_IS(nodep, NodeExpr) || VN_IS(nodep, NodeDType)) continue;
         AstNode* innerp = scopep;
@@ -819,6 +819,8 @@ void AstBegin::dumpJson(std::ostream& str) const {
 const char* AstCAwait::broken() const {
     if (const AstCMethodHard* const methodp = VN_CAST(exprp(), CMethodHard)) {
         BROKEN_RTN(!methodp->method().isAwaitable());
+    } else if (const AstCFuncHard* const funcp = VN_CAST(exprp(), CFuncHard)) {
+        BROKEN_RTN(!(funcp->function() == VCFunction::AWAIT_IMPORT_TASK));
     } else {
         BROKEN_RTN(!VN_AS(exprp(), NodeCCall)->funcp()->isCoroutine());
     }
@@ -961,6 +963,11 @@ bool AstCMethodHard::getPurity() {
     if (!fromp()->isPure()) return false;
     for (AstNodeExpr* const argp : pinspList()) {
         if (!argp->isPure()) return false;
+    }
+    if (withp()) {
+        for (AstNode* const itemp : withp()->exprpList()) {
+            if (!itemp->isPure()) return false;
+        }
     }
     return true;
 }
@@ -1606,12 +1613,14 @@ void AstCoverBin::dump(std::ostream& str) const {
     Super::dump(str);
     str << " " << m_binsType.ascii();
     if (m_isArray) str << "[]";
+    if (m_isDefault) str << " [DEFAULT]";
     if (m_isWildcard) str << "[*]";
     if (m_isSetExpr) str << " [SETEXPR]";
 }
 void AstCoverBin::dumpJson(std::ostream& str) const {
     Super::dumpJson(str);
     dumpJsonBoolIf(str, "isArray", isArray());
+    dumpJsonBoolIf(str, "isDefault", isDefault());
     dumpJsonBoolIf(str, "isWildcard", isWildcard());
     dumpJsonBoolIf(str, "isSetExpr", isSetExpr());
     str << ", \"binsType\": \"" << binsType().ascii() << "\"";
@@ -2989,7 +2998,7 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
                     nodep = subp;
                     continue;
                 }
-                if (assertOn) nodep->v3fatalSrc(nodep->prettyTypeName() << " not linked to type");
+                if (assertOn) nodep->v3fatalSrc(nodep->prettyTypeNameQ() << " not linked to type");
                 return nullptr;
             }
             return nodep;
@@ -3014,7 +3023,7 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
             if (depth < MAX_CHAIN_DISPLAY && !nodep->name().empty()) {
                 FileLine* const flp = nodep->fileline();
                 ss << '\n'
-                   << flp->warnOther() << "... Type chain: " << nodep->prettyTypeName() << '\n'
+                   << flp->warnOther() << "... Type chain: " << nodep->prettyTypeNameQ() << '\n'
                    << (!depth ? flp->warnContextPrimary() : flp->warnContextSecondary());
             }
             nodep = nodep->subDTypep();
@@ -3177,15 +3186,9 @@ const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
         return anodep->lhsp()->getVAccessTargetRecurse();
     }
     if (const AstCMethodHard* const anodep = VN_CAST(this, CMethodHard)) {
-        switch (anodep->method()) {
-        case VCMethod::ARRAY_AT:
-        case VCMethod::ARRAY_AT_BACK:
-        case VCMethod::ARRAY_AT_WRITE:
-        case VCMethod::DYN_AT_WRITE_APPEND:
-        case VCMethod::DYN_AT_WRITE_APPEND_BACK:
+        if (anodep->method().isDynElementAccess()) {
             // Used for things like Queue/AssocArray/DynArray
             return anodep->fromp()->getVAccessTargetRecurse();
-        default: break;
         }
     }
     return nullptr;  // nothing found
@@ -3271,7 +3274,7 @@ bool AstNodeFTask::getPurityRecurse() const {
     // Check the declarations and statements if they contain any impure node
     // or any write reference to a variable that isn't an automatic function local.
     for (AstNode* const listp : std::initializer_list<AstNode*>{this->declsp(), this->stmtsp()}) {
-        for (AstNode* itemp = listp; itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : VNList<AstNode>{listp}) {
             if (const AstVar* const varp = VN_CAST(itemp, Var)) {
                 if (varp->isInoutOrRef()) return false;
             }
@@ -4634,6 +4637,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isSigPublic()) str << " [P]";
     if (isSigUserRdPublic()) str << " [PRD]";
     if (isSigUserRWPublic()) str << " [PWR]";
+    if (keepPort()) str << " [KEEPPORT]";
     if (isReadByDpi()) str << " [DPIRD]";
     if (isWrittenByDpi()) str << " [DPIWR]";
     if (isInternal()) str << " [INTERNAL]";
@@ -4705,6 +4709,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
     dumpJsonBoolFuncIf(str, isSigUserRdPublic);
     dumpJsonBoolFuncIf(str, isSigUserRWPublic);
+    dumpJsonBoolFuncIf(str, keepPort);
     dumpJsonBoolFuncIf(str, isReadByDpi);
     dumpJsonBoolFuncIf(str, isWrittenByDpi);
     dumpJsonBoolFuncIf(str, isGParam);

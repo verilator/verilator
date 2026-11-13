@@ -97,6 +97,33 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->fileline(new FileLine{nodep->fileline()});
         }
         m_filelines.insert(nodep->fileline());
+        if (VN_IS(nodep, NodeStmt)) checkEndRunOn(nodep);
+    }
+
+    void checkEndRunOn(AstNode* nodep) {
+        // Statement run on after an 'end' that starts its line, with the
+        // following line indented deeper, as if the statement were
+        // e.g. the body of an 'else' that is missing
+        FileLine* const flp = nodep->fileline();
+        const std::string prefix = flp->sourcePrefix(flp->firstColumn());
+        const std::string::size_type prefixPos = prefix.find_first_not_of(" \t");
+        // Intionally doesn't match end with tab, as unsure what is intent
+        if (prefixPos == std::string::npos
+            || prefix.compare(prefixPos, std::strlen("end "), "end ") != 0)
+            return;
+        // Statement starts after "end[ \t]+"
+        if (prefix.find_first_not_of(" \t", prefixPos + std::strlen("end")) != std::string::npos)
+            return;
+        const std::string prefixIndent = prefix.substr(0, prefixPos);
+        const std::string nextSource = flp->sourceNextLine();
+        const std::string::size_type nextPos = nextSource.find_first_not_of(" \t\n");
+        if (nextPos == std::string::npos) return;  // Blank line
+        const std::string nextIndent = nextSource.substr(0, nextPos);
+        if (nextIndent.size() <= prefixIndent.size()
+            || nextIndent.compare(0, prefixPos, prefixIndent) != 0)
+            return;
+        nodep->v3warn(MISINDENT, "Misleading indentation, was 'end' intended to be 'end else'?\n"
+                                     << nodep->warnContextPrimary());
     }
 
     string nameFromTypedef(AstNode* nodep) {
@@ -121,6 +148,14 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_dtypep);
         m_dtypep = nodep;
         iterateChildren(nodep);
+    }
+    // Warn if a packed dimension is a C-style '[size]', which the grammar accepts
+    static void warnPackedSize(const AstRange* rangep) {
+        if (rangep && rangep->fromBracket()) {
+            rangep->v3warn(
+                NONSTD, "Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)\n"
+                            << rangep->warnMore() << "... Suggest use equivalent '[0:size-1]'");
+        }
     }
 
     bool nestedIfBegin(AstGenBlock* nodep) {  // Point at begin inside the GenIf/GenCaseItem
@@ -206,12 +241,12 @@ class LinkParseVisitor final : public VNVisitor {
         // V3LinkDot hasn't run yet, so have VAR for pre-IEEE 'input' and
         // separate var for pre-IEEE 'integer'.
         std::unordered_map<std::string, AstVar*> portNames;
-        for (AstNode* nodep = nodeListp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{nodeListp}) {
             if (AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isIO() && !varp->isFuncReturn()) portNames.emplace(varp->name(), varp);
             }
         }
-        for (AstNode* nodep = nodeListp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{nodeListp}) {
             if (AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isIO()) continue;
                 const auto it = portNames.find(varp->name());
@@ -296,6 +331,10 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
+    void visit(AstPackArrayDType* nodep) override {
+        warnPackedSize(nodep->rangep());
+        visitIterateNodeDType(nodep);
+    }
     void visit(AstConstraint* nodep) override {
         v3Global.useRandomizeMethods(true);
         iterateChildren(nodep);
@@ -361,11 +400,13 @@ class LinkParseVisitor final : public VNVisitor {
             refp->name(AstClass::embeddedCovergroupTypeName(refp->name()));
         }
         if (nodep->valuep()) nodep->hasUserInit(true);
+        // Lifetime is of variables (IEEE 1800-2023 6.21). Parameters and genvars are constants,
+        // so static, also in classes and automatic functions.
+        if (nodep->isParam() || nodep->isGenVar()) nodep->lifetime(VLifetime::STATIC_IMPLICIT);
         // IEEE 1800-2023 6.21: for loop variables are automatic. verilog.y is
         // responsible for marking those.
         if (nodep->valuep() && nodep->lifetime().isNone() && m_lifetime.isStatic()
             && !nodep->isIO()
-            && !nodep->isParam()
             // In task, or a procedure but not Initial/Final as executed only once
             && ((m_ftaskp && !m_ftaskp->lifetime().isStaticExplicit()) || m_procedurep)) {
             if (VN_IS(m_modp, Module) && m_ftaskp) {
@@ -908,6 +949,8 @@ class LinkParseVisitor final : public VNVisitor {
         } else if (nodep->name() == "" && (VN_IS(backp, GenCaseItem) || VN_IS(backp, GenIf))
                    && !nestedIf) {
             assignGenBlkNum = m_genblkAbove;
+            // A generate block even without begin-end, so a hierarchy level (IEEE 1800-2023 27.5)
+            nodep->implied(false);
         }
         if (assignGenBlkNum != -1) {
             nodep->name("genblk" + cvtToStr(assignGenBlkNum));
@@ -1199,6 +1242,7 @@ class LinkParseVisitor final : public VNVisitor {
         if (nodep->keyword() == VBasicDTypeKwd::CVOID) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: void (for tagged unions)");
         }
+        warnPackedSize(nodep->rangep());
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
@@ -1210,7 +1254,7 @@ class LinkParseVisitor final : public VNVisitor {
     // unwritten.
     static void addArgMemberCopies(AstFunc* funcp, AstNode* argsp, bool readOnlyRefs) {
         AstNodeStmt* copiesp = nullptr;
-        for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
+        for (AstNode* const argp : VNList<AstNode>{argsp}) {
             AstVar* const origVarp = VN_AS(argp, Var);
             AstVar* const paramp = origVarp->cloneTree(false);
             FileLine* const fl = new FileLine{paramp->fileline()};

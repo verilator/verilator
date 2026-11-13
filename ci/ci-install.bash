@@ -75,7 +75,7 @@ install-wavetools() {
   local _tmpdir
   _tmpdir=$(mktemp -d)
   local _archive="wavetools-${WAVETOOLS_VERSION}-${_platform}"
-  wget -q -O "${_tmpdir}/${_archive}.tar.gz" "${_base_url}/${_archive}.tar.gz"
+  wget --retry-connrefused --retry-on-host-error --timeout=15 --waitretry=5 -q -O "${_tmpdir}/${_archive}.tar.gz" "${_base_url}/${_archive}.tar.gz"
   tar -xzf "${_tmpdir}/${_archive}.tar.gz" -C "${_tmpdir}"
   sudo cp "${_tmpdir}/${_archive}/"* /usr/local/bin/
   rm -rf "${_tmpdir}"

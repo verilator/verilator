@@ -70,8 +70,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         return false;
     }
-    void iterateAndCommaConstNull(AstNode* nodep) {
-        for (; nodep; nodep = nodep->nextp()) {
+    void iterateAndCommaConstNull(AstNode* nodesp) {
+        for (AstNode* const nodep : VNList<AstNode>{nodesp}) {
             iterateConst(nodep);
             if (nodep->nextp()) puts(", ");
         }
@@ -84,7 +84,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         m_packedps.clear();
     }
     void emitNodesWithText(AstNode* nodesp, bool tracking, const std::string& separator) {
-        for (AstNode* nodep = nodesp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{nodesp}) {
             if (const AstText* const textp = VN_CAST(nodep, Text)) {
                 if (tracking) {
                     puts(textp->text());
@@ -357,7 +357,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstAlias* nodep) override {
         putbs("alias ");
         iterateConst(nodep->itemsp());
-        for (AstNode* itemp = nodep->itemsp()->nextp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : VNList<AstNode>{nodep->itemsp()->nextp()}) {
             putfs(nodep, " = ");
             iterateConst(itemp);
         }
@@ -485,7 +485,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             if (nodep->arraySizep()) iterateConst(nodep->arraySizep());
             puts("]");
         }
-        if (nodep->binsType() == VCoverBinsType::BINS_DEFAULT) {
+        if (nodep->isDefault()) {
             puts(" = default");
         } else if (nodep->transp()) {
             puts(" = ");
@@ -630,7 +630,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             putbs(", ");
         }
         putsQuoted(text);
-        for (AstNode* expp = exprsp; expp; expp = expp->nextp()) {
+        for (AstNode* const expp : VNList<AstNode>{exprsp}) {
             puts(", ");
             iterateConstNull(expp);
         }
@@ -1327,7 +1327,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstRefDType* nodep) override {
         if (!nodep->subDTypep()) {
-            puts("\n???? // "s + nodep->prettyTypeName() + " -> UNLINKED\n");
+            puts("\n???? // "s + nodep->prettyTypeNameQ() + " -> UNLINKED\n");
             return;
         }
         if (const AstTypedef* const tdefp = nodep->typedefp()) {
@@ -1465,7 +1465,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         if (!VN_IS(nodep->propp(), SchemaRef)) {
             // Same dumping as in AstSenTree
             putfs(nodep, "@(");
-            for (AstNode* expp = nodep->sensesp(); expp; expp = expp->nextp()) {
+            for (AstNode* const expp : VNList<AstNode>{nodep->sensesp()}) {
                 iterateConst(expp);
                 if (expp->nextp()) putqs(expp->nextp(), " or ");
             }
@@ -1568,7 +1568,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             puts("protected ");
         }
         if (isConstDecl(nodep) && !nodep->isParam()) puts("const ");
-        if (m_activeClassp && nodep->lifetime().isStatic()) puts("static ");
+        if (m_activeClassp && nodep->lifetime().isStatic() && !nodep->isParam()) puts("static ");
         if (nodep->rand().isRand()) puts(nodep->rand().isRandC() ? "randc " : "rand ");
         if (nodep->isParam()) puts(nodep->isGParam() ? "parameter " : "localparam ");
 
@@ -1643,12 +1643,12 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstCell*) override {}  // Handled outside the Visit class
     // Default
     void visit(AstNode* nodep) override {
-        puts("\n???? // "s + nodep->prettyTypeName() + "\n");
+        puts("\n???? // "s + nodep->prettyTypeNameQ() + "\n");
         iterateChildrenConst(nodep);
         // Not v3fatalSrc so we keep processing
         if (!m_suppressUnknown) {
             nodep->v3error(
-                "Internal: Unknown node type reached emitter: " << nodep->prettyTypeName());
+                "Internal: Unknown node type reached emitter: " << nodep->prettyTypeNameQ());
         }
     }
     void visit(AstParamTypeDType* nodep) override { puts(nodep->prettyName()); }

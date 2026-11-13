@@ -18,6 +18,7 @@ module t;
     automatic int y = m_i.b.x;
 
     if (vif.x != 2) $stop;
+    if (vif.p != 2) $stop;
     if (y != 2) $stop;
     $write("*-* All Finished *-*\n");
     $finish;

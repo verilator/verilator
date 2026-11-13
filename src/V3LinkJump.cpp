@@ -33,9 +33,9 @@
 
 #include "V3LinkJump.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3Error.h"
 #include "V3UniqueNames.h"
+#include "V3VNUserAllocator.h"
 
 #include <unordered_map>
 #include <vector>
@@ -637,7 +637,7 @@ class LinkJumpVisitor final : public VNVisitor {
             }
         } else {
             nodep->v3fatalSrc("Disable linked with node of unhandled type "
-                              << targetp->prettyTypeName());
+                              << targetp->prettyTypeNameQ());
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

@@ -27,15 +27,38 @@ class RandArrayIndexTest;
   }
 endclass
 
+// Cast index into a random dynamic array and queue
+class RandDynIndexCastTest;
+  rand bit [1:0] idx;
+  rand bit [7:0] dyn[];
+  rand bit [7:0] q[$];
+  rand bit [7:0] dyn_value;
+  rand bit [7:0] q_value;
+
+  constraint sizes { dyn.size() == 4; q.size() == 4; }
+  constraint value_match {
+    dyn_value == dyn[int'(idx)];
+    q_value == q[32'(idx)];
+  }
+endclass
+
 module t;
   initial begin
     int randomize_result;
     static RandArrayIndexTest obj = new();
+    RandDynIndexCastTest cobj;
     repeat (20) begin
       randomize_result = obj.randomize();
       `checkd(randomize_result, 1);
       `checkd(obj.selected_value, obj.data[obj.idx]);
       `check_range(obj.selected_value, 8'd10, 8'd50)
+    end
+    cobj = new();
+    repeat (20) begin
+      randomize_result = cobj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(cobj.dyn_value, cobj.dyn[cobj.idx]);
+      `checkd(cobj.q_value, cobj.q[cobj.idx]);
     end
     $write("*-* All Finished *-*\n");
     $finish;

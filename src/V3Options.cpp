@@ -617,6 +617,7 @@ int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
         {"protect-lib", 2},
         {"protect-key", 2},
         {"threads", 2},
+        {"top", 2},
         {"top-module", 2},
         //
         {"build", 1},
@@ -1009,6 +1010,12 @@ void V3Options::notify() VL_MT_DISABLED {
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_makeJson) m_gmake = true;
 
+    if (cxxModules() && m_compilerMsvc && !m_makeJson && !lintOnly() && !preprocOnly()
+        && !dpiHdrOnly() && !jsonOnly()) {
+        cmdfl->v3error("Unsupported: the MSVC C++ module backend requires CMake; "
+                       "use --make json and build with CMake");
+    }
+
     if (m_hierarchical && (m_hierChild || !m_hierBlocks.empty())) {
         cmdfl->v3error(
             "--hierarchical must not be set with --hierarchical-child or --hierarchical-block");
@@ -1366,6 +1373,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-comp-limit-parens", Set, &m_compLimitParens).undocumented();
     DECL_OPTION("-comp-limit-syms", CbVal, [](int val) { VName::maxLength(val); }).undocumented();
     DECL_OPTION("-compiler", CbVal, [this, fl](const char* valp) {
+        m_compilerMsvc = !std::strcmp(valp, "msvc");
         if (!std::strcmp(valp, "clang")) {
             m_compLimitBlocks = 80;  // limit unknown
             m_compLimitMembers = 64;  // soft limit, has slowdown bug as of clang++ 3.8
@@ -1430,6 +1438,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
     DECL_OPTION("-coverage-user", OnOff, &m_coverageUser);
+
+    DECL_OPTION("-cxx-modules", OnOff, &m_cxxModules);
 
     DECL_OPTION("-D", CbPartialMatch, [this](const char* valp) VL_MT_DISABLED {
         addDefine(valp, false);
@@ -1521,6 +1531,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fcase-decoder", FOnOff, &m_fCaseDecoder);
     DECL_OPTION("-fcase-table", FOnOff, &m_fCaseTable);
     DECL_OPTION("-fcase-tree", FOnOff, &m_fCaseTree);
+    DECL_OPTION("-fcoalesce", FOnOff, &m_fCoalesce);
     DECL_OPTION("-fcombine", FOnOff, &m_fCombine);
     DECL_OPTION("-fconst", FOnOff, &m_fConst);
     DECL_OPTION("-fconst-before-dfg", FOnOff, &m_fConstBeforeDfg);
@@ -2118,6 +2129,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             || suffixed(filename, ".c")  //
             || suffixed(filename, ".sp")) {
             V3Options::addCppFile(filename);
+        } else if (suffixed(filename, ".cppm")  //
+                   || suffixed(filename, ".ixx")) {
+            V3Options::addCppFile(filename);
+            m_moduleFiles.insert(filename);
         } else if (suffixed(filename, ".a")  //
                    || suffixed(filename, ".o")  //
                    || suffixed(filename, ".so")) {
@@ -2459,6 +2474,7 @@ void V3Options::optimize(int level) {
     m_fCaseDecoder = flag;
     m_fCaseTable = flag;
     m_fCaseTree = flag;
+    m_fCoalesce = flag;
     m_fCombine = flag;
     m_fConst = flag;
     m_fConstBitOpTree = flag;

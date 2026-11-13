@@ -1109,3 +1109,13 @@ string boo = "testtest x,y xquux(test)";
 
 
 `line 774 "t/t_preproc.v" 0
+ 
+ 
+ 
+ 
+EXP: ja32 z y
+ja32 z y
+EXP: ja32 p q
+ja32 p q
+
+`line 783 "t/t_preproc.v" 0

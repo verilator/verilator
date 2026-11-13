@@ -559,10 +559,10 @@ class CoverageVisitor final : public VNVisitor {
         } else if (VN_IS(dtypep, QueueDType) || VN_IS(dtypep, AssocArrayDType)
                    || VN_IS(dtypep, WildcardArrayDType)) {
             // Not covered
-            varp->v3warn(COVERIGN, "Coverage ignored for type " << dtypep->prettyTypeName());
+            varp->v3warn(COVERIGN, "Coverage ignored for type " << dtypep->prettyTypeNameQ());
         } else {
             dtypep->v3fatalSrc("Unexpected node data type in toggle coverage generation: "
-                               << dtypep->prettyTypeName());
+                               << dtypep->prettyTypeNameQ());
         }
     }
     bool includeCondToBranchRecursive(const AstNode* const nodep) {

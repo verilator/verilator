@@ -271,9 +271,43 @@ void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgStrongly{this, 
 
 class GraphAlgRank final : GraphAlg<> {
     void main() {
-        // Rank each vertex, ignoring cutable edges
+        // Rank each vertex, ignoring cutable edges, with the longest path to it. Visit vertices
+        // in topological order (A. B. Kahn, "Topological sorting of large networks", CACM 1962),
+        // so each once; raising ranks depth first instead revisits all vertices after one at
+        // each raise, which is quadratic on long paths.
+        // Vertex::m_user: number of predecessors not visited yet
+        size_t nUnvisited = 0;
+        for (V3GraphVertex& vertex : m_graphp->vertices()) {
+            vertex.rank(1);
+            vertex.user(0);
+            ++nUnvisited;
+        }
+        for (V3GraphVertex& vertex : m_graphp->vertices()) {
+            for (V3GraphEdge& edge : vertex.outEdges()) {
+                if (followEdge(&edge)) edge.top()->user(edge.top()->user() + 1);
+            }
+        }
+        std::vector<V3GraphVertex*> readyps;
+        readyps.reserve(nUnvisited);
+        for (V3GraphVertex& vertex : m_graphp->vertices()) {
+            if (!vertex.user()) readyps.push_back(&vertex);
+        }
+        while (!readyps.empty()) {
+            V3GraphVertex* const vertexp = readyps.back();
+            readyps.pop_back();
+            --nUnvisited;
+            const uint32_t rank = vertexp->rank() + vertexp->rankAdder();
+            for (V3GraphEdge& edge : vertexp->outEdges()) {
+                if (!followEdge(&edge)) continue;
+                V3GraphVertex* const topp = edge.top();
+                topp->rank(std::max(topp->rank(), rank));
+                topp->user(topp->user() - 1);
+                if (!topp->user()) readyps.push_back(topp);
+            }
+        }
+        if (!nUnvisited) return;
+        // Vertices on a loop are never ready. Report it as the depth first search does.
         // Vertex::m_user begin: 1 indicates processing, 2 indicates completed
-        // Clear existing ranks
         for (V3GraphVertex& vertex : m_graphp->vertices()) {
             vertex.rank(0);
             vertex.user(0);
@@ -411,9 +445,7 @@ public:
         main(vertexp);
     }
     ~GraphAlgRLoops() = default;
-    string message() const {
-        return std::accumulate(m_msgs.begin(), m_msgs.end(), std::string{""});
-    }
+    string message() const { return std::accumulate(m_msgs.begin(), m_msgs.end(), ""s); }
 };
 
 string V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {

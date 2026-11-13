@@ -20,4 +20,6 @@ BRDA:360,0,(k==0) => 0,11
 BRDA:360,0,(k==1) => 1,0
 BRF:12
 BRH:4
+LF:6
+LH:4
 end_of_record

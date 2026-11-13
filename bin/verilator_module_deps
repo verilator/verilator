@@ -1,0 +1,603 @@
+#!/usr/bin/env python3
+# mypy: disallow-untyped-defs
+# pylint: disable=C0114,C0116,C0209,R0912,R0913,R0914,R0915,R0917
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+######################################################################
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+from typing import Any, NoReturn, Optional
+
+MODULE_SOURCE_SUFFIXES = ('.cppm', '.ixx')
+
+
+def fatal(message: str) -> NoReturn:
+    sys.stderr.write("%Error: " + message + "\n")
+    sys.exit(1)
+
+
+def make_escape(name: str) -> str:
+    escaped = []
+    for char in name:
+        if char == '$':
+            escaped.append('$$')
+        elif char in '\\ \t#:*?[]':
+            escaped.append('\\' + char)
+        else:
+            escaped.append(char)
+    return ''.join(escaped)
+
+
+def shell_quote(name: str) -> str:
+    return "'" + name.replace("'", "'\\''").replace('$', '$$') + "'"
+
+
+def safe_stem(stem: str, abs_source: str) -> str:
+    safe = re.sub(r'[^A-Za-z0-9_.+-]', '_', stem)
+    if safe != stem:
+        safe += '_' + hashlib.sha256(abs_source.encode('utf8')).hexdigest()[:8]
+    return safe
+
+
+def parse_flags(flags: str) -> list[str]:
+    return [flag for flag in shlex.split(flags) if flag not in ('-MMD', '-MP')]
+
+
+def is_module_control_flag(flag: str) -> bool:
+    return (flag == '-fmodule-only' or flag == '-fmodule-header'
+            or flag.startswith('-fmodule-header='))
+
+
+def external_modules(flags: list[str]) -> set[str]:
+    prefix = '-fmodule-file='
+    modules = set()
+    for flag in flags:
+        if flag.startswith(prefix):
+            modules.add(flag[len(prefix):].split('=', 1)[0])
+    return modules
+
+
+def gcc_module_flags(cxxflags: list[str]) -> list[str]:
+    if '-fmodules' in cxxflags or '-fmodules-ts' in cxxflags:
+        return []
+    return ['-fmodules']
+
+
+def run_scan(command: list[str], abs_source: str, deps_file: str) -> None:
+    result = subprocess.run(command, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        sys.stderr.write(result.stdout)
+        sys.stderr.write(result.stderr)
+        fatal("C++ module scan failed for '" + abs_source + "'")
+    if not os.path.exists(deps_file):
+        fatal("C++ module scan produced no dependency file for '" + abs_source + "'")
+
+
+def scan_gcc(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str], abs_source: str,
+             obj: str, deps_file: str) -> None:
+    run_scan((shlex.split(args.cxx) + cppflags + cxxflags + gcc_module_flags(cxxflags) + [
+        '-MM',
+        '-fdeps-format=p1689r5',
+        '-fdeps-file=' + deps_file,
+        '-fdeps-target=' + obj,
+        '-fsyntax-only',
+        abs_source,
+    ]), abs_source, deps_file)
+
+
+def scan_deps_path(cxx: str) -> str:
+    found = shutil.which('clang-scan-deps')
+    if found:
+        return found
+    candidate = os.path.join(os.path.dirname(os.path.abspath(shlex.split(cxx)[0])),
+                             'clang-scan-deps')
+    if os.path.exists(candidate):
+        return candidate
+    fatal("clang-scan-deps is required for the clang C++ module backend")
+
+
+def clang_language_flags(source: str) -> list[str]:
+    return ['-x', 'c++-module'] if source.endswith('.ixx') else []
+
+
+def scan_clang(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str], abs_source: str,
+               deps_file: str) -> None:
+    compile_database = deps_file + '.compile_commands.json'
+    command = shlex.split(args.cxx) + cppflags + cxxflags + clang_language_flags(abs_source) + [
+        '-c', abs_source, '-o', abs_source + '.o'
+    ]
+    try:
+        with open(compile_database, 'w', encoding='utf8') as fh:
+            json.dump([{
+                'directory': os.getcwd(),
+                'file': abs_source,
+                'command': subprocess.list2cmdline(command),
+            }], fh)
+        run_scan(([
+            scan_deps_path(args.cxx),
+            '-compilation-database=' + compile_database,
+            '-format=p1689',
+            '-o',
+            deps_file,
+        ]), abs_source, deps_file)
+    finally:
+        if os.path.exists(compile_database):
+            os.remove(compile_database)
+
+
+def scan_cache_path(objdir: str, stem: str) -> str:
+    return os.path.join(objdir, stem + '.scan.json')
+
+
+def scan_flags_key(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str]) -> str:
+    payload = {
+        'backend': args.backend,
+        'cxx': args.cxx,
+        'cppflags': cppflags,
+        'cxxflags': cxxflags,
+        'opt_fast': args.opt_fast,
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode('utf8')).hexdigest()
+
+
+def cached_scan(args: argparse.Namespace, module: dict[str, Any], flags_key: str) -> bool:
+    try:
+        with open(scan_cache_path(args.objdir, module['stem']), 'r', encoding='utf8') as fh:
+            cache = json.load(fh)
+        source_stat = os.stat(module['source'])
+    except (OSError, ValueError):
+        return False
+    return (cache.get('source') == module['source']
+            and cache.get('mtime_ns') == source_stat.st_mtime_ns
+            and cache.get('size') == source_stat.st_size and cache.get('flags_key') == flags_key
+            and cache.get('deps') == os.path.basename(module['deps_file'])
+            and os.path.exists(module['deps_file']))
+
+
+def write_scan_cache(args: argparse.Namespace, module: dict[str, Any], flags_key: str) -> None:
+    source_stat = os.stat(module['source'])
+    with open(scan_cache_path(args.objdir, module['stem']), 'w', encoding='utf8') as fh:
+        json.dump(
+            {
+                'source': module['source'],
+                'mtime_ns': source_stat.st_mtime_ns,
+                'size': source_stat.st_size,
+                'flags_key': flags_key,
+                'deps': os.path.basename(module['deps_file']),
+            },
+            fh,
+            indent=2)
+        fh.write('\n')
+
+
+def ensure_scan(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
+                module: dict[str, Any], flags_key: str) -> None:
+    if cached_scan(args, module, flags_key):
+        return
+    if args.backend == 'gcc':
+        scan_gcc(args, cppflags, cxxflags, module['source'], module['obj'], module['deps_file'])
+    else:
+        scan_clang(args, cppflags, cxxflags, module['source'], module['deps_file'])
+    write_scan_cache(args, module, flags_key)
+
+
+HEADER_IMPORT_RE = re.compile(r'^\s*(?:export\s+)?import\s+"([^"]+)"\s*;', re.MULTILINE)
+
+
+def header_imports(path: str) -> list[str]:
+    with open(path, 'r', encoding='utf8', errors='replace') as fh:
+        text = fh.read()
+    text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
+    text = re.sub(r'//[^\n]*', '', text)
+    return HEADER_IMPORT_RE.findall(text)
+
+
+def include_directories(flags: list[str]) -> list[str]:
+    dirs: list[str] = []
+    index = 0
+    prefixes = ('-I', '-iquote', '-isystem', '-idirafter')
+    while index < len(flags):
+        flag = flags[index]
+        if flag in prefixes and index + 1 < len(flags):
+            dirs.append(flags[index + 1])
+            index += 1
+        else:
+            for prefix in prefixes:
+                if flag.startswith(prefix) and len(flag) > len(prefix):
+                    dirs.append(flag[len(prefix):])
+                    break
+        index += 1
+    return dirs
+
+
+def resolve_header(name: str, importer: str,
+                   include_dirs: list[str]) -> Optional[str]:  # noqa: UP045
+    if os.path.isabs(name):
+        return name if os.path.isfile(name) else None
+    candidate = os.path.join(os.path.dirname(importer), name)
+    if os.path.isfile(candidate):
+        return candidate
+    for directory in include_dirs:
+        candidate = os.path.join(directory, name)
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def header_sidecar(objdir: str, header: str) -> str:
+    digest = hashlib.sha256(header.encode('utf8')).hexdigest()[:16]
+    return os.path.join(objdir, digest + '.cmi')
+
+
+def cached_header_cmi(objdir: str, header: str) -> Optional[str]:  # noqa: UP045
+    try:
+        with open(header_sidecar(objdir, header), 'r', encoding='utf8') as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    if data.get('header') != header or not isinstance(data.get('cmi'), str):
+        return None
+    return str(data['cmi'])
+
+
+def write_header_sidecar(objdir: str, header: str, cmi: str) -> None:
+    with open(header_sidecar(objdir, header), 'w', encoding='utf8') as fh:
+        json.dump({'header': header, 'cmi': cmi}, fh, indent=2)
+        fh.write('\n')
+
+
+COMPILER_CMI_RE = re.compile("writing CMI ['\u2018]([^'\u2019]+)['\u2019]")
+
+
+def compile_header(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
+                   header: dict[str, Any]) -> str:
+    opt_flags = parse_flags(args.opt_fast)
+    command = (shlex.split(args.cxx) + opt_flags + cppflags + cxxflags +
+               gcc_module_flags(cxxflags) +
+               ['-flang-info-module-cmi', '-fmodule-header', '-x', 'c++-header', header['path']])
+    result = subprocess.run(command, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        sys.stderr.write(result.stdout)
+        sys.stderr.write(result.stderr)
+        fatal("C++ header unit build failed for '" + header['path'] + "'")
+    match = COMPILER_CMI_RE.search(result.stdout + '\n' + result.stderr)
+    if match is None:
+        fatal("C++ header unit build for '" + header['path'] +
+              "' did not report a CMI path; this GCC requires -flang-info-module-cmi support")
+    cmi = os.path.normpath(match.group(1))
+    if not os.path.exists(cmi):
+        fatal("C++ header unit build reported a CMI at '" + cmi + "' that does not exist")
+    write_header_sidecar(args.objdir, header['key'], cmi)
+    return cmi
+
+
+def prepare_gcc_headers(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
+                        modules: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    include_dirs = include_directories(cppflags + cxxflags)
+    headers: dict[str, dict[str, Any]] = {}
+
+    def add(path: str) -> dict[str, Any]:
+        key = os.path.abspath(path)
+        if key in headers:
+            return headers[key]
+        entry: dict[str, Any] = {'key': key, 'path': path, 'cmi': '', 'deps': []}
+        headers[key] = entry
+        for name in header_imports(path):
+            dep = resolve_header(name, path, include_dirs)
+            if dep is not None:
+                entry['deps'].append(add(dep))
+        return entry
+
+    for module in modules:
+        module['headers'] = []
+        for name in header_imports(module['source']):
+            dep = resolve_header(name, module['source'], include_dirs)
+            if dep is not None:
+                module['headers'].append(add(dep))
+
+    built: set[str] = set()
+
+    def up_to_date(entry: dict[str, Any]) -> Optional[str]:  # noqa: UP045
+        cmi = cached_header_cmi(args.objdir, entry['key'])
+        if cmi is None or not os.path.exists(cmi):
+            return None
+        cmi_time = os.stat(cmi).st_mtime_ns
+        if os.stat(entry['path']).st_mtime_ns > cmi_time:
+            return None
+        for dep in entry['deps']:
+            if os.stat(dep['cmi']).st_mtime_ns > cmi_time:
+                return None
+        return cmi
+
+    def build(entry: dict[str, Any]) -> None:
+        if entry['key'] in built:
+            return
+        built.add(entry['key'])
+        for dep in entry['deps']:
+            build(dep)
+        cmi = up_to_date(entry)
+        if cmi is None:
+            cmi = compile_header(args, cppflags, cxxflags, entry)
+        entry['cmi'] = cmi
+
+    for entry in headers.values():
+        build(entry)
+    return headers
+
+
+def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]], external: set[str],
+                    headers: dict[str, dict[str, Any]]) -> None:
+    providers: dict[str, dict[str, Any]] = {}
+    for module in modules:
+        for name in module['provides']:
+            if name in providers:
+                fatal("Duplicate C++ module provider '" + name + "' in '" +
+                      providers[name]['source'] + "' and '" + module['source'] + "'")
+            providers[name] = module
+
+    for module in modules:
+        direct: list[dict[str, Any]] = []
+        header_deps: list[dict[str, Any]] = []
+        dep_names: set[str] = set()
+        pending = list(module['requires'])
+        seen: set[str] = set()
+        while pending:
+            name = pending.pop()
+            if name in seen:
+                continue
+            seen.add(name)
+            if name in providers:
+                provider = providers[name]
+                if provider not in direct:
+                    direct.append(provider)
+                dep_names.add(name)
+                pending.extend(provider['requires'])
+            elif name in external:
+                continue
+            elif '/' in name or '\\' in name:
+                if args.backend != 'gcc':
+                    continue
+                header = headers.get(os.path.abspath(name))
+                if header is not None and header not in header_deps:
+                    header_deps.append(header)
+            elif name == 'std':
+                if args.backend == 'gcc' and not os.path.exists(
+                        os.path.join(args.objdir, 'gcm.cache', 'std.gcm')):
+                    fatal("C++ module 'std' is required, but gcm.cache/std.gcm was not found; "
+                          "precompile the std module before building")
+            else:
+                fatal("C++ module '" + name + "' required by '" + module['source'] +
+                      "' has no provider; precompile it and pass -fmodule-file=" + name +
+                      "=<path>")
+        module['direct_deps'] = direct
+        module['header_deps'] = header_deps
+        if args.backend == 'clang':
+            module['dep_flags'] = sorted('-fmodule-file=' + name + '=' + providers[name]['pcm']
+                                         for name in dep_names)
+        else:
+            module['dep_flags'] = []
+
+
+def module_flags_lines() -> list[str]:
+    return [
+        ('VK_MODULE_FLAGS = $(filter-out -fmodule-header% -fmodule-only,'
+         '$(CXXFLAGS) $(CPPFLAGS)) '
+         '$(if $(filter gcc,$(VK_MODULE_BACKEND)),-fmodules)'),
+    ]
+
+
+def gcc_module_cmi(module: dict[str, Any]) -> str:
+    return os.path.join('gcm.cache', str(module['provides'][0]) + '.gcm')
+
+
+def gcc_compile_command(module: dict[str, Any], module_only: bool) -> str:
+    if module_only:
+        return ('$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -fmodule-only -c ' +
+                shell_quote(module['source']))
+    return ('$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -c ' +
+            shell_quote(module['source']) + ' -o ' + shell_quote(module['obj']))
+
+
+def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any]],
+                 module_only: bool) -> str:
+    lines: list[str] = []
+    module_objs = sorted(
+        {module['obj']
+         for module in modules if module['provides'] and not module_only})
+    module_cmis = {header['cmi'] for header in headers.values()}
+    module_cmis.update(gcc_module_cmi(module) for module in modules if module['provides'])
+    lines.append('VK_MODULE_OBJS = ' + ' '.join(make_escape(obj) for obj in module_objs))
+    lines.append('VK_MODULE_CMIS = ' + ' '.join(make_escape(cmi) for cmi in sorted(module_cmis)))
+    if not module_only:
+        stems = sorted({
+            module['stem']
+            for module in modules if module['source'].endswith(MODULE_SOURCE_SUFFIXES)
+        })
+        lines.append('VM_USER_CLASSES += ' + ' '.join(stems))
+    lines.extend(module_flags_lines())
+    lines.append('')
+    lines.append('.PHONY: modules')
+    lines.append('modules: $(VK_MODULE_OBJS) $(VK_MODULE_CMIS)')
+    lines.append('')
+    for header in sorted(headers.values(), key=lambda entry: entry['cmi']):
+        prereqs = [make_escape(header['path']), '$(VM_PREFIX).mk']
+        prereqs.extend(make_escape(dep['cmi']) for dep in header['deps'])
+        lines.append(make_escape(header['cmi']) + ': ' + ' '.join(prereqs))
+        lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -fmodule-header'
+                     ' -x c++-header ' + shell_quote(header['path']))
+        lines.append('')
+    for module in sorted(modules, key=lambda entry: entry['obj']):
+        deps = [gcc_module_cmi(dep) for dep in module['direct_deps']]
+        deps.extend(header['cmi'] for header in module['header_deps'])
+        prereqs = [make_escape(module['source']), '$(VM_PREFIX).mk']
+        prereqs.extend(make_escape(dep) for dep in sorted(set(deps)))
+        if module_only and module['provides']:
+            cmi = gcc_module_cmi(module)
+            lines.append(make_escape(cmi) + ': ' + ' '.join(prereqs))
+            lines.append('\t' + gcc_compile_command(module, module_only=True))
+        else:
+            command = gcc_compile_command(module, module_only=False)
+            if module['provides']:
+                cmi = gcc_module_cmi(module)
+                lines.append(
+                    make_escape(cmi) + ': ' + ' '.join(prereqs) + ' | ' +
+                    make_escape(module['obj']))
+                lines.append('\ttest -f ' + shell_quote(cmi) + ' || ' + command)
+            lines.append(make_escape(module['obj']) + ': ' + ' '.join(prereqs))
+            lines.append('\t' + command)
+        lines.append('')
+    return '\n'.join(lines)
+
+
+def generate_clang(modules: list[dict[str, Any]]) -> str:
+    lines: list[str] = []
+    module_objs = sorted({module['obj'] for module in modules if module['provides']})
+    module_cmis = sorted({module['pcm'] for module in modules if module['provides']})
+    lines.append('VK_MODULE_OBJS = ' + ' '.join(make_escape(obj) for obj in module_objs))
+    lines.append('VK_MODULE_CMIS = ' + ' '.join(make_escape(cmi) for cmi in module_cmis))
+    stems = sorted({
+        module['stem']
+        for module in modules if module['source'].endswith(MODULE_SOURCE_SUFFIXES)
+    })
+    lines.append('VM_USER_CLASSES += ' + ' '.join(stems))
+    lines.extend(module_flags_lines())
+    lines.append('')
+    lines.append('.PHONY: modules')
+    lines.append('modules: $(VK_MODULE_OBJS) $(VK_MODULE_CMIS)')
+    lines.append('')
+    for module in sorted(modules, key=lambda entry: entry['obj']):
+        prereqs = [make_escape(module['source']), '$(VM_PREFIX).mk']
+        prereqs.extend(make_escape(dep['pcm']) for dep in module['direct_deps'])
+        command = [
+            '$(OBJCACHE)', '$(CXX)', '$(OPT_FAST)', '$(VK_MODULE_FLAGS)',
+            *[shell_quote(flag) for flag in module['dep_flags']]
+        ]
+        if module['provides']:
+            command.append(shell_quote('-fmodule-output=' + module['pcm']))
+        command += clang_language_flags(module['source'])
+        command += ['-c', shell_quote(module['source']), '-o', shell_quote(module['obj'])]
+        if module['provides']:
+            pcm = make_escape(module['pcm'])
+            lines.append(pcm + ': ' + ' '.join(prereqs) + ' | ' + make_escape(module['obj']))
+            lines.append('\ttest -f ' + shell_quote(module['pcm']) + ' || ' + ' '.join(command))
+        lines.append(make_escape(module['obj']) + ': ' + ' '.join(prereqs))
+        lines.append('\t' + ' '.join(command))
+        lines.append('')
+    return '\n'.join(lines)
+
+
+def scan(args: argparse.Namespace) -> None:
+    cppflags = parse_flags(args.cppflags)
+    cxxflags = parse_flags(args.cxxflags)
+    external = external_modules(cppflags + cxxflags)
+
+    if args.backend not in ('gcc', 'clang'):
+        fatal("Unsupported C++ module dependency backend '" + args.backend + "'")
+
+    module_only = False
+    headers: dict[str, dict[str, Any]] = {}
+    if args.backend == 'gcc':
+        module_only = any(flag == '-fmodule-only' for flag in cppflags + cxxflags)
+        cppflags = [flag for flag in cppflags if not is_module_control_flag(flag)]
+        cxxflags = [flag for flag in cxxflags if not is_module_control_flag(flag)]
+
+    if args.objdir:
+        os.makedirs(args.objdir, exist_ok=True)
+
+    modules: list[dict[str, Any]] = []
+    objects: dict[str, str] = {}
+    for source in args.source:
+        abs_source = os.path.abspath(source)
+        stem = os.path.splitext(os.path.basename(abs_source))[0]
+        safe = safe_stem(stem, abs_source)
+        obj = safe + '.o'
+        if obj in objects:
+            fatal("Multiple C++ sources produce '" + obj + "': '" + objects[obj] + "' and '" +
+                  abs_source + "'")
+        objects[obj] = abs_source
+
+        modules.append({
+            'source': abs_source,
+            'stem': safe,
+            'obj': obj,
+            'pcm': safe + '.pcm',
+            'deps_file': os.path.join(args.objdir, stem + '.deps.json'),
+        })
+
+    if args.backend == 'gcc':
+        headers = prepare_gcc_headers(args, cppflags, cxxflags, modules)
+
+    flags_key = scan_flags_key(args, cppflags, cxxflags)
+    for module in modules:
+        ensure_scan(args, cppflags, cxxflags, module, flags_key)
+
+    for module in modules:
+        with open(module['deps_file'], 'r', encoding='utf8') as fh:
+            data = json.load(fh)
+        rules = data.get('rules', [])
+        rule = next((entry for entry in rules if entry.get('primary-output') == module['obj']),
+                    None)
+        if rule is None and rules:
+            rule = rules[0]
+        if rule is None:
+            rule = {}
+
+        provides = []
+        for provide in rule.get('provides', []):
+            if provide.get('is-interface', False):
+                provides.append(provide['logical-name'])
+        requires = []
+        for require in rule.get('requires', []):
+            requires.append(require['logical-name'])
+        module['provides'] = provides
+        module['requires'] = requires
+
+    resolve_modules(args, modules, external, headers)
+
+    if args.backend == 'gcc':
+        content = generate_gcc(modules, headers, module_only)
+    else:
+        content = generate_clang(modules)
+
+    old_content = None
+    if os.path.exists(args.output):
+        with open(args.output, 'r', encoding='utf8') as fh:
+            old_content = fh.read()
+    if content != old_content:
+        with open(args.output, 'w', encoding='utf8') as fh:
+            fh.write(content)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(allow_abbrev=False)
+    parser.add_argument('--backend', required=True, help='dependency backend')
+    parser.add_argument('--cxx', required=True, help='C++ compiler')
+    parser.add_argument('--cxxflags', default='', help='C++ compiler flags')
+    parser.add_argument('--cppflags', default='', help='C preprocessor flags')
+    parser.add_argument('--objdir', default='.', help='object directory')
+    parser.add_argument('--opt-fast', default='', help='fast optimization flags')
+    parser.add_argument('--output', required=True, help='output make fragment')
+    parser.add_argument('--source', action='append', default=[], help='C++ source file')
+    args = parser.parse_args()
+    scan(args)
+
+
+if __name__ == '__main__':
+    main()
+
+######################################################################
+# Local Variables:
+# compile-command: "./verilator_module_deps --backend gcc --cxx c++ --source m.cppm"
+# End:

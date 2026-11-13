@@ -1,0 +1,6 @@
+                   0: calling dpi_import_function
+Calling dpi_export_func
+                   0: calling dpi_import_task
+Calling dpi_export_task
+%Error: <unknown>:0: DPI exported task called from function context (IEEE 1800-2023 35.8)
+Aborting...

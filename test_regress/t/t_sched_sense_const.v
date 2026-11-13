@@ -104,6 +104,12 @@ module t;
     if (never) #1;
   end
 
+  // An NBA reads the unchanged value of a variable whose only writer never fires
+  bit never_written;
+  logic nba_read = 1;
+  always @(posedge w_even) never_written <= 1;
+  always @(posedge w_odd) nba_read <= never_written;
+
   initial begin
     #1;
     `checkd(cnt_const_n, 1);
@@ -126,6 +132,7 @@ module t;
     `checkd(cnt_pos_even_s, 0);
     `checkd(cnt_neg_odd_n, 0);
     `checkd(cnt_neg_odd_s, 0);
+    `checkd(nba_read, 0);
     #10;
     `checkd(cnt_const_n, 1);
     `checkd(cnt_const_s, 1);

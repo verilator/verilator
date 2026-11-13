@@ -134,18 +134,6 @@ protected:
         sc_register_stage_callback(*this, SC_PRE_TIMESTEP);
 #endif
     }
-    static std::string getScTimeUnit() {
-        // We want to avoid a depreciated warning, but still be back compatible.
-        // Turning off the message just for this still results in an
-        // annoying "to turn off" message.
-        const sc_core::sc_time t1sec{1, sc_core::SC_SEC};
-        if (t1sec.to_default_time_units() == 0) {
-            VL_FATAL_MT(__FILE__, __LINE__, "",  // LCOV_EXCL_LINE
-                        "Cannot to get valid SystemC default time unit for trace file");
-        }
-        const sc_core::sc_time tunits{1.0 / t1sec.to_default_time_units(), sc_core::SC_SEC};
-        return tunits.to_string();
-    }
     static std::string getScTimeResolution() {
         return sc_core::sc_get_time_resolution().to_string();
     }

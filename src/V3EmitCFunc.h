@@ -302,7 +302,7 @@ public:
     void emitVarResetScopeHash();
     void emitChangeDet();
     void putCommaIterateNext(AstNode* nodep, bool comma = false) {
-        for (AstNode* subnodep = nodep; subnodep; subnodep = subnodep->nextp()) {
+        for (AstNode* const subnodep : VNList<AstNode>{nodep}) {
             if (comma) puts(", ");
             iterateConst(subnodep);
             comma = true;
@@ -393,7 +393,7 @@ public:
 
     void emitNodesWithText(AstNode* nodesp, bool useSelfForThis, bool tracking,
                            const std::string& separator) {
-        for (AstNode* nodep = nodesp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{nodesp}) {
             if (const AstText* const textp = VN_CAST(nodep, Text)) {
                 const std::string text
                     = VSelfPointerText::replaceThis(useSelfForThis, textp->text());
@@ -938,7 +938,8 @@ public:
         if (nodep->method() == VCMethod::FORCE_READ_SEL) {
             emitIQW(nodep);
             if (nodep->isWide()) puts("<" + cvtToStr(nodep->dtypep()->widthWords()) + ">");
-        } else if (nodep->method() == VCMethod::ARRAY_SLICE) {
+        } else if (nodep->method() == VCMethod::ARRAY_SLICE
+                   || nodep->method() == VCMethod::ARRAY_SLICE_REF) {
             // VlUnpacked::slice<N_Out>(loIdx) - N_Out is the (fixed) result array size
             const AstUnpackArrayDType* const adtypep
                 = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
@@ -1953,7 +1954,8 @@ public:
     void visit(AstAddrOfCFunc* nodep) override {
         // Note: Can be thought to handle more, but this is all that is needed right now
         const AstCFunc* const funcp = nodep->funcp();
-        UASSERT_OBJ(funcp->isLoose(), nodep, "Cannot take address of non-loose method");
+        UASSERT_OBJ(funcp->isLoose() || funcp->dpiImportPrototype(), nodep,
+                    "Cannot take address of non-loose method");
         putns(nodep, "&");
         puts(funcNameProtect(funcp));
     }
@@ -2001,10 +2003,10 @@ public:
 
     // Default
     void visit(AstNode* nodep) override {  // LCOV_EXCL_START
-        putns(nodep, "\n???? // "s + nodep->prettyTypeName() + "\n");
+        putns(nodep, "\n???? // "s + nodep->prettyTypeNameQ() + "\n");
         iterateChildrenConst(nodep);
         if (!v3Global.opt.lintOnly()) {  // An internal problem, so suppress
-            nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeName());
+            nodep->v3fatalSrc("Unknown node type reached emitter: " << nodep->prettyTypeNameQ());
         }
     }  // LCOV_EXCL_STOP
 

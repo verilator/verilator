@@ -210,7 +210,7 @@ private:
                 UASSERT_OBJ(!VN_IS(nodep, NodeExpr), nodep,
                             "All AstNodeExpr must have a dtype post V3WidthCommit");
                 UASSERT_OBJ(!nodep->dtypep(), nodep,
-                            "DType on node without hasDType(): " << nodep->prettyTypeName());
+                            "DType on node without hasDType(): " << nodep->prettyTypeNameQ());
             }
             UASSERT_OBJ(!nodep->getChildDTypep(), nodep,
                         "childDTypep() non-null on node after should have removed");
@@ -225,11 +225,8 @@ private:
         iterateChildrenConst(nodep);
         processExit(nodep);
     }
-    void processAndIterateList(AstNode* nodep) {
-        while (nodep) {
-            processAndIterate(nodep);
-            nodep = nodep->nextp();
-        }
+    void processAndIterateList(AstNode* nodesp) {
+        for (AstNode* const nodep : VNList<AstNode>{nodesp}) processAndIterate(nodep);
     }
     void pushLocalScope() {
         if (m_cfuncp) m_localsStack.emplace_back();
@@ -248,7 +245,7 @@ private:
 
         // Check each argument
         const char* dp = descrp;
-        for (AstNodeExpr* argp = argsp; argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+        for (AstNodeExpr* const argp : VNList<AstNodeExpr>{argsp}) {
             if (argp->fileline()->erroringOn()) return;  // Intentionally skip all checks
             const AstNodeExpr* const lvalp = argp->getVAccessTargetRecurse();
             const VAccess access
@@ -272,6 +269,13 @@ private:
                             "Inout argument of library call is not a valid C++ LValue");
                 UASSERT_OBJ(access.isRW(), argp,
                             "Inout argument of library call is not read-write");
+                break;
+            case 'f':
+                if (access.isWriteOrRW()) {
+                    UASSERT_OBJ(
+                        lvalp, argp,
+                        "Mutable forwarded argument of library call is not a valid C++ LValue");
+                }
                 break;
             default:
                 UASSERT_OBJ(dp[0], argp, "Unexpected trailing arguments to library call");

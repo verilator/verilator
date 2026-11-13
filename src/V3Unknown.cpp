@@ -130,8 +130,15 @@ class UnknownVisitor final : public VNVisitor {
                                                 prep->dtypep()};
                 addVar(varp);
                 AstNode* const prepCopyp = prep->clonep();
-                prepCopyp->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
+                // As written by the original, e.g. read-write as a library call's inout argument
+                prepCopyp->replaceWith(new AstVarRef{fl, varp, prep->getVAccessRecurse()});
                 VL_DO_DANGLING(pushDeletep(prepCopyp), prepCopyp);
+                // Start from the default value (IEEE 1800-2023 7.4.6), not what an earlier
+                // execution left, as an inout argument reads it, and push_back() extends it
+                elseStmtp = AstNode::addNext<AstNodeStmt, AstNodeStmt>(
+                    new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                  new AstCReset{fl, varp, false}},
+                    elseStmtp);
             }
             AstIf* const newp = new AstIf{fl, condp, origStmtp, elseStmtp};
             replaceHandle.relink(newp);
@@ -212,7 +219,7 @@ class UnknownVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         VL_RESTORER(m_allowXUnique);
-        if (nodep->isParam()) m_allowXUnique = false;
+        if (nodep->isParam() || nodep->constPoolEntry()) m_allowXUnique = false;
         iterateChildren(nodep);
     }
     void visitEqNeqCase(AstNodeBiop* nodep) {
@@ -473,7 +480,7 @@ class UnknownVisitor final : public VNVisitor {
             AstNodeDType* const dtypep = nodep->fromp()->dtypep()->skipRefp();
             UASSERT_OBJ(dtypep, nodep, "Select of non-selectable type");
             const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType);
-            UASSERT_OBJ(adtypep, nodep, "Select from non-array " << dtypep->prettyTypeName());
+            UASSERT_OBJ(adtypep, nodep, "Select from non-array " << dtypep->prettyTypeNameQ());
             declElements = adtypep->elementsConst();
             UINFOTREE(9, nodep, "", "arraysel_old");
 

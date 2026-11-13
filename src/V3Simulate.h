@@ -36,10 +36,10 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
-#include "V3AstUserAllocator.h"
 #include "V3Const.h"
 #include "V3Error.h"
 #include "V3Task.h"
+#include "V3VNUserAllocator.h"
 #include "V3Width.h"
 
 #include <deque>
@@ -98,7 +98,7 @@ private:
         AstNodeExpr* valuep = nullptr;
     };
 
-    AstUser1Allocator<AstNode, AuxVariable> m_varAux;
+    VNUser1Allocator<AstNode, AuxVariable> m_varAux;
 
     // We want to re-use allocated constants across calls to clear(), but we want to be able
     // to 'clear()' fast, so we use a generation number based allocator.
@@ -713,7 +713,7 @@ private:
             static std::set<VNType> s_typePrinted;
             const auto pair = s_typePrinted.emplace(nodep->type());
             if (pair.second)
-                UINFO(0, "Unknown node type in SimulateVisitor: " << nodep->prettyTypeName());
+                UINFO(0, "Unknown node type in SimulateVisitor: " << nodep->prettyTypeNameQ());
 #endif
         }
     }
@@ -1240,7 +1240,7 @@ private:
             if (const AstArraySel* const aselp = VN_CAST(selp, ArraySel)) {
                 AstConsArray* const consp = VN_AS(itemp, ConsArray);
                 const AstConst* const indexp = fetchConst(aselp->bitp());
-                if (indexp->num().isFourState()) return;
+                if (!indexp->num().fitsInUInt()) return;  // X/Z, or out of bounds
                 const uint32_t index = indexp->toUInt();
                 const int elements
                     = VN_AS(consp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
@@ -1412,7 +1412,12 @@ private:
         iterateChildrenConst(nodep);
         if (const AstConsArray* const consp = VN_CAST(fetchValueNull(nodep->fromp()), ConsArray)) {
             const AstConst* const indexp = fetchConst(nodep->bitp());
-            if (indexp->num().isFourState()) {
+            const int elements
+                = VN_AS(consp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
+            // An invalid index, out of bounds or with X/Z bits, reads the default value
+            // (IEEE 1800-2023 7.4.6)
+            if (!indexp->num().fitsInUInt()
+                || indexp->toUInt() >= static_cast<uint32_t>(elements)) {
                 AstNodeExpr* const valuep = defaultOf(nodep->fileline(), nodep->dtypep());
                 if (!valuep) {
                     clearOptimizable(nodep, "Unsupported array element type");
@@ -1422,13 +1427,9 @@ private:
                 VL_DO_DANGLING(valuep->deleteTree(), valuep);
                 return;
             }
-            const uint32_t offset = indexp->num().toUInt();
-            AstNodeExpr* const itemp = consp->valuep(offset);
-            if (!itemp) {
-                clearOptimizable(nodep, "Array select out of range: " + std::to_string(offset));
-            } else {
-                setValue(nodep, itemp);
-            }
+            AstNodeExpr* const itemp = consp->valuep(indexp->toUInt());
+            UASSERT_OBJ(itemp, nodep, "Array value has neither the element nor a default");
+            setValue(nodep, itemp);
         } else {
             clearOptimizable(nodep, "Array select of non-array");
         }

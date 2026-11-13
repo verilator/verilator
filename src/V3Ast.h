@@ -163,18 +163,18 @@ class VNUser final {
 
 public:
 #ifdef VL_USER_TYPE_CHECKS
-    VNUser() = default;
+    VL_ATTR_ALWINLINE VNUser() = default;
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
-    VNUser(uint64_t i) {
+    VL_ATTR_ALWINLINE VNUser(uint64_t i) {
         // VNUser{0} represents the monostate
         if (i) m_u = i;
     }
-    explicit VNUser(void* p) {
+    VL_ATTR_ALWINLINE explicit VNUser(void* p) {
         // VNUser{nullptr} represents the monostate
         if (p) m_u = p;
     }
-    ~VNUser() = default;
+    VL_ATTR_ALWINLINE ~VNUser() = default;
     // Casters
     template <typename T>
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
@@ -190,15 +190,18 @@ public:
         return *uip;
     }
 #else
-    VNUser() = default;
+    VL_ATTR_ALWINLINE VNUser() = default;
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
-    VNUser(uint64_t i) {
+    VL_ATTR_ALWINLINE VNUser(uint64_t i) {
         m_u.up = nullptr;
         m_u.uq = i;
     }
-    explicit VNUser(void* p) { m_u.up = p; }
-    ~VNUser() = default;
+    VL_ATTR_ALWINLINE explicit VNUser(void* p) {
+        m_u.uq = 0;  // For 32-bit targets where up is 32-bits
+        m_u.up = p;
+    }
+    VL_ATTR_ALWINLINE ~VNUser() = default;
     // Casters
     template <typename T>
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
@@ -600,7 +603,7 @@ protected:
 public:
     // ACCESSORS
     VNType type() const VL_MT_SAFE { return m_type; }
-    const char* typeName() const VL_MT_SAFE { return type().ascii(); }  // See also prettyTypeName
+    const char* typeName() const VL_MT_SAFE { return type().ascii(); }  // See also prettyTypeNameQ
     AstNode* nextp() const VL_MT_STABLE { return m_nextp; }
     AstNode* backp() const VL_MT_STABLE { return m_backp; }
     AstNode* abovep() const;  // Get parent node above, only for list head and tail
@@ -688,8 +691,8 @@ public:
     string prettyNameQ() const { return "'"s + prettyNameMsg() + "'"; }  // Quoted, for messages
     string verilogName() const { return vpiName(origName()); }  // Decoded original Verilog name
     // "VARREF" for error messages (NOT dtype's pretty name)
-    string prettyTypeName() const;
-    virtual string prettyOperatorName() const { return "operator " + prettyTypeName(); }
+    string prettyTypeNameQ() const;
+    virtual string prettyOperatorName() const { return "operator " + prettyTypeNameQ(); }
     FileLine* fileline() const VL_MT_SAFE { return m_fileline; }
     void fileline(FileLine* fl) { m_fileline = fl; }
     inline bool width1() const;
@@ -926,7 +929,7 @@ public:
 
     // METHODS - dump and error
     void v3errorEnd(const std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
-    void v3errorEndFatal(const std::ostringstream& str) const VL_ATTR_NORETURN
+    [[noreturn]] void v3errorEndFatal(const std::ostringstream& str) const
         VL_RELEASE(V3Error::s().m_mutex);
     string warnContextPrimary() const VL_REQUIRES(V3Error::s().m_mutex) {
         return fileline()->warnContextPrimary();
@@ -1736,7 +1739,7 @@ class VDTypeNameScopes final {
     static const VDTypeNameScopes* s_currentp;  // Index in use, or nullptr if none
 
     // METHODS
-    void index(AstNode* nodep, AstNode* scopep);
+    void index(AstNode* nodesp, AstNode* scopep);
     VL_UNCOPYABLE(VDTypeNameScopes);
     VL_UNMOVABLE(VDTypeNameScopes);
 

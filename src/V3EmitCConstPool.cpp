@@ -86,7 +86,8 @@ class EmitCConstPool final : public EmitCConstInit {
 
     // VISITORS
     void visit(AstNode* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatalSrc("Unknown node type reached EmitCConstPool: " << nodep->prettyTypeName());
+        nodep->v3fatalSrc(
+            "Unknown node type reached EmitCConstPool: " << nodep->prettyTypeNameQ());
     }  // LCOV_EXCL_STOP
 
 public:
