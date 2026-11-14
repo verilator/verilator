@@ -5534,6 +5534,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             // the caller.
                             m_ds.m_unresolvedClass = true;
                         } else {
+                            // Import inherited members in case the class was not visited yet.
+                            if (!m_statep->forPrimary()) classExtendImport(classDtp->classp());
                             m_randSymp = m_statep->getNodeSym(classDtp->classp());
                         }
                     }
