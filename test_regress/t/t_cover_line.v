@@ -400,4 +400,19 @@ module cond(input logic clk, input int cyc);
     end
     else n = 0;
   end
+
+  // Likewise for $stop and $fatal, including in a case item followed by statements
+  logic n2;
+  always @(posedge clk) begin
+    case (cyc[1:0])
+      2'd0: begin
+        assert (cyc < 100) else $stop;
+        n2 = 0;
+      end
+      default: begin
+        assert (cyc < 100) else $fatal(1, "cyc too large");
+        n2 = 1;
+      end
+    endcase
+  end
 endmodule
