@@ -118,7 +118,9 @@ List Of Warnings
 
    Warning that an `always @*` statement has no variables being read,
    therefore the event list is empty, and as there are no events to wake
-   the process up, the always will never execute.
+   the process up, the always will never execute. Variables read only in
+   a delay, an event control or a wait condition of the statement are not
+   part of the event list (IEEE 1800-2023 9.4.2.2).
 
    Faulty example:
 

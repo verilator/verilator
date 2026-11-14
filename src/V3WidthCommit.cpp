@@ -42,6 +42,55 @@ struct PairHash final {
 };
 
 //######################################################################
+// The event list implied by 'always @*' (IEEE 1800-2023 9.4.2.2): the variables the
+// statement reads, except where they appear only in a delay, event control or wait condition
+
+class WidthCommitComboStarVisitor final : public VNVisitorConst {
+    AstSenTree* const m_sentreep;  // The event list
+    std::unordered_set<const AstVar*> m_varps;  // Variables in m_sentreep
+    // Handle and member of the plain 'handle.member' reads in m_sentreep
+    std::unordered_set<std::pair<const AstVar*, const AstVar*>, PairHash> m_memberps;
+
+    void addSense(AstNodeExpr* exprp) {
+        m_sentreep->addSensesp(new AstSenItem{exprp->fileline(), VEdgeType::ET_CHANGED, exprp});
+    }
+    void visit(AstNodeVarRef* nodep) override {
+        if (!nodep->access().isReadOrRW() || nodep->varp()->isParam()) return;
+        if (!m_varps.emplace(nodep->varp()).second) return;
+        AstNodeVarRef* const refp = nodep->cloneTree(false);
+        refp->access(VAccess::READ);
+        addSense(refp);
+    }
+    void visit(AstMemberRef* nodep) override {
+        if (!nodep->access().isReadOrRW()) {
+            iterateChildrenConst(nodep);
+            return;
+        }
+        // Wait on the class or virtual interface member, not only on its handle
+        const AstNodeVarRef* const fromp = VN_CAST(nodep->fromp(), NodeVarRef);
+        if (fromp && !m_memberps.emplace(fromp->varp(), nodep->varp()).second) return;
+        AstMemberRef* const refp = nodep->cloneTree(false);
+        refp->access(VAccess::READ);
+        addSense(refp);
+    }
+    void visit(AstDelay* nodep) override { iterateAndNextConstNull(nodep->stmtsp()); }
+    void visit(AstSenTree*) override {}
+    void visit(AstWait* nodep) override { iterateAndNextConstNull(nodep->stmtsp()); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    explicit WidthCommitComboStarVisitor(AstAlways* nodep)
+        : m_sentreep{new AstSenTree{nodep->fileline(), nullptr}} {
+        iterateAndNextConstNull(nodep->stmtsp());
+    }
+
+public:
+    // The event list of 'always @*' nodep; it has no senses if the statement reads nothing
+    static AstSenTree* apply(AstAlways* nodep) {
+        return WidthCommitComboStarVisitor{nodep}.m_sentreep;
+    }
+};
+
+//######################################################################
 // Now that all widthing is complete,
 // Copy all width() to widthMin().  V3Const expects this
 
@@ -74,6 +123,16 @@ public:
 
 private:
     // METHODS
+    // Whether nodep, or a task it calls, has a timing control
+    static bool hasTimingControl(const AstNode* nodep,
+                                 std::unordered_set<const AstNodeFTask*>& visitedr) {
+        return nodep->exists([&](const AstNode* np) {
+            if (np->isTimingControl()) return true;
+            const AstNodeFTaskRef* const refp = VN_CAST(np, NodeFTaskRef);
+            return refp && refp->taskp() && visitedr.emplace(refp->taskp()).second
+                   && hasTimingControl(refp->taskp(), visitedr);
+        });
+    }
     void editDType(AstNode* nodep) {
         // Called by every visitor. Edit dtypes for this node, also check for some warnings
         nodep->dtypep(editOneDType(nodep->dtypep()));
@@ -262,15 +321,30 @@ private:
         // As have not optimized SenTrees yet, an 'always .*' will be on first and only SenItem
         if (nodep->sentreep() && nodep->sentreep()->sensesp()
             && nodep->sentreep()->sensesp()->isComboStar()) {
-            const bool noReads = nodep->forall(
-                [&](const AstNodeVarRef* refp) { return !refp->access().isReadOrRW(); });
+            // With timing controls the process must wait on its event list between executions,
+            // so keep that list, made explicit, instead of the '.*' that iterate deletes
+            std::unordered_set<const AstNodeFTask*> visited;
+            const bool timing = hasTimingControl(nodep, visited);
+            AstSenTree* const sentreep
+                = timing ? WidthCommitComboStarVisitor::apply(nodep) : nullptr;
+            const bool noReads
+                = timing ? !sentreep->sensesp() : nodep->forall([&](const AstNodeVarRef* refp) {
+                      return !refp->access().isReadOrRW();
+                  });
             if (noReads) {
-                nodep->v3warn(ALWNEVER, "'always @*' will never execute as expression list is "
-                                        "empty (no variables read)\n"
-                                            << nodep->warnMore()
-                                            << "... Suggest use 'always_comb'");
+                nodep->v3warn(ALWNEVER,
+                              "'always @*' will never execute as expression list is "
+                              "empty (no variables read"
+                                  << (timing ? " outside timing controls" : "") << ")\n"
+                                  << nodep->warnMore() << "... Suggest use "
+                                  << (timing ? "an explicit event list" : "'always_comb'"));
+                if (sentreep) VL_DO_DANGLING(pushDeletep(sentreep), sentreep);
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
+            }
+            if (sentreep) {
+                pushDeletep(nodep->sentreep()->unlinkFrBack());
+                nodep->sentreep(sentreep);
             }
         }
         VL_RESTORER(m_underAlwaysEdged);

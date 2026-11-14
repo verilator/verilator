@@ -1,0 +1,8 @@
+%Warning-ALWNEVER: t/t_timing_always_star_never_bad.v:11:3: 'always @*' will never execute as expression list is empty (no variables read outside timing controls)
+                                                          : ... note: In instance 't'
+                                                          : ... Suggest use an explicit event list
+   11 |   always @* begin
+      |   ^~~~~~
+                   ... For warning description see https://verilator.org/warn/ALWNEVER?v=latest
+                   ... Use "/* verilator lint_off ALWNEVER */" and lint_on around source to disable this message.
+%Error: Exiting due to
