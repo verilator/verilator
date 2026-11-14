@@ -259,18 +259,18 @@
          "lhsp": [
           {"type":"VARREF","name":"randomize","addr":"(FF)","loc":"d,7:1,7:6","dtypep":"(V)","access":"WR","varp":"(UE)"}
         ]},
-        {"type":"ASSIGN","addr":"(GF)","loc":"d,7:1,7:6","dtypep":"(V)",
-         "rhsp": [
-          {"type":"AND","addr":"(HF)","loc":"d,7:1,7:6","dtypep":"(V)",
-           "lhsp": [
-            {"type":"VARREF","name":"randomize","addr":"(IF)","loc":"d,7:1,7:6","dtypep":"(V)","access":"RD","varp":"(UE)"}
-          ],
+        {"type":"IF","addr":"(GF)","loc":"d,7:1,7:6",
+         "condp": [
+          {"type":"VARREF","name":"randomize","addr":"(HF)","loc":"d,7:1,7:6","dtypep":"(V)","access":"RD","varp":"(UE)"}
+        ],
+         "thensp": [
+          {"type":"ASSIGN","addr":"(IF)","loc":"d,7:1,7:6","dtypep":"(V)",
            "rhsp": [
             {"type":"FUNCREF","name":"__VBasicRand","addr":"(JF)","loc":"d,7:1,7:6","dtypep":"(V)","taskp":"(KF)"}
+          ],
+           "lhsp": [
+            {"type":"VARREF","name":"randomize","addr":"(LF)","loc":"d,7:1,7:6","dtypep":"(V)","access":"WR","varp":"(UE)"}
           ]}
-        ],
-         "lhsp": [
-          {"type":"VARREF","name":"randomize","addr":"(LF)","loc":"d,7:1,7:6","dtypep":"(V)","access":"WR","varp":"(UE)"}
         ]}
       ]},
       {"type":"VAR","name":"constraint","addr":"(LC)","loc":"d,7:1,7:6","dtypep":"(KC)","origName":"constraint","verilogName":"constraint","direction":"NONE","declDirection":"NONE","lifetime":"NONE","varType":"MEMBER","dtypeName":"VlRandomizer"},
