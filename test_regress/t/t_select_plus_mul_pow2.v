@@ -13,9 +13,18 @@ module t (
   reg [2:0] bitn;
   reg [7:0] cyc;
   initial cyc = 0;
+  reg [63:0] arr[8];
+  initial arr[0] = 64'h0f0e0d0c0b0a0908;
+  reg [31:0] wto;
 
   always @* begin
     to = from[bitn*8+:8];
+  end
+
+  always @* begin
+    wto = '0;
+    // Write LSB folds to zero only after V3Expand, leaving AND(CONST33, AND(CONST32, x))
+    wto[bitn*32+:8] = arr[bitn][7:0];
   end
 
   // verilog_format: off
@@ -48,6 +57,7 @@ module t (
       8'd08: begin if (to !== 8'h07) $stop; end
       default: $stop;
     endcase
+    if (cyc != 0 && wto !== (bitn == 0 ? 32'h08 : 32'h00)) $stop;
   end
 
 endmodule

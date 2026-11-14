@@ -6,12 +6,14 @@
 # or the Perl Artistic License Version 2.0.
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
 import glob
 import os
 import re
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
+
 test.clean_objs()
 cxx = os.environ.get('CXX', 'c++')
 cxx_version = test.cxx_version
@@ -19,7 +21,7 @@ gcc_match = re.search(r'\(GCC\) (\d+)', cxx_version)
 is_clang = re.search(r'clang', cxx_version)
 flags = [
     '--exe',
-    test.t_dir + '/t_flag_cflags_modules_main.cpp',
+    test.t_dir + '/t_flag_cxx_modules_main.cpp',
 ]
 make_flags = ['VM_PARALLEL_BUILDS=1']
 if gcc_match:
@@ -63,7 +65,7 @@ if gcc_match:
 else:
     test.file_grep(test.obj_dir + '/vlt_gcc.log', r'-fmodule-file=std=std\.pcm')
 
-os.utime(test.t_dir + '/t_flag_cflags_modules_main.cpp', None)
+os.utime(test.t_dir + '/t_flag_cxx_modules_main.cpp', None)
 test.run_capture('cd ' + test.obj_dir + ' && ' + os.environ['MAKE'] + ' -f ' + test.vm_prefix +
                  '.mk VM_PARALLEL_BUILDS=1 OPT_FAST=-O0 OPT_GLOBAL=-O0')
 test.execute()

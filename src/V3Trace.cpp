@@ -162,6 +162,26 @@ public:
 };
 
 //######################################################################
+
+class TraceInitDeclCollector final : public VNVisitorConst {
+    std::vector<AstTraceDecl*>& m_declps;  // Output: trace declarations found so far
+    std::set<const AstCFunc*> m_seenFuncps;
+
+    void visit(AstTraceDecl* nodep) override { m_declps.push_back(nodep); }
+    void visit(AstCCall* nodep) override {
+        if (AstCFunc* const funcp = nodep->funcp()) collect(funcp);
+    }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+public:
+    explicit TraceInitDeclCollector(std::vector<AstTraceDecl*>& declps)
+        : m_declps{declps} {}
+    void collect(AstCFunc* funcp) {
+        if (funcp && m_seenFuncps.insert(funcp).second) iterateConst(funcp);
+    }
+};
+
+//######################################################################
 // Trace state, as a visitor of each AstNode
 
 class TraceVisitor final : public VNVisitor {
@@ -220,24 +240,6 @@ class TraceVisitor final : public VNVisitor {
     // Candidate interface-member VarScopes keyed by (interface type, member name)
     std::map<std::pair<const AstIface*, std::string>, std::vector<AstVarScope*>>
         m_ifaceMemberVscps;
-
-    class TraceInitDeclCollector final : public VNVisitor {
-        std::vector<AstTraceDecl*>& m_declps;  // Output: trace declarations found so far
-        std::set<const AstCFunc*> m_seenFuncps;
-
-        void visit(AstTraceDecl* nodep) override { m_declps.push_back(nodep); }
-        void visit(AstCCall* nodep) override {
-            if (AstCFunc* const funcp = nodep->funcp()) collect(funcp);
-        }
-        void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-    public:
-        explicit TraceInitDeclCollector(std::vector<AstTraceDecl*>& declps)
-            : m_declps{declps} {}
-        void collect(AstCFunc* funcp) {
-            if (funcp && m_seenFuncps.insert(funcp).second) iterate(funcp);
-        }
-    };
 
     // METHODS
 

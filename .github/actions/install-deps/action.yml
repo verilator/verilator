@@ -61,11 +61,25 @@ runs:
         fi
 
     - name: Install dependencies
+      id: install
+      continue-on-error: true
       shell: bash
       working-directory: ${{ inputs.repo }}
       env:
         STAGE: ${{ inputs.stage }}
-      run: ./ci/ci-install.bash "$STAGE"
+      run: |
+        ./ci/ci-install.bash "$STAGE"
+        false
+
+    - name: Install dependencies (retry)
+      if: ${{ steps.install.outcome == 'failure' }}
+      shell: bash
+      working-directory: ${{ inputs.repo }}
+      env:
+        STAGE: ${{ inputs.stage }}
+      run: |
+        sleep $((60 + RANDOM % 61))  # Random, so parallel jobs do not retry together
+        ./ci/ci-install.bash "$STAGE"
 
     - name: Collect apt downloads
       id: collect

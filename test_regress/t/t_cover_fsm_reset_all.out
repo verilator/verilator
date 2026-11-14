@@ -1,0 +1,340 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: FSM coverage grouped reset semantics test
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain.
+        // SPDX-FileCopyrightText: 2026 Wilson Snyder
+        // SPDX-License-Identifier: CC0-1.0
+        
+        // Group accepted simulator-style reset semantics, including reset include /
+        // exclude behavior and nearby fallback cases that should still preserve FSMs.
+        
+        module fsm_reset_policy (
+%000009     input logic clk,
+%000001     input logic rst
+        );
+        
+          typedef enum logic [0:0] {
+            S0 = 1'b0,
+            S1 = 1'b1
+          } state_t;
+        
+%000001   state_t state_incl  /*verilator fsm_state*/;
+%000001   state_t state_excl;
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_incl <= S0;
+            else
+%000007       case (state_incl)
+        // [FSM coverage]
+%000001        // [fsm_arc t.reset_policy_u.state_incl::S0->S1]
+%000000        // [fsm_arc t.reset_policy_u.state_incl::S1->S0]
+%000001        // [fsm_state t.reset_policy_u.state_incl::S0]
+%000001        // [fsm_state t.reset_policy_u.state_incl::S1]
+%000001         S0: state_incl <= S1;
+%000006         default: state_incl <= S1;
+              endcase
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) state_excl <= S0;
+            else
+%000007       case (state_excl)
+        // [FSM coverage]
+%000001        // [fsm_arc t.reset_policy_u.state_excl::S0->S1]
+%000000        // [fsm_arc t.reset_policy_u.state_excl::S1->S0]
+%000001        // [fsm_state t.reset_policy_u.state_excl::S0]
+%000001        // [fsm_state t.reset_policy_u.state_excl::S1]
+%000001         S0: state_excl <= S1;
+%000006         default: state_excl <= S1;
+              endcase
+          end
+        endmodule
+        
+        module fsm_reset_other_assign_ok (
+%000009     input logic clk,
+%000001     input logic rst
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'b00,
+            S1 = 2'b01,
+            S2 = 2'b10
+          } state_t;
+        
+%000000   logic aux;
+%000001   logic start;
+%000004   state_t state_q;
+%000004   state_t state_d;
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) begin
+%000002       aux <= 1'b1;
+%000002       start <= 1'b1;
+%000002       state_q <= S0;
+%000002       aux <= 1'b0;
+            end
+%000007     else begin
+%000007       state_q <= state_d;
+            end
+          end
+        
+ 000010   always_comb begin
+ 000010     state_d = state_q;
+ 000010     case (state_q)
+%000009       S0: state_d = start ? S1 : S2;
+%000004       default: state_d = S0;
+            endcase
+          end
+        endmodule
+        
+        module fsm_oneblock_reset_mismatch_ok (
+%000009     input logic clk,
+%000001     input logic rst
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+%000001   state_t state_q = S0;
+%000001   state_t other_q = S2;
+        
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) begin
+%000002       other_q <= S0;
+            end
+%000007     else begin
+%000007       case (state_q)
+        // [FSM coverage]
+%000001        // [fsm_arc t.oneblock_reset_mismatch_ok_u.state_q::S0->S1]
+%000001        // [fsm_state t.oneblock_reset_mismatch_ok_u.state_q::S0]
+%000001        // [fsm_state t.oneblock_reset_mismatch_ok_u.state_q::S1]
+%000001        // [fsm_state t.oneblock_reset_mismatch_ok_u.state_q::S2]
+%000001         S0: state_q <= S1;
+%000006         default: state_q <= S2;
+              endcase
+            end
+          end
+        endmodule
+        
+        module fsm_oneblock_reset_nonconst_ok (
+%000009     input logic clk,
+%000001     input logic rst
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+%000001   state_t state_q = S0;
+%000001   state_t other_q = S2;
+        
+          // Useful because the one-block reset fallback must ignore non-constant reset
+          // assignments and still retain the supported case(state_q) FSM below.
+%000009   always_ff @(posedge clk) begin
+%000007     if (rst) begin
+%000002       state_q <= other_q;
+            end
+%000007     else begin
+%000007       case (state_q)
+        // [FSM coverage]
+%000000        // [fsm_arc t.oneblock_reset_nonconst_ok_u.state_q::S0->S1]
+%000001        // [fsm_state t.oneblock_reset_nonconst_ok_u.state_q::S0]
+%000000        // [fsm_state t.oneblock_reset_nonconst_ok_u.state_q::S1] *** UNCOVERED ***
+%000001        // [fsm_state t.oneblock_reset_nonconst_ok_u.state_q::S2]
+%000000         S0: state_q <= S1;
+%000007         default: state_q <= S2;
+              endcase
+            end
+          end
+        endmodule
+        
+        module fsm_reset_active_low (
+%000009     input logic clk,
+%000002     input logic rst_n
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+        
+%000003   state_t sync_q;
+%000003   state_t sync_d;
+%000003   state_t async_q;
+%000003   state_t async_d;
+%000003   state_t oneblock_q;
+%000003   state_t tern_q;
+%000003   state_t tern_d;
+%000003   state_t chain_q;
+%000003   logic [1:0] count;
+%000003   logic busy;
+        
+          // V3Const writes 'if (!rst_n) R; else C' as 'if (rst_n) C; else R', and without other
+          // coverage folds this one into 'sync_q <= rst_n ? sync_d : S0'
+%000009   always_ff @(posedge clk) begin
+%000006     if (!rst_n) sync_q <= S0;
+%000006     else sync_q <= sync_d;
+          end
+        
+          // Branch coverage lifts the '?:' into an if/else on a temporary
+%000009   always_ff @(posedge clk) begin
+%000009     tern_q <= !rst_n ? S0 : tern_d;
+          end
+        
+ 000010   always_comb begin
+ 000010     tern_d = tern_q;
+~000010     case (tern_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.reset_active_low_u.tern_q::S0->S1]
+%000001        // [fsm_arc t.reset_active_low_u.tern_q::S1->S0]
+%000002        // [fsm_arc t.reset_active_low_u.tern_q::S1->S2]
+%000001        // [fsm_arc t.reset_active_low_u.tern_q::S2->S0]
+%000003        // [fsm_state t.reset_active_low_u.tern_q::S0]
+%000003        // [fsm_state t.reset_active_low_u.tern_q::S1]
+%000002        // [fsm_state t.reset_active_low_u.tern_q::S2]
+%000005       S0: tern_d = S1;
+%000003       S1: tern_d = S2;
+%000002       default: tern_d = S0;
+            endcase
+          end
+        
+ 000010   always_ff @(posedge clk or negedge rst_n) begin
+%000006     if (!rst_n) begin
+%000004       async_q <= S0;
+%000004       count <= '0;
+            end
+%000006     else begin
+%000006       async_q <= async_d;
+%000006       count <= count + 1'b1;
+            end
+          end
+        
+ 000010   always_comb begin
+ 000010     sync_d = sync_q;
+~000010     case (sync_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.reset_active_low_u.sync_q::S0->S1]
+%000001        // [fsm_arc t.reset_active_low_u.sync_q::S1->S0]
+%000002        // [fsm_arc t.reset_active_low_u.sync_q::S1->S2]
+%000001        // [fsm_arc t.reset_active_low_u.sync_q::S2->S0]
+%000003        // [fsm_state t.reset_active_low_u.sync_q::S0]
+%000003        // [fsm_state t.reset_active_low_u.sync_q::S1]
+%000002        // [fsm_state t.reset_active_low_u.sync_q::S2]
+%000005       S0: sync_d = S1;
+%000003       S1: sync_d = S2;
+%000002       default: sync_d = S0;
+            endcase
+          end
+        
+ 000011   always_comb begin
+ 000011     async_d = async_q;
+~000011     case (async_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.reset_active_low_u.async_q::S0->S1]
+%000001        // [fsm_arc t.reset_active_low_u.async_q::S1->S0]
+%000002        // [fsm_arc t.reset_active_low_u.async_q::S1->S2]
+%000001        // [fsm_arc t.reset_active_low_u.async_q::S2->S0]
+%000003        // [fsm_state t.reset_active_low_u.async_q::S0]
+%000003        // [fsm_state t.reset_active_low_u.async_q::S1]
+%000002        // [fsm_state t.reset_active_low_u.async_q::S2]
+%000006       S0: async_d = S1;
+%000003       S1: async_d = S2;
+%000002       default: async_d = S0;
+            endcase
+          end
+        
+%000009   always_ff @(posedge clk) begin
+%000006     if (!rst_n) oneblock_q <= S0;
+            else
+%000006       case (oneblock_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.reset_active_low_u.oneblock_q::S0->S1]
+%000001        // [fsm_arc t.reset_active_low_u.oneblock_q::S1->S0]
+%000002        // [fsm_arc t.reset_active_low_u.oneblock_q::S1->S2]
+%000001        // [fsm_arc t.reset_active_low_u.oneblock_q::S2->S0]
+%000003        // [fsm_state t.reset_active_low_u.oneblock_q::S0]
+%000003        // [fsm_state t.reset_active_low_u.oneblock_q::S1]
+%000002        // [fsm_state t.reset_active_low_u.oneblock_q::S2]
+%000003         S0: oneblock_q <= S1;
+%000002         S1: oneblock_q <= S2;
+%000001         default: oneblock_q <= S0;
+              endcase
+          end
+        
+          // Two statements per branch keep the chain from folding into one assignment
+%000009   always_ff @(posedge clk) begin
+%000006     if (!rst_n) begin
+%000003       chain_q <= S0;
+%000003       busy <= 1'b0;
+            end
+%000003     else if (chain_q == S0) begin
+        // [FSM coverage]
+%000003        // [fsm_arc t.reset_active_low_u.chain_q::S0->S1]
+%000001        // [fsm_arc t.reset_active_low_u.chain_q::S1->S0]
+%000002        // [fsm_arc t.reset_active_low_u.chain_q::S1->S2]
+%000001        // [fsm_arc t.reset_active_low_u.chain_q::S2->S0]
+%000003        // [fsm_state t.reset_active_low_u.chain_q::S0]
+%000003        // [fsm_state t.reset_active_low_u.chain_q::S1]
+%000002        // [fsm_state t.reset_active_low_u.chain_q::S2]
+%000003       chain_q <= S1;
+%000003       busy <= 1'b1;
+            end
+%000002     else if (chain_q == S1) begin
+%000002       chain_q <= S2;
+%000002       busy <= 1'b1;
+            end
+%000001     else begin
+%000001       chain_q <= S0;
+%000001       busy <= 1'b0;
+            end
+          end
+        endmodule
+        
+        module t (
+%000009     input logic clk
+        );
+        
+%000001   logic rst;
+          integer cyc;
+        
+          fsm_reset_policy reset_policy_u (
+              .clk(clk),
+              .rst(rst)
+          );
+          fsm_reset_other_assign_ok reset_other_assign_ok_u (
+              .clk(clk),
+              .rst(rst)
+          );
+          fsm_oneblock_reset_mismatch_ok oneblock_reset_mismatch_ok_u (
+              .clk(clk),
+              .rst(rst)
+          );
+          fsm_oneblock_reset_nonconst_ok oneblock_reset_nonconst_ok_u (
+              .clk(clk),
+              .rst(rst)
+          );
+          // A second reset from S1 hits the active-low FSMs' reset arc S1->S0, which their
+          // next-state logic never takes
+          fsm_reset_active_low reset_active_low_u (
+              .clk(clk),
+              .rst_n(!rst && cyc != 6)
+          );
+        
+%000001   initial begin
+%000001     rst = 1'b1;
+%000001     cyc = 0;
+          end
+        
+%000009   always @(posedge clk) begin
+%000009     cyc <= cyc + 1;
+%000008     if (cyc == 1) rst <= 1'b0;
+%000008     if (cyc == 8) begin
+%000001       $write("*-* All Finished *-*\n");
+%000001       $finish;
+            end
+          end
+        
+        endmodule
+        

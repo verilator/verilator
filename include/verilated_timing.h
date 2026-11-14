@@ -28,6 +28,7 @@
 
 #include "verilated.h"
 
+#include <functional>
 #include <limits>
 #include <vector>
 
@@ -60,6 +61,12 @@
 # endif
 #endif
 // clang-format on
+
+namespace VerilatedDpiCall {
+/// Queue an aborted import for resumption after its exported coroutine is destroyed.
+void enqueueAborted(std::function<void()> resume) VL_MT_SAFE;
+void resumeAborted() VL_MT_UNSAFE_ONE;
+}  // namespace VerilatedDpiCall
 
 //=============================================================================
 // VlCoroutineHandle is a non-copyable (but movable) coroutine handle. On resume, the handle is
@@ -97,6 +104,8 @@ class VlCoroutineHandle final {
     VlProcessRef m_process;  // Data of the suspended process, null if not needed
     VlFileLineDebug m_fileline;  // Source location, for debug
 
+    void destroy();  // Clean up a nonempty handle
+
 public:
     // CONSTRUCTORS
     // Construct
@@ -121,17 +130,8 @@ public:
         : m_coro{std::exchange(moved.m_coro, nullptr)}
         , m_process{std::exchange(moved.m_process, nullptr)}
         , m_fileline{moved.m_fileline} {}
-    // Destroy if the handle isn't null
     ~VlCoroutineHandle() {
-        // Usually these coroutines should get resumed; we only need to clean up if we destroy a
-        // model with some coroutines suspended
-        if (VL_UNLIKELY(m_coro)) {
-            if (m_process && m_process->state() != VlProcess::KILLED
-                && !m_coro.promise().m_forever) {
-                m_process->state(VlProcess::FINISHED);
-            }
-            m_coro.destroy();
-        }
+        if (VL_UNLIKELY(m_coro)) destroy();
     }
     // METHODS
     // Move the handle, leaving a null handle

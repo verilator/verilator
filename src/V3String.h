@@ -104,6 +104,8 @@ public:
     // e.g. input `C:\Program Files\My Program\My Program.exe` becomes
     // `C:\\Program\ Files\\My\ Program\\My\ Program.exe`
     static string quoteStringLiteralForShell(const string& str);
+    static string escapeForMake(const string& str);
+    static string quoteForMakeShell(const string& str);
     // Replace any unprintable with space
     // This includes removing tabs, so column tracking is correct
     static string spaceUnprintable(const string& str) VL_PURE;
