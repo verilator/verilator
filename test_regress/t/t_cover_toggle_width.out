@@ -2429,6 +2429,25 @@
           // CHECK_COVER(-1,"top.t.o1","toggle:0->1",1)
           // CHECK_COVER(-2,"top.t.o1","toggle:1->0",1)
         
+          // coverage off
+          wire off_bare = toggle;
+          // CHECK_COVER_MISSING(-1)
+          // coverage on
+%000001   wire on_bare = toggle;
+-000001  point: type=toggle comment=on_bare:0->1 hier=top.t.o1
+-000001  point: type=toggle comment=on_bare:1->0 hier=top.t.o1
+          // CHECK_COVER(-1,"top.t.o1","on_bare:0->1",1)
+          // CHECK_COVER(-2,"top.t.o1","on_bare:1->0",1)
+          /* pragma coverage off */
+          wire off_pragma = toggle;
+          // CHECK_COVER_MISSING(-1)
+          // pragma coverage on
+%000001   wire on_pragma = toggle;
+-000001  point: type=toggle comment=on_pragma:0->1 hier=top.t.o1
+-000001  point: type=toggle comment=on_pragma:1->0 hier=top.t.o1
+          // CHECK_COVER(-1,"top.t.o1","on_pragma:0->1",1)
+          // CHECK_COVER(-2,"top.t.o1","on_pragma:1->0",1)
+        
         endmodule
         
         module param #(parameter P = 2) (/*AUTOARG*/
