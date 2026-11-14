@@ -222,6 +222,21 @@ module off (/*AUTOARG*/
   // CHECK_COVER(-1,"top.t.o1","toggle:0->1",1)
   // CHECK_COVER(-2,"top.t.o1","toggle:1->0",1)
 
+  // coverage off
+  wire off_bare = toggle;
+  // CHECK_COVER_MISSING(-1)
+  // coverage on
+  wire on_bare = toggle;
+  // CHECK_COVER(-1,"top.t.o1","on_bare:0->1",1)
+  // CHECK_COVER(-2,"top.t.o1","on_bare:1->0",1)
+  /* pragma coverage off */
+  wire off_pragma = toggle;
+  // CHECK_COVER_MISSING(-1)
+  // pragma coverage on
+  wire on_pragma = toggle;
+  // CHECK_COVER(-1,"top.t.o1","on_pragma:0->1",1)
+  // CHECK_COVER(-2,"top.t.o1","on_pragma:1->0",1)
+
 endmodule
 
 module param #(parameter P = 2) (/*AUTOARG*/

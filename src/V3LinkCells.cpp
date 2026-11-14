@@ -233,6 +233,7 @@ class LinkCellsVisitor final : public VNVisitor {
     // Below state needs to be preserved between each module call.
     AstNodeModule* m_modp = nullptr;  // Current module
     AstVar* m_varp = nullptr;  // Current variable
+    bool m_fromBind = false;  // Visiting cells inserted by a bind directive
     VSymGraph m_mods;  // Symbol table of all module names
     std::unordered_map<string, AstPackage*> m_packages;  // Packages table
     std::unordered_set<string> m_autoLoaded;  // Names already searched for on disk
@@ -610,7 +611,9 @@ class LinkCellsVisitor final : public VNVisitor {
             AstNode* const cellsp = nodep->cellsp()->unlinkFrBackWithNext();
             // Module may have already linked, so need to pick up these new cells
             VL_RESTORER(m_modp);
+            VL_RESTORER(m_fromBind);
             m_modp = modp;
+            m_fromBind = true;
             // Important that this adds to end, as next iterate assumes does all cells
             modp->addStmtsp(cellsp);
             iterateAndNextNull(cellsp);
@@ -636,6 +639,8 @@ class LinkCellsVisitor final : public VNVisitor {
             }
         }
         nodep->user1p(m_modp);
+        // Only set, as recursive module clones are revisited outside the bind
+        if (m_fromBind) nodep->fromBind(true);
         //
         if (!nodep->modp() || cloned) {
             UINFO(4, "Link Cell: " << nodep);
