@@ -399,6 +399,8 @@ class CoverageVisitor final : public VNVisitor {
             itemp->addStmtsp(stmtp);
         } else if (AstForkItem* const itemp = VN_CAST(nodep, ForkItem)) {
             itemp->addStmtsp(stmtp);
+        } else if (AstCaseItem* const itemp = VN_CAST(nodep, CaseItem)) {
+            itemp->addStmtsp(stmtp);
         } else {
             nodep->v3fatalSrc("Bad node type");
         }
@@ -738,8 +740,11 @@ class CoverageVisitor final : public VNVisitor {
         // We don't add an explicit "default" coverage if not provided,
         // as we already have a warning when there is no default.
         UINFO(4, " CASEI: " << nodep);
-        if (m_state.lineCoverageOn(nodep)) {
+        // Visit the body for every coverage type; only the line point needs line coverage
+        if (m_state.coverageOn(nodep)) {
             VL_RESTORER(m_state);
+            VL_RESTORER(m_exprStmtsp);
+            m_exprStmtsp = nodep;  // Expression coverage counts only when this item runs
             createHandle(nodep);
             iterateAndNextNull(nodep->stmtsp());
             if (m_state.lineCoverageOn(nodep)) {  // if the case body didn't disable it
