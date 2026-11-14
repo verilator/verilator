@@ -49,6 +49,7 @@ union RandomizeMode final {
     struct {
         bool usesMode : 1;  // Variable/constraint uses rand_mode/constraint_mode
         uint32_t index : 31;  // Index of var/constraint in rand_mode/constraint_mode vector
+        bool modeMayDisable : 1;  // May be turned off by some rand_mode() call; else stays on
     };
     uint64_t asUQuad;  // Representation as int to be stored in nodep->user*
 };
