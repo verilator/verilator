@@ -375,4 +375,15 @@ module cond(input logic clk, input int cyc);
     // An else-if chain (line points only) and an if/else (branch points too) on one line
     if (cyc == 3) l = 1; else if (cyc == 4) l = 0; else l = 1; if (cyc == 5) l = 0; else l = 1;
   end
+
+  // A $error in an assertion's action block turns coverage off only inside the assertion
+  logic n;
+  always @(posedge clk) begin
+    assert (cyc < 100) else $error("cyc too large");
+    if (cyc[0]) begin
+      assert (cyc < 100) else $error("cyc too large");
+      n = 1;
+    end
+    else n = 0;
+  end
 endmodule

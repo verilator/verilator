@@ -778,6 +778,12 @@ class CoverageVisitor final : public VNVisitor {
         m_exprStmtsp = nullptr;
         iterateChildren(nodep);
     }
+    void visit(AstNodeCoverOrAssert* nodep) override {
+        // A $stop or $error in an action block turns coverage off only inside the assertion
+        VL_RESTORER(m_state);
+        lineTrack(nodep);
+        iterateChildren(nodep);
+    }
     void visit(AstStop* nodep) override {
         UINFO(4, "  STOP: " << nodep);
         m_state.m_on = false;
