@@ -83,6 +83,9 @@ public:
         AstVar* m_varp = nullptr;  // The forced (original) variable
         AstScope* m_scopep = nullptr;  // Scope containing the forced variable
         std::unordered_map<AstAssignForce*, ForceInfo> m_forces;
+        // Synthetic forces for the public force controls, indexed by the element (or, for a
+        // non-array, the bit range starting at 0) each covers
+        std::vector<const ForceInfo*> m_externalps;
         std::unordered_map<string, int> m_forcePathToIndex;
         int m_nextForcePathIndex = 1;  // Start at 1 so 0 can be the base path (whole signal)
 
@@ -286,9 +289,12 @@ public:
         return curp;
     }
 
+    // Build a statement for each element of an unpacked array, or only for the flattened
+    // elements flatLsb..flatMsb
     template <typename Fn>
     static AstNodeStmt* foreachUnpackedLeaf(const std::vector<AstUnpackArrayDType*>& dims,
-                                            Fn buildLeaf) {
+                                            Fn buildLeaf, int flatLsb = 0,
+                                            int flatMsb = std::numeric_limits<int>::max()) {
         AstNodeStmt* headp = nullptr;
         AstNodeStmt* tailp = nullptr;
         if (dims.empty()) return nullptr;
@@ -296,7 +302,12 @@ public:
         for (const AstUnpackArrayDType* const dp : dims) total *= dp->elementsConst();
         if (total <= 0) return nullptr;
         std::vector<int> idx(dims.size(), 0);
-        for (int flat = 0; flat < total; ++flat) {
+        int rem = flatLsb;
+        for (int d = static_cast<int>(dims.size()) - 1; d >= 0; --d) {
+            idx[d] = rem % dims[d]->elementsConst();
+            rem /= dims[d]->elementsConst();
+        }
+        for (int flat = flatLsb; flat <= std::min(flatMsb, total - 1); ++flat) {
             AstNodeStmt* const stmtp = buildLeaf(idx, flat);
             if (!headp) {
                 headp = stmtp;
@@ -435,24 +446,30 @@ public:
         return new AstCond{flp, enRefp, valRefp, baseRefp};
     }
 
-    AstNodeStmt* createForceRdUpdateStmt(const VarForceInfo& varInfo) const {
+    // Update the read-back of a forceable variable. An element of an unpacked array reads back
+    // only from that element, so a statement changing only the flattened elements
+    // elemLsb..elemMsb updates only those.
+    AstNodeStmt* createForceRdUpdateStmt(const VarForceInfo& varInfo, int elemLsb = 0,
+                                         int elemMsb = std::numeric_limits<int>::max()) const {
         UASSERT(varInfo.m_forceRdVscp, "No forceRd for forced variable");
         AstVar* const varp = varInfo.m_varVscp->varp();
         if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
-            return createForceRdUpdateStmtUnpacked(varInfo);
+            return createForceRdUpdateStmtUnpacked(varInfo, elemLsb, elemMsb);
         }
         FileLine* const flp = varInfo.m_varVscp->fileline();
         return new AstAssign{flp, new AstVarRef{flp, varInfo.m_forceRdVscp, VAccess::WRITE},
                              createForceRdExpression(varInfo, flp)};
     }
 
-    AstNodeStmt* createForceRdUpdateStmtUnpacked(const VarForceInfo& varInfo) const {
+    AstNodeStmt* createForceRdUpdateStmtUnpacked(const VarForceInfo& varInfo, int elemLsb,
+                                                 int elemMsb) const {
         FileLine* const flp = varInfo.m_varVscp->fileline();
         AstVar* const varp = varInfo.m_varVscp->varp();
         AstUnpackArrayDType* const arrDtypep = VN_AS(varp->dtypep()->skipRefp(), UnpackArrayDType);
         const std::vector<AstUnpackArrayDType*> dims = arrDtypep->unpackDimensions();
         AstNodeStmt* const stmtsp = foreachUnpackedLeaf(
-            dims, [&](const std::vector<int>& idx, int /*flat*/) -> AstNodeStmt* {
+            dims,
+            [&](const std::vector<int>& idx, int /*flat*/) -> AstNodeStmt* {
                 AstVarRef* const baseRefp = new AstVarRef{flp, varInfo.m_varVscp, VAccess::READ};
                 markPermanentlyProtected(baseRefp);
                 AstNodeExpr* const baseSelp = buildNestedArraySel(flp, baseRefp, idx);
@@ -466,12 +483,16 @@ public:
                 AstNodeExpr* const rdLhsSelp = buildNestedArraySel(
                     flp, new AstVarRef{flp, varInfo.m_forceRdVscp, VAccess::WRITE}, idx);
                 return new AstAssign{flp, rdLhsSelp, readExprp};
-            });
+            },
+            elemLsb, elemMsb);
         // Whole-array reads use the force vector, whose external-force entries point to
         // RHS shadows. Refresh those alongside forceRd so blocking writes are visible
         // before the next statement. Only synthetic expressions are safe to reevaluate here.
-        for (const ForceInfo* const finfop : forceInfosInIdOrder(varInfo)) {
-            if (!finfop->m_isExternal) continue;
+        // The assign pass has no external forces.
+        const int externalMsb
+            = std::min(elemMsb, static_cast<int>(varInfo.m_externalps.size()) - 1);
+        for (int flat = elemLsb; flat <= externalMsb; ++flat) {
+            const ForceInfo* const finfop = varInfo.m_externalps[flat];
             stmtsp->addNext(new AstAssign{flp,
                                           new AstVarRef{flp, finfop->m_rhsVarVscp, VAccess::WRITE},
                                           finfop->m_rhsExprp->cloneTreePure(false)});
@@ -591,6 +612,12 @@ public:
                                                     hasArraySel, nullptr, rhsExprp});
         ForceInfo& finfo = pair.first->second;
         finfo.m_isExternal = forceStmtp->user2();
+        if (finfo.m_isExternal) {
+            if (info.m_externalps.size() <= static_cast<size_t>(rangeLsb)) {
+                info.m_externalps.resize(rangeLsb + 1);
+            }
+            info.m_externalps[rangeLsb] = &finfo;
+        }
         finfo.m_skipRdRefresh = skipRdRefresh;
         if (doingAssign()) {
             std::vector<AstVar*> depVarps;
@@ -1210,7 +1237,8 @@ class ForceConvertVisitor final : public VNVisitor {
         }
         tailp->addNextHere(stmtp);
         if (varInfop->m_forceRdVscp && !info.m_skipRdRefresh) {
-            stmtp->addNextHere(m_state.createForceRdUpdateStmt(*varInfop));
+            stmtp->addNextHere(
+                m_state.createForceRdUpdateStmt(*varInfop, info.m_rangeLsb, info.m_rangeMsb));
         }
         nodep->replaceWith(rhsAssignp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -1225,11 +1253,11 @@ class ForceConvertVisitor final : public VNVisitor {
 
         const ForceState::VarForceInfo* const varInfop
             = m_state.getVarInfo(lhsVarRefp->varScopep());
-        if (!varInfop) {
+        // Nothing to release; a forceable variable has var info in the assign pass regardless
+        if (!varInfop || varInfop->m_forces.empty()) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
-        UASSERT_OBJ(!varInfop->m_forces.empty(), nodep, "Var info for variable with no forces");
 
         FileLine* const flp = nodep->fileline();
 
@@ -1332,8 +1360,10 @@ class ForceConvertVisitor final : public VNVisitor {
             stmtListp = assignp;
         }
 
-        if (varInfop->m_forceRdVscp)
-            stmtListp->addNext(m_state.createForceRdUpdateStmt(*varInfop));
+        if (varInfop->m_forceRdVscp) {
+            stmtListp->addNext(m_state.createForceRdUpdateStmt(*varInfop, rangeInfo.m_rangeLsb,
+                                                               rangeInfo.m_rangeMsb));
+        }
 
         nodep->replaceWith(stmtListp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -1627,6 +1657,14 @@ static void assignAllImpl(AstNetlist* nodep, ForceState::ForceHelperVarsByVar& h
     });
 
     for (AstAssignCont* const assignp : assignContps) {
+        const AstVar* const varp = ForceState::getOneVarRef(assignp->lhsp())->varp();
+        if (varp->isForceable() && ForceState::isUnpackedArrayDType(varp->dtypep())) {
+            // A forceable unpacked array is read only through its read-back and force vector
+            assignp->v3warn(E_UNSUPPORTED,
+                            "Unsupported: Procedural assign of forceable unpacked array");
+            VL_DO_DANGLING(assignp->unlinkFrBack()->deleteTree(), assignp);
+            continue;
+        }
         assignp->replaceWith(new AstAssignForce{assignp->fileline(),
                                                 assignp->lhsp()->unlinkFrBack(),
                                                 assignp->rhsp()->unlinkFrBack()});

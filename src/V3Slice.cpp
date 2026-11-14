@@ -158,6 +158,19 @@ class SliceVisitor final : public VNVisitor {
         AstNode* stp = nodep->rhsp();
         const AstUnpackArrayDType* const arrayp = VN_CAST(dtp, UnpackArrayDType);
         if (!arrayp) return false;
+
+        // A force or procedural assign must be expanded, as V3Force handles them only by element
+        const bool byElement = VN_IS(nodep, AssignForce) || VN_IS(nodep, AssignCont);
+        if (byElement && (VN_IS(stp, CvtPackedToArray) || VN_IS(stp, CvtQueueToUnpack))) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: "
+                              << (VN_IS(nodep, AssignForce) ? "Force" : "Procedural assign")
+                              << " of unpacked array from "
+                              << (VN_IS(stp, CvtQueueToUnpack) ? "queue or dynamic array"
+                                                               : "streaming expression"));
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return true;
+        }
         if (VN_IS(stp, CvtPackedToArray)) return false;
         if (VN_IS(stp, CvtQueueToUnpack)) return false;
         if (VN_IS(stp, CReset)) return false;
@@ -167,7 +180,7 @@ class SliceVisitor final : public VNVisitor {
         // array representation that could be assigned.
         const bool hasSc
             = nodep->exists([&](const AstVarRef* refp) -> bool { return refp->varp()->isSc(); });
-        if (!hasSc && !VN_IS(nodep->lhsp(), ConsArray) && !v3Global.opt.fSlice()) {
+        if (!hasSc && !byElement && !VN_IS(nodep->lhsp(), ConsArray) && !v3Global.opt.fSlice()) {
             m_okConsArray = true;  // VL_RESTORER in visit(AstNodeAssign)
             return false;
         }
@@ -175,7 +188,7 @@ class SliceVisitor final : public VNVisitor {
         // Skip optimization if array is too large
         const int elements = arrayp->rangep()->elementsConst();
         const int elementLimit = v3Global.opt.fSliceElementLimit();
-        if (elements > elementLimit && elementLimit > 0) {
+        if (elements > elementLimit && elementLimit > 0 && !byElement) {
             ++m_statSliceElementSkips;
             m_okConsArray = true;  // VL_RESTORER in visit(AstNodeAssign)
             return false;
@@ -184,7 +197,8 @@ class SliceVisitor final : public VNVisitor {
         // Skip if this is a simple a = b assignment of identical arrays
         if (AstVarRef* const lhsp = VN_CAST(nodep->lhsp(), VarRef)) {
             if (AstVarRef* const rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
-                if (!hasSc && lhsp->dtypep()->skipRefp()->sameTree(rhsp->dtypep()->skipRefp())) {
+                if (!hasSc && !byElement
+                    && lhsp->dtypep()->skipRefp()->sameTree(rhsp->dtypep()->skipRefp())) {
                     m_okConsArray = true;  // VL_RESTORER in visit(AstNodeAssign)
                     return false;
                 }
@@ -227,6 +241,28 @@ class SliceVisitor final : public VNVisitor {
         if (assignOptimize(nodep)) return;
         iterateChildren(nodep);
     }
+
+    // As for a force or procedural assign: release or deassign each element of an unpacked
+    // array
+    template <typename T_Stmt>
+    void sliceRelease(T_Stmt* nodep) {
+        const AstUnpackArrayDType* const arrayp
+            = VN_CAST(nodep->lhsp()->dtypep()->skipRefp(), UnpackArrayDType);
+        if (!arrayp) return;
+        VL_RESTORER(m_assignError);
+        m_assignError = false;
+        const int elements = arrayp->rangep()->elementsConst();
+        AstNode* newlistp = nullptr;
+        for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
+            newlistp = AstNode::addNext(
+                newlistp, new T_Stmt{nodep->fileline(),
+                                     cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0)});
+        }
+        nodep->replaceWith(newlistp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstRelease* nodep) override { sliceRelease(nodep); }
+    void visit(AstDeassign* nodep) override { sliceRelease(nodep); }
 
     void visit(AstNodeCons* nodep) override {
         VL_RESTORER(m_okConsArray);
