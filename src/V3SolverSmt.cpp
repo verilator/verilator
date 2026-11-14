@@ -1903,26 +1903,220 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Width processing offsets the index of a range not starting at 0 with an unsigned
     // constant, which zero-extends a signed index and turns a negative one into an in-range one.
     // The bias may sit above user arithmetic (e.g. arr[k+6]).
-    static void signExtendBiasedIndex(AstNodeExpr* idxp) {
-        // Other shapes (e.g. an inlined select) keep the direct-children upgrade.
-        const bool recurse = VN_IS(idxp, Add) || VN_IS(idxp, Sub);
-        std::vector<AstNodeExpr*> stack{idxp};
-        while (!stack.empty()) {
-            AstNodeBiop* const biopp = VN_AS(stack.back(), NodeBiop);
-            stack.pop_back();
-            for (AstNodeExpr* const opp : {biopp->lhsp(), biopp->rhsp()}) {
-                AstExtend* const extendp = VN_CAST(opp, Extend);
-                if (extendp && extendp->lhsp()->isSigned()) {
-                    AstExtendS* const newp = new AstExtendS{
-                        extendp->fileline(), extendp->lhsp()->unlinkFrBack(), extendp->width()};
-                    newp->user1(extendp->user1());
-                    extendp->replaceWith(newp);
-                    VL_DO_DANGLING(extendp->deleteTree(), extendp);
-                    continue;
+    static bool biasedIndexIsWrappable(AstNode* nodep) {
+        return VN_IS(nodep, Add) || VN_IS(nodep, Sub) || VN_IS(nodep, Mul) || VN_IS(nodep, MulS)
+               || VN_IS(nodep, Div) || VN_IS(nodep, DivS) || VN_IS(nodep, ModDiv)
+               || VN_IS(nodep, ModDivS) || VN_IS(nodep, Negate) || VN_IS(nodep, ShiftL);
+    }
+    static bool biasedIndexIsKnown(AstNode* nodep) {
+        return biasedIndexIsWrappable(nodep) || VN_IS(nodep, Not) || VN_IS(nodep, ShiftR)
+               || VN_IS(nodep, Cond) || VN_IS(nodep, Sel) || VN_IS(nodep, Gt) || VN_IS(nodep, GtS)
+               || VN_IS(nodep, Gte) || VN_IS(nodep, GteS) || VN_IS(nodep, Lt) || VN_IS(nodep, LtS)
+               || VN_IS(nodep, Lte) || VN_IS(nodep, LteS) || VN_IS(nodep, Eq) || VN_IS(nodep, Neq);
+    }
+    // The language signedness of an index subexpression, which division and
+    // comparison flavors depend on. Flavor-signed nodes never reach here except
+    // freshly flipped ones, whose value is signed by construction.
+    static bool biasedIndexIsSigned(AstNodeExpr* nodep) {
+        if (const AstExtend* const extendp = VN_CAST(nodep, Extend)) {
+            return extendp->lhsp()->isSigned();
+        }
+        if (VN_IS(nodep, ExtendS)) return true;
+        if (VN_IS(nodep, Negate) || VN_IS(nodep, Not)) {
+            return biasedIndexIsSigned(VN_AS(nodep, NodeUniop)->lhsp());
+        }
+        if (const AstNodeBiop* const biopp = VN_CAST(nodep, NodeBiop)) {
+            if (VN_IS(nodep, ShiftL) || VN_IS(nodep, ShiftR)) {
+                return biasedIndexIsSigned(biopp->lhsp());
+            }
+            if (VN_IS(nodep, DivS) || VN_IS(nodep, ModDivS)) return true;
+            if (VN_IS(nodep, Add) || VN_IS(nodep, Sub) || VN_IS(nodep, Mul)  // LCOV_EXCL_BR_LINE
+                || VN_IS(nodep, Div) || VN_IS(nodep, ModDiv)) {
+                return biasedIndexIsSigned(biopp->lhsp()) && biasedIndexIsSigned(biopp->rhsp());
+            }
+            return false;
+        }
+        if (const AstCond* const condp = VN_CAST(nodep, Cond)) {
+            return biasedIndexIsSigned(condp->thenp()) && biasedIndexIsSigned(condp->elsep());
+        }
+        return nodep->isSigned();
+    }
+    static bool biasedIndexNeedsSignedCtx(AstNode* nodep) {
+        return VN_IS(nodep, Div) || VN_IS(nodep, ModDiv) || VN_IS(nodep, Gt) || VN_IS(nodep, GtS)
+               || VN_IS(nodep, Gte) || VN_IS(nodep, GteS) || VN_IS(nodep, Lt) || VN_IS(nodep, LtS)
+               || VN_IS(nodep, Lte) || VN_IS(nodep, LteS) || VN_IS(nodep, Eq) || VN_IS(nodep, Neq);
+    }
+    // The language width of an index subexpression, before widening discarded it.
+    static int biasedIndexValueWidth(AstNodeExpr* nodep) {
+        if (const AstNodeBiop* const biopp = VN_CAST(nodep, NodeBiop)) {
+            if (VN_IS(nodep, ShiftL) || VN_IS(nodep, ShiftR)) {
+                return biasedIndexValueWidth(biopp->lhsp());
+            }
+            if (biasedIndexIsWrappable(nodep)) {
+                const int lhsWidth = biasedIndexValueWidth(biopp->lhsp());
+                const int rhsWidth = biasedIndexValueWidth(biopp->rhsp());
+                // Mixed signedness widens to 32, so nothing wraps below that.
+                if ((VN_IS(nodep, Add) || VN_IS(nodep, Sub) || VN_IS(nodep, Mul)
+                     || VN_IS(nodep, Div) || VN_IS(nodep, ModDiv))
+                    && biasedIndexIsSigned(biopp->lhsp()) != biasedIndexIsSigned(biopp->rhsp())) {
+                    return std::max({32, lhsWidth, rhsWidth});
                 }
-                if (recurse && (VN_IS(opp, Add) || VN_IS(opp, Sub))) stack.push_back(opp);
+                return std::max(lhsWidth, rhsWidth);
+            }
+            return nodep->width();
+        }
+        if (const AstNodeUniop* const uniopp = VN_CAST(nodep, NodeUniop)) {
+            if (VN_IS(nodep, Extend) || VN_IS(nodep, ExtendS) || VN_IS(nodep, Negate)
+                || VN_IS(nodep, Not)) {
+                return biasedIndexValueWidth(uniopp->lhsp());
+            }
+            return nodep->width();
+        }
+        if (const AstCond* const condp = VN_CAST(nodep, Cond)) {
+            return std::max(biasedIndexValueWidth(condp->thenp()),
+                            biasedIndexValueWidth(condp->elsep()));
+        }
+        return nodep->width();
+    }
+    static void normalizeBiasedIndexInner(AstNodeExpr* nodep, bool isTop, bool extendCtx,
+                                          int parentWidth) {
+        if (AstExtend* const extendp = VN_CAST(nodep, Extend)) {
+            normalizeBiasedIndexInner(extendp->lhsp(), false, true, extendp->width());
+            // Unsigned division and comparison operands keep widening with zeros;
+            // the mark tells the later scan those are intended, not missed.
+            if (!extendp->lhsp()->isSigned() || !extendCtx) {
+                if (extendCtx) return;
+                extendp->user2(1);
+                return;
+            }
+            AstExtendS* const newp = new AstExtendS{
+                extendp->fileline(), extendp->lhsp()->unlinkFrBack(), extendp->width()};
+            newp->user1(extendp->user1());
+            extendp->replaceWith(newp);
+            VL_DO_DANGLING(extendp->deleteTree(), extendp);
+            return;
+        }
+        if (VN_IS(nodep, ExtendS)) {
+            normalizeBiasedIndexInner(VN_AS(nodep, ExtendS)->lhsp(), false, extendCtx,
+                                      nodep->width());
+            return;
+        }
+        if (!biasedIndexIsKnown(nodep)) return;
+        bool kidCtx = true;
+        if (biasedIndexNeedsSignedCtx(nodep)) {
+            const AstNodeBiop* const biopp = VN_AS(nodep, NodeBiop);
+            kidCtx = biasedIndexIsSigned(biopp->lhsp()) && biasedIndexIsSigned(biopp->rhsp());
+        }
+        // Known nodes take at most three operands.
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op1p(), NodeExpr)) {  // LCOV_EXCL_BR_LINE
+            normalizeBiasedIndexInner(cp, false,
+                                      VN_IS(cp, Extend) || VN_IS(cp, ExtendS) ? kidCtx : true,
+                                      nodep->width());
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op2p(), NodeExpr)) {
+            normalizeBiasedIndexInner(cp, false,
+                                      VN_IS(cp, Extend) || VN_IS(cp, ExtendS) ? kidCtx : true,
+                                      nodep->width());
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op3p(), NodeExpr)) {
+            normalizeBiasedIndexInner(cp, false,
+                                      VN_IS(cp, Extend) || VN_IS(cp, ExtendS) ? kidCtx : true,
+                                      nodep->width());
+        }
+        // Division flavors follow the operands: an unsigned node dividing
+        // sign-extended values computes the wrong quotient, so flip it to match.
+        if (VN_IS(nodep, Div) || VN_IS(nodep, ModDiv)) {
+            const AstNodeBiop* const biopp = VN_AS(nodep, NodeBiop);
+            if (biasedIndexIsSigned(biopp->lhsp()) && biasedIndexIsSigned(biopp->rhsp())) {
+                FileLine* const fl = nodep->fileline();
+                AstNodeExpr* const lhsp = biopp->lhsp()->unlinkFrBack();
+                AstNodeExpr* const rhsp = biopp->rhsp()->unlinkFrBack();
+                AstNodeBiop* newp;
+                if (VN_IS(nodep, Div)) {
+                    newp = new AstDivS{fl, lhsp, rhsp};
+                } else {
+                    newp = new AstModDivS{fl, lhsp, rhsp};
+                }
+                newp->dtypeSetLogicSized(32, VSigning::SIGNED);
+                newp->user1(nodep->user1());
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                nodep = newp;
             }
         }
+        // Narrow arithmetic wraps at its own width before widening (e.g. -128/-1 stays
+        // out of range instead of aliasing). The top feeds storage directly, never wrapped.
+        if (!isTop && biasedIndexIsWrappable(nodep)
+            && biasedIndexValueWidth(nodep) < parentWidth) {
+            FileLine* const fl = nodep->fileline();
+            const int width = biasedIndexValueWidth(nodep);
+            const bool randDependent = nodep->user1();
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            AstSel* const selp = new AstSel{fl, nodep, 0, width};
+            selp->dtypeSetLogicSized(width, VSigning::UNSIGNED);
+            selp->user1(randDependent);
+            // Signed values stay negative through the widening, so they fall out of
+            // range instead of aliasing back into it.
+            AstNodeExpr* const extp
+                = biasedIndexIsSigned(nodep)
+                      ? static_cast<AstNodeExpr*>(new AstExtendS{fl, selp, parentWidth})
+                      : new AstExtend{fl, selp, parentWidth};
+            extp->user1(randDependent);
+            relinker.relink(extp);
+        }
+    }  // LCOV_EXCL_BR_LINE
+    // A logical shift widens with zeros while an arithmetic one widens with the sign,
+    // but widening demotes the latter onto the former, so neither reading is provable.
+    // Clears the keep mark on the way down, so only this pass can have set it.
+    static bool biasedIndexClearAndCheckShift(AstNodeExpr* nodep) {
+        nodep->user2(0);
+        if (VN_IS(nodep, ShiftR)) {
+            const AstExtend* const extendp = VN_CAST(VN_AS(nodep, ShiftR)->lhsp(), Extend);
+            if (extendp && extendp->lhsp()->isSigned()) return true;
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op1p(), NodeExpr)) {
+            if (biasedIndexClearAndCheckShift(cp)) return true;
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op2p(), NodeExpr)) {
+            if (biasedIndexClearAndCheckShift(cp)) return true;
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op3p(), NodeExpr)) {
+            if (biasedIndexClearAndCheckShift(cp)) return true;
+        }
+        // LCOV_EXCL_START -- no index shape has a fourth operand; kept for a future one
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op4p(), NodeExpr)) {
+            if (biasedIndexClearAndCheckShift(cp)) return true;
+        }
+        // LCOV_EXCL_STOP
+        return false;
+    }
+    static bool biasedIndexHasBadExtend(AstNodeExpr* nodep) {
+        if (const AstExtend* const extendp = VN_CAST(nodep, Extend)) {
+            // LCOV_EXCL_START -- defensive: every widener-emitted shape is handled above
+            if (extendp->lhsp()->isSigned() && !extendp->user2()) return true;
+            // LCOV_EXCL_STOP
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op1p(), NodeExpr)) {
+            if (biasedIndexHasBadExtend(cp)) return true;
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op2p(), NodeExpr)) {
+            if (biasedIndexHasBadExtend(cp)) return true;
+        }
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op3p(), NodeExpr)) {
+            if (biasedIndexHasBadExtend(cp)) return true;
+        }
+        // LCOV_EXCL_START -- no index shape has a fourth operand; kept for a future one
+        if (AstNodeExpr* const cp = VN_CAST(nodep->op4p(), NodeExpr)) {
+            if (biasedIndexHasBadExtend(cp)) return true;
+        }
+        // LCOV_EXCL_STOP
+        return false;
+    }
+    static bool normalizeBiasedIndex(AstNodeExpr* idxp) {
+        if (biasedIndexClearAndCheckShift(idxp)) return false;
+        normalizeBiasedIndexInner(idxp, true, true, 32);
+        return !biasedIndexHasBadExtend(idxp);
     }
     void handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl) {
         const bool nestedElement
@@ -1970,12 +2164,18 @@ class ConstraintExprVisitor final : public VNVisitor {
             return;
         }
 
+        if (arrDtp->lo() != 0 && !normalizeBiasedIndex(nodep->bitp())) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Complex index expression into non-rand "
+                                         "array");
+            return;
+        }
         AstNodeExpr* idxp = nodep->bitp()->unlinkFrBack();
-        if (arrDtp->lo() != 0) signExtendBiasedIndex(idxp);
+        if (arrDtp->lo() != 0) propagateUser1InlineRecurse(idxp);
         // Widened by its own signedness, so a negative index falls out of range
         if (idxp->width() < 32) {
-            idxp = idxp->isSigned() ? static_cast<AstNodeExpr*>(new AstExtendS{fl, idxp, 32})
-                                    : new AstExtend{fl, idxp, 32};
+            idxp = biasedIndexIsSigned(idxp)
+                       ? static_cast<AstNodeExpr*>(new AstExtendS{fl, idxp, 32})
+                       : new AstExtend{fl, idxp, 32};
             idxp->user1(true);
         }
         // An out-of-range index reads the element default (IEEE 1800-2023 7.4.5), not the last
