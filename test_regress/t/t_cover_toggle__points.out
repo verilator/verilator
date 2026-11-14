@@ -232,7 +232,7 @@
 -000000  point: type=toggle comment=memory[121][1]:0->1 hier=top.t
 -000000  point: type=toggle comment=memory[121][1]:1->0 hier=top.t
         
-          wire [1023:0] largeish = {992'h0, cyc};
+          wire [1024:0] largeish = {cyc[2], 960'h0, cyc, cyc};
           // CHECK_COVER_MISSING(-1)
         
           always @ (posedge clk) begin
