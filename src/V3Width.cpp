@@ -383,7 +383,7 @@ class WidthVisitor final : public VNVisitor {
     AstNodeExpr* m_fromParentp = nullptr;  // Method call or member select iterating its fromp()
     AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
     bool m_hasSExpr = false;  // Property has a sequence expression
-    const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
+    const AstCell* m_cellp = nullptr;  // Current cell, whose port connections are visited
     std::vector<AstVar*> m_splitIfaceArrayVarps;  // Interface arrays split by V3Param
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -391,7 +391,7 @@ class WidthVisitor final : public VNVisitor {
     AstNodeModule* m_modep = nullptr;  // Current module
     const AstConstraint* m_constraintp = nullptr;  // Current constraint
     AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
-    const AstNode* m_writerp = nullptr;  // Assignment, release or pin whose lvalue is iterated
+    const AstNode* m_writerp = nullptr;  // Assign, release or driving pin whose lvalue is iterated
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
@@ -3488,7 +3488,14 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             } else if (AstBasicDType* const basicp = toDtp->basicp()) {
-                if (!basicp->isString() && fromDtp->isString()) {
+                if (basicp->isDouble() && fromDtp->isString()) {
+                    AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+                    const int width = fromp->width();
+                    AstNodeDType* const intDtp
+                        = nodep->findBitDType(width, width, VSigning::UNSIGNED);
+                    newp = new AstIToRD{nodep->fileline(),
+                                        new AstNToI{nodep->fileline(), fromp, intDtp}};
+                } else if (!basicp->isString() && fromDtp->isString()) {
                     newp = new AstNToI{nodep->fileline(), nodep->fromp()->unlinkFrBack(), toDtp};
                 } else if (!basicp->isDouble() && !fromDtp->isDouble()) {
                     AstNodeDType* const origDTypep = nodep->dtypep();
@@ -3589,7 +3596,16 @@ class WidthVisitor final : public VNVisitor {
                 m_underCast = true;
                 userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM, STREAM_USE_CAST}.p());
             }
-            castSized(nodep, nodep->lhsp(), width);  // lhsp may change
+            if (nodep->lhsp()->isString()) {
+                AstNodeExpr* const fromp = nodep->lhsp()->unlinkFrBack();
+                const AstBasicDType* const fromBasicp = fromp->dtypep()->basicp();
+                AstNodeDType* const outDtp = nodep->findBitOrLogicDType(
+                    width, width, fromBasicp->numeric(), fromBasicp->isFourstate());
+                nodep->lhsp(new AstNToI{nodep->fileline(), fromp, outDtp});
+                nodep->dtypep(outDtp);
+            } else {
+                castSized(nodep, nodep->lhsp(), width);  // lhsp may change
+            }
         }
         if (m_vup->final()) {
             // CastSize not needed once sizes determined, but a stream stays the operand of a cast
@@ -4175,15 +4191,17 @@ class WidthVisitor final : public VNVisitor {
                    && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
                    && !VN_IS(m_writerp, AssignForce) && !VN_IS(m_writerp, Release)) {
             // Skip ASSIGNIN for continuous assignments to net-type input ports
-            // via hierarchical reference. Net ports allow multiple continuous
-            // drivers (IEEE 1800-2023 23.3.3.3). Input ports default to net
-            // when port kind is omitted (23.2.2.3, PORT type).
+            // via hierarchical reference, or via a port connection of a bind
+            // instance, which is not code of the target module (IEEE 1800-2023 23.11).
+            // Net ports allow multiple continuous drivers (IEEE 1800-2023 23.3.3.3).
+            // Input ports default to net when port kind is omitted (23.2.2.3, PORT type).
             const bool hierRef = !m_curModVars.count(nodep->varp());
             const bool netPort
                 = nodep->varp()->isNet() || nodep->varp()->varType() == VVarType::PORT;
             const bool contAssign = VN_IS(m_writerp, AssignW);
             const bool pinConn = VN_IS(m_writerp, Pin);
-            if (!(hierRef && netPort && (contAssign || pinConn))) {
+            const bool bindPinConn = pinConn && m_cellp->fromBind();
+            if (!((hierRef || bindPinConn) && netPort && (contAssign || pinConn))) {
                 nodep->v3warn(ASSIGNIN,
                               "Assigning to input/const variable: " << nodep->prettyNameQ());
             }
@@ -8316,8 +8334,6 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void visit(AstPin* nodep) override {
-        VL_RESTORER(m_writerp);
-        m_writerp = nodep;
         // UINFOTREE(1, nodep, "", "PinPre");
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
@@ -8337,6 +8353,13 @@ class WidthVisitor final : public VNVisitor {
             m_inParamOverride = isOverridePattern(nodep->exprp());
             userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         } else if (!m_paramsOnly) {
+            // Very much like like an assignment, but which side is LH/RHS
+            // depends on pin being a in/output/inout.
+            const VDirection pinDirection = nodep->modVarp()->direction();
+            // Only output and inout connections drive the connected expression,
+            // a ref connection or a parameter value does not
+            VL_RESTORER(m_writerp);
+            if (pinDirection.isOutput() || pinDirection.isInout()) m_writerp = nodep;
             if (!nodep->modVarp()->didWidth()) {
                 // Var hasn't been widthed, so make it so.
                 userIterate(nodep->modVarp(), nullptr);
@@ -8345,9 +8368,6 @@ class WidthVisitor final : public VNVisitor {
                 if (nodep->modVarp()->isIfaceArraySplit()) expandIfaceArrayPin(nodep);
                 return;
             }
-            // Very much like like an assignment, but which side is LH/RHS
-            // depends on pin being a in/output/inout.
-            const VDirection pinDirection = nodep->modVarp()->direction();
             if (VN_IS(nodep->exprp(), NodeStream) && pinDirection.isInoutOrRef()) {
                 nodep->exprp()->v3error("Streaming concatenation cannot be connected to '"
                                         << pinDirection.prettyName()
@@ -9817,6 +9837,13 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+            if (nodep->lhsp()->isString()) {
+                nodep->lhsp()->v3error("Signing cast is not legal on string data types"
+                                       " (IEEE 1800-2023 6.24.1)");
+                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
             checkCvtUS(nodep->lhsp(), true);
             const int width = nodep->lhsp()->width();
             AstNodeDType* const expDTypep = nodep->findBitOrLogicDType(
@@ -10820,6 +10847,24 @@ class WidthVisitor final : public VNVisitor {
         } else if (expDTypep == underp->dtypep()) {  // Perfect
             underp = userIterateSubtreeReturnEdits(underp,
                                                    WidthVP{expDTypep, FINAL, childStreamUse}.p());
+        } else if (determ == ASSIGN && underp->isString()
+                   && (expDTypep->skipRefp()->isIntegralOrPacked() || expDTypep->isDouble())) {
+            underp->v3error(ucfirst(side)
+                            << " of string type is not implicitly convertible to the "
+                               "destination data type (IEEE 1800-2023 6.16)\n"
+                            << underp->warnMore() << "... Source data type: "
+                            << underp->dtypep()->prettyDTypeNameQ() << '\n'
+                            << underp->warnMore() << "... Destination data type: "
+                            << expDTypep->prettyDTypeNameQ() << '\n'
+                            << underp->warnMore()
+                            << "... Suggest use an explicit cast to the destination type");
+            AstNodeExpr* const exprp = VN_AS(underp, NodeExpr);
+            AstConst* const newp = new AstConst{exprp->fileline(), AstConst::BitFalseErroring{}};
+            newp->dtypeFrom(expDTypep);
+            newp->didWidth(true);
+            exprp->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(exprp), exprp);
+            underp = newp;
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
             underp = userIterateSubtreeReturnEdits(underp,
                                                    WidthVP{expDTypep, FINAL, childStreamUse}.p());

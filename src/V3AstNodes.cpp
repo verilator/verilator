@@ -1035,6 +1035,7 @@ string AstCase::pragmaString() const {
 }
 void AstCell::dump(std::ostream& str) const {
     Super::dump(str);
+    if (fromBind()) str << " [FROMBIND]";
     if (recursive()) str << " [RECURSIVE]";
     if (arrayIdx() >= 0) str << " [ARRAYIDX=" << arrayIdx() << "]";
     if (modp()) {
@@ -1048,6 +1049,7 @@ void AstCell::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, modName);
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
+    dumpJsonBoolFuncIf(str, fromBind);
     dumpJsonBoolFuncIf(str, recursive);
     if (arrayIdx() >= 0) dumpJsonNumFunc(str, arrayIdx);
     dumpJsonGen(str);
