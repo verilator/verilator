@@ -12,8 +12,8 @@
                                   : ... note: In instance 't'
    44 |   sub #(.X(block.block_func())) u_sub2 ();   
       |                  ^~~~~~~~~~
-%Error-HIERPARAM: t/t_param_hier_bad.v:47:29: Parameter values cannot use hierarchical values (IEEE 1800-2023 6.20.2)
-                                            : ... note: In instance 't'
-   47 |   defparam u_sub3.X = u_sub.Z;   
+%Error-HIERPARAM: t/t_param_hier_bad.v:71:29: Parameter values cannot use hierarchical values (IEEE 1800-2023 6.20.2)
+                                            : ... note: In instance 't.u_sub_defparam'
+   71 |   defparam u_sub3.X = u_sub.Z;   
       |                             ^
 %Error: Exiting due to

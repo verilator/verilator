@@ -25,6 +25,9 @@ module t;
     end
   endgenerate
 
+  m3 u_up ();
+  m6 #(.M6_PARAM(7)) m6 ();
+
   initial begin
     `checkd(u_m3[0].PAR3, 100);
     `checkd(u_m3[1].PAR3, 200);
@@ -61,4 +64,14 @@ endmodule
 
 module m3 ();
   parameter PAR3 = 40;
+endmodule
+
+module m6 #(
+    parameter M6_PARAM = 6
+);
+  class Cls;
+    localparam CLS_PARAM = M6_PARAM;
+  endclass
+  defparam t.u_up.PAR3 = M6_PARAM;  // Instance not under the defparam
+  defparam t.u_up.PAR3 = Cls::CLS_PARAM;
 endmodule

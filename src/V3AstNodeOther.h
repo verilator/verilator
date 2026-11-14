@@ -1382,7 +1382,9 @@ class AstDefParam final : public AstNode {
     // @astgen op1 := rhsp : AstNodeExpr
     // @astgen op2 := pathp : Optional[AstNodeExpr]
     // @astgen op3 := targetp : Optional[AstNodeExpr]
-    std::string m_name;  // After V3LinkDot, "instance.parameter" V3Param sets, from this scope
+    // Set by V3LinkDot: "instance.parameter" path from this defparam's scope, for V3Param
+    std::string m_name;
+
 public:
     AstDefParam(FileLine* fl, AstNodeExpr* pathp, AstNodeExpr* targetp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_DefParam(fl) {

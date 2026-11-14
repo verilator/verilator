@@ -43,8 +43,7 @@ module t;
 
   sub #(.X(block.block_func())) u_sub2 ();  // <--- BAD
 
-  sub u_sub3 ();
-  defparam u_sub3.X = u_sub.Z;  // <--- BAD
+  sub_defparam u_sub_defparam ();
 
   begin : block
     function int block_func();
@@ -64,4 +63,10 @@ module t;
     $finish;
   end
 
+endmodule
+
+module sub_defparam;
+  sub u_sub ();
+  sub u_sub3 ();
+  defparam u_sub3.X = u_sub.Z;  // <--- BAD
 endmodule

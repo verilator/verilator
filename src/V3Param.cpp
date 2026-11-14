@@ -2457,13 +2457,6 @@ public:
         m_deleter.pushDeletep(valuep);
         m_defparamValues[path] = valuep;
     }
-    // Whether a defparam may set a parameter of the instance, or of one below it
-    bool hasDefparam(const AstCell* cellp) {
-        for (const AstPin* const pinp : cellp->paramspList()) {
-            if (!pinp->paramPath().empty()) return true;
-        }
-        return nestedDefparamp(cellp->modp());
-    }
 
     // Find 'name' declared in classp or a class it extends, setting memberClassp to the declaring
     // class. V3LinkDot defers names inherited through a parameterized base until the base is
@@ -2566,6 +2559,9 @@ public:
                         pinp->exprp(it->second->cloneTree(false));
                         continue;
                     }
+                    // No value: the defparam sets another instance of this module, or is in a
+                    // generate block not built. ParamVisitor::iterateDefParams registers values
+                    // before specializing any instance they may set.
                 } else if (instanceName == pinp->paramPath()
                            || VString::endsWith(instanceName, "." + pinp->paramPath())) {
                     continue;
@@ -2947,6 +2943,19 @@ class ParamVisitor final : public VNVisitor {
 
     // METHODS
 
+    // Register the defparams of a scope, before an instance they set is specialized, possibly
+    // early as an interface (see visit(AstDefParam))
+    void iterateDefParams(AstNode* stmtsp) {
+        for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
+            if (AstDefParam* const defParamp = VN_CAST(nodep, DefParam)) {
+                iterate(defParamp);
+            } else if (const AstGenBlock* const blockp = VN_CAST(nodep, GenBlock)) {
+                // Unnamed, so in this scope (see LinkDotFindVisitor::visit(AstGenBlock))
+                if (blockp->name().empty()) iterateDefParams(blockp->itemsp());
+            }
+        }
+    }
+
     void processWorkQ() {
         UASSERT(!m_iterateModule, "Should not nest");
         std::multimap<ParamState::WQKey, AstNodeModule*> workQueue;
@@ -2992,6 +3001,7 @@ class ParamVisitor final : public VNVisitor {
                     VL_RESTORER(m_modIfaceRefsDone);
                     m_modp = modp;
                     m_modIfaceRefsDone = false;
+                    iterateDefParams(modp->stmtsp());
                     iterateChildren(modp);
                 }
             }
@@ -3320,15 +3330,13 @@ class ParamVisitor final : public VNVisitor {
         // Must do ifaces first, so push to list and do in proper order
         m_genHierNames.emplace(nodep, m_generateHierName);
 
-        // Deparameterize iface cells early so types are available for lparams, unless a defparam
-        // may yet give a value (see visit(AstDefParam))
-        if (isIface && VN_CAST(nodep, Cell) && VN_CAST(nodep, Cell)->paramsp()
-            && !m_processor.hasDefparam(VN_AS(nodep, Cell))) {
+        // Deparameterize iface cells early so types are available for lparams.
+        if (isIface && VN_CAST(nodep, Cell) && VN_CAST(nodep, Cell)->paramsp()) {
             AstCell* const cellp = VN_CAST(nodep, Cell);
             if (!cellParamsReferenceIfacePorts(cellp)) {
                 AstNodeModule* const srcModp = cellp->modp();
-                AstNodeModule* const newModp
-                    = m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
+                AstNodeModule* const newModp = m_processor.nodeDeparam(
+                    cellp, srcModp, m_modp, m_modp->someInstanceName() + m_generateHierName);
                 // Retarget template REFDTYPEs to the clone's types.
                 if (V3LinkDotIfaceCapture::enabled() && cellp->modp() != srcModp) {
                     m_processor.retargetIfaceRefs(m_modp, cellp->name());
@@ -3887,6 +3895,7 @@ class ParamVisitor final : public VNVisitor {
         } else {
             VL_RESTORER_COPY(m_generateHierName);
             m_generateHierName += "." + nodep->prettyName();
+            iterateDefParams(nodep->itemsp());
             iterateChildren(nodep);
         }
     }
