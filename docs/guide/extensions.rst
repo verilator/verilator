@@ -236,6 +236,20 @@ or "`ifdef`"'s may break other tools.
    Returns the timeunit of the current module as an integer. This extension
    is experimental and may be removed without deprecation.
 
+.. option:: //&32;coverage&32;off
+
+   Same as :option:`/*verilator&32;coverage_off*/`, as other tools accept.
+   One word may come before ``coverage``, such as ``pragma`` or
+   ``verilator``. A comment with any other text is an ordinary comment.
+
+.. option:: //&32;coverage&32;on
+
+   Same as :option:`/*verilator&32;coverage_on*/`, as other tools accept.
+   One word may come before ``coverage``, as for
+   :option:`//&32;coverage&32;off`.
+
+   .. t_dist_docs_style restart_sort
+
 .. option:: /*verilator&32;clock_enable*/
 
    Deprecated and has no effect (ignored).
