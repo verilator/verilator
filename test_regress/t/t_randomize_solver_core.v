@@ -10,12 +10,13 @@
 // verilog_format: on
 
 // Only unsatisfiable, so every solver status this test produces belongs to the
-// unsat core report
+// unsat core report. The variable has the form of the runtime's numbered core
+// labels (__Vcons<N>) without the prefix, and must not clash.
 class Unsat;
-  rand bit [7:0] u;
+  rand bit [7:0] cons0;
   constraint uc {
-    u > 8'd200;
-    u < 8'd100;
+    cons0 > 8'd200;
+    cons0 < 8'd100;
   }
 endclass
 
@@ -24,10 +25,10 @@ module t;
     automatic Unsat un = new;
     automatic int nfail = 0;
     for (int i = 0; i < 3; ++i) begin
-      un.u = 8'd7;
+      un.cons0 = 8'd7;
       if (un.randomize() == 0) nfail++;
       // An unsatisfiable randomize leaves the variable alone
-      `checkd(un.u, 8'd7);
+      `checkd(un.cons0, 8'd7);
     end
     $write("NFAIL=%0d\n", nfail);
     $write("*-* All Finished *-*\n");
