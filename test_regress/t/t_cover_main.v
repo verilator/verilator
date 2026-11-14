@@ -7,6 +7,8 @@
 module t;
 
   initial begin
+    // Uses the std package, which gets no coverage points
+    automatic process p = process::self();
     $write("*-* All Finished *-*\n");
     $finish;
   end

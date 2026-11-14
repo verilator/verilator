@@ -295,7 +295,8 @@ class CoverageVisitor final : public VNVisitor {
         VL_RESTORER_COPY(m_funcTemps);
         createHandle(nodep);
         m_modp = nodep;
-        m_state.m_inModOff = nodep->isTop();  // Already made top shell, no coverage for it
+        // Already made top shell, no coverage for it, nor for the std package's library code
+        m_state.m_inModOff = nodep->isTop() || nodep == v3Global.rootp()->stdPackagep();
         if (!origModp) {
             // No blocks cross (non-nested) modules, so save some memory
             m_varnames.clear();
@@ -312,7 +313,7 @@ class CoverageVisitor final : public VNVisitor {
         m_modp = nodep;
         // Covergroup declarations are not executable statements; suppress line/expr/toggle
         // coverage so declarative elements (covergroup, coverpoint, cross) are not annotated
-        m_state.m_inModOff = nodep->isCovergroup();
+        m_state.m_inModOff = m_state.m_inModOff || nodep->isCovergroup();
         iterateChildren(nodep);
     }
     void visit(AstAlways* nodep) override {
