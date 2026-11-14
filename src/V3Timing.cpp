@@ -437,9 +437,10 @@ public:
     // CONSTRUCTORS
     explicit TimingSuspendableVisitor(AstNetlist* nodep) {
         iterate(nodep);
-        m_suspGraph.removeTransitiveEdges();
-        m_procGraph.removeTransitiveEdges();
-        // Opaque DPI calls may introduce cycles, so add them after transitive pruning.
+        // Process pruning is incorrect: flags stop at T_ALLOCS_PROC, so a direct call edge is
+        // not implied through a fork. Suspendability pruning is correct but unnecessary:
+        // propagation is linear, while transitive reduction dominates this pass's cost.
+        // Opaque DPI calls may invoke any export, so link them through the netlist.
         for (AstCFunc* const dpiExportp : m_dpiExports) {
             new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(dpiExportp), getSuspendDepVtx(nodep),
                             P_CALL};

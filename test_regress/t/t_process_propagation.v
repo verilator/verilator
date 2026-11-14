@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 event evt1, evt2;
 
 class Foo;
@@ -34,6 +39,7 @@ class Bar extends Foo;
 endclass
 
 module t;
+  bit legacy_done;
   initial begin
     process p;
     Foo foo;
@@ -59,8 +65,63 @@ module t;
       if (!foo.event_received) $stop;
       if (bar.event_received) $stop;
 
-      $write("*-* All Finished *-*\n");
-      $finish;
+      legacy_done = 1;
     end
+  end
+
+  // The direct call must preserve the caller's process even with a second fork call.
+  class Cls;
+    static process last;
+    static function void record();
+      last = process::self();
+    endfunction
+    static task recordTwice();
+      record();
+      fork
+        record();
+      join_none
+    endtask
+  endclass
+
+  bit identity_done;
+  initial begin
+    process p;
+    p = process::self();
+    Cls::recordTwice();
+    // The join_none child cannot run until this parent suspends.
+    `checkd(Cls::last == p, 1);
+    #1;
+    `checkd(Cls::last != p, 1);
+    identity_done = 1;
+  end
+
+  class Stopper;
+    static task stopChildren();
+      disable fork;
+    endtask
+    static task stopTwice();
+      stopChildren();
+      fork
+        stopChildren();
+      join_none
+    endtask
+  endclass
+
+  bit kill_done;
+  initial begin
+    int finished;
+    finished = 0;
+    fork
+      #2 finished = 1;
+    join_none
+    #1 Stopper::stopTwice();
+    #2 `checkd(finished, 0);
+    kill_done = 1;
+  end
+
+  initial begin
+    wait (legacy_done && identity_done && kill_done);
+    $write("*-* All Finished *-*\n");
+    $finish;
   end
 endmodule
