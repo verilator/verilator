@@ -381,9 +381,12 @@ module cond(input logic clk, input int cyc);
       else l = 1;
     end
     else l = 0;
-    // $stop turns coverage off in its leg, which drops that if/else's branch points
+    // $stop turns coverage off in its leg, which drops the branch points of its whole chain
     if (cyc == 3) l = 1;
     else if (cyc != 100) l = 0;
     else $stop;
+    if (cyc == 100) $stop;
+    else if (cyc == 3) l = 1;
+    else l = 0;
   end
 endmodule

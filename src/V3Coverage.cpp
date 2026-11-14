@@ -139,7 +139,9 @@ class CoverageVisitor final : public VNVisitor {
 
     // NODE STATE
     // Entire netlist:
+    //  AstIf::user1()      -> bool.  Branch coverage is on in its legs and its chain's below
     //  AstIf/AstLoopTest::user2()      -> bool.  True indicates coverage-generated
+    const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
     V3UniqueNames m_exprTempNames;  // For generating unique temporary variable names used by
                                     // expression coverage
@@ -155,6 +157,8 @@ class CoverageVisitor final : public VNVisitor {
     AstNode* m_exprStmtsp = nullptr;  // Node to add expr coverage to
     bool m_then = false;  // Whether we're iterating the then or else branch
                           // when m_exprStmtps is an AstIf
+    const AstIf* m_chainNextp = nullptr;  // Next if of the if/else-if chain being iterated
+    bool m_chainAboveOn = false;  // Branch coverage is on in every leg above m_chainNextp
     CoverExprs m_exprs;  // List of expressions that can reach objective
     Objective m_seeking = NONE;  // Seeking objective for expression coverage
     bool m_objective = false;  // Expression objective
@@ -633,6 +637,7 @@ class CoverageVisitor final : public VNVisitor {
             // can show it as part of line coverage of the statement
             // above. Otherwise show it based on what is inside.
             // But: Seemed too complicated, and fragile.
+            const bool aboveOn = nodep != m_chainNextp || m_chainAboveOn;
             const CheckState lastState = m_state;
             CheckState ifState;
             CheckState elseState;
@@ -650,18 +655,24 @@ class CoverageVisitor final : public VNVisitor {
             {
                 VL_RESTORER(m_exprStmtsp);
                 VL_RESTORER(m_then);
+                VL_RESTORER(m_chainNextp);
+                VL_RESTORER(m_chainAboveOn);
                 m_exprStmtsp = nodep;
                 m_then = false;
                 createHandle(nodep);
+                m_chainNextp = elsif ? VN_AS(nodep->elsesp(), If) : nullptr;
+                m_chainAboveOn = aboveOn && ifState.branchCoverageOn(nodep);
                 iterateAndNextNull(nodep->elsesp());
                 elseState = m_state;
             }
             m_state = lastState;
+            const bool belowOn
+                = elsif ? VN_AS(nodep->elsesp(), If)->user1() : elseState.branchCoverageOn(nodep);
+            nodep->user1(ifState.branchCoverageOn(nodep) && belowOn);
             //
-            // Branch coverage when both if and else are on. An if/else-if chain is one
-            // decision: a point for each if or else-if, and one for the final else, which is
-            // implicit if absent.
-            if (ifState.branchCoverageOn(nodep) && elseState.branchCoverageOn(nodep)) {
+            // Branch coverage when every leg is on. An if/else-if chain is one decision, with a
+            // point per if or else-if, and one for the final else, implicit if absent.
+            if (aboveOn && nodep->user1()) {
                 // Linecov shows what's inside the if (not condition that is always executed)
                 UINFO(4, "   COVER-branch: " << nodep);
                 // Named as the line point on the same block, so reports can pair them
@@ -674,9 +685,8 @@ class CoverageVisitor final : public VNVisitor {
                 nodep->addThensp(
                     newCoverInc(nodep->fileline(), ifDeclp, traceNameForLine(nodep, ifName)));
                 if (!elsif) {
-                    // The else has a column offset of 1 to uniquify it relative to the if
-                    // As "if" and "else" are more than one character wide, this won't overlap
-                    // another token
+                    // The else has a column offset of 1 to uniquify it relative to the if; as "if"
+                    // and "else" are wider than one character, this won't overlap another token
                     AstCoverOtherDecl* const elseDeclp = new AstCoverOtherDecl{
                         nodep->fileline(), "v_branch/" + m_modp->prettyName(), "else",
                         linesCov(elseState, nodep), 1};
