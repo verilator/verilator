@@ -383,7 +383,7 @@ public:
 
 class ActiveDlyVisitor final : public VNVisitor {
 public:
-    enum CheckType : uint8_t { CT_COMB, CT_FINAL };
+    enum CheckType : uint8_t { CT_COMB, CT_LATCH, CT_FINAL };
 
 private:
     // MEMBERS
@@ -391,6 +391,19 @@ private:
 
     // METHODS
     void warnNonBlocking(AstNode* nodep, const char* what, const char* nbOp, const char* bOp) {
+        if (m_check == CT_LATCH) {
+            nodep->v3warn(LATCHDLY, "Unsupported: Non-blocking "
+                                        << what << " '" << nbOp
+                                        << "' in always_latch (treated as blocking '" << bOp
+                                        << "')\n"
+                                        << nodep->warnMore()
+                                        << "... A flop reading the latch output on the edge that"
+                                           " opens the latch may get the new value\n"
+                                        << nodep->warnMore()
+                                        << "... For non-blocking semantics, use 'always' with an"
+                                           " explicit sensitivity list");
+            return;
+        }
         const bool inFinal = m_check == CT_FINAL;
         nodep->v3warnCode(inFinal ? V3ErrorCode::FINALDLY : V3ErrorCode::COMBDLY,
                           "Non-blocking "
@@ -495,7 +508,10 @@ class ActiveVisitor final : public VNVisitor {
         wantactivep->addProcsp(nodep);
 
         // Warn and convert any delayed assignments
-        if (!m_clockedProcess) ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMB};
+        if (!m_clockedProcess) {
+            ActiveDlyVisitor{nodep, kwd == VAlwaysKwd::ALWAYS_LATCH ? ActiveDlyVisitor::CT_LATCH
+                                                                    : ActiveDlyVisitor::CT_COMB};
+        }
 
         // Delete sensitivity list
         if (oldsentreep) VL_DO_DANGLING(oldsentreep->deleteTree(), oldsentreep);

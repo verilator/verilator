@@ -1,0 +1,18 @@
+%Warning-LATCHDLY: t/t_latchdly_bad.v:9:26: Unsupported: Non-blocking assignment '<=' in always_latch (treated as blocking '=')
+                                          : ... A flop reading the latch output on the edge that opens the latch may get the new value
+                                          : ... For non-blocking semantics, use 'always' with an explicit sensitivity list
+    9 |   always_latch if (en) q <= d;   
+      |                          ^~
+                   ... For warning description see https://verilator.org/warn/LATCHDLY?v=latest
+                   ... Use "/* verilator lint_off LATCHDLY */" and lint_on around source to disable this message.
+%Warning-LATCHDLY: t/t_latchdly_bad.v:12:24: Unsupported: Non-blocking event trigger '->>' in always_latch (treated as blocking '->')
+                                           : ... A flop reading the latch output on the edge that opens the latch may get the new value
+                                           : ... For non-blocking semantics, use 'always' with an explicit sensitivity list
+   12 |   always_latch if (en) ->>ev;   
+      |                        ^~~
+%Warning-LATCHDLY: t/t_latchdly_bad.v:21:38: Unsupported: Non-blocking assignment '<=' in always_latch (treated as blocking '=')
+                                           : ... A flop reading the latch output on the edge that opens the latch may get the new value
+                                           : ... For non-blocking semantics, use 'always' with an explicit sensitivity list
+   21 |   always_latch if (en) q_comb_waiver <= d;   
+      |                                      ^~
+%Error: Exiting due to

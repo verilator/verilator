@@ -15,7 +15,7 @@ module t (/*AUTOARG*/
   output logic bl;
   output logic cl;
   always_latch begin
-    bl <= a;  // No warning
+    bl <= a;  // Warning
     cl = a;
   end
 

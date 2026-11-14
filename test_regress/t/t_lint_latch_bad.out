@@ -1,9 +1,10 @@
-%Warning-COMBDLY: t/t_lint_latch_bad.v:18:8: Non-blocking assignment '<=' in combinational logic
-                                           : ... This will be executed as a blocking assignment '='!
+%Warning-LATCHDLY: t/t_lint_latch_bad.v:18:8: Unsupported: Non-blocking assignment '<=' in always_latch (treated as blocking '=')
+                                            : ... A flop reading the latch output on the edge that opens the latch may get the new value
+                                            : ... For non-blocking semantics, use 'always' with an explicit sensitivity list
    18 |     bl <= a;   
       |        ^~
-                  ... For warning description see https://verilator.org/warn/COMBDLY?v=latest
-                  ... Use "/* verilator lint_off COMBDLY */" and lint_on around source to disable this message.
+                   ... For warning description see https://verilator.org/warn/LATCHDLY?v=latest
+                   ... Use "/* verilator lint_off LATCHDLY */" and lint_on around source to disable this message.
 %Warning-NOLATCH: t/t_lint_latch_bad.v:17:3: No latches detected in always_latch block
    17 |   always_latch begin
       |   ^~~~~~~~~~~~
@@ -13,4 +14,6 @@
                                            : ... This will be executed as a blocking assignment '='!
    25 |     bc <= a;   
       |        ^~
+                  ... For warning description see https://verilator.org/warn/COMBDLY?v=latest
+                  ... Use "/* verilator lint_off COMBDLY */" and lint_on around source to disable this message.
 %Error: Exiting due to
