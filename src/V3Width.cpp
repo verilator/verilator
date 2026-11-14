@@ -390,6 +390,8 @@ class WidthVisitor final : public VNVisitor {
     AstProperty* m_propertyp = nullptr;  // Current property
     AstNodeModule* m_modep = nullptr;  // Current module
     const AstConstraint* m_constraintp = nullptr;  // Current constraint
+    bool m_inConstraintItem = false;  // Under a constraint item, inline ones included
+    std::set<const AstVar*> m_stdRandomizeArgVars;  // Variables a std::randomize() solves for
     AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
     const AstNode* m_writerp = nullptr;  // Assign, release or driving pin whose lvalue is iterated
     const AstWith* m_withp = nullptr;  // Current 'with' statement
@@ -1566,12 +1568,42 @@ class WidthVisitor final : public VNVisitor {
                         }
                     }
                 }
-                widthCheckSized(nodep, "Extract Range", nodep->bitp(), selwidthDTypep, EXTEND_EXP,
-                                false /*NOWARN*/);
+                if (!keepConstraintIndexWidth(nodep)) {
+                    widthCheckSized(nodep, "Extract Range", nodep->bitp(), selwidthDTypep,
+                                    EXTEND_EXP, false /*NOWARN*/);
+                }
             }
         }
     }
 
+    // The constraint lowering reads an out-of-range index as the element default
+    // (IEEE 1800-2023 7.4.5), and can't tell a truncation added here from 2'(index).
+    bool keepConstraintIndexWidth(const AstArraySel* nodep) const {
+        if (!m_inConstraintItem) return false;
+        // Only a member of the object under randomize() counts, recognized by the
+        // lambda argument carrying that object; anything else still truncates, as
+        // the solver reads it stale.
+        const bool randIndex = nodep->bitp()->exists([&](const AstNodeVarRef* refp) {
+            return refp->varp()->rand().isRandomizable()
+                   || m_stdRandomizeArgVars.count(refp->varp());
+        }) || nodep->bitp()->exists([&](const AstMemberRef* refp) {
+            const AstLambdaArgRef* const argrefp = VN_CAST(refp->fromp(), LambdaArgRef);
+            return m_stdRandomizeArgVars.count(refp->varp())
+                   || (argrefp && argrefp->name() == "__Vrandwith_obj"
+                       && refp->varp()->rand().isRandomizable());
+        });
+        if (!randIndex) return false;
+        const AstNodeExpr* basep = nodep->fromp();
+        while (const AstStructSel* const sselp = VN_CAST(basep, StructSel)) basep = sselp->fromp();
+        const AstVar* varp = nullptr;
+        if (const AstNodeVarRef* const refp = VN_CAST(basep, NodeVarRef)) {
+            varp = refp->varp();
+        } else if (const AstMemberRef* const mrefp = VN_CAST(basep, MemberRef)) {
+            varp = mrefp->varp();
+        }
+        if (!varp || varp->rand().isRandomizable()) return false;
+        return nodep->dtypep()->skipRefp()->isIntegralOrPacked();
+    }
     void visit(AstAssocSel* nodep) override {
         // Signed/Real: Output type based on array-declared type; binary operator
         assertAtExpr(nodep);
@@ -3942,6 +3974,8 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->rhssp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstConstraintExpr* nodep) override {
+        VL_RESTORER(m_inConstraintItem);
+        m_inConstraintItem = true;
         userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstConstraintForeach* nodep) override {
@@ -3951,11 +3985,15 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->bodyp(), nullptr);
     }
     void visit(AstConstraintIf* nodep) override {
+        VL_RESTORER(m_inConstraintItem);
+        m_inConstraintItem = true;
         userIterateAndNext(nodep->thensp(), nullptr);
         userIterateAndNext(nodep->elsesp(), nullptr);
         iterateCheckBool(nodep, "If", nodep->condp(), BOTH);
     }
     void visit(AstConstraintUnique* nodep) override {
+        VL_RESTORER(m_inConstraintItem);
+        m_inConstraintItem = true;
         userIterateAndNext(nodep->rangesp(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstDistItem* nodep) override {
@@ -9050,11 +9088,21 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->classOrPackagep() && nodep->classOrPackagep()->name() == "std") {
                 v3Global.useRandomizeMethods(true);
                 AstNodeDType* const adtypep = nodep->findBitDType();
-                withp = methodWithClause(nodep, false, false, adtypep->findVoidDType(),
-                                         adtypep->findBitDType(), adtypep);
+                VL_RESTORER_COPY(m_stdRandomizeArgVars);
+                // Visit first: member refs resolve their target on visit, before either use below.
                 for (const AstArg* const argp : nodep->argspList()) {
                     userIterateAndNext(argp->exprp(), WidthVP{SELF, BOTH}.p());
                 }
+                for (const AstArg* const argp : nodep->argspList()) {
+                    if (const AstNodeVarRef* const refp = VN_CAST(argp->exprp(), NodeVarRef)) {
+                        m_stdRandomizeArgVars.insert(refp->varp());
+                    } else if (const AstMemberRef* const mrefp
+                               = VN_CAST(argp->exprp(), MemberRef)) {
+                        m_stdRandomizeArgVars.insert(mrefp->varp());
+                    }
+                }
+                withp = methodWithClause(nodep, false, false, adtypep->findVoidDType(),
+                                         adtypep->findBitDType(), adtypep);
                 handleStdRandomizeArgs(nodep);  // Provided args should be in current scope
                 processFTaskRefArgs(nodep);
                 if (withp) nodep->withp(withp);
