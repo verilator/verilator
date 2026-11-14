@@ -30,7 +30,10 @@ int main(int argc, char** argv) {
     // The paired inline/no-inline regressions check that duplicate hierarchy
     // instances keep real counters, so forcePerInstance can split the same
     // source coverage point by hierarchy at write time.
+    // t_cover_hier_per_instance leaves this to --coverage-per-instance
+#ifndef TEST_NO_FORCE_PER_INSTANCE
     context.coveragep()->forcePerInstance(true);
+#endif
     context.coveragep()->write(VL_STRINGIFY(TEST_OBJ_DIR) "/coverage.dat");
 
     return 0;
