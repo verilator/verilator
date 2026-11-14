@@ -776,6 +776,7 @@ class AstCell final : public AstNode {
     string m_origName;  // Original name before dot addition
     string m_modName;  // Module the cell instances
     int m_arrayIdx = -1;  // Row-major position in instance array, from the left (V3Param-V3Width)
+    bool m_fromBind : 1;  // Inserted into its module by a bind directive (IEEE 1800-2023 23.11)
     bool m_hasIfaceVar : 1;  // True if a Var has been created for this cell
     bool m_recursive : 1;  // Self-recursive module
     bool m_trace : 1;  // Trace this cell
@@ -787,6 +788,7 @@ public:
         , m_name{instName}
         , m_origName{instName}
         , m_modName{modName}
+        , m_fromBind{false}
         , m_hasIfaceVar{false}
         , m_recursive{false}
         , m_trace{true} {
@@ -812,6 +814,8 @@ public:
     void modp(AstNodeModule* nodep) { m_modp = nodep; }
     int arrayIdx() const { return m_arrayIdx; }
     void arrayIdx(int idx) { m_arrayIdx = idx; }
+    bool fromBind() const { return m_fromBind; }
+    void fromBind(bool flag) { m_fromBind = flag; }
     bool hasIfaceVar() const { return m_hasIfaceVar; }
     void hasIfaceVar(bool flag) { m_hasIfaceVar = flag; }
     void trace(bool flag) { m_trace = flag; }

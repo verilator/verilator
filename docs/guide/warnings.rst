@@ -207,6 +207,11 @@ List Of Warnings
       input a;
       assign a = 1'b1;
 
+   This error is not reported when a continuous assignment or port
+   connection drives a net input port from outside its module or interface,
+   either through a hierarchical reference or from an instance inserted by
+   ``bind``.
+
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
