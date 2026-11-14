@@ -3,9 +3,9 @@
 // A data member/variable named identically to a type from an enclosing scope
 // must resolve its type specifier against the enclosing-scope type, not against
 // the just-declared variable (IEEE 1800-2023 6.18). This is the UVM RAL /
-// peakrdl-regblock pattern: 'rand <block_t> <same_name>;'. A reference to the
-// type made before such a variable is declared, e.g. as a type parameter, also
-// resolves to the type, as the variable is not yet visible (IEEE 1800-2023 6.5).
+// peakrdl-regblock pattern: 'rand <block_t> <same_name>;'. Likewise a type
+// parameter's value names the type, also from a nested scope, though a variable
+// of the same name is declared later, e.g. 'mailbox #(cls) fifo; cls cls;'.
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Tom Jackson
@@ -39,6 +39,11 @@ endclass
 // The type parameter is the class, as the member named the same is declared later
 class monitor;
   mailbox #(my_blk) fifo = new();
+  function int count();  // likewise in a nested scope
+    mailbox #(my_blk) local_fifo = new();
+    void'(local_fifo.try_put(null));
+    return local_fifo.num();
+  endfunction
   my_blk my_blk;
   function void get();
     void'(fifo.try_get(my_blk));
@@ -112,6 +117,7 @@ module t;
     `checkh(my_t, 8'h12);
     `checkh(blk_fifo.num(), 1);
     `checkh(mon.my_blk.x, 7);
+    `checkh(mon.count(), 1);
     `checkh(pmon.fifo.num(), 1);
     `checkh(der.holder.v, 7'h7f);
     `checkh(imp.holder.v, 32'hffffffff);

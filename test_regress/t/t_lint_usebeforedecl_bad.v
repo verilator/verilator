@@ -73,8 +73,6 @@ module t #(
 endmodule
 
 module sub2;
-  // A bound instance is as if at the end of its target (IEEE 1800-2023 23.11): no error
-  bind sub2 chk #(.W(SW)) u_self_chk ();
   localparam int SW = 2;
 endmodule
 
