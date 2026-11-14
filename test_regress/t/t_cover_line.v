@@ -389,4 +389,30 @@ module cond(input logic clk, input int cyc);
     else if (cyc == 3) l = 1;
     else l = 0;
   end
+
+  // A $error in an assertion's action block turns coverage off only inside the assertion
+  logic n;
+  always @(posedge clk) begin
+    assert (cyc < 100) else $error("cyc too large");
+    if (cyc[0]) begin
+      assert (cyc < 100) else $error("cyc too large");
+      n = 1;
+    end
+    else n = 0;
+  end
+
+  // Likewise for $stop and $fatal, including in a case item followed by statements
+  logic n2;
+  always @(posedge clk) begin
+    case (cyc[1:0])
+      2'd0: begin
+        assert (cyc < 100) else $stop;
+        n2 = 0;
+      end
+      default: begin
+        assert (cyc < 100) else $fatal(1, "cyc too large");
+        n2 = 1;
+      end
+    endcase
+  end
 endmodule
