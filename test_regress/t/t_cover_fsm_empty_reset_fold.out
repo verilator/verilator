@@ -29,7 +29,7 @@
           always_comb begin
             state_next = state;
             case (state)
-%000008       IDLE: state_next = go ? BUSY : IDLE;
+%000007       IDLE: state_next = go ? BUSY : IDLE;
               default: state_next = IDLE;
             endcase
           end
@@ -61,7 +61,7 @@
 %000001        // [fsm_state t.oneblock_u.state::COLLECTING]
 %000003        // [fsm_state t.oneblock_u.state::SENDING]
 %000003        // [fsm_state t.oneblock_u.state::WAITING]
-%000003         WAITING: state <= take_alt ? SENDING : COLLECTING;
+%000002         WAITING: state <= take_alt ? SENDING : COLLECTING;
                 COLLECTING: state <= SENDING;
                 SENDING: state <= WAITING;
                 default: state <= WAITING;
@@ -153,7 +153,7 @@
 %000001        // [fsm_state t.two_proc_wide_u.state::DONE]
 %000002        // [fsm_state t.two_proc_wide_u.state::IDLE]
 %000001        // [fsm_state t.two_proc_wide_u.state::RUN]
-%000008       IDLE: state_next = go ? RUN : IDLE;
+%000006       IDLE: state_next = go ? RUN : IDLE;
               RUN: state_next = DONE;
               default: state_next = IDLE;
             endcase
@@ -227,7 +227,7 @@
 %000001        // [fsm_state t.negated_enable_u.state::DONE]
 %000002        // [fsm_state t.negated_enable_u.state::IDLE]
 %000001        // [fsm_state t.negated_enable_u.state::RUN]
-%000008       IDLE: state_next = go ? RUN : IDLE;
+%000006       IDLE: state_next = go ? RUN : IDLE;
               RUN: state_next = DONE;
               default: state_next = IDLE;
             endcase
@@ -264,7 +264,7 @@
 %000001        // [fsm_state t.compound_u.state::DONE]
 %000002        // [fsm_state t.compound_u.state::IDLE]
 %000001        // [fsm_state t.compound_u.state::RUN]
-%000008       IDLE: state_next = go ? RUN : IDLE;
+%000006       IDLE: state_next = go ? RUN : IDLE;
               RUN: state_next = DONE;
               default: state_next = IDLE;
             endcase

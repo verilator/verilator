@@ -80,7 +80,7 @@
  000010   always_comb begin
  000010     state_d = state_q;
  000010     case (state_q)
-%000009       S0: state_d = start ? S1 : S2;
+%000006       S0: state_d = start ? S1 : S2;
 %000004       default: state_d = S0;
             endcase
           end

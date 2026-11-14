@@ -401,6 +401,8 @@ class CoverageVisitor final : public VNVisitor {
             itemp->addStmtsp(stmtp);
         } else if (AstForkItem* const itemp = VN_CAST(nodep, ForkItem)) {
             itemp->addStmtsp(stmtp);
+        } else if (AstCaseItem* const itemp = VN_CAST(nodep, CaseItem)) {
+            itemp->addStmtsp(stmtp);
         } else {
             nodep->v3fatalSrc("Bad node type");
         }
@@ -769,13 +771,18 @@ class CoverageVisitor final : public VNVisitor {
     }
     void visit(AstCaseItem* nodep) override {
         UINFO(4, " CASEI: " << nodep);
-        VL_RESTORER(m_state);
-        createHandle(nodep);
-        iterateAndNextNull(nodep->stmtsp());
-        lineTrack(nodep);
-        // Each kind unless the case body disabled it, named alike so reports can pair them
-        if (m_state.lineCoverageOn(nodep)) coverCaseItem(nodep, "v_line/");
-        if (m_state.branchCoverageOn(nodep)) coverCaseItem(nodep, "v_branch/");
+        // Visit the body for every coverage type
+        if (m_state.coverageOn(nodep)) {
+            VL_RESTORER(m_state);
+            VL_RESTORER(m_exprStmtsp);
+            m_exprStmtsp = nodep;  // Expression coverage counts only when this item runs
+            createHandle(nodep);
+            iterateAndNextNull(nodep->stmtsp());
+            lineTrack(nodep);
+            // Each kind unless the case body disabled it, named alike so reports can pair them
+            if (m_state.lineCoverageOn(nodep)) coverCaseItem(nodep, "v_line/");
+            if (m_state.branchCoverageOn(nodep)) coverCaseItem(nodep, "v_branch/");
+        }
     }
     void visit(AstCover* nodep) override {
         UINFO(4, " COVER: " << nodep);
