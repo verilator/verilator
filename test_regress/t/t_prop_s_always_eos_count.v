@@ -69,6 +69,10 @@ module t (
   // A pending strong cover obligation is not an EOS failure.
   cover property (@(posedge clk) s_always[1: 3] 1'b1);
 
+  // A severity task in the action block keeps its message format at EOS
+  assert property (@(posedge clk) s_always[1: 3] 1'b1)
+  else $error("EOS_ERROR");
+
   // The default action carries the same per-attempt multiplicity.
   assert property (@(posedge clk) s_always[1: 3] 1'b1);
 
