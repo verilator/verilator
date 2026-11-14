@@ -3471,9 +3471,8 @@ void VerilatedContext::threads(unsigned n) {
     if (n == 0) VL_FATAL_MT(__FILE__, __LINE__, "", "Simulation threads must be >= 1");
 
     if (m_threadPool) {
-        VL_FATAL_MT(
-            __FILE__, __LINE__, "",
-            "%Error: Cannot set simulation threads after the thread pool has been created.");
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "Cannot set simulation threads after the thread pool has been created.");
     }
 
     m_useNumaAssign = true;
@@ -3486,17 +3485,11 @@ void VerilatedContext::threads(unsigned n) {
 void VerilatedContext::useNumaAssign(bool flag) { m_useNumaAssign = flag; }
 
 void VerilatedContext::commandArgs(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex) {
-    // Not locking m_argMutex here, it is done in impp()->commandArgsAddGuts
-    // m_argMutex here is the same as in impp()->commandArgsAddGuts;
-    // due to clang limitations, it doesn't properly check it
-    impp()->commandArgsGuts(argc, argv);
+    impp()->commandArgsGuts(argc, argv, false);
 }
 void VerilatedContext::commandArgsAdd(int argc, const char** argv)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
-    // Not locking m_argMutex here, it is done in impp()->commandArgsAddGuts
-    // m_argMutex here is the same as in impp()->commandArgsAddGuts;
-    // due to clang limitations, it doesn't properly check it
-    impp()->commandArgsAddGutsLock(argc, argv);
+    impp()->commandArgsGuts(argc, argv, true);
 }
 const char* VerilatedContext::commandArgsPlusMatch(const char* prefixp)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
@@ -3609,26 +3602,16 @@ std::map<std::string, VerilatedModel*> VerilatedContext::models() const VL_MT_SA
 //======================================================================
 // VerilatedContextImp:: Methods - command line
 
-void VerilatedContextImp::commandArgsGuts(int argc, const char** argv)
+void VerilatedContextImp::commandArgsGuts(int argc, const char** argv, bool add)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
-    const VerilatedLockGuard lock{m_argMutex};
-    m_args.m_argVec.clear();  // Empty first, then add
-    commandArgsAddGuts(argc, argv);
-}
-
-void VerilatedContextImp::commandArgsAddGutsLock(int argc, const char** argv)
-    VL_MT_SAFE_EXCLUDES(m_argMutex) {
-    const VerilatedLockGuard lock{m_argMutex};
-    commandArgsAddGuts(argc, argv);
-}
-
-void VerilatedContextImp::commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(m_argMutex) {
-    if (!m_args.m_argVecLoaded) m_args.m_argVec.clear();
-    for (int i = 0; i < argc; ++i) {
-        m_args.m_argVec.emplace_back(argv[i]);
-        commandArgVl(argv[i]);
+    {
+        const VerilatedLockGuard lock{m_argMutex};
+        if (!add || !m_args.m_argVecLoaded) m_args.m_argVec.clear();
+        for (int i = 0; i < argc; ++i) m_args.m_argVec.emplace_back(argv[i]);
+        // Can't just test later for empty vector, no arguments is ok
+        m_args.m_argVecLoaded = true;
     }
-    m_args.m_argVecLoaded = true;  // Can't just test later for empty vector, no arguments is ok
+    for (int i = 0; i < argc; ++i) commandArgVl(argv[i]);
 }
 void VerilatedContextImp::commandArgDump() const VL_MT_SAFE_EXCLUDES(m_argMutex) {
     const VerilatedLockGuard lock{m_argMutex};
@@ -3638,20 +3621,21 @@ void VerilatedContextImp::commandArgDump() const VL_MT_SAFE_EXCLUDES(m_argMutex)
 }
 std::string VerilatedContextImp::argPlusMatch(const char* prefixp)
     VL_MT_SAFE_EXCLUDES(m_argMutex) {
-    const VerilatedLockGuard lock{m_argMutex};
-    // Note prefixp does not include the leading "+"
-    const size_t len = std::strlen(prefixp);
-    if (VL_UNLIKELY(!m_args.m_argVecLoaded)) {
-        m_args.m_argVecLoaded = true;  // Complain only once
-        VL_FATAL_MT("unknown", 0, "",
-                    "%Error: Verilog called $test$plusargs or $value$plusargs without"
-                    " testbench C first calling Verilated::commandArgs(argc,argv).");
-    }
-    for (const auto& i : m_args.m_argVec) {
-        if (i[0] == '+') {
-            if (0 == std::strncmp(prefixp, i.c_str() + 1, len)) return i;
+    {
+        const VerilatedLockGuard lock{m_argMutex};
+        if (VL_LIKELY(m_args.m_argVecLoaded)) {
+            // Note prefixp does not include the leading "+"
+            const size_t len = std::strlen(prefixp);
+            for (const auto& i : m_args.m_argVec) {
+                if (i[0] == '+' && 0 == std::strncmp(prefixp, i.c_str() + 1, len)) return i;
+            }
+            return "";
         }
+        m_args.m_argVecLoaded = true;  // Complain only once, including from fatal callbacks
     }
+    VL_FATAL_MT("unknown", 0, "",
+                "Verilog called $test$plusargs or $value$plusargs without"
+                " testbench C first calling Verilated::commandArgs(argc,argv).");
     return "";
 }
 // Return string representing current argv
@@ -4135,7 +4119,7 @@ void Verilated::scTimePrecisionError(int sc_prec, int vl_prec) VL_MT_SAFE {
 void Verilated::scTraceBeforeElaborationError() VL_MT_SAFE {
     // Slowpath - Called only when trace file opened before SystemC elaboration
     VL_FATAL_MT("unknown", 0, "",
-                "%Error: Verilated*Sc::open(...) was called before sc_core::sc_start(). "
+                "Verilated*Sc::open(...) was called before sc_core::sc_start(). "
                 "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.");
     VL_UNREACHABLE;
 }

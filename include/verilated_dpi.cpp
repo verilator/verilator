@@ -209,12 +209,12 @@ void svPutPartselLogic(svLogicVecVal* dp, const svLogicVecVal s, int lbit, int w
 static const VerilatedDpiOpenVar* _vl_openhandle_varp(const svOpenArrayHandle h) VL_MT_SAFE {
     if (VL_UNLIKELY(!h)) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
-                    "%%Error: DPI svOpenArrayHandle function called with nullptr handle");
+                    "DPI svOpenArrayHandle function called with nullptr handle");
     }
     const VerilatedDpiOpenVar* const varp = reinterpret_cast<const VerilatedDpiOpenVar*>(h);
     if (VL_UNLIKELY(!varp->magicOk())) {
         VL_FATAL_MT(__FILE__, __LINE__, "",
-                    "%%Error: DPI svOpenArrayHandle function called with non-Verilator handle");
+                    "DPI svOpenArrayHandle function called with non-Verilator handle");
     }
     return varp;
 }
