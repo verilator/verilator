@@ -16,8 +16,6 @@ if not test.have_solver:
 
 # --debug-check's structural check fires on the dropped index before the
 # gate under test runs, so opt out to check the gate's own diagnostic
-test.lint(verilator_flags2=["--no-debug-check"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["--no-debug-check"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()
