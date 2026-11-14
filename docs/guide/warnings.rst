@@ -2178,6 +2178,26 @@ List Of Warnings
    simulators.
 
 
+.. option:: SIGNEDRANGE
+
+   Warns when a positive numeric literal assigned to an integral destination
+   exceeds the positive range of a signed value of the destination's width.
+   This includes initializations, assignments, and input port connections,
+   including unsigned destinations. For a signed destination, the resulting
+   bit pattern may be interpreted as negative. Cast the literal explicitly
+   when the bit pattern is intentional. Unknown and high-impedance values
+   and unbased unsized fill literals are not checked.
+
+   Disabled by default, including with :vlopt:`-Wall`; enable it with
+   ``-Wwarn-SIGNEDRANGE``.
+
+   .. include:: ../../docs/gen/ex_SIGNEDRANGE_faulty.rst
+
+   .. include:: ../../docs/gen/ex_SIGNEDRANGE_msg.rst
+
+   .. include:: ../../docs/gen/ex_SIGNEDRANGE_fixed.rst
+
+
 .. option:: SIMILARNAME
 
    Warns that an entity name only differs from another in lexical case.

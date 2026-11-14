@@ -4143,6 +4143,7 @@ class WidthVisitor final : public VNVisitor {
             m_valueOutsideFTaskp
                 = nodep->isIO() || nodep->lifetime().isStatic() ? m_ftaskp : nullptr;
             // AstPattern requires assignments to pass datatype on PRELIM
+            warnSignedRange(nodep->valuep(), nodep->dtypep());
             userIterateAndNext(nodep->valuep(), WidthVP{nodep->dtypep(), PRELIM}.p());
             iterateCheckAssign(nodep, "Initial value", nodep->valuep(), FINAL, nodep->dtypep());
         }
@@ -7711,6 +7712,27 @@ class WidthVisitor final : public VNVisitor {
         VL_DO_DANGLING(V3Begin::convertToWhile(nodep), nodep);
     }
 
+    // Check the original literal before widthing changes its value or removes casts.
+    static void warnSignedRange(AstNode* exprp, const AstNodeDType* dtypep) {
+        AstConst* const literalp = VN_CAST(exprp, Const);
+        const AstNodeDType* const targetp = dtypep->skipRefp();
+        if (!literalp || literalp->fileline()->warnIsOff(V3ErrorCode::SIGNEDRANGE)
+            || !targetp->isIntegralOrPacked())
+            return;
+        const V3Number& num = literalp->num();
+        const int width = targetp->width();
+        if (num.isOpaque() || num.isFourState() || (num.isSigned() && num.isNegative())
+            || width < 1 || width > num.width())
+            return;
+        V3Number upper{literalp, num.width() - width + 1};
+        upper.opSel(num, num.width() - 1, width - 1);
+        if (!upper.isNeqZero()) return;
+        // Unbased unsized literals such as '1 are fill patterns, not numeric values.
+        if (!num.sized() && num.autoExtend()) return;
+        literalp->v3warn(SIGNEDRANGE, "Positive literal exceeds the signed range of the "
+                                          << width << "-bit assignment destination.");
+    }
+
     void visit(AstNodeAssign* nodep) override {
         // IEEE-2012 10.7, 11.8.2, 11.8.3, 11.5:  (Careful of 11.8.1 which is
         //                  only one step; final dtype depends on assign LHS.)
@@ -7743,6 +7765,7 @@ class WidthVisitor final : public VNVisitor {
             //
             // AstPattern needs to know the proposed data type of the lhs, so pass on the prelim
             // UINFOTREE(1, nodep, "", "assrhs");
+            warnSignedRange(nodep->rhsp(), nodep->dtypep());
             userIterateAndNext(nodep->rhsp(), WidthVP{nodep->dtypep(), PRELIM}.p());
             //
             // UINFOTREE(1, nodep, "", "assign");
@@ -8373,6 +8396,9 @@ class WidthVisitor final : public VNVisitor {
                                         << pinDirection.prettyName()
                                         << "' port (IEEE 1800-2023 11.4.14)");
             }
+            if (pinDirection == VDirection::INPUT) {
+                warnSignedRange(nodep->exprp(), nodep->modVarp()->dtypep());
+            }
             userIterateAndNext(nodep->exprp(), WidthVP{nodep->modVarp()->dtypep(), PRELIM}.p());
             // Outputs are continuous assignments; inouts are transistor connections (23.3.3).
             if (pinDirection.isOutput() || pinDirection.isInout()) {
@@ -8887,6 +8913,8 @@ class WidthVisitor final : public VNVisitor {
                     V3LinkLValue::linkLValueSet(pinp, portp->direction().pinAccess());
                 }
                 // AstPattern requires assignments to pass datatype on PRELIM
+                if (portp->direction() == VDirection::INPUT)
+                    warnSignedRange(pinp, portp->dtypep());
                 VL_DO_DANGLING(userIterate(pinp, WidthVP{portp->dtypep(), PRELIM}.p()), pinp);
             }
         } while (false);

@@ -1,0 +1,59 @@
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:11:19: Positive literal exceeds the signed range of the 14-bit assignment destination.
+                                                  : ... note: In instance 't'
+   11 |   initial consume(14'd10483);
+      |                   ^~~~~~~~~
+                      ... For warning description see https://verilator.org/warn/SIGNEDRANGE?v=latest
+                      ... Use "/* verilator lint_off SIGNEDRANGE */" and lint_on around source to disable this message.
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:12:16: Positive literal exceeds the signed range of the 1-bit assignment destination.
+                                                  : ... note: In instance 't'
+   12 |   logic flag = 1'b1;
+      |                ^~~~
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:13:22: Positive literal exceeds the signed range of the 16-bit assignment destination.
+                                                  : ... note: In instance 't'
+   13 |   logic [15:0] foo = 65535;
+      |                      ^~~~~
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:15:27: Positive literal exceeds the signed range of the 16-bit assignment destination.
+                                                  : ... note: In instance 't'
+   15 |   logic [15:0] overflow = 65536;
+      |                           ^~~~~
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:17:30: Positive literal exceeds the signed range of the 14-bit assignment destination.
+                                                  : ... note: In instance 't'
+   17 |   logic signed [13:0] init = 14'd10483;
+      |                              ^~~~~~~~~
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:20:16: Positive literal exceeds the signed range of the 14-bit assignment destination.
+                                                  : ... note: In instance 't'
+   20 |     assigned = 14'd10483;
+      |                ^~~~~~~~~
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:21:17: Positive literal exceeds the signed range of the 14-bit assignment destination.
+                                                  : ... note: In instance 't'
+   21 |     assigned <= 14'd8192;
+      |                 ^~~~~~~~
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:24:23: Positive literal exceeds the signed range of the 14-bit assignment destination.
+                                                  : ... note: In instance 't'
+   24 |   assign continuous = 14'd10483;
+      |                       ^~~~~~~~~
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:25:17: Positive literal exceeds the signed range of the 14-bit assignment destination.
+                                                  : ... note: In instance 't'
+   25 |   sink a(.coeff(14'd10483));
+      |                 ^~~~~~~~~
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:26:10: Positive literal exceeds the signed range of the 14-bit assignment destination.
+                                                  : ... note: In instance 't'
+   26 |   sink b(14'd8192);
+      |          ^~~~~~~~
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:36:10: Positive literal exceeds the signed range of the 14-bit assignment destination.
+                                                  : ... note: In instance 't'
+   36 |   sink k(32'd10483);
+      |          ^~~~~~~~~
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:38:19: Positive literal exceeds the signed range of the 14-bit assignment destination.
+                                                  : ... note: In instance 't'
+   38 |   sink_unsigned l(14'd10483);
+      |                   ^~~~~~~~~
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:39:15: Positive literal exceeds the signed range of the 96-bit assignment destination.
+                                                  : ... note: In instance 't'
+   39 |   sink_wide m(96'h800000000000000000000000);
+      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Warning-SIGNEDRANGE: t/t_lint_signedrange.v:41:14: Positive literal exceeds the signed range of the 1-bit assignment destination.
+                                                  : ... note: In instance 't'
+   41 |   sink_bit p(1'b1);
+      |              ^~~~
+%Error: Exiting due to
