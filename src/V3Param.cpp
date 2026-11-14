@@ -3906,8 +3906,10 @@ class ParamVisitor final : public VNVisitor {
         // The parameters of this instance of the module are known, and the generate blocks
         // above expanded, so nodeDeparam can give the value (IEEE 1800-2023 23.10.1)
         checkParamNotHierRecurse(nodep->rhsp());
-        m_processor.defparamValue(defparamPath(m_modp->someInstanceName() + m_generateHierName)
-                                      + "." + nodep->name(),
+        const AstVarXRef* const targetp = VN_AS(nodep->targetp(), VarXRef);
+        const string instanceName
+            = m_modp->someInstanceName() + m_generateHierName + "." + targetp->dotted();
+        m_processor.defparamValue(defparamPath(instanceName) + "." + targetp->name(),
                                   nodep->rhsp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }

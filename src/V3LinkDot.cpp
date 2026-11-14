@@ -2623,9 +2623,10 @@ class LinkDotParamVisitor final : public VNVisitor {
             pinp->paramPath(path);
             cellp->addParamsp(pinp);
             if (!exprp) {
-                nodep->name(belowPath + "." + name);
                 pushDeletep(nodep->pathp()->unlinkFrBack());
-                pushDeletep(nodep->targetp()->unlinkFrBack());
+                targetp->replaceWith(
+                    new AstVarXRef{targetp->fileline(), name, belowPath, VAccess::WRITE});
+                VL_DO_DANGLING(pushDeletep(targetp), targetp);
                 return;
             }
             pinp->user1p(scopeSymp);  // For the value, see ResolveVisitor::visit(AstPin)
@@ -4233,6 +4234,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // UINFOTREE(1, nodep->modp(), "", "linkcemd");
             iterateChildren(nodep);
         }
+    }
+    void visit(AstDefParam* nodep) override {
+        // Not the target, as the pin LinkDotParamVisitor added for it is linked instead, and
+        // V3Param finds the target in each instance of this module
+        LINKDOT_VISIT_START();
+        iterate(nodep->rhsp());
     }
     void visit(AstPin* nodep) override {
         // Pin: Link to submodule's port

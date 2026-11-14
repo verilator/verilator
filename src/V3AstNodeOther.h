@@ -1380,11 +1380,8 @@ class AstDefParam final : public AstNode {
     // A defparam assignment
     // Parents: MODULE
     // @astgen op1 := rhsp : AstNodeExpr
-    // @astgen op2 := pathp : Optional[AstNodeExpr]
-    // @astgen op3 := targetp : Optional[AstNodeExpr]
-    // Set by V3LinkDot: "instance.parameter" path from this defparam's scope, for V3Param
-    std::string m_name;
-
+    // @astgen op2 := pathp : Optional[AstNodeExpr] // Null after V3LinkDot
+    // @astgen op3 := targetp : AstNodeExpr // After V3LinkDot, AstVarXRef from this scope
 public:
     AstDefParam(FileLine* fl, AstNodeExpr* pathp, AstNodeExpr* targetp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_DefParam(fl) {
@@ -1393,11 +1390,7 @@ public:
         this->targetp(targetp);
     }
     ASTGEN_MEMBERS_AstDefParam;
-    std::string name() const override VL_MT_STABLE { return m_name; }
-    void name(const std::string& name) override { m_name = name; }
-    bool sameNode(const AstNode* samep) const override {  // LCOV_EXCL_START
-        return m_name == VN_DBG_AS(samep, DefParam)->m_name;
-    }  // LCOV_EXCL_STOP
+    bool sameNode(const AstNode*) const override { return true; }
 };
 class AstDefaultClocking final : public AstNode {
     std::string m_name;  // Clocking block name
