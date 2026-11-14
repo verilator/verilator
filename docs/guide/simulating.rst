@@ -424,8 +424,9 @@ Suppressing Coverage
 
 Using :option:`/*verilator&32;coverage_off*/` and
 :option:`/*verilator&32;coverage_on*/` around a block of code will disable
-and enable coverage respectively around that block. Or, use the
-:option:`coverage_block_off` control file option.
+and enable coverage respectively around that block, as do
+:option:`//&32;coverage&32;off` and :option:`//&32;coverage&32;on`. Or, use
+the :option:`coverage_block_off` control file option.
 
 Verilator automatically disables coverage of lines and branches with a
 $stop in them, as it is assumed that $stop branches contain an error check
