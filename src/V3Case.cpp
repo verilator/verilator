@@ -1229,12 +1229,13 @@ class CaseVisitor final : public VNVisitor {
         // Analyze this case statement
         analyzeCase(nodep);
 
-        // Count no item matching, unless the items match every value
+        // Count no item matching, unless the items match every value, not just every enum value
         if (AstCoverInc* const incp = nodep->coverDefaultp()) {
             incp->unlinkFrBack();
-            if (m_caseDetailsValid && m_caseDetails.exhaustive) {
+            if (m_caseDetailsValid && m_caseDetails.exhaustive
+                && !m_caseDetails.exhaustiveOverEnumOnly) {
                 m_droppedCoverDecls.emplace(incp->declp());
-                VL_DO_DANGLING(incp->deleteTree(), incp);
+                VL_DO_DANGLING(pushDeletep(incp), incp);
             } else {
                 nodep->addItemsp(new AstCaseItem{incp->fileline(), nullptr, incp});
                 // The analysis didn't see this default, so use the generic conversion
@@ -1282,8 +1283,9 @@ public:
     // CONSTRUCTORS
     explicit CaseVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~CaseVisitor() override {
+        // After the increments that refer to them, which pushDeletep queued earlier
         for (AstNodeCoverDecl* const declp : m_droppedCoverDecls) {
-            VL_DO_DANGLING(declp->unlinkFrBack()->deleteTree(), declp);
+            VL_DO_DANGLING(pushDeletep(declp->unlinkFrBack()), declp);
         }
         V3Stats::addStat("Optimizations, Cases decoder", m_stats.caseDecoder);
         V3Stats::addStat("Optimizations, Cases table normal", m_stats.caseTableNormal);

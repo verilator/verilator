@@ -370,6 +370,14 @@ module cond(input logic clk, input int cyc);
   assign pstruct.a = cyc == 1 ? 16'd2 : 16'd3;
   assign pstruct.b = 16'd0;
 
+  // An enum register, so the case below keeps its enum type
+  typedef enum logic [1:0] {
+    E_A,
+    E_B
+  } e_t;
+  e_t ev;
+  always @(posedge clk) ev <= e_t'(cyc[1:0]);
+
   always @(posedge clk) begin
     if (cyc == 2) $display("%08x", pstruct);
     // An else-if chain and an if/else on one line
@@ -416,6 +424,12 @@ module cond(input logic clk, input int cyc);
     // Items that aren't constants can't be proven to match every value
     case (cyc[0])
       cyc[1]: l = 1;
+    endcase
+    // unique0 allows no item to match, and items naming every value of an enum don't cover
+    // its unnamed values
+    unique0 case (ev)
+      E_A: l = 1;
+      E_B: l = 0;
     endcase
   end
 endmodule

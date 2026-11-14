@@ -748,6 +748,15 @@ class CoverageVisitor final : public VNVisitor {
         // No trace variable, as V3Case may drop the point
         nodep->coverDefaultp(newCoverInc(nodep->fileline(), declp, ""));
     }
+    // Add a case item's point on the given page, line or branch
+    void coverCaseItem(AstCaseItem* nodep, const string& page) {
+        UINFO(4, "   COVER: " << nodep);
+        AstCoverOtherDecl* const declp = new AstCoverOtherDecl{
+            nodep->fileline(), page + m_modp->prettyName(), "case", linesCov(m_state, nodep), 0};
+        setCoverageHier(declp);
+        m_modp->addStmtsp(declp);
+        nodep->addStmtsp(newCoverInc(nodep->fileline(), declp, traceNameForLine(nodep, "case")));
+    }
     void visit(AstCaseItem* nodep) override {
         UINFO(4, " CASEI: " << nodep);
         VL_RESTORER(m_state);
@@ -755,17 +764,8 @@ class CoverageVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->stmtsp());
         lineTrack(nodep);
         // Each kind unless the case body disabled it, named alike so reports can pair them
-        for (const bool line : {true, false}) {
-            if (line ? !m_state.lineCoverageOn(nodep) : !m_state.branchCoverageOn(nodep)) continue;
-            UINFO(4, "   COVER: " << nodep);
-            AstCoverOtherDecl* const declp = new AstCoverOtherDecl{
-                nodep->fileline(), (line ? "v_line/" : "v_branch/") + m_modp->prettyName(), "case",
-                linesCov(m_state, nodep), 0};
-            setCoverageHier(declp);
-            m_modp->addStmtsp(declp);
-            nodep->addStmtsp(
-                newCoverInc(nodep->fileline(), declp, traceNameForLine(nodep, "case")));
-        }
+        if (m_state.lineCoverageOn(nodep)) coverCaseItem(nodep, "v_line/");
+        if (m_state.branchCoverageOn(nodep)) coverCaseItem(nodep, "v_branch/");
     }
     void visit(AstCover* nodep) override {
         UINFO(4, " COVER: " << nodep);

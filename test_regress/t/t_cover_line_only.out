@@ -522,6 +522,15 @@
           assign pstruct.a = cyc == 1 ? 16'd2 : 16'd3;
           assign pstruct.b = 16'd0;
         
+          // An enum register, so the case below keeps its enum type
+          typedef enum logic [1:0] {
+            E_A,
+            E_B
+          } e_t;
+          e_t ev;
+ 000010   always @(posedge clk) ev <= e_t'(cyc[1:0]);
++000010  point: type=line comment=block hier=top.t.cond1
+        
  000010   always @(posedge clk) begin
 +000010  point: type=line comment=block hier=top.t.cond1
 %000009     if (cyc == 2) $display("%08x", pstruct);
@@ -605,6 +614,15 @@
 +000010  point: type=line comment=block hier=top.t.cond1
 %000004       cyc[1]: l = 1;
 -000004  point: type=line comment=case hier=top.t.cond1
+            endcase
+            // unique0 allows no item to match, and items naming every value of an enum don't cover
+            // its unnamed values
+ 000010     unique0 case (ev)
++000010  point: type=line comment=block hier=top.t.cond1
+%000003       E_A: l = 1;
+-000003  point: type=line comment=case hier=top.t.cond1
+%000003       E_B: l = 0;
+-000003  point: type=line comment=case hier=top.t.cond1
             endcase
           end
         endmodule
