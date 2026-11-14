@@ -9645,9 +9645,9 @@ class WidthVisitor final : public VNVisitor {
                 userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             }
 
+            const string wildSuggestQ = VN_IS(nodep, EqWild) ? "'=='" : "'!='";
             const bool isAggrLhs = isAggregateType(nodep->lhsp());
             const bool isAggrRhs = isAggregateType(nodep->rhsp());
-
             if ((isAggrLhs || isAggrRhs)
                 && (cmpType == ComparisonType::NORMAL_EQ || cmpType == ComparisonType::CASE)) {
                 const AstNodeDType* const lhsDTypep = nodep->lhsp()->dtypep();
@@ -9666,7 +9666,9 @@ class WidthVisitor final : public VNVisitor {
                 convertUnpackedOrder(nodep->rhsp(), nodep->lhsp()->dtypep());
             } else if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
                 if (cmpType == ComparisonType::WILD) {
-                    nodep->v3error("Real is illegal operand to ?== operator");
+                    nodep->v3error("Real is non-integer operand to '" + nodep->verilogKwd()
+                                       + "' operator (IEEE 1800-2023 Table 11-1)\n"
+                                   << nodep->warnMore() << "... Suggest " << wildSuggestQ);
                     AstNode* const newp
                         = new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}};
                     nodep->replaceWith(newp);
@@ -9680,6 +9682,16 @@ class WidthVisitor final : public VNVisitor {
                     iterateCheckReal(nodep, "RHS", nodep->rhsp(), FINAL);
                 }
             } else if (nodep->lhsp()->isString() || nodep->rhsp()->isString()) {
+                if (cmpType == ComparisonType::WILD) {
+                    nodep->v3error("String is non-integer operand to '" + nodep->verilogKwd()
+                                       + "' operator (IEEE 1800-2023 Table 11-1)\n"
+                                   << nodep->warnMore() << "... Suggest " << wildSuggestQ);
+                    AstNode* const newp
+                        = new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}};
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
                 if (AstNodeBiop* const newp = replaceWithNVersion(nodep)) {
                     VL_DANGLING(nodep);
                     nodep = newp;  // Process new node instead
