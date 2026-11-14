@@ -1005,6 +1005,17 @@ public:
     }
 };
 
+// Checks if any class or module contains a 'systemc_* section that lands in the header file
+static bool hasHeaderScSection() {
+    for (const AstNodeModule* const modp : v3Global.rootp()->modulespList()) {
+        if (modp->hasAnyScSection({VSystemCSectionType::HDR, VSystemCSectionType::HDR_POST,
+                                   VSystemCSectionType::INT})) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void EmitCSyms::emitSymHdr() {
     UINFO(6, __FUNCTION__ << ": ");
     openNewOutputHeaderFile(symClassName(), "Symbol table internal header");
@@ -1026,10 +1037,14 @@ void EmitCSyms::emitSymHdr() {
     puts("\n// INCLUDE MODEL CLASS\n");
     puts("\n#include \"" + topClassName() + ".h\"\n");
 
+    const bool headerHasUserCpp = hasHeaderScSection();
+
     puts("\n// INCLUDE MODULE CLASSES\n");
     for (AstNodeModule* const nodep : v3Global.rootp()->modulespList()) {
-        if (VN_IS(nodep, Class)) continue;  // Class included earlier
         if (nodep->isConstPool()) continue;  // Special emit rules
+        // Classes are included in TUs that use them; user c++ in headers may reference any
+        // class, so all classes must be visible everywhere
+        if (VN_IS(nodep, Class) && !headerHasUserCpp) continue;
         putns(nodep, "#include \"" + EmitCUtil::prefixNameProtect(nodep) + ".h\"\n");
     }
 

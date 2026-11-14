@@ -123,7 +123,24 @@ class ClassVisitor final : public VNVisitor {
         m_classScopep = classScopep;
         m_packageScopep = scopep;
         m_prefix = nodep->name() + "__02e";  // .
+        const size_t scopeMovesBefore = m_toScopeMoves.size();
+        const size_t packageMovesBefore = m_toPackageMoves.size();
         iterateChildren(nodep);
+        // Delete the class package if the class has nothing static, so class packages that are not
+        // needed do not pollute the Syms header (which would otherwise change whenever a class is
+        // added). Items might have been already put into the package's statement list, or they
+        // could be delayed in m_toScopeMoves or m_toPackageMoves. Nested classes also add their
+        // moves there, so we need to check the target and not just the size
+        if (scopep->nextp()) return;
+        for (size_t i = packageMovesBefore; i < m_toPackageMoves.size(); ++i) {
+            if (m_toPackageMoves[i].second == packagep) return;
+        }
+        for (size_t i = scopeMovesBefore; i < m_toScopeMoves.size(); ++i) {
+            if (m_toScopeMoves[i].second == scopep) return;
+        }
+        nodep->classOrPackagep(nullptr);
+        VL_DO_DANGLING(pushDeletep(cellp->unlinkFrBack()), cellp);
+        VL_DO_DANGLING(pushDeletep(packagep->unlinkFrBack()), packagep);
     }
     void visit(AstNodeModule* nodep) override {
         // Visit for NodeModules that are not AstClass (AstClass is-a AstNodeModule)

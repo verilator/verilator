@@ -170,9 +170,9 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
     return args;
 }
 
-void EmitCBaseVisitorConst::emitCDefaultConstructor(const AstNodeModule* const modp) {
-    puts(EmitCUtil::prefixNameProtect(modp));
-    puts("() = default;\n");
+void EmitCBaseVisitorConst::emitCDefaultConstructor(const AstClass* const classp) {
+    puts(EmitCUtil::prefixNameProtect(classp));
+    puts(classp->isInterfaceClass() ? "() = default;\n" : "();\n");
 }
 
 void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp,
@@ -202,7 +202,7 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
                                           bool cLinkage) {
     ensureNewLine();
     if (!funcp->ifdef().empty()) putns(funcp, "#ifdef " + funcp->ifdef() + "\n");
-    if (funcp->isConstructor()) emitCDefaultConstructor(modp);
+    if (funcp->isConstructor()) emitCDefaultConstructor(VN_AS(modp, Class));
     if (cLinkage) putns(funcp, "extern \"C\" ");
     if (funcp->isStatic() && funcp->isProperMethod()) putns(funcp, "static ");
     if (funcp->isVirtual()) {
@@ -214,7 +214,8 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
     emitCFuncHeader(funcp, modp, /* withScope: */ false);
     const AstClass* const classp = VN_CAST(modp, Class);
     if (funcp->emptyBody() && !funcp->isLoose() && !cLinkage
-        && !(funcp->isConstructor() && classp && classp->isInterfaceClass())) {
+        && !(funcp->isConstructor() && classp && classp->isInterfaceClass())
+        && !funcp->isDestructor()) {
         putns(funcp, " {}\n");
     } else {
         putns(funcp, ";\n");

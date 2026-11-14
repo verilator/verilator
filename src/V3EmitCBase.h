@@ -341,7 +341,7 @@ public:
         const AstStructDType* const dtypep = VN_CAST(portp->dtypep()->skipRefp(), StructDType);
         return dtypep && dtypep->isClosure() ? dtypep : nullptr;
     }
-    void emitCDefaultConstructor(const AstNodeModule* modp);
+    void emitCDefaultConstructor(const AstClass* classp);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
     void emitVarDecl(const AstVar* nodep, bool asRef = false);
@@ -351,7 +351,14 @@ public:
         for (const AstNode* const itemp : modp->stmtspList()) {
             if (const AstCUse* const usep = VN_CAST(itemp, CUse)) {
                 if (usep->useType().containsAny(useType)) {
-                    if (usep->useType().containsAny(VUseType::INT_INCLUDE)) {
+                    const bool headerRequiresFullType
+                        = usep->useType().containsAny(VUseType::INT_INCLUDE);
+                    const bool implRequestedFullType
+                        = usep->useType().containsAny(VUseType::IMP_INCLUDE)
+                          && useType.containsAny(VUseType::IMP_INCLUDE);
+                    // Header already included the file, so implementation doesn't have to
+                    if (headerRequiresFullType && implRequestedFullType) continue;
+                    if (headerRequiresFullType || implRequestedFullType) {
                         action("#include \"" + EmitCUtil::prefixNameProtect(usep) + ".h\"\n");
                         continue;  // Forward declaration is not necessary
                     }
