@@ -6,7 +6,10 @@
 
 // Interface instantiation without parenthesis
 
-interface intf_no_instance;
+interface intf_no_instance_but_alive;
+endinterface
+
+interface intf_no_instance_dead;
 endinterface
 
 interface intf #(
@@ -22,7 +25,8 @@ module b (
 );
   intf intf_b_not_port;
   intf.A intf_b_not_port_mod;
-  intf_no_instance intf_no_instance_b_not_port;
+  intf_no_instance_but_alive intf_no_instance_but_alive_b_not_port;
+  intf_no_instance_dead intf_no_instance_dead_b_not_port;
 endmodule
 
 module d (
@@ -33,13 +37,14 @@ module d (
   intf intf_d_not_port;
   intf.A intf_d_port_mod;
   intf.A intf_d_not_port_mod;
-  intf_no_instance intf_no_instance_d_not_port;
+  intf_no_instance_but_alive intf_no_instance_but_alive_d_not_port;
+  intf_no_instance_dead intf_no_instance_dead_d_not_port;
 endmodule
 
 module t;
   intf intf_t_not_port;
   intf.A intf_t_not_port_mod;
-  intf_no_instance intf_no_instance_t_not_port;
+  intf_no_instance_but_alive intf_no_instance_but_alive_t_not_port;
   intf #(.par(8)) intf_exists ();
   b b1 (
       .intf_b_port(intf_exists),

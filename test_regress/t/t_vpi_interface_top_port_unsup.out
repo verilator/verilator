@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_vpi_interface_top_port_unsup.v:11:14: Unsupported: --vpi with top module interface port
+                                                            : ... note: In instance 't'
+   11 | module t(bus b);
+      |              ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

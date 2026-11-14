@@ -1,0 +1,9 @@
+%Error-UNSUPPORTED: t/t_interface_top_port_unsup3.v:13:29: Top module interface port with interface port
+                                                         : ... note: In instance 't'
+   16 | module t(outer_if outer);
+      |                   ^~~~~
+                                                         : interface port in 'outer_if'
+   13 | interface outer_if(inner_if child);
+      |                             ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

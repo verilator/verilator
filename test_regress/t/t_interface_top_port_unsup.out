@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_interface_top_port_unsup.v:8:13: Unsupported: Generic interface as top module port
+    8 |   interface bus,
+      |             ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_interface_top_port_unsup.v:9:13: Unsupported: Generic interface as top module port
+    9 |   interface busses[1:2][3:4]
+      |             ^~~~~~
+%Error: Exiting due to
