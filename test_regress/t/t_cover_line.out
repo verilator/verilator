@@ -687,13 +687,18 @@
 %000005     else l = 0;
 -000005  point: type=branch comment=else hier=top.t.cond1
 -000005  point: type=line comment=else hier=top.t.cond1
-            // $stop turns coverage off in its leg, which drops that if/else's branch points
+            // $stop turns coverage off in its leg, which drops the branch points of its whole chain
 %000001     if (cyc == 3) l = 1;
--000001  point: type=branch comment=elsif hier=top.t.cond1
 -000001  point: type=line comment=elsif hier=top.t.cond1
 %000009     else if (cyc != 100) l = 0;
 -000009  point: type=line comment=if hier=top.t.cond1
             else $stop;
+            if (cyc == 100) $stop;
+%000009     else if (cyc == 3) l = 1;
+-000001  point: type=line comment=if hier=top.t.cond1
+-000009  point: type=line comment=else hier=top.t.cond1
+%000009     else l = 0;
+-000009  point: type=line comment=else hier=top.t.cond1
             // A case without a default gets a point for no item matching, unless its items match
             // every value or a pragma says one matches
             // verilator lint_off CASEINCOMPLETE
