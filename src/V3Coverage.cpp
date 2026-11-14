@@ -139,7 +139,7 @@ class CoverageVisitor final : public VNVisitor {
 
     // NODE STATE
     // Entire netlist:
-    //  AstIf::user1()                  -> bool.  True indicates ifelse processed
+    //  AstIf::user1()                  -> bool.  Branch coverage on in its legs and all legs below
     //  AstIf/AstLoopTest::user2()      -> bool.  True indicates coverage-generated
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
@@ -157,6 +157,8 @@ class CoverageVisitor final : public VNVisitor {
     AstNode* m_exprStmtsp = nullptr;  // Node to add expr coverage to
     bool m_then = false;  // Whether we're iterating the then or else branch
                           // when m_exprStmtps is an AstIf
+    const AstIf* m_chainNextp = nullptr;  // Next if of the if/else-if chain being iterated
+    bool m_chainAboveOn = false;  // Branch coverage is on in every leg above m_chainNextp
     CoverExprs m_exprs;  // List of expressions that can reach objective
     Objective m_seeking = NONE;  // Seeking objective for expression coverage
     bool m_objective = false;  // Expression objective
@@ -632,15 +634,12 @@ class CoverageVisitor final : public VNVisitor {
             // An else-if.  When we iterate the if, use "elsif" marking
             const bool elsif
                 = nodep->thensp() && VN_IS(nodep->elsesp(), If) && !nodep->elsesp()->nextp();
-            if (elsif) VN_AS(nodep->elsesp(), If)->user1(true);
-            const bool first_elsif = !nodep->user1() && elsif;
-            const bool cont_elsif = nodep->user1() && elsif;
-            const bool final_elsif = nodep->user1() && !elsif && nodep->elsesp();
             //
             // Considered: If conditional is on a different line from if/else then we
             // can show it as part of line coverage of the statement
             // above. Otherwise show it based on what is inside.
             // But: Seemed too complicated, and fragile.
+            const bool aboveOn = nodep != m_chainNextp || m_chainAboveOn;
             const CheckState lastState = m_state;
             CheckState ifState;
             CheckState elseState;
@@ -658,41 +657,49 @@ class CoverageVisitor final : public VNVisitor {
             {
                 VL_RESTORER(m_exprStmtsp);
                 VL_RESTORER(m_then);
+                VL_RESTORER(m_chainNextp);
+                VL_RESTORER(m_chainAboveOn);
                 m_exprStmtsp = nodep;
                 m_then = false;
                 createHandle(nodep);
+                m_chainNextp = elsif ? VN_AS(nodep->elsesp(), If) : nullptr;
+                m_chainAboveOn = aboveOn && ifState.branchCoverageOn(nodep);
                 iterateAndNextNull(nodep->elsesp());
                 elseState = m_state;
             }
             m_state = lastState;
+            const bool belowOn
+                = elsif ? VN_AS(nodep->elsesp(), If)->user1() : elseState.branchCoverageOn(nodep);
+            nodep->user1(ifState.branchCoverageOn(nodep) && belowOn);
             //
-            // If both if and else are "on", and we're not in an if/else, then
-            // we do branch coverage
-            if (!(first_elsif || cont_elsif || final_elsif) && ifState.branchCoverageOn(nodep)
-                && elseState.branchCoverageOn(nodep)) {
-                // Normal if. Linecov shows what's inside the if (not condition that is
-                // always executed)
+            // Branch coverage when every leg is on. An if/else-if chain is one decision, with a
+            // point per if or else-if, and one for the final else, implicit if absent.
+            if (aboveOn && nodep->user1()) {
+                // Linecov shows what's inside the if (not condition that is always executed)
                 UINFO(4, "   COVER-branch: " << nodep);
+                // Named as the line point on the same block, so reports can pair them
+                const string ifName = elsif ? "elsif" : "if";
                 AstCoverOtherDecl* const ifDeclp
                     = new AstCoverOtherDecl{nodep->fileline(), "v_branch/" + m_modp->prettyName(),
-                                            "if", linesCov(ifState, nodep), 0};
+                                            ifName, linesCov(ifState, nodep), 0};
                 setCoverageHier(ifDeclp);
                 m_modp->addStmtsp(ifDeclp);
                 nodep->addThensp(
-                    newCoverInc(nodep->fileline(), ifDeclp, traceNameForLine(nodep, "if")));
-                // The else has a column offset of 1 to uniquify it relative to the if
-                // As "if" and "else" are more than one character wide, this won't overlap
-                // another token
-                AstCoverOtherDecl* const elseDeclp
-                    = new AstCoverOtherDecl{nodep->fileline(), "v_branch/" + m_modp->prettyName(),
-                                            "else", linesCov(elseState, nodep), 1};
-                setCoverageHier(elseDeclp);
-                m_modp->addStmtsp(elseDeclp);
-                nodep->addElsesp(
-                    newCoverInc(nodep->fileline(), elseDeclp, traceNameForLine(nodep, "else")));
+                    newCoverInc(nodep->fileline(), ifDeclp, traceNameForLine(nodep, ifName)));
+                if (!elsif) {
+                    // The else has a column offset of 1 to uniquify it relative to the if; as "if"
+                    // and "else" are wider than one character, this won't overlap another token
+                    AstCoverOtherDecl* const elseDeclp = new AstCoverOtherDecl{
+                        nodep->fileline(), "v_branch/" + m_modp->prettyName(), "else",
+                        linesCov(elseState, nodep), 1};
+                    setCoverageHier(elseDeclp);
+                    m_modp->addStmtsp(elseDeclp);
+                    nodep->addElsesp(newCoverInc(nodep->fileline(), elseDeclp,
+                                                 traceNameForLine(nodep, "else")));
+                }
             }
             // Line coverage of each block, whether or not branch coverage also covers it
-            if (first_elsif || cont_elsif) {
+            if (elsif) {
                 UINFO(4, "   COVER-elsif: " << nodep);
                 if (ifState.lineCoverageOn(nodep)) {
                     AstCoverOtherDecl* const elsifDeclp = new AstCoverOtherDecl{
