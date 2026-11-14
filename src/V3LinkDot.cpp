@@ -3870,6 +3870,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
         symIterateNull(nodep, m_statep->getNodeSym(nodep));
     }
 
+    // True if the reference is written before the declaration. A bind's references never are,
+    // as a bound instance is as if at the very end of its target scope (IEEE 1800-2023 23.11)
+    bool isRefBeforeDecl(const AstNode* refp, const AstNode* declp) const {
+        return !(m_cellp && m_cellp->fromBind())
+               && refp->fileline()->tokenNum() < declp->fileline()->tokenNum();
+    }
     void checkDeclOrder(AstNode* nodep, AstNode* declp) {
         const uint32_t declTokenNum = declp->declTokenNum();
         if (!declTokenNum) return;  // Not implemented/valid on this object
@@ -3925,6 +3931,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (nodep && nodep->isParam()) nodep->usedParam(true);
     }
 
+    static bool isTypeDecl(const AstNode* nodep) {
+        return VN_IS(nodep, Typedef) || VN_IS(nodep, ParamTypeDType) || VN_IS(nodep, Class);
+    }
     static VSymEnt* findIdFallbackSkipMemberDType(VSymEnt* lookp, const string& name) {
         VSymEnt* shadowEntp = nullptr;  // Shadowing variable: not a type, kept for error report
         while (lookp) {
@@ -3933,15 +3942,40 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // Non-type entries are not type candidates
                 // (IEEE 1800-2023 6.18); skip them so an enclosing
                 // type is found, but keep one to preserve the "found: ..." error.
-                if (VN_IS(foundp->nodep(), Typedef) || VN_IS(foundp->nodep(), ParamTypeDType)
-                    || VN_IS(foundp->nodep(), Class)) {
-                    return foundp;
-                }
+                if (isTypeDecl(foundp->nodep())) return foundp;
                 if (!shadowEntp) shadowEntp = foundp;
             }
             lookp = lookp->fallbackp();
         }
         return shadowEntp;
+    }
+    // Find what a plain identifier refers to, from the scope it is written in. A variable is not
+    // visible before its declaration (IEEE 1800-2023 6.5, 23.9), so when the scope declares one of
+    // that name later, a type visible at the reference is used instead, e.g. a class used as a
+    // type parameter before a class member named like it. Order is checked later for types only,
+    // so any other declaration found leaves the reference to the variable, as before.
+    VSymEnt* findIdPlain(VSymEnt* symp, const AstParseRef* nodep) {
+        const string& name = nodep->name();
+        VSymEnt* const foundp = symp->findIdFallback(name);
+        const AstVar* const varp = foundp ? VN_CAST(foundp->nodep(), Var) : nullptr;
+        if (!varp || foundp->parentp() != symp || !isRefBeforeDecl(nodep, varp)) return foundp;
+        // Visible is a member the variable hides, inherited from a base class (IEEE 1800-2023
+        // 8.13), but not through 'implements' (8.26.3); else a declaration in an enclosing scope
+        VSymEnt* visiblep = nullptr;
+        if (const AstClass* const classp = VN_CAST(symp->nodep(), Class)) {
+            for (const AstClassExtends* cextp = classp->extendsp(); cextp && !visiblep;
+                 cextp = VN_AS(cextp->nextp(), ClassExtends)) {
+                // A base class still to be parameterized is not searched, as for other names
+                AstClass* const basep = cextp->classOrNullp();
+                if (basep && !cextp->isImplements()) {
+                    visiblep = m_statep->getNodeSym(basep)->findIdFlat(name);
+                }
+            }
+        }
+        for (VSymEnt* lookp = symp->fallbackp(); lookp && !visiblep; lookp = lookp->fallbackp()) {
+            visiblep = lookp->findIdFlat(name);
+        }
+        return visiblep && isTypeDecl(visiblep->nodep()) ? visiblep : foundp;
     }
 
     void symIterateChildren(AstNode* nodep, VSymEnt* symp) {
@@ -4678,7 +4712,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 foundp = m_statep->findDotted(nodep->fileline(), m_ds.m_dotSymp, nodep->name(),
                                               baddot, okSymp, first);  // Maybe nullptr
             } else if (first) {
-                foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
+                // A plain identifier, as a dotted name's first part allows a scope
+                foundp = findIdPlain(m_ds.m_dotSymp, nodep);
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
             }
@@ -4899,11 +4934,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             // nodep->v3error("Static access to non-static member variable "
                             //                << varp->prettyNameQ() << endl);
                         }
-                        // A bind's references are written outside the module they resolve in
                         if (varp->isParam() && start && !foundp->imported()
-                            && !VN_IS(m_modp, Class)
-                            && nodep->fileline()->tokenNum() > m_modp->fileline()->tokenNum()
-                            && nodep->fileline()->tokenNum() < varp->fileline()->tokenNum()) {
+                            && !VN_IS(m_modp, Class) && isRefBeforeDecl(nodep, varp)) {
                             nodep->v3warn(
                                 USEBEFOREDECL,
                                 "Reference to parameter "
