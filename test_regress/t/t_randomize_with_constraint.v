@@ -36,6 +36,29 @@ class Cls;
   endfunction
 endclass
 
+class Grid;
+  rand bit [4:0] grid[3][3];
+  rand int cube[2][3][4];
+  rand int x;
+
+  // A nested foreach with an omitted first dimension, randomized from a class method.
+  function int randomize_self(int off);
+    return randomize() with {
+      foreach (cube[i]) {
+        foreach (cube[, j, k]) cube[i][j][k] == i + j + k + off;
+      }
+    };
+  endfunction
+endclass
+
+// Foreach loop variables are local; the caller arg 'k' is captured where no loop 'k' shadows it.
+function automatic int func_foreach(Grid obj, int k);
+  return obj.randomize() with {
+    x == k;
+    foreach (cube[i, j, k]) cube[i][j][k] == 100 * i + 10 * j + k;
+  };
+endfunction
+
 // 'y' is not in the list -> resolves to the caller arg (10), not class member (-1).
 function int func_restricted(Cls obj, int y);
   return obj.randomize() with (m_x) {
@@ -127,6 +150,25 @@ module t;
       // Statement form: discards return value via void'.
       void'(c.randomize() with (m_x) { m_x > 0; m_x < 5; });
       `check_range(c.m_x, 1, 4);
+    end
+    begin
+      automatic Grid g = new;
+      automatic int m[2][3];
+      automatic int ok;
+      for (int n = 0; n < 20; ++n) begin
+        void'(g.randomize() with {foreach (grid[i, j]) grid[i][j] inside {[1:9]};});
+        foreach (g.grid[i, j]) `check_range(g.grid[i][j], 1, 9);
+        ok = func_foreach(g, n);
+        `checkd(ok, 1);
+        `checkd(g.x, n);
+        foreach (g.cube[i, j, k]) `checkd(g.cube[i][j][k], 100 * i + 10 * j + k);
+        ok = g.randomize_self(n);
+        `checkd(ok, 1);
+        foreach (g.cube[i, j, k]) `checkd(g.cube[i][j][k], i + j + k + n);
+        ok = std::randomize(m) with {foreach (m[i, j]) m[i][j] == 10 * i + j + n;};
+        `checkd(ok, 1);
+        foreach (m[i, j]) `checkd(m[i][j], 10 * i + j + n);
+      end
     end
     $write("*-* All Finished *-*\n");
     $finish;

@@ -57,7 +57,7 @@
 #   phase_model      - replace the final phased model reply with (error ...)
 #   phase_trunc      - answer an unterminated phase value reply and close the pipe
 #   short_model      - replace the Nth model reply with one omitting a requested variable
-#   stale_assume     - answer every unsat assumptions reply from the Nth with the literal a0
+#   stale_assume     - answer every unsat assumptions reply from the Nth with the literal __Va0
 #   success          - echo a print-success line before every reply
 #   unknown_once     - answer the Nth status with unknown
 #   unknown_twice    - answer two statuses with unknown
@@ -95,9 +95,9 @@ SELECT_MODES = ("bad_index", "diversity_model")
 RECHECK_MODES = ("unsat_recheck", )
 # phase_model acts on the final phased model; the others on any phase value reply
 PHASE_MODES = ("err_phase", "phase_model", "phase_trunc")
-# Modes acting on an unsat-assumptions reply, which lists a<N> literals
+# Modes acting on an unsat-assumptions reply, which lists __Va<N> literals
 ASSUME_MODES = ("err_assume", "garbage_assume", "oor_assume", "stale_assume")
-# Modes acting on an unsat-core reply, which lists cons<N> names
+# Modes acting on an unsat-core reply, which lists __Vcons<N> names
 CORE_MODES = ("core_junk", "err_core")
 # Modes rewriting every line, so they never consume the index
 STREAM_MODES = ("crlf", "indent", "multiline", "success")
@@ -190,9 +190,9 @@ for line in proc.stdout:
     elif mode in PHASE_MODES:
         counted = at_reply_start and line.startswith("((x")
     elif mode in ASSUME_MODES:
-        counted = at_reply_start and re.match(r"\(a\d", line) is not None
+        counted = at_reply_start and re.match(r"\(__Va\d", line) is not None
     elif mode in CORE_MODES:
-        counted = at_reply_start and line.startswith("(cons")
+        counted = at_reply_start and line.startswith("(__Vcons")
     else:
         counted = at_reply_start and line.startswith("((")
     if line == "unsat":
@@ -237,7 +237,7 @@ for line in proc.stdout:
         swallow(line)
         continue
     if mode == "core_junk":
-        emit("junk((cons0))")
+        emit("junk((__Vcons0))")
         proc.kill()
         proc.wait()
         sys.exit(0)
@@ -325,7 +325,7 @@ for line in proc.stdout:
         swallow(line)
         continue
     if mode == "oor_assume":
-        emit("(a99999999999999)")
+        emit("(__Va99999999999999)")
         swallow(line)
         continue
     # Only the final phase queries every variable, so only that reply names y
@@ -348,11 +348,11 @@ for line in proc.stdout:
         emit("((a #x0b))")
         swallow(line)
         continue
-    # Naming the already dropped a0 leaves the real conflict in place, so every round
+    # Naming the already dropped __Va0 leaves the real conflict in place, so every round
     # stays unsat up to the round limit; it keeps acting instead of latching
     if mode == "stale_assume":
         done = False
-        emit("(a0)")
+        emit("(__Va0)")
         swallow(line)
         continue
     if mode == "unknown_once":

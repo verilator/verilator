@@ -232,6 +232,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
     // Below state needs to be preserved between each module call.
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstPackage* m_pkgp = nullptr;  // Package being visited, which is or contains m_modp
     AstVar* m_varp = nullptr;  // Current variable
     bool m_fromBind = false;  // Visiting cells inserted by a bind directive
     VSymGraph m_mods;  // Symbol table of all module names
@@ -485,10 +486,12 @@ class LinkCellsVisitor final : public VNVisitor {
         // Module: Pick up modnames, so we can resolve cells later
         VL_RESTORER(m_modDepth);
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_pkgp);
         {
             // For nested modules/classes, child below parent
             if (m_modp) newEdge(vertex(m_modp), vertex(nodep), 1, false);
             m_modp = nodep;
+            if (AstPackage* const pkgp = VN_CAST(nodep, Package)) m_pkgp = pkgp;
             // Need vertex to levelize even if no edges
             vertex(m_modp);
             ++m_modDepth;
@@ -587,7 +590,10 @@ class LinkCellsVisitor final : public VNVisitor {
                 return;
             }
         }
-        newEdge(vertex(m_modp), vertex(nodep->packagep()), 1, false);
+        // Except within the package itself (e.g. a file included into the package imports it)
+        if (nodep->packagep() != m_pkgp) {
+            newEdge(vertex(m_modp), vertex(nodep->packagep()), 1, false);
+        }
     }
 
     void visit(AstBind* nodep) override {

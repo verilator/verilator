@@ -83,7 +83,7 @@ pin_runs = [
     # Unsat-assumptions reply 1: the first pin round of call 1, naming only literals out of
     # range
     ('oor_assume', 1, 17),
-    # Unsat-assumptions reply 1 on: every pin round names the already dropped a0, so each
+    # Unsat-assumptions reply 1 on: every pin round names the already dropped __Va0, so each
     # call runs out its 8 rounds, one per pin plus one
     ('stale_assume', 1, 32),
 ]
