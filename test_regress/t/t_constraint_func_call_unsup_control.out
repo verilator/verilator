@@ -1,0 +1,12 @@
+%Warning-CONSTRAINTIGN: t/t_constraint_func_call_unsup_control.v:28:22: Unsupported: complex function in constraint, treating as state
+   28 |   constraint c {x <= control_func(y);}
+      |                      ^~~~~~~~~~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Warning-CONSTRAINTIGN: t/t_constraint_func_call_unsup_control.v:29:22: Unsupported: complex function in constraint, treating as state
+   29 |   constraint d {x <= static_func(y);}
+      |                      ^~~~~~~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_func_call_unsup_control.v:30:22: Unsupported: complex function in constraint, treating as state
+   30 |   constraint e {x <= static_reset_func(y);}
+      |                      ^~~~~~~~~~~~~~~~~
+%Error: Exiting due to

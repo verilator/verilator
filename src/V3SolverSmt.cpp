@@ -643,22 +643,126 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
     }
 
-    // Extract return expression from a simple function body, or nullptr if too complex.
-    // Uses foreach to walk all assigns regardless of body organization (JumpBlock nesting etc.).
-    // Takes the last assignment to the return variable -- the first is the initializer.
+    // Clone exprp, replacing references to variables for which valueps holds a value with a
+    // copy of that value. Returns a detached expression.
+    static AstNodeExpr*
+    cloneSubstLocals(AstNodeExpr* exprp,
+                     const std::unordered_map<const AstVar*, AstNodeExpr*>& valueps) {
+        AstNodeExpr* const clonedp = exprp->cloneTreePure(false);
+        // The root of a detached tree has no back pointer, so foreach cannot replace it
+        if (AstVarRef* const rootRefp = VN_CAST(clonedp, VarRef)) {
+            const auto it = valueps.find(rootRefp->varp());
+            if (it == valueps.end()) return clonedp;
+            AstNodeExpr* const valuep = it->second->cloneTreePure(false);
+            clonedp->deleteTree();
+            return valuep;
+        }
+        clonedp->foreach([&](AstVarRef* refp) {
+            const auto it = valueps.find(refp->varp());
+            if (it != valueps.end()) {
+                refp->replaceWith(it->second->cloneTreePure(false));
+                VL_DO_DANGLING(refp->deleteTree(), refp);
+            }
+        });
+        return clonedp;
+    }
+
+    // Extract the value a function returns, or nullptr if the body is too complex. The
+    // returned expression is detached and references no variable declared inside the
+    // function, as the function body is discarded once the call is inlined.
+    //
+    // Only a straight-line body of assignments is handled: the value of each local assignment
+    // is substituted into the expressions that follow it, and the last assignment to the
+    // return variable is the return value (an earlier one is the default initializer).
     AstNodeExpr* extractReturnExpr(AstFunc* funcp) {
         AstVar* const retVarp = funcp->fvarp();
         if (!retVarp) return nullptr;
+        std::unordered_map<const AstVar*, AstNodeExpr*> localValueps;  // Substituted, owned values
         AstNodeExpr* retExprp = nullptr;
-        int assignCount = 0;
-        funcp->foreach([&](AstAssign* assignp) {
-            AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef);
-            if (!lhsp || lhsp->varp() != retVarp) return;
-            retExprp = assignp->rhsp();
-            ++assignCount;
+        int retAssignCount = 0;
+        bool simple = true;
+        bool terminated = false;
+
+        // Walk a straight-line statement list. A return wraps the remaining body in a jump
+        // block, so nested blocks are flattened in place; a jump ends the reachable sequence.
+        const auto process = [&](auto&& self, AstNode* stmtp) -> void {
+            for (; stmtp && !terminated; stmtp = stmtp->nextp()) {
+                // Declarations and comments carry no value
+                if (VN_IS(stmtp, Comment) || VN_IS(stmtp, Var)) continue;
+                if (const AstInitialAutomaticStmt* const initp
+                    = VN_CAST(stmtp, InitialAutomaticStmt)) {
+                    self(self, initp->stmtsp());
+                    continue;
+                }
+                // A static local keeps its value across calls, so its initializer is not the
+                // value this call reads
+                if (const AstInitialStaticStmt* const initp = VN_CAST(stmtp, InitialStaticStmt)) {
+                    for (AstNode* itemp = initp->stmtsp(); itemp; itemp = itemp->nextp()) {
+                        const AstAssign* const assignp = VN_CAST(itemp, Assign);
+                        if (!assignp || !VN_IS(assignp->rhsp(), CReset)) {
+                            simple = false;
+                            return;
+                        }
+                    }
+                    continue;
+                }
+                if (const AstJumpBlock* const blockp = VN_CAST(stmtp, JumpBlock)) {
+                    self(self, blockp->stmtsp());
+                    continue;
+                }
+                if (const AstBegin* const beginp = VN_CAST(stmtp, Begin)) {
+                    self(self, beginp->stmtsp());
+                    continue;
+                }
+                // An unconditional jump out of the function ends the straight-line sequence;
+                // anything else means the value depends on control flow
+                if (VN_IS(stmtp, JumpGo)) {
+                    terminated = true;
+                    return;
+                }
+                const AstAssign* const assignp = VN_CAST(stmtp, Assign);
+                const AstVarRef* const lhsp = assignp ? VN_CAST(assignp->lhsp(), VarRef) : nullptr;
+                if (!lhsp) {
+                    simple = false;
+                    return;
+                }
+                // Every automatic local gets a reset initializer, which carries no value
+                if (VN_IS(assignp->rhsp(), CReset)) continue;
+                AstVar* const varp = lhsp->varp();
+                AstNodeExpr* const valuep = cloneSubstLocals(assignp->rhsp(), localValueps);
+                if (varp == retVarp) {
+                    if (++retAssignCount > 2) {  // Initializer and return only
+                        valuep->deleteTree();
+                        simple = false;
+                        return;
+                    }
+                    if (retExprp) retExprp->deleteTree();
+                    retExprp = valuep;
+                } else if (!localValueps.emplace(varp, valuep).second) {
+                    // Assigned more than once, so it has no single value to substitute
+                    valuep->deleteTree();
+                    simple = false;
+                    return;
+                }
+            }
+        };
+        process(process, funcp->stmtsp());
+        for (const auto& pair : localValueps) pair.second->deleteTree();
+        if (!simple || !retExprp) {
+            if (retExprp) retExprp->deleteTree();
+            return nullptr;
+        }
+        // Anything local left unsubstituted would dangle once the function's variables are
+        // dead-code eliminated; ports are substituted with the actual arguments by the caller.
+        bool refsLocal = false;
+        retExprp->foreach([&](AstVarRef* refp) {
+            const AstVar* const varp = refp->varp();
+            refsLocal |= varp == retVarp || (varp->isFuncLocal() && !varp->isIO());
         });
-        // Simple function: initializer + return (2) or just return (1)
-        if (assignCount > 2 || !retExprp) return nullptr;
+        if (refsLocal) {
+            retExprp->deleteTree();
+            return nullptr;
+        }
         return retExprp;
     }
 
@@ -2843,12 +2947,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         const V3TaskConnects tconnects
             = V3Task::taskConnects(nodep, funcp->declsp(), nullptr, false);
 
-        // Clone return expression, substitute params with args.
+        // Substitute params with args in the extracted expression.
         // Track the root via a local pointer: when the root itself is a VarRef to a port
-        // (e.g. body `F = d;`), the cloned root has no back pointer, so foreach's
+        // (e.g. body `F = d;`), a detached root has no back pointer, so foreach's
         // replaceWith would trip the "no back" assertion -- substitute the root pointer
         // directly instead.
-        AstNodeExpr* inlinedp = retExprp->cloneTreePure(false);
+        AstNodeExpr* inlinedp = retExprp;
         for (const auto& tconnect : tconnects) {
             const AstVar* const portp = tconnect.first;
             AstArg* const argp = tconnect.second;
