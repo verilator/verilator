@@ -2596,13 +2596,22 @@ class LinkDotParamVisitor final : public VNVisitor {
         UASSERT_OBJ(!hasPartSelect && !path.empty(), nodep, "Unexpected defparam path shape");
         string baddot;
         VSymEnt* okSymp = nullptr;
-        VSymEnt* const foundp = m_statep->findDotted(
-            nodep->fileline(), m_statep->getNodeSym(nodep), path, baddot, okSymp, true);
+        VSymEnt* const scopeSymp = m_statep->getNodeSym(nodep);
+        VSymEnt* const foundp
+            = m_statep->findDotted(nodep->fileline(), scopeSymp, path, baddot, okSymp, true);
         AstCell* const cellp = foundp ? VN_AS(foundp->nodep(), Cell) : nullptr;
         if (!cellp) {
             nodep->v3error("In defparam, instance " << path << " never declared");
         } else {
-            AstNodeExpr* const exprp = nodep->rhsp()->unlinkFrBack();
+            // Path from the defparam's scope, if the instance is under it
+            string belowPath;
+            const VSymEnt* symp = foundp;
+            for (; symp && symp != scopeSymp; symp = symp->parentp()) {
+                belowPath = VString::dot(symp->nodep()->name(), ".", belowPath);
+            }
+            // If under it, V3Param passes the value down from each instance of this module, so
+            // it uses the parameters of the module declaring it (IEEE 1800-2023 23.10.1)
+            AstNodeExpr* const exprp = symp ? nullptr : nodep->rhsp()->unlinkFrBack();
             UINFO(9, "Defparam cell " << path << "." << name << " attach-to " << cellp
                                       << "  <= " << exprp);
             // Don't need to check the name of the defparam exists.  V3Param does.
@@ -2612,6 +2621,12 @@ class LinkDotParamVisitor final : public VNVisitor {
             pinp->param(true);
             pinp->paramPath(path);
             cellp->addParamsp(pinp);
+            if (!exprp) {
+                nodep->name(belowPath + "." + name);
+                pushDeletep(nodep->pathp()->unlinkFrBack());
+                pushDeletep(nodep->targetp()->unlinkFrBack());
+                return;
+            }
         }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
@@ -4253,7 +4268,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // Primitive parameter is really a delay2 we can just ignore
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                     return;
-                } else if (nodep->param() && !nodep->exprp() && !nodep->svDotName()) {
+                } else if (nodep->param() && !nodep->exprp() && !nodep->svDotName()
+                           && nodep->paramPath().empty()) {
                     // Placeholder pin the parser makes for an empty '#()', to signal
                     // the user did type the '#()'. No further use, deleting.
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
