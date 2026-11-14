@@ -118,7 +118,7 @@ struct RandModeTarget final {
 static bool randModeCallMayDisable(const AstNodeFTaskRef* nodep) {
     const AstArg* const argp = nodep->argsp();
     if (!argp) return false;
-    if (argp->nextp()) return true;
+    if (argp->nextp()) return true;  // LCOV_EXCL_BR_LINE
     const AstConst* const constp = VN_CAST(argp->exprp(), Const);
     return !constp || !constp->num().isNeqZero();
 }

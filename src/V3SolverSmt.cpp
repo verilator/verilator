@@ -1694,7 +1694,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             // This form becomes a rand variable reference once the member-reference
             // visitor runs after the gate, so judge it the way that consumer will.
             const bool thisRefMember
-                = VN_IS(mselp->fromp(), VarRef) && mselp->fromp()->user1() && mselp->user2p()
+                = VN_IS(mselp->fromp(), VarRef) && mselp->fromp()->user1()
+                  && mselp->user2p()  // LCOV_EXCL_BR_LINE
                   && VN_AS(mselp->user2p(), NodeModule) == mselp->varp()->user2p()
                   && mselp->varp()->rand().isRandomizable();
             return (mselp->user1() && selChainIsRand(mselp->fromp())) || thisRefMember;
@@ -1708,7 +1709,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
             if (cmethp->method() == VCMethod::ARRAY_AT) {  // LCOV_EXCL_BR_LINE
                 // No pins to judge; assume the worst (reject loud).
-                if (!cmethp->pinsp()) return true;
+                if (!cmethp->pinsp()) return true;  // LCOV_EXCL_BR_LINE
                 return cmethp->pinsp()->user1() || selChainHasRandIndex(cmethp->fromp());
             }
         }
