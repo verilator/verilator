@@ -448,16 +448,22 @@
  000010     case (cyc4)
 +000010  point: type=line comment=block hier=top.t.tab1
 %000001       1: decoded = 10;
+-000001  point: type=branch comment=case hier=top.t.tab1
 -000001  point: type=line comment=case hier=top.t.tab1
 %000001       2: decoded = 20;
+-000001  point: type=branch comment=case hier=top.t.tab1
 -000001  point: type=line comment=case hier=top.t.tab1
 %000001       3: decoded = 30;
+-000001  point: type=branch comment=case hier=top.t.tab1
 -000001  point: type=line comment=case hier=top.t.tab1
 %000001       4: decoded = 40;
+-000001  point: type=branch comment=case hier=top.t.tab1
 -000001  point: type=line comment=case hier=top.t.tab1
 %000001       5: decoded = 50;
+-000001  point: type=branch comment=case hier=top.t.tab1
 -000001  point: type=line comment=case hier=top.t.tab1
 %000005       default: decoded = 0;
+-000005  point: type=branch comment=case hier=top.t.tab1
 -000005  point: type=line comment=case hier=top.t.tab1
             endcase
           end
@@ -632,6 +638,18 @@
 +000010  point: type=branch comment=cond_else hier=top.t.cond1
           assign pstruct.b = 16'd0;
         
+          // An enum register, so the case below keeps its enum type
+          typedef enum logic [2:0] {
+            E_A,
+            E_B,
+            E_C,
+            E_D,
+            E_E
+          } e_t;
+          e_t ev;
+ 000010   always @(posedge clk) ev <= e_t'(cyc[2:0]);
++000010  point: type=line comment=block hier=top.t.cond1
+        
  000010   always @(posedge clk) begin
 +000010  point: type=line comment=block hier=top.t.cond1
 %000009     if (cyc == 2) $display("%08x", pstruct);
@@ -684,6 +702,94 @@
 -000009  point: type=line comment=else hier=top.t.cond1
 %000009     else l = 0;
 -000009  point: type=line comment=else hier=top.t.cond1
+            // A case without a default gets a point for no item matching, unless its items match
+            // every value or a pragma says one matches
+            // verilator lint_off CASEINCOMPLETE
+~000010     case (cyc[2:0])
++000010  point: type=line comment=block hier=top.t.cond1
+-000008  point: type=branch comment=default hier=top.t.cond1
+%000001       3'd3: l = 1;
+-000001  point: type=branch comment=case hier=top.t.cond1
+-000001  point: type=line comment=case hier=top.t.cond1
+%000001       3'd4: l = 0;
+-000001  point: type=branch comment=case hier=top.t.cond1
+-000001  point: type=line comment=case hier=top.t.cond1
+            endcase
+            // verilator lint_on CASEINCOMPLETE
+ 000010     case (cyc[0])
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       1'b0: l = 1;
+-000005  point: type=branch comment=case hier=top.t.cond1
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       1'b1: l = 0;
+-000005  point: type=branch comment=case hier=top.t.cond1
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+ 000010     casez (cyc[1:0])
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       2'b1?: l = 1;
+-000005  point: type=branch comment=case hier=top.t.cond1
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       2'b0?: l = 0;
+-000005  point: type=branch comment=case hier=top.t.cond1
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+ 000010     unique case (1'b1)
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       cyc[0]: l = 1;
+-000005  point: type=branch comment=case hier=top.t.cond1
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       !cyc[0]: l = 0;
+-000005  point: type=branch comment=case hier=top.t.cond1
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+ 000010     case (1'b1)  /* verilator full_case */
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       cyc[0]: l = 1;
+-000005  point: type=branch comment=case hier=top.t.cond1
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       !cyc[0]: l = 0;
+-000005  point: type=branch comment=case hier=top.t.cond1
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+ 000010     priority case (1'b1)
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       cyc[0]: l = 1;
+-000005  point: type=branch comment=case hier=top.t.cond1
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       !cyc[0]: l = 0;
+-000005  point: type=branch comment=case hier=top.t.cond1
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+            // Items that aren't constants can't be proven to match every value
+~000010     case (cyc[0])
++000010  point: type=line comment=block hier=top.t.cond1
+-000006  point: type=branch comment=default hier=top.t.cond1
+%000004       cyc[1]: l = 1;
+-000004  point: type=branch comment=case hier=top.t.cond1
+-000004  point: type=line comment=case hier=top.t.cond1
+            endcase
+            // unique0 allows no item to match, and items naming every value of an enum don't cover
+            // its unnamed values
+~000010     unique0 case (ev)
++000010  point: type=line comment=block hier=top.t.cond1
+-000003  point: type=branch comment=default hier=top.t.cond1
+%000002       E_A: l = 1;
+-000002  point: type=branch comment=case hier=top.t.cond1
+-000002  point: type=line comment=case hier=top.t.cond1
+%000002       E_B: l = 0;
+-000002  point: type=branch comment=case hier=top.t.cond1
+-000002  point: type=line comment=case hier=top.t.cond1
+%000001       E_C: l = 1;
+-000001  point: type=branch comment=case hier=top.t.cond1
+-000001  point: type=line comment=case hier=top.t.cond1
+%000001       E_D: l = 0;
+-000001  point: type=branch comment=case hier=top.t.cond1
+-000001  point: type=line comment=case hier=top.t.cond1
+%000001       E_E: l = 1;
+-000001  point: type=branch comment=case hier=top.t.cond1
+-000001  point: type=line comment=case hier=top.t.cond1
+            endcase
           end
         endmodule
         

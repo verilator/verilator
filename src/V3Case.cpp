@@ -187,10 +187,13 @@ class CaseVisitor final : public VNVisitor {
     // For item conditions with side effects
     V3SharedTmps m_condTmps{"__VcaseCond", VVarType::MODULETEMP};
     AstScope* m_scopep = nullptr;  // Current scope
+    // Coverage points of dropped implicit defaults, deleted once every clone is processed
+    std::unordered_set<AstNodeCoverDecl*> m_droppedCoverDecls;
 
     // STATE - per AstCase. Update by 'analyzeCase', treat 'const' otherwise
     bool m_caseOpaque = false;  // Case statement is opaque (non-packed, or non-const conditions)
     bool m_caseHasDefault = false;  // Indicates the case statement has a default case
+    bool m_caseCoverDefault = false;  // Has a coverage default item the analysis didn't see
     size_t m_caseNCaseItems = 0;  // Number of AstCaseItems in the case statement
     size_t m_caseNConditions = 0;  // Number of conditions in the case statement
     // Map from LHSs of decoder pattern to corresponding LhsRecord.
@@ -569,6 +572,7 @@ class CaseVisitor final : public VNVisitor {
         // Reset all analysis results
         m_caseOpaque = false;
         m_caseHasDefault = false;
+        m_caseCoverDefault = false;
         m_caseNCaseItems = 0;
         m_caseNConditions = 0;
         m_caseDecoderRecords.clear();
@@ -1196,6 +1200,8 @@ class CaseVisitor final : public VNVisitor {
             if (!v3Global.opt.fCaseTree()) return false;
             // Can't do it without the detailed analysis
             if (!m_caseDetailsValid) return false;
+            // The tree would lose a default the analysis didn't see
+            if (m_caseCoverDefault) return false;
             // Can't do it if not exhaustive
             if (!m_caseDetails.exhaustive) return false;
             // Not worth doing if there are few conditions
@@ -1229,6 +1235,22 @@ class CaseVisitor final : public VNVisitor {
 
         // Analyze this case statement
         analyzeCase(nodep);
+
+        // Count no item matching, unless the items match every value, not just every enum value
+        if (AstCoverInc* const incp = nodep->coverDefaultp()) {
+            incp->unlinkFrBack();
+            if (m_caseDetailsValid && m_caseDetails.exhaustive
+                && !m_caseDetails.exhaustiveOverEnumOnly) {
+                m_droppedCoverDecls.emplace(incp->declp());
+                VL_DO_DANGLING(pushDeletep(incp), incp);
+            } else {
+                nodep->addItemsp(new AstCaseItem{incp->fileline(), nullptr, incp});
+                // The analysis didn't see this default, so use the generic conversion
+                m_caseCoverDefault = true;
+                m_caseTableWidth = 0;
+                m_caseDecoderRecords.clear();
+            }
+        }
 
         // Take the 'notParallelp' statements under the case statement created by V3Assert.
         // If the statement was proven to have no overlaps and all cases covered,
@@ -1269,6 +1291,10 @@ public:
     // CONSTRUCTORS
     explicit CaseVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~CaseVisitor() override {
+        // After the increments that refer to them, which pushDeletep queued earlier
+        for (AstNodeCoverDecl* const declp : m_droppedCoverDecls) {
+            VL_DO_DANGLING(pushDeletep(declp->unlinkFrBack()), declp);
+        }
         V3Stats::addStat("Optimizations, Cases decoder", m_stats.caseDecoder);
         V3Stats::addStat("Optimizations, Cases table normal", m_stats.caseTableNormal);
         V3Stats::addStat("Optimizations, Cases table tiny", m_stats.caseTableTiny);
