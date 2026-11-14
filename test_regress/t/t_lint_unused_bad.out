@@ -142,4 +142,20 @@
                                                    : ... note: In instance 't.sub'
   198 |     bit [6:0] partial;
       |               ^~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:209:9: Signal is not driven, nor used: 'unu_local'
+                                                  : ... note: In instance 't.sub'
+  209 |     int unu_local;   
+      |         ^~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:213:9: Signal is not used: 'unr_local'
+                                                  : ... note: In instance 't.sub'
+  213 |     int unr_local;   
+      |         ^~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:228:9: Signal is not used: 'arg_unused'
+                                                  : ... note: In instance 't.sub'
+  228 |   logic arg_unused = 0;
+      |         ^~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:229:31: Signal is not used: 'y'
+                                                   : ... note: In instance 't.sub'
+  229 |   sequence s_unused_formal(x, y);
+      |                               ^
 %Error: Exiting due to

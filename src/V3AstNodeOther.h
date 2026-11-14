@@ -1869,6 +1869,7 @@ class AstPropSpec final : public AstNode {
     // @astgen op3 := propp : AstNodeExpr
     // @astgen op4 := matchCountp : Optional[AstNodeExpr] // Cover sequence matches this tick
     VPropStrength m_propStrength = VPropStrength::DEFAULT;
+    bool m_fromInstanceChain = false;  // Body of a property instance whose body is an instance
 
 public:
     AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNodeExpr* disablep, AstNodeExpr* propp,
@@ -1886,6 +1887,8 @@ public:
         return true;
     }  // Used under Cover, which expects a bool child
     VPropStrength propStrength() const { return m_propStrength; }
+    bool fromInstanceChain() const { return m_fromInstanceChain; }
+    void fromInstanceChain(bool flag) { m_fromInstanceChain = flag; }
 };
 class AstPull final : public AstNode {
     // @astgen op1 := lhsp : AstNodeExpr
@@ -3791,8 +3794,8 @@ public:
 class AstSequence final : public AstNodeSchema {
     // Verilog "sequence" definition
     // @astgen op2 := exprp : AstNodeExpr
-    // Set by V3LinkWith when referenced; cleared by V3AssertPre after inlining; if still set
-    // after V3AssertPre, the reference is in an unsupported context
+    // Set by V3LinkWith when referenced, cleared by V3AssertElab when inlined. If still set in
+    // V3AssertPre, the reference is in an unsupported context
     bool m_referenced = false;
 
 public:

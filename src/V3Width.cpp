@@ -8706,7 +8706,7 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->doingWidth(true);
         // Temporaries made for the body are property-local variables, promoted per instance by
-        // V3AssertPre/V3AssertNfa
+        // V3AssertElab
         VL_RESTORER(m_propertyp);
         m_propertyp = nodep;
         userIterateAndNext(nodep->declsp(), nullptr);
@@ -8718,12 +8718,11 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSequence* nodep) override {
         // IEEE 1800-2023 16.7 (sequence declarations), 16.8 (sequence instances)
         // Width-check the sequence body so expressions are typed for later inlining.
-        // Referenced sequences in assertion context will be inlined by V3AssertPre.
+        // Referenced sequences in assertion context will be inlined by V3AssertElab.
         if (nodep->didWidth()) return;
         userIterateAndNext(nodep->declsp(), nullptr);
         iterateCheckSelf(nodep, "SeqBody", nodep->exprp(), SELF, BOTH);
         nodep->didWidth(true);
-        // Keep all sequences for now; cleanup happens after V3AssertPre inlining.
     }
     void visit(AstSchemaRef* nodep) override {
         if (nodep->didWidth()) return;
@@ -10653,7 +10652,7 @@ class WidthVisitor final : public VNVisitor {
         underp = iterateCheck(parentp, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         AstNodeDType* const checkDtp = expDTypep->skipRefToEnump();
         // Sampling functions may still reference an untyped property formal here.
-        // V3AssertPre checks the actual type after property argument substitution.
+        // V3AssertPre checks the actual type after V3AssertElab substitutes the arguments.
         if (!checkDtp->isIntegralOrPacked()
             && !(deferUntyped && checkDtp->basicp() && checkDtp->basicp()->untyped())) {
             parentp->v3error(ucfirst(parentp->prettyOperatorName())

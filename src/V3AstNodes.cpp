@@ -3710,10 +3710,12 @@ void AstPropSpec::dump(std::ostream& str) const {
     if (propStrength() != VPropStrength::DEFAULT) {
         str << " [" << VString::upcase(propStrength().ascii()) << "]";
     }
+    if (fromInstanceChain()) str << " [CHAIN]";
 }
 void AstPropSpec::dumpJson(std::ostream& str) const {
     if (propStrength() != VPropStrength::DEFAULT)
         dumpJsonStr(str, "strength", propStrength().ascii());
+    dumpJsonBoolFuncIf(str, fromInstanceChain);
     dumpJsonGen(str);
 }
 void AstPull::dump(std::ostream& str) const {

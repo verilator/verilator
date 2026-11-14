@@ -61,7 +61,7 @@ top-of-file comment.
 | Type/width error, "what type is this", implicit conversion | `V3Width` |
 | Name/scope/parameter resolution ("Can't find...", hierarchy) | `V3LinkDot`, `V3Param` |
 | `randomize` / `constraint` / `rand` / `randc` | `V3Randomize` |
-| `assert` / `property` / `sequence` / `cover` | `V3Assert`, `V3AssertPre`, `V3AssertNfa` |
+| `assert` / `property` / `sequence` / `cover` | `V3Assert`, `V3AssertElab`, `V3AssertPre`, `V3AssertNfa` |
 | `fork` / timing / `#delay` / NBA / event scheduling | `V3Sched`, `V3Timing`, `V3Fork` |
 | Syntax wrongly accepted or rejected | `verilog.y`, `verilog.l` |
 | Wrong generated C++ | `V3EmitC*` |

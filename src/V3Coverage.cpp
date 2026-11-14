@@ -756,6 +756,8 @@ class CoverageVisitor final : public VNVisitor {
         }
     }
     void visit(AstCover* nodep) override {
+        // A lowered sequence event control is not a user cover statement
+        if (nodep->isSeqEvent()) return;
         UINFO(4, " COVER: " << nodep);
         VL_RESTORER(m_state);
         m_state.m_on = true;  // Always do cover blocks, even if there's a $stop

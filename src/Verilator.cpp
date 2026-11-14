@@ -19,6 +19,7 @@
 #include "V3Active.h"
 #include "V3ActiveTop.h"
 #include "V3Assert.h"
+#include "V3AssertElab.h"
 #include "V3AssertNfa.h"
 #include "V3AssertPre.h"
 #include "V3Ast.h"
@@ -219,6 +220,11 @@ static void process() {
 
         V3Error::abortIfErrors();
 
+        // Inline property and sequence instances before widths are committed.
+        V3AssertElab::assertElabAll(v3Global.rootp());
+        // V3Undriven would report what a rejected instance or sequence event control leaves
+        V3Error::abortIfErrors();
+
         // Commit to the widths we've chosen; Make widthMin==width
         V3WidthCommit::widthCommit(v3Global.rootp());
         v3Global.assertDTypesResolved(true);
@@ -272,7 +278,6 @@ static void process() {
         // Assertion insertion
         //    After we've added block coverage, but before other nasty transforms
         V3AssertCommon::collectDefaultDisable(v3Global.rootp());
-        V3AssertCommon::lowerSequenceEvents(v3Global.rootp());
         V3AssertNfa::assertNfaAll(v3Global.rootp());
         // V3AssertProp removed: NFA subsumes multi-cycle property lowering.
         // Unsupported constructs fall through to V3AssertPre.

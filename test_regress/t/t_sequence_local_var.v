@@ -73,6 +73,20 @@ module t (
   endproperty
   cover property (p_init_local);
 
+  // --- Scenario 7: local variable assigned in a sequence instance ---
+  // A local variable passed as an entire actual argument to an untyped formal may be
+  // assigned in the instance (IEEE 1800-2023 16.10). Verilator warns on the formal itself.
+  // verilator lint_off ASSIGNIN
+  sequence s_capture(lv);
+    (valid, lv = cyc[0]);
+  endsequence
+  // verilator lint_on ASSIGNIN
+  property p_capture;
+    bit prev;
+    @(posedge clk) s_capture(prev) |=> (cyc[0] != prev);
+  endproperty
+  assert property (p_capture);
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     counter_x <= counter_x + 1;
