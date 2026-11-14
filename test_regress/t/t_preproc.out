@@ -1124,7 +1124,12 @@ ja32 p q
 /*verilator coverage_off*/
 /*verilator coverage_on*/
 /*verilator coverage_off*/
+/*verilator coverage_on*/
+/*verilator coverage_off*/
+/*verilator coverage_on*/
+ 
+ 
  
  
 
-`line 791 "t/t_preproc.v" 0
+`line 796 "t/t_preproc.v" 0

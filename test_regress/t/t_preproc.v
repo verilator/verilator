@@ -784,6 +784,11 @@ EXP: ja32 p q
 // Other simulators' coverage off/on comments
 // coverage off
 /* pragma coverage on */
-// synopsys coverage off
+// VCS coverage off
+// synopsys coverage on
+// verilator coverage off
+// verilator coverage_on
 // coverage offset is not a pragma
 // coverage on -item s is not either
+// two words coverage off is not either
+// coverage

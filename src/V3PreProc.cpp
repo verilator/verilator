@@ -476,6 +476,22 @@ void V3PreProcImp::comment(const string& text) {
 
     while (std::isspace(*cp)) ++cp;
 
+    // "coverage off/on", alone or after one word such as "pragma" or a tool's name
+    if (std::strstr(cp, "coverage")) {
+        string cmd = commentCleanup(string{cp});
+        const string::size_type spacePos = cmd.find(' ');
+        if (spacePos != string::npos && !VString::startsWith(cmd, "coverage ")) {
+            cmd.erase(0, spacePos + 1);
+        }
+        if (cmd == "coverage off" || cmd == "coverage on") {
+            if (!printed) {
+                insertUnreadback(cmd == "coverage off" ? "/*verilator coverage_off*/"
+                                                       : "/*verilator coverage_on*/");
+            }
+            return;
+        }
+    }
+
     bool synth = false;
     bool vlcomment = false;
     if ((cp[0] == 'v' || cp[0] == 'V') && VString::startsWith(cp + 1, "erilator")) {
@@ -505,7 +521,7 @@ void V3PreProcImp::comment(const string& text) {
     } else if (VString::startsWith(cp, "ambit synthesis")) {
         cp += std::strlen("ambit synthesis");
         synth = true;
-    } else if (!VString::startsWith(cp, "coverage")) {  // "// coverage off/on" has no prefix
+    } else {
         return;
     }
 
@@ -513,13 +529,7 @@ void V3PreProcImp::comment(const string& text) {
     string cmd = commentCleanup(string{cp});
     // cmd now is comment without extra spaces and "verilator" prefix
 
-    if (!vlcomment && (cmd == "coverage off" || cmd == "coverage on")) {
-        // As other simulators accept, alone or after a synthesis prefix
-        if (!printed) {
-            insertUnreadback(cmd == "coverage off" ? "/*verilator coverage_off*/"
-                                                   : "/*verilator coverage_on*/");
-        }
-    } else if (synth) {
+    if (synth) {
         if (v3Global.opt.assertOn()) {
             // one_hot, one_cold, (full_case, parallel_case)
             if (commentTokenMatch(cmd /*ref*/, "full_case")) {

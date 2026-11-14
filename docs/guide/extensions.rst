@@ -288,9 +288,9 @@ or "`ifdef`"'s may break other tools.
    Specifies that that following lines of code should have coverage disabled.
    Often used to ignore an entire module for coverage analysis purposes.
 
-   ``// coverage off``, as other simulators accept, alone or after a
-   synthesis directive prefix such as ``pragma``, is equivalent. A comment
-   with more text after ``off`` is an ordinary comment.
+   ``// coverage off``, alone or after one word such as ``pragma``,
+   ``synopsys``, ``cadence``, ``VCS`` or ``verilator``, is equivalent, as
+   other tools accept. A comment with any other text is an ordinary comment.
 
 .. option:: /*verilator&32;coverage_on*/
 
@@ -298,8 +298,8 @@ or "`ifdef`"'s may break other tools.
    (if appropriate :vlopt:`--coverage` flags are passed) after being
    disabled earlier with :option:`/*verilator&32;coverage_off*/`.
 
-   ``// coverage on``, alone or after a synthesis directive prefix such as
-   ``pragma``, is equivalent.
+   ``// coverage on``, alone or after one word as for ``// coverage off``,
+   is equivalent.
 
 .. option:: /*verilator&32;dpi_c_decl "<C function declaration>"*/
 
