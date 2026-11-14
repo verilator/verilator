@@ -19,6 +19,8 @@
 
 #include "V3InstrCount.h"
 
+#include "V3Stats.h"
+
 #include <iomanip>
 #include <unordered_map>
 
@@ -29,6 +31,12 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 /// execute, not the number we'll generate. That is, for conditionals,
 /// we'll count instructions from either the 'if' or the 'else' branch,
 /// whichever is larger. We know we won't run both.
+///
+/// Branch prediction, also used for V3Branch:
+///     At each IF/(IF else) without a prediction yet.
+///         Count underneath $display/$stop statements.
+///         The branch with more is unlikely.
+///     A branch predicted not taken has zero cost.
 
 class InstrCountVisitor final : public VNVisitorConst {
     // NODE STATE
@@ -42,6 +50,9 @@ class InstrCountVisitor final : public VNVisitorConst {
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
     bool m_inCFunc = false;  // Inside AstCFunc
     bool m_ignoreRemaining = false;  // Ignore remaining statements in the block
+    int m_unlikely = 0;  // Excuses for branch likely not taken
+    size_t m_statLikely = 0;  // Statistic tracking
+    size_t m_statUnlikely = 0;  // Statistic tracking
     const bool m_assertNoDups;  // Check for duplicates
     const std::ostream* const m_osp;  // Dump file
     std::unordered_map<const AstCFunc*, uint32_t> m_funcCosts;  // Cost of each function
@@ -75,7 +86,10 @@ public:
         , m_osp{osp} {
         iterateConstNull(nodep);
     }
-    ~InstrCountVisitor() override = default;
+    ~InstrCountVisitor() override {
+        V3Stats::addStatSum("Optimizations, Branch prediction likely", m_statLikely);
+        V3Stats::addStatSum("Optimizations, Branch prediction unlikely", m_statUnlikely);
+    }
 
     // METHODS
     uint32_t instrCount() const { return m_instrCount; }
@@ -87,6 +101,7 @@ private:
     }
     uint32_t startVisitBase(AstNode* nodep) {
         UASSERT_OBJ(!m_ignoreRemaining, nodep, "Should not reach here if ignoring");
+        if (nodep->isUnlikely()) ++m_unlikely;
         if (m_assertNoDups && !m_inCFunc) {
             // Ensure we don't count the same node twice
             //
@@ -166,19 +181,35 @@ private:
     void visit(AstIf* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
+        // Unlikely statements below count only for the branch they are in
+        VL_RESTORER(m_unlikely);
         iterateAndNextConstNull(nodep->condp());
         const uint32_t savedCount = m_instrCount;
 
         UINFO(8, "thensp:");
         reset();
+        m_unlikely = 0;
         iterateAndNextConstNull(nodep->thensp());
         uint32_t ifCount = m_instrCount;
-        if (nodep->branchPred().unlikely()) ifCount = 0;
+        const int thenUnlikely = m_unlikely;
 
         UINFO(8, "elsesp:");
         reset();
+        m_unlikely = 0;
         iterateAndNextConstNull(nodep->elsesp());
         uint32_t elseCount = m_instrCount;
+        const int elseUnlikely = m_unlikely;
+
+        if (nodep->branchPred().unknown()) {
+            if (elseUnlikely > thenUnlikely) {
+                nodep->branchPred(VBranchPred::BP_LIKELY);
+                ++m_statLikely;
+            } else if (elseUnlikely < thenUnlikely) {
+                nodep->branchPred(VBranchPred::BP_UNLIKELY);
+                ++m_statUnlikely;
+            }  // else leave unknown
+        }
+        if (nodep->branchPred().unlikely()) ifCount = 0;
         if (nodep->branchPred().likely()) elseCount = 0;
 
         reset();
@@ -269,12 +300,17 @@ private:
     }
     void visit(AstCFunc* nodep) override {
         // Don't count a CFunc other than by tracing a call or counting it
-        // from the root
-        UASSERT_OBJ(m_tracingCall || nodep == m_startNodep, nodep,
-                    "AstCFunc not under AstCCall, or not start node");
+        // from the root. From a netlist, count each CFunc once, where first reached.
+        if (!m_tracingCall && nodep != m_startNodep) {
+            UASSERT_OBJ(VN_IS(m_startNodep, Netlist), nodep,
+                        "AstCFunc not under AstCCall, or not start node");
+            if (m_funcCosts.count(nodep)) return;
+        }
         UASSERT_OBJ(!m_ignoreRemaining, nodep, "Should not be ignoring at the start of a CFunc");
         const auto emplacePair = m_funcCosts.emplace(nodep, 0);
         UASSERT_OBJ(emplacePair.second, nodep, "Should visit every CFunc at most once");
+        // The caller's branch counts the call, not the statements within
+        VL_RESTORER(m_unlikely);
         uint32_t& funcCostr = emplacePair.first->second;
         m_tracingCall = false;
 

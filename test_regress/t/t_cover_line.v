@@ -372,5 +372,7 @@ module cond(input logic clk, input int cyc);
 
   always @(posedge clk) begin
     if (cyc == 2) $display("%08x", pstruct);
+    // An else-if chain (line points only) and an if/else (branch points too) on one line
+    if (cyc == 3) l = 1; else if (cyc == 4) l = 0; else l = 1; if (cyc == 5) l = 0; else l = 1;
   end
 endmodule
