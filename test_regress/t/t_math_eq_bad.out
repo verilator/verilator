@@ -1,6 +1,42 @@
-%Error: t/t_math_eq_bad.v:13:11: Real is illegal operand to ?== operator
+%Error: t/t_math_eq_bad.v:18:11: Real is non-integer operand to '==?' operator (IEEE 1800-2023 Table 11-1)
                                : ... note: In instance 't'
-   13 |     if (a ==? 1.0) $stop;   
+                               : ... Suggest '=='
+   18 |     if (a ==? 1.0) $stop;   
       |           ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_math_eq_bad.v:19:11: Real is non-integer operand to '!=?' operator (IEEE 1800-2023 Table 11-1)
+                               : ... note: In instance 't'
+                               : ... Suggest '!='
+   19 |     if (a !=? 1.0) $stop;   
+      |           ^~~
+%Error: t/t_math_eq_bad.v:20:11: String is non-integer operand to '==?' operator (IEEE 1800-2023 Table 11-1)
+                               : ... note: In instance 't'
+                               : ... Suggest '=='
+   20 |     if (s ==? "1") $stop;   
+      |           ^~~
+%Error: t/t_math_eq_bad.v:21:11: String is non-integer operand to '!=?' operator (IEEE 1800-2023 Table 11-1)
+                               : ... note: In instance 't'
+                               : ... Suggest '!='
+   21 |     if (s !=? "1") $stop;   
+      |           ^~~
+%Error: t/t_math_eq_bad.v:22:11: Real is non-integer operand to '==?' operator (IEEE 1800-2023 Table 11-1)
+                               : ... note: In instance 't'
+                               : ... Suggest '=='
+   22 |     if (r ==? r) $stop;   
+      |           ^~~
+%Error: t/t_math_eq_bad.v:23:11: Real is non-integer operand to '!=?' operator (IEEE 1800-2023 Table 11-1)
+                               : ... note: In instance 't'
+                               : ... Suggest '!='
+   23 |     if (r !=? r) $stop;   
+      |           ^~~
+%Error: t/t_math_eq_bad.v:24:12: Real is non-integer operand to '==?' operator (IEEE 1800-2023 Table 11-1)
+                               : ... note: In instance 't'
+                               : ... Suggest '=='
+   24 |     if (sr ==? sr) $stop;   
+      |            ^~~
+%Error: t/t_math_eq_bad.v:25:12: Real is non-integer operand to '!=?' operator (IEEE 1800-2023 Table 11-1)
+                               : ... note: In instance 't'
+                               : ... Suggest '!='
+   25 |     if (sr !=? sr) $stop;   
+      |            ^~~
 %Error: Exiting due to

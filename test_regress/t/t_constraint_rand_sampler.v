@@ -13,21 +13,23 @@
 // diversity pins by default), an array (XOR diversity rounds) and
 // solve...before (phased, with a diversity round per layer), and a randc
 // cycle. The drivers check the sampler named in the solver log.
+// The variables a0 and d0 have the form of the runtime's numbered diversity pin
+// and UniGen2 literals (__Va<N>, __Vd<N>) without the prefix, and must not clash.
 
 module t;
 
   class Scalars;
-    rand bit [6:0] a;
+    rand bit [6:0] a0;
     rand bit [14:0] b;
     constraint c {
-      a < 7'd100;
-      b > 15'(a);
+      a0 < 7'd100;
+      b > 15'(a0);
     }
   endclass
 
   class Elems;
-    rand bit [30:0] q[3];
-    constraint c {foreach (q[i]) q[i] < 31'd1000;}
+    rand bit [30:0] d0[3];
+    constraint c {foreach (d0[i]) d0[i] < 31'd1000;}
   endclass
 
   class Ordered;
@@ -51,9 +53,9 @@ module t;
     Cyclic c;
     int randomize_result;
     bit [14:0] first_b;
-    bit [30:0] first_q0;
+    bit [30:0] first_d0;
     bit b_varied;
-    bit q0_varied;
+    bit d0_varied;
     bit [7:0] seen;
     s = new;
     e = new;
@@ -62,15 +64,15 @@ module t;
     for (int i = 0; i < 20; ++i) begin
       randomize_result = s.randomize();
       `checkd(randomize_result, 1);
-      `checkd(s.a < 7'd100, 1'b1);
-      `checkd(s.b > 15'(s.a), 1'b1);
+      `checkd(s.a0 < 7'd100, 1'b1);
+      `checkd(s.b > 15'(s.a0), 1'b1);
       if (i == 0) first_b = s.b;
       else if (s.b != first_b) b_varied = 1'b1;
       randomize_result = e.randomize();
       `checkd(randomize_result, 1);
-      foreach (e.q[j]) `checkd(e.q[j] < 31'd1000, 1'b1);
-      if (i == 0) first_q0 = e.q[0];
-      else if (e.q[0] != first_q0) q0_varied = 1'b1;
+      foreach (e.d0[j]) `checkd(e.d0[j] < 31'd1000, 1'b1);
+      if (i == 0) first_d0 = e.d0[0];
+      else if (e.d0[0] != first_d0) d0_varied = 1'b1;
       randomize_result = o.randomize();
       `checkd(randomize_result, 1);
       `checkd(o.x < 5'd20, 1'b1);
@@ -79,7 +81,7 @@ module t;
     // Only Verilator's sampler promises varied results; the solver's depend on the solver
     if ($test$plusargs("check_varied")) begin
       `checkd(b_varied, 1'b1);
-      `checkd(q0_varied, 1'b1);
+      `checkd(d0_varied, 1'b1);
     end
 
     // Two full randc cycles: the second exhausts the first's history and retries
@@ -94,16 +96,16 @@ module t;
     end
 
     // randomize(null) only checks the current values: no sampling, values unchanged
-    s.a = 7'd5;
+    s.a0 = 7'd5;
     s.b = 15'd6;
     randomize_result = s.randomize(null);
     `checkd(randomize_result, 1);
-    `checkd(s.a, 5);
+    `checkd(s.a0, 5);
     `checkd(s.b, 6);
     s.b = 15'd5;
     randomize_result = s.randomize(null);
     `checkd(randomize_result, 0);
-    `checkd(s.a, 5);
+    `checkd(s.a0, 5);
     `checkd(s.b, 5);
 
     $write("*-* All Finished *-*\n");

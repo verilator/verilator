@@ -21,8 +21,8 @@
           state_t state_q;
         
           always_ff @(posedge clk) begin
-            if (rst) state_q <= S0;
-%000006     else if (state_q == S0) state_q <= start ? S1 : S0;
+%000002     if (rst) state_q <= S0;
+%000007     else if (state_q == S0) state_q <= start ? S1 : S0;
         // [FSM coverage]
 %000001        // [fsm_arc t.enum_oneblock_u.state_q::S0->S1]
 %000000        // [fsm_arc t.enum_oneblock_u.state_q::S1->S0]
@@ -31,7 +31,7 @@
 %000002        // [fsm_state t.enum_oneblock_u.state_q::S0]
 %000001        // [fsm_state t.enum_oneblock_u.state_q::S1]
 %000001        // [fsm_state t.enum_oneblock_u.state_q::S2]
-            else if (state_q == S1) state_q <= S2;
+%000001     else if (state_q == S1) state_q <= S2;
 %000001     else if (state_q == S2) state_q <= S0;
           end
         endmodule
@@ -52,7 +52,7 @@
         
           always_comb begin
             state_d = state_q;
-%000009     if (state_q == S0) state_d = start ? S1 : S0;
+~000010     if (state_q == S0) state_d = start ? S1 : S0;
         // [FSM coverage]
 %000001        // [fsm_arc t.enum_twoproc_u.state_q::S0->S1]
 %000000        // [fsm_arc t.enum_twoproc_u.state_q::S1->S0]
@@ -61,7 +61,7 @@
 %000002        // [fsm_state t.enum_twoproc_u.state_q::S0]
 %000001        // [fsm_state t.enum_twoproc_u.state_q::S1]
 %000001        // [fsm_state t.enum_twoproc_u.state_q::S2]
-            else if (state_q == S1) state_d = S2;
+%000001     else if (state_q == S1) state_d = S2;
 %000001     else if (state_q == S2) state_d = S0;
           end
         
@@ -85,7 +85,7 @@
         
           always_comb begin
             state_d = state_q;
-%000009     if (state_q == IDLE) state_d = start ? BUSY : IDLE;
+~000010     if (state_q == IDLE) state_d = start ? BUSY : IDLE;
         // [FSM coverage]
 %000001        // [fsm_arc t.localparam_u.state_q::BUSY->DONE]
 %000000        // [fsm_arc t.localparam_u.state_q::BUSY->IDLE]
@@ -94,7 +94,7 @@
 %000001        // [fsm_state t.localparam_u.state_q::BUSY]
 %000001        // [fsm_state t.localparam_u.state_q::DONE]
 %000002        // [fsm_state t.localparam_u.state_q::IDLE]
-            else if (state_q == BUSY) state_d = DONE;
+%000001     else if (state_q == BUSY) state_d = DONE;
 %000001     else if (state_q == DONE) state_d = IDLE;
           end
         
@@ -118,7 +118,7 @@
         
           always_comb begin
             state_d = state_q;
-%000009     if (state_q == IDLE) state_d = start ? BUSY : IDLE;
+~000010     if (state_q == IDLE) state_d = start ? BUSY : IDLE;
         // [FSM coverage]
 %000001        // [fsm_arc t.parameter_u.state_q::BUSY->DONE]
 %000000        // [fsm_arc t.parameter_u.state_q::BUSY->IDLE]
@@ -127,7 +127,7 @@
 %000001        // [fsm_state t.parameter_u.state_q::BUSY]
 %000001        // [fsm_state t.parameter_u.state_q::DONE]
 %000002        // [fsm_state t.parameter_u.state_q::IDLE]
-            else if (state_q == BUSY) state_d = DONE;
+%000001     else if (state_q == BUSY) state_d = DONE;
 %000001     else if (state_q == DONE) state_d = IDLE;
           end
         
@@ -144,7 +144,7 @@
           logic [1:0] state  /*verilator fsm_state*/;
         
           always_ff @(posedge clk) begin
-            if (rst) state <= 2'd0;
+%000002     if (rst) state <= 2'd0;
 %000004     else if (state == 2'd0) state <= 2'd1;
         // [FSM coverage]
 %000003        // [fsm_arc t.literal_forced_u.state::2'h0->2'h1]
@@ -154,7 +154,7 @@
 %000004        // [fsm_state t.literal_forced_u.state::2'h0]
 %000003        // [fsm_state t.literal_forced_u.state::2'h1]
 %000003        // [fsm_state t.literal_forced_u.state::2'h2]
-            else if (state == 2'd1) state <= 2'd2;
+%000003     else if (state == 2'd1) state <= 2'd2;
 %000003     else if (state == 2'd2) state <= 2'd0;
           end
         endmodule
@@ -184,7 +184,7 @@
 %000002        // [fsm_state t.guard_state_first_u.state_q::S0]
 %000001        // [fsm_state t.guard_state_first_u.state_q::S1]
 %000001        // [fsm_state t.guard_state_first_u.state_q::S2]
-            else if (state_q == S1) state_d = S2;
+%000001     else if (state_q == S1) state_d = S2;
 %000009     else if (state_q == S2) state_d = S0;
           end
         
@@ -219,7 +219,7 @@
 %000002        // [fsm_state t.guard_first_u.state_q::S0]
 %000001        // [fsm_state t.guard_first_u.state_q::S1]
 %000001        // [fsm_state t.guard_first_u.state_q::S2]
-            else if (state_q == S1) state_d = S2;
+%000001     else if (state_q == S1) state_d = S2;
 %000009     else if (state_q == S2) state_d = S0;
           end
         
@@ -256,7 +256,7 @@
 %000002        // [fsm_state t.local_alias_u.state_q::S0]
 %000001        // [fsm_state t.local_alias_u.state_q::S1]
 %000001        // [fsm_state t.local_alias_u.state_q::S2]
-            else if (state_q == S1) state_d = S2;
+%000001     else if (state_q == S1) state_d = S2;
 %000009     else if (state_q == S2) state_d = S0;
           end
         
@@ -294,7 +294,7 @@
 %000002        // [fsm_state t.continuous_alias_u.state_q::S0]
 %000001        // [fsm_state t.continuous_alias_u.state_q::S1]
 %000001        // [fsm_state t.continuous_alias_u.state_q::S2]
-            else if (state_q == S1) state_d = S2;
+%000001     else if (state_q == S1) state_d = S2;
 %000009     else if (state_q == S2) state_d = S0;
           end
         
@@ -333,7 +333,7 @@
 %000001       if (choose) state_d = S1;
 %000001       else state_d = S0;
             end
-            else if (state_q == S1) state_d = S2;
+%000000     else if (state_q == S1) state_d = S2;
 ~000011     else if (state_q == S2) state_d = S0;
           end
         
@@ -359,7 +359,7 @@
         
           always_comb begin
             state_d = state_q;
-%000009     if (state_q == S0) state_d = start ? S1 : S0;
+~000010     if (state_q == S0) state_d = start ? S1 : S0;
         // [FSM coverage]
 %000001        // [fsm_arc t.default_incl_u.state_q::S0->S1]
 %000000        // [fsm_arc t.default_incl_u.state_q::S1->S0]
@@ -368,8 +368,8 @@
 %000002        // [fsm_state t.default_incl_u.state_q::S0]
 %000001        // [fsm_state t.default_incl_u.state_q::S1]
 %000001        // [fsm_state t.default_incl_u.state_q::S2]
-            else if (state_q == S1) state_d = S2;
-            else state_d = S0;
+%000001     else if (state_q == S1) state_d = S2;
+%000001     else state_d = S0;
           end
         
           always_ff @(posedge clk) begin
@@ -393,7 +393,7 @@
           state_t state_q;
         
           always_ff @(posedge clk) begin
-            if (rst) state_q <= S0;
+%000002     if (rst) state_q <= S0;
 %000002     else if (idle_state && start) state_q <= S1;
         // [FSM coverage]
 %000001        // [fsm_arc t.oneblock_late_continuous_alias_u.state_q::S0->S1]
@@ -403,7 +403,7 @@
 %000002        // [fsm_state t.oneblock_late_continuous_alias_u.state_q::S0]
 %000001        // [fsm_state t.oneblock_late_continuous_alias_u.state_q::S1]
 %000001        // [fsm_state t.oneblock_late_continuous_alias_u.state_q::S2]
-            else if (state_q == S1) state_q <= S2;
+%000001     else if (state_q == S1) state_q <= S2;
 %000006     else if (state_q == S2) state_q <= S0;
           end
         
@@ -426,7 +426,7 @@
         
           always_comb begin
             state_d = state_q;
-%000009     if (state_d == S0) state_d = start ? S1 : S0;
+~000010     if (state_d == S0) state_d = start ? S1 : S0;
         // [FSM coverage]
 %000001        // [fsm_arc t.nextstate_compare_u.state_q::S0->S1]
 %000000        // [fsm_arc t.nextstate_compare_u.state_q::S1->S0]
@@ -435,7 +435,7 @@
 %000002        // [fsm_state t.nextstate_compare_u.state_q::S0]
 %000001        // [fsm_state t.nextstate_compare_u.state_q::S1]
 %000001        // [fsm_state t.nextstate_compare_u.state_q::S2]
-            else if (state_d == S1) state_d = S2;
+%000001     else if (state_d == S1) state_d = S2;
 %000001     else if (state_d == S2) state_d = S0;
           end
         
@@ -458,7 +458,7 @@
           state_t state_q;
         
           always_ff @(posedge clk) begin
-            if (rst) state_q <= S0;
+%000002     if (rst) state_q <= S0;
 %000004     else if (S0 == state_q) state_q <= S1;
         // [FSM coverage]
 %000003        // [fsm_arc t.reversed_compare_u.state_q::S0->S1]
@@ -468,7 +468,7 @@
 %000004        // [fsm_state t.reversed_compare_u.state_q::S0]
 %000003        // [fsm_state t.reversed_compare_u.state_q::S1]
 %000003        // [fsm_state t.reversed_compare_u.state_q::S2]
-            else if (S1 == state_q) state_q <= S2;
+%000003     else if (S1 == state_q) state_q <= S2;
 %000003     else if (S2 == state_q) state_q <= S0;
           end
         endmodule
@@ -501,7 +501,7 @@
 %000002        // [fsm_state t.duplicate_alias_u.state_q::S0]
 %000001        // [fsm_state t.duplicate_alias_u.state_q::S1]
 %000001        // [fsm_state t.duplicate_alias_u.state_q::S2]
-            else if (state_q == S1) state_d = S2;
+%000001     else if (state_q == S1) state_d = S2;
 %000009     else if (state_q == S2) state_d = S0;
           end
         
@@ -543,8 +543,8 @@
               S2: state_d = S0;
               default: state_d = state_q;
             endcase
-            if (other_q == S0) other_d = S1;
-            else if (other_q == S1) other_d = S2;
+%000006     if (other_q == S0) other_d = S1;
+%000003     else if (other_q == S1) other_d = S2;
 %000003     else if (other_q == S2) other_d = S0;
           end
         
@@ -583,9 +583,9 @@
 %000001        // [fsm_state t.else_chain_guard_u.state_q::BUSY]
 %000001        // [fsm_state t.else_chain_guard_u.state_q::DONE]
 %000002        // [fsm_state t.else_chain_guard_u.state_q::IDLE]
-            else if (state_q == BUSY) state_d = DONE;
-            else if (state_q == DONE) state_d = IDLE;
-            else state_d = state_q;
+%000001     else if (state_q == BUSY) state_d = DONE;
+%000009     else if (state_q == DONE) state_d = IDLE;
+%000009     else state_d = state_q;
           end
         
           always_ff @(posedge clk) begin
@@ -770,11 +770,11 @@
 %000000        // [fsm_state t.state::S1] *** UNCOVERED ***
 %000005        // [fsm_state t.state::S2]
                 S0: begin
-                  if (sel) begin
-                    state <= S1;
+%000005           if (sel) begin
+%000000             state <= S1;
                   end
-                  else begin
-                    state <= S2;
+%000005           else begin
+%000005             state <= S2;
                   end
                 end
                 S1: begin
