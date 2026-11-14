@@ -1239,6 +1239,7 @@ class CaseVisitor final : public VNVisitor {
             } else {
                 nodep->addItemsp(new AstCaseItem{incp->fileline(), nullptr, incp});
                 // The analysis didn't see this default, so use the generic conversion
+                m_caseDetailsValid = false;
                 m_caseTableWidth = 0;
                 m_caseDecoderRecords.clear();
             }

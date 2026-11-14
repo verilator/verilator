@@ -371,12 +371,15 @@ module cond(input logic clk, input int cyc);
   assign pstruct.b = 16'd0;
 
   // An enum register, so the case below keeps its enum type
-  typedef enum logic [1:0] {
+  typedef enum logic [2:0] {
     E_A,
-    E_B
+    E_B,
+    E_C,
+    E_D,
+    E_E
   } e_t;
   e_t ev;
-  always @(posedge clk) ev <= e_t'(cyc[1:0]);
+  always @(posedge clk) ev <= e_t'(cyc[2:0]);
 
   always @(posedge clk) begin
     if (cyc == 2) $display("%08x", pstruct);
@@ -433,6 +436,9 @@ module cond(input logic clk, input int cyc);
     unique0 case (ev)
       E_A: l = 1;
       E_B: l = 0;
+      E_C: l = 1;
+      E_D: l = 0;
+      E_E: l = 1;
     endcase
   end
 endmodule

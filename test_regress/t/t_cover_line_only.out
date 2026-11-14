@@ -523,12 +523,15 @@
           assign pstruct.b = 16'd0;
         
           // An enum register, so the case below keeps its enum type
-          typedef enum logic [1:0] {
+          typedef enum logic [2:0] {
             E_A,
-            E_B
+            E_B,
+            E_C,
+            E_D,
+            E_E
           } e_t;
           e_t ev;
- 000010   always @(posedge clk) ev <= e_t'(cyc[1:0]);
+ 000010   always @(posedge clk) ev <= e_t'(cyc[2:0]);
 +000010  point: type=line comment=block hier=top.t.cond1
         
  000010   always @(posedge clk) begin
@@ -625,10 +628,16 @@
             // its unnamed values
  000010     unique0 case (ev)
 +000010  point: type=line comment=block hier=top.t.cond1
-%000003       E_A: l = 1;
--000003  point: type=line comment=case hier=top.t.cond1
-%000003       E_B: l = 0;
--000003  point: type=line comment=case hier=top.t.cond1
+%000002       E_A: l = 1;
+-000002  point: type=line comment=case hier=top.t.cond1
+%000002       E_B: l = 0;
+-000002  point: type=line comment=case hier=top.t.cond1
+%000001       E_C: l = 1;
+-000001  point: type=line comment=case hier=top.t.cond1
+%000001       E_D: l = 0;
+-000001  point: type=line comment=case hier=top.t.cond1
+%000001       E_E: l = 1;
+-000001  point: type=line comment=case hier=top.t.cond1
             endcase
           end
         endmodule
