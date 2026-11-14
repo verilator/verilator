@@ -279,8 +279,10 @@
 -000004  point: type=expr comment=(t1==0) => 0 hier=top.t
 -000002  point: type=expr comment=(t1==1 && t2==1) => 1 hier=top.t
 -000005  point: type=expr comment=(t2==0) => 0 hier=top.t
+-000002  point: type=branch comment=elsif hier=top.t
 -000002  point: type=line comment=elsif hier=top.t
 %000002       $write("");
+-000002  point: type=branch comment=elsif hier=top.t
 -000002  point: type=line comment=elsif hier=top.t
             end
 %000005     else if (t1 || t2) begin
