@@ -905,8 +905,10 @@ size_t VlRandomizer::hashConstraints(const std::vector<std::string>& extras) con
     return h;
 }
 
-void VlRandomizer::emitRandcExclusions(std::ostream& os) const {
-    for (const auto& name : m_randcVarNames) {
+void VlRandomizer::emitRandcExclusions(std::ostream& os,
+                                       const std::vector<std::string>& randcNames) const {
+    // A drawn value is never a used one, so its pin already satisfies these
+    for (const auto& name : randcNames) {
         const auto usedIt = m_randcUsedValues.find(name);
         if (usedIt != m_randcUsedValues.end()) {
             const int w = m_vars.at(name)->width();
@@ -925,13 +927,142 @@ static uint64_t readVarValueU64(const void* datap, int width) {
     return 0;
 }
 
-void VlRandomizer::recordRandcValues() {
-    for (const auto& name : m_randcVarNames) {
-        const auto varIt = m_vars.find(name);
-        if (varIt == m_vars.end()) continue;
-        const VlRandomVar& var = *varIt->second;
+void VlRandomizer::activeRandcVars(std::vector<std::string>& namesr) const {
+    for (const auto& var : m_vars) {
+        if (!m_randcVarNames.count(var.first)) continue;
+        if (isFrozenVar(var.first, *var.second)) continue;
+        namesr.push_back(var.first);
+    }
+}
+
+// Every solver variable the constraint names is randc or frozen, or its names cannot tell:
+// merged (see hard()), or including one matching no registered variable, as a path through an
+// object array element does
+bool VlRandomizer::constraintFiltersDraw(size_t n) const {
+    if (m_constraintNamesMerged[n]) return true;
+    const size_t begin = n ? m_constraintVarEnds[n - 1] : 0;
+    const size_t end = m_constraintVarEnds[n];
+    if (begin == end) return false;
+    bool randcOnly = true;
+    for (size_t i = begin; i < end; ++i) {
+        const std::string name = m_constraintVarNames[i];
+        if (m_randcVarNames.count(name)) continue;
+        const auto it = m_vars.find(name);
+        if (it == m_vars.end()) return true;
+        if (!isFrozenVar(name, *it->second)) randcOnly = false;
+    }
+    return randcOnly;
+}
+
+void VlRandomizer::recordRandcValues(const std::vector<std::string>& randcNames) {
+    for (const auto& name : randcNames) {
+        const VlRandomVar& var = *m_vars.at(name);
         m_randcUsedValues[name].insert(readVarValueU64(var.datap(0), var.width()));
     }
+}
+
+void VlRandomizer::recordDrawnValues(const std::map<std::string, std::string>& drawn) {
+    for (const auto& entry : drawn) {
+        // drawRandcValues accepted only values that passed validSMTNum
+        VlWide<VL_WQ_WORDS_E> qowp;
+        VL_SET_WQ(qowp, 0ULL);
+        parseSMTNum(m_vars.at(entry.first)->width(), qowp, entry.second);
+        m_randcUsedValues[entry.first].insert(VL_SET_QW(qowp));
+    }
+}
+
+// Randc variables are solved before rand ones (IEEE 1800-2023 18.4.2), so the value is drawn
+// blind to rand feasibility. Limitations, which do not follow 18.4.2: nothing is drawn, and the
+// randc variables are solved jointly with the rand variables, with two or more active randc
+// variables, a randc array, or in a randomize() resizing arrays (next_sized()). A constraint whose
+// names cannot tell (see constraintFiltersDraw()) filters the draw with its rand variables free,
+// as the joint solve would, where 18.4.2 would draw blind to it if its text involves rand
+// variables.
+bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
+                                   const std::vector<std::string>& randcNames,
+                                   const std::vector<std::string>& uniqueExprs,
+                                   std::map<std::string, std::string>& drawnr)
+    VL_REQUIRES(sess.m_mutex) {
+    if (m_sized || randcNames.size() != 1 || m_vars.at(randcNames.front())->dimension() > 0) {
+        return true;
+    }
+    std::iostream& os = sess.os();
+    // A cleared history cannot exhaust again, so this retries at most once
+    while (true) {
+        emitFlatPreamble(os, rngr, true);
+        // Every variable is declared so the query stays well-formed even when a constraint's
+        // names are incomplete or name a frozen variable outright, as an enum's value-range
+        // constraint does; a frozen scalar keeps its current value
+        emitDeclares(os, false);
+        for (const auto& var : m_vars) {
+            if (var.second->dimension() > 0 || !isFrozenVar(var.first, *var.second)) continue;
+            os << "(assert (= " << var.first << ' ';
+            var.second->emitConcreteValue(os);
+            os << "))\n";
+        }
+        // Only constraints evaluable at randc-solve time, and those whose names cannot tell,
+        // filter the cycle domain (see constraintFiltersDraw())
+        for (size_t n = 0; n < m_constraints.size(); ++n) {
+            if (!constraintFiltersDraw(n)) continue;
+            os << "(assert (= #b1 " << m_constraints[n] << "))\n";
+        }
+        emitRandcExclusions(os, randcNames);
+        os << "(check-sat)\n";
+        const VlSolverStatus status = sess.readStatus();
+        if (status != VlSolverStatus::SAT) {
+            if (status != VlSolverStatus::UNSAT) return false;
+            os << "(reset)\n";
+            // Domain exhausted: recompute the permutation and retry
+            if (!m_randcUsedValues.empty()) {
+                m_randcUsedValues.clear();
+                continue;
+            }
+            // No randc value satisfies the randc-only constraints at all
+            reportUnsatSetup(sess, uniqueExprs);
+            return false;
+        }
+        // The solver-sampled draw keeps the seeded model from the check-sat
+        if (!solverSamples()) {
+            int npins = 0;
+            emitDiversityPins(os, rngr, *m_vars.at(randcNames.front()), npins);
+            // Pins the solver could not settle leave no model, so get-value fails the draw
+            solveAssumingPins(sess, npins);
+        }
+        os << "(get-value (";
+        for (const auto& name : randcNames) os << name << " ";
+        os << "))\n";
+        // A reply not naming the drawn variable would leave it unpinned and solved jointly,
+        // and a malformed value would corrupt the cycle history
+        std::map<std::string, std::string> values;
+        const bool read = readPhaseValues(sess, values);
+        const auto it = values.find(randcNames.front());
+        const bool got = read && it != values.end() && validSMTNum(it->second);
+        // Only the drawn variable is pinned; any other name in the reply is ignored
+        if (got) drawnr.emplace(*it);
+        os << "(reset)\n";
+        return got;
+    }
+}
+
+bool VlRandomizer::tailFeasible(VlSolverSession& sess, const std::vector<std::string>& randcNames,
+                                const std::vector<std::string>& uniqueExprs,
+                                const std::map<std::string, std::string>& drawn, bool& unsatr)
+    VL_REQUIRES(sess.m_mutex) {
+    std::iostream& os = sess.os();
+    os << "(set-logic " << phasedLogic() << ")\n";
+    emitDefines(os);
+    emitDeclares(os, false);
+    emitAsserts(os, uniqueExprs, false);
+    emitRandcExclusions(os, randcNames);
+    // The draw is consumed whatever this answers, so it is not part of the tail
+    for (const auto& entry : drawn) {
+        os << "(assert (not (= " << entry.first << " " << entry.second << ")))\n";
+    }
+    os << "(check-sat)\n";
+    const VlSolverStatus status = sess.readStatus();
+    os << "(reset)\n";
+    unsatr = status == VlSolverStatus::UNSAT;
+    return status == VlSolverStatus::SAT;
 }
 
 bool VlRandomizer::isFrozenVar(const std::string& name, const VlRandomVar& var) const {
@@ -961,6 +1092,13 @@ bool VlRandomizer::hasFrozenVar() const {
 bool VlRandomizer::next_check_only(VlRNGReseeds& rngr) { return nextRandomize(rngr, true); }
 
 bool VlRandomizer::next(VlRNGReseeds& rngr) { return nextRandomize(rngr, false); }
+
+// No randc draw: the size solve sees the elements the arrays held before resizing
+bool VlRandomizer::next_sized(VlRNGReseeds& rngr) {
+    VL_RESTORER(m_sized);
+    m_sized = true;
+    return nextRandomize(rngr, false);
+}
 
 bool VlRandomizer::nextRandomize(VlRNGReseeds& rngr, bool checkOnly) {
     // No rand variables: randomize() still checks the constraints (IEEE 1800-2023 18.11.1)
@@ -1038,6 +1176,20 @@ void VlRandomizer::emitDefines(std::ostream& os) const {
     os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
 }
 
+// The randc draw reads back only its scalar randc variable, never an array lacking element
+// constraints, so it shares the flat solve's QF_ABV rather than phasedLogic()
+void VlRandomizer::emitFlatPreamble(std::ostream& os, VlRNG& rngr, bool seed) const {
+    os << "(set-option :produce-models true)\n";
+    if (!solverSamples()) {
+        // Lets the scalar pin path learn which free-bit assumptions conflict.
+        os << "(set-option :produce-unsat-assumptions true)\n";
+    } else if (seed) {
+        emitSolverSeed(os, rngr);
+    }
+    os << "(set-logic QF_ABV)\n";
+    emitDefines(os);
+}
+
 void VlRandomizer::emitDeclares(std::ostream& os, bool pinCurrent) const {
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
@@ -1086,25 +1238,27 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
     VlSolverTxn txn{sess};
     if (!txn.ok()) return false;
     std::iostream& os = sess.os();
-    // Randc retry: if unsat due to randc exhaustion, clear history and retry once
-    const bool hasRandc = !m_randcVarNames.empty();
-    for (int attempt = 0; attempt < (hasRandc ? 2 : 1); ++attempt) {
-        os << "(set-option :produce-models true)\n";
-        if (!solverSamples()) {
-            // Lets the scalar pin path learn which free-bit assumptions conflict.
-            os << "(set-option :produce-unsat-assumptions true)\n";
-        } else if (!m_checkOnly) {
-            // Check-only results are not random, so leave the random state alone
-            emitSolverSeed(os, rngr);
-        }
-        os << "(set-logic QF_ABV)\n";
-        emitDefines(os);
+    // Check-only must not advance randc cycle state.
+    const bool useRandc = !m_checkOnly && !m_randcVarNames.empty();
+    std::vector<std::string> randcNames;
+    if (useRandc) activeRandcVars(randcNames);
+    // A cleared history cannot exhaust again, so this retries at most once
+    while (true) {
+        std::map<std::string, std::string> drawn;
+        if (useRandc && !drawRandcValues(rngr, sess, randcNames, uniqueExprs, drawn)) return false;
+        // Check-only results are not random, so leave the random state alone
+        emitFlatPreamble(os, rngr, !m_checkOnly);
         emitDeclares(os, m_checkOnly);
         emitAsserts(os, uniqueExprs, false);
 
-        // randc exclusions vs. a pinned current value would make every check
-        // trivially UNSAT after the first cycle.
-        if (!m_checkOnly) emitRandcExclusions(os);
+        // A drawn randc value is pinned, and every randc variable keeps its
+        // used-value exclusions. Check-only pins current values instead.
+        if (!m_checkOnly) {
+            for (const auto& entry : drawn) {
+                os << "(assert (= " << entry.first << " " << entry.second << "))\n";
+            }
+            emitRandcExclusions(os, randcNames);
+        }
 
         relaxSoftConstraints(sess);
         os << "(check-sat)\n";
@@ -1113,15 +1267,25 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
         if (status != VlSolverStatus::SAT) {
             if (status != VlSolverStatus::UNSAT) return false;
             os << "(reset)\n";
-            // If randc vars have used values, this may be cycle exhaustion - retry
-            if (hasRandc && !m_randcUsedValues.empty() && attempt == 0) {
-                m_randcUsedValues.clear();
-                continue;  // Retry without exclusions
-            }
             // Skip the unsat-core path in check-only: it re-declares vars
             // without pinning, so the solver's free assignment would clobber
             // user state.
             if (m_checkOnly) return false;
+            if (!drawn.empty()) {
+                bool tailUnsat = false;
+                if (tailFeasible(sess, randcNames, uniqueExprs, drawn, tailUnsat)) {
+                    // Values left in the cycle stay feasible: consume the draw and fail
+                    recordDrawnValues(drawn);
+                    return false;
+                }
+                // A solver that gave up says nothing about the cycle
+                if (!tailUnsat) return false;
+            }
+            // Cycle exhaustion: recompute the permutation and retry
+            if (useRandc && !m_randcUsedValues.empty()) {
+                m_randcUsedValues.clear();
+                continue;
+            }
             // Genuine unsat: report via unsat-core
             reportUnsatSetup(sess, uniqueExprs);
             return false;
@@ -1129,13 +1293,11 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
         if (!applyModel(sess)) return false;
 
         if (!m_checkOnly) {
-            if (!solverSamples()) solveDiversity(rngr, sess);
-            // Check-only must not advance randc cycle state.
-            recordRandcValues();
+            if (!solverSamples()) solveDiversity(rngr, sess, drawn);
+            recordRandcValues(randcNames);
         }
         return true;
     }
-    return false;  // Should not reach here
 }
 
 // Enumerate one cell of the solution space, and cache the solutions in m_ug2.loThreshWitnesses.
@@ -1431,7 +1593,9 @@ bool VlRandomizer::generateSamples(VlSolverSession& sess, VlRNG& rngr) VL_REQUIR
     return false;  // LCOV_EXCL_LINE
 }
 
-void VlRandomizer::solveDiversity(VlRNG& rngr, VlSolverSession& sess) VL_REQUIRES(sess.m_mutex) {
+void VlRandomizer::solveDiversity(VlRNG& rngr, VlSolverSession& sess,
+                                  const std::map<std::string, std::string>& pinned)
+    VL_REQUIRES(sess.m_mutex) {
     bool hasArray = false;
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
@@ -1442,27 +1606,26 @@ void VlRandomizer::solveDiversity(VlRNG& rngr, VlSolverSession& sess) VL_REQUIRE
     if (hasArray) {
         solveDiversityXor(rngr, sess);
     } else {
-        solveDiversityPins(rngr, sess);
+        solveDiversityPins(rngr, sess, pinned);
     }
 }
 
-void VlRandomizer::solveDiversityPins(VlRNG& rngr, VlSolverSession& sess)
-    VL_REQUIRES(sess.m_mutex) {
-    std::iostream& os = sess.os();
-    // Tie each free bit to a random target via an assumption literal;
-    // drop one conflicting literal per round until compatible
-    int npins = 0;
-    for (const auto& var : m_vars) {
-        const int w = var.second->totalWidth();
-        for (int b = 0; b < w; ++b) {
-            const bool target = (VL_RANDOM_RNG_I(rngr) & 1);
-            os << "(declare-fun a" << npins << " () Bool)\n";
-            os << "(assert (= a" << npins << " (=";
-            var.second->emitExtract(os, b);
-            os << " #b" << (target ? '1' : '0') << ")))\n";
-            ++npins;
-        }
+void VlRandomizer::emitDiversityPins(std::ostream& os, VlRNG& rngr, const VlRandomVar& var,
+                                     int& npinsr) const {
+    // Tie each free bit to a random target via an assumption literal
+    const int w = var.totalWidth();
+    for (int b = 0; b < w; ++b) {
+        const bool target = (VL_RANDOM_RNG_I(rngr) & 1);
+        os << "(declare-fun a" << npinsr << " () Bool)\n";
+        os << "(assert (= a" << npinsr << " (=";
+        var.emitExtract(os, b);
+        os << " #b" << (target ? '1' : '0') << ")))\n";
+        ++npinsr;
     }
+}
+
+bool VlRandomizer::solveAssumingPins(VlSolverSession& sess, int npins) VL_REQUIRES(sess.m_mutex) {
+    std::iostream& os = sess.os();
     std::vector<bool> dropped(npins, false);
     for (int round = 0; round <= npins; ++round) {
         os << "(check-sat-assuming (";
@@ -1471,12 +1634,9 @@ void VlRandomizer::solveDiversityPins(VlRNG& rngr, VlSolverSession& sess)
         }
         os << "))\n";
         const VlSolverStatus status = sess.readStatus();
-        if (status == VlSolverStatus::SAT) {
-            applyModel(sess);
-            return;
-        }
-        // Unknown or failure: the base solution already written stands
-        if (status != VlSolverStatus::UNSAT) return;
+        if (status == VlSolverStatus::SAT) return true;
+        // Unknown or failure: no model is left to read
+        if (status != VlSolverStatus::UNSAT) break;
         // get-unsat-assumptions only echoes still-active literals,
         // so the first in-range index is a live conflicting bit.
         const std::vector<int> core = readUnsatAssumptions(sess);
@@ -1488,8 +1648,20 @@ void VlRandomizer::solveDiversityPins(VlRNG& rngr, VlSolverSession& sess)
                 break;
             }
         }
-        if (!droppedOne) return;
+        if (!droppedOne) break;
     }
+    return false;
+}
+
+void VlRandomizer::solveDiversityPins(VlRNG& rngr, VlSolverSession& sess,
+                                      const std::map<std::string, std::string>& pinned)
+    VL_REQUIRES(sess.m_mutex) {
+    // A pinned variable has no free bit left to steer
+    int npins = 0;
+    for (const auto& var : m_vars) {
+        if (!pinned.count(var.first)) emitDiversityPins(sess.os(), rngr, *var.second, npins);
+    }
+    if (npins && solveAssumingPins(sess, npins)) applyModel(sess);
 }
 
 void VlRandomizer::solveDiversityXor(VlRNG& rngr, VlSolverSession& sess)
@@ -1678,14 +1850,7 @@ bool VlRandomizer::parseModel(std::istream& is, size_t requested) {
                        "Internal: Unable to parse solver's response: repeated variable");
             return false;
         }
-        if (!varr.randModeIdxNone()) {
-            // Static rand vars have their rand_mode in a class-package shared queue,
-            // not the per-instance one.
-            const VlQueue<CData>* const modep
-                = m_staticVars.count(name) ? m_static_randmodep : m_randmodep;
-            if (modep && !modep->at(varr.randModeIdx())) continue;
-        }
-        if (m_disabledVars.count(name)) continue;
+        if (isFrozenVar(name, varr)) continue;
         if (!indices.empty()) {
             std::ostringstream oss;
             oss << varr.name();
@@ -1748,11 +1913,15 @@ bool VlRandomizer::parseModel(std::istream& is, size_t requested) {
 }
 
 void VlRandomizer::hard(std::string constraint, std::initializer_list<const char*> varNames,
-                        const char* filename, uint32_t linenum, const char* source) {
+                        const char* filename, uint32_t linenum, const char* source,
+                        bool namesMerged) {
+    // Names are merged from branches the state chose between, from several items folded into
+    // the constraint, or around a branch naming no rand variable
+    m_constraintNamesMerged.push_back(namesMerged);
     m_constraints.emplace_back(std::move(constraint));
     // Stored for every constraint: a randomize() with clause registers its constraints
-    // before markRandc() marks its randc variables, so whether the names are needed isn't
-    // known yet here
+    // before markRandc() marks its randc variables, so whether the randc draw needs the
+    // names isn't known yet here
     m_constraintVarNames.insert(m_constraintVarNames.end(), varNames.begin(), varNames.end());
     m_constraintVarEnds.push_back(m_constraintVarNames.size());
     // Format constraint location: "filename:linenum   source"
@@ -1785,6 +1954,7 @@ void VlRandomizer::clearConstraints() {
     m_constraints.clear();
     m_constraintVarNames.clear();
     m_constraintVarEnds.clear();
+    m_constraintNamesMerged.clear();
     m_constraints_line.clear();
     m_solveBefore.clear();
     m_softConstraints.clear();
@@ -1796,6 +1966,7 @@ void VlRandomizer::clearAll() {
     m_constraints.clear();
     m_constraintVarNames.clear();
     m_constraintVarEnds.clear();
+    m_constraintNamesMerged.clear();
     m_softConstraints.clear();
     m_vars.clear();
     m_randcVarNames.clear();
@@ -1873,21 +2044,46 @@ bool VlRandomizer::nextPhased(VlRNG& rngr, VlSolverSession& sess,
 
     VlSolverTxn txn{sess};
     if (!txn.ok()) return false;
-    // Retry once with the randc cycle cleared, as nextFlat does
-    bool exhausted = false;
-    if (solvePhases(rngr, sess, layers, uniqueExprs, exhausted)) return true;
-    if (!exhausted) return false;
-    m_randcUsedValues.clear();
-    sess.os() << "(reset)\n";
-    return solvePhases(rngr, sess, layers, uniqueExprs, exhausted);
+    const bool useRandc = !m_randcVarNames.empty();
+    std::vector<std::string> randcNames;
+    if (useRandc) activeRandcVars(randcNames);
+    // A cleared history cannot exhaust again, so this retries at most once
+    while (true) {
+        std::map<std::string, std::string> drawn;
+        if (useRandc && !drawRandcValues(rngr, sess, randcNames, uniqueExprs, drawn)) return false;
+        bool unsat = false;
+        if (solvePhases(rngr, sess, layers, randcNames, uniqueExprs, drawn, unsat)) return true;
+        // A lost solver is not worth a retry
+        if (!unsat) return false;
+        sess.os() << "(reset)\n";
+        if (!drawn.empty()) {
+            bool tailUnsat = false;
+            if (tailFeasible(sess, randcNames, uniqueExprs, drawn, tailUnsat)) {
+                // Values left in the cycle stay feasible: consume the draw and fail
+                recordDrawnValues(drawn);
+                return false;
+            }
+            // A solver that gave up says nothing about the cycle
+            if (!tailUnsat) return false;
+        }
+        // Cycle exhaustion: recompute the permutation and retry, as nextFlat does
+        if (useRandc && !m_randcUsedValues.empty()) {
+            m_randcUsedValues.clear();
+            continue;
+        }
+        return false;
+    }
 }
 
 bool VlRandomizer::solvePhases(VlRNG& rngr, VlSolverSession& sess,
                                const std::vector<std::vector<std::string>>& layers,
-                               const std::vector<std::string>& uniqueExprs, bool& exhaustedr)
+                               const std::vector<std::string>& randcNames,
+                               const std::vector<std::string>& uniqueExprs,
+                               const std::map<std::string, std::string>& drawn, bool& unsatr)
     VL_REQUIRES(sess.m_mutex) {
     std::iostream& os = sess.os();
-    std::map<std::string, std::string> solvedValues;  // varName -> SMT value literal
+    // Drawn randc values act as a pre-solved layer ahead of every phase
+    std::map<std::string, std::string> solvedValues{drawn};  // varName -> SMT value literal
     const char* const logicp = phasedLogic();
 
     for (size_t phase = 0; phase < layers.size(); phase++) {
@@ -1903,9 +2099,7 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, VlSolverSession& sess,
             os << "(assert (= " << entry.first << " " << entry.second << "))\n";
         }
         emitAsserts(os, uniqueExprs, false);
-
-        // Randc: exclude previously used values
-        emitRandcExclusions(os);
+        emitRandcExclusions(os, randcNames);
 
         // Soft constraints participate in every phase, priority-ordered.
         relaxSoftConstraints(sess);
@@ -1914,16 +2108,14 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, VlSolverSession& sess,
         os << "(check-sat)\n";
         const VlSolverStatus status = sess.readStatus();
         if (status != VlSolverStatus::SAT) {
-            // Only exhausted randc values are worth a retry; a lost solver is not
-            if (status == VlSolverStatus::UNSAT) exhaustedr = !m_randcUsedValues.empty();
+            if (status == VlSolverStatus::UNSAT) unsatr = true;
             return false;
         }
 
         if (isFinalPhase) {
             if (!applyModel(sess)) return false;
             if (!solverSamples()) solveDiversityXor(rngr, sess);
-            // Record solved randc values for future exclusion
-            recordRandcValues();
+            recordRandcValues(randcNames);
         } else {
             if (!solvePhaseValues(sess, rngr, layers[phase], solvedValues)) return false;
             os << "(reset)\n";

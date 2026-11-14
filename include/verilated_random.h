@@ -261,6 +261,8 @@ class VlRandomizer VL_NOT_FINAL {
     std::vector<const char*> m_constraintVarNames;
     // Per hard constraint, the end of its names in m_constraintVarNames
     std::vector<size_t> m_constraintVarEnds;
+    // Per hard constraint, whether its names are merged from more than its text (see hard())
+    std::vector<bool> m_constraintNamesMerged;
     std::vector<std::string>
         m_constraints_line;  // fileline content of the constraint for unsat constraints
     std::vector<std::string> m_softConstraints;  // Soft constraints
@@ -283,6 +285,7 @@ class VlRandomizer VL_NOT_FINAL {
     std::vector<std::pair<std::string, std::string>>
         m_solveBefore;  // Solve-before ordering pairs (beforeVar, afterVar)
     bool m_checkOnly = false;  // Set for randomize(null)
+    bool m_sized = false;  // Set for the solves of a randomize() that resizes arrays
     bool isFrozenVar(const std::string& name,
                      const VlRandomVar& var) const;  // true if this var is currently frozen
     bool hasFrozenVar() const;  // true if any var is currently rand_mode(0)-frozen
@@ -310,13 +313,34 @@ class VlRandomizer VL_NOT_FINAL {
     std::vector<int> readUnsatAssumptions(VlSolverSession& sess);
     void reportUnsatSetup(VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
     void reportUnsatCore(VlSolverSession& sess);
-    void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
-    void recordRandcValues();  // Record solved randc values for future exclusion
+    // Used-value exclusions for the randc variables this call may write
+    void emitRandcExclusions(std::ostream& os, const std::vector<std::string>& randcNames) const;
+    // Record the solved value of every randc variable this call wrote, drawn ones included
+    void recordRandcValues(const std::vector<std::string>& randcNames);
+    // Randc variables this randomize() may write, computed once per call
+    void activeRandcVars(std::vector<std::string>& namesr) const;
+    // True if the n'th hard constraint filters the randc draw
+    bool constraintFiltersDraw(size_t n) const;
+    // Draw the next cyclic value of a lone active randc variable ahead of the rand ones
+    bool drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
+                         const std::vector<std::string>& randcNames,
+                         const std::vector<std::string>& uniqueExprs,
+                         std::map<std::string, std::string>& drawnr);
+    // True if a randc value left in the cycle still admits a solution;
+    // unsatr distinguishes a proven-empty tail from a solver that gave up
+    bool tailFeasible(VlSolverSession& sess, const std::vector<std::string>& randcNames,
+                      const std::vector<std::string>& uniqueExprs,
+                      const std::map<std::string, std::string>& drawn, bool& unsatr);
+    // Consume the draw of a call that fails while values are left in the cycle
+    void recordDrawnValues(const std::map<std::string, std::string>& drawn);
     size_t hashConstraints(const std::vector<std::string>& extras) const;
     bool nextRandomize(VlRNGReseeds& rngr, bool checkOnly);
     // "(distinct ...)" expression per unique-constrained array
     std::vector<std::string> buildUniqueExprs() const;
     void emitDefines(std::ostream& os) const;
+    // Options, logic and defines opening a flat solve or a randc draw; 'seed'
+    // seeds a solver-sampled solve from rngr
+    void emitFlatPreamble(std::ostream& os, VlRNG& rngr, bool seed) const;
     void emitDeclares(std::ostream& os, bool pinCurrent) const;
     void emitAsserts(std::ostream& os, const std::vector<std::string>& extras, bool named) const;
     bool nextFlat(VlRNG& rngr, VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
@@ -361,9 +385,17 @@ class VlRandomizer VL_NOT_FINAL {
     };
     Unigen2State m_ug2;
 
-    void solveDiversity(VlRNG& rngr, VlSolverSession& sess);
-    void solveDiversityPins(VlRNG& rngr, VlSolverSession& sess);
+    void solveDiversity(VlRNG& rngr, VlSolverSession& sess,
+                        const std::map<std::string, std::string>& pinned);
+    void solveDiversityPins(VlRNG& rngr, VlSolverSession& sess,
+                            const std::map<std::string, std::string>& pinned);
     void solveDiversityXor(VlRNG& rngr, VlSolverSession& sess);
+    // One random per-bit assumption literal per bit of the variable, numbered from npinsr
+    void emitDiversityPins(std::ostream& os, VlRNG& rngr, const VlRandomVar& var,
+                           int& npinsr) const;
+    // Drop one conflicting assumption per round until compatible; true if the last
+    // check was sat, leaving its model for the caller to read
+    bool solveAssumingPins(VlSolverSession& sess, int npins);
     // Layers of solve...before variables in dependency order
     bool buildSolveLayers(std::vector<std::vector<std::string>>& layersr);
     const char* phasedLogic() const;
@@ -371,7 +403,9 @@ class VlRandomizer VL_NOT_FINAL {
                     const std::vector<std::string>& uniqueExprs);
     bool solvePhases(VlRNG& rngr, VlSolverSession& sess,
                      const std::vector<std::vector<std::string>>& layers,
-                     const std::vector<std::string>& uniqueExprs, bool& exhaustedr);
+                     const std::vector<std::string>& randcNames,
+                     const std::vector<std::string>& uniqueExprs,
+                     const std::map<std::string, std::string>& drawn, bool& unsatr);
     bool solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
                           const std::vector<std::string>& layerVars,
                           std::map<std::string, std::string>& solvedValuesr);
@@ -386,6 +420,8 @@ public:
     // METHODS
     // Finds the next solution satisfying the constraints
     bool next(VlRNGReseeds& rngr);
+    // As next(), without the randc draw, for the solves of a randomize() resizing arrays
+    bool next_sized(VlRNGReseeds& rngr);
     // Validate the constraints against the current runtime values of every
     // registered rand variable without picking new ones.
     bool next_check_only(VlRNGReseeds& rngr);
@@ -949,8 +985,10 @@ public:
 
     // varNames are the solver variables the constraint names, kept without copying until
     // clearConstraints(), so they must live that long (the generated code passes literals)
+    // namesMerged: varNames may name a rand variable the randc-only part of the text does not
     void hard(std::string constraint, std::initializer_list<const char*> varNames = {},
-              const char* filename = "", uint32_t linenum = 0, const char* source = "");
+              const char* filename = "", uint32_t linenum = 0, const char* source = "",
+              bool namesMerged = false);
     void soft(std::string constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
     // name is kept without copying until clearConstraints(), like hard()'s varNames, so it
