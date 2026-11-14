@@ -14,9 +14,16 @@
 // the items are moved into separate functions, which must keep the local
 // variables of the process, jumps and loop conditions working.
 
+interface bus;
+  bit en = 1'b1;
+endinterface
+
 module t;
   logic clk = 0;
   always #5 clk = ~clk;
+
+  bus b ();
+  virtual bus vb = b;
 
   int edges = 0;
   always @(posedge clk) edges <= edges + 1;
@@ -147,6 +154,13 @@ module t;
     end
     `checkd(c, 2);
     `checkd(acc, 541);
+    // A condition read through a virtual interface, which puts the statement in an AstHidden:
+    // parts of it are moved all the same
+    if (vb.en) begin
+      step(8, acc);
+      step(9, acc);
+    end
+    `checkd(acc, 598);
     begin
       automatic Cls cls = new;
       automatic int lim = 5;
