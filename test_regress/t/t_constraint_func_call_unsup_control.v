@@ -20,8 +20,14 @@ class Cls;
     return tmp + m;
   endfunction
 
+  function bit [7:0] static_reset_func(bit [7:0] m);
+    static bit [7:0] tmp;
+    return tmp + m;
+  endfunction
+
   constraint c {x <= control_func(y);}
   constraint d {x <= static_func(y);}
+  constraint e {x <= static_reset_func(y);}
 endclass
 
 module t;

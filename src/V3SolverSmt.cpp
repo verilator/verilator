@@ -659,9 +659,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         clonedp->foreach([&](AstVarRef* refp) {
             const auto it = valueps.find(refp->varp());
-            if (it == valueps.end()) return;
-            refp->replaceWith(it->second->cloneTreePure(false));
-            VL_DO_DANGLING(refp->deleteTree(), refp);
+            if (it != valueps.end()) {
+                refp->replaceWith(it->second->cloneTreePure(false));
+                VL_DO_DANGLING(refp->deleteTree(), refp);
+            }
         });
         return clonedp;
     }
