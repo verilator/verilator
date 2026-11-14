@@ -236,6 +236,21 @@ or "`ifdef`"'s may break other tools.
    Returns the timeunit of the current module as an integer. This extension
    is experimental and may be removed without deprecation.
 
+.. option:: //&32;coverage&32;off
+
+   Same as :option:`/*verilator&32;coverage_off*/`, as other tools accept.
+   One word may come before ``coverage``, such as ``pragma``, ``synopsys``,
+   ``cadence``, ``VCS`` or ``verilator``. A comment with any other text is
+   an ordinary comment.
+
+.. option:: //&32;coverage&32;on
+
+   Same as :option:`/*verilator&32;coverage_on*/`, as other tools accept.
+   One word may come before ``coverage``, as for
+   :option:`//&32;coverage&32;off`.
+
+   .. t_dist_docs_style restart_sort
+
 .. option:: /*verilator&32;clock_enable*/
 
    Deprecated and has no effect (ignored).
@@ -288,18 +303,11 @@ or "`ifdef`"'s may break other tools.
    Specifies that that following lines of code should have coverage disabled.
    Often used to ignore an entire module for coverage analysis purposes.
 
-   ``// coverage off``, alone or after one word such as ``pragma``,
-   ``synopsys``, ``cadence``, ``VCS`` or ``verilator``, is equivalent, as
-   other tools accept. A comment with any other text is an ordinary comment.
-
 .. option:: /*verilator&32;coverage_on*/
 
    Specifies that that following lines of code should have coverage re-enabled
    (if appropriate :vlopt:`--coverage` flags are passed) after being
    disabled earlier with :option:`/*verilator&32;coverage_off*/`.
-
-   ``// coverage on``, alone or after one word as for ``// coverage off``,
-   is equivalent.
 
 .. option:: /*verilator&32;dpi_c_decl "<C function declaration>"*/
 
