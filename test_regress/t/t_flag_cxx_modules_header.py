@@ -27,6 +27,13 @@ flags = [
     '-CFLAGS "-std=c++23 -isystem ' + test.t_dir + '/t_flag_cxx_modules_header_isystem"',
 ]
 test.compile(make_main=False, verilator_flags2=flags, make_flags=['VM_PARALLEL_BUILDS=1'])
+with open(test.obj_dir + '/' + test.vm_prefix + '__modules.json', encoding='utf8') as fh:
+    graph = json.load(fh)
+if not [
+        edge for edge in graph['edges']
+        if edge['kind'] == 'header' and edge['from'] == 't_flag_cxx_modules_header'
+]:
+    test.error('Missing C++ module to header unit graph edge')
 cmis = glob.glob(test.obj_dir + '/gcm.cache/**/t_flag_cxx_modules_header.h.gcm', recursive=True)
 if not cmis:
     test.error('No C++ header unit CMI generated')

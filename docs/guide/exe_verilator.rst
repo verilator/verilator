@@ -503,7 +503,9 @@ Summary:
 
    Changing compiler flags or the C++ compiler does not automatically
    invalidate existing CMIs.  Remove the model object directory before
-   rebuilding after such changes.
+   rebuilding after such changes.  The build writes
+   ``<prefix>__modules.json`` and ``<prefix>__modules.dot`` in the model
+   object directory.
 
    Existing :command:`-CFLAGS -fmodules` style flags remain supported,
    including :command:`-fmodule-header` and

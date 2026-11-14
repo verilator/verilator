@@ -51,6 +51,22 @@ def safe_stem(stem: str, abs_source: str) -> str:
     return safe
 
 
+def write_if_changed(path: str, content: str) -> None:
+    old_content = None
+    try:
+        with open(path, 'r', encoding='utf8') as fh:
+            old_content = fh.read()
+    except OSError:
+        pass
+    if content == old_content:
+        return
+    directory = os.path.dirname(path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+    with open(path, 'w', encoding='utf8') as fh:
+        fh.write(content)
+
+
 def parse_flags(flags: str) -> list[str]:
     return [flag for flag in shlex.split(flags) if flag not in ('-MMD', '-MP')]
 
@@ -60,12 +76,14 @@ def is_module_control_flag(flag: str) -> bool:
             or flag.startswith('-fmodule-header='))
 
 
-def external_modules(flags: list[str]) -> set[str]:
+def external_modules(flags: list[str]) -> dict[str, str]:
     prefix = '-fmodule-file='
-    modules = set()
+    modules: dict[str, str] = {}
     for flag in flags:
         if flag.startswith(prefix):
-            modules.add(flag[len(prefix):].split('=', 1)[0])
+            spec = flag[len(prefix):]
+            name, separator, path = spec.partition('=')
+            modules[name] = path if separator else ''
     return modules
 
 
@@ -222,6 +240,38 @@ def include_directories(flags: list[str]) -> list[str]:
     return dirs
 
 
+def std_module_path(args: argparse.Namespace, flags: list[str]) -> str:
+    if args.backend == 'gcc':
+        return os.path.join(args.objdir, 'gcm.cache', 'std.gcm')
+    prefix = '-fmodule-file=std='
+    for flag in flags:
+        if flag.startswith(prefix):
+            return flag[len(prefix):]
+    return ''
+
+
+def check_std_module(args: argparse.Namespace, external: dict[str, str], flags: list[str]) -> None:
+    if args.backend == 'gcc':
+        path = std_module_path(args, flags)
+        if os.path.exists(path):
+            return
+        fatal("C++ module 'std' is required, but the gcc backend cannot find '" + path + "'.\n"
+              "Precompile the GCC std module in the object directory, for example:\n"
+              "  cd " + args.objdir + " && g++ -std=c++23 -fmodules --compile-std-module"
+              " -c -x c++ /dev/null -o /dev/null")
+    path = external.get('std', '')
+    if not path:
+        fatal("C++ module 'std' is required, but the clang backend has no std PCM.\n"
+              "Precompile libc++ std.cppm and pass -CFLAGS -fmodule-file=std=<path>, for example:\n"
+              "  clang++ -std=c++23 -stdlib=libc++ --precompile -x c++-module std.cppm"
+              " -o std.pcm")
+    if not os.path.exists(path):
+        fatal("C++ module 'std' is required, but the clang std PCM '" + path + "' does not exist.\n"
+              "Recompile libc++ std.cppm and pass -CFLAGS -fmodule-file=std=<path>, for example:\n"
+              "  clang++ -std=c++23 -stdlib=libc++ --precompile -x c++-module std.cppm"
+              " -o std.pcm")
+
+
 def resolve_header(name: str, importer: str,
                    include_dirs: list[str]) -> Optional[str]:  # noqa: UP045
     if os.path.isabs(name):
@@ -337,8 +387,9 @@ def prepare_gcc_headers(args: argparse.Namespace, cppflags: list[str], cxxflags:
     return headers
 
 
-def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]], external: set[str],
-                    headers: dict[str, dict[str, Any]]) -> None:
+def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]],
+                    external: dict[str, str], headers: dict[str, dict[str, Any]],
+                    flags: list[str]) -> None:
     providers: dict[str, dict[str, Any]] = {}
     for module in modules:
         for name in module['provides']:
@@ -364,6 +415,8 @@ def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]], ext
                     direct.append(provider)
                 dep_names.add(name)
                 pending.extend(provider['requires'])
+            elif name == 'std':
+                check_std_module(args, external, flags)
             elif name in external:
                 continue
             elif '/' in name or '\\' in name:
@@ -372,11 +425,6 @@ def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]], ext
                 header = headers.get(os.path.abspath(name))
                 if header is not None and header not in header_deps:
                     header_deps.append(header)
-            elif name == 'std':
-                if args.backend == 'gcc' and not os.path.exists(
-                        os.path.join(args.objdir, 'gcm.cache', 'std.gcm')):
-                    fatal("C++ module 'std' is required, but gcm.cache/std.gcm was not found; "
-                          "precompile the std module before building")
             else:
                 fatal("C++ module '" + name + "' required by '" + module['source'] +
                       "' has no provider; precompile it and pass -fmodule-file=" + name +
@@ -498,6 +546,77 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
     return '\n'.join(lines)
 
 
+def module_name(module: dict[str, Any]) -> str:
+    return str(module['provides'][0]) if module['provides'] else str(module['stem'])
+
+
+def module_graph(args: argparse.Namespace, modules: list[dict[str, Any]],
+                 headers: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    entries: list[dict[str, Any]] = []
+    edges: list[dict[str, str]] = []
+    for module in sorted(modules, key=module_name):
+        provides = list(module['provides'])
+        entries.append({
+            'name': module_name(module),
+            'source': module['source'],
+            'object': module['obj'],
+            'cmi': gcc_module_cmi(module) if args.backend == 'gcc' and provides else '',
+            'pcm': module['pcm'] if args.backend == 'clang' and provides else '',
+            'provides': provides,
+            'requires': list(module['requires']),
+        })
+        for provider in module['direct_deps']:
+            edges.append({
+                'from': module_name(module),
+                'to': module_name(provider),
+                'kind': 'module',
+            })
+        for header in module['header_deps']:
+            edges.append({
+                'from': module_name(module),
+                'to': header['cmi'],
+                'kind': 'header',
+            })
+    for header in headers.values():
+        entries.append({
+            'name': header['cmi'],
+            'source': header['path'],
+            'object': '',
+            'cmi': header['cmi'],
+            'pcm': '',
+            'provides': [],
+            'requires': [],
+        })
+        edges.append({
+            'from': header['cmi'],
+            'to': header['path'],
+            'kind': 'header',
+        })
+    entries.sort(key=lambda entry: (entry['name'], entry['source']))
+    edges.sort(key=lambda edge: (edge['from'], edge['to'], edge['kind']))
+    return {'backend': args.backend, 'modules': entries, 'edges': edges}
+
+
+def dot_id(name: str) -> str:
+    if re.match(r'^[A-Za-z_][A-Za-z0-9_.]*$', name):
+        return name
+    return json.dumps(name)
+
+
+def dot_graph(graph: dict[str, Any]) -> str:
+    lines = ['digraph modules {']
+    lines.append('  graph [label=' + json.dumps('backend: ' + str(graph['backend'])) + '];')
+    nodes = sorted({entry['name'] for entry in graph['modules']}
+                   | {edge['to'] for edge in graph['edges']})
+    for node in nodes:
+        lines.append('  ' + dot_id(node) + ';')
+    for edge in graph['edges']:
+        lines.append('  ' + dot_id(edge['from']) + ' -> ' + dot_id(edge['to']) + ' [label=' +
+                     json.dumps(edge['kind']) + '];')
+    lines.append('}')
+    return '\n'.join(lines) + '\n'
+
+
 def scan(args: argparse.Namespace) -> None:
     cppflags = parse_flags(args.cppflags)
     cxxflags = parse_flags(args.cxxflags)
@@ -564,20 +683,19 @@ def scan(args: argparse.Namespace) -> None:
         module['provides'] = provides
         module['requires'] = requires
 
-    resolve_modules(args, modules, external, headers)
+    resolve_modules(args, modules, external, headers, cppflags + cxxflags)
 
     if args.backend == 'gcc':
         content = generate_gcc(modules, headers, module_only)
     else:
         content = generate_clang(modules)
 
-    old_content = None
-    if os.path.exists(args.output):
-        with open(args.output, 'r', encoding='utf8') as fh:
-            old_content = fh.read()
-    if content != old_content:
-        with open(args.output, 'w', encoding='utf8') as fh:
-            fh.write(content)
+    graph = module_graph(args, modules, headers)
+    if args.json:
+        write_if_changed(args.json, json.dumps(graph, indent=2, sort_keys=True) + '\n')
+    if args.dot:
+        write_if_changed(args.dot, dot_graph(graph))
+    write_if_changed(args.output, content)
 
 
 def main() -> None:
@@ -586,6 +704,8 @@ def main() -> None:
     parser.add_argument('--cxx', required=True, help='C++ compiler')
     parser.add_argument('--cxxflags', default='', help='C++ compiler flags')
     parser.add_argument('--cppflags', default='', help='C preprocessor flags')
+    parser.add_argument('--dot', default='', help='DOT dependency graph file')
+    parser.add_argument('--json', default='', help='JSON dependency graph file')
     parser.add_argument('--objdir', default='.', help='object directory')
     parser.add_argument('--opt-fast', default='', help='fast optimization flags')
     parser.add_argument('--output', required=True, help='output make fragment')

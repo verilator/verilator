@@ -9,6 +9,8 @@
 
 import glob
 import os
+import shlex
+import sys
 import vltest_bootstrap
 
 test.scenarios('vlt')
@@ -31,6 +33,56 @@ flags = [
     test.t_dir + '/t_flag_cxx_modules_build.ixx',
 ]
 test.compile(make_main=False, verilator_flags2=flags, make_flags=['VM_PARALLEL_BUILDS=1'])
+
+
+def run_make():
+    return test.run_capture('cd ' + test.obj_dir + ' && ' + os.environ['MAKE'] + ' -f ' +
+                            test.vm_prefix + '.mk VM_PARALLEL_BUILDS=1 2>&1')
+
+modules_json = test.obj_dir + '/' + test.vm_prefix + '__modules.json'
+modules_dot = test.obj_dir + '/' + test.vm_prefix + '__modules.dot'
+module_obj = test.obj_dir + '/t_flag_cxx_modules_chain_m1.o'
+if 'clang' in test.cxx_version.lower():
+    artifact = test.obj_dir + '/t_flag_cxx_modules_chain_m1.pcm'
+else:
+    artifact = test.obj_dir + '/gcm.cache/m1.gcm'
+test.file_grep(modules_json, r'"m1"')
+test.file_grep(modules_json, r'"m2"')
+test.file_grep(modules_json, r'"buildmod"')
+test.file_grep(modules_dot, r'm2 -> m1')
+
+direct_dir = test.obj_dir + '/direct'
+test.run(
+    logfile=test.obj_dir + '/direct.log',
+    cmd=[
+        sys.executable,
+        test.root + '/bin/verilator_module_deps',
+        '--backend',
+        'clang' if 'clang' in test.cxx_version.lower() else 'gcc',
+        '--cxx',
+        shlex.quote(os.environ.get('CXX', 'c++')),
+        '--cxxflags=-std=c++23',
+        '--cppflags=',
+        '--opt-fast=-O0',
+        '--objdir',
+        direct_dir,
+        '--json',
+        direct_dir + '/graph.json',
+        '--dot',
+        direct_dir + '/graph.dot',
+        '--output',
+        direct_dir + '/graph.mk',
+        '--source',
+        test.t_dir + '/t_flag_cxx_modules_chain_m1.cppm',
+    ])
+test.file_grep(direct_dir + '/graph.json', r'"m1"')
+test.file_grep(direct_dir + '/graph.dot', r'digraph modules')
+
+run_make()
+if not os.path.exists(artifact):
+    test.error('Missing C++ module artifact: ' + artifact)
+if not os.path.exists(module_obj):
+    test.error('Missing C++ module object: ' + module_obj)
 test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--backend')
 test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--cxx ')
 test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--cxxflags')
@@ -40,18 +92,8 @@ test.file_grep(test.obj_dir + '/' + test.vm_prefix + '.mk', r'--objdir')
 artifacts = (glob.glob(test.obj_dir + '/gcm.cache/*.gcm') + glob.glob(test.obj_dir + '/*.pcm'))
 if not artifacts:
     test.error('No C++ module artifacts were generated')
-if 'clang' in test.cxx_version.lower():
-    artifact = test.obj_dir + '/t_flag_cxx_modules_chain_m1.pcm'
-else:
-    artifact = test.obj_dir + '/gcm.cache/m1.gcm'
-module_obj = test.obj_dir + '/t_flag_cxx_modules_chain_m1.o'
-if not os.path.exists(artifact):
-    test.error('Missing C++ module artifact: ' + artifact)
-if not os.path.exists(module_obj):
-    test.error('Missing C++ module object: ' + module_obj)
 os.remove(artifact)
-make_out = test.run_capture('cd ' + test.obj_dir + ' && ' + os.environ['MAKE'] + ' -f ' +
-                            test.vm_prefix + '.mk VM_PARALLEL_BUILDS=1 2>&1')
+make_out = run_make()
 if 'Circular' in make_out:
     test.error('Circular dependency in C++ module make rules')
 if not os.path.exists(artifact):
@@ -66,14 +108,12 @@ for path in (deps_1, deps_2, scan_cache):
 deps_1_time = os.stat(deps_1).st_mtime_ns
 deps_2_time = os.stat(deps_2).st_mtime_ns
 os.remove(test.obj_dir + '/' + test.vm_prefix + '__modules.mk')
-test.run_capture('cd ' + test.obj_dir + ' && ' + os.environ['MAKE'] + ' -f ' + test.vm_prefix +
-                 '.mk VM_PARALLEL_BUILDS=1 2>&1')
+run_make()
 if os.stat(deps_1).st_mtime_ns != deps_1_time or os.stat(deps_2).st_mtime_ns != deps_2_time:
     test.error('C++ module scan was not reused from cache')
 
 os.utime(test.t_dir + '/t_flag_cxx_modules_chain_m2.cppm', None)
-test.run_capture('cd ' + test.obj_dir + ' && ' + os.environ['MAKE'] + ' -f ' + test.vm_prefix +
-                 '.mk VM_PARALLEL_BUILDS=1 2>&1')
+run_make()
 if os.stat(deps_2).st_mtime_ns == deps_2_time:
     test.error('C++ module scan cache was not invalidated by a source change')
 if os.stat(deps_1).st_mtime_ns != deps_1_time:
