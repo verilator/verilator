@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
 test.top_filename = "t/t_cover_toggle.v"
 
 test.compile(verilator_flags2=['--cc --coverage-toggle --coverage-max-width 1025'])
@@ -17,5 +17,9 @@ test.compile(verilator_flags2=['--cc --coverage-toggle --coverage-max-width 1025
 test.execute()
 
 test.file_grep(test.obj_dir + "/coverage.dat", "largeish")
+# Only cyc drives largeish, so bits of cyc toggle and no bit above 31 does
+test.file_grep(test.obj_dir + "/coverage.dat", r"largeish\[1\]:0->1[^']*' [1-9]")
+test.file_grep_not(test.obj_dir + "/coverage.dat",
+                   r"largeish\[(3[2-9]|[4-9][0-9]|[0-9]{3,})\]:[01]->[01][^']*' [1-9]")
 
 test.passes()
