@@ -50,17 +50,21 @@ class V3DiagSarifImp final {
         of.put("text", VString::trimWhitespace(clean)).put("markdown", markdown);
     }
 
-    void putLocation(V3OutJsonFile& of, const FileLine* fl) const {
+    void putArtifactLocation(V3OutJsonFile& of, const FileLine* fl) const {
         const string filename = V3Os::filenameRealPath(fl->filename());
-        of.begin("physicalLocation");
         of.begin("artifactLocation");
         if (V3Os::filenameIsRel(filename)) {  // SARIF spec says rel has no //
             of.put("uri", "file:" + filename).put("uriBaseId", "%srcroot%");
         } else {
             of.put("uri", "file://" + filename);
         }
-        of.end()
-            .begin("region")
+        of.end();
+    }
+
+    void putLocation(V3OutJsonFile& of, const FileLine* fl) const {
+        of.begin("physicalLocation");
+        putArtifactLocation(of, fl);
+        of.begin("region")
             .put("sourceLanguage", "systemverilog")
             .put("startLine", fl->firstLineno())
             .put("startColumn", fl->firstColumn());
@@ -76,6 +80,108 @@ class V3DiagSarifImp final {
     string substrToNextRelated(const string& str) {
         const size_t pos = str.find("__WARNRELATED(", 0);
         return (pos == std::string::npos) ? str : str.substr(0, pos);
+    }
+
+    // Zero-width replacement, i.e. insert content at the start of a line
+    void putInsertion(V3OutJsonFile& of, int lineno, const string& content) const {
+        of.begin();
+        of.begin("deletedRegion")
+            .put("startLine", lineno)
+            .put("startColumn", 1)
+            .put("endColumn", 1)
+            .end();
+        of.begin("insertedContent").put("text", content).end();
+        of.end();
+    }
+
+    void putFixes(V3OutJsonFile& of, const VErrorMessage& msg) const {
+        // Fixes are only offered where the warning text already tells the
+        // user the edit: a "Suggested alternative" spelling, and the
+        // lint_off/lint_on hint.
+        const FileLine* const fl = msg.fileline();
+        if (!fl || fl->firstLineno() <= 0 || fl->filenameIsGlobal()) return;
+        const V3ErrorCode code = msg.code();
+        const string& text = msg.text();
+
+        // Replace the misspelt name. Only when the reported region is
+        // exactly the name quoted in the message, otherwise we would be
+        // guessing at what to delete.
+        string goal;
+        string candidate;
+        {
+            static const string marker = "... Suggested alternative: '";
+            const size_t pos = text.find(marker);
+            if (pos != string::npos && fl->firstLineno() == fl->lastLineno()
+                && fl->lastColumn() > fl->firstColumn()) {
+                const size_t start = pos + marker.size();
+                const size_t end = text.find('\'', start);
+                const string src = fl->prettySource();
+                const size_t first = static_cast<size_t>(fl->firstColumn() - 1);
+                const size_t len = static_cast<size_t>(fl->lastColumn() - fl->firstColumn());
+                if (end != string::npos && end > start && first + len <= src.size()) {
+                    const string regionText = src.substr(first, len);
+                    const string cand = text.substr(start, end - start);
+                    if (cand.find('\n') == string::npos && regionText != cand
+                        && text.substr(0, pos).find("'" + regionText + "'") != string::npos) {
+                        goal = regionText;
+                        candidate = cand;
+                    }
+                }
+            }
+        }
+
+        // Disable the warning around the offending lines
+        const bool suppressible = code.isNamed() && !code.hardError() && !code.severityInfo()
+                                  && !code.pretendError() && !code.dangerous();
+
+        if (candidate.empty() && !suppressible) return;
+        of.begin("fixes", '[');
+        if (!candidate.empty()) {
+            of.begin();
+            of.begin("description").put("text", "Replace '" + goal + "' with '" + candidate + "'");
+            of.end();
+            of.begin("artifactChanges", '[').begin();
+            putArtifactLocation(of, fl);
+            of.begin("replacements", '[').begin();
+            of.begin("deletedRegion")
+                .put("startLine", fl->firstLineno())
+                .put("startColumn", fl->firstColumn())
+                .put("endColumn", fl->lastColumn())
+                .end();
+            of.begin("insertedContent").put("text", candidate).end();
+            of.end();  // replacement
+            of.end();  // replacements
+            of.end();  // artifactChange
+            of.end();  // artifactChanges
+            of.end();  // fix
+        }
+        if (suppressible) {
+            const string line = fl->source();
+            string indent;
+            for (const char c : line) {
+                if (c != ' ' && c != '\t') break;
+                indent += c;
+            }
+            const int firstLine = fl->firstLineno();
+            const int lastLine = std::max(fl->lastLineno(), firstLine);
+            of.begin();
+            of.begin("description")
+                .put("text", "Disable " + string{code.ascii()}
+                                 + " around this source with lint_off and lint_on");
+            of.end();
+            of.begin("artifactChanges", '[').begin();
+            putArtifactLocation(of, fl);
+            of.begin("replacements", '[');
+            putInsertion(of, firstLine,
+                         indent + "/* verilator lint_off " + code.ascii() + " */\n");
+            putInsertion(of, lastLine + 1,
+                         indent + "/* verilator lint_on " + code.ascii() + " */\n");
+            of.end();  // replacements
+            of.end();  // artifactChange
+            of.end();  // artifactChanges
+            of.end();  // fix
+        }
+        of.end();  // fixes
     }
 
     void putResult(V3OutJsonFile& of, const VErrorMessage& msg) {
@@ -130,6 +236,8 @@ class V3DiagSarifImp final {
             }
             of.end();
         }
+
+        putFixes(of, msg);
 
         if (msg.code().isNamed())
             of.put("ruleId", msg.code().ascii()).put("ruleIndex", m_codeIndex[msg.code()]);
