@@ -19,7 +19,7 @@
                                         : ... note: In instance 't'
    21 |     sink = x_arr / x;
       |                  ^
-%Error: t/t_math_nonintegral_bad.v:22:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+%Error: t/t_math_nonintegral_bad.v:22:10: Illegal assignment between unpacked aggregate and integral type (IEEE 1800-2023 7.6)
                                         : ... note: In instance 't'
                                         : ... Left-hand data type: 'logic'
                                         : ... Right-hand data type: 'logic$[0:2]'
@@ -53,7 +53,7 @@
                                         : ... note: In instance 't'
    28 |     sink = x_arr ~^ x;
       |                  ^~
-%Error: t/t_math_nonintegral_bad.v:29:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+%Error: t/t_math_nonintegral_bad.v:29:10: Illegal assignment between unpacked aggregate and integral type (IEEE 1800-2023 7.6)
                                         : ... note: In instance 't'
                                         : ... Left-hand data type: 'logic'
                                         : ... Right-hand data type: 'logic$[0:2]'
@@ -63,7 +63,7 @@
                                         : ... note: In instance 't'
    29 |     sink = x_arr >> x;
       |                  ^~
-%Error: t/t_math_nonintegral_bad.v:30:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+%Error: t/t_math_nonintegral_bad.v:30:10: Illegal assignment between unpacked aggregate and integral type (IEEE 1800-2023 7.6)
                                         : ... note: In instance 't'
                                         : ... Left-hand data type: 'logic'
                                         : ... Right-hand data type: 'logic$[0:2]'
@@ -73,7 +73,7 @@
                                         : ... note: In instance 't'
    30 |     sink = x_arr << x;
       |                  ^~
-%Error: t/t_math_nonintegral_bad.v:31:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+%Error: t/t_math_nonintegral_bad.v:31:10: Illegal assignment between unpacked aggregate and integral type (IEEE 1800-2023 7.6)
                                         : ... note: In instance 't'
                                         : ... Left-hand data type: 'logic'
                                         : ... Right-hand data type: 'logic$[0:2]'
@@ -83,7 +83,7 @@
                                         : ... note: In instance 't'
    31 |     sink = x_arr >>> x;
       |                  ^~~
-%Error: t/t_math_nonintegral_bad.v:32:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+%Error: t/t_math_nonintegral_bad.v:32:10: Illegal assignment between unpacked aggregate and integral type (IEEE 1800-2023 7.6)
                                         : ... note: In instance 't'
                                         : ... Left-hand data type: 'logic'
                                         : ... Right-hand data type: 'logic$[0:2]'
@@ -233,7 +233,7 @@
                                         : ... note: In instance 't'
    62 |     sink = x <-> x_arr;
       |              ^~~
-%Error: t/t_math_nonintegral_bad.v:64:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+%Error: t/t_math_nonintegral_bad.v:64:10: Illegal assignment between unpacked aggregate and integral type (IEEE 1800-2023 7.6)
                                         : ... note: In instance 't'
                                         : ... Left-hand data type: 'logic'
                                         : ... Right-hand data type: 'logic$[0:2]'
@@ -243,7 +243,7 @@
                                         : ... note: In instance 't'
    64 |     sink = -x_arr;
       |            ^
-%Error: t/t_math_nonintegral_bad.v:65:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+%Error: t/t_math_nonintegral_bad.v:65:10: Illegal assignment between unpacked aggregate and integral type (IEEE 1800-2023 7.6)
                                         : ... note: In instance 't'
                                         : ... Left-hand data type: 'logic'
                                         : ... Right-hand data type: 'logic$[0:2]'

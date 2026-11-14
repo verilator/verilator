@@ -33,6 +33,7 @@
 #include "V3Cast.h"
 #include "V3Class.h"
 #include "V3Clean.h"
+#include "V3Coalesce.h"
 #include "V3Combine.h"
 #include "V3Common.h"
 #include "V3Const.h"
@@ -353,6 +354,9 @@ static void process() {
             // Module inlining
             if (v3Global.opt.fInline()) V3Inline::inlineAll(v3Global.rootp());
 
+            // Coalesce variables that are always the same
+            if (v3Global.opt.fCoalesce()) V3Coalesce::coalesceAll(v3Global.rootp());
+
             // Relocate classes (after linkDot)
             V3Class::classAll(v3Global.rootp());
         }
@@ -402,6 +406,10 @@ static void process() {
             if (v3Global.opt.fBitblast()) V3BitBlast::bitBlastAll(v3Global.rootp());
 
             if (v3Global.opt.fLife()) V3Life::lifeAll(v3Global.rootp());
+
+            // Split single ALWAYS blocks before making tables, so that a table is made for each
+            // independent group of outputs, indexed by their own inputs only
+            if (v3Global.opt.fSplit()) V3Split::splitAll(v3Global.rootp());
 
             // Make large low-fanin logic blocks into lookup tables
             // This should probably be done much later, once we have common logic elimination.

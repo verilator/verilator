@@ -129,13 +129,12 @@ public:
             m_hierBlockOptsByOrigName.emplace(hierOpt.second.origName(), &hierOpt.second);
             const V3HierarchicalBlockOption::ParamStrMap& params = hierOpt.second.params();
             ParamConstMap& consts = m_hierParams[&hierOpt.second];
-            for (V3HierarchicalBlockOption::ParamStrMap::const_iterator pIt = params.begin();
-                 pIt != params.end(); ++pIt) {
+            for (const auto& pItr : params) {
                 std::unique_ptr<AstConst> constp{AstConst::parseParamLiteral(
-                    new FileLine{FileLine::builtInFilename()}, pIt->second)};
-                UASSERT(constp, pIt->second << " is not a valid parameter literal");
-                const bool inserted = consts.emplace(pIt->first, std::move(constp)).second;
-                UASSERT(inserted, pIt->first << " is already added");
+                    new FileLine{FileLine::builtInFilename()}, pItr.second)};
+                UASSERT(constp, pItr.second << " is not a valid parameter literal");
+                const bool inserted = consts.emplace(pItr.first, std::move(constp)).second;
+                UASSERT(inserted, pItr.first << " is already added");
             }
             // origName may be already registered, but it's fine.
             m_modParams.insert({hierOpt.second.origName(), {}});

@@ -531,7 +531,9 @@ class DelayedRecord final : public VNVisitorConst, public DelayedBase {
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_vtxp);
         FuncVertex* const vtxp = funcVtxp(nodep);
-        if (nodep->dpiImportPrototype() && nodep->dpiContext()) addEdge(vtxp, m_dpiExportCallVtxp);
+        // Context imports may call any export. Their wrappers invoke the import prototypes
+        // indirectly through runtime helpers, so record the callback edge at the wrapper.
+        if (nodep->dpiImportWrapper() && nodep->dpiContext()) addEdge(vtxp, m_dpiExportCallVtxp);
         if (nodep->dpiExportImpl()) addEdge(m_dpiExportCallVtxp, vtxp);
         m_vtxp = vtxp;
         iterateChildrenConst(nodep);

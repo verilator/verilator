@@ -207,6 +207,11 @@ List Of Warnings
       input a;
       assign a = 1'b1;
 
+   This error is not reported when a continuous assignment or port
+   connection drives a net input port from outside its module or interface,
+   either through a hierarchical reference or from an instance inserted by
+   ``bind``.
+
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
@@ -1644,7 +1649,11 @@ List Of Warnings
    Warns when a non-standard language feature is used that has a standard
    equivalent, which might behave differently in corner cases. For example
    ``$psprintf`` system function is replaced by its standard equivalent
-   ``$sformatf``.
+   ``$sformatf``, and a C-style packed dimension ``[size]``, as accepted by
+   other simulators, by the ascending range ``[0:size-1]``. Likewise, a
+   keyed assignment pattern without the leading apostrophe, such as
+   ``{default: 0}`` as accepted by other simulators, is replaced by
+   ``'{default: 0}``.
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
@@ -2573,6 +2582,11 @@ List Of Warnings
 
    An error that a construct might be legal according to IEEE but is not
    currently supported by Verilator.
+
+   This includes DPI imported task calls in ``always`` processes when any DPI
+   exported task can suspend, even if the imported task does not call that
+   export. Calls through other tasks are also affected, as are ``always_comb``,
+   ``always_latch``, and ``always_ff`` processes.
 
    A typical workaround is to rewrite the construct into a more common
    alternative language construct.

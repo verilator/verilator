@@ -45,10 +45,14 @@ class VSymEnt final {
     // Symbol table that can have a "superior" table for resolving upper references
     // MEMBERS
     using IdNameMap = std::multimap<std::string, VSymEnt*>;
-    IdNameMap m_idNameMap;  // Hash of variables by name
-    std::unordered_set<std::string> m_idNameSimilarMap;  // Variables by name with same case
+    // Most entries (variables, imported symbols) never get children, so only allocate on insert
+    struct Names final {
+        IdNameMap m_idName;  // Hash of variables by name
+        std::unordered_set<std::string> m_idNameSimilar;  // Variables by name with same case
+    };
+    std::unique_ptr<Names> m_namesp;
     // Packages imported with 'import pkg::*', in import order. Per IEEE 1800-2023 26.3 their
-    // symbols are only candidates, imported into m_idNameMap on first lookup, as copying
+    // symbols are only candidates, imported into the name map on first lookup, as copying
     // every symbol is O(package size) per importing scope.
     std::vector<const VSymEnt*> m_wildImportps;
     VSymGraph* const m_graphp;  // Graph that owns this entry
@@ -67,8 +71,22 @@ class VSymEnt final {
 #endif
 public:
     using const_iterator = IdNameMap::const_iterator;
-    const_iterator begin() const { return m_idNameMap.begin(); }
-    const_iterator end() const { return m_idNameMap.end(); }
+    const IdNameMap& idNameMap() const {  // Read access only, as lazy-stored empty
+        static const IdNameMap s_empty;
+        return m_namesp ? m_namesp->m_idName : s_empty;
+    }
+    Names& namesWritable() {  // Going to insert, dynamically create if does not exist
+        if (!m_namesp) m_namesp = std::make_unique<Names>();
+        return *m_namesp;
+    }
+    const_iterator begin() const {
+        const IdNameMap& nameMapr = idNameMap();
+        return nameMapr.begin();
+    }
+    const_iterator end() const {
+        const IdNameMap& nameMapr = idNameMap();
+        return nameMapr.end();
+    }
 
     void dumpIterate(std::ostream& os, VSymConstMap& doneSymsr, const string& indent,
                      int numLevels, const string& searchName) const {
@@ -87,10 +105,10 @@ public:
         if (VL_UNCOVERABLE(!doneSymsr.insert(this).second)) {
             os << indent << "| ^ duplicate, so no children printed\n";  // LCOV_EXCL_LINE
         } else {
-            for (auto it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
+            for (const auto& itr : idNameMap()) {
                 if (numLevels >= 1) {
-                    it->second->dumpIterate(os, doneSymsr, indent + "| ", numLevels - 1,
-                                            it->first);
+                    itr.second->dumpIterate(os, doneSymsr, indent + "| ", numLevels - 1,
+                                            itr.first);
                 }
             }
             for (const VSymEnt* const pkgSymp : m_wildImportps) {
@@ -144,7 +162,8 @@ public:
     VSymEnt* insert(const string& name, VSymEnt* entp) {
         UINFO(9, "     SymInsert se" << cvtToHex(this) << " '" << name << "' se" << cvtToHex(entp)
                                      << "  " << entp->nodep());
-        if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
+        const IdNameMap& nameMapr = idNameMap();
+        if (name != "" && nameMapr.find(name) != nameMapr.end()) {
             // If didn't already report warning
             if (!V3Error::errorCount()) {  // LCOV_EXCL_START
                 if (debug() >= 9 || V3Error::debugDefault())
@@ -152,21 +171,21 @@ public:
                 entp->nodep()->v3fatalSrc("Inserting two symbols with same name: " << name);
             }  // LCOV_EXCL_STOP
         } else {
-            m_idNameMap.emplace(name, entp);
+            namesWritable().m_idName.emplace(name, entp);
         }
         if (!name.empty() && name.find("__DOT__") == std::string::npos  // ignore hierarchical
             && checkSimilarname(entp->nodep())) {
             string lc = name;
             for (auto& c : lc) c = (char)tolower(c);
-            if (m_idNameSimilarMap.find(lc) == m_idNameSimilarMap.end())
-                m_idNameSimilarMap.insert(lc);
+            namesWritable().m_idNameSimilar.insert(lc);
         }
 
         return entp;
     }
     void reinsert(const string& name, VSymEnt* entp) {
-        const auto it = m_idNameMap.find(name);
-        if (name != "" && it != m_idNameMap.end()) {
+        IdNameMap& nameMap = namesWritable().m_idName;
+        const auto it = nameMap.find(name);
+        if (name != "" && it != nameMap.end()) {
             UINFO(9, "     SymReinsert se" << cvtToHex(this) << " '" << name << "' se"
                                            << cvtToHex(entp) << "  " << entp->nodep());
             it->second = entp;  // Replace
@@ -177,17 +196,19 @@ public:
     VSymEnt* findIdFlat(const string& name) {
         // Find identifier without looking upward through symbol hierarchy
         // First, scan this begin/end block or module for the name
-        const auto it = m_idNameMap.find(name);
+        const IdNameMap& nameMapr = idNameMap();
+        const auto it = nameMapr.find(name);
         UINFO(9, "     SymFind   se"
                      << cvtToHex(this) << " '" << name << "' -> "
-                     << (it == m_idNameMap.end() ? "NONE"
-                                                 : "se" + cvtToHex(it->second)
-                                                       + " n=" + cvtToHex(it->second->nodep())));
-        if (it != m_idNameMap.end()) return it->second;
+                     << (it == nameMapr.end() ? "NONE"
+                                              : "se" + cvtToHex(it->second)
+                                                    + " n=" + cvtToHex(it->second->nodep())));
+        if (it != nameMapr.end()) return it->second;
         // Then import it from the first wildcard imported package that exports it
         for (const VSymEnt* const pkgSymp : m_wildImportps) {
-            const auto pkgIt = pkgSymp->m_idNameMap.find(name);
-            if (pkgIt != pkgSymp->m_idNameMap.end() && pkgIt->second->exported()) {
+            const IdNameMap& pkgNameMapr = pkgSymp->idNameMap();
+            const auto pkgIt = pkgNameMapr.find(name);
+            if (pkgIt != pkgNameMapr.end() && pkgIt->second->exported()) {
                 VSymEnt* const symp = insert(name, newImportedSymbol(pkgIt->second));
                 symp->m_wildImported = true;
                 return symp;
@@ -214,16 +235,16 @@ public:
             return nullptr;
         string s = name;
         for (auto& c : s) c = (char)tolower(c);
-        if (m_idNameSimilarMap.find(s) == m_idNameSimilarMap.end()) return nullptr;
-        for (auto it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
+        if (!m_namesp || !m_namesp->m_idNameSimilar.count(s)) return nullptr;
+        for (const auto& itr : idNameMap()) {
             // Only report a declaration that is itself checked, otherwise we
             // might point at e.g. a localparam that merely sorts first
-            if (!checkSimilarname(it->second->nodep())) continue;
+            if (!checkSimilarname(itr.second->nodep())) continue;
             // Not a wildcard import, which is only here if some lookup happened to import it
-            if (it->second->m_wildImported) continue;
-            string t = it->first;
+            if (itr.second->m_wildImported) continue;
+            string t = itr.first;
             for (auto& c : t) c = (char)tolower(c);
-            if (t == s && name != it->first) { return it->second; }
+            if (t == s && name != itr.first) return itr.second;
         }
         return nullptr;
     }
@@ -239,14 +260,13 @@ public:
                          bool includeType) const {
         // Suggest alternative symbol candidates without looking upward through symbol
         // hierarchy
-        for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
-            candidateId(spellerp, matcherp, includeType, it->second->nodep());
+        for (const auto& itr : idNameMap()) {
+            candidateId(spellerp, matcherp, includeType, itr.second->nodep());
         }
         for (const VSymEnt* const pkgSymp : m_wildImportps) {
-            for (IdNameMap::const_iterator it = pkgSymp->m_idNameMap.begin();
-                 it != pkgSymp->m_idNameMap.end(); ++it) {
-                if (it->second->exported())
-                    candidateId(spellerp, matcherp, includeType, it->second->nodep());
+            for (const auto& itr : pkgSymp->idNameMap()) {
+                if (itr.second->exported())
+                    candidateId(spellerp, matcherp, includeType, itr.second->nodep());
             }
         }
     }
@@ -285,8 +305,9 @@ private:
     void importOneSymbol(const string& name, const VSymEnt* srcp, bool honorExport) {
         if (honorExport && !srcp->exported()) return;
         // An explicit import hides a wildcard import, but not a declaration or other import
-        const auto it = m_idNameMap.find(name);
-        if (it == m_idNameMap.end() || it->second->m_wildImported) {
+        const IdNameMap& nameMapr = idNameMap();
+        const auto it = nameMapr.find(name);
+        if (it == nameMapr.end() || it->second->m_wildImported) {
             reinsert(name, newImportedSymbol(srcp));
         }
     }
@@ -295,14 +316,16 @@ private:
         // through any package, per IEEE 1800-2023 26.6. Exporting a name that is not imported
         // is reported by V3LinkDot.
         if (!srcp->exported()) return;
-        const auto it = m_idNameMap.find(name);
-        if (it != m_idNameMap.end() && !it->second->m_wildImported) {
+        const IdNameMap& nameMapr = idNameMap();
+        const auto it = nameMapr.find(name);
+        if (it != nameMapr.end() && !it->second->m_wildImported) {
             if (it->second->nodep() == srcp->nodep()) it->second->exported(true);
             return;
         }
         for (const VSymEnt* const pkgSymp : m_wildImportps) {
-            const auto pkgIt = pkgSymp->m_idNameMap.find(name);
-            if (pkgIt != pkgSymp->m_idNameMap.end() && pkgIt->second->exported()
+            const IdNameMap& pkgNameMapr = pkgSymp->idNameMap();
+            const auto pkgIt = pkgNameMapr.find(name);
+            if (pkgIt != pkgNameMapr.end() && pkgIt->second->exported()
                 && pkgIt->second->nodep() == srcp->nodep()) {
                 VSymEnt* const symp = newImportedSymbol(srcp);
                 symp->exported(true);
@@ -321,46 +344,42 @@ public:
         // But ok for "extern foo" and "foo" to both come from base (so must check before
         // insert)
         std::unordered_set<std::string> haveExterns;
-        for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
-             it != srcp->m_idNameMap.end(); ++it) {
-            if (m_idNameMap.count("extern " + it->first)) haveExterns.emplace(it->first);
+        for (const auto& itr : srcp->idNameMap()) {
+            if (idNameMap().count("extern " + itr.first)) haveExterns.emplace(itr.first);
         }
-        for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
-             it != srcp->m_idNameMap.end(); ++it) {
-            if (!haveExterns.count(it->first)) importOneSymbol(it->first, it->second, false);
+        for (const auto& itr : srcp->idNameMap()) {
+            if (!haveExterns.count(itr.first)) importOneSymbol(itr.first, itr.second, false);
         }
     }
     void importFromPackage(const VSymEnt* srcp, const string& id_or_star) {
         // Import tokens from source symbol table into this symbol table
         if (id_or_star != "*") {
-            const auto it = srcp->m_idNameMap.find(id_or_star);
-            if (it != srcp->m_idNameMap.end()) importOneSymbol(it->first, it->second, true);
+            const IdNameMap& srcNameMapr = srcp->idNameMap();
+            const auto it = srcNameMapr.find(id_or_star);
+            if (it != srcNameMapr.end()) importOneSymbol(it->first, it->second, true);
         } else {
             addWildImport(srcp);  // Symbols are imported on lookup, see findIdFlat
         }
     }
     void exportFromPackage(const VSymEnt* srcp, const string& id_or_star) {
         // Export tokens from source symbol table into this symbol table
+        const IdNameMap& srcNameMapr = srcp->idNameMap();
         if (id_or_star != "*") {
-            const auto it = vlstd::as_const(srcp->m_idNameMap).find(id_or_star);
-            if (it != srcp->m_idNameMap.end()) exportOneSymbol(it->first, it->second);
+            const auto it = vlstd::as_const(srcNameMapr).find(id_or_star);
+            if (it != srcNameMapr.end()) exportOneSymbol(it->first, it->second);
         } else {
-            for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
-                 it != srcp->m_idNameMap.end(); ++it) {
-                exportOneSymbol(it->first, it->second);
-            }
+            for (const auto& itr : srcNameMapr) exportOneSymbol(itr.first, itr.second);
         }
     }
     void exportStarStar() {
         // Export *:*: Export all tokens from imported packages
         for (const VSymEnt* const pkgSymp : m_wildImportps) {
-            for (IdNameMap::const_iterator it = pkgSymp->m_idNameMap.begin();
-                 it != pkgSymp->m_idNameMap.end(); ++it) {
-                findIdFlat(it->first);  // Import, so marked exported below
+            for (const auto& itr : pkgSymp->idNameMap()) {
+                findIdFlat(itr.first);  // Import, so marked exported below
             }
         }
-        for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
-            VSymEnt* const symp = it->second;
+        for (const auto& itr : idNameMap()) {
+            VSymEnt* const symp = itr.second;
             if (!symp->exported()) symp->exported(true);
         }
     }
@@ -372,10 +391,9 @@ public:
         if (!onlyUnmodportable) {
             for (const VSymEnt* const pkgSymp : srcp->m_wildImportps) addWildImport(pkgSymp);
         }
-        for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
-             it != srcp->m_idNameMap.end(); ++it) {
-            const string& name = it->first;
-            VSymEnt* const subSrcp = it->second;
+        for (const auto& itr : srcp->idNameMap()) {
+            const string& name = itr.first;
+            VSymEnt* const subSrcp = itr.second;
             const AstVar* const varp = VN_CAST(subSrcp->nodep(), Var);
             if (!onlyUnmodportable || (varp && varp->isParam())) {
                 VSymEnt* const subSymp = new VSymEnt{m_graphp, subSrcp};
@@ -390,11 +408,11 @@ public:
     string cellErrorScopes(const AstNode* lookp, string prettyName = "") {
         if (prettyName == "") prettyName = lookp->prettyName();
         string scopes;
-        for (IdNameMap::iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
-            const AstNode* const itemp = it->second->nodep();
+        for (const auto& itr : idNameMap()) {
+            const AstNode* const itemp = itr.second->nodep();
             if (VN_IS(itemp, Cell) || (VN_IS(itemp, Module) && VN_AS(itemp, Module)->isTop())) {
                 if (scopes != "") scopes += ", ";
-                scopes += AstNode::prettyName(it->first);
+                scopes += AstNode::prettyName(itr.first);
             }
         }
         if (scopes == "") scopes = "<no instances found>";
@@ -439,13 +457,13 @@ public:
         os << "SymEnt Dump:\n";
         m_symRootp->dumpIterate(os, doneSyms, indent, 9999, "$root");
         bool first = true;
-        for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) {
-            if (doneSyms.find(*it) == doneSyms.end()) {
+        for (const auto& itr : m_symsp) {
+            if (doneSyms.find(itr) == doneSyms.end()) {
                 if (first) {
                     first = false;
                     os << "%%Warning: SymEnt Orphans:\n";
                 }
-                (*it)->dumpIterate(os, doneSyms, indent, 9999, "Orphan");
+                (itr)->dumpIterate(os, doneSyms, indent, 9999, "Orphan");
             }
         }
     }

@@ -1531,6 +1531,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fcase-decoder", FOnOff, &m_fCaseDecoder);
     DECL_OPTION("-fcase-table", FOnOff, &m_fCaseTable);
     DECL_OPTION("-fcase-tree", FOnOff, &m_fCaseTree);
+    DECL_OPTION("-fcoalesce", FOnOff, &m_fCoalesce);
     DECL_OPTION("-fcombine", FOnOff, &m_fCombine);
     DECL_OPTION("-fconst", FOnOff, &m_fConst);
     DECL_OPTION("-fconst-before-dfg", FOnOff, &m_fConstBeforeDfg);
@@ -2473,6 +2474,7 @@ void V3Options::optimize(int level) {
     m_fCaseDecoder = flag;
     m_fCaseTable = flag;
     m_fCaseTree = flag;
+    m_fCoalesce = flag;
     m_fCombine = flag;
     m_fConst = flag;
     m_fConstBitOpTree = flag;

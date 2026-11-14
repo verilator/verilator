@@ -115,8 +115,9 @@ def clang_language_flags(source: str) -> list[str]:
 def scan_clang(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str], abs_source: str,
                deps_file: str) -> None:
     compile_database = deps_file + '.compile_commands.json'
-    command = shlex.split(args.cxx) + cppflags + cxxflags + clang_language_flags(
-        abs_source) + ['-c', abs_source, '-o', abs_source + '.o']
+    command = shlex.split(args.cxx) + cppflags + cxxflags + clang_language_flags(abs_source) + [
+        '-c', abs_source, '-o', abs_source + '.o'
+    ]
     try:
         with open(compile_database, 'w', encoding='utf8') as fh:
             json.dump([{
@@ -160,8 +161,7 @@ def cached_scan(args: argparse.Namespace, module: dict[str, Any], flags_key: str
         return False
     return (cache.get('source') == module['source']
             and cache.get('mtime_ns') == source_stat.st_mtime_ns
-            and cache.get('size') == source_stat.st_size
-            and cache.get('flags_key') == flags_key
+            and cache.get('size') == source_stat.st_size and cache.get('flags_key') == flags_key
             and cache.get('deps') == os.path.basename(module['deps_file'])
             and os.path.exists(module['deps_file']))
 
@@ -169,13 +169,16 @@ def cached_scan(args: argparse.Namespace, module: dict[str, Any], flags_key: str
 def write_scan_cache(args: argparse.Namespace, module: dict[str, Any], flags_key: str) -> None:
     source_stat = os.stat(module['source'])
     with open(scan_cache_path(args.objdir, module['stem']), 'w', encoding='utf8') as fh:
-        json.dump({
-            'source': module['source'],
-            'mtime_ns': source_stat.st_mtime_ns,
-            'size': source_stat.st_size,
-            'flags_key': flags_key,
-            'deps': os.path.basename(module['deps_file']),
-        }, fh, indent=2)
+        json.dump(
+            {
+                'source': module['source'],
+                'mtime_ns': source_stat.st_mtime_ns,
+                'size': source_stat.st_size,
+                'flags_key': flags_key,
+                'deps': os.path.basename(module['deps_file']),
+            },
+            fh,
+            indent=2)
         fh.write('\n')
 
 
@@ -261,9 +264,9 @@ COMPILER_CMI_RE = re.compile("writing CMI ['\u2018]([^'\u2019]+)['\u2019]")
 def compile_header(args: argparse.Namespace, cppflags: list[str], cxxflags: list[str],
                    header: dict[str, Any]) -> str:
     opt_flags = parse_flags(args.opt_fast)
-    command = (shlex.split(args.cxx) + opt_flags + cppflags + cxxflags
-               + gcc_module_flags(cxxflags)
-               + ['-flang-info-module-cmi', '-fmodule-header', '-x', 'c++-header', header['path']])
+    command = (shlex.split(args.cxx) + opt_flags + cppflags + cxxflags +
+               gcc_module_flags(cxxflags) +
+               ['-flang-info-module-cmi', '-fmodule-header', '-x', 'c++-header', header['path']])
     result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         sys.stderr.write(result.stdout)
@@ -416,8 +419,7 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
     module_cmis = {header['cmi'] for header in headers.values()}
     module_cmis.update(gcc_module_cmi(module) for module in modules if module['provides'])
     lines.append('VK_MODULE_OBJS = ' + ' '.join(make_escape(obj) for obj in module_objs))
-    lines.append('VK_MODULE_CMIS = ' +
-                 ' '.join(make_escape(cmi) for cmi in sorted(module_cmis)))
+    lines.append('VK_MODULE_CMIS = ' + ' '.join(make_escape(cmi) for cmi in sorted(module_cmis)))
     if not module_only:
         stems = sorted({
             module['stem']
@@ -449,8 +451,9 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
             command = gcc_compile_command(module, module_only=False)
             if module['provides']:
                 cmi = gcc_module_cmi(module)
-                lines.append(make_escape(cmi) + ': ' + ' '.join(prereqs)
-                             + ' | ' + make_escape(module['obj']))
+                lines.append(
+                    make_escape(cmi) + ': ' + ' '.join(prereqs) + ' | ' +
+                    make_escape(module['obj']))
                 lines.append('\ttest -f ' + shell_quote(cmi) + ' || ' + command)
             lines.append(make_escape(module['obj']) + ': ' + ' '.join(prereqs))
             lines.append('\t' + command)
@@ -487,10 +490,8 @@ def generate_clang(modules: list[dict[str, Any]]) -> str:
         command += ['-c', shell_quote(module['source']), '-o', shell_quote(module['obj'])]
         if module['provides']:
             pcm = make_escape(module['pcm'])
-            lines.append(pcm + ': ' + ' '.join(prereqs) + ' | '
-                         + make_escape(module['obj']))
-            lines.append('\ttest -f ' + shell_quote(module['pcm']) + ' || '
-                         + ' '.join(command))
+            lines.append(pcm + ': ' + ' '.join(prereqs) + ' | ' + make_escape(module['obj']))
+            lines.append('\ttest -f ' + shell_quote(module['pcm']) + ' || ' + ' '.join(command))
         lines.append(make_escape(module['obj']) + ': ' + ' '.join(prereqs))
         lines.append('\t' + ' '.join(command))
         lines.append('')

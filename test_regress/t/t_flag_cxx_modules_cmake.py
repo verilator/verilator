@@ -11,7 +11,8 @@ import os
 import shutil
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
+
 test.clean_objs()
 if not test.have_cxx_module_scan:
     test.skip('Requires a compiler with C++ module dependency scanning')

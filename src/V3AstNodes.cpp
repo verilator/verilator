@@ -819,6 +819,8 @@ void AstBegin::dumpJson(std::ostream& str) const {
 const char* AstCAwait::broken() const {
     if (const AstCMethodHard* const methodp = VN_CAST(exprp(), CMethodHard)) {
         BROKEN_RTN(!methodp->method().isAwaitable());
+    } else if (const AstCFuncHard* const funcp = VN_CAST(exprp(), CFuncHard)) {
+        BROKEN_RTN(!(funcp->function() == VCFunction::AWAIT_IMPORT_TASK));
     } else {
         BROKEN_RTN(!VN_AS(exprp(), NodeCCall)->funcp()->isCoroutine());
     }
@@ -1033,6 +1035,7 @@ string AstCase::pragmaString() const {
 }
 void AstCell::dump(std::ostream& str) const {
     Super::dump(str);
+    if (fromBind()) str << " [FROMBIND]";
     if (recursive()) str << " [RECURSIVE]";
     if (arrayIdx() >= 0) str << " [ARRAYIDX=" << arrayIdx() << "]";
     if (modp()) {
@@ -1046,6 +1049,7 @@ void AstCell::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, modName);
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
+    dumpJsonBoolFuncIf(str, fromBind);
     dumpJsonBoolFuncIf(str, recursive);
     if (arrayIdx() >= 0) dumpJsonNumFunc(str, arrayIdx);
     dumpJsonGen(str);
@@ -4635,6 +4639,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isSigPublic()) str << " [P]";
     if (isSigUserRdPublic()) str << " [PRD]";
     if (isSigUserRWPublic()) str << " [PWR]";
+    if (keepPort()) str << " [KEEPPORT]";
     if (isReadByDpi()) str << " [DPIRD]";
     if (isWrittenByDpi()) str << " [DPIWR]";
     if (isInternal()) str << " [INTERNAL]";
@@ -4706,6 +4711,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
     dumpJsonBoolFuncIf(str, isSigUserRdPublic);
     dumpJsonBoolFuncIf(str, isSigUserRWPublic);
+    dumpJsonBoolFuncIf(str, keepPort);
     dumpJsonBoolFuncIf(str, isReadByDpi);
     dumpJsonBoolFuncIf(str, isWrittenByDpi);
     dumpJsonBoolFuncIf(str, isGParam);

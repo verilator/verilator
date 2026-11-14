@@ -130,7 +130,7 @@ public:
 //######################################################################
 // Covergroup expression validation visitor
 
-class CovergroupExprValidVisitor final : public VNVisitor {
+class CovergroupExprValidVisitor final : public VNVisitorConst {
     const std::set<const AstVar*>& m_sampleMembers;
     const std::set<const AstVar*>& m_constructorRefMembers;
     bool m_inCoverageExpression = false;  // Under a coverage expression
@@ -140,34 +140,34 @@ class CovergroupExprValidVisitor final : public VNVisitor {
         if (!nodep) return;
         VL_RESTORER(m_sampleFormalAllowed);
         m_sampleFormalAllowed = true;
-        iterateAndNextNull(nodep);
+        iterateAndNextConstNull(nodep);
     }
 
     void scanCoverageExpression(AstNode* nodep) {
         if (!nodep) return;
         VL_RESTORER(m_inCoverageExpression);
         m_inCoverageExpression = true;
-        iterateAndNextNull(nodep);
+        iterateAndNextConstNull(nodep);
     }
 
     void visit(AstCoverpoint* nodep) override {
         scanSampleExpression(nodep->exprp());
         scanSampleExpression(nodep->iffp());
-        iterateAndNextNull(nodep->binsp());
-        iterateAndNextNull(nodep->optionsp());
+        iterateAndNextConstNull(nodep->binsp());
+        iterateAndNextConstNull(nodep->optionsp());
     }
     void visit(AstCoverCross* nodep) override {
-        iterateAndNextNull(nodep->itemsp());
+        iterateAndNextConstNull(nodep->itemsp());
         scanSampleExpression(nodep->iffp());
-        iterateAndNextNull(nodep->optionsp());
-        iterateAndNextNull(nodep->binsp());
+        iterateAndNextConstNull(nodep->optionsp());
+        iterateAndNextConstNull(nodep->binsp());
     }
     void visit(AstCoverCrossBin* nodep) override {
-        iterateAndNextNull(nodep->selectp());
+        iterateAndNextConstNull(nodep->selectp());
         scanSampleExpression(nodep->iffp());
     }
     void visit(AstCoverCrossWith* nodep) override {
-        iterateAndNextNull(nodep->selectp());
+        iterateAndNextConstNull(nodep->selectp());
         scanCoverageExpression(nodep->filterp());
         scanCoverageExpression(nodep->countp());
     }
@@ -209,16 +209,16 @@ class CovergroupExprValidVisitor final : public VNVisitor {
                                               "(IEEE 1800-2023 19.5).");
             }
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     CovergroupExprValidVisitor(const std::set<const AstVar*>& sampleMembers,
                                const std::set<const AstVar*>& constructorRefMembers)
         : m_sampleMembers{sampleMembers}
         , m_constructorRefMembers{constructorRefMembers} {}
-    void scan(AstNode* nodep) { iterate(nodep); }
+    void scan(AstNode* nodep) { iterateConst(nodep); }
 };
 
 //######################################################################
@@ -4249,7 +4249,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     // VISITORS
     static bool isEnclosingInstanceVar(const AstVar* varp) {
-        return varp->isClassMember() && !varp->lifetime().isStatic() && !varp->isParam();
+        return varp->isClassMember() && !varp->lifetime().isStatic();
     }
 
     void rewriteThisRef(AstThisRef* refp, AstVar* handleVarp) {
