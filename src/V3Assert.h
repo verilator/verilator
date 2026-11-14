@@ -42,6 +42,10 @@ public:
     // Check the cycle delays of a sequence or property instance, after its formal arguments are
     // replaced with the actual arguments (IEEE 1800-2023 16.8), reporting errors on instp
     static void checkSvaInstanceDelays(AstNode* nodep, AstNode* instp) VL_MT_DISABLED;
+    // The expression inside any exact one-cycle repetitions [*1] around it, else the expression.
+    // e[*1] matches where e matches (IEEE 1800-2023 16.9.2), so e[*1] and (e[*1])[*1] give e.
+    // Ranges such as e[*1:1] are not skipped: V3AssertPre lowers only exact counts.
+    static const AstNodeExpr* skipRepeatOnce(const AstNodeExpr* exprp) VL_MT_DISABLED;
 };
 
 class V3Assert final {

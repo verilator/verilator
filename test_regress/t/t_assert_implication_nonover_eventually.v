@@ -1,0 +1,276 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Marco Brambilla
+// SPDX-License-Identifier: CC0-1.0
+
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// With VACUOUS_ON (t_assert_implication_nonover_eventually_vac) vacuous successes run pass actions
+// too, and only the failure counts are checked
+`ifdef VACUOUS_ON
+`define checkp(gotv,expv)
+`else
+`define checkp(gotv,expv) `checkd(gotv,expv)
+`endif
+// verilog_format: on
+
+module t;
+  logic clk = 0;
+  always #5 clk = ~clk;
+
+  int cyc = 0;
+  // Vacuous successes also run pass actions (IEEE 1800-2023 20.11). Turn them off, so that the
+  // pass counts below count only non-vacuous successes
+`ifndef VACUOUS_ON
+  initial $assertvacuousoff;
+`endif
+  // a1 in cycle 3 and b1 in cycle 6, used by several cases below
+  logic a1 = 0, b1 = 0;
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    a1 <= (cyc == 2);
+    b1 <= (cyc == 5);
+    if (cyc == 16) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
+
+  // Single-cycle antecedent, b1 after it: every form passes once (only non-vacuous
+  // successes are counted) and nothing fails. h is 3 from cycle 1, so the function returns 4
+  logic [2:0] h = 3'd0;
+  always @(posedge clk) h <= 3'd3;
+  int pass_non = 0, pass_over = 0, pass_func = 0, pass_rose = 0, pass_expr = 0;
+  int fail_non = 0, fail_over = 0, fail_func = 0, fail_rose = 0, fail_expr = 0;
+  function automatic int burst_len(logic [2:0] hb);
+    return (hb == 3'd3) ? 4 : 1;
+  endfunction
+  assert property (@(posedge clk) a1 |=> s_eventually b1) pass_non = pass_non + 1;
+  else fail_non = fail_non + 1;
+  assert property (@(posedge clk) a1 |-> s_eventually b1) pass_over = pass_over + 1;
+  else fail_over = fail_over + 1;
+  assert property (@(posedge clk) (a1 && burst_len(h) > 1) |=> s_eventually b1)
+    pass_func = pass_func + 1;
+  else fail_func = fail_func + 1;
+  assert property (@(posedge clk) $rose(a1) |=> s_eventually b1) pass_rose = pass_rose + 1;
+  else fail_rose = fail_rose + 1;
+  // A boolean expression as the operand of s_eventually
+  assert property (@(posedge clk) a1 |=> s_eventually (b1 && !a1)) pass_expr = pass_expr + 1;
+  else fail_expr = fail_expr + 1;
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass_non, 1);
+      `checkp(pass_over, 1);
+      `checkp(pass_func, 1);
+      `checkp(pass_rose, 1);
+      `checkp(pass_expr, 1);
+      `checkd(fail_non, 0);
+      `checkd(fail_over, 0);
+      `checkd(fail_func, 0);
+      `checkd(fail_rose, 0);
+      `checkd(fail_expr, 0);
+    end
+
+  // a2 and b2 both only in cycle 9: |-> passes, |=> starts one cycle later and never passes
+  // (it stays unresolved until the end of simulation, after the checks, and then fails
+  // once: the .py checks the message). The operand b2 [* 1] gives the result of b2
+  logic a2 = 0, b2 = 0;
+  always @(posedge clk) begin
+    a2 <= (cyc == 8);
+    b2 <= (cyc == 8);
+  end
+  int pass2_non = 0, pass2_over = 0, pass2_rep = 0, fail2_non = 0, fail2_over = 0, fail2_rep = 0;
+  assert property (@(posedge clk) a2 |=> s_eventually b2) pass2_non = pass2_non + 1;
+  else begin
+    fail2_non = fail2_non + 1;
+    $write("fail2_non=%0d at the end of simulation\n", fail2_non);
+  end
+  assert property (@(posedge clk) a2 |-> s_eventually b2) pass2_over = pass2_over + 1;
+  else fail2_over = fail2_over + 1;
+  assert property (@(posedge clk) a2 |=> s_eventually (b2 [* 1])) pass2_rep = pass2_rep + 1;
+  else begin
+    fail2_rep = fail2_rep + 1;
+    $write("fail2_rep=%0d at the end of simulation\n", fail2_rep);
+  end
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass2_non, 0);
+      `checkp(pass2_over, 1);
+      `checkp(pass2_rep, 0);
+      `checkd(fail2_non, 0);
+      `checkd(fail2_over, 0);
+      `checkd(fail2_rep, 0);
+    end
+
+  // An exact [* 1], also nested, as the operand of s_eventually or around the antecedent
+  // gives the result of the form without it: each assertion passes once and does not fail
+  int pass_rep = 0, pass_rep2 = 0, pass_rep_proc = 0, pass_ant = 0, pass_ant2 = 0;
+  int fail_rep = 0, fail_rep2 = 0, fail_rep_proc = 0, fail_ant = 0, fail_ant2 = 0;
+  assert property (@(posedge clk) a1 |-> s_eventually (b1 [* 1])) pass_rep = pass_rep + 1;
+  else fail_rep = fail_rep + 1;
+  assert property (@(posedge clk) a1 |=> s_eventually ((b1 [* 1]) [* 1])) pass_rep2 = pass_rep2 + 1;
+  else fail_rep2 = fail_rep2 + 1;
+  always @(posedge clk)
+    assert property (a1 |=> s_eventually ((b1 [* 1]) [* 1])) pass_rep_proc = pass_rep_proc + 1;
+    else fail_rep_proc = fail_rep_proc + 1;
+  assert property (@(posedge clk) a1 [* 1] |=> s_eventually b1) pass_ant = pass_ant + 1;
+  else fail_ant = fail_ant + 1;
+  assert property (@(posedge clk) (a1 [* 1]) [* 1] |-> s_eventually b1) pass_ant2 = pass_ant2 + 1;
+  else fail_ant2 = fail_ant2 + 1;
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass_rep, 1);
+      `checkp(pass_rep2, 1);
+      `checkp(pass_rep_proc, 1);
+      `checkp(pass_ant, 1);
+      `checkp(pass_ant2, 1);
+      `checkd(fail_rep, 0);
+      `checkd(fail_rep2, 0);
+      `checkd(fail_rep_proc, 0);
+      `checkd(fail_ant, 0);
+      `checkd(fail_ant2, 0);
+    end
+
+  // Two attempts wait at the same time (from a3 in cycles 11 and 12) and both pass on b3 in
+  // cycle 13
+  logic a3 = 0, b3 = 0;
+  always @(posedge clk) begin
+    a3 <= (cyc == 10 || cyc == 11);
+    b3 <= (cyc == 12);
+  end
+  int pass3_non = 0, fail3_non = 0;
+  assert property (@(posedge clk) a3 |=> s_eventually b3) pass3_non = pass3_non + 1;
+  else fail3_non = fail3_non + 1;
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass3_non, 2);
+      `checkd(fail3_non, 0);
+    end
+
+  // |=> then |->: c1 is true in cycle 4, one cycle after a1, so the chain passes once; with
+  // the operands swapped a1 is never one cycle after c1 and the chain is vacuous
+  logic c1 = 0;
+  always @(posedge clk) c1 <= (cyc == 3);
+  int pass_chain = 0, pass_chain0 = 0, fail_chain = 0, fail_chain0 = 0;
+  assert property (@(posedge clk) a1 |=> c1 |-> s_eventually b1) pass_chain = pass_chain + 1;
+  else fail_chain = fail_chain + 1;
+  assert property (@(posedge clk) c1 |=> a1 |-> s_eventually b1) pass_chain0 = pass_chain0 + 1;
+  else fail_chain0 = fail_chain0 + 1;
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass_chain, 1);
+      `checkp(pass_chain0, 0);
+      `checkd(fail_chain, 0);
+      `checkd(fail_chain0, 0);
+    end
+
+  // Procedural assertions, clocked by their always block: each passes once and nothing fails
+  int pass_proc = 0, pass_proc_rep = 0, fail_proc = 0, fail_proc_rep = 0;
+  always @(posedge clk) begin
+    assert property (a1 |=> s_eventually b1) pass_proc = pass_proc + 1;
+    else fail_proc = fail_proc + 1;
+    assert property (a1 [* 1] |=> s_eventually b1) pass_proc_rep = pass_proc_rep + 1;
+    else fail_proc_rep = fail_proc_rep + 1;
+  end
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass_proc, 1);
+      `checkp(pass_proc_rep, 1);
+      `checkd(fail_proc, 0);
+      `checkd(fail_proc_rep, 0);
+    end
+
+  // A named sequence, a named property and a let around a boolean operand give the result of
+  // the operand: each assertion passes once and does not fail
+  sequence s_b1; b1; endsequence
+  property p_b1;
+    s_eventually s_b1;
+  endproperty
+  let l_b1(x) = x && !a1;
+  int pass_nseq = 0, pass_nprop = 0, pass_nlet = 0, fail_nseq = 0, fail_nprop = 0, fail_nlet = 0;
+  assert property (@(posedge clk) a1 |=> s_eventually s_b1) pass_nseq = pass_nseq + 1;
+  else fail_nseq = fail_nseq + 1;
+  assert property (@(posedge clk) a1 |-> p_b1) pass_nprop = pass_nprop + 1;
+  else fail_nprop = fail_nprop + 1;
+  assert property (@(posedge clk) a1 |=> s_eventually l_b1(b1)) pass_nlet = pass_nlet + 1;
+  else fail_nlet = fail_nlet + 1;
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass_nseq, 1);
+      `checkp(pass_nprop, 1);
+      `checkp(pass_nlet, 1);
+      `checkd(fail_nseq, 0);
+      `checkd(fail_nprop, 0);
+      `checkd(fail_nlet, 0);
+    end
+
+  sub_default_disable sub (
+      .clk(clk),
+      .cyc(cyc),
+      .a1(a1),
+      .b1(b1)
+  );
+  sub_default_clocking subc (
+      .clk(clk),
+      .cyc(cyc),
+      .a1(a1),
+      .b1(b1)
+  );
+
+  // Each cover property is hit once
+  int cov_non = 0, cov_over = 0;
+  cover property (@(posedge clk) a1 |=> s_eventually b1) cov_non = cov_non + 1;
+  cover property (@(posedge clk) a1 |-> s_eventually b1) cov_over = cov_over + 1;
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(cov_non, 1);
+      `checkp(cov_over, 1);
+    end
+endmodule
+
+// A procedural assertion under a default disable iff that never disables it (rst stays low)
+// passes once and does not fail
+module sub_default_disable (
+    input clk,
+    input int cyc,
+    input logic a1,
+    input logic b1
+);
+  logic rst = 0;
+  default disable iff (rst);
+  int pass_proc = 0, fail_proc = 0;
+  always @(posedge clk) begin
+    assert property (a1 |=> s_eventually b1) pass_proc = pass_proc + 1;
+    else fail_proc = fail_proc + 1;
+  end
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass_proc, 1);
+      `checkd(fail_proc, 0);
+    end
+endmodule
+
+// Assertions clocked by a default clocking block: each passes once and does not fail
+module sub_default_clocking (
+    input clk,
+    input int cyc,
+    input logic a1,
+    input logic b1
+);
+  default clocking cb @(posedge clk);
+  endclocking
+  int pass_non = 0, pass_over = 0, fail_non = 0, fail_over = 0;
+  assert property (a1 |=> s_eventually b1) pass_non = pass_non + 1;
+  else fail_non = fail_non + 1;
+  assert property (a1 |-> s_eventually b1) pass_over = pass_over + 1;
+  else fail_over = fail_over + 1;
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass_non, 1);
+      `checkp(pass_over, 1);
+      `checkd(fail_non, 0);
+      `checkd(fail_over, 0);
+    end
+endmodule

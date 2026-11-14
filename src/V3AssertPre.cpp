@@ -1093,8 +1093,48 @@ private:
         sizep->dtypep(refp->findBasicDType(VBasicDTypeKwd::UINT32));
         return sizep;
     }
+    // What in the operand of s_eventually the process below cannot evaluate, or nullptr.
+    // The process tests the operand as a boolean at each clock tick, so it cannot evaluate a
+    // sequence or property operator. It is forked when the attempt starts and reads a copy,
+    // made then, of the history that $past, $rose, $fell, $stable and $changed use, so these
+    // see the history of the attempt's first tick. The future-value global clocking functions
+    // ($future_gclk, $rising_gclk, ...) are reported too: V3Assert evaluates them by delaying
+    // every other variable of the assertion by one tick, which it cannot do for the
+    // variables that this process writes.
+    static const char* unsupportedOperandWhat(const AstNodeExpr* operandp) {
+        bool sampled = false;
+        const bool multiCycle = operandp->exists([&](const AstNodeExpr* np) {
+            sampled |= VN_IS(np, Past) || VN_IS(np, Rose) || VN_IS(np, Fell) || VN_IS(np, Stable)
+                       || VN_IS(np, Future) || VN_IS(np, Rising) || VN_IS(np, Falling)
+                       || VN_IS(np, Steady);
+            return np->isMultiCycleSva();
+        });
+        if (multiCycle) return "sequence or property operator";
+        if (sampled) return "sampled value function";
+        return nullptr;
+    }
     void visit(AstSEventually* nodep) override {
         UASSERT(v3Global.rootp()->stdPackagep(), "Should be imported");
+        // Inline the sequence and property instances in the operand first, also nested ones,
+        // so that the check below sees their bodies. One instance per pass: replacing a node
+        // ends the traversal, and an inlined body can contain further instances.
+        while (true) {
+            AstSchemaRef* refp = nullptr;
+            nodep->exprp()->exists([&](AstSchemaRef* np) {
+                refp = np;
+                return true;
+            });
+            if (!refp) break;
+            visit(refp);
+        }
+        if (const char* const whatp
+            = unsupportedOperandWhat(V3AssertCommon::skipRepeatOnce(nodep->exprp()))) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: " << whatp << " in the operand of s_eventually");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
 
         AstSenTree* const sentreep = newSenTree(nodep);
         if (!sentreep->sensesp()) {
@@ -1169,13 +1209,7 @@ private:
         iterate(bodyp);
         iterate(finalp);
 
-        if (m_hasCycleDelay) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: cycle delay in s_eventually");
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            VL_DO_DANGLING(m_pexprp->deleteTree(), m_pexprp);
-            return;
-        }
+        UASSERT_OBJ(!m_hasCycleDelay, nodep, "Cycle delay in the operand reported above");
 
         nodep->replaceWith(m_pexprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
