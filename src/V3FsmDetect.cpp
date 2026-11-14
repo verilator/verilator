@@ -1738,7 +1738,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
 
         if (enump) {
             stateSpace.enumBacked = true;
-            for (AstEnumItem* const itemp : enump->itemspList()) {
+            for (AstEnumItem* const itemp : enump->originalOrThisDTypep()->itemspList()) {
                 const AstConst* const constp = VN_AS(itemp->valuep(), Const);
                 const FsmStateValue value{constp->num()};
                 const size_t stateIndex = stateSpace.states.size();

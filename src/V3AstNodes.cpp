@@ -223,7 +223,7 @@ static string dtypeNameConst(const V3Number& num, const AstNodeDType* dtypep, bo
     }
     // Enumerations as the name of the item with the value
     if (const AstEnumDType* const enump = VN_CAST(dtypep, EnumDType)) {
-        for (const AstEnumItem* const itemp : enump->itemspList()) {
+        for (const AstEnumItem* const itemp : enump->originalOrThisDTypep()->itemspList()) {
             const AstConst* const constp = VN_CAST(itemp->valuep(), Const);
             if (constp && !constp->num().isAnyXZ() && value.isCaseEq(constp->num())) {
                 return dtypeNameIdent(itemp->name());
@@ -1853,6 +1853,9 @@ void AstEnumDType::dump(std::ostream& str) const {
     Super::dump(str);
     str << " enum";
     if (!m_typedefName.empty()) str << " typedefName=" << m_typedefName;
+    if (AstEnumDType* const enumDTypep = originalDTypep()) {
+        str << " originalDTypep=" << nodeAddr(enumDTypep);
+    }
 }
 void AstEnumDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "enum", true);
@@ -2980,6 +2983,15 @@ bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
     if (nodep->type() != samep->type()) return false;
     return nodep->similarDTypeNode(samep);
 }
+const AstNodeDType* AstNodeDType::skipDerivedDTypep() const {
+    if (const AstEnumDType* const edtypep = VN_CAST(this, EnumDType)) {
+        return edtypep->originalOrThisDTypep();
+    }
+    if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(this, NodeUOrStructDType)) {
+        return sdtypep->originalOrThisDTypep();
+    }
+    return this;
+}
 const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
                                                bool assertOn) const VL_MT_STABLE {
     static constexpr size_t MAX_TYPEDEF_DEPTH = 1000;
@@ -3481,6 +3493,9 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     if (subDTypep()) str << " refDTypep=" << nodeAddr(subDTypep());
     if (!m_typedefName.empty()) str << " typedefName=" << m_typedefName;
+    if (AstNodeUOrStructDType* const uOrStructDtypep = originalDTypep()) {
+        str << " originalDTypep=" << nodeAddr(uOrStructDtypep);
+    }
 }
 void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, packed);

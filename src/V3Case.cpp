@@ -294,7 +294,7 @@ class CaseVisitor final : public VNVisitor {
         const uint32_t numCases = 1UL << nodep->exprp()->width();
         bool fullyCovered = true;
         string missingItems;
-        for (AstEnumItem* const eip : enump->itemspList()) {
+        for (AstEnumItem* const eip : enump->originalOrThisDTypep()->itemspList()) {
             const auto& match = matchPattern(nodep, VN_AS(eip->valuep(), Const));
             const uint32_t mask = match.first.toUInt();
             const uint32_t bits = match.second.toUInt();

@@ -528,7 +528,7 @@ class ParamProcessor final {
             // With the items, as prettyDTypeName() omits them, yet a specialization of a class
             // may declare an enumeration of the same name with other values
             key += " enum {";
-            for (const AstEnumItem* const itemp : dtypep->itemspList()) {
+            for (const AstEnumItem* const itemp : dtypep->originalOrThisDTypep()->itemspList()) {
                 const AstConst* const constp = VN_CAST(itemp->valuep(), Const);
                 key += itemp->name() + "=" + (constp ? constp->num().ascii() : "?") + ";";
             }

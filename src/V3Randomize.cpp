@@ -1495,7 +1495,7 @@ class RandomizeVisitor final : public VNVisitor {
                                                              : RandModeVars::randModeVarp(classp);
         return RandModeVars::wrapIfMode(rmode, modeVarp, stmtp);
     }
-    AstVarRef* enumValueTabRefp(AstEnumDType* const nodep) {
+    AstVarRef* enumValueTabRefp(AstEnumDType* nodep) {
         // Return a reference to a constant table of the values of the given enum. The reference
         // is cached, so the table is built only once.
         if (nodep->user2p()) return VN_AS(nodep->user2p(), VarRef)->cloneTree(false);
@@ -1543,7 +1543,8 @@ class RandomizeVisitor final : public VNVisitor {
         if (!varp->isRandC()) return nullptr;
 
         uint64_t items = 0;
-        if (AstEnumDType* const enumDtp = VN_CAST(varp->dtypep()->skipRefToEnump(), EnumDType)) {
+        if (AstEnumDType* const enumDtp
+            = VN_CAST(varp->dtypep()->skipRefToEnump(true), EnumDType)) {
             items = static_cast<uint64_t>(enumDtp->itemCount());
         } else if (AstBasicDType* const basicp = varp->dtypep()->skipRefp()->basicp()) {
             if (basicp->width() > 32) {
@@ -1680,9 +1681,10 @@ class RandomizeVisitor final : public VNVisitor {
             return createArrayForeachLoop(fl, assocarrayDtp, exprp, outputVarp);
         } else {
             AstNodeExpr* valp;
-            if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
-                                                              : exprp->dtypep()->subDTypep(),
-                                                      EnumDType)) {
+            if (AstEnumDType* enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
+                                                        : exprp->dtypep()->subDTypep(),
+                                                EnumDType)) {
+                enumDtp = enumDtp->originalOrThisDTypep();
                 AstVarRef* const tabRefp = enumValueTabRefp(enumDtp);
                 AstNodeExpr* const randp
                     = newRandValue(fl, randcVarp, exprp->findBasicDType(VBasicDTypeKwd::UINT32));

@@ -758,6 +758,8 @@ class EmitCTrace final : public EmitCFunc {
             // Skip over refs-to-refs, but stop before final ref so can get data type name
             // Alternatively back in V3Width we could push enum names from upper typedefs
             if (AstEnumDType* const enump = VN_CAST(nodep->skipRefToEnump(), EnumDType)) {
+                UASSERT_OBJ(!enump->originalDTypep(), nodep,
+                            "Derived dtype should not have its trace decl");
                 return m_emitTypesp->getEnumMapNum(enump);
             }
         }

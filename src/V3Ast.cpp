@@ -1651,7 +1651,7 @@ void AstNode::dtypeChgWidth(int width, int widthMin) {
 }
 AstNodeDType* AstNode::findStatesCounterpart(const bool isFourstate) const {
     UASSERT_OBJ(dtypep(), this, "No dtype when changing logic");
-    if (isFourstate == dtypep()->skipRefp()->isFourstate()) return dtypep();
+    if (isFourstate == dtypep()->isFourstate()) return dtypep();
     if (const AstBasicDType* const basicp = VN_CAST(dtypep()->skipRefToEnump(), BasicDType)) {
         UASSERT_OBJ(basicp->isIntegralOrPacked(), this,
                     "Can't change logic type of not integral type");
@@ -1778,8 +1778,8 @@ static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {
 static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
                                     const AstNode* fromConstp, const bool checkIfaceArgCompat) {
     const VCastable castable = VCastable::UNSUPPORTED;
-    toDtp = toDtp->skipRefToEnump();
-    fromDtp = fromDtp->skipRefToEnump();
+    toDtp = toDtp->skipRefToEnump(true);
+    fromDtp = fromDtp->skipRefToEnump(true);
     if (toDtp->matchingDType(fromDtp)) return VCastable::MATCHING;
     if (toDtp->similarDType(fromDtp)) return VCastable::SAMEISH;
     // UNSUP unpacked struct/unions (treated like BasicDType)

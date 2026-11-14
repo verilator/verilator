@@ -918,7 +918,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void createEnumAutoBins(AstCoverpoint* coverpointp, AstNodeExpr* exprp,
                             const AstEnumDType* enump) {
         FileLine* const fl = coverpointp->fileline();
-        for (const AstEnumItem* const itemp : enump->itemspList()) {
+        for (const AstEnumItem* const itemp : enump->originalOrThisDTypep()->itemspList()) {
             AstConst* const lop = newValueConst(fl, VN_AS(itemp->valuep(), Const)->num(), exprp);
             AstInsideRange* const rangep = new AstInsideRange{fl, lop, lop->cloneTree(false)};
             rangep->dtypeFrom(exprp);
@@ -1938,7 +1938,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             return runs;
         }
         std::vector<V3Number> values;
-        for (const AstEnumItem* const itemp : enump->itemspList()) {
+        for (const AstEnumItem* const itemp : enump->originalOrThisDTypep()->itemspList()) {
             const V3Number& num = VN_AS(itemp->valuep(), Const)->num();
             if (num.isFourState()) continue;  // Not a coverpoint value (19.5.7)
             values.emplace_back(nodep, width);
