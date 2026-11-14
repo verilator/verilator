@@ -9,7 +9,7 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-// Test the "pick an unused ID from a pool" idiom: a rand index into a
+// Test the "pick an unused ID" idiom: a rand index into a
 // non-rand array must stay symbolic in the solver, not fold to a constant.
 
 class UniqueIdPool;
@@ -20,7 +20,7 @@ class UniqueIdPool;
   constraint c_unused { !used[id]; }
 endclass
 
-// Same idiom, reached via a member select (holder.used[id]).
+// Same idiom, reached via a member select on another object.
 class Holder;
   bit used[16];
 endclass
@@ -37,7 +37,7 @@ class UniqueIdPoolViaMember;
   endfunction
 endclass
 
-// Same idiom, but 'used' has a non-zero declared range ([1:16]).
+// Same idiom, but the array has a non-zero declared range ([1:16]).
 class UniqueIdPoolNonZeroBase;
   rand int id;
   bit used[1:16];
@@ -64,7 +64,7 @@ class RandArrayRandIndex;
   constraint c_data { data[idx] == 8'hAA; }
 endclass
 
-// Same, but 'data' is multidimensional.
+// Same, but the rand array is multidimensional.
 class RandMultidimRandIndex;
   rand int idx;
   rand bit [7:0] data[4][4];
@@ -72,9 +72,8 @@ class RandMultidimRandIndex;
   constraint c_data { data[idx][0] == 8'hAA; }
 endclass
 
-// Same, but the rand index is the outer subscript (data[0][idx]) instead of
-// the inner one -- reaching the rand base variable through a nested
-// ArraySel, not a direct one.
+// Same, but the rand index is the outer subscript instead of the inner one --
+// reaching the rand base variable through a nested array select, not a direct one.
 class RandMultidimRandIndexOuter;
   rand int idx;
   rand bit [7:0] data[4][4];
@@ -91,10 +90,9 @@ class RandMultidimRandIndexOuterMinimal;
   constraint c_data { data[0][idx] == 8'hAA; }
 endclass
 
-// Same, but three dimensions deep with the rand index outermost
-// (data[1][2][idx]) -- the array's root must resolve through two nested
-// index selects to reach 'data', not just one as in the two-dimensional
-// case above.
+// Same, but three dimensions deep with the rand index outermost -- the array's
+// root must resolve through two nested index selects to reach the base array,
+// not just one as in the two-dimensional case above.
 class RandMultidimRandIndexDeep;
   rand int idx;
   rand bit [7:0] data[4][4][4];
@@ -112,51 +110,81 @@ class RandQueueRandIndex;
   constraint c_data { data[idx] == 1; }
 endclass
 
-// An out-of-range idx reads as 0 (IEEE 1800-2023 7.4.5), not as
-// used[used.size()-1] -- idx == used.size() is only satisfiable if the
-// solver models that default correctly.
+// An out-of-range index reads as 0 (IEEE 1800-2023 7.4.5), not as the last
+// element -- an index equal to the size is only satisfiable if the solver
+// models that default correctly.
 class OutOfBoundsIndex;
   rand int idx;
   bit used[3] = '{1, 1, 1};
   constraint c { idx == 3; used[idx] == 0; }
 endclass
 
-// Same, but idx runs negative instead of past the top.
+// Same, but the index runs negative instead of past the top.
 class OutOfBoundsIndexNegative;
   rand int idx;
   bit used[3] = '{1, 1, 1};
   constraint c { idx == -1; used[idx] == 0; }
 endclass
 
-// Same idea on a non-zero-based declared range, where idx is
+// Same idea on a non-zero-based declared range, where the index is
 // bias-adjusted before comparison -- the default must still apply once
-// idx falls outside [1:3], not just outside [0:2].
+// it falls outside [1:3], not just outside [0:2].
 class OutOfBoundsIndexNonZeroBase;
   rand int idx;
   bit used[1:3] = '{1, 1, 1};
   constraint c { idx == 4; used[idx] == 0; }
 endclass
 
-// Same, but idx is wide enough to alias back into range if truncated to
-// the array's 2-bit index width (4 -> used[0], 5 -> used[1]).
+// Same, but the index is wide enough to alias back into range if truncated to
+// the array's 2-bit index width (4 reads element 0, 5 reads element 1).
 class OutOfBoundsIndexPastIndexWidth;
   rand int idx;
   bit used[3] = '{1, 1, 1};
   constraint c { idx inside {[4:5]}; used[idx] == 0; }
 endclass
 
-// An explicit idx[1:0] does truncate, so idx == 4 reads used[0].
+// An explicit [1:0] part-select does truncate, so 4 reads element 0.
 class ExplicitlyTruncatedIndex;
   rand int idx;
   bit used[3] = '{1, 1, 1};
   constraint c { idx == 4; used[idx[1:0]] == 0; }
 endclass
 
-// idx is exactly as wide as the array's index, so there's no truncation.
+// The index is exactly the array's index width, so there's no truncation.
 class ExactWidthIndex;
   rand bit [1:0] idx;
   bit used[4] = '{1, 1, 0, 1};
   constraint c { used[idx] == 0; }
+endclass
+
+// An inline randomize() with spells the rand index as a member reference, which
+// must keep the index's own width (a match past the truncation boundary is the guard).
+class InlineWithPool;
+  rand int idx;
+  bit [7:0] pool[4];
+  function new(); pool = '{8'h11, 8'h22, 8'h33, 8'h44}; endfunction
+endclass
+
+// The bias subtraction must sign-extend through user arithmetic, so -1 + 6
+// reads element 5, not element 261.
+class CompoundBiasIndex;
+  rand byte r;
+  bit [7:0] pool[5:12];
+  constraint c { r == -1; pool[r+6] == 8'hB0; }
+  function new();
+    pool = '{8'hB0, 8'hB1, 8'hB2, 8'hB3, 8'hB4, 8'hB5, 8'hB6, 8'hB7};
+  endfunction
+endclass
+
+// Same, but the zero-extended alias lands in range: UNSAT must stay UNSAT.
+class CompoundBiasIndexUnsat;
+  rand byte r;
+  bit [7:0] pool[5:270];
+  constraint c { r == -1; pool[r+6] == 8'h77; }
+  function new();
+    foreach (pool[i]) pool[i] = 8'h11;
+    pool[261] = 8'h77;
+  endfunction
 endclass
 
 // A rand index into a fixed array reached through a rand dynamic, queue,
@@ -202,14 +230,14 @@ typedef struct {
   bit [7:0] b;
 } s_t;
 
-// Member select off a constant-indexed struct array, which names the
-// element '%s.%s' rather than '(select %s %s)'.
+// Member select off a constant-indexed struct array, which must keep dotted
+// member naming rather than folding to a generic select.
 class StructArrayConstIndex;
   rand s_t arr[4];
   constraint c_a { arr[2].a == 8'hBB; }
 endclass
 
-// Packed-struct elements are bit vectors like any other.
+// Packed-struct elements are ordinary bit vectors.
 typedef struct packed {
   bit [1:0] x;
   bit y;
@@ -223,7 +251,7 @@ class PackedStructPool;
   endfunction
 endclass
 
-// The pool as an array member of a non-rand struct, in range and out of range.
+// The array as a member of a non-rand struct, in range and out of range.
 typedef struct {
   bit used[4];
 } pool_s;
@@ -245,7 +273,17 @@ class StructFieldPoolOob;
   endfunction
 endclass
 
-// An explicit size cast does truncate, so idx == 4 reads used[0].
+// A member index to std::randomize(): the answer (2) needs the index's high
+// bit, which a truncation to the array's index width would lose.
+class StdMemberPool;
+  int idx;
+  bit [7:0] used[4];
+  function new();
+    used = '{8'h11, 8'h22, 8'h33, 8'h44};
+  endfunction
+endclass
+
+// An explicit size cast does truncate, so 4 reads element 0.
 class ExplicitlyCastIndex;
   rand int unsigned idx;
   bit used[4] = '{1, 1, 1, 1};
@@ -315,6 +353,9 @@ module t;
     OutOfBoundsIndexPastIndexWidth oob_wide_obj;
     ExplicitlyTruncatedIndex trunc_obj;
     ExactWidthIndex exact_obj;
+    InlineWithPool iw_obj;
+    CompoundBiasIndex cb_obj;
+    CompoundBiasIndexUnsat cb_u_obj;
     RandDynOuterRandIndex rdyn_outer_obj;
     RandQueueOuterRandIndex rq_outer_obj;
     RandAssocOuterRandIndex raa_outer_obj;
@@ -554,7 +595,7 @@ module t;
       for (int i = 0; i < 16; i++) begin
         randomize_result = obj.randomize();
         `checkd(randomize_result, 1);
-        // Each draw must be a legal, not-yet-seen id
+        // Each draw must be a legal, not-yet-drawn value
         if (obj.id < 0 || obj.id > 15) begin
           $write("%%Error: id out of range: %0d\n", obj.id);
           `stop;
@@ -568,7 +609,7 @@ module t;
       end
       // All 16 ids must have been drawn exactly once
       `checkd(seen, 16'hffff);
-      // Pool is now exhausted -- no legal id remains
+      // Pool exhausted -- no legal value remains
       randomize_result = obj.randomize();
       `checkd(randomize_result, 0);
     end
@@ -588,10 +629,9 @@ module t;
       end
     end
 
-    // Same rand index, but also reaching a plain (non-argument, non-rand)
-    // array in the same expression -- that side must still resolve to its
-    // own root var and get the non-rand elementwise treatment, not be
-    // mistaken for part of the std::randomize() call's own rand set.
+    // Same rand index, but also reaching a plain non-rand array in the same
+    // expression -- that side must still get the non-rand elementwise treatment,
+    // not be mistaken for part of the std::randomize() call's own rand set.
     begin
       bit [7:0] sarr2[4];
       bit [7:0] other[4];
@@ -606,6 +646,39 @@ module t;
         `checkd(sarr2[sidx2], other[sidx2]);
       end
     end
+
+    begin
+      StdMemberPool mobj;
+      int std_result3;
+      mobj = new;
+      for (int i = 0; i < 20; i++) begin
+        mobj.idx = 0;
+        std_result3 = std::randomize(
+            mobj.idx) with {mobj.idx inside {[0 : 3]}; mobj.used[mobj.idx] == 8'h33;};
+        `checkd(std_result3, 1);
+        `checkd(mobj.idx, 2);
+        `checkd(mobj.used[mobj.idx], 8'h33);
+      end
+    end
+
+    // Bare and this-qualified spellings of the with-clause member index.
+    iw_obj = new;
+    randomize_result = iw_obj.randomize() with { idx inside {[0:3]}; pool[idx] == 8'h33; };
+    `checkd(randomize_result, 1);
+    `checkd(iw_obj.idx, 2);
+    randomize_result = iw_obj.randomize() with { idx inside {[0:3]}; pool[idx] == 8'h00; };
+    `checkd(randomize_result, 0);
+    randomize_result = iw_obj.randomize() with { idx inside {[0:3]}; pool[this.idx] == 8'h00; };
+    `checkd(randomize_result, 0);
+
+    cb_obj = new;
+    randomize_result = cb_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(cb_obj.r, -1);
+
+    cb_u_obj = new;
+    randomize_result = cb_u_obj.randomize();
+    `checkd(randomize_result, 0);
 
     $write("*-* All Finished *-*\n");
     $finish;

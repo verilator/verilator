@@ -50,4 +50,7 @@
 %Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:124:41: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
   124 |   constraint c { id inside {[0:1]}; a[0][id] == 8'hAA; }
       |                                         ^
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:132:45: Unsupported: rand-dependent index into non-rand array of 20000 elements exceeds the 16384-element solver expansion limit
+  132 |   constraint c { id inside {[0:19999]}; used[id] == 1; }
+      |                                             ^
 %Error: Exiting due to

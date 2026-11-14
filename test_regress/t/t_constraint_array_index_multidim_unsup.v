@@ -63,7 +63,7 @@ class C7;
 endclass
 
 // A fixed 1-D array whose element is a class handle, not a scalar or a
-// struct: the same reason C6's struct element fails applies here too.
+// struct: a handle can't be formatted as an SMT hex literal either.
 class Elem;
   rand bit [7:0] v;
 endclass
@@ -73,9 +73,9 @@ class C8;
   constraint c { id inside {[0:3]}; pool[id].v == 8'hAA; }
 endclass
 
-// Same shape as C7, but 'a' is itself rand: confirms the diagnostic fires
-// regardless of the unresolvable root's rand-ness, rather than silently
-// selecting from the function call expression instead of the array.
+// Same function-call operand shape, but the array itself is rand: confirms the
+// diagnostic fires regardless of the unresolvable root's rand-ness, rather than
+// silently selecting from the function call expression instead of the array.
 class C9;
   rand int id;
   rand arr4_t a;
@@ -124,6 +124,14 @@ class C14;
   constraint c { id inside {[0:1]}; a[0][id] == 8'hAA; }
 endclass
 
+// A fixed 1-D non-rand array too large to expand elementwise: the mux
+// would hang the compile, so this is an error rather than a slow build.
+class C15;
+  rand int id;
+  bit used[20000];
+  constraint c { id inside {[0:19999]}; used[id] == 1; }
+endclass
+
 module t;
   initial begin
     C1 obj1;
@@ -140,6 +148,7 @@ module t;
     C12 obj12;
     C13 obj13;
     C14 obj14;
+    C15 obj15;
     obj1 = new;
     obj2 = new;
     obj3 = new;
@@ -154,6 +163,7 @@ module t;
     obj12 = new;
     obj13 = new;
     obj14 = new;
+    obj15 = new;
     if (obj1.randomize() == 0) $stop;
     if (obj2.randomize() == 0) $stop;
     if (obj3.randomize() == 0) $stop;
@@ -168,5 +178,6 @@ module t;
     if (obj12.randomize() == 0) $stop;
     if (obj13.randomize() == 0) $stop;
     if (obj14.randomize() == 0) $stop;
+    if (obj15.randomize() == 0) $stop;
   end
 endmodule

@@ -1743,7 +1743,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
         FileLine* const fl = nodep->fileline();
-        // fromp() may already be unsupported-warned instead of lowered here.
+        // The operand may already be unsupported-warned instead of lowered here.
         AstSFormatF* const fromFmtp = VN_CAST(nodep->fromp(), SFormatF);
         if (!fromFmtp) return;
         AstSFormatF* newp = nullptr;
@@ -1882,7 +1882,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             condp = new AstEq{fl, idxp->cloneTreePure(false),
                               new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
                                            static_cast<uint32_t>(lo)}};
-            // 0-based lo, not arrDtp->lo()+lo: idxp is already bias-adjusted.
+            // A 0-based position, not base-plus-position: the index arrives bias-adjusted.
             thenp = new AstArraySel{
                 fl, fromp->cloneTreePure(false),
                 new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(lo)}};
@@ -1895,23 +1895,33 @@ class ConstraintExprVisitor final : public VNVisitor {
             thenp = newElementMuxp(fl, fromp, idxp, lo, mid - 1, width);
             elsep = newElementMuxp(fl, fromp, idxp, mid, hi, width);
         }
-        condp->user1(true);  // else editFormat() folds this to idxp's stale value
+        condp->user1(true);  // else this folds to the index's stale value
         AstCond* const muxp = new AstCond{fl, condp, thenp, elsep};
         muxp->user1(true);
         return muxp;
     }
-    // V3WidthSel offsets the index of a range not starting at 0 (idx - lo) with an unsigned
-    // constant, which zero-extends a signed index and turns a negative one into an in-range one
+    // Width processing offsets the index of a range not starting at 0 with an unsigned
+    // constant, which zero-extends a signed index and turns a negative one into an in-range one.
+    // The bias may sit above user arithmetic (e.g. arr[k+6]).
     static void signExtendBiasedIndex(AstNodeExpr* idxp) {
-        AstNodeBiop* const biasp = VN_AS(idxp, NodeBiop);
-        for (AstNodeExpr* const opp : {biasp->lhsp(), biasp->rhsp()}) {
-            AstExtend* const extendp = VN_CAST(opp, Extend);
-            if (!extendp || !extendp->lhsp()->isSigned()) continue;
-            AstExtendS* const newp = new AstExtendS{
-                extendp->fileline(), extendp->lhsp()->unlinkFrBack(), extendp->width()};
-            newp->user1(extendp->user1());
-            extendp->replaceWith(newp);
-            VL_DO_DANGLING(extendp->deleteTree(), extendp);
+        // Other shapes (e.g. an inlined select) keep the direct-children upgrade.
+        const bool recurse = VN_IS(idxp, Add) || VN_IS(idxp, Sub);
+        std::vector<AstNodeExpr*> stack{idxp};
+        while (!stack.empty()) {
+            AstNodeBiop* const biopp = VN_AS(stack.back(), NodeBiop);
+            stack.pop_back();
+            for (AstNodeExpr* const opp : {biopp->lhsp(), biopp->rhsp()}) {
+                AstExtend* const extendp = VN_CAST(opp, Extend);
+                if (extendp && extendp->lhsp()->isSigned()) {
+                    AstExtendS* const newp = new AstExtendS{
+                        extendp->fileline(), extendp->lhsp()->unlinkFrBack(), extendp->width()};
+                    newp->user1(extendp->user1());
+                    extendp->replaceWith(newp);
+                    VL_DO_DANGLING(extendp->deleteTree(), extendp);
+                    continue;
+                }
+                if (recurse && (VN_IS(opp, Add) || VN_IS(opp, Sub))) stack.push_back(opp);
+            }
         }
     }
     void handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl) {
@@ -1920,15 +1930,15 @@ class ConstraintExprVisitor final : public VNVisitor {
         const AstUnpackArrayDType* const arrDtp
             = VN_AS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
         // A 1-D array indexed directly (not an element of an outer array or container),
-        // with bit-vector elements (scalar or packed) -- editSMT()'s hex formatting needs one.
+        // with bit-vector elements (scalar or packed) -- the SMT emitter's hex format needs one.
         const AstNodeDType* const subp = arrDtp->subDTypep()->skipRefp();
-        // WildcardArrayDType: untestable, hits an unrelated V3Width error first.
+        // Wildcard elements are untestable: an unrelated width error fires first.
         const AstNodeUOrStructDType* const structDtp = VN_CAST(subp, NodeUOrStructDType);
         const bool arrIsSupported1D = !nestedElement && !VN_IS(subp, NodeArrayDType)
                                       && !VN_IS(subp, QueueDType) && !VN_IS(subp, DynArrayDType)
                                       && !VN_IS(subp, AssocArrayDType)
                                       && !VN_IS(subp, WildcardArrayDType)  // LCOV_EXCL_BR_LINE
-                                      // Tested (C6, C8); gcov misattributes one branch of each.
+                                      // Tested, but gcov misattributes one branch of each.
                                       && (!structDtp || structDtp->packed())  // LCOV_EXCL_BR_LINE
                                       && !VN_IS(subp, ClassRefDType);  // LCOV_EXCL_BR_LINE
         if (!arrIsSupported1D) {
@@ -1948,6 +1958,17 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Randomized index in complex expression");
             return;
         }
+        // Cap the expansion so a large table fails fast instead of hanging the compile.
+        static constexpr int MAX_RAND_INDEX_ELEMENTS = 16384;
+        const int elements = arrDtp->elementsConst();
+        if (elements > MAX_RAND_INDEX_ELEMENTS) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: rand-dependent index into non-rand array of "
+                              + cvtToStr(elements) + " elements exceeds the "
+                              + cvtToStr(MAX_RAND_INDEX_ELEMENTS)
+                              + "-element solver expansion limit");
+            return;
+        }
 
         AstNodeExpr* idxp = nodep->bitp()->unlinkFrBack();
         if (arrDtp->lo() != 0) signExtendBiasedIndex(idxp);
@@ -1957,8 +1978,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                                     : new AstExtend{fl, idxp, 32};
             idxp->user1(true);
         }
-        const int elements = arrDtp->elementsConst();
-        // Out-of-range idx reads the element default (IEEE 1800-2023 7.4.5), not the last one.
+        // An out-of-range index reads the element default (IEEE 1800-2023 7.4.5), not the last
+        // one.
         AstNodeExpr* const muxp
             = newElementMuxp(fl, nodep->fromp(), idxp, 0, elements - 1, subp->width());
         VL_DO_DANGLING(idxp->deleteTree(), idxp);

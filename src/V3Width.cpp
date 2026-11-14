@@ -1576,14 +1576,21 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
-    // In a constraint, a select from a non-rand array at a rand index keeps the index's own
-    // width and signedness. The constraint lowering reads an out-of-range index as the element
-    // default (IEEE 1800-2023 7.4.5), and can't tell a truncation added here from 2'(idx).
+    // The constraint lowering reads an out-of-range index as the element default
+    // (IEEE 1800-2023 7.4.5), and can't tell a truncation added here from 2'(index).
     bool keepConstraintIndexWidth(const AstArraySel* nodep) const {
         if (!m_inConstraintItem) return false;
+        // Only a member of the object under randomize() counts, recognized by the
+        // lambda argument carrying that object; anything else still truncates, as
+        // the solver reads it stale.
         const bool randIndex = nodep->bitp()->exists([&](const AstNodeVarRef* refp) {
             return refp->varp()->rand().isRandomizable()
                    || m_stdRandomizeArgVars.count(refp->varp());
+        }) || nodep->bitp()->exists([&](const AstMemberRef* refp) {
+            const AstLambdaArgRef* const argrefp = VN_CAST(refp->fromp(), LambdaArgRef);
+            return m_stdRandomizeArgVars.count(refp->varp())
+                   || (argrefp && argrefp->name() == "__Vrandwith_obj"
+                       && refp->varp()->rand().isRandomizable());
         });
         if (!randIndex) return false;
         const AstNodeExpr* basep = nodep->fromp();
@@ -9064,16 +9071,20 @@ class WidthVisitor final : public VNVisitor {
                 v3Global.useRandomizeMethods(true);
                 AstNodeDType* const adtypep = nodep->findBitDType();
                 VL_RESTORER_COPY(m_stdRandomizeArgVars);
+                // Visit first: member refs resolve their target on visit, before either use below.
+                for (const AstArg* const argp : nodep->argspList()) {
+                    userIterateAndNext(argp->exprp(), WidthVP{SELF, BOTH}.p());
+                }
                 for (const AstArg* const argp : nodep->argspList()) {
                     if (const AstNodeVarRef* const refp = VN_CAST(argp->exprp(), NodeVarRef)) {
                         m_stdRandomizeArgVars.insert(refp->varp());
+                    } else if (const AstMemberRef* const mrefp
+                               = VN_CAST(argp->exprp(), MemberRef)) {
+                        m_stdRandomizeArgVars.insert(mrefp->varp());
                     }
                 }
                 withp = methodWithClause(nodep, false, false, adtypep->findVoidDType(),
                                          adtypep->findBitDType(), adtypep);
-                for (const AstArg* const argp : nodep->argspList()) {
-                    userIterateAndNext(argp->exprp(), WidthVP{SELF, BOTH}.p());
-                }
                 handleStdRandomizeArgs(nodep);  // Provided args should be in current scope
                 processFTaskRefArgs(nodep);
                 if (withp) nodep->withp(withp);
