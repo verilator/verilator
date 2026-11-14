@@ -239,9 +239,8 @@ or "`ifdef`"'s may break other tools.
 .. option:: //&32;coverage&32;off
 
    Same as :option:`/*verilator&32;coverage_off*/`, as other tools accept.
-   One word may come before ``coverage``, such as ``pragma``, ``synopsys``,
-   ``cadence``, ``VCS`` or ``verilator``. A comment with any other text is
-   an ordinary comment.
+   One word may come before ``coverage``, such as ``pragma`` or
+   ``verilator``. A comment with any other text is an ordinary comment.
 
 .. option:: //&32;coverage&32;on
 
