@@ -1857,6 +1857,8 @@ class ConstVisitor final : public VNVisitor {
         if (!thensp || thensp->nextp()) return false;  // Must be SINGLE statement
         if (!elsesp || elsesp->nextp()) return false;
         if (thensp->type() != elsesp->type()) return false;  // Can't mix an assigndly with assign
+        // The merged assignment would keep only the 'then' intra-assignment timing control
+        if (thensp->timingControlp() || elsesp->timingControlp()) return false;
         if (!thensp->lhsp()->sameGateTree(elsesp->lhsp())) return false;
         if (!thensp->rhsp()->gateTree()) return false;
         if (!elsesp->rhsp()->gateTree()) return false;
