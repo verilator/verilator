@@ -86,7 +86,8 @@ class UnrollGenVisitor final : public VNVisitor {
 
         m_forVarp = VN_AS(initAssp->lhsp(), VarRef)->varp();
         if (!m_forVarp->isGenVar()) {
-            nodep->v3error("Non-genvar used in generate for: " << m_forVarp->prettyNameQ());
+            nodep->v3error("Non-genvar used in generate for: " << m_forVarp->prettyNameQ()
+                                                               << " (IEEE 1800-2023 27.4)");
         }
         V3Const::constifyParamsEdit(initAssp->rhsp());  // rhsp may change
 

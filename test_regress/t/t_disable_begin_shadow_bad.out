@@ -1,4 +1,4 @@
-%Error: t/t_disable_begin_shadow_bad.v:19:7: break isn't underneath a loop
+%Error: t/t_disable_begin_shadow_bad.v:19:7: break isn't underneath a loop (IEEE 1800-2023 12.8)
    19 |       break;
       |       ^~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

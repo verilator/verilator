@@ -56,7 +56,10 @@ class CaseLintVisitor final : public VNVisitorConst {
         bool hitDefault = false;
         for (CaseItem* const itemp : VNList<CaseItem>{itemsp}) {
             if (!itemp->isDefault()) continue;
-            if (hitDefault) itemp->v3error("Multiple default statements in case statement.");
+            if (hitDefault) {
+                itemp->v3error("Multiple default statements in case statement"
+                               " (IEEE 1800-2023 12.5)");
+            }
             hitDefault = true;
         }
     }

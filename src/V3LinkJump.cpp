@@ -527,9 +527,10 @@ class LinkJumpVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         } else if (!m_ftaskp) {
-            nodep->v3error("Return isn't underneath a task or function");
+            nodep->v3error("Return isn't underneath a task or function (IEEE 1800-2023 12.8)");
         } else if (funcp && !nodep->lhsp() && !funcp->isConstructor()) {
-            nodep->v3error("Return underneath a function should have return value");
+            nodep->v3error(
+                "Return underneath a function should have return value (IEEE 1800-2023 12.8)");
         } else if (!funcp && nodep->lhsp()) {
             nodep->v3error("Return underneath a task shouldn't have return value");
         } else {
@@ -554,7 +555,7 @@ class LinkJumpVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         } else if (!m_loopp) {
-            nodep->v3error("break isn't underneath a loop");
+            nodep->v3error("break isn't underneath a loop (IEEE 1800-2023 12.8)");
         } else {
             // Jump to the end of the loop
             AstJumpBlock* const blockp = getJumpBlock(m_loopp, false);
@@ -566,7 +567,7 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstContinue* nodep) override {
         iterateChildren(nodep);
         if (!m_loopp) {
-            nodep->v3error("continue isn't underneath a loop");
+            nodep->v3error("continue isn't underneath a loop (IEEE 1800-2023 12.8)");
         } else {
             // Jump to the end of this iteration
             // If a "for" loop then need to still do the post-loop increment
