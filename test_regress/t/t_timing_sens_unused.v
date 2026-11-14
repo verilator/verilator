@@ -30,6 +30,10 @@ module t;
   logic [1:0] read_value;
   always @(rst or select_value) read_value = {rst, select_value};
 
+  // Repeated reads must only consume a trigger once.
+  time t_repeat = 0;
+  always @(rst) t_repeat = $time + time'(rst) + time'(rst);
+
   initial begin
     #5 select_value = 1'b1;
   end
@@ -42,6 +46,7 @@ module t;
     `checkd(t_partial, 11);
     `checkd(write_trigger, 1'b0);
     `checkd(read_value, 2'b11);
+    `checkd(t_repeat, 12);
     #10 rst = 1'b0;
     write_trigger = 1'b1;
     #1;
@@ -49,6 +54,7 @@ module t;
     `checkd(t_partial, 22);
     `checkd(write_trigger, 1'b0);
     `checkd(read_value, 2'b01);
+    `checkd(t_repeat, 21);
     $write("*-* All Finished *-*\n");
     $finish;
   end

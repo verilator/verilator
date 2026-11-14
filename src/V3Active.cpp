@@ -438,15 +438,17 @@ public:
 // Active class functions
 
 class ActiveVisitor final : public VNVisitor {
+    enum : uint8_t { SENS_NONE, SENS_READ, SENS_UNREAD };
+
     // NODE STATE
     //  Each call to V3Const::constify
-    //   AstVarScope::user1()           bool: This VarScope is referenced in the sensitivity list
+    //   AstVarScope::user1()           SENS_*: Sensitivity membership and read-before-write state
     //   AstVarScope::user2()           bool: This VarScope is written in the current process
-    //   AstVarScope::user3()           bool: This VarScope is read before being written
     //   AstNode::user4()               Used by V3Const::constify, called below
 
     // STATE
     ActiveNamer m_namer;  // Tracking of active names
+    int m_unreadSens = 0;  // Number of sensitivity VarScopes not yet read before being written
     bool m_clockedProcess = false;  // Whether current process is a clocked process
     bool m_allChanged = false;  // Whether all SenItem in the SenTree are ET_CHANGED
     bool m_walkingBody = false;  // Walking body of a process
@@ -466,6 +468,7 @@ class ActiveVisitor final : public VNVisitor {
             const VNUser1InUse user1InUse;
 
             // Walk sensitivity list
+            m_unreadSens = 0;
             m_clockedProcess = false;
             m_allChanged = true;
             if (oldsentreep) {
@@ -477,18 +480,12 @@ class ActiveVisitor final : public VNVisitor {
             // could be turned into a combinational process instead.
             if (m_allChanged) {
                 const VNUser2InUse user2InUse;
-                const VNUser3InUse user3InUse;
                 m_walkingBody = true;
                 m_canBeComb = true;
                 iterateChildrenConst(nodep);
                 m_walkingBody = false;
-                // Combinational scheduling must retain every explicit trigger.
-                if (oldsentreep && oldsentreep->exists([](const AstVarRef* refp) {
-                        return !refp->varScopep()->user3();
-                    })) {
-                    m_canBeComb = false;
-                }
-                if (m_canBeComb) m_clockedProcess = false;
+                // Combinational logic only re-evaluates when a value it reads changes.
+                if (m_canBeComb && !m_unreadSens) m_clockedProcess = false;
             }
         }
 
@@ -603,7 +600,13 @@ class ActiveVisitor final : public VNVisitor {
             }
         }
 
-        nodep->sensp()->foreach([](const AstVarRef* refp) { refp->varScopep()->user1(true); });
+        nodep->sensp()->foreach([this](const AstVarRef* refp) {
+            AstVarScope* const vscp = refp->varScopep();
+            if (vscp->user1() == SENS_NONE) {
+                vscp->user1(SENS_UNREAD);
+                ++m_unreadSens;
+            }
+        });
     }
 
     void visit(AstVarRef* nodep) override {
@@ -611,7 +614,10 @@ class ActiveVisitor final : public VNVisitor {
         if (nodep->access().isWriteOnly()) {
             vscp->user2(true);
         } else {
-            if (!vscp->user2()) vscp->user3(true);
+            if (!vscp->user2() && vscp->user1() == SENS_UNREAD) {
+                vscp->user1(SENS_READ);
+                --m_unreadSens;
+            }
             // If the variable is read before it is written (and is not a never-changing value,
             // including an X randomization temporary set once at initialization), and is not
             // in the sensitivity list, then this cannot be optimized into a combinational process
