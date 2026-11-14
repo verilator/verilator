@@ -1380,8 +1380,8 @@ class AstDefParam final : public AstNode {
     // A defparam assignment
     // Parents: MODULE
     // @astgen op1 := rhsp : AstNodeExpr
-    // @astgen op2 := pathp : AstNodeExpr
-    // @astgen op3 := targetp : AstNodeExpr
+    // @astgen op2 := pathp : Optional[AstNodeExpr] // Null after V3LinkDot
+    // @astgen op3 := targetp : AstNodeExpr // After V3LinkDot, AstVarXRef from this scope
 public:
     AstDefParam(FileLine* fl, AstNodeExpr* pathp, AstNodeExpr* targetp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_DefParam(fl) {
