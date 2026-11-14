@@ -139,7 +139,7 @@ class CoverageVisitor final : public VNVisitor {
 
     // NODE STATE
     // Entire netlist:
-    //  AstIf::user1()      -> bool.  Branch coverage is on in its legs and its chain's below
+    //  AstIf::user1()                  -> bool.  Branch coverage on in its legs and all legs below
     //  AstIf/AstLoopTest::user2()      -> bool.  True indicates coverage-generated
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
