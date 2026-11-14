@@ -16,8 +16,6 @@ if not test.have_solver:
 
 # The mixed-width arithmetic under test widens implicitly by design; silence
 # that warning so the golden shows only the gate's own diagnostics
-test.lint(verilator_flags2=["-Wno-WIDTHEXPAND"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["-Wno-WIDTHEXPAND"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()
