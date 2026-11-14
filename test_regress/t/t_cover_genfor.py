@@ -24,7 +24,8 @@ def run_and_check(golden):
 
 # --coverage-per-instance: each unrolled generate-for iteration reports
 # separately, with a distinct hierarchy per iteration (labeled g_loop,
-# unlabeled genblk2, and nested g_nest).
+# unlabeled genblk2, and nested g_nest). Unnamed blocks that declare
+# variables (repeat, g_decl's for loop) report under their enclosing block.
 test.compile(verilator_flags2=cov_flags)
 run_and_check("t/t_cover_genfor.dat.out")
 

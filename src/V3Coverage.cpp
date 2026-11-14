@@ -165,6 +165,7 @@ class CoverageVisitor final : public VNVisitor {
     bool m_ifCond = false;  // Visiting if condition
     bool m_inToggleOff = false;  // In function/task etc
     string m_beginHier;  // AstBegin hier name for user coverage points
+    string m_namedHier;  // Pretty hier of user-named and generate blocks, for setCoverageHier
 
     // STATE - cleared each module
     std::unordered_map<std::string, uint32_t> m_varnames;  // Uniquify inserted variable names
@@ -193,10 +194,13 @@ class CoverageVisitor final : public VNVisitor {
         return nullptr;
     }
 
+    void addNamedHier(const string& name) {
+        m_namedHier += (m_namedHier.empty() ? "" : ".") + AstNode::prettyName(name);
+    }
     // Set a line/branch/expr point's 'hier' to the begin/generate-block name, so
     // each unrolled generate-for iteration reports separately (per-instance only).
     void setCoverageHier(AstCoverOtherDecl* const declp) {
-        if (v3Global.opt.coveragePerInstance()) declp->hier(m_beginHier);
+        if (v3Global.opt.coveragePerInstance()) declp->hier(m_namedHier);
     }
 
     AstCoverInc* newCoverInc(FileLine* fl, AstNodeCoverDecl* const declp,
@@ -808,8 +812,10 @@ class CoverageVisitor final : public VNVisitor {
     void visit(AstGenBlock* nodep) override {
         // Similar to AstBegin
         VL_RESTORER_COPY(m_beginHier);
+        VL_RESTORER_COPY(m_namedHier);
         if (nodep->name() != "") {
             m_beginHier = m_beginHier + (m_beginHier != "" ? "__DOT__" : "") + nodep->name();
+            addNamedHier(nodep->name());
         }
         iterateChildren(nodep);
         lineTrack(nodep);
@@ -828,12 +834,15 @@ class CoverageVisitor final : public VNVisitor {
         // --coverage-per-instance (see setCoverageHier).  Each generate
         // iteration is a distinct begin, so its points report separately.
         VL_RESTORER_COPY(m_beginHier);
+        VL_RESTORER_COPY(m_namedHier);
         VL_RESTORER(m_inToggleOff);
         VL_RESTORER(m_exprStmtsp);
         m_exprStmtsp = nodep;
         m_inToggleOff = true;
         if (nodep->name() != "") {
             m_beginHier = m_beginHier + (m_beginHier != "" ? "__DOT__" : "") + nodep->name();
+            // Not Verilator's own unnamedblk names
+            if (!nodep->unnamed()) addNamedHier(nodep->name());
         }
         iterateChildren(nodep);
         lineTrack(nodep);

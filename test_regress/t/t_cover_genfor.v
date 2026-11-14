@@ -60,4 +60,16 @@ module tb;
     $write("*-* All Finished *-*\n");
     $finish;
   end
+
+  // A loop declaring its variable, an unnamed block, inside each iteration
+  reg [3:0] e = 0;
+  generate
+    for (i = 0; i < 2; i++) begin : g_decl
+      always @(posedge clk) begin
+        for (int j = 0; j < 2; j++) begin
+          if (e[i*2+j] == 0) e[i*2+j] <= 1;
+        end
+      end
+    end
+  endgenerate
 endmodule
