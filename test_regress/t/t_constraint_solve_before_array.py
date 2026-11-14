@@ -15,7 +15,10 @@ if not test.have_solver:
     test.skip("No constraint solver installed")
 
 test.compile()
-
-test.execute()
+# The distribution check requires Verilator's default sampler.
+if test.vlt:
+    test.execute(all_run_flags=['+verilator+rand+sampler+default'])
+else:
+    test.execute()
 
 test.passes()
