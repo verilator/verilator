@@ -3025,8 +3025,7 @@ class WidthVisitor final : public VNVisitor {
 
     void visit(AstCellArrayRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
-        userIterateAndNext(nodep->selp(), WidthVP{SELF, PRELIM}.p());
-        userIterateAndNext(nodep->selp(), WidthVP{SELF, FINAL}.p());
+        userIterateAndNext(nodep->selp(), WidthVP{SELF, BOTH}.p());
         nodep->dtypeSetVoid();  // placeholder; this node shouldnt survive beyond linking
         nodep->didWidth(true);
     }
@@ -3035,8 +3034,7 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->didWidthAndSet()) return;
 
         if (AstNodeExpr* const cellExprp = VN_CAST(nodep->cellp(), NodeExpr)) {
-            userIterateAndNext(cellExprp, WidthVP{SELF, PRELIM}.p());
-            userIterateAndNext(cellExprp, WidthVP{SELF, FINAL}.p());
+            userIterateAndNext(cellExprp, WidthVP{SELF, BOTH}.p());
         }
 
         if (AstNodeExpr* const exprp = VN_CAST(nodep->exprp(), NodeExpr)) {
@@ -9192,7 +9190,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstClockingItem* nodep) override {
         nodep->exprp()->foreach(
             [nodep](AstVarRef* const refp) { refp->access(nodep->direction().pinAccess()); });
-        userIterateChildren(nodep, WidthVP{SELF, PRELIM}.p());
+        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
     }
     void visit(AstWait* nodep) override {
         if (!m_underFork && VN_IS(m_ftaskp, Func)) {
@@ -9398,10 +9396,10 @@ class WidthVisitor final : public VNVisitor {
         // Real: Output real
         // LHS presumed self-determined, then coerced to real
         assertAtExpr(nodep);
-        if (m_vup->prelim()) {  // First stage evaluation
+        if (m_vup->prelim()) {
             nodep->dtypeSetDouble();
             // Self-determined operand (TODO check if numeric type)
-            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
             if (nodep->lhsp()->isSigned()) {
                 nodep->replaceWith(
                     new AstISToRD{nodep->fileline(), nodep->lhsp()->unlinkFrBack()});
@@ -9413,10 +9411,10 @@ class WidthVisitor final : public VNVisitor {
         // Real: Output real
         // LHS presumed self-determined, then coerced to real
         assertAtExpr(nodep);
-        if (m_vup->prelim()) {  // First stage evaluation
+        if (m_vup->prelim()) {
             nodep->dtypeSetDouble();
             // Self-determined operand (TODO check if numeric type)
-            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
         }
     }
     void visit_Os32_Lr(AstNodeUniop* nodep) {
