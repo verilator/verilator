@@ -20,9 +20,9 @@ class both_rand_opp_dir;
   constraint c { frame != target; }
 endclass
 
-// Both operands rand, opposite direction, '==': forces frame to known
-// values, then checks target's declared-position-matched elements (not
-// its raw storage slots) actually received them.
+// Both operands rand, opposite direction, '==': forces the ascending side
+// to known values, then checks the descending side's declared-position-matched
+// elements (not its raw storage slots) actually received them.
 class both_rand_opp_dir_eq;
   rand bit [3:0] frame[0:1];
   rand bit [3:0] target[1:0];
@@ -48,7 +48,7 @@ class mixed_rand_opp_dir;
   endfunction
 endclass
 
-// Same as mixed_rand_opp_dir, with the lhs (rand) side's declared range
+// Same mixed rand/non-rand pairing, with the rand side's declared range
 // flipped to descending instead of ascending.
 class mixed_rand_opp_dir_lhs_desc;
   rand bit [3:0] frame[1:0];
@@ -108,8 +108,8 @@ module t;
       end
     end
 
-    // frame[0]=5 (declared position 0) must land in target's declared
-    // position 0, which for target[1:0] is target[1] -- not target[0].
+    // Declared position 0 must pair across sides -- storage slot 1, not slot 0,
+    // when directions run opposite.
     opp_dir_eq_obj = new;
     randomize_result = opp_dir_eq_obj.randomize();
     `checkd(randomize_result, 1);

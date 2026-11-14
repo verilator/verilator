@@ -44,9 +44,8 @@ class frame_3d;
   endfunction
 endclass
 
-// Same, but 'frame'/'target' have a non-zero declared range ([1:4]), and
-// the non-rand operand is written first ('target == frame') to confirm
-// operand order doesn't matter.
+// Same, but the operands have a non-zero declared range ([1:4]), and the
+// non-rand operand is written first, to confirm operand order doesn't matter.
 class frame_nonzero_base;
   rand bit [7:0] frame[1:4];
   bit [7:0] target[1:4];
@@ -59,7 +58,7 @@ class frame_nonzero_base;
   endfunction
 endclass
 
-// Same, reached via a member select (holder.target).
+// Same, reached via a member select on another object.
 class Holder;
   bit [7:0] target[2][2];
   function new();
@@ -134,9 +133,8 @@ class frame_via_rand_handle_struct;
   endfunction
 endclass
 
-// An odd element count -- the balanced-tree reduction's carry-forward
-// path (an unpaired last element at a given level) only triggers for an
-// odd number of remaining nodes, never exercised by an even-sized array.
+// An odd element count -- the reduction's carry-forward path (an unpaired last
+// element at a given level) only triggers then, never for an even-sized array.
 class frame_odd_count;
   rand bit [7:0] frame[3];
   bit [7:0] target[3];
@@ -148,7 +146,7 @@ class frame_odd_count;
   endfunction
 endclass
 
-// Rand side as a constant-indexed slice of a larger array (cube[0]).
+// Rand side as a constant-indexed slice of a larger array.
 class frame_rand_slice;
   rand bit [7:0] cube[2][2][2];
   bit [7:0] target[2][2];
@@ -161,10 +159,8 @@ class frame_rand_slice;
   endfunction
 endclass
 
-// Non-rand side as a constant-indexed slice of a larger non-rand array --
-// mirrors frame_rand_slice, but here it's the non-rand operand that's
-// sliced, so the walk for a rand-dependent index has to terminate in "none
-// found" instead of finding one.
+// Non-rand side as a constant-indexed slice instead -- the walk for a
+// rand-dependent index has to terminate in "none found", not find one.
 class frame_nonrand_slice;
   rand bit [7:0] frame[2];
   bit [7:0] nra[3][2];
@@ -199,9 +195,9 @@ class frame_contradiction;
   endfunction
 endclass
 
-// Both operands are member selects on array-indexed elements of the same
-// rand array (x[0].a vs x[1].a); the root-variable resolver must recurse
-// through the index to find 'x', not just the member select itself.
+// Both operands are member selects on indexed elements of the same rand array;
+// the root-variable resolver must recurse through the index to find the root
+// array, not just the member select itself.
 typedef struct {
   bit [7:0] a[2];
 } s_t;
@@ -211,7 +207,7 @@ class member_of_rand_array;
 endclass
 
 // Rand array indexed by a plain (non-rand) variable, then whole-compared
-// against a non-rand target -- the index itself must never be mistaken
+// against a non-rand array -- the index itself must never be mistaken
 // for part of the rand comparison operand.
 class frame_nonrand_index;
   rand bit [7:0] frame[3][2];
@@ -225,7 +221,7 @@ class frame_nonrand_index;
   endfunction
 endclass
 
-// An array large enough that a left-deep AstLogAnd chain (one per element)
+// An array large enough that a left-deep conjunction chain (one per element)
 // overflows the stack in a later recursive pass -- the reduction has to
 // stay a bounded (balanced-tree) depth well before reaching this size.
 class frame_large;
@@ -239,7 +235,7 @@ endclass
 
 // Both operands are constant-indexed elements of a queue -- the root
 // resolver must see through the queue's own 'at()' accessor, not just
-// a plain fixed-array ArraySel.
+// a plain fixed-array select.
 class frame_queue_element;
   rand bit frame[$][2];
   bit target[$][2];
@@ -265,7 +261,7 @@ class rr_eq_negated;
   constraint c { frame[0] == other[0]; frame[1] == other[1]; !(frame == other); }
 endclass
 
-// Element types other than a plain bit vector.
+// Element types besides a plain bit vector.
 typedef enum bit [1:0] { EA, EB, EC } elem_e;
 typedef struct packed { bit [1:0] x; bit [1:0] y; } elem_ps;
 class elem_types;
@@ -349,6 +345,57 @@ class rand_mode_side;
   constraint c { frame == target; }
 endclass
 
+// rand_mode(1) leaves the mode on, so a rand-indexed row still expands.
+class rand_mode_on_randidx;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[2][2];
+  rand int idx;
+  constraint c { idx == 1; frame == target[idx]; }
+  function new();
+    target[0][0] = 8'h00; target[0][1] = 8'h01;
+    target[1][0] = 8'h10; target[1][1] = 8'h11;
+  endfunction
+endclass
+
+// Same, but the whole array and the addressed row are pinned to disagree:
+// UNSAT, proving the expanded comparison is enforced rather than ignored.
+class rand_mode_on_randidx_unsat;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[2][2];
+  rand int idx;
+  constraint c_pin {
+    idx == 1;
+    frame[0] == 8'hAA; frame[1] == 8'hBB;
+    target[1][0] == 8'h10; target[1][1] == 8'h11;
+  }
+  constraint c { frame == target[idx]; }
+endclass
+
+// A whole-array compare under a method's inline randomize() with: the
+// with-object member references must read as rand, not fold to constants.
+class method_ctx_eq;
+  rand bit [7:0] a[4];
+  bit [7:0] b[4];
+  function new(); b = '{8'h11, 8'h22, 8'h33, 8'h44}; endfunction
+  function int do_rand();
+    int ok;
+    ok = randomize() with { this.a == b; };
+    return ok;
+  endfunction
+endclass
+
+// Same, but the fixed side disagrees with the pinned rand side: UNSAT.
+class method_ctx_neq_unsat;
+  rand bit [7:0] a[4];
+  bit [7:0] b[4];
+  function new(); b = '{8'h11, 8'h22, 8'h33, 8'h44}; endfunction
+  function int do_rand();
+    int ok;
+    ok = randomize() with { this.a[0] == 8'hAA; this.a == b; };
+    return ok;
+  endfunction
+endclass
+
 // Both sides rand queues: keeps the solver's own queue comparison.
 class rr_queues;
   rand bit [1:0] frame[$];
@@ -407,6 +454,10 @@ module t;
     range_forms range_obj;
     const_operands const_obj;
     rand_mode_side rmode_obj;
+    rand_mode_on_randidx rmode1_obj;
+    rand_mode_on_randidx_unsat rmode1u_obj;
+    method_ctx_eq mctx_obj;
+    method_ctx_neq_unsat mctxu_obj;
     inline_target inline_obj;
     rr_queues rrq_obj;
     rr_fixed_of_queues rrfq_obj;
@@ -515,8 +566,8 @@ module t;
 
     // A constant-indexed slice of a larger rand array, used as a whole
     // comparison operand, must force the exact value on that slice -- and
-    // leave the rest of the same rand array (cube[1], untouched by the
-    // constraint) genuinely random, not incidentally pinned too.
+    // leave the rest of the same rand array (untouched by the constraint)
+    // genuinely random, not incidentally pinned too.
     slice_obj = new;
     any_diff = 0;
     for (int t = 0; t < 20; t++) begin
@@ -573,7 +624,7 @@ module t;
     `checkd(member_idx_obj.x[0].a != member_idx_obj.x[1].a, 1);
 
     // A rand array indexed by a plain non-rand variable, whole-compared
-    // against a non-rand target, must force the exact value at that row.
+    // against a non-rand array, must force the exact value at that row.
     nonrand_idx_obj = new;
     randomize_result = nonrand_idx_obj.randomize();
     `checkd(randomize_result, 1);
@@ -680,6 +731,27 @@ module t;
     `checkd(randomize_result, 1);
     rmode_obj.frame = '{2'd0, 2'd2};
     randomize_result = rmode_obj.randomize();
+    `checkd(randomize_result, 0);
+
+    rmode1_obj = new;
+    rmode1_obj.target.rand_mode(1);
+    randomize_result = rmode1_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(rmode1_obj.idx, 1);
+    `checkd(rmode1_obj.frame == rmode1_obj.target[rmode1_obj.idx], 1);
+
+    rmode1u_obj = new;
+    rmode1u_obj.target.rand_mode(1);
+    randomize_result = rmode1u_obj.randomize();
+    `checkd(randomize_result, 0);
+
+    mctx_obj = new;
+    randomize_result = mctx_obj.do_rand();
+    `checkd(randomize_result, 1);
+    `checkd(mctx_obj.a == mctx_obj.b, 1);
+
+    mctxu_obj = new;
+    randomize_result = mctxu_obj.do_rand();
     `checkd(randomize_result, 0);
 
     rrq_obj = new;

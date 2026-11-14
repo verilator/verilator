@@ -54,7 +54,7 @@ class C6;
   constraint c { get_target() == frame; }
 endclass
 
-// Same as C1, but with the queue as the outermost dimension.
+// Same unexpandable-shape error, but with the queue as the outermost dimension.
 class C7;
   rand bit frame[$][2];
   bit target[$][2];
@@ -69,9 +69,9 @@ class C9;
   constraint c { frame == t.hier_target; }
 endclass
 
-// Same as C9, but the hierarchical reference is sliced to one element
-// instead of compared whole -- the clone-safety walk has to recurse past
-// the index and still land on the same unresolvable base.
+// Same hierarchical-reference operand, but sliced to one element instead of
+// compared whole -- the clone-safety walk has to recurse past the index and
+// still land on the same unresolvable base.
 class C9b;
   rand bit [7:0] frame[2];
   constraint c { frame == t.hier_target[0]; }
@@ -108,12 +108,11 @@ class C10b;
   endfunction
 endclass
 
-// Same fields as t_constraint_array_neq_nonrand.v's frame_bothrand_randidx,
-// but only idx is rand, not cube: buildElementwiseEqp can only evaluate a
-// non-rand operand once, at constraint-setup time, using the index's
-// pre-solve value -- the solver may later choose a different index, so
-// this can't be expanded correctly and must be rejected instead of
-// silently selecting the wrong row.
+// Same fields as the both-rand indexed-compare case, but only the index is
+// rand, not the array: a non-rand operand can only be evaluated once, at
+// constraint-setup time, using the index's pre-solve value -- the solver may
+// later choose a different index, so this can't be expanded correctly and must
+// be rejected instead of silently selecting the wrong row.
 class C11;
   rand int idx;
   bit [7:0] cube[4][2];
@@ -122,8 +121,8 @@ class C11;
   constraint c { probe == cube[idx]; }
 endclass
 
-// Same as C11, but with the operands swapped -- the rand-indexed, non-rand
-// operand lands on the left instead of the right.
+// Same rand-indexed non-rand operand, but with the operands swapped -- it
+// lands on the left instead of the right.
 class C11b;
   rand int idx;
   bit [7:0] cube[4][2];
@@ -133,10 +132,8 @@ class C11b;
 endclass
 
 // Same underlying problem reached through a member select instead of
-// landing directly on the array: the handle array isn't rand, so its
-// elements are ordinary non-rand state, but the member itself is rand --
-// the rand index still means which element's member gets compared can't be
-// pinned down before the solve runs.
+// landing directly on the array: the member is rand on a non-rand handle
+// array, so the compared member still can't be pinned down before the solve.
 class Inner11;
   rand bit [7:0] target[2];
 endclass
@@ -181,9 +178,9 @@ class C14;
   constraint c { frame == target[getIdx()]; }
 endclass
 
-// Same as C11, but the non-rand operand is a queue element instead of a
-// fixed-array element -- the rand-index-into-non-rand check has to see
-// through the queue's own 'at()' accessor the same way it does ArraySel.
+// Same rand-indexed non-rand operand, but as a queue element instead of a
+// fixed-array element -- the rand-index-into-non-rand check has to see through
+// the queue's own 'at()' accessor the same way it does a plain select.
 class C15;
   rand int idx;
   bit [7:0] cube[$][2];
@@ -209,9 +206,9 @@ class C16;
   endfunction
 endclass
 
-// Same as C13, but the rand-indexed outer dimension is a fixed array and
-// the non-rand inner one is a queue -- the search has to recurse from a
-// CMethodHard access into an ArraySel one to find the rand index.
+// Same outer-dimension rand index, but with a fixed array outside and a queue
+// inside -- the search has to recurse from a method-call access into a plain
+// select to find the rand index.
 class C17;
   rand int i;
   bit [7:0] cube[4][$][2];

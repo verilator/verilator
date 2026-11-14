@@ -113,6 +113,25 @@ struct RandModeTarget final {
     }
 };
 
+// True iff the call can turn its target off: anything but exactly one
+// nonzero constant (zero turns off, anything dynamic might; no args is a query).
+static bool randModeCallMayDisable(const AstNodeFTaskRef* nodep) {
+    const AstArg* const argp = nodep->argsp();
+    if (!argp) return false;
+    if (argp->nextp()) return true;
+    const AstConst* const constp = VN_CAST(argp->exprp(), Const);
+    return !constp || !constp->num().isNeqZero();
+}
+
+// Read-modify-write: sites run in no fixed order, and any site's disabling
+// call revokes the always-on guarantee for good.
+static void markRandModeUse(AstVar* varp, bool mayDisable) {
+    RandomizeMode randMode = {.asUQuad = varp->user1()};
+    randMode.usesMode = true;
+    randMode.modeMayDisable = randMode.modeMayDisable || mayDisable;
+    varp->user1(randMode.asUQuad);
+}
+
 // Check a rand/randc variable's type against IEEE 1800-2023 18.4's
 // allowed list. Purely diagnostic: codegen sites that would otherwise
 // mishandle one of these types guard themselves on V3Error::errorCount()
@@ -283,11 +302,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                         }
                     }
                     // If the class is randomized inline, all members use rand mode
-                    if (nodep->user1() == IS_RANDOMIZED_INLINE) {
-                        RandomizeMode randMode = {};
-                        randMode.usesMode = true;
-                        varp->user1(randMode.asUQuad);
-                    }
+                    if (nodep->user1() == IS_RANDOMIZED_INLINE) { markRandModeUse(varp, false); }
                 }
             }
         }
@@ -475,9 +490,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 // Inline randomized then
                 UASSERT_OBJ(VN_IS(backp, Class), randVarp,
                             "No class found for inline randomized variable");
-                RandomizeMode randMode = {};
-                randMode.usesMode = true;
-                randVarp->user1(randMode.asUQuad);
+                markRandModeUse(randVarp, false);
                 backp->user1(IS_RANDOMIZED_INLINE);
             }
         }
@@ -552,16 +565,13 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     valid = false;
                 } else if (randModeTarget.receiverp && randModeTarget.receiverp->isRand()) {
                     // Called on a rand member variable
-                    RandomizeMode randMode = {};
-                    randMode.usesMode = true;
-                    randModeTarget.receiverp->user1(randMode.asUQuad);
+                    markRandModeUse(randModeTarget.receiverp, randModeCallMayDisable(nodep));
                 } else {
                     // Called on 'this' or a non-rand class instance
+                    const bool mayDisable = randModeCallMayDisable(nodep);
                     randModeTarget.classp->foreachMember([&](AstClass*, AstVar* varp) {
                         if (!varp->isRand()) return;
-                        RandomizeMode randMode = {};
-                        randMode.usesMode = true;
-                        varp->user1(randMode.asUQuad);
+                        markRandModeUse(varp, mayDisable);
                     });
                 }
             }
