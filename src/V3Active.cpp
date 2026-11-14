@@ -442,6 +442,7 @@ class ActiveVisitor final : public VNVisitor {
     //  Each call to V3Const::constify
     //   AstVarScope::user1()           bool: This VarScope is referenced in the sensitivity list
     //   AstVarScope::user2()           bool: This VarScope is written in the current process
+    //   AstVarScope::user3()           bool: This VarScope is read before being written
     //   AstNode::user4()               Used by V3Const::constify, called below
 
     // STATE
@@ -476,10 +477,17 @@ class ActiveVisitor final : public VNVisitor {
             // could be turned into a combinational process instead.
             if (m_allChanged) {
                 const VNUser2InUse user2InUse;
+                const VNUser3InUse user3InUse;
                 m_walkingBody = true;
                 m_canBeComb = true;
                 iterateChildrenConst(nodep);
                 m_walkingBody = false;
+                // Combinational scheduling must retain every explicit trigger.
+                if (oldsentreep && oldsentreep->exists([](const AstVarRef* refp) {
+                        return !refp->varScopep()->user3();
+                    })) {
+                    m_canBeComb = false;
+                }
                 if (m_canBeComb) m_clockedProcess = false;
             }
         }
@@ -603,6 +611,7 @@ class ActiveVisitor final : public VNVisitor {
         if (nodep->access().isWriteOnly()) {
             vscp->user2(true);
         } else {
+            if (!vscp->user2()) vscp->user3(true);
             // If the variable is read before it is written (and is not a never-changing value,
             // including an X randomization temporary set once at initialization), and is not
             // in the sensitivity list, then this cannot be optimized into a combinational process
