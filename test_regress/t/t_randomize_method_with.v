@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2024 Antmicro Ltd
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 `define check_rand(cl, field) \
 begin \
    automatic longint prev_result; \
@@ -78,6 +83,9 @@ class Baz2;
   function bit test_this_randomize;
     return this.randomize() with { v == 5; } == 1;
   endfunction
+  function bit test_randomize_noparen;
+    return this.randomize with { v == 6; } == 1 && v == 6;
+  endfunction
 endclass
 
 module submodule();
@@ -95,6 +103,11 @@ endclass
 
 class Cls2 extends Cls;
   rand int c;
+endclass
+
+class NoParen;
+  int a = 4;  // Not rand, so constraints only read it
+  rand int b;
 endclass
 
 module mwith ();
@@ -161,6 +174,31 @@ module mwith ();
     if (!foo.test_this_randomize()) $stop;
     // Check this.randomize() with no constraints
     if (!baz2.test_this_randomize()) $stop;
+
+    // Check randomize with a constraint block and no argument parentheses
+    begin
+      automatic NoParen np = new;
+      automatic int a = 7;  // Same name as a member of NoParen
+      int randomize_result;
+      bit test_result;
+      randomize_result = np.randomize with {b == a;};
+      `checkd(randomize_result, 1);
+      `checkd(np.b, 4);  // Unrestricted: 'a' is the member
+      randomize_result = np.randomize with (b) {b == a;};
+      `checkd(randomize_result, 1);
+      `checkd(np.b, 7);  // Restricted: 'a' is the caller's variable
+      randomize_result = np.randomize with () {np.b == a + 1;};
+      `checkd(randomize_result, 1);
+      `checkd(np.b, 8);
+      np.randomize with {b == 9;};
+      `checkd(np.b, 9);
+      np.randomize with (b) {b == a + 3;};
+      `checkd(np.b, 10);
+      void'(np.randomize with (b) {b == a + 4;});
+      `checkd(np.b, 11);
+      test_result = baz2.test_randomize_noparen();
+      `checkd(test_result, 1'b1);
+    end
 
     $write("*-* All Finished *-*\n");
     $finish();
