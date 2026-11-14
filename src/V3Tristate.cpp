@@ -603,6 +603,31 @@ class TristateVisitor final : public TristateBaseVisitor {
         numz0.opNot(numz);  // Z->0, else 1
         return new AstConst{fl, numz0};
     }
+    AstNodeExpr* newEnSel(AstSel* selp, AstNodeExpr* enFromp) {
+        // Enable of 'selp', given the enable of what it selects from. Out of
+        // range reads X, not Z. Guard as V3Unknown will the value, but with
+        // all ones, regardless of --x-assign.
+        FileLine* const fl = selp->fileline();
+        AstNodeExpr* lsbp = selp->lsbp();
+        if (!lsbp->isPure()) {
+            // Only the value evaluates the index, into a temporary the enable reads, so 'selp'
+            // must be kept wherever the enable is used. V3LiftExpr moves the write before its
+            // statement, and V3Order orders other statements after it.
+            AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP,
+                                            "__Vtrisel" + cvtToStr(m_unique++), lsbp->dtypep()};
+            m_modp->addStmtsp(varp);
+            AstNodeExpr* const idxp = lsbp->unlinkFrBack();
+            lsbp = new AstVarRef{fl, varp, VAccess::READ};
+            selp->lsbp(new AstExprStmt{
+                fl, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, idxp}, lsbp});
+        }
+        AstNodeExpr* const maxmsbp
+            = new AstConst{fl, AstConst::WidthedValue{}, lsbp->width(),
+                           static_cast<uint32_t>(selp->fromp()->width() - 1)};
+        return new AstCond{fl, new AstGte{fl, maxmsbp, lsbp->cloneTreePure(false)},
+                           new AstSel{fl, enFromp, lsbp->cloneTreePure(false), selp->widthConst()},
+                           newAllZerosOrOnes(selp, true)};
+    }
     AstNodeExpr* getEnExprBasedOnOriginalp(AstNodeExpr* const nodep) {
         if (AstVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
             return new AstVarRef{varrefp->fileline(), getCreateEnVarp(varrefp->varp(), false),
@@ -627,12 +652,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             enExtendp->lhsp(new AstNot{enLhsp->fileline(), enLhsp});
             return new AstNot{enExtendp->fileline(), enExtendp};
         } else if (AstSel* const selp = VN_CAST(nodep, Sel)) {
-            AstNodeExpr* const fromp = selp->fromp()->unlinkFrBack();
-            AstSel* const enSelp = selp->cloneTree(false);
-            selp->fromp(fromp);
-            AstNodeExpr* const enFromp = getEnExprBasedOnOriginalp(fromp);
-            enSelp->fromp(enFromp);
-            return enSelp;
+            return newEnSel(selp, getEnExprBasedOnOriginalp(selp->fromp()));
         } else {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported tristate construct: " << nodep->prettyTypeNameQ()
@@ -1581,10 +1601,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                      << nodep->prettyTypeNameQ());
                 }
                 if (nodep->fromp()->user1p()) {  // SEL(VARREF, lsb)
-                    AstNodeExpr* const en1p = getEnp(nodep->fromp());
-                    AstNodeExpr* const enp
-                        = new AstSel{nodep->fileline(), en1p, nodep->lsbp()->cloneTreePure(true),
-                                     nodep->widthConst()};
+                    AstNodeExpr* const enp = newEnSel(nodep, getEnp(nodep->fromp()));
                     UINFO(9, "       newsel " << enp);
                     nodep->user1p(enp);  // propagate up SEL(fromp->enable, value)
                     m_tgraph.didProcess(nodep);
@@ -1897,10 +1914,11 @@ class TristateVisitor final : public TristateBaseVisitor {
                 } else {
                     enRhsp = getEnExprBasedOnOriginalp(rhsp);
                 }
+                // Not short-circuiting, so the value is evaluated whenever the enable is
                 AstNodeExpr* newp
-                    = new AstLogAnd{fl, new AstEq{fl, VN_AS(constp->user1p(), Const), enRhsp},
-                                    // Keep the caseeq if there are X's present
-                                    new AstEqCase{fl, new AstConst{fl, constp->num()}, rhsp}};
+                    = new AstAnd{fl, new AstEq{fl, VN_AS(constp->user1p(), Const), enRhsp},
+                                 // Keep the caseeq if there are X's present
+                                 new AstEqCase{fl, new AstConst{fl, constp->num()}, rhsp}};
                 constp->user1p(nullptr);
                 if (neq) newp = new AstLogNot{fl, newp};
                 UINFO(9, "       newceq " << newp);
@@ -1912,11 +1930,12 @@ class TristateVisitor final : public TristateBaseVisitor {
                 FileLine* const fl = nodep->fileline();
                 constp->unlinkFrBack();
                 AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-                AstNodeExpr* newp = new AstLogAnd{fl,
-                                                  new AstEq{fl, newAllZerosOrOnes(constp, false),
-                                                            VN_AS(rhsp->user1p(), NodeExpr)},
-                                                  // Keep the caseeq if there are X's present
-                                                  new AstEqCase{fl, constp, rhsp}};
+                // As above, not short-circuiting
+                AstNodeExpr* newp = new AstAnd{fl,
+                                               new AstEq{fl, newAllZerosOrOnes(constp, false),
+                                                         VN_AS(rhsp->user1p(), NodeExpr)},
+                                               // Keep the caseeq if there are X's present
+                                               new AstEqCase{fl, constp, rhsp}};
                 if (neq) newp = new AstLogNot{fl, newp};
                 rhsp->user1p(nullptr);
                 UINFO(9, "       newceq " << newp);
