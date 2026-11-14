@@ -1,0 +1,34 @@
+%Error-UNSUPPORTED: t/t_assert_multiclock_seq_unsup.v:14:40: Unsupported: clocking event inside sequence expression
+                                                           : ... note: In instance 't'
+   14 |   cover property (@(posedge clk) a ##1 @(posedge clk2) b_basic);
+      |                                        ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_multiclock_seq_unsup.v:16:26: Unsupported: clocking event inside sequence expression
+                                                           : ... note: In instance 't'
+   16 |     @(posedge clk) a ##1 @(posedge clk2) b_basic;
+      |                          ^
+%Error-UNSUPPORTED: t/t_assert_multiclock_seq_unsup.v:21:40: Unsupported: clocking event inside sequence expression
+                                                           : ... note: In instance 't'
+   21 |   cover property (@(posedge clk) a ##1 @(posedge clk2) b_after ##1 c_after);
+      |                                        ^
+%Error-UNSUPPORTED: t/t_assert_multiclock_seq_unsup.v:23:40: Unsupported: clocking event inside sequence expression
+                                                           : ... note: In instance 't'
+   23 |   cover property (@(posedge clk) a ##1 @(posedge clk2) b_after ##1 @(posedge clk) c_3clk);
+      |                                        ^
+%Error-UNSUPPORTED: t/t_assert_multiclock_seq_unsup.v:25:40: Unsupported: clocking event inside sequence expression
+                                                           : ... note: In instance 't'
+   25 |   cover property (@(posedge clk) a ##1 @(posedge clk2) ##1 ##1 @(posedge clk) ##1 b_switch);
+      |                                        ^
+%Error-UNSUPPORTED: t/t_assert_multiclock_seq_unsup.v:31:11: Unsupported: clocking event inside sequence expression
+                                                           : ... note: In instance 't'
+   31 |       ##1 @(posedge clk2) ##1
+      |           ^
+%Error-UNSUPPORTED: t/t_assert_multiclock_seq_unsup.v:38:40: Unsupported: clocking event inside sequence expression
+                                                           : ... note: In instance 't'
+   38 |   cover sequence (@(posedge clk) a ##1 @(posedge clk2) b_basic);
+      |                                        ^
+%Error-UNSUPPORTED: t/t_assert_multiclock_seq_unsup.v:40:52: Unsupported: clocking event inside sequence expression
+                                                           : ... note: In instance 't'
+   40 |   assert property (@(posedge clk) $rose(a) |=> ##1 @(posedge clk2) ##1 ##1 @(posedge clk)
+      |                                                    ^
+%Error: Exiting due to
