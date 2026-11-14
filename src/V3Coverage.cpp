@@ -689,8 +689,8 @@ class CoverageVisitor final : public VNVisitor {
                 nodep->addElsesp(
                     newCoverInc(nodep->fileline(), elseDeclp, traceNameForLine(nodep, "else")));
             }
-            // If/else attributes to each block as non-branch coverage
-            else if (first_elsif || cont_elsif) {
+            // Line coverage of each block, whether or not branch coverage also covers it
+            if (first_elsif || cont_elsif) {
                 UINFO(4, "   COVER-elsif: " << nodep);
                 if (ifState.lineCoverageOn(nodep)) {
                     AstCoverOtherDecl* const elsifDeclp = new AstCoverOtherDecl{
@@ -704,7 +704,7 @@ class CoverageVisitor final : public VNVisitor {
                 }
                 // and we don't insert the else as the child if-else will do so
             } else {
-                // Cover as separate blocks (not a branch as is not two-legged)
+                // Cover as separate blocks
                 if (ifState.lineCoverageOn(nodep)) {
                     UINFO(4, "   COVER-half-if: " << nodep);
                     AstCoverOtherDecl* const ifDeclp = new AstCoverOtherDecl{
