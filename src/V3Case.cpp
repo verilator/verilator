@@ -190,6 +190,7 @@ class CaseVisitor final : public VNVisitor {
     // STATE - per AstCase. Update by 'analyzeCase', treat 'const' otherwise
     bool m_caseOpaque = false;  // Case statement is opaque (non-packed, or non-const conditions)
     bool m_caseHasDefault = false;  // Indicates the case statement has a default case
+    bool m_caseCoverDefault = false;  // Has a coverage default item the analysis didn't see
     size_t m_caseNCaseItems = 0;  // Number of AstCaseItems in the case statement
     size_t m_caseNConditions = 0;  // Number of conditions in the case statement
     // Map from LHSs of decoder pattern to corresponding LhsRecord.
@@ -568,6 +569,7 @@ class CaseVisitor final : public VNVisitor {
         // Reset all analysis results
         m_caseOpaque = false;
         m_caseHasDefault = false;
+        m_caseCoverDefault = false;
         m_caseNCaseItems = 0;
         m_caseNConditions = 0;
         m_caseDecoderRecords.clear();
@@ -1195,6 +1197,8 @@ class CaseVisitor final : public VNVisitor {
             if (!v3Global.opt.fCaseTree()) return false;
             // Can't do it without the detailed analysis
             if (!m_caseDetailsValid) return false;
+            // The tree would lose a default the analysis didn't see
+            if (m_caseCoverDefault) return false;
             // Can't do it if not exhaustive
             if (!m_caseDetails.exhaustive) return false;
             // Not worth doing if there are few conditions
@@ -1239,7 +1243,7 @@ class CaseVisitor final : public VNVisitor {
             } else {
                 nodep->addItemsp(new AstCaseItem{incp->fileline(), nullptr, incp});
                 // The analysis didn't see this default, so use the generic conversion
-                m_caseDetailsValid = false;
+                m_caseCoverDefault = true;
                 m_caseTableWidth = 0;
                 m_caseDecoderRecords.clear();
             }
