@@ -1,0 +1,136 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Aditya Shevade
+// SPDX-License-Identifier: CC0-1.0
+
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
+// Unsupported shapes of unique{} over a foreach-indexed array slice: the
+// constraint is ignored (with a warning), but randomize() should still
+// succeed on the class's other constraints.
+
+class Cube;
+  rand bit [4:0] cube[2][3][3];
+  constraint c1 {foreach (cube[i]) unique {cube[i]};}
+endclass
+
+class WideRows;
+  rand bit [7:0] wide[2][101];
+  constraint c1 {foreach (wide[i]) unique {wide[i]};}
+endclass
+
+class ScalarAndArray;
+  rand bit [3:0] x;
+  rand bit [3:0] arr[4];
+  constraint c1 {unique {x, arr};}
+endclass
+
+class TwoScalarsAndArray;
+  rand bit [3:0] x;
+  rand bit [3:0] y;
+  rand bit [3:0] arr[4];
+  constraint c1 {unique {x, y, arr};}
+endclass
+
+typedef bit [4:0] row3_t[3];
+class QueueRows;
+  rand bit [2:0] q[$][4];
+  constraint c_size {q.size() == 2;}
+  constraint c1 {foreach (q[i]) unique {q[i]};}
+endclass
+
+class DynRows;
+  rand bit [2:0] d[][4];
+  constraint c_size {d.size() == 2;}
+  constraint c1 {foreach (d[i]) unique {d[i]};}
+endclass
+
+typedef struct {rand bit [2:0] r[4];} row_s;
+class StructRows;
+  rand row_s s[2];
+  constraint c1 {foreach (s[i]) unique {s[i].r};}
+endclass
+
+class HandleRow;
+  rand bit [2:0] row[4];
+  rand bit [2:0] grid[2][4];
+endclass
+class HandleArrayRows;
+  rand HandleRow objs[2];
+  HandleRow sobjs[2];
+  constraint c1 {unique {objs[0].row};}
+  constraint c2 {unique {sobjs[1].row};}
+  constraint c3 {unique {objs[1].row[1:2]};}
+  constraint c4 {unique {objs[0].grid[1]};}
+  function new();
+    foreach (objs[k]) objs[k] = new;
+    foreach (sobjs[k]) sobjs[k] = new;
+  endfunction
+endclass
+
+class StateRowAtRandIndex;
+  rand int ri;
+  bit [2:0] s[3][4];
+  bit [2:0] s3[3][2][4];
+  constraint c1 {ri inside {[0 : 2]}; unique {s[ri]};}
+  constraint c2 {unique {s3[ri][1]};}
+endclass
+
+class FuncItem;
+  rand bit [4:0] grid[3][3];
+  function row3_t get_row();
+    return grid[0];
+  endfunction
+  constraint c1 {unique {get_row()};}
+endclass
+
+module t;
+  initial begin
+    automatic Cube cb = new;
+    automatic WideRows wr = new;
+    automatic ScalarAndArray sa = new;
+    automatic TwoScalarsAndArray tsa = new;
+    automatic FuncItem fi = new;
+    automatic QueueRows qr = new;
+    automatic DynRows dr = new;
+    automatic StructRows sr = new;
+    automatic HandleArrayRows har = new;
+    automatic StateRowAtRandIndex srri = new;
+    int ok;
+    repeat (20) begin
+      ok = cb.randomize();
+      `checkd(ok, 1)
+      ok = wr.randomize();
+      `checkd(ok, 1)
+      ok = sa.randomize();
+      `checkd(ok, 1)
+      ok = tsa.randomize();
+      `checkd(ok, 1)
+      `checkd(tsa.x == tsa.y, 0)
+      for (int i = 0; i < 4; i++) begin
+        for (int j = i + 1; j < 4; j++) begin
+          `checkd(tsa.arr[i] == tsa.arr[j], 0)
+        end
+      end
+      ok = fi.randomize();
+      `checkd(ok, 1)
+      ok = qr.randomize();
+      `checkd(ok, 1)
+      ok = dr.randomize();
+      `checkd(ok, 1)
+      ok = sr.randomize();
+      `checkd(ok, 1)
+      ok = har.randomize();
+      `checkd(ok, 1)
+      ok = srri.randomize();
+      `checkd(ok, 1)
+    end
+
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
+endmodule
