@@ -538,10 +538,10 @@
 %000004        // [fsm_state t.case_priority_u.state_q::S0]
 %000003        // [fsm_state t.case_priority_u.state_q::S1]
 %000003        // [fsm_state t.case_priority_u.state_q::S2]
-              S0: state_d = S1;
-              S1: state_d = S2;
-              S2: state_d = S0;
-              default: state_d = state_q;
+%000006       S0: state_d = S1;
+%000003       S1: state_d = S2;
+%000003       S2: state_d = S0;
+%000000       default: state_d = state_q;
             endcase
 %000006     if (other_q == S0) other_d = S1;
 %000003     else if (other_q == S1) other_d = S2;
@@ -769,19 +769,19 @@
 %000005        // [fsm_state t.state::S0]
 %000000        // [fsm_state t.state::S1] *** UNCOVERED ***
 %000005        // [fsm_state t.state::S2]
-                S0: begin
-                  if (sel) begin
-                    state <= S1;
+%000005         S0: begin
+%000005           if (sel) begin
+%000000             state <= S1;
                   end
-                  else begin
-                    state <= S2;
+%000005           else begin
+%000005             state <= S2;
                   end
                 end
-                S1: begin
-                  state <= S0;
+%000000         S1: begin
+%000000           state <= S0;
                 end
-                default: begin
-                  state <= S0;
+%000004         default: begin
+%000004           state <= S0;
                 end
               endcase
             end

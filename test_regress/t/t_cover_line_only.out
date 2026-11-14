@@ -554,6 +554,58 @@
 %000009     else if (cyc != 100) l = 0;
 -000009  point: type=line comment=if hier=top.t.cond1
             else $stop;
+            // A case without a default gets a point for no item matching, unless its items match
+            // every value or a pragma says one matches
+            // verilator lint_off CASEINCOMPLETE
+ 000010     case (cyc[2:0])
++000010  point: type=line comment=block hier=top.t.cond1
+%000001       3'd3: l = 1;
+-000001  point: type=line comment=case hier=top.t.cond1
+%000001       3'd4: l = 0;
+-000001  point: type=line comment=case hier=top.t.cond1
+            endcase
+            // verilator lint_on CASEINCOMPLETE
+ 000010     case (cyc[0])
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       1'b0: l = 1;
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       1'b1: l = 0;
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+ 000010     casez (cyc[1:0])
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       2'b1?: l = 1;
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       2'b0?: l = 0;
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+ 000010     unique case (1'b1)
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       cyc[0]: l = 1;
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       !cyc[0]: l = 0;
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+ 000010     case (1'b1)  /* verilator full_case */
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       cyc[0]: l = 1;
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       !cyc[0]: l = 0;
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+ 000010     priority case (1'b1)
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       cyc[0]: l = 1;
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       !cyc[0]: l = 0;
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+            // Items that aren't constants can't be proven to match every value
+ 000010     case (cyc[0])
++000010  point: type=line comment=block hier=top.t.cond1
+%000004       cyc[1]: l = 1;
+-000004  point: type=line comment=case hier=top.t.cond1
+            endcase
           end
         endmodule
         

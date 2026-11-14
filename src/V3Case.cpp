@@ -184,6 +184,8 @@ class CaseVisitor final : public VNVisitor {
     // For item conditions with side effects
     V3SharedTmps m_condTmps{"__VcaseCond", VVarType::MODULETEMP};
     AstScope* m_scopep = nullptr;  // Current scope
+    // Coverage points of dropped implicit defaults, deleted once every clone is processed
+    std::unordered_set<AstNodeCoverDecl*> m_droppedCoverDecls;
 
     // STATE - per AstCase. Update by 'analyzeCase', treat 'const' otherwise
     bool m_caseOpaque = false;  // Case statement is opaque (non-packed, or non-const conditions)
@@ -1227,6 +1229,20 @@ class CaseVisitor final : public VNVisitor {
         // Analyze this case statement
         analyzeCase(nodep);
 
+        // Count no item matching, unless the items match every value
+        if (AstCoverInc* const incp = nodep->coverDefaultp()) {
+            incp->unlinkFrBack();
+            if (m_caseDetailsValid && m_caseDetails.exhaustive) {
+                m_droppedCoverDecls.emplace(incp->declp());
+                VL_DO_DANGLING(incp->deleteTree(), incp);
+            } else {
+                nodep->addItemsp(new AstCaseItem{incp->fileline(), nullptr, incp});
+                // The analysis didn't see this default, so use the generic conversion
+                m_caseTableWidth = 0;
+                m_caseDecoderRecords.clear();
+            }
+        }
+
         // Take the 'notParallelp' statements under the case statement created by V3Assert.
         // If the statement was proven to have no overlaps and all cases covered,
         // it can be removed. Otherwise insert the assertion after the case statement.
@@ -1266,6 +1282,9 @@ public:
     // CONSTRUCTORS
     explicit CaseVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~CaseVisitor() override {
+        for (AstNodeCoverDecl* const declp : m_droppedCoverDecls) {
+            VL_DO_DANGLING(declp->unlinkFrBack()->deleteTree(), declp);
+        }
         V3Stats::addStat("Optimizations, Cases decoder", m_stats.caseDecoder);
         V3Stats::addStat("Optimizations, Cases table normal", m_stats.caseTableNormal);
         V3Stats::addStat("Optimizations, Cases table tiny", m_stats.caseTableTiny);

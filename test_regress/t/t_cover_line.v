@@ -385,5 +385,37 @@ module cond(input logic clk, input int cyc);
     if (cyc == 3) l = 1;
     else if (cyc != 100) l = 0;
     else $stop;
+    // A case without a default gets a point for no item matching, unless its items match
+    // every value or a pragma says one matches
+    // verilator lint_off CASEINCOMPLETE
+    case (cyc[2:0])
+      3'd3: l = 1;
+      3'd4: l = 0;
+    endcase
+    // verilator lint_on CASEINCOMPLETE
+    case (cyc[0])
+      1'b0: l = 1;
+      1'b1: l = 0;
+    endcase
+    casez (cyc[1:0])
+      2'b1?: l = 1;
+      2'b0?: l = 0;
+    endcase
+    unique case (1'b1)
+      cyc[0]: l = 1;
+      !cyc[0]: l = 0;
+    endcase
+    case (1'b1)  /* verilator full_case */
+      cyc[0]: l = 1;
+      !cyc[0]: l = 0;
+    endcase
+    priority case (1'b1)
+      cyc[0]: l = 1;
+      !cyc[0]: l = 0;
+    endcase
+    // Items that aren't constants can't be proven to match every value
+    case (cyc[0])
+      cyc[1]: l = 1;
+    endcase
   end
 endmodule
