@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 cov_flags = [
-    '--binary', '--coverage-line', '--coverage-branch', '--coverage-expr',
+    '--binary', '--coverage-line', '--coverage-branch', '--coverage-expr', '--coverage-user',
     '--coverage-per-instance'
 ]
 
@@ -25,7 +25,8 @@ def run_and_check(golden):
 # --coverage-per-instance: each unrolled generate-for iteration reports
 # separately, with a distinct hierarchy per iteration (labeled g_loop,
 # unlabeled genblk2, and nested g_nest). Unnamed blocks that declare
-# variables (repeat, g_decl's for loop) report under their enclosing block.
+# variables (repeat, the for loops in g_decl and b_named) report under their
+# enclosing block. User covers use the same readable names.
 test.compile(verilator_flags2=cov_flags)
 run_and_check("t/t_cover_genfor.dat.out")
 

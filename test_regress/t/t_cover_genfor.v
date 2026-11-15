@@ -72,4 +72,19 @@ module tb;
       end
     end
   endgenerate
+
+  // A named procedural block with an unnamed loop block inside, and user covers
+  reg [3:0] f = 0;
+  always @(posedge clk) begin : b_named
+    for (int j = 0; j < 2; j++) begin
+      if (f[j] == 0) f[j] <= 1;
+      cover (f[j]);
+    end
+    for (int k = 0; k < 2; k++) cover (f[k]);
+  end
+  generate
+    for (i = 0; i < 2; i++) begin : g_cover
+      cover property (@(posedge clk) f[i]);
+    end
+  endgenerate
 endmodule
