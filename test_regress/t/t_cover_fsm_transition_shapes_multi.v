@@ -911,6 +911,40 @@ module fsm_forced_guarded (
   end
 endmodule
 
+module fsm_reset_cond_enable (
+    input logic clk,
+    input logic rst,
+    input logic sel
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+
+  state_t state_q  /*verilator fsm_state*/;
+  state_t state_d;
+  always_comb begin
+    state_d = state_q;
+    case (state_q)
+      S0: state_d = S1;
+      S1: state_d = S2;
+      default: state_d = S0;
+    endcase
+  end
+
+  // An enable in the commit, which otherwise holds the state
+  always_ff @(posedge clk) state_q <= rst ? S0 : (sel ? state_d : state_q);
+
+  // Neither arm of the commit holds the state, so it is no enable
+  state_t other_q  /*verilator fsm_state*/;
+  state_t a_d;
+  state_t b_d;
+  assign a_d = S1;
+  assign b_d = S2;
+  always_ff @(posedge clk) other_q <= rst ? S0 : (sel ? a_d : b_d);
+endmodule
+
 module t (
     input logic clk
 );
@@ -934,6 +968,11 @@ module t (
   fsm_normalized_if_follow_wronglhs_bad normalized_if_follow_wronglhs_bad_u (.clk(clk));
   fsm_case_next_wrongrhs_bad case_next_wrongrhs_bad_u (.clk(clk));
   fsm_forced_wide forced_wide_u (.clk(clk));
+  fsm_reset_cond_enable reset_cond_enable_u (
+      .clk(clk),
+      .rst(cyc == 0),
+      .sel(cyc[0])
+  );
   fsm_forced_if_wide forced_if_wide_u (.clk(clk));
   fsm_reset_commit_mismatch_bad reset_commit_mismatch_bad_u (.clk(clk));
   fsm_reset_then_bad reset_then_bad_u (.clk(clk));

@@ -517,6 +517,128 @@ module fsm_case_guarded_chain (
   end
 endmodule
 
+module fsm_enable (
+    input logic clk,
+    input logic rst,
+    input logic en
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+  logic rst_n;
+  assign rst_n = !rst;
+
+  // Registers with an enable, which otherwise holds the state
+
+  state_t elsif_q;
+  state_t elsif_d;
+  always_comb begin
+    elsif_d = elsif_q;
+    case (elsif_q)
+      S0: elsif_d = S1;
+      S1: elsif_d = S2;
+      S2: elsif_d = S0;
+      default: elsif_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) elsif_q <= S0;
+    else if (en) elsif_q <= elsif_d;
+  end
+
+  state_t cond_q;
+  state_t cond_d;
+  always_comb begin
+    cond_d = cond_q;
+    case (cond_q)
+      S0: cond_d = S1;
+      S1: cond_d = S2;
+      S2: cond_d = S0;
+      default: cond_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) cond_q <= rst ? S0 : (en ? cond_d : cond_q);
+
+  state_t lowrst_q;
+  state_t lowrst_d;
+  always_comb begin
+    lowrst_d = lowrst_q;
+    case (lowrst_q)
+      S0: lowrst_d = S1;
+      S1: lowrst_d = S2;
+      S2: lowrst_d = S0;
+      default: lowrst_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (!rst_n) lowrst_q <= S0;
+    else if (en) lowrst_q <= lowrst_d;
+  end
+
+  state_t noreset_q;
+  state_t noreset_d;
+  always_comb begin
+    noreset_d = noreset_q;
+    case (noreset_q)
+      S0: noreset_d = S1;
+      S1: noreset_d = S2;
+      S2: noreset_d = S0;
+      default: noreset_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (en) noreset_q <= noreset_d;
+  end
+
+  state_t noreset_cond_q;
+  state_t noreset_cond_d;
+  always_comb begin
+    noreset_cond_d = noreset_cond_q;
+    case (noreset_cond_q)
+      S0: noreset_cond_d = S1;
+      S1: noreset_cond_d = S2;
+      S2: noreset_cond_d = S0;
+      default: noreset_cond_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) noreset_cond_q <= en ? noreset_cond_d : noreset_cond_q;
+
+  // An enable that holds the state when set
+  logic stall;
+  assign stall = !en;
+
+  state_t stall_q;
+  state_t stall_d;
+  always_comb begin
+    stall_d = stall_q;
+    case (stall_q)
+      S0: stall_d = S1;
+      S1: stall_d = S2;
+      S2: stall_d = S0;
+      default: stall_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) stall_q <= rst ? S0 : (stall ? stall_q : stall_d);
+
+  // Not enables, so no FSM: neither arm holds the state, or an arm is not a single value
+  logic sel;
+  assign sel = en;
+  state_t sel_q;
+  state_t a_d;
+  state_t b_d;
+  assign a_d = S1;
+  assign b_d = S2;
+  always_ff @(posedge clk) sel_q <= rst ? S0 : (sel ? a_d : b_d);
+  state_t nest_q;
+  always_ff @(posedge clk) nest_q <= rst ? S0 : (en ? (sel ? a_d : b_d) : nest_q);
+  state_t then_q;
+  always_ff @(posedge clk) then_q <= rst ? (sel ? a_d : b_d) : nest_q;
+  state_t else_q;
+  always_ff @(posedge clk) else_q <= rst ? S0 : (en ? else_q : (sel ? a_d : b_d));
+endmodule
+
 module t (
     input clk
 );
@@ -602,6 +724,11 @@ module t (
       .rst(rst),
       .a(cyc[0]),
       .b(cyc[1])
+  );
+  fsm_enable enable_u (
+      .clk(clk),
+      .rst(rst),
+      .en(cyc[0])
   );
 
   initial begin
