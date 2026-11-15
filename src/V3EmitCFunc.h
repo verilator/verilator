@@ -202,8 +202,9 @@ protected:
         puts(", ");
         puts(cvtToStr(nodep->offset() + nodep->fileline()->firstColumn()));
         puts(", ");
-        putsQuoted((!nodep->hier().empty() ? "." : "")
-                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
+        putsQuoted(
+            (!nodep->hier().empty() ? "." : "")
+            + VIdProtect::protectWordsIf(AstNode::prettyName(nodep->hier()), nodep->protect()));
         puts(", ");
         putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
         puts(", ");
@@ -245,8 +246,9 @@ protected:
         puts(", ");
         puts(cvtToStr(nodep->fileline()->firstColumn()));
         puts(", ");
-        putsQuoted((!nodep->hier().empty() ? "." : "")
-                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
+        putsQuoted(
+            (!nodep->hier().empty() ? "." : "")
+            + VIdProtect::protectWordsIf(AstNode::prettyName(nodep->hier()), nodep->protect()));
         puts(", ");
         putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
         puts(", ");
