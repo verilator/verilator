@@ -878,6 +878,66 @@ class NarrowIndex;
 endclass
 /* verilator lint_on WIDTHEXPAND */
 
+// An inline index mixing a non-rand member with the rand one: the rand member
+// must still keep its width.
+class InlineMixedMemberIndex;
+  rand bit [3:0] k;
+  bit [3:0] c;
+  bit [7:0] pool[16];
+  function new();
+    c = 3;
+    pool = '{8'h00, 8'h01, 8'h02, 8'h03, 8'h04, 8'h55, 8'h06, 8'h07,
+             8'h08, 8'h09, 8'h0a, 8'h0b, 8'h0c, 8'h0d, 8'h0e, 8'h0f};
+  endfunction
+endclass
+
+// A state index read through a handle: no with-clause is involved, so the
+// member resolves through its object.
+class HolderState;
+  bit [2:0] c = 5;
+endclass
+class HolderStateIndex;
+  HolderState h;
+  bit [7:0] pool[8];
+  constraint c { pool[h.c] == 8'h55; }
+  function new();
+    h = new;
+    pool = '{8'h00, 8'h01, 8'h02, 8'h03, 8'h04, 8'h55, 8'h06, 8'h07};
+  endfunction
+endclass
+
+// An index read through an array-method item: the member's base is the
+// method's item, not the with-object.
+class ItemElem;
+  bit [3:0] memb;
+endclass
+class ItemMemberSumIndex;
+  ItemElem q[$];
+  bit [7:0] pool[16];
+  constraint c { q.sum() with (pool[item.memb]) == 8'h00; }
+  function new();
+    automatic ItemElem e = new;
+    e.memb = 0;
+    q.push_back(e);
+    pool = '{8'h00, 8'h01, 8'h02, 8'h03, 8'h04, 8'h05, 8'h06, 8'h07,
+             8'h08, 8'h09, 8'h0a, 8'h0b, 8'h0c, 8'h0d, 8'h0e, 8'h0f};
+  endfunction
+endclass
+
+// Same sum, but the target value matches nothing: must stay UNSAT.
+class ItemMemberSumIndexUnsat;
+  ItemElem q[$];
+  bit [7:0] pool[16];
+  constraint c { q.sum() with (pool[item.memb]) == 8'hFF; }
+  function new();
+    automatic ItemElem e = new;
+    e.memb = 0;
+    q.push_back(e);
+    pool = '{8'h00, 8'h01, 8'h02, 8'h03, 8'h04, 8'h05, 8'h06, 8'h07,
+             8'h08, 8'h09, 8'h0a, 8'h0b, 8'h0c, 8'h0d, 8'h0e, 8'h0f};
+  endfunction
+endclass
+
 
 module t;
   initial begin
@@ -960,6 +1020,10 @@ module t;
     PackedStructPool ps_obj;
     StructFieldPool sf_obj;
     StructFieldPoolOob sf_oob_obj;
+    InlineMixedMemberIndex imm_obj;
+    HolderStateIndex hs_obj;
+    ItemMemberSumIndex ims_obj;
+    ItemMemberSumIndexUnsat ims_u_obj;
     bit [15:0] seen;
     int randomize_result;
 
@@ -1496,6 +1560,25 @@ module t;
     randomize_result = umod_obj.randomize();
     `checkd(randomize_result, 1);
     `checkd(umod_obj.u1, 20);
+
+    imm_obj = new;
+    randomize_result = imm_obj.randomize() with { k == 2; pool[c + k] == 8'h55; };
+    `checkd(randomize_result, 1);
+    `checkd(imm_obj.k, 2);
+    randomize_result = imm_obj.randomize() with { k == 2; pool[c + k] == 8'hFF; };
+    `checkd(randomize_result, 0);
+
+    hs_obj = new;
+    randomize_result = hs_obj.randomize();
+    `checkd(randomize_result, 1);
+
+    ims_obj = new;
+    randomize_result = ims_obj.randomize();
+    `checkd(randomize_result, 1);
+
+    ims_u_obj = new;
+    randomize_result = ims_u_obj.randomize();
+    `checkd(randomize_result, 0);
 
     $write("*-* All Finished *-*\n");
     $finish;
