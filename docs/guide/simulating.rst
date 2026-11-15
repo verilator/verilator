@@ -364,13 +364,11 @@ module with the same parameter set. A module instantiated with different
 parameter values is considered a different module and will get counted
 separately.
 
-Verilator makes a minimally-intelligent decision about what clock domain
-the signal goes to, and only looks for edges in that clock domain. This
-means that edges may be ignored if it is known that the receiving logic
-could never see the edge. This algorithm may improve in the future. The net
-result is that coverage may be lower than what would be seen by looking at
-traces, but the coverage is a more accurate representation of the quality
-of stimulus into the design.
+Toggles are counted whenever combinational logic is evaluated, so a bit
+that changes more than once in a time step, for example while the logic
+settles, is counted each time. As a result, toggle counts may be higher
+than what would be seen by looking at traces, which show one value per time
+step.
 
 There may be edges counted near time zero while the model stabilizes. It's
 a good practice to zero all coverage just before releasing reset to prevent
