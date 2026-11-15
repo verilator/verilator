@@ -69,6 +69,38 @@ module t (
     endcase
   end
 
+  // One-process FSMs with the same reset; flush arrives in RUN
+  state_t state4;
+  always_ff @(posedge clk) begin
+    if (rst | flush) state4 <= IDLE;
+    else
+      case (state4)
+        IDLE: if (go) state4 <= RUN;
+        RUN: if (last) state4 <= DONE;
+        default: state4 <= IDLE;
+      endcase
+  end
+
+  state_t state5;
+  always_ff @(posedge clk) begin
+    if (rst | flush) state5 <= IDLE;
+    else if (state5 == IDLE) state5 <= go ? RUN : IDLE;
+    else if (state5 == RUN) state5 <= last ? DONE : RUN;
+    else state5 <= IDLE;
+  end
+
+  // A first 'if' that reads the state is not a reset, so it adds no reset arcs
+  state_t state6;
+  always_ff @(posedge clk) begin
+    if (state6 == DONE) state6 <= IDLE;
+    else
+      case (state6)
+        IDLE: if (go) state6 <= RUN;
+        RUN: if (last) state6 <= DONE;
+        default: state6 <= IDLE;
+      endcase
+  end
+
   initial cyc = 0;
 
   always @(posedge clk) begin

@@ -879,6 +879,8 @@
 %000002       case (state)
         // [FSM coverage]
 %000002        // [fsm_arc t.state::S0->S1]
+%000000        // [fsm_arc t.state::S1->S0]
+%000001        // [fsm_arc t.state::S2->S0]
 %000002        // [fsm_state t.state::S0]
 %000002        // [fsm_state t.state::S1]
 %000002        // [fsm_state t.state::S2]

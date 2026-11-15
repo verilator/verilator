@@ -105,12 +105,13 @@ struct FsmSenDesc final {
     AstVarScope* varScopep = nullptr;
 };
 
-// Captures the simple reset predicate shape that survives to this pass after
-// earlier normalization so reset arcs can be reconstructed during lowering.
+// Describes an FSM's reset branch, if it has one.
 struct FsmResetCondDesc final {
-    // Reset signal used by the FSM in the saved scoped AST.
+    // Reset signal used by the FSM in the saved scoped AST; set only when the
+    // reset condition is a plain signal.
     AstVarScope* varScopep = nullptr;
     bool activeLow = false;
+    bool hasBranch = false;  // The FSM has a reset branch, with any condition
 };
 
 class FsmResetArcDesc final {
@@ -708,7 +709,10 @@ class FsmDetectVisitor final : public VNVisitorConst {
             reg.hasResetCond(reg.resetCond().varScopep != nullptr);
             reg.inclCond(vscp->varp()->attrFsmArcInclCond());
             AstIf* const firstIfp = VN_CAST(alwaysp->stmtsp(), If);
-            if (firstIfp && reg.hasResetCond()) {
+            // A first 'if' that reads the state is not a reset
+            if (firstIfp && reg.resetCond().hasBranch
+                && !firstIfp->condp()->exists(
+                    [vscp](const AstVarRef* const refp) { return refp->varScopep() == vscp; })) {
                 AstNode* const resetsp
                     = reg.resetCond().activeLow ? firstIfp->elsesp() : firstIfp->thensp();
                 AstVarScope* resetStateVscp = nullptr;
@@ -906,8 +910,8 @@ class FsmDetectVisitor final : public VNVisitorConst {
         }
     };
 
-    // Reset arcs are only modeled for the simple signal form that survives to
-    // this pass after earlier normalization.
+    // An active-low reset is recognized only as a plain signal, the form V3Const
+    // normalizes it to
     static bool isSimpleResetCond(AstNodeExpr* condp) { return VN_IS(condp, VarRef); }
 
     // Body of 'if (!rst) body', V3Const's fold of an empty reset 'if (rst) ; else body'.
@@ -928,14 +932,12 @@ class FsmDetectVisitor final : public VNVisitorConst {
         return skipLeadingIgnorableStmt(ifp->thensp());
     }
 
-    // Normalize the reset condition into a compact description so the lowering
-    // phase can regenerate the same predicate after detection. By the time
-    // this pass runs, active-low source forms such as "!rst_n" have already
-    // been canonicalized to a positive-condition if/else shape, so only a
-    // plain VarRef survives here.
+    // Describe a reset branch with any condition. Only a plain signal is
+    // recorded; V3Const has already turned an active-low '!rst_n' into one.
     static FsmResetCondDesc describeResetCond(AstNodeExpr* condp, bool activeLow = false) {
         FsmResetCondDesc desc;
         desc.activeLow = activeLow;
+        desc.hasBranch = true;
         if (AstVarRef* const vrefp = VN_CAST(condp, VarRef)) {
             desc.varScopep = vrefp->varScopep();
         }

@@ -86,6 +86,60 @@
             endcase
           end
         
+          // One-process FSMs with the same reset; flush arrives in RUN
+          state_t state4;
+ 000011   always_ff @(posedge clk) begin
+%000009     if (rst | flush) state4 <= IDLE;
+            else
+%000009       case (state4)
+        // [FSM coverage]
+%000001        // [fsm_arc t.state4::DONE->IDLE]
+%000002        // [fsm_arc t.state4::IDLE->RUN]
+%000001        // [fsm_arc t.state4::RUN->DONE]
+%000001        // [fsm_arc t.state4::RUN->IDLE]
+%000001        // [fsm_state t.state4::DONE]
+%000003        // [fsm_state t.state4::IDLE]
+%000002        // [fsm_state t.state4::RUN]
+%000004         IDLE: if (go) state4 <= RUN;
+%000004         RUN: if (last) state4 <= DONE;
+%000001         default: state4 <= IDLE;
+              endcase
+          end
+        
+          state_t state5;
+ 000011   always_ff @(posedge clk) begin
+%000009     if (rst | flush) state5 <= IDLE;
+%000004     else if (state5 == IDLE) state5 <= go ? RUN : IDLE;
+        // [FSM coverage]
+%000001        // [fsm_arc t.state5::DONE->IDLE]
+%000002        // [fsm_arc t.state5::IDLE->RUN]
+%000001        // [fsm_arc t.state5::RUN->DONE]
+%000001        // [fsm_arc t.state5::RUN->IDLE]
+%000001        // [fsm_state t.state5::DONE]
+%000003        // [fsm_state t.state5::IDLE]
+%000002        // [fsm_state t.state5::RUN]
+%000004     else if (state5 == RUN) state5 <= last ? DONE : RUN;
+%000001     else state5 <= IDLE;
+          end
+        
+          // A first 'if' that reads the state is not a reset, so it adds no reset arcs
+          state_t state6;
+ 000011   always_ff @(posedge clk) begin
+~000010     if (state6 == DONE) state6 <= IDLE;
+            else
+~000010       case (state6)
+        // [FSM coverage]
+%000001        // [fsm_arc t.state6::IDLE->RUN]
+%000001        // [fsm_arc t.state6::RUN->DONE]
+%000001        // [fsm_state t.state6::DONE]
+%000002        // [fsm_state t.state6::IDLE]
+%000001        // [fsm_state t.state6::RUN]
+%000004         IDLE: if (go) state6 <= RUN;
+%000006         RUN: if (last) state6 <= DONE;
+%000000         default: state6 <= IDLE;
+              endcase
+          end
+        
 %000001   initial cyc = 0;
         
  000011   always @(posedge clk) begin
