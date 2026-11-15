@@ -1062,21 +1062,32 @@ class FsmDetectVisitor final : public VNVisitorConst {
         return nullptr;
     }
 
-    // The next state of 'en ? next : state', an enable that otherwise holds the state; else
-    // 'exprp'
+    // The next state of 'en ? next : state', an enable that otherwise holds the state, of any
+    // depth of enables; else 'exprp'
     static AstNodeExpr* enabledNextp(AstNodeExpr* exprp, const AstVarRef* stateRefp) {
         AstCond* const condp = VN_CAST(exprp, Cond);
         if (!condp) return exprp;
         AstNodeExpr* const nextp = enabledArmp(condp->thenp(), condp->elsep(), stateRefp);
-        return nextp ? nextp : exprp;
+        return nextp ? enabledNextp(nextp, stateRefp) : exprp;
     }
 
-    // The commit of 'if (en) commit', an enable that otherwise holds the state; else 'nodep'
+    // The commit of 'if (en) commit' or 'if (en) commit; else state = state', an enable that
+    // otherwise holds the state, of any depth of enables; else 'nodep'
     static AstNode* enabledCommitp(AstNode* nodep) {
         AstIf* const ifp = VN_CAST(nodep, If);
-        if (!ifp || skipLeadingIgnorableStmt(ifp->elsesp())) return nodep;
-        AstNode* const commitp = singleMeaningfulStmt(ifp->thensp());
-        return commitp ? commitp : nodep;
+        AstNode* const commitp
+            = ifp ? enabledCommitp(singleMeaningfulStmt(ifp->thensp())) : nullptr;
+        if (!commitp) return nodep;
+        if (!skipLeadingIgnorableStmt(ifp->elsesp())) return commitp;
+        AstVarScope* stateVscp = nullptr;
+        AstVarScope* fromVscp = nullptr;
+        AstVarScope* holdVscp = nullptr;
+        AstVarScope* holdFromVscp = nullptr;
+        const bool isHold
+            = nodeStateVarAssign(commitp, stateVscp, fromVscp)
+              && nodeStateVarAssign(singleMeaningfulStmt(ifp->elsesp()), holdVscp, holdFromVscp)
+              && holdVscp == stateVscp && holdFromVscp == stateVscp;
+        return isHold ? commitp : nodep;
     }
 
     // The value an arm of V3LiftExpr's form assigns its temporary, where an enable,
@@ -1122,24 +1133,10 @@ class FsmDetectVisitor final : public VNVisitorConst {
         return assp;
     }
 
-    // Match 'state = en ? next : state', an enable without reset, or its lifted form
-    static bool enabledStateVarAssign(AstNode* stmtsp, AstVarScope*& stateVscp,
-                                      AstVarScope*& fromVscp) {
-        AstNodeExpr* condp;
-        AstNodeExpr* thenp;
-        AstNodeExpr* elsep;
-        AstNodeAssign* const assp = condStateAssign(stmtsp, condp, thenp, elsep);
-        if (!assp) return false;
-        AstVarRef* const lhsp = VN_AS(assp->lhsp()->baseFromp(true), VarRef);
-        AstVarRef* const nextRefp = VN_CAST(enabledArmp(thenp, elsep, lhsp), VarRef);
-        if (!nextRefp) return false;
-        stateVscp = lhsp->varScopep();
-        fromVscp = nextRefp->varScopep();
-        return true;
-    }
-
     // Match 'state = reset ? CONST : next', an active high reset folded into the commit,
     // or active low 'state = reset_n ? next : CONST', with or without an enable on next.
+    // An enable on the reset arm still resets to CONST, from every state.  Or match
+    // 'state = en ? next : state', an enable without reset, leaving 'resetValuep' null.
     static AstNodeAssign* condStateVarAssign(AstNode* stmtsp, AstVarScope*& stateVscp,
                                              AstVarScope*& fromVscp, AstNodeExpr*& condp,
                                              AstNodeExpr*& resetValuep, FsmStateValue& resetValue,
@@ -1147,13 +1144,20 @@ class FsmDetectVisitor final : public VNVisitorConst {
         AstNodeExpr* nextp;
         AstNodeAssign* const assp = condStateAssign(stmtsp, condp, resetValuep, nextp);
         if (!assp) return nullptr;
+        AstVarRef* const lhsp = VN_AS(assp->lhsp()->baseFromp(true), VarRef);
+        stateVscp = lhsp->varScopep();
+        if (AstVarRef* const enabledRefp
+            = VN_CAST(enabledArmp(resetValuep, nextp, lhsp), VarRef)) {
+            resetValuep = nullptr;
+            fromVscp = enabledRefp->varScopep();
+            return assp;
+        }
         activeLow = !VN_IS(nextp, VarRef) && isSimpleResetCond(condp);
         if (activeLow) std::swap(resetValuep, nextp);
         AstVarRef* const nextRefp = VN_CAST(nextp, VarRef);
         if (!nextRefp) return nullptr;
         if (constValueStatus(resetValuep, resetValue /*ref*/) != ConstValueStatus::OK)
             return nullptr;
-        stateVscp = VN_AS(assp->lhsp()->baseFromp(true), VarRef)->varScopep();
         fromVscp = nextRefp->varScopep();
         return assp;
     }
@@ -1666,7 +1670,12 @@ class FsmDetectVisitor final : public VNVisitorConst {
             const bool hasElse = skipLeadingIgnorableStmt(ifp->elsesp());
             AstNode* resetsp = hasElse ? ifp->thensp() : nullptr;
             AstNode* commitp = hasElse ? ifp->elsesp() : emptyResetBodyp(ifp);
-            if (!commitp) commitp = ifp;  // 'if (en) commit', an enable without reset
+            // 'if (en) commit [else state = state]', an enable without reset
+            const bool enableOnly = !commitp || enabledCommitp(ifp) != ifp;
+            if (enableOnly) {
+                resetsp = nullptr;
+                commitp = ifp;
+            }
             const bool activeLow = activeLowResetBodyp(ifp) != nullptr;
             if (activeLow) std::swap(resetsp, commitp);
             AstVarScope* resetStateVscp = nullptr;
@@ -1691,8 +1700,10 @@ class FsmDetectVisitor final : public VNVisitorConst {
             UASSERT_OBJ(elseNodep, ifp, "register reset match requires a non-empty commit branch");
             if (!nodeStateVarAssign(enabledCommitp(elseNodep), stateVscp, nextVscp)) return false;
             if (!emptyResetBranch && resetStateVscp != stateVscp) return false;
-            cand.resetCond() = describeResetCond(ifp->condp(), activeLow);
-            cand.hasResetCond(cand.resetCond().varScopep != nullptr);
+            if (!enableOnly) {
+                cand.resetCond() = describeResetCond(ifp->condp(), activeLow);
+                cand.hasResetCond(cand.resetCond().varScopep != nullptr);
+            }
         } else {
             AstNodeExpr* resetCondp = nullptr;
             AstNodeExpr* resetValuep = nullptr;
@@ -1701,11 +1712,12 @@ class FsmDetectVisitor final : public VNVisitorConst {
             if (AstNodeAssign* const assp = condStateVarAssign(
                     stmtsp, stateVscp /*ref*/, nextVscp /*ref*/, resetCondp /*ref*/,
                     resetValuep /*ref*/, resetValue /*ref*/, activeLow /*ref*/)) {
-                cand.resetArcs().emplace_back(resetValue, assp, resetValuep);
-                cand.resetCond() = describeResetCond(resetCondp, activeLow);
-                cand.hasResetCond(cand.resetCond().varScopep != nullptr);
-            } else if (!nodeStateVarAssign(nodep, stateVscp, nextVscp)
-                       && !enabledStateVarAssign(stmtsp, stateVscp, nextVscp)) {
+                if (resetValuep) {
+                    cand.resetArcs().emplace_back(resetValue, assp, resetValuep);
+                    cand.resetCond() = describeResetCond(resetCondp, activeLow);
+                    cand.hasResetCond(cand.resetCond().varScopep != nullptr);
+                }
+            } else if (!nodeStateVarAssign(nodep, stateVscp, nextVscp)) {
                 return false;
             }
         }

@@ -529,6 +529,8 @@ module fsm_enable (
   } state_t;
   logic rst_n;
   assign rst_n = !rst;
+  logic sel;
+  assign sel = en;
 
   // Registers with an enable, which otherwise holds the state
 
@@ -605,6 +607,83 @@ module fsm_enable (
   end
   always_ff @(posedge clk) noreset_cond_q <= en ? noreset_cond_d : noreset_cond_q;
 
+  state_t lowcond_q;
+  state_t lowcond_d;
+  always_comb begin
+    lowcond_d = lowcond_q;
+    case (lowcond_q)
+      S0: lowcond_d = S1;
+      S1: lowcond_d = S2;
+      S2: lowcond_d = S0;
+      default: lowcond_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) lowcond_q <= rst_n ? (en ? lowcond_d : lowcond_q) : S0;
+
+  state_t hold_q;
+  state_t hold_d;
+  always_comb begin
+    hold_d = hold_q;
+    case (hold_q)
+      S0: hold_d = S1;
+      S1: hold_d = S2;
+      S2: hold_d = S0;
+      default: hold_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) hold_q <= S0;
+    else if (en) hold_q <= hold_d;
+    else hold_q <= hold_q;
+  end
+
+  state_t noreset_hold_q;
+  state_t noreset_hold_d;
+  always_comb begin
+    noreset_hold_d = noreset_hold_q;
+    case (noreset_hold_q)
+      S0: noreset_hold_d = S1;
+      S1: noreset_hold_d = S2;
+      S2: noreset_hold_d = S0;
+      default: noreset_hold_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (en) noreset_hold_q <= noreset_hold_d;
+    else noreset_hold_q <= noreset_hold_q;
+  end
+
+  state_t nest_cond_q;
+  state_t nest_cond_d;
+  always_comb begin
+    nest_cond_d = nest_cond_q;
+    case (nest_cond_q)
+      S0: nest_cond_d = S1;
+      S1: nest_cond_d = S2;
+      S2: nest_cond_d = S0;
+      default: nest_cond_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) nest_cond_q <= rst ? S0 : (en ? (sel ? nest_cond_d : nest_cond_q) : nest_cond_q);
+
+  state_t nest_if_q;
+  state_t nest_if_d;
+  always_comb begin
+    nest_if_d = nest_if_q;
+    case (nest_if_q)
+      S0: nest_if_d = S1;
+      S1: nest_if_d = S2;
+      S2: nest_if_d = S0;
+      default: nest_if_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) nest_if_q <= S0;
+    else if (en) begin
+      if (sel) nest_if_q <= nest_if_d;
+    end
+  end
+
   // An enable that holds the state when set
   logic stall;
   assign stall = !en;
@@ -622,9 +701,8 @@ module fsm_enable (
   end
   always_ff @(posedge clk) stall_q <= rst ? S0 : (stall ? stall_q : stall_d);
 
-  // Not enables, so no FSM: neither arm holds the state, or an arm is not a single value
-  logic sel;
-  assign sel = en;
+  // Not enables, so no FSM: neither arm holds the state, an arm is not a single value, or
+  // the else holds another register
   state_t sel_q;
   state_t a_d;
   state_t b_d;
@@ -634,7 +712,12 @@ module fsm_enable (
   state_t nest_q;
   always_ff @(posedge clk) nest_q <= rst ? S0 : (en ? (sel ? a_d : b_d) : nest_q);
   state_t then_q;
-  always_ff @(posedge clk) then_q <= rst ? (sel ? a_d : b_d) : nest_q;
+  always_ff @(posedge clk) then_q <= rst ? (sel ? a_d : b_d) : then_q;
+  state_t badhold_q;
+  always_ff @(posedge clk) begin
+    if (en) badhold_q <= a_d;
+    else badhold_q <= then_q;
+  end
   state_t else_q;
   always_ff @(posedge clk) else_q <= rst ? S0 : (en ? else_q : (sel ? a_d : b_d));
 endmodule

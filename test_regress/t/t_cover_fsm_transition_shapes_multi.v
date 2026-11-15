@@ -911,38 +911,209 @@ module fsm_forced_guarded (
   end
 endmodule
 
-module fsm_reset_cond_enable (
+module fsm_enable (
     input logic clk,
     input logic rst,
-    input logic sel
+    input logic en
 );
   typedef enum logic [1:0] {
     S0 = 2'd0,
     S1 = 2'd1,
     S2 = 2'd2
   } state_t;
+  logic rst_n;
+  assign rst_n = !rst;
+  logic sel;
+  assign sel = en;
 
-  state_t state_q  /*verilator fsm_state*/;
-  state_t state_d;
+  // Registers with an enable, which otherwise holds the state
+
+  state_t elsif_q;
+  state_t elsif_d;
   always_comb begin
-    state_d = state_q;
-    case (state_q)
-      S0: state_d = S1;
-      S1: state_d = S2;
-      default: state_d = S0;
+    elsif_d = elsif_q;
+    case (elsif_q)
+      S0: elsif_d = S1;
+      S1: elsif_d = S2;
+      S2: elsif_d = S0;
+      default: elsif_d = S0;
     endcase
   end
+  always_ff @(posedge clk) begin
+    if (rst) elsif_q <= S0;
+    else if (en) elsif_q <= elsif_d;
+  end
 
-  // An enable in the commit, which otherwise holds the state
-  always_ff @(posedge clk) state_q <= rst ? S0 : (sel ? state_d : state_q);
+  state_t cond_q;
+  state_t cond_d;
+  always_comb begin
+    cond_d = cond_q;
+    case (cond_q)
+      S0: cond_d = S1;
+      S1: cond_d = S2;
+      S2: cond_d = S0;
+      default: cond_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) cond_q <= rst ? S0 : (en ? cond_d : cond_q);
 
-  // Neither arm of the commit holds the state, so it is no enable
-  state_t other_q  /*verilator fsm_state*/;
+  state_t lowrst_q;
+  state_t lowrst_d;
+  always_comb begin
+    lowrst_d = lowrst_q;
+    case (lowrst_q)
+      S0: lowrst_d = S1;
+      S1: lowrst_d = S2;
+      S2: lowrst_d = S0;
+      default: lowrst_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (!rst_n) lowrst_q <= S0;
+    else if (en) lowrst_q <= lowrst_d;
+  end
+
+  state_t noreset_q;
+  state_t noreset_d;
+  always_comb begin
+    noreset_d = noreset_q;
+    case (noreset_q)
+      S0: noreset_d = S1;
+      S1: noreset_d = S2;
+      S2: noreset_d = S0;
+      default: noreset_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (en) noreset_q <= noreset_d;
+  end
+
+  state_t noreset_cond_q;
+  state_t noreset_cond_d;
+  always_comb begin
+    noreset_cond_d = noreset_cond_q;
+    case (noreset_cond_q)
+      S0: noreset_cond_d = S1;
+      S1: noreset_cond_d = S2;
+      S2: noreset_cond_d = S0;
+      default: noreset_cond_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) noreset_cond_q <= en ? noreset_cond_d : noreset_cond_q;
+
+  state_t lowcond_q;
+  state_t lowcond_d;
+  always_comb begin
+    lowcond_d = lowcond_q;
+    case (lowcond_q)
+      S0: lowcond_d = S1;
+      S1: lowcond_d = S2;
+      S2: lowcond_d = S0;
+      default: lowcond_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) lowcond_q <= rst_n ? (en ? lowcond_d : lowcond_q) : S0;
+
+  state_t hold_q;
+  state_t hold_d;
+  always_comb begin
+    hold_d = hold_q;
+    case (hold_q)
+      S0: hold_d = S1;
+      S1: hold_d = S2;
+      S2: hold_d = S0;
+      default: hold_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) hold_q <= S0;
+    else if (en) hold_q <= hold_d;
+    else hold_q <= hold_q;
+  end
+
+  state_t noreset_hold_q;
+  state_t noreset_hold_d;
+  always_comb begin
+    noreset_hold_d = noreset_hold_q;
+    case (noreset_hold_q)
+      S0: noreset_hold_d = S1;
+      S1: noreset_hold_d = S2;
+      S2: noreset_hold_d = S0;
+      default: noreset_hold_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (en) noreset_hold_q <= noreset_hold_d;
+    else noreset_hold_q <= noreset_hold_q;
+  end
+
+  state_t nest_cond_q;
+  state_t nest_cond_d;
+  always_comb begin
+    nest_cond_d = nest_cond_q;
+    case (nest_cond_q)
+      S0: nest_cond_d = S1;
+      S1: nest_cond_d = S2;
+      S2: nest_cond_d = S0;
+      default: nest_cond_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) nest_cond_q <= rst ? S0 : (en ? (sel ? nest_cond_d : nest_cond_q) : nest_cond_q);
+
+  state_t nest_if_q;
+  state_t nest_if_d;
+  always_comb begin
+    nest_if_d = nest_if_q;
+    case (nest_if_q)
+      S0: nest_if_d = S1;
+      S1: nest_if_d = S2;
+      S2: nest_if_d = S0;
+      default: nest_if_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) nest_if_q <= S0;
+    else if (en) begin
+      if (sel) nest_if_q <= nest_if_d;
+    end
+  end
+
+  // An enable that holds the state when set
+  logic stall;
+  assign stall = !en;
+
+  state_t stall_q;
+  state_t stall_d;
+  always_comb begin
+    stall_d = stall_q;
+    case (stall_q)
+      S0: stall_d = S1;
+      S1: stall_d = S2;
+      S2: stall_d = S0;
+      default: stall_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) stall_q <= rst ? S0 : (stall ? stall_q : stall_d);
+
+  // Not enables, so no FSM: neither arm holds the state, an arm is not a single value, or
+  // the else holds another register
+  state_t sel_q;
   state_t a_d;
   state_t b_d;
   assign a_d = S1;
   assign b_d = S2;
-  always_ff @(posedge clk) other_q <= rst ? S0 : (sel ? a_d : b_d);
+  always_ff @(posedge clk) sel_q <= rst ? S0 : (sel ? a_d : b_d);
+  state_t nest_q;
+  always_ff @(posedge clk) nest_q <= rst ? S0 : (en ? (sel ? a_d : b_d) : nest_q);
+  state_t then_q;
+  always_ff @(posedge clk) then_q <= rst ? (sel ? a_d : b_d) : then_q;
+  state_t badhold_q;
+  always_ff @(posedge clk) begin
+    if (en) badhold_q <= a_d;
+    else badhold_q <= then_q;
+  end
+  state_t else_q;
+  always_ff @(posedge clk) else_q <= rst ? S0 : (en ? else_q : (sel ? a_d : b_d));
 endmodule
 
 module t (
@@ -968,10 +1139,10 @@ module t (
   fsm_normalized_if_follow_wronglhs_bad normalized_if_follow_wronglhs_bad_u (.clk(clk));
   fsm_case_next_wrongrhs_bad case_next_wrongrhs_bad_u (.clk(clk));
   fsm_forced_wide forced_wide_u (.clk(clk));
-  fsm_reset_cond_enable reset_cond_enable_u (
+  fsm_enable enable_u (
       .clk(clk),
       .rst(cyc == 0),
-      .sel(cyc[0])
+      .en(cyc[0])
   );
   fsm_forced_if_wide forced_if_wide_u (.clk(clk));
   fsm_reset_commit_mismatch_bad reset_commit_mismatch_bad_u (.clk(clk));
