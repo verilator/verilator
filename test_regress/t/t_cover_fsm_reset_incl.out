@@ -292,6 +292,496 @@
           end
         endmodule
         
+        module fsm_enable (
+            input logic clk,
+            input logic rst,
+            input logic en,
+            input logic sel
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+          logic rst_n;
+          assign rst_n = !rst;
+          logic stall;
+          assign stall = !en;
+          state_t b_d;
+          assign b_d = S2;
+        
+          // Registers with an enable, which otherwise holds the state
+        
+          state_t elsif_q;
+          state_t elsif_d;
+          always_comb begin
+            elsif_d = elsif_q;
+%000003     case (elsif_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.elsif_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.elsif_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.elsif_q::S1->S2]
+%000001        // [fsm_arc t.enable_u.elsif_q::S2->S0]
+%000003        // [fsm_state t.enable_u.elsif_q::S0]
+%000003        // [fsm_state t.enable_u.elsif_q::S1]
+%000001        // [fsm_state t.enable_u.elsif_q::S2]
+              S0: elsif_d = S1;
+              S1: elsif_d = S2;
+              S2: elsif_d = S0;
+              default: elsif_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            if (rst) elsif_q <= S0;
+            else if (en) elsif_q <= elsif_d;
+          end
+        
+          state_t cond_q;
+          state_t cond_d;
+          always_comb begin
+            cond_d = cond_q;
+%000003     case (cond_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.cond_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.cond_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.cond_q::S1->S2]
+%000001        // [fsm_arc t.enable_u.cond_q::S2->S0]
+%000003        // [fsm_state t.enable_u.cond_q::S0]
+%000003        // [fsm_state t.enable_u.cond_q::S1]
+%000001        // [fsm_state t.enable_u.cond_q::S2]
+              S0: cond_d = S1;
+              S1: cond_d = S2;
+              S2: cond_d = S0;
+              default: cond_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) cond_q <= rst ? S0 : (en ? cond_d : cond_q);
+        
+          state_t lowrst_q;
+          state_t lowrst_d;
+          always_comb begin
+            lowrst_d = lowrst_q;
+%000003     case (lowrst_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.lowrst_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.lowrst_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.lowrst_q::S1->S2]
+%000001        // [fsm_arc t.enable_u.lowrst_q::S2->S0]
+%000003        // [fsm_state t.enable_u.lowrst_q::S0]
+%000003        // [fsm_state t.enable_u.lowrst_q::S1]
+%000001        // [fsm_state t.enable_u.lowrst_q::S2]
+              S0: lowrst_d = S1;
+              S1: lowrst_d = S2;
+              S2: lowrst_d = S0;
+              default: lowrst_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            if (!rst_n) lowrst_q <= S0;
+            else if (en) lowrst_q <= lowrst_d;
+          end
+        
+          state_t lowcond_q;
+          state_t lowcond_d;
+          always_comb begin
+            lowcond_d = lowcond_q;
+%000003     case (lowcond_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.lowcond_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.lowcond_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.lowcond_q::S1->S2]
+%000001        // [fsm_arc t.enable_u.lowcond_q::S2->S0]
+%000003        // [fsm_state t.enable_u.lowcond_q::S0]
+%000003        // [fsm_state t.enable_u.lowcond_q::S1]
+%000001        // [fsm_state t.enable_u.lowcond_q::S2]
+              S0: lowcond_d = S1;
+              S1: lowcond_d = S2;
+              S2: lowcond_d = S0;
+              default: lowcond_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) lowcond_q <= rst_n ? (en ? lowcond_d : lowcond_q) : S0;
+        
+          state_t noreset_q;
+          state_t noreset_d;
+          always_comb begin
+            noreset_d = noreset_q;
+%000003     case (noreset_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.noreset_q::S0->S1]
+%000003        // [fsm_arc t.enable_u.noreset_q::S1->S2]
+%000002        // [fsm_arc t.enable_u.noreset_q::S2->S0]
+%000003        // [fsm_state t.enable_u.noreset_q::S0]
+%000003        // [fsm_state t.enable_u.noreset_q::S1]
+%000003        // [fsm_state t.enable_u.noreset_q::S2]
+              S0: noreset_d = S1;
+              S1: noreset_d = S2;
+              S2: noreset_d = S0;
+              default: noreset_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            if (en) noreset_q <= noreset_d;
+          end
+        
+          state_t noreset_cond_q;
+          state_t noreset_cond_d;
+          always_comb begin
+            noreset_cond_d = noreset_cond_q;
+%000003     case (noreset_cond_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.noreset_cond_q::S0->S1]
+%000003        // [fsm_arc t.enable_u.noreset_cond_q::S1->S2]
+%000002        // [fsm_arc t.enable_u.noreset_cond_q::S2->S0]
+%000003        // [fsm_state t.enable_u.noreset_cond_q::S0]
+%000003        // [fsm_state t.enable_u.noreset_cond_q::S1]
+%000003        // [fsm_state t.enable_u.noreset_cond_q::S2]
+              S0: noreset_cond_d = S1;
+              S1: noreset_cond_d = S2;
+              S2: noreset_cond_d = S0;
+              default: noreset_cond_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) noreset_cond_q <= en ? noreset_cond_d : noreset_cond_q;
+        
+          state_t hold_q;
+          state_t hold_d;
+          always_comb begin
+            hold_d = hold_q;
+%000003     case (hold_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.hold_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.hold_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.hold_q::S1->S2]
+%000001        // [fsm_arc t.enable_u.hold_q::S2->S0]
+%000003        // [fsm_state t.enable_u.hold_q::S0]
+%000003        // [fsm_state t.enable_u.hold_q::S1]
+%000001        // [fsm_state t.enable_u.hold_q::S2]
+              S0: hold_d = S1;
+              S1: hold_d = S2;
+              S2: hold_d = S0;
+              default: hold_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            if (rst) hold_q <= S0;
+            else if (en) hold_q <= hold_d;
+            else hold_q <= hold_q;
+          end
+        
+          state_t noreset_hold_q;
+          state_t noreset_hold_d;
+          always_comb begin
+            noreset_hold_d = noreset_hold_q;
+%000003     case (noreset_hold_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.noreset_hold_q::S0->S1]
+%000003        // [fsm_arc t.enable_u.noreset_hold_q::S1->S2]
+%000002        // [fsm_arc t.enable_u.noreset_hold_q::S2->S0]
+%000003        // [fsm_state t.enable_u.noreset_hold_q::S0]
+%000003        // [fsm_state t.enable_u.noreset_hold_q::S1]
+%000003        // [fsm_state t.enable_u.noreset_hold_q::S2]
+              S0: noreset_hold_d = S1;
+              S1: noreset_hold_d = S2;
+              S2: noreset_hold_d = S0;
+              default: noreset_hold_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            if (en) noreset_hold_q <= noreset_hold_d;
+            else noreset_hold_q <= noreset_hold_q;
+          end
+        
+          state_t stall_q;
+          state_t stall_d;
+          always_comb begin
+            stall_d = stall_q;
+%000003     case (stall_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.stall_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.stall_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.stall_q::S1->S2]
+%000001        // [fsm_arc t.enable_u.stall_q::S2->S0]
+%000003        // [fsm_state t.enable_u.stall_q::S0]
+%000003        // [fsm_state t.enable_u.stall_q::S1]
+%000001        // [fsm_state t.enable_u.stall_q::S2]
+              S0: stall_d = S1;
+              S1: stall_d = S2;
+              S2: stall_d = S0;
+              default: stall_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) stall_q <= rst ? S0 : (stall ? stall_q : stall_d);
+        
+          state_t stall_if_q;
+          state_t stall_if_d;
+          always_comb begin
+            stall_if_d = stall_if_q;
+%000003     case (stall_if_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.stall_if_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.stall_if_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.stall_if_q::S1->S2]
+%000001        // [fsm_arc t.enable_u.stall_if_q::S2->S0]
+%000003        // [fsm_state t.enable_u.stall_if_q::S0]
+%000003        // [fsm_state t.enable_u.stall_if_q::S1]
+%000001        // [fsm_state t.enable_u.stall_if_q::S2]
+              S0: stall_if_d = S1;
+              S1: stall_if_d = S2;
+              S2: stall_if_d = S0;
+              default: stall_if_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            if (rst) stall_if_q <= S0;
+            else if (stall) stall_if_q <= stall_if_q;
+            else stall_if_q <= stall_if_d;
+          end
+        
+          state_t nest_cond_q;
+          state_t nest_cond_d;
+          always_comb begin
+            nest_cond_d = nest_cond_q;
+%000002     case (nest_cond_q)
+        // [FSM coverage]
+%000002        // [fsm_arc t.enable_u.nest_cond_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.nest_cond_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.nest_cond_q::S1->S2]
+%000000        // [fsm_arc t.enable_u.nest_cond_q::S2->S0]
+%000002        // [fsm_state t.enable_u.nest_cond_q::S0]
+%000002        // [fsm_state t.enable_u.nest_cond_q::S1]
+%000001        // [fsm_state t.enable_u.nest_cond_q::S2]
+              S0: nest_cond_d = S1;
+              S1: nest_cond_d = S2;
+              S2: nest_cond_d = S0;
+              default: nest_cond_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk)
+            nest_cond_q <= rst ? S0 : (en ? (sel ? nest_cond_d : nest_cond_q) : nest_cond_q);
+        
+          state_t nest_if_q;
+          state_t nest_if_d;
+          always_comb begin
+            nest_if_d = nest_if_q;
+%000002     case (nest_if_q)
+        // [FSM coverage]
+%000002        // [fsm_arc t.enable_u.nest_if_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.nest_if_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.nest_if_q::S1->S2]
+%000000        // [fsm_arc t.enable_u.nest_if_q::S2->S0]
+%000002        // [fsm_state t.enable_u.nest_if_q::S0]
+%000002        // [fsm_state t.enable_u.nest_if_q::S1]
+%000001        // [fsm_state t.enable_u.nest_if_q::S2]
+              S0: nest_if_d = S1;
+              S1: nest_if_d = S2;
+              S2: nest_if_d = S0;
+              default: nest_if_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            if (rst) nest_if_q <= S0;
+            else if (en) begin
+              if (sel) nest_if_q <= nest_if_d;
+            end
+          end
+        
+          state_t reset_en_q;
+          state_t reset_en_d;
+          always_comb begin
+            reset_en_d = reset_en_q;
+%000003     case (reset_en_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.reset_en_q::S0->S1]
+%000000        // [fsm_arc t.enable_u.reset_en_q::S1->S0]
+%000002        // [fsm_arc t.enable_u.reset_en_q::S1->S2]
+%000002        // [fsm_arc t.enable_u.reset_en_q::S2->S0]
+%000003        // [fsm_state t.enable_u.reset_en_q::S0]
+%000003        // [fsm_state t.enable_u.reset_en_q::S1]
+%000002        // [fsm_state t.enable_u.reset_en_q::S2]
+              S0: reset_en_d = S1;
+              S1: reset_en_d = S2;
+              S2: reset_en_d = S0;
+              default: reset_en_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) reset_en_q <= rst ? (en ? S0 : reset_en_q) : reset_en_d;
+        
+          state_t arm_cond_q;
+          state_t arm_cond_d;
+          always_comb begin
+            arm_cond_d = arm_cond_q;
+%000003     case (arm_cond_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.arm_cond_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.arm_cond_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.arm_cond_q::S1->S2]
+%000001        // [fsm_arc t.enable_u.arm_cond_q::S2->S0]
+%000003        // [fsm_state t.enable_u.arm_cond_q::S0]
+%000003        // [fsm_state t.enable_u.arm_cond_q::S1]
+%000001        // [fsm_state t.enable_u.arm_cond_q::S2]
+              S0: arm_cond_d = S1;
+              S1: arm_cond_d = S2;
+              S2: arm_cond_d = S0;
+              default: arm_cond_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            if (rst) arm_cond_q <= S0;
+            else arm_cond_q <= en ? arm_cond_d : arm_cond_q;
+          end
+        
+          state_t reset_two_q;
+          state_t reset_two_d;
+          always_comb begin
+            reset_two_d = reset_two_q;
+%000003     case (reset_two_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.reset_two_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.reset_two_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.reset_two_q::S1->S2]
+%000001        // [fsm_arc t.enable_u.reset_two_q::S2->S0]
+%000003        // [fsm_state t.enable_u.reset_two_q::S0]
+%000003        // [fsm_state t.enable_u.reset_two_q::S1]
+%000001        // [fsm_state t.enable_u.reset_two_q::S2]
+              S0: reset_two_d = S1;
+              S1: reset_two_d = S2;
+              S2: reset_two_d = S0;
+              default: reset_two_d = S0;
+            endcase
+          end
+          logic reset_two_x;
+          always_ff @(posedge clk) begin
+            if (rst) begin
+              reset_two_q <= S0;
+              reset_two_x <= 1'b0;
+            end
+            else if (en) reset_two_q <= reset_two_d;
+            else reset_two_q <= reset_two_q;
+          end
+        
+          state_t stall_noreset_q;
+          state_t stall_noreset_d;
+          always_comb begin
+            stall_noreset_d = stall_noreset_q;
+%000003     case (stall_noreset_q)
+        // [FSM coverage]
+%000003        // [fsm_arc t.enable_u.stall_noreset_q::S0->S1]
+%000003        // [fsm_arc t.enable_u.stall_noreset_q::S1->S2]
+%000002        // [fsm_arc t.enable_u.stall_noreset_q::S2->S0]
+%000003        // [fsm_state t.enable_u.stall_noreset_q::S0]
+%000003        // [fsm_state t.enable_u.stall_noreset_q::S1]
+%000003        // [fsm_state t.enable_u.stall_noreset_q::S2]
+              S0: stall_noreset_d = S1;
+              S1: stall_noreset_d = S2;
+              S2: stall_noreset_d = S0;
+              default: stall_noreset_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            if (stall) stall_noreset_q <= stall_noreset_q;
+            else stall_noreset_q <= stall_noreset_d;
+          end
+        
+          // Not enables, so no FSM
+        
+          // Neither arm holds the state
+          state_t neither_q;
+          state_t neither_d;
+          always_comb begin
+            neither_d = neither_q;
+            case (neither_q)
+              S0: neither_d = S1;
+              S1: neither_d = S2;
+              S2: neither_d = S0;
+              default: neither_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) neither_q <= rst ? S0 : (sel ? neither_d : b_d);
+        
+          // An inner enable whose arms do not hold the state
+          state_t nest_neither_q;
+          state_t nest_neither_d;
+          always_comb begin
+            nest_neither_d = nest_neither_q;
+            case (nest_neither_q)
+              S0: nest_neither_d = S1;
+              S1: nest_neither_d = S2;
+              S2: nest_neither_d = S0;
+              default: nest_neither_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk)
+            nest_neither_q <= rst ? S0 : (en ? (sel ? nest_neither_d : b_d) : nest_neither_q);
+        
+          // A reset arm that is not a constant
+          state_t a_d;
+          assign a_d = S1;
+          state_t reset_sel_q;
+          state_t reset_sel_d;
+          always_comb begin
+            reset_sel_d = reset_sel_q;
+            case (reset_sel_q)
+              S0: reset_sel_d = S1;
+              S1: reset_sel_d = S2;
+              S2: reset_sel_d = S0;
+              default: reset_sel_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) reset_sel_q <= rst ? (sel ? a_d : b_d) : reset_sel_d;
+        
+          // An else that holds another register
+          state_t other_hold_q;
+          state_t other_hold_d;
+          always_comb begin
+            other_hold_d = other_hold_q;
+            case (other_hold_q)
+              S0: other_hold_d = S1;
+              S1: other_hold_d = S2;
+              S2: other_hold_d = S0;
+              default: other_hold_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            if (en) other_hold_q <= other_hold_d;
+            else other_hold_q <= hold_q;
+          end
+        
+          // A next state that is not a single value
+          state_t then_hold_q;
+          state_t then_hold_d;
+          always_comb begin
+            then_hold_d = then_hold_q;
+            case (then_hold_q)
+              S0: then_hold_d = S1;
+              S1: then_hold_d = S2;
+              S2: then_hold_d = S0;
+              default: then_hold_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) then_hold_q <= rst ? S0 : (en ? then_hold_q : (sel ? then_hold_d : b_d));
+        
+          // A commit of several statements
+          state_t then_two_q;
+          state_t then_two_d;
+          always_comb begin
+            then_two_d = then_two_q;
+            case (then_two_q)
+              S0: then_two_d = S1;
+              S1: then_two_d = S2;
+              S2: then_two_d = S0;
+              default: then_two_d = S0;
+            endcase
+          end
+          logic then_two_x;
+          always_ff @(posedge clk) begin
+            if (en) begin
+              then_two_q <= then_two_d;
+              then_two_x <= 1'b1;
+            end
+          end
+        endmodule
+        
         module t (
             input logic clk
         );
@@ -317,6 +807,13 @@
           );
           // A second reset from S1 hits the active-low FSMs' reset arc S1->S0, which their
           // next-state logic never takes
+          // A second reset at cyc 4 from S1 hits the reset arcs; the enable is off once, at cyc 3
+          fsm_enable enable_u (
+              .clk(clk),
+              .rst(rst || cyc == 4),
+              .en(cyc != 3),
+              .sel(cyc[0] || cyc == 2)
+          );
           fsm_reset_active_low reset_active_low_u (
               .clk(clk),
               .rst_n(!rst && cyc != 6)
