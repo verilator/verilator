@@ -57,6 +57,12 @@ module t (
   assert property (@(posedge clk) if (sel) a |-> ##1 b else c)
   else $stop;
 
+  // Property if/else binds looser than a cycle delay, so the delay belongs to the else branch
+  // and d is only required two cycles after a cycle where sel is false.
+  wire d = !(cyc inside {4, 8});
+  assert property (@(posedge clk) if (sel) a else c ##2 d)
+  else `stop;
+
   // Dangling else binds to the inner property if. If it bound to the outer if,
   // the false outer condition would select the failing 1'b0 branch.
   assert property (@(posedge clk) if (nested_inner) if (nested_inner) 1'b1 else 1'b0)

@@ -6800,7 +6800,7 @@ property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
                         { $$ = PARSEP->makePropertyCase($1, $3, nullptr); }
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr  %prec prIF
                         { $$ = new AstImplication{$1, $3, $5, true}; }
-        |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr
+        |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr  %prec prIF
                         { AstNodeExpr* const elseCondp = new AstLogNot{$1, $3->cloneTreePure(false)};
                           $$ = new AstSAnd{$1, new AstImplication{$1, $3, $5, true},
                                            new AstImplication{$1, elseCondp, $7, true},

@@ -1,16 +1,16 @@
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:26:63: Unsupported: temporal property if/case with a pass action
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:26:35: Unsupported: temporal property if/case with a pass action
                                                        : ... note: In instance 't'
    26 |   assert property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c) $display("pass");
-      |                                                               ^~
+      |                                   ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:27:62: Unsupported: temporal property if/case with cover
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:27:34: Unsupported: temporal property if/case with cover
                                                        : ... note: In instance 't'
    27 |   cover property (@(posedge clk) if (a) 1'b1 ##1 b else 1'b1 ##2 c);
-      |                                                              ^~
-%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:28:68: Unsupported: temporal property if/case with negation
+      |                                  ^~
+%Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:28:40: Unsupported: temporal property if/case with negation
                                                        : ... note: In instance 't'
    28 |   assert property (@(posedge clk) not (if (a) 1'b1 ##1 b else 1'b1 ##2 c));
-      |                                                                    ^~
+      |                                        ^~
 %Error-UNSUPPORTED: t/t_property_nfa_msgs_unsup.v:30:35: Unsupported: temporal property if/case with a pass action
                                                        : ... note: In instance 't'
    30 |   assert property (@(posedge clk) case (a) 1'b0: 1'b1 ##1 b; 1'b1: 1'b1 ##2 c; default: 1'b1 ##1 d;
