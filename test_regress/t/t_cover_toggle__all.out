@@ -106,7 +106,7 @@
         
 ~000001   reg [1:0]  memory[121:110];
         
-          wire [1023:0] largeish = {992'h0, cyc};
+          wire [1024:0] largeish = {cyc[2], 960'h0, cyc, cyc};
           // CHECK_COVER_MISSING(-1)
         
           always @ (posedge clk) begin

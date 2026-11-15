@@ -159,9 +159,6 @@ private:
 
         if (v3Global.opt.coverage()) {
             puts("// Write coverage data (since Verilated with --coverage)\n");
-            if (v3Global.opt.coveragePerInstance()) {
-                puts("contextp->coveragep()->forcePerInstance(true);\n");
-            }
             puts("contextp->coveragep()->write();\n");
             puts("\n");
         }

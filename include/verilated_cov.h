@@ -98,7 +98,7 @@ inline void VL_COV_TOGGLE_CHG_ST_W(const int width, uint32_t* covp, WDataInP new
     for (int i = 0; i < VL_WORDS_I(width); ++i) {
         const EData chgData = newData[i] ^ oldData[i];
         if (chgData) {
-            for (int j = 0; j < width - i * VL_EDATASIZE; ++j) {
+            for (int j = 0; j < std::min(VL_EDATASIZE, width - i * VL_EDATASIZE); ++j) {
                 *(covp + (i * VL_EDATASIZE + j) * 2 + ((newData[i] >> j) & 1))
                     += (chgData >> j) & 1;
             }
@@ -131,7 +131,7 @@ inline void VL_COV_TOGGLE_CHG_MT_W(const int width, std::atomic<uint32_t>* covp,
     for (int i = 0; i < VL_WORDS_I(width); ++i) {
         const EData chgData = newData[i] ^ oldData[i];
         if (chgData) {
-            for (int j = 0; j < width - i * VL_EDATASIZE; ++j) {
+            for (int j = 0; j < std::min(VL_EDATASIZE, width - i * VL_EDATASIZE); ++j) {
                 if (VL_BITISSET_E(chgData, j)) {
                     (covp + (i * VL_EDATASIZE + j) * 2 + ((newData[i] >> j) & 1))
                         ->fetch_add(1, std::memory_order_relaxed);

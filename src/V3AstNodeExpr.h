@@ -3271,6 +3271,7 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opWildEq(lhs, rhs);
     }
+    string verilogKwd() const override { return "==?"; }
     string emitVerilog() override { return "%k(%l %f==? %r)"; }
     string emitC() override {
         if (v3Global.opt.fourstate()) {
@@ -3846,6 +3847,7 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opWildNeq(lhs, rhs);
     }
+    string verilogKwd() const override { return "!=?"; }
     string emitVerilog() override { return "%k(%l %f!=? %r)"; }
     string emitC() override {
         if (v3Global.opt.fourstate()) {
@@ -4509,6 +4511,7 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opCaseEq(lhs, rhs);
     }
+    string verilogKwd() const override { return "==="; }
     string emitVerilog() override { return "%k(%l %f=== %r)"; }
     string emitC() override { return "VL_EQ_%lq(%lW, %P, %li, %ri)"; }
     string emitSimpleOperator() override { return "=="; }
@@ -4634,6 +4637,7 @@ public:
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opCaseNeq(lhs, rhs);
     }
+    string verilogKwd() const override { return "!=="; }
     string emitVerilog() override { return "%k(%l %f!== %r)"; }
     string emitC() override { return "VL_NEQ_%lq(%lW, %P, %li, %ri)"; }
     string emitSimpleOperator() override { return "!="; }

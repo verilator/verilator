@@ -1428,6 +1428,10 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
     }
 
     if (v3Global.opt.coverage()) {
+        if (v3Global.opt.coveragePerInstance()) {
+            // So the option applies whichever main writes coverage
+            stmts.add("vlSymsp->_vm_contextp__->coveragep()->forcePerInstance(true);");
+        }
         stmts.add("// Setup each module's pointer back to symbol table (for public functions)");
         for (const ScopeModPair& i : m_scopes) {
             const AstScope* const scopep = i.first;

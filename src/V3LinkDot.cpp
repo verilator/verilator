@@ -3925,19 +3925,35 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (nodep && nodep->isParam()) nodep->usedParam(true);
     }
 
+    static bool isTypeDecl(const AstNode* nodep) {
+        return VN_IS(nodep, Typedef) || VN_IS(nodep, ParamTypeDType) || VN_IS(nodep, Class);
+    }
+    // Find a type inherited by the class of the symbol table, where the class hides its name
+    static VSymEnt* findInheritedType(const VSymEnt* symp, const string& name) {
+        const AstClass* const classp = VN_CAST(symp->nodep(), Class);
+        if (!classp) return nullptr;
+        for (const AstClassExtends* cextp = classp->extendsp(); cextp;
+             cextp = VN_AS(cextp->nextp(), ClassExtends)) {
+            // Types are not inherited through 'implements' (IEEE 1800-2023 8.26.3), and a base
+            // class still to be parameterized is not searched, as for other names
+            AstClass* const basep = cextp->classOrNullp();
+            if (!basep || cextp->isImplements()) continue;
+            VSymEnt* const foundp = LinkDotState::getNodeSym(basep)->findIdFlat(name);
+            if (foundp && isTypeDecl(foundp->nodep())) return foundp;
+        }
+        return nullptr;
+    }
     static VSymEnt* findIdFallbackSkipMemberDType(VSymEnt* lookp, const string& name) {
         VSymEnt* shadowEntp = nullptr;  // Shadowing variable: not a type, kept for error report
         while (lookp) {
             VSymEnt* const foundp = lookp->findIdFlat(name);
             if (foundp && !VN_IS(foundp->nodep(), MemberDType)) {
                 // Non-type entries are not type candidates
-                // (IEEE 1800-2023 6.18); skip them so an enclosing
+                // (IEEE 1800-2023 6.18); skip them so an inherited or enclosing
                 // type is found, but keep one to preserve the "found: ..." error.
-                if (VN_IS(foundp->nodep(), Typedef) || VN_IS(foundp->nodep(), ParamTypeDType)
-                    || VN_IS(foundp->nodep(), Class)) {
-                    return foundp;
-                }
+                if (isTypeDecl(foundp->nodep())) return foundp;
                 if (!shadowEntp) shadowEntp = foundp;
+                if (VSymEnt* const typep = findInheritedType(lookp, name)) return typep;
             }
             lookp = lookp->fallbackp();
         }
@@ -4205,6 +4221,23 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Pin: Link to submodule's port
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
+        if (AstParseRef* const refp
+            = nodep->param() ? VN_CAST(nodep->exprp(), ParseRef) : nullptr) {
+            // A type parameter's value is a type, which a variable of the same name does not
+            // hide (IEEE 1800-2023 6.18), e.g. 'cls' in 'mailbox #(cls) fifo; cls cls;'. Other
+            // values keep the usual lookup, which also checks the declaration order.
+            const VSymEnt* const paramp
+                = m_pinSymp ? m_pinSymp->findIdFlat(nodep->name()) : nullptr;
+            const VSymEnt* const typep
+                = paramp && VN_IS(paramp->nodep(), ParamTypeDType)
+                      ? findIdFallbackSkipMemberDType(m_curSymp, refp->name())
+                      : nullptr;
+            if (typep && isTypeDecl(typep->nodep())
+                && !isTypeDecl(m_curSymp->findIdFallback(refp->name())->nodep())) {
+                refp->replaceWith(new AstRefDType{refp->fileline(), refp->name()});
+                VL_DO_DANGLING(pushDeletep(refp), refp);
+            }
+        }
         {
             VL_RESTORER(m_pinp);
             m_pinp = nodep;

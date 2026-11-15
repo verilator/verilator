@@ -1033,6 +1033,8 @@ static void emitSolverSeed(std::ostream& os, VlRNG& rngr) {
     os << "(set-option :random-seed " << (VL_RANDOM_RNG_I(rngr) & 0x7fffffffU) << ")\n";
 }
 
+// The runtime's own symbols (these, the __Va<N> and __Vd<N> literals and the __Vcons<N>
+// labels) use the __V prefix Verilator reserves, so no random variable shares them
 void VlRandomizer::emitDefines(std::ostream& os) const {
     os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
     os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
@@ -1062,14 +1064,14 @@ void VlRandomizer::emitAsserts(std::ostream& os, const std::vector<std::string>&
     int j = 0;
     for (const std::string& constraint : m_constraints) {
         if (named) {
-            os << "(assert (! (= #b1 " << constraint << ") :named cons" << j++ << "))\n";
+            os << "(assert (! (= #b1 " << constraint << ") :named __Vcons" << j++ << "))\n";
         } else {
             os << "(assert (= #b1 " << constraint << "))\n";
         }
     }
     for (const std::string& extra : extras) {
         if (named) {
-            os << "(assert (! (= #b1 " << extra << ") :named cons" << j++ << "))\n";
+            os << "(assert (! (= #b1 " << extra << ") :named __Vcons" << j++ << "))\n";
         } else {
             os << "(assert (= #b1 " << extra << "))\n";
         }
@@ -1232,11 +1234,11 @@ int VlRandomizer::bsat(VlSolverSession& sess, size_t bound, std::vector<Witness>
             const Witness& prev = witnesses.back();
             const std::pair<std::string, int>& pick
                 = order[VL_RANDOM_RNG_I(*diversifyRngp) % order.size()];
-            solver << "(declare-fun d" << assumeNum << " () Bool)\n";
-            solver << "(assert (= d" << assumeNum << " (not (=";
+            solver << "(declare-fun __Vd" << assumeNum << " () Bool)\n";
+            solver << "(assert (= __Vd" << assumeNum << " (not (=";
             m_vars.at(pick.first)->emitElement(solver, pick.second);
             solver << ' ' << prev.at(pick.first).at(pick.second) << "))))\n";
-            solver << "(check-sat-assuming (d" << assumeNum << "))\n";
+            solver << "(check-sat-assuming (__Vd" << assumeNum << "))\n";
             ++assumeNum;
             status = sess.readStatus();
         }
@@ -1456,8 +1458,8 @@ void VlRandomizer::solveDiversityPins(VlRNG& rngr, VlSolverSession& sess)
         const int w = var.second->totalWidth();
         for (int b = 0; b < w; ++b) {
             const bool target = (VL_RANDOM_RNG_I(rngr) & 1);
-            os << "(declare-fun a" << npins << " () Bool)\n";
-            os << "(assert (= a" << npins << " (=";
+            os << "(declare-fun __Va" << npins << " () Bool)\n";
+            os << "(assert (= __Va" << npins << " (=";
             var.second->emitExtract(os, b);
             os << " #b" << (target ? '1' : '0') << ")))\n";
             ++npins;
@@ -1467,7 +1469,7 @@ void VlRandomizer::solveDiversityPins(VlRNG& rngr, VlSolverSession& sess)
     for (int round = 0; round <= npins; ++round) {
         os << "(check-sat-assuming (";
         for (int k = 0; k < npins; ++k) {
-            if (!dropped[k]) os << " a" << k;
+            if (!dropped[k]) os << " __Va" << k;
         }
         os << "))\n";
         const VlSolverStatus status = sess.readStatus();
@@ -1551,7 +1553,7 @@ std::vector<int> VlRandomizer::readUnsatAssumptions(VlSolverSession& sess)
         warnSolverReply(reply);
         return {};
     }
-    // The response lists only "a<N>" literals; collect each full integer run.
+    // The response lists only "__Va<N>" literals; collect each full integer run.
     return scanIntRuns(reply);
 }
 

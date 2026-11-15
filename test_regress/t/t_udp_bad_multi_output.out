@@ -1,4 +1,4 @@
-%Error: t/t_udp_bad_multi_output.v:8:17: 2 output ports for UDP table, there must be one output port
+%Error: t/t_udp_bad_multi_output.v:8:17: 2 output ports for UDP table, there must be one output port (IEEE 1800-2023 29.3.1)
                                        : ... note: In instance 'top'
     8 |   output dout1, dout2;
       |                 ^~~~~
