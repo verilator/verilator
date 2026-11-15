@@ -10929,8 +10929,17 @@ class WidthVisitor final : public VNVisitor {
         } else if (expDTypep->isString() && !underp->dtypep()->isString()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
-            spliceCvtString(VN_AS(underp, NodeExpr));
+            AstCvtPackString* const cvtp
+                = VN_AS(spliceCvtString(VN_AS(underp, NodeExpr)), CvtPackString);
             underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
+            // Padded before constant folding loses the stream; V3Const pads a fixed-size
+            // unpacked operand once packed
+            AstNodeStream* const streamp = VN_CAST(underp, NodeStream);
+            if (streamp && !VN_IS(streamp->dtypep(), StreamDType)) {
+                AstNodeExpr* const paddedp = V3Const::padStringStream(streamp->unlinkFrBack());
+                cvtp->lhsp(paddedp);
+                underp = paddedp;
+            }
         } else {
             const AstNodeDType* const underDtp = underp->dtypep()->skipRefp();
             if (determ != ASSIGN && expDTypep->skipRefp()->isIntegralOrPacked()
@@ -12250,7 +12259,9 @@ public:
                 VL_DO_DANGLING(pushDeletep(streamp), streamp);
                 return;
             }
-            const int lwidth = lhsDTypeSkippedRefp->widthStream();
+            // A string target is not fixed size, it takes the whole stream
+            const int lwidth
+                = lhsDTypeSkippedRefp->isString() ? 0 : lhsDTypeSkippedRefp->widthStream();
             const int rwidth = streamp->lhsp()->dtypep()->skipRefp()->widthStream();
             if (lwidth != 0 && lwidth < rwidth) {
                 nodep->v3widthWarn(lwidth, rwidth,

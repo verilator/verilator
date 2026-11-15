@@ -1733,6 +1733,31 @@ class ConstVisitor final : public VNVisitor {
         return true;
     }
 
+    bool packStringStreamOperand(AstCvtPackString* const nodep) {
+        // Pack a fixed-size unpacked stream operand, so the stream converts as a packed one. A
+        // queue or dynamic array operand is converted at run time.
+        AstNodeStream* const streamp = VN_CAST(nodep->lhsp(), NodeStream);
+        if (!streamp || !VN_IS(streamp->dtypep(), StreamDType)) return false;
+        AstNodeExpr* const fromp = streamp->lhsp();
+        if (!fromp->dtypep()->isStreamableFixedAggregate()) return false;
+        fromp->unlinkFrBack();
+        const int width = fromp->dtypep()->widthStream();
+        // A struct operand is selected per member, as for a stream assigned to another target, so
+        // warns if impure; other operands are converted as a whole, so are evaluated once
+        AstNodeExpr* const packedp
+            = lowerAsFixedAggregate(fromp->dtypep())
+                  ? packFixedAggregate(fromp)
+                  : new AstCvtArrayToPacked{
+                        fromp->fileline(), fromp,
+                        fromp->findBitOrLogicDType(width, width, VSigning::UNSIGNED,
+                                                   fromp->dtypep()->isFourstate())};
+        streamp->lhsp(packedp);
+        streamp->dtypeSetBitOrLogicUnsized(packedp->width(), packedp->widthMin(),
+                                           VSigning::UNSIGNED, packedp->isFourstateOrNoDtype());
+        nodep->lhsp(V3Const::padStringStream(streamp->unlinkFrBack()));
+        return true;
+    }
+
     bool operandBiExtendConstShrink(AstNodeBiop* nodep) {
         // Loop unrolling favors standalone compares
         // EQ(const{width32}, EXTEND(xx{width3})) -> EQ(const{3}, xx{3})
@@ -4581,6 +4606,7 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstShiftL{operandShiftShift(nodep)}",      "replaceShiftShift(nodep)");
     TREEOP ("AstShiftR{operandShiftShift(nodep)}",      "replaceShiftShift(nodep)");
     TREEOP ("AstWordSel{operandWordOOB(nodep)}",        "replaceZero(nodep)");
+    TREEOPV("AstCvtPackString{packStringStreamOperand(nodep)}", "DONE");
     // Compress out EXTENDs to appease loop unroller
     TREEOPV("AstEq    {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",    "DONE");
     TREEOPV("AstNeq   {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",    "DONE");
@@ -4830,6 +4856,20 @@ uint32_t ConstVisitor::s_globalPassNum = 0;
 
 //######################################################################
 // Const class functions
+
+AstNodeExpr* V3Const::padStringStream(AstNodeExpr* const streamp) {
+    const int width = streamp->width();
+    const int paddedWidth = VL_BYTES_I(width) * VL_BYTESIZE;
+    if (width == paddedWidth) return streamp;
+    FileLine* const flp = streamp->fileline();
+    AstNodeExpr* const extendp = new AstExtend{flp, streamp, paddedWidth};
+    AstNodeExpr* const shiftp = new AstConst{flp, static_cast<uint32_t>(paddedWidth - width)};
+    AstNodeExpr* const newp = new AstShiftL{flp, extendp, shiftp, paddedWidth};
+    extendp->didWidth(true);
+    shiftp->didWidth(true);
+    newp->didWidth(true);
+    return newp;
+}
 
 void V3Const::collectFixedAggregateTerms(VNDeleter& deleter, AstNodeExpr* const fromp,
                                          std::vector<AstNodeExpr*>& termps, const bool packReal,
