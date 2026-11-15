@@ -1,6 +1,5 @@
-%Warning-LATCHDLY: t/t_lint_latch_bad.v:18:8: Unsupported: Non-blocking assignment '<=' in always_latch (treated as blocking '=')
-                                            : ... A flop reading the latch output on the edge that opens the latch may get the new value
-                                            : ... For non-blocking semantics, use 'always' with an explicit sensitivity list
+%Warning-LATCHDLY: t/t_lint_latch_bad.v:18:8: Non-blocking assignment '<=' in always_latch
+                                            : ... This will be executed as a blocking assignment '='!
    18 |     bl <= a;   
       |        ^~
                    ... For warning description see https://verilator.org/warn/LATCHDLY?v=latest

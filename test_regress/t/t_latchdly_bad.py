@@ -19,6 +19,6 @@ test.extract(in_filename=test.top_filename,
 
 test.extract(in_filename=test.golden_filename,
              out_filename=test.root + "/docs/gen/ex_LATCHDLY_msg.rst",
-             lines="1-5")
+             lines="1-4")
 
 test.passes()

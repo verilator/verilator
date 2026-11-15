@@ -391,26 +391,19 @@ private:
 
     // METHODS
     void warnNonBlocking(AstNode* nodep, const char* what, const char* nbOp, const char* bOp) {
-        if (m_check == CT_LATCH) {
-            nodep->v3warn(LATCHDLY, "Unsupported: Non-blocking "
-                                        << what << " '" << nbOp
-                                        << "' in always_latch (treated as blocking '" << bOp
-                                        << "')\n"
-                                        << nodep->warnMore()
-                                        << "... A flop reading the latch output on the edge that"
-                                           " opens the latch may get the new value\n"
-                                        << nodep->warnMore()
-                                        << "... For non-blocking semantics, use 'always' with an"
-                                           " explicit sensitivity list");
-            return;
-        }
         const bool inFinal = m_check == CT_FINAL;
-        nodep->v3warnCode(inFinal ? V3ErrorCode::FINALDLY : V3ErrorCode::COMBDLY,
-                          "Non-blocking "
-                              << what << " '" << nbOp << "' in "
-                              << (inFinal ? "final block" : "combinational logic") << '\n'
-                              << nodep->warnMore() << "... This will be executed as a blocking "
-                              << what << " '" << bOp << "'!");
+        const bool inLatch = m_check == CT_LATCH;
+        nodep->v3warnCode(inFinal   ? V3ErrorCode::FINALDLY
+                          : inLatch ? V3ErrorCode::LATCHDLY
+                                    : V3ErrorCode::COMBDLY,
+                          "Non-blocking " << what << " '" << nbOp << "' in "
+                                          << (inFinal   ? "final block"
+                                              : inLatch ? "always_latch"
+                                                        : "combinational logic")
+                                          << '\n'
+                                          << nodep->warnMore()
+                                          << "... This will be executed as a blocking " << what
+                                          << " '" << bOp << "'!");
     }
 
     // VISITORS
