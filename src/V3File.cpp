@@ -1128,7 +1128,11 @@ public:
         of.puts("<verilator_id_map>\n");
         {
             for (const auto& itr : m_nameMap) {
-                of.puts("<map from=\"" + itr.second + "\" to=\"" + itr.first + "\"/>\n");
+                of.puts("<map from=\""
+                        + V3OutFormatter::quoteNameControls(itr.second, V3OutFormatter::LA_XML)
+                        + "\" to=\""
+                        + V3OutFormatter::quoteNameControls(itr.first, V3OutFormatter::LA_XML)
+                        + "\"/>\n");
             }
         }
         of.puts("</verilator_id_map>\n");
