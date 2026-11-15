@@ -223,11 +223,13 @@ class CoverageVisitor final : public VNVisitor {
         }
         return incp;
     }
-    string traceNameForLine(const AstNode* nodep, const string& type) {
-        string name = "vlCoverageLineTrace_" + nodep->fileline()->filebasenameNoExt() + "__"
-                      + cvtToStr(nodep->fileline()->lineno()) + "_" + type;
+    string uniqueVarName(string name) {
         if (const uint32_t suffix = m_varnames[name]++) name += "_" + cvtToStr(suffix);
         return name;
+    }
+    string traceNameForLine(const AstNode* nodep, const string& type) {
+        return uniqueVarName("vlCoverageLineTrace_" + nodep->fileline()->filebasenameNoExt() + "__"
+                             + cvtToStr(nodep->fileline()->lineno()) + "_" + type);
     }
 
     // Line tracking
@@ -798,8 +800,8 @@ class CoverageVisitor final : public VNVisitor {
                                         "cover", linesCov(m_state, nodep), 0};
             declp->hier(m_beginHier);
             m_modp->addStmtsp(declp);
-            nodep->addCoverincsp(
-                newCoverInc(nodep->fileline(), declp, m_beginHier + "_vlCoverageUserTrace"));
+            nodep->addCoverincsp(newCoverInc(nodep->fileline(), declp,
+                                             uniqueVarName(m_beginHier + "_vlCoverageUserTrace")));
         }
     }
     void visit(AstPropSpec* nodep) override {
