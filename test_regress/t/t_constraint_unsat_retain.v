@@ -98,8 +98,10 @@ class NullHandle;
   rand bit [6:0] c;
   rand Inner inner;  // Left null
   rand NoRand norand;
+  rand NoRand norands[2];
   function new();
     norand = new;
+    foreach (norands[i]) norands[i] = new;
   endfunction
 endclass
 
@@ -113,6 +115,7 @@ endclass
 class CycB;
   rand bit [14:0] z;
   rand CycA a;  // Left null
+  rand CycA arr[1];  // Left null
 endclass
 
 class ArrayElem;
@@ -257,13 +260,15 @@ module t;
       `checkd(ow.solo.s, 22);
     end
 
-    // A null rand class member, and one without rand members
+    // A null rand class member, and a rand class member and a rand array of class handles
+    // whose class has no rand members
     begin
       NullHandle nh;
       int randomize_result;
       nh = new;
       nh.c = 31;
       nh.norand.x = 32;
+      nh.norands[1].x = 33;
       randomize_result = nh.randomize() with {
         c > 100;
         c < 50;
@@ -271,6 +276,7 @@ module t;
       `checkd(randomize_result, 0);
       `checkd(nh.c, 31);
       `checkd(nh.norand.x, 32);
+      `checkd(nh.norands[1].x, 33);
     end
 
     // A class without rand members
@@ -284,7 +290,7 @@ module t;
       `checkd(nr.x, 3);
     end
 
-    // Rand class members whose classes refer to each other
+    // Rand class members whose classes refer to each other, also through a rand array
     begin
       CycA ca;
       int randomize_result;
