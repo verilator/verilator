@@ -4324,6 +4324,12 @@ class ConstVisitor final : public VNVisitor {
         // because all that is needed is to execute what causes the side effect.
     }
 
+    void visit(AstHidden* nodep) override {
+        // The references to the variables must stay references, so leave them
+        iterateAndNextNull(nodep->stmtsp());
+        if (!nodep->stmtsp()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+
     // Simplify
     void visit(AstBasicDType* nodep) override {
         iterateChildren(nodep);

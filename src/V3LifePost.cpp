@@ -56,6 +56,11 @@
 //
 // Constraint 3 should always hold with V3Delayed, will check assert it.
 //
+// The references of an AstHidden are taken as any other. These are only ever
+// reasons not to optimize: a write of 'q' fails constraint 2, and a read of
+// 'q' is checked by constraint 4. So writes that may not happen, or be partial,
+// are handled correctly. 'd' is created later, so is never in an AstHidden.
+//
 // If old-value reads prevent elimination, constant partial writes can still narrow both
 // copies to the words containing those writes. Other shadow bits are never read. The
 // assignments keep their original positions, so evaluation order and scheduling are unchanged.

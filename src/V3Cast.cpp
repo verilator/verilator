@@ -234,6 +234,8 @@ class CastVisitor final : public VNVisitor {
             if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         }
     }
+    // The references only show accesses to analyses, they are not expressions
+    void visit(AstHidden* nodep) override { iterateAndNextNull(nodep->stmtsp()); }
     void visit(AstVarRef* nodep) override {
         const AstNode* const backp = nodep->backp();
         if (nodep->access().isReadOnly() && VN_IS(backp, NodeExpr) && !VN_IS(backp, CCast)

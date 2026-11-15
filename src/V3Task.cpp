@@ -330,6 +330,9 @@ private:
             if (m_curVxp->pure() && !varp->isXTemp() && !varp->isParam()) m_curVxp->impure(nodep);
         }
     }
+    // Whether accesses through virtual interfaces are external depends on the handle, not on the
+    // variables they may access
+    void visit(AstHidden* nodep) override { iterateAndNextNull(nodep->stmtsp()); }
     void visit(AstClass* nodep) override {
         // Move initial statements into the constructor
         VL_RESTORER_CLEAR(m_initialps);

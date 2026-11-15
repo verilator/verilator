@@ -185,6 +185,8 @@ class OutlineVisitor final : public VNVisitor {
             listps = {loopp->stmtsp()};
         } else if (AstJumpBlock* const blockp = VN_CAST(stmtp, JumpBlock)) {
             listps = {blockp->stmtsp()};
+        } else if (AstHidden* const hiddenp = VN_CAST(stmtp, Hidden)) {
+            listps = {hiddenp->stmtsp()};
         }
         std::vector<StmtRange> runs;  // Runs of movable statements no larger than the limit
         std::vector<AstNodeStmt*> largeps;  // Statements larger than the limit
