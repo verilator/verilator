@@ -253,11 +253,11 @@ protected:
 // $coverage_control
 inline int VL_COVERAGE_CONTROL(VerilatedCovContext* covp, int control, int coverageType,
                                int scope) VL_MT_SAFE {
-    if (control != VL_SV_COV_RESET || coverageType != VL_SV_COV_ALL || scope != VL_SV_COV_HIER) {
-        return VL_SV_COV_ERROR;
+    if (control == VL_SV_COV_RESET && coverageType == VL_SV_COV_ALL && scope == VL_SV_COV_HIER) {
+        covp->zero();
+        return VL_SV_COV_OK;
     }
-    covp->zero();
-    return VL_SV_COV_OK;
+    return VL_SV_COV_ERROR;
 }
 
 //=============================================================================
