@@ -336,6 +336,7 @@
 %000009     case (cyc[3:2])
 -000009  point: type=line comment=block hier=top.t
 %000003       2'b00: if (t1 && t2) $write("");
+-000003  point: type=branch comment=case hier=top.t
 -000003  point: type=line comment=case hier=top.t
 -000001  point: type=branch comment=if hier=top.t
 -000001  point: type=line comment=if hier=top.t
@@ -345,11 +346,13 @@
 -000001  point: type=expr comment=(t1==1 && t2==1) => 1 hier=top.t
 -000001  point: type=expr comment=(t2==0) => 0 hier=top.t
 %000004       2'b01: case_bool <= t1 || t2;
+-000004  point: type=branch comment=case hier=top.t
 -000004  point: type=line comment=case hier=top.t
 -000001  point: type=expr comment=(t1==0 && t2==0) => 0 hier=top.t
 -000002  point: type=expr comment=(t1==1) => 1 hier=top.t
 -000002  point: type=expr comment=(t2==1) => 1 hier=top.t
 %000000       2'b11: if (t1 || t2) $write("");  // cyc stops at 9, so never runs
+-000000  point: type=branch comment=case hier=top.t
 -000000  point: type=line comment=case hier=top.t
 -000000  point: type=branch comment=if hier=top.t
 -000000  point: type=line comment=if hier=top.t
@@ -359,6 +362,7 @@
 -000000  point: type=expr comment=(t1==1) => 1 hier=top.t
 -000000  point: type=expr comment=(t2==1) => 1 hier=top.t
 %000002       default: ;
+-000002  point: type=branch comment=case hier=top.t
 -000002  point: type=line comment=case hier=top.t
             endcase
             // nothing after a $stop is covered, including inside case items

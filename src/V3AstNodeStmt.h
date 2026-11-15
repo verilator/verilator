@@ -402,6 +402,7 @@ class AstCase final : public AstNodeStmt {
     // @astgen op1 := exprp : AstNodeExpr // Condition (scurtinee) expression
     // @astgen op2 := itemsp : List[AstCaseItem]
     // @astgen op3 := notParallelp : List[AstNodeStmt] // assertion code for non-full case's
+    // @astgen op4 := coverDefaultp : Optional[AstCoverInc] // Implicit default's coverage
     VCaseType m_caseType;  // 0=case, 1=casex, 2=casez
     bool m_fullPragma = false;  // Synthesis full_case
     bool m_parallelPragma = false;  // Synthesis parallel_case

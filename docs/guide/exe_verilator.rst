@@ -446,6 +446,10 @@ Summary:
    generated model size, counter memory, coverage write time, and ``.dat`` file
    size.
 
+   The model sets this on its ``VerilatedContext`` when it is constructed, so
+   it applies whichever ``main`` writes the coverage, and to every model
+   sharing that context.
+
    This does not affect SystemVerilog ``cover``, which uses the IEEE-specified
    coverage option ``per_instance``.
 

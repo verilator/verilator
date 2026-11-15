@@ -743,28 +743,45 @@ class CoverageVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->condp());
         UINFO(9, " done HANDLE " << m_state.m_handle << " for " << nodep);
     }
+    void visit(AstCase* nodep) override {
+        iterateChildren(nodep);
+        // A case without a default gets a branch point for no item matching, which V3Case
+        // drops if the items match every value. None where a pragma says an item matches.
+        if (!m_state.branchCoverageOn(nodep) || nodep->uniquePragma() || nodep->priorityPragma()
+            || nodep->fullPragma())
+            return;
+        for (const AstCaseItem* const itemp : nodep->itemspList()) {
+            if (itemp->isDefault()) return;
+        }
+        AstCoverOtherDecl* const declp = new AstCoverOtherDecl{
+            nodep->fileline(), "v_branch/" + m_modp->prettyName(), "default", "", 0};
+        setCoverageHier(declp);
+        m_modp->addStmtsp(declp);
+        // No trace variable, as V3Case may drop the point
+        nodep->coverDefaultp(newCoverInc(nodep->fileline(), declp, ""));
+    }
+    // Add a case item's point on the given page, line or branch
+    void coverCaseItem(AstCaseItem* nodep, const string& page) {
+        UINFO(4, "   COVER: " << nodep);
+        AstCoverOtherDecl* const declp = new AstCoverOtherDecl{
+            nodep->fileline(), page + m_modp->prettyName(), "case", linesCov(m_state, nodep), 0};
+        setCoverageHier(declp);
+        m_modp->addStmtsp(declp);
+        nodep->addStmtsp(newCoverInc(nodep->fileline(), declp, traceNameForLine(nodep, "case")));
+    }
     void visit(AstCaseItem* nodep) override {
-        // We don't add an explicit "default" coverage if not provided,
-        // as we already have a warning when there is no default.
         UINFO(4, " CASEI: " << nodep);
-        // Visit the body for every coverage type; only the line point needs line coverage
+        // Visit the body for every coverage type
         if (m_state.coverageOn(nodep)) {
             VL_RESTORER(m_state);
             VL_RESTORER(m_exprStmtsp);
             m_exprStmtsp = nodep;  // Expression coverage counts only when this item runs
             createHandle(nodep);
             iterateAndNextNull(nodep->stmtsp());
-            if (m_state.lineCoverageOn(nodep)) {  // if the case body didn't disable it
-                lineTrack(nodep);
-                UINFO(4, "   COVER: " << nodep);
-                AstCoverOtherDecl* const declp
-                    = new AstCoverOtherDecl{nodep->fileline(), "v_line/" + m_modp->prettyName(),
-                                            "case", linesCov(m_state, nodep), 0};
-                setCoverageHier(declp);
-                m_modp->addStmtsp(declp);
-                nodep->addStmtsp(
-                    newCoverInc(nodep->fileline(), declp, traceNameForLine(nodep, "case")));
-            }
+            lineTrack(nodep);
+            // Each kind unless the case body disabled it, named alike so reports can pair them
+            if (m_state.lineCoverageOn(nodep)) coverCaseItem(nodep, "v_line/");
+            if (m_state.branchCoverageOn(nodep)) coverCaseItem(nodep, "v_branch/");
         }
     }
     void visit(AstCover* nodep) override {
