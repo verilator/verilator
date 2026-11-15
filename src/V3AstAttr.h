@@ -1230,6 +1230,7 @@ FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
     macro(CALL_EXPORT_TASK,                   "VerilatedDpi::callExportTask",       false,  "rf+") \
     macro(CALL_IMPORT_FUNCTION,               "VerilatedDpi::callImportFunction",   false,  "r+") \
     macro(CALL_IMPORT_TASK,                   "VerilatedDpi::callImportTask",       false,  "r+") \
+    macro(COVERAGE_CONTROL,                   "VL_COVERAGE_CONTROL",                false,  "r+") \
     macro(STRING_APPEND,                      "VL_APPENDN_NN",                      false,  "mr")
 // clang-format on
 

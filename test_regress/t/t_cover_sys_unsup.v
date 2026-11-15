@@ -11,20 +11,6 @@ module t;
   int i;
   initial begin
 
-    // control_constant = `SV_COV_START, `SV_COV_STOP, `SV_COV_RESET, `SV_COV_CHECK
-    // coverage_type = `SV_COV_ASSERTION, `SV_COV_FSM_STATE, `SV_COV_STATEMENT,`SV_COV_TOGGLE
-    // scope_def = [`SV_COV_MODULE, "unique module def name"], [`SV_COV_HIER, "module name"],
-    //               [`SV_COV_MODULE, instance_name], [`SV_COV_HIER, instance_name]
-    i = $coverage_control(`SV_COV_START, `SV_COV_TOGGLE, `SV_COV_MODULE, t);
-    // Only (`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root) is supported
-    i = $coverage_control(`SV_COV_RESET, `SV_COV_TOGGLE, `SV_COV_HIER, $root);
-    i = $coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_MODULE, $root);
-    i = $coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, t);
-    i = $coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root.t);
-    i = $coverage_control(i, `SV_COV_ALL, `SV_COV_HIER, $root);
-    i = $coverage_control(`SV_COV_STOP, `SV_COV_ALL, `SV_COV_HIER, $root);
-    // returns `SV_COV_OK, `SV_COV_ERROR, `SV_COV_NOCOV, `SV_COV_PARTIAL
-
     i = $coverage_get(`SV_COV_TOGGLE, `SV_COV_MODULE, t);
     // returns number or `SC_COV_OVERFLOW, `SC_COV_ERROR, `SV_COV_NOCOV
 

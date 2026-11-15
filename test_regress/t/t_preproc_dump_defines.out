@@ -2,12 +2,18 @@
 `define JA_32(a, b) ja32 a b
 `define JOIN_ARGS(n, x) `JA_``n``(x, y)
 `define PREDEF_COMMAND_LINE
-`define SV_COV_ALL 24
+`define SV_COV_ALL -110
 `define SV_COV_ASSERTION 20
+`define SV_COV_BRANCH -104
 `define SV_COV_CHECK 3
+`define SV_COV_CONDITION -105
 `define SV_COV_ERROR -1
+`define SV_COV_EXPR -106
+`define SV_COV_EXPRESSION -106
 `define SV_COV_FSM_STATE 21
+`define SV_COV_FSM_TRANS -107
 `define SV_COV_HIER 11
+`define SV_COV_LINE -102
 `define SV_COV_MODULE 10
 `define SV_COV_NOCOV 0
 `define SV_COV_OK 1

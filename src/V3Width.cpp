@@ -82,6 +82,7 @@
 #include "V3LinkLValue.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
+#include "V3PreShell.h"
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"
@@ -695,6 +696,31 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstTimeD* nodep) override { nodep->dtypeSetDouble(); }
     void visit(AstTimePrecision* nodep) override { nodep->dtypeSetInteger2State(); }
     void visit(AstGetInitialRandomSeed* nodep) override { nodep->dtypeSetInt(); }
+    void visit(AstCoverageControl* nodep) override {
+        // VL_COVERAGE_CONTROL checks the other arguments when called
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* newp;
+        if (!v3Global.opt.coverage()) {
+            // Without coverage the model has no coverage runtime to call
+            newp = new AstConst{fl, AstConst::Signed32{}, VSvCov::SV_COV_NOCOV};
+        } else if (!nodep->rootInstance()) {
+            newp = new AstConst{fl, AstConst::Signed32{}, VSvCov::SV_COV_ERROR};
+        } else {
+            iterateCheckSigned32(nodep, "control", nodep->controlp(), BOTH);
+            iterateCheckSigned32(nodep, "coverage type", nodep->coverageTypep(), BOTH);
+            iterateCheckSigned32(nodep, "scope", nodep->scopeDefp(), BOTH);
+            AstCFuncHard* const callp
+                = new AstCFuncHard{fl, VCFunction::COVERAGE_CONTROL,
+                                   new AstCExpr{fl, "vlSymsp->_vm_contextp__->coveragep()"}};
+            callp->addPinsp(nodep->controlp()->unlinkFrBack());
+            callp->addPinsp(nodep->coverageTypep()->unlinkFrBack());
+            callp->addPinsp(nodep->scopeDefp()->unlinkFrBack());
+            callp->dtypeSetInt();
+            newp = callp;
+        }
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstTimeUnit* nodep) override {
         nodep->replaceWith(
             new AstConst{nodep->fileline(), AstConst::Signed32{}, nodep->timeunit().powerOfTen()});
@@ -5201,6 +5227,10 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstCMethodHard* nodep) override {
         // Never created before V3Width, so no need to redo it
         UASSERT_OBJ(nodep->dtypep(), nodep, "CMETHODCALLs should have already been sized");
+    }
+    void visit(AstCFuncHard* nodep) override {
+        // Never created before V3Width, so no need to redo it
+        UASSERT_OBJ(nodep->dtypep(), nodep, "CFUNCHARDs should have already been sized");
     }
 
     void visit(AstMethodCall* nodep) override {

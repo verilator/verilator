@@ -6,6 +6,35 @@
         // SPDX-License-Identifier: CC0-1.0
         
         `define stop $stop
+        `ifdef NO_COVERAGE
+        `define EXPECTED `SV_COV_NOCOV
+        `define EXPECTED_ERROR `SV_COV_NOCOV
+        `else
+        `define EXPECTED `SV_COV_OK
+        `define EXPECTED_ERROR `SV_COV_ERROR
+        `endif
+        
+        package pkg;
+          function automatic int reset_from_package();
+            return $coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root);
+          endfunction
+        endpackage
+        
+%000000 class Cls;
+-000000  point: type=line comment=block hier=top.$unit::Cls__Vclpkg
+          // Arguments may be parameters
+          localparam int RESET = `SV_COV_RESET;
+%000000   function int reset_from_method();
+-000000  point: type=line comment=block hier=top.$unit::Cls__Vclpkg
+%000000     return $coverage_control(RESET, `SV_COV_ALL, `SV_COV_HIER, $root);
+-000000  point: type=line comment=block hier=top.$unit::Cls__Vclpkg
+          endfunction
+%000000   static function int reset_from_static();
+-000000  point: type=line comment=block hier=top.$unit::Cls__Vclpkg
+%000000     return $coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root);
+-000000  point: type=line comment=block hier=top.$unit::Cls__Vclpkg
+          endfunction
+        endclass
         
         module t (  /*AUTOARG*/
             // Inputs
@@ -22,6 +51,31 @@
 -000000  point: type=line comment=block hier=top.t
 -000003  point: type=toggle comment=toggler:0->1 hier=top.t
 -000002  point: type=toggle comment=toggler:1->0 hier=top.t
+%000000   Cls c = new;
+-000000  point: type=line comment=block hier=top.t
+%000000   int control = `SV_COV_RESET;
+-000000  point: type=line comment=block hier=top.t
+        
+%000000   initial begin
+-000000  point: type=line comment=block hier=top.t
+            // Unsupported arguments return an error when called
+%000000     if ($coverage_control(`SV_COV_STOP, `SV_COV_ALL, `SV_COV_HIER, $root) != `EXPECTED_ERROR) `stop;
+-000000  point: type=line comment=else hier=top.t
+%000000     if ($coverage_control(`SV_COV_RESET, `SV_COV_TOGGLE, `SV_COV_HIER, $root) != `EXPECTED_ERROR)
+-000000  point: type=line comment=else hier=top.t
+              `stop;
+%000000     if ($coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_MODULE, $root) != `EXPECTED_ERROR)
+-000000  point: type=line comment=else hier=top.t
+              `stop;
+%000000     if ($coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, t) != `EXPECTED_ERROR) `stop;
+-000000  point: type=line comment=else hier=top.t
+%000000     if ($coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root.t) != `EXPECTED_ERROR)
+-000000  point: type=line comment=else hier=top.t
+              `stop;
+%000000     if ($coverage_control(control + 1, `SV_COV_ALL, `SV_COV_HIER, $root) != `EXPECTED_ERROR)
+-000000  point: type=line comment=else hier=top.t
+              `stop;
+          end
         
 %000005   always @(posedge clk) begin
 -000005  point: type=line comment=block hier=top.t
@@ -30,26 +84,38 @@
 %000005     toggler <= cyc[0];
 -000005  point: type=line comment=block hier=top.t
             // Counts before the last reset are dropped
-%000004     if (cyc == 3) $coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root);
+%000004     if (cyc == 1) status = pkg::reset_from_package();
 -000000  point: type=branch comment=if hier=top.t
 -000000  point: type=line comment=if hier=top.t
 -000004  point: type=branch comment=else hier=top.t
 -000004  point: type=line comment=else hier=top.t
-%000004     if (cyc == 5) begin
+%000004     if (cyc == 2) status = c.reset_from_method();
+-000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
+-000004  point: type=branch comment=else hier=top.t
+-000004  point: type=line comment=else hier=top.t
+%000004     if (cyc == 3) $coverage_control(control, `SV_COV_ALL, `SV_COV_HIER, $root);
+-000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
+-000004  point: type=branch comment=else hier=top.t
+-000004  point: type=line comment=else hier=top.t
+%000004     if (cyc == 4) status = Cls::reset_from_static();
+-000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
+-000004  point: type=branch comment=else hier=top.t
+-000004  point: type=line comment=else hier=top.t
+%000004     if (cyc == 5) status = $coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root);
 -000001  point: type=branch comment=if hier=top.t
 -000001  point: type=line comment=if hier=top.t
 -000004  point: type=branch comment=else hier=top.t
 -000004  point: type=line comment=else hier=top.t
-%000001       status = $coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root);
--000001  point: type=branch comment=if hier=top.t
--000001  point: type=line comment=if hier=top.t
-        `ifdef NO_COVERAGE
-              if (status != `SV_COV_NOCOV) `stop;
-        `else
-%000001       if (status != `SV_COV_OK) `stop;
--000001  point: type=line comment=else hier=top.t
-        `endif
-            end
+%000005     if (cyc >= 1 && cyc <= 5 && cyc != 3 && status != `EXPECTED) `stop;
+-000000  point: type=expr comment=((cyc != 32'sh3)==0) => 0 hier=top.t
+-000004  point: type=expr comment=((cyc <= 32'sh5)==0) => 0 hier=top.t
+-000000  point: type=expr comment=((cyc >= 32'sh1)==0) => 0 hier=top.t
+-000000  point: type=expr comment=((cyc >= 32'sh1)==1 && (cyc <= 32'sh5)==1 && (cyc != 32'sh3)==1 && (status != 32'sh1)==1) => 1 hier=top.t
+-000005  point: type=expr comment=((status != 32'sh1)==0) => 0 hier=top.t
+-000005  point: type=line comment=else hier=top.t
 %000004     if (cyc == 9) begin
 -000001  point: type=branch comment=if hier=top.t
 -000001  point: type=line comment=if hier=top.t

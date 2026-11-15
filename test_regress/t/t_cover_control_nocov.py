@@ -12,7 +12,8 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_cover_control.v"
 
-test.compile(verilator_flags2=['--cc +define+NO_COVERAGE'])
+# Dump trees to cover the dump of AstCoverageControl, which V3Width replaces
+test.compile(verilator_flags2=['--cc +define+NO_COVERAGE --dump-tree --dump-tree-json'])
 
 test.execute()
 

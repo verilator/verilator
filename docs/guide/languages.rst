@@ -360,8 +360,9 @@ See :ref:`Covergroup Coverage`.
 
 ``$coverage_control`` is supported only as
 ``$coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root)``,
-which zeroes all coverage counts, for example once reset has completed. It
-returns ``SV_COV_NOCOV`` when the model was built without coverage.
+which zeroes all coverage counts, for example once reset has completed.
+Other arguments return ``SV_COV_ERROR``. It returns ``SV_COV_NOCOV`` when
+the model was built without coverage.
 
 
 Encrypted Verilog

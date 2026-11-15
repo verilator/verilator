@@ -4506,7 +4506,10 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
                         { $$ = new AstCountBits{$1, $3, $5, $7, $9};
                           BBUNSUP($11, "Unsupported: $countbits with more than 3 control fields"); }
         |       yD_COUNTONES '(' expr ')'               { $$ = new AstCountOnes{$1, $3}; }
-        |       yD_COVERAGE_CONTROL '(' expr ',' expr ',' expr ',' expr ')'  { $$ = GRAMMARP->createCoverageControl($1, $3, $5, $7, $9); }
+        |       yD_COVERAGE_CONTROL '(' expr ',' expr ',' expr ',' expr ')'  { // Only a $root modules_or_instance is supported, see V3Width
+                          const AstParseRef* const rootp = VN_CAST($9, ParseRef);
+                          $$ = new AstCoverageControl{$1, $3, $5, $7, rootp && rootp->name() == "$root"};
+                          VL_DO_DANGLING($9->deleteTree(), $9); }
         |       yD_DIMENSIONS '(' exprOrDataType ')'    { $$ = new AstAttrOf{$1, VAttrType::DIM_DIMENSIONS, $3}; }
         |       yD_DIST_CHI_SQUARE '(' expr ',' expr ')'        { $$ = new AstDistChiSquare{$1, $3, $5}; }
         |       yD_DIST_ERLANG '(' expr ',' expr ',' expr ')'   { $$ = new AstDistErlang{$1, $3, $5, $7}; }

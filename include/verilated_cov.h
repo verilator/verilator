@@ -223,6 +223,18 @@ protected:
     VerilatedCovImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedCovImp*>(this); }
 };
 
+// $coverage_control on $root. Only (`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER) is supported, and
+// zeroes every count. The values match VSvCov in src/V3PreShell.h.
+inline int VL_COVERAGE_CONTROL(VerilatedCovContext* covp, int control, int coverageType,
+                               int scope) VL_MT_SAFE {
+    if (control != 2 /*SV_COV_RESET*/ || coverageType != -110 /*SV_COV_ALL*/
+        || scope != 11 /*SV_COV_HIER*/) {
+        return -1;  // SV_COV_ERROR
+    }
+    covp->zero();
+    return 1;  // SV_COV_OK
+}
+
 //=============================================================================
 //  VerilatedCov
 /// Coverage global class.
