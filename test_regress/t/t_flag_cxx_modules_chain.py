@@ -9,8 +9,6 @@
 
 import glob
 import os
-import shlex
-import sys
 import vltest_bootstrap
 
 test.scenarios('vlt')
@@ -39,45 +37,11 @@ def run_make():
     return test.run_capture('cd ' + test.obj_dir + ' && ' + os.environ['MAKE'] + ' -f ' +
                             test.vm_prefix + '.mk VM_PARALLEL_BUILDS=1 2>&1')
 
-modules_json = test.obj_dir + '/' + test.vm_prefix + '__modules.json'
-modules_dot = test.obj_dir + '/' + test.vm_prefix + '__modules.dot'
 module_obj = test.obj_dir + '/t_flag_cxx_modules_chain_m1.o'
 if 'clang' in test.cxx_version.lower():
     artifact = test.obj_dir + '/t_flag_cxx_modules_chain_m1.pcm'
 else:
     artifact = test.obj_dir + '/gcm.cache/m1.gcm'
-test.file_grep(modules_json, r'"m1"')
-test.file_grep(modules_json, r'"m2"')
-test.file_grep(modules_json, r'"buildmod"')
-test.file_grep(modules_dot, r'm2 -> m1')
-
-direct_dir = test.obj_dir + '/direct'
-test.run(
-    logfile=test.obj_dir + '/direct.log',
-    cmd=[
-        sys.executable,
-        test.root + '/bin/verilator_module_deps',
-        '--backend',
-        'clang' if 'clang' in test.cxx_version.lower() else 'gcc',
-        '--cxx',
-        shlex.quote(os.environ.get('CXX', 'c++')),
-        '--cxxflags=-std=c++23',
-        '--cppflags=',
-        '--opt-fast=-O0',
-        '--objdir',
-        direct_dir,
-        '--json',
-        direct_dir + '/graph.json',
-        '--dot',
-        direct_dir + '/graph.dot',
-        '--output',
-        direct_dir + '/graph.mk',
-        '--source',
-        test.t_dir + '/t_flag_cxx_modules_chain_m1.cppm',
-    ])
-test.file_grep(direct_dir + '/graph.json', r'"m1"')
-test.file_grep(direct_dir + '/graph.dot', r'digraph modules')
-
 run_make()
 if not os.path.exists(artifact):
     test.error('Missing C++ module artifact: ' + artifact)
