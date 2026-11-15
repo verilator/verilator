@@ -780,6 +780,22 @@
 %000008       then_two_x <= 1'b1;
             end
           end
+          // A commit that loads a constant, not an enable
+%000003   state_t load_q;
+%000003   state_t load_d;
+ 000010   always_comb begin
+ 000010     load_d = load_q;
+ 000010     case (load_q)
+%000004       S0: load_d = S1;
+%000004       S1: load_d = S2;
+%000002       S2: load_d = S0;
+%000000       default: load_d = S0;
+            endcase
+          end
+%000009   always_ff @(posedge clk) begin
+%000006     if (rst) load_q <= S0;
+%000006     else load_q <= sel ? S1 : load_d;
+          end
         endmodule
         
         module t (

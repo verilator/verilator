@@ -595,6 +595,22 @@ module fsm_enable (
       then_two_x <= 1'b1;
     end
   end
+  // A commit that loads a constant, not an enable
+  state_t load_q;
+  state_t load_d;
+  always_comb begin
+    load_d = load_q;
+    case (load_q)
+      S0: load_d = S1;
+      S1: load_d = S2;
+      S2: load_d = S0;
+      default: load_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) load_q <= S0;
+    else load_q <= sel ? S1 : load_d;
+  end
 endmodule
 
 module t (
