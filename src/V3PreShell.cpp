@@ -71,6 +71,8 @@ protected:
                 s_preprocp->defineCmdLine(prefl, "SV_COV_FSM_STATE", "21");
                 s_preprocp->defineCmdLine(prefl, "SV_COV_STATEMENT", "22");
                 s_preprocp->defineCmdLine(prefl, "SV_COV_TOGGLE", "23");
+                // Verilator extension: every coverage type
+                s_preprocp->defineCmdLine(prefl, "SV_COV_ALL", "24");
                 s_preprocp->defineCmdLine(prefl, "SV_COV_OVERFLOW", "-2");
                 s_preprocp->defineCmdLine(prefl, "SV_COV_ERROR", "-1");
                 s_preprocp->defineCmdLine(prefl, "SV_COV_NOCOV", "0");

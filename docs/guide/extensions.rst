@@ -122,7 +122,8 @@ or "`ifdef`"'s may break other tools.
 
    The SYSTEMVERILOG, SV_COV_START, and related standard predefined macros
    are defined by default when :vlopt:`--language <--language>` is
-   "1800-\*".
+   "1800-\*". So is SV_COV_ALL, a Verilator extension that selects every
+   coverage type in :code:`$coverage_control`.
 
 .. option:: `VERILATOR
 

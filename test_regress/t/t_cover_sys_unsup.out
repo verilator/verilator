@@ -1,26 +1,44 @@
-%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:18:9: Unsupported: IEEE 1800-2005 reserved word not implemented: '$coverage_control'
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:18:9: Unsupported: $coverage_control other than (`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root)
    18 |     i = $coverage_control(0, 23, 10, t);
       |         ^~~~~~~~~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:21:9: Unsupported: IEEE 1800-2005 reserved word not implemented: '$coverage_get'
-   21 |     i = $coverage_get(23, 10, t);
-      |         ^~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:24:9: Unsupported: IEEE 1800-2005 reserved word not implemented: '$coverage_get_max'
-   24 |     i = $coverage_get_max(23, 10, t);
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:20:9: Unsupported: $coverage_control other than (`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root)
+   20 |     i = $coverage_control(2, 23, 11, $root);
       |         ^~~~~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:27:9: Unsupported: IEEE 1800-2005 reserved word not implemented: '$get_coverage'
-   27 |     r = $get_coverage();
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:21:9: Unsupported: $coverage_control other than (`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root)
+   21 |     i = $coverage_control(2, 24, 10, $root);
+      |         ^~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:22:9: Unsupported: $coverage_control other than (`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root)
+   22 |     i = $coverage_control(2, 24, 11, t);
+      |         ^~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:23:9: Unsupported: $coverage_control other than (`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root)
+   23 |     i = $coverage_control(2, 24, 11, $root.t);
+      |         ^~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:24:9: Unsupported: $coverage_control other than (`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root)
+   24 |     i = $coverage_control(i, 24, 11, $root);
+      |         ^~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:25:9: Unsupported: $coverage_control other than (`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root)
+   25 |     i = $coverage_control(1, 24, 11, $root);
+      |         ^~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:28:9: Unsupported: IEEE 1800-2005 reserved word not implemented: '$coverage_get'
+   28 |     i = $coverage_get(23, 10, t);
       |         ^~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:29:5: Unsupported: IEEE 1800-2005 reserved word not implemented: '$set_coverage_db_name'
-   29 |     $set_coverage_db_name("filename");
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:31:9: Unsupported: IEEE 1800-2005 reserved word not implemented: '$coverage_get_max'
+   31 |     i = $coverage_get_max(23, 10, t);
+      |         ^~~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:34:9: Unsupported: IEEE 1800-2005 reserved word not implemented: '$get_coverage'
+   34 |     r = $get_coverage();
+      |         ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:36:5: Unsupported: IEEE 1800-2005 reserved word not implemented: '$set_coverage_db_name'
+   36 |     $set_coverage_db_name("filename");
       |     ^~~~~~~~~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:31:9: Unsupported: IEEE 1800-2005 reserved word not implemented: '$coverage_save'
-   31 |     i = $coverage_save(coverage_type, "filename");
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:38:9: Unsupported: IEEE 1800-2005 reserved word not implemented: '$coverage_save'
+   38 |     i = $coverage_save(coverage_type, "filename");
       |         ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:34:5: Unsupported: IEEE 1800-2005 reserved word not implemented: '$load_coverage_db'
-   34 |     $load_coverage_db("filename");
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:41:5: Unsupported: IEEE 1800-2005 reserved word not implemented: '$load_coverage_db'
+   41 |     $load_coverage_db("filename");
       |     ^~~~~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:36:9: Unsupported: IEEE 1800-2005 reserved word not implemented: '$coverage_merge'
-   36 |     i = $coverage_merge(coverage_type, "filename");
+%Error-UNSUPPORTED: t/t_cover_sys_unsup.v:43:9: Unsupported: IEEE 1800-2005 reserved word not implemented: '$coverage_merge'
+   43 |     i = $coverage_merge(coverage_type, "filename");
       |         ^~~~~~~~~~~~~~~
 %Error: Exiting due to

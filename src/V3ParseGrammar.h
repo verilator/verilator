@@ -160,6 +160,32 @@ public:
                                    << "... Suggest removing it, as values in no bins do not "
                                       "affect coverage");
     }
+    // $coverage_control (IEEE 1800-2023 20.14) is supported only as
+    // (`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root), which zeroes all coverage
+    static AstNodeExpr* createCoverageControl(FileLine* fl, AstNodeExpr* controlp,
+                                              AstNodeExpr* typep, AstNodeExpr* scopep,
+                                              AstNodeExpr* instp) {
+        const auto isConst = [](const AstNodeExpr* exprp, int value) {
+            const AstConst* const constp = VN_CAST(exprp, Const);
+            return constp && constp->toSInt() == value;
+        };
+        const AstParseRef* const rootp = VN_CAST(instp, ParseRef);
+        const bool supported
+            = isConst(controlp, 2 /*SV_COV_RESET*/) && isConst(typep, 24 /*SV_COV_ALL*/)
+              && isConst(scopep, 11 /*SV_COV_HIER*/) && rootp && rootp->name() == "$root";
+        for (AstNodeExpr* const argp : {controlp, typep, scopep, instp}) argp->deleteTree();
+        if (!supported) {
+            fl->v3warn(E_UNSUPPORTED, "Unsupported: $coverage_control other than "
+                                      "(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root)");
+            return new AstConst{fl, AstConst::Signed32{}, -1};  // SV_COV_ERROR
+        }
+        // Without coverage the model has no coverage runtime to call
+        if (!v3Global.opt.coverage()) return new AstConst{fl, AstConst::Signed32{}, 0};
+        AstCExpr* const cexprp  // Returns SV_COV_OK
+            = new AstCExpr{fl, "(vlSymsp->_vm_contextp__->coveragep()->zero(), 1)", 32};
+        cexprp->dtypeSetBitSized(32, VSigning::SIGNED);
+        return cexprp;
+    }
     AstNodeExpr* createGatePin(AstNodeExpr* exprp) {
         AstRange* const rangep = m_gateRangep;
         if (!rangep) return exprp;

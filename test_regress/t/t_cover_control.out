@@ -1,0 +1,67 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: Verilog Test module
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain.
+        // SPDX-FileCopyrightText: 2026 David Harris
+        // SPDX-License-Identifier: CC0-1.0
+        
+        `define stop $stop
+        
+        module t (  /*AUTOARG*/
+            // Inputs
+            clk
+        );
+%000004   input clk;
+-000004  point: type=toggle comment=clk:0->1 hier=top.t
+-000004  point: type=toggle comment=clk:1->0 hier=top.t
+        
+%000000   int cyc = 0;
+-000000  point: type=line comment=block hier=top.t
+          int status;
+%000003   logic toggler = 0;
+-000000  point: type=line comment=block hier=top.t
+-000003  point: type=toggle comment=toggler:0->1 hier=top.t
+-000002  point: type=toggle comment=toggler:1->0 hier=top.t
+        
+%000005   always @(posedge clk) begin
+-000005  point: type=line comment=block hier=top.t
+%000005     cyc <= cyc + 1;
+-000005  point: type=line comment=block hier=top.t
+%000005     toggler <= cyc[0];
+-000005  point: type=line comment=block hier=top.t
+            // Counts before the last reset are dropped
+%000004     if (cyc == 3) $coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root);
+-000000  point: type=branch comment=if hier=top.t
+-000000  point: type=line comment=if hier=top.t
+-000004  point: type=branch comment=else hier=top.t
+-000004  point: type=line comment=else hier=top.t
+%000004     if (cyc == 5) begin
+-000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
+-000004  point: type=branch comment=else hier=top.t
+-000004  point: type=line comment=else hier=top.t
+%000001       status = $coverage_control(`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER, $root);
+-000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
+        `ifdef NO_COVERAGE
+              if (status != `SV_COV_NOCOV) `stop;
+        `else
+%000001       if (status != `SV_COV_OK) `stop;
+-000001  point: type=line comment=else hier=top.t
+        `endif
+            end
+%000004     if (cyc == 9) begin
+-000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
+-000004  point: type=branch comment=else hier=top.t
+-000004  point: type=line comment=else hier=top.t
+%000001       $write("*-* All Finished *-*\n");
+-000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
+%000001       $finish;
+-000001  point: type=branch comment=if hier=top.t
+-000001  point: type=line comment=if hier=top.t
+            end
+          end
+        endmodule
+        
