@@ -83,7 +83,7 @@ module sub #(
     input a,
     input b,
     output logic x,
-    output out_2d_unpacked[3][4],
+    output logic out_2d_unpacked[3][4],
     output data_t data,
     input int cyc,
     input clk
