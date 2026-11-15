@@ -3730,17 +3730,25 @@ class WidthVisitor final : public VNVisitor {
     }
     // True if a bit-stream type (IEEE 1800-2023 6.24.3), assuming a class is one, and if 'dest',
     // one without an associative array or class, as these are illegal in a destination type
-    static bool isBitstreamDType(const AstNodeDType* dtypep, const bool dest) {
+    static bool isBitstreamDType(const AstNodeDType* const dtypep, const bool dest) {
+        std::unordered_set<const AstStructDType*> checked;
+        return isBitstreamDTypeRecurse(dtypep, dest, checked);
+    }
+    // A struct type can be shared by many members, so each is checked once. A struct seen again
+    // passed its first check, as any failure ends the whole check.
+    static bool isBitstreamDTypeRecurse(const AstNodeDType* dtypep, const bool dest,
+                                        std::unordered_set<const AstStructDType*>& checked) {
         dtypep = dtypep->skipRefp();
         if (const AstStructDType* const sdtypep = VN_CAST(dtypep, StructDType)) {
+            if (!checked.emplace(sdtypep).second) return true;
             for (const AstMemberDType* const memberp : sdtypep->memberspList()) {
-                if (!isBitstreamDType(memberp->subDTypep(), dest)) return false;
+                if (!isBitstreamDTypeRecurse(memberp->subDTypep(), dest, checked)) return false;
             }
             return true;
         }
         const bool assoc = VN_IS(dtypep, AssocArrayDType) || VN_IS(dtypep, WildcardArrayDType);
         if (dtypep->isNonPackedArray() || assoc) {
-            return !(dest && assoc) && isBitstreamDType(dtypep->subDTypep(), dest);
+            return !(dest && assoc) && isBitstreamDTypeRecurse(dtypep->subDTypep(), dest, checked);
         }
         return dtypep->isIntegralOrPacked() || dtypep->isString()
                || (!dest && VN_IS(dtypep, ClassRefDType));
@@ -12191,6 +12199,27 @@ public:
         // Check width of stream and wrap if needed
         if (AstNodeStream* const streamp = VN_CAST(nodep->rhsp(), NodeStream)) {
             AstNodeDType* const lhsDTypeSkippedRefp = lhsDTypep->skipRefp();
+            const bool bitstream = isBitstreamDType(lhsDTypeSkippedRefp, false);
+            if (!bitstream || !isBitstreamDType(lhsDTypeSkippedRefp, true)) {
+                if (!bitstream) {
+                    nodep->v3error("Streaming concatenation assigned to "
+                                   << lhsDTypeSkippedRefp->prettyDTypeNameQ() << ", but "
+                                   << lhsDTypeSkippedRefp->prettyDTypeNameQ()
+                                   << " is not a bit-stream type (IEEE 1800-2023 11.4.14).");
+                } else {
+                    nodep->v3error("Streaming concatenation assigned to "
+                                   << lhsDTypeSkippedRefp->prettyDTypeNameQ()
+                                   << ", but an associative array or class is illegal in the"
+                                      " destination type (IEEE 1800-2023 6.24.3).");
+                }
+                AstConst* const newp
+                    = new AstConst{streamp->fileline(), AstConst::BitFalseErroring{}};
+                newp->dtypeFrom(lhsDTypep);
+                newp->didWidth(true);
+                streamp->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(streamp), streamp);
+                return;
+            }
             const int lwidth = lhsDTypeSkippedRefp->widthStream();
             const int rwidth = streamp->lhsp()->dtypep()->skipRefp()->widthStream();
             if (lwidth != 0 && lwidth < rwidth) {
