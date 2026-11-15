@@ -108,11 +108,12 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
         GRAMMARP->setDType(dtypep); \
         GRAMMARP->m_varDeclTyped = true; \
     }
+// Set the data type without making a typed declaration, e.g. a range-only port
 #define VARDTYPE_NDECL(dtypep) \
     { \
         GRAMMARP->setDType(dtypep); \
         GRAMMARP->m_varDeclTyped = false; \
-    }  // Set the data type without making a typed declaration, e.g. a range-only port
+    }
 
 #define VARDONEA(fl, name, array, attrs) GRAMMARP->createVariable((fl), (name), (array), (attrs))
 #define VARDONEP(portp, array, attrs) \

@@ -747,7 +747,7 @@ class UndrivenVisitor final : public VNVisitorConst {
             } else if (m_inContAssign && !nodep->fileline()->language().systemVerilog()
                        && (!nodep->varp()->varType().isContAssignable()
                            // A port declared with a data type, e.g. 'output reg', is a variable
-                           || (nodep->varp()->varType() == VVarType::PORT
+                           || (nodep->varp()->varType().isPort()
                                && nodep->varp()->isDeclTyped()))) {
                 nodep->v3warn(CONTASSREG,
                               "Continuous assignment to reg, perhaps intended wire"

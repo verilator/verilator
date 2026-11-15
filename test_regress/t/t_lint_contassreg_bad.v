@@ -34,7 +34,8 @@ module t (
       .c(),
       .d(),
       .e(),
-      .f()
+      .f(),
+      .g()
   );
 endmodule
 
@@ -44,7 +45,8 @@ module sub (
     output c,
     output signed [1:0] d,
     output wire e,
-    output integer f
+    output integer f,
+    output wire integer g
 );
   assign a = 1'b0;  // Bad
   assign b = 1'b0;  // Bad
@@ -52,4 +54,5 @@ module sub (
   assign d = 2'b0;
   assign e = 1'b0;
   assign f = 0;  // Bad
+  assign g = 0;
 endmodule
