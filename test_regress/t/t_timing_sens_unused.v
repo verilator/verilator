@@ -26,6 +26,14 @@ module t;
   logic write_trigger = 1'b0;
   always @(write_trigger) write_trigger = 1'b0;
 
+  // Reading the trigger after overwriting it is not a read dependency either.
+  logic overwritten_trigger = 1'b0;
+  time t_overwritten = 0;
+  always @(overwritten_trigger) begin
+    overwritten_trigger = 1'b0;
+    t_overwritten = $time + time'(overwritten_trigger);
+  end
+
   // A complete sensitivity list can still be treated as combinational logic.
   logic [1:0] read_value;
   always @(rst or select_value) read_value = {rst, select_value};
@@ -41,18 +49,22 @@ module t;
   initial begin
     #10 rst = 1'b1;
     write_trigger = 1'b1;
+    overwritten_trigger = 1'b1;
     #1;
     `checkd(t_rst, 10);
     `checkd(t_partial, 11);
     `checkd(write_trigger, 1'b0);
+    `checkd(t_overwritten, 10);
     `checkd(read_value, 2'b11);
     `checkd(t_repeat, 12);
     #10 rst = 1'b0;
     write_trigger = 1'b1;
+    overwritten_trigger = 1'b1;
     #1;
     `checkd(t_rst, 21);
     `checkd(t_partial, 22);
     `checkd(write_trigger, 1'b0);
+    `checkd(t_overwritten, 21);
     `checkd(read_value, 2'b01);
     `checkd(t_repeat, 21);
     $write("*-* All Finished *-*\n");

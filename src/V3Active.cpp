@@ -614,6 +614,7 @@ class ActiveVisitor final : public VNVisitor {
         if (nodep->access().isWriteOnly()) {
             vscp->user2(true);
         } else {
+            // Match the existing ordering heuristic: a read counts only before any visited write.
             if (!vscp->user2() && vscp->user1() == SENS_UNREAD) {
                 vscp->user1(SENS_READ);
                 --m_unreadSens;
