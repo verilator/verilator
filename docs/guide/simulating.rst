@@ -364,11 +364,10 @@ module with the same parameter set. A module instantiated with different
 parameter values is considered a different module and will get counted
 separately.
 
-Toggles are counted whenever combinational logic is evaluated, so a bit
-that changes more than once in a time step, for example while the logic
-settles, is counted each time. As a result, toggle counts may be higher
-than what would be seen by looking at traces, which show one value per time
-step.
+Toggles are counted on every change of a bit, including glitches, which are
+transient changes within a time step while logic settles. As a result,
+toggle counts may be higher than what would be seen by looking at traces,
+which show one value per time step.
 
 There may be edges counted near time zero while the model stabilizes. It's
 a good practice to zero all coverage just before releasing reset to prevent
