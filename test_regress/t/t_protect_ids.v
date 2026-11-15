@@ -77,6 +77,10 @@ module secret_other (
     end
   end
 
+  // Expression coverage comments contain '=>', which the id map must escape
+  logic secret_both;
+  always @(posedge clk) secret_both <= secret_cyc[0] && secret_cyc[1];
+
   secret_intf secret_interface ();
 
 endmodule
