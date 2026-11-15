@@ -73,7 +73,6 @@ protected:
                 VL_DEFINE_SV_COV(SV_COV_FSM_STATE);
                 VL_DEFINE_SV_COV(SV_COV_STATEMENT);
                 VL_DEFINE_SV_COV(SV_COV_TOGGLE);
-                // Extensions also used by other simulators
                 VL_DEFINE_SV_COV(SV_COV_LINE);
                 VL_DEFINE_SV_COV(SV_COV_BRANCH);
                 VL_DEFINE_SV_COV(SV_COV_CONDITION);

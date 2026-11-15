@@ -43,7 +43,7 @@ struct VSvCov final {
         SV_COV_FSM_STATE = 21,
         SV_COV_STATEMENT = 22,
         SV_COV_TOGGLE = 23,
-        // Extensions also used by other simulators
+        // Extensions
         SV_COV_LINE = -102,
         SV_COV_BRANCH = -104,
         SV_COV_CONDITION = -105,

@@ -33,6 +33,33 @@
 #include <sstream>
 #include <string>
 
+//=============================================================================
+// $coverage_control values; negative coverage types are extensions.
+// Must match VSvCov in src/V3PreShell.h.
+
+#define VL_SV_COV_START 0
+#define VL_SV_COV_STOP 1
+#define VL_SV_COV_RESET 2
+#define VL_SV_COV_CHECK 3
+#define VL_SV_COV_MODULE 10
+#define VL_SV_COV_HIER 11
+#define VL_SV_COV_ASSERTION 20
+#define VL_SV_COV_FSM_STATE 21
+#define VL_SV_COV_STATEMENT 22
+#define VL_SV_COV_TOGGLE 23
+#define VL_SV_COV_LINE (-102)
+#define VL_SV_COV_BRANCH (-104)
+#define VL_SV_COV_CONDITION (-105)
+#define VL_SV_COV_EXPRESSION (-106)
+#define VL_SV_COV_EXPR (-106)
+#define VL_SV_COV_FSM_TRANS (-107)
+#define VL_SV_COV_ALL (-110)
+#define VL_SV_COV_OVERFLOW (-2)
+#define VL_SV_COV_ERROR (-1)
+#define VL_SV_COV_NOCOV 0
+#define VL_SV_COV_OK 1
+#define VL_SV_COV_PARTIAL 2
+
 class VerilatedCovImp;
 
 using VerilatedCovWeightFunc = int32_t (*)(const void*);
@@ -223,16 +250,14 @@ protected:
     VerilatedCovImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedCovImp*>(this); }
 };
 
-// $coverage_control on $root. Only (`SV_COV_RESET, `SV_COV_ALL, `SV_COV_HIER) is supported, and
-// zeroes every count. The values match VSvCov in src/V3PreShell.h.
+// $coverage_control
 inline int VL_COVERAGE_CONTROL(VerilatedCovContext* covp, int control, int coverageType,
                                int scope) VL_MT_SAFE {
-    if (control != 2 /*SV_COV_RESET*/ || coverageType != -110 /*SV_COV_ALL*/
-        || scope != 11 /*SV_COV_HIER*/) {
-        return -1;  // SV_COV_ERROR
+    if (control != VL_SV_COV_RESET || coverageType != VL_SV_COV_ALL || scope != VL_SV_COV_HIER) {
+        return VL_SV_COV_ERROR;
     }
     covp->zero();
-    return 1;  // SV_COV_OK
+    return VL_SV_COV_OK;
 }
 
 //=============================================================================
