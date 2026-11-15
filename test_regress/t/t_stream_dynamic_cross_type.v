@@ -32,6 +32,30 @@ module t;
     `checkh(destination_words[0], 32'h84000001);
     `checkh(destination_words[1], 32'h28000000);
 
+    begin
+      // Queue streamed into dynamic arrays
+      typedef byte byte_array_t[];
+      byte source_q[$];
+      byte_array_t destination_bytes;
+      logic [11:0] destination_12[];
+      source_q = '{8'h12, 8'h34, 8'h56};
+      destination_bytes = {>>{source_q}};
+      `checkh(destination_bytes.size(), 3);
+      `checkh(destination_bytes[0], 8'h12);
+      `checkh(destination_bytes[2], 8'h56);
+      destination_bytes = {<<8{source_q}};
+      `checkh(destination_bytes.size(), 3);
+      `checkh(destination_bytes[0], 8'h56);
+      `checkh(destination_bytes[2], 8'h12);
+      destination_12 = {>>{source_q}};
+      `checkh(destination_12.size(), 2);
+      `checkh(destination_12[0], 12'h123);
+      `checkh(destination_12[1], 12'h456);
+      destination_words = {<<4{source_q}};
+      `checkh(destination_words.size(), 1);
+      `checkh(destination_words[0], 32'h65432100);
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

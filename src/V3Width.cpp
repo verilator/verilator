@@ -12200,7 +12200,7 @@ public:
                                        << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
             }
             if (VN_IS(streamp->lhsp()->dtypep()->skipRefp(), QueueDType)
-                && !VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
+                && !lhsDTypeSkippedRefp->isDynamicallySized()) {
                 const int queueElementSize = streamp->lhsp()->dtypep()->subDTypep()->width();
                 UASSERT_OBJ(queueElementSize <= lwidth, nodep, "LHS < RHS");
             }
