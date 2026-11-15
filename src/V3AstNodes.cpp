@@ -1741,6 +1741,14 @@ void AstCoverTransItem::dumpJson(std::ostream& str) const {
 }
 void AstCoverTransSet::dump(std::ostream& str) const { Super::dump(str); }
 void AstCoverTransSet::dumpJson(std::ostream& str) const { Super::dumpJson(str); }
+void AstCoverageControl::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (rootInstance()) str << " [ROOT]";
+}
+void AstCoverageControl::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, rootInstance);
+    dumpJsonGen(str);
+}
 //######################################################################
 // Functional coverage dump methods
 void AstCoverpoint::dump(std::ostream& str) const { Super::dump(str); }
