@@ -326,6 +326,7 @@ public:
         VDouble0 cfgCyclic;  // Cyclic input CFGs
         VDouble0 joinUsingPathPredicate;  // Num control flow joins using full path predicate
         VDouble0 joinUsingBranchCondition;  // Num Control flow joins using dominating branch cond
+        VDouble0 selectVarExpansions;  // Number of variables expanded while selecting logic
     } m_synt;
 
 private:
@@ -397,6 +398,7 @@ private:
         addStat("synt / input CFG cyclic", m_synt.cfgCyclic);
 
         addStat("synt / joins using path predicate", m_synt.joinUsingPathPredicate);
+        addStat("synt / selection variable expansions", m_synt.selectVarExpansions);
         addStat("synt / joins using branch condition", m_synt.joinUsingBranchCondition);
     }
 };
