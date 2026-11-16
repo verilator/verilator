@@ -202,25 +202,17 @@ void V3LinkDotIfaceCapture::retargetRefToTypedef(AstRefDType* refp, AstTypedef* 
 }
 
 namespace {
-using LiveNodes = std::unordered_set<const AstNode*>;
-
-// A scoped snapshot of every node currently in the tree.  V3Broken::isLinkable()
-// cannot serve this role: its table is populated only while V3Broken::brokenAll()
-// runs and is cleared before it returns.
-LiveNodes collectLiveNodes() {
-    LiveNodes liveNodes;
-    v3Global.rootp()->foreach([&](AstNode* nodep) { liveNodes.insert(nodep); });
-    return liveNodes;
+bool moduleMatchesOwner(const AstNodeModule* modp, const string& ownerName) {
+    if (!modp || ownerName.empty()) return false;
+    return modp->name() == ownerName || modp->origName() == ownerName;
 }
+}  // namespace
 
-// Find the module that owns this node; a snapshot, if given, stops the walk at a stale link.
-AstNodeModule* findOwnerModuleImpl(AstNode* nodep, const LiveNodes* liveNodesp) {
+AstNodeModule* V3LinkDotIfaceCapture::findOwnerModule(AstNode* nodep) {
     for (AstNode* curp = nodep; curp;) {
-        if (liveNodesp && !liveNodesp->count(curp)) return nullptr;
         if (AstNodeModule* const modp = VN_CAST(curp, NodeModule)) return modp;
         AstNode* backp = curp->backp();
         while (backp) {
-            if (liveNodesp && !liveNodesp->count(backp)) return nullptr;
             if (backp->nextp() != curp) break;
             curp = backp;
             backp = curp->backp();
@@ -230,19 +222,6 @@ AstNodeModule* findOwnerModuleImpl(AstNode* nodep, const LiveNodes* liveNodesp) 
     return nullptr;
 }
 
-AstNodeModule* findOwnerModuleIfLive(AstNode* nodep, const LiveNodes& liveNodes) {
-    return findOwnerModuleImpl(nodep, &liveNodes);
-}
-
-bool moduleMatchesOwner(const AstNodeModule* modp, const string& ownerName) {
-    if (!modp || ownerName.empty()) return false;
-    return modp->name() == ownerName || modp->origName() == ownerName;
-}
-}  // namespace
-
-AstNodeModule* V3LinkDotIfaceCapture::findOwnerModule(AstNode* nodep) {
-    return findOwnerModuleImpl(nodep, nullptr);
-}
 
 void V3LinkDotIfaceCapture::dumpEntries(const string& label) {
     UINFO(9, "========== iface capture dumpEntries: " << label << " ==========");
@@ -465,72 +444,101 @@ int V3LinkDotIfaceCapture::resolveCapturedRefs() {
     return fixed;
 }
 
-void V3LinkDotIfaceCapture::verifyNoDeadRefs(const LiveNodes& liveNodes) {
-    // Assert: no REFDTYPE in any live module should have typedefp or refDTypep
-    // pointing to a dead module.
-    for (AstNode* const nodep : v3Global.rootp()->modulespList()) {
-        if (AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) {
-            if (modp->dead()) continue;
-            modp->foreach([&](AstRefDType* refp) {
-                if (refp->typedefp()) {
-                    UASSERT_OBJ(liveNodes.count(refp->typedefp()), refp,
-                                "REFDTYPE '" << refp->prettyNameQ() << "' in live module '"
-                                             << modp->prettyNameQ()
-                                             << "' has a dangling typedefp");
-                    AstNodeModule* const ownerModp
-                        = findOwnerModuleIfLive(refp->typedefp(), liveNodes);
-                    UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,
-                                "REFDTYPE '" << refp->prettyNameQ() << "' in live module '"
-                                             << modp->prettyNameQ()
-                                             << "' has typedefp pointing to dead module '"
-                                             << ownerModp->prettyNameQ() << "'");
-                }
-                if (refp->refDTypep()) {
-                    UASSERT_OBJ(liveNodes.count(refp->refDTypep()), refp,
-                                "REFDTYPE '" << refp->prettyNameQ() << "' in live module '"
-                                             << modp->prettyNameQ()
-                                             << "' has a dangling refDTypep");
-                    AstNodeModule* const ownerModp
-                        = findOwnerModuleIfLive(refp->refDTypep(), liveNodes);
-                    UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,
-                                "REFDTYPE '" << refp->prettyNameQ() << "' in live module '"
-                                             << modp->prettyNameQ()
-                                             << "' has refDTypep pointing to dead module '"
-                                             << ownerModp->prettyNameQ() << "'");
-                }
-            });
+namespace {
+using LiveNodes = std::unordered_set<const AstNode*>;
+
+// NODE STATE
+//  AstNode::user1p() -> AstNodeModule* owning the node during verifyNoDeadRefs()
+class LiveNodeOwnerVisitor final : public VNVisitor {
+    LiveNodes& m_liveNodes;
+    AstNodeModule* m_ownerModp = nullptr;
+
+    void visit(AstNode* nodep) override {
+        m_liveNodes.insert(nodep);
+        nodep->user1p(m_ownerModp);
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_ownerModp);
+        m_ownerModp = nodep;
+        m_liveNodes.insert(nodep);
+        nodep->user1p(nodep);
+        iterateChildren(nodep);
+    }
+
+public:
+    LiveNodeOwnerVisitor(AstNetlist* nodep, LiveNodes& liveNodes)
+        : m_liveNodes{liveNodes} {
+        iterate(nodep);
+    }
+};
+
+class VerifyNoDeadRefsVisitor final : public VNVisitor {
+    const LiveNodes& m_liveNodes;
+    AstNodeModule* m_ownerModp = nullptr;
+    bool m_inTypeTable = false;
+
+    void checkLink(AstRefDType* refp, AstNode* targetp, const char* linkName) {
+        const bool targetIsLive = m_liveNodes.count(targetp);
+        if (m_ownerModp) {
+            UASSERT_OBJ(targetIsLive, refp,
+                        "REFDTYPE '" << refp->prettyNameQ() << "' in live module '"
+                                     << m_ownerModp->prettyNameQ() << "' has a dangling "
+                                     << linkName);
+        } else {
+            UASSERT_OBJ(targetIsLive, refp,
+                        "REFDTYPE '" << refp->prettyNameQ() << "' in type table has a dangling "
+                                     << linkName);
+        }
+        if (!targetIsLive) return;
+        AstNodeModule* const targetOwnerModp = VN_CAST(targetp->user1p(), NodeModule);
+        if (m_ownerModp) {
+            UASSERT_OBJ(!targetOwnerModp || !targetOwnerModp->dead(), refp,
+                        "REFDTYPE '" << refp->prettyNameQ() << "' in live module '"
+                                     << m_ownerModp->prettyNameQ() << "' has " << linkName
+                                     << " pointing to dead module '"
+                                     << targetOwnerModp->prettyNameQ() << "'");
+        } else {
+            UASSERT_OBJ(!targetOwnerModp || !targetOwnerModp->dead(), refp,
+                        "REFDTYPE '" << refp->prettyNameQ() << "' in type table has " << linkName
+                                     << " pointing to dead module '"
+                                     << targetOwnerModp->prettyNameQ() << "'");
         }
     }
-    if (v3Global.rootp()->typeTablep()) {
-        for (AstNode* const nodep : v3Global.rootp()->typeTablep()->typespList()) {
-            nodep->foreach([&](AstRefDType* refp) {
-                if (refp->typedefp()) {
-                    UASSERT_OBJ(liveNodes.count(refp->typedefp()), refp,
-                                "REFDTYPE '" << refp->prettyNameQ()
-                                             << "' in type table has a dangling typedefp");
-                    AstNodeModule* const ownerModp
-                        = findOwnerModuleIfLive(refp->typedefp(), liveNodes);
-                    UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,
-                                "REFDTYPE '"
-                                    << refp->prettyNameQ()
-                                    << "' in type table has typedefp pointing to dead module '"
-                                    << ownerModp->prettyNameQ() << "'");
-                }
-                if (refp->refDTypep()) {
-                    UASSERT_OBJ(liveNodes.count(refp->refDTypep()), refp,
-                                "REFDTYPE '" << refp->prettyNameQ()
-                                             << "' in type table has a dangling refDTypep");
-                    AstNodeModule* const ownerModp
-                        = findOwnerModuleIfLive(refp->refDTypep(), liveNodes);
-                    UASSERT_OBJ(!ownerModp || !ownerModp->dead(), refp,
-                                "REFDTYPE '"
-                                    << refp->prettyNameQ()
-                                    << "' in type table has refDTypep pointing to dead module '"
-                                    << ownerModp->prettyNameQ() << "'");
-                }
-            });
-        }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeModule* nodep) override {
+        if (nodep->dead()) return;
+        VL_RESTORER(m_ownerModp);
+        m_ownerModp = nodep;
+        iterateChildren(nodep);
     }
+    void visit(AstTypeTable* nodep) override {
+        VL_RESTORER(m_inTypeTable);
+        m_inTypeTable = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstRefDType* refp) override {
+        iterateChildren(refp);
+        if (!m_ownerModp && !m_inTypeTable) return;
+        if (refp->typedefp()) checkLink(refp, refp->typedefp(), "typedefp");
+        if (refp->refDTypep()) checkLink(refp, refp->refDTypep(), "refDTypep");
+    }
+
+public:
+    VerifyNoDeadRefsVisitor(AstNetlist* nodep, const LiveNodes& liveNodes)
+        : m_liveNodes{liveNodes} {
+        iterate(nodep);
+    }
+};
+}  // namespace
+
+void V3LinkDotIfaceCapture::verifyNoDeadRefs() {
+    // Snapshot liveness before checking cross-links, so stale pointers are detected without
+    // dereferencing them.  Owner pointers live in user1p for constant-time lookup.
+    const VNUser1InUse user1InUse;
+    LiveNodes liveNodes;
+    LiveNodeOwnerVisitor collectVisitor{v3Global.rootp(), liveNodes};
+    VerifyNoDeadRefsVisitor verifyVisitor{v3Global.rootp(), liveNodes};
 }
 
 void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
@@ -551,7 +559,7 @@ void V3LinkDotIfaceCapture::finalizeIfaceCapture() {
     V3Stats::addStat("IfaceCapture, Captured refs resolved", capturedFixed);
 
     // No reference may be left pointing into a module about to be removed
-    if (v3Global.opt.debugCheck()) verifyNoDeadRefs(collectLiveNodes());
+    if (v3Global.opt.debugCheck()) verifyNoDeadRefs();
     // Drop every tag before its record is freed.
     v3Global.rootp()->foreach([](AstRefDType* refp) { refp->captureTagp(nullptr); });
     reset();
