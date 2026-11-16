@@ -1654,7 +1654,8 @@ class FsmDetectVisitor final : public VNVisitorConst {
     }
 
     // Strict Phase 1 matcher for register processes: either a bare state
-    // commit, or a top-level reset guard whose else path is that commit.
+    // commit, or a top-level reset guard whose else path is that commit.  The commit
+    // may be under enables, as 'if (en)' or 'en ? next : state'.
     static bool matchRegisterAlways(AstAlways* alwaysp, AstScope* scopep,
                                     FsmRegisterCandidate& cand) {
         if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasEdge()) return false;
@@ -1676,7 +1677,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
                 resetsp = nullptr;
                 commitp = ifp;
             }
-            const bool activeLow = activeLowResetBodyp(ifp) != nullptr;
+            const bool activeLow = !enableOnly && activeLowResetBodyp(ifp);
             if (activeLow) std::swap(resetsp, commitp);
             AstVarScope* resetStateVscp = nullptr;
             const ResetAssignStatus resetStatus
@@ -1698,17 +1699,27 @@ class FsmDetectVisitor final : public VNVisitorConst {
             }
             AstNode* const elseNodep = singleMeaningfulBranch(commitp);
             UASSERT_OBJ(elseNodep, ifp, "register reset match requires a non-empty commit branch");
-            if (!nodeStateVarAssign(enabledCommitp(elseNodep), stateVscp, nextVscp)) {
-                // 'state = en ? next : state' or its V3LiftExpr form, an enable in the commit
-                AstNodeExpr* enCondp;
-                AstNodeExpr* resetValuep = nullptr;
-                FsmStateValue resetValue;
-                bool enActiveLow;
-                if (!condStateVarAssign(commitp, stateVscp, nextVscp, enCondp, resetValuep,
-                                        resetValue, enActiveLow)
-                    || resetValuep) {
+            AstNode* const enCommitp = enabledCommitp(elseNodep);
+            if (!nodeStateVarAssign(enCommitp, stateVscp, nextVscp)) {
+                // 'state = en ? next : state' or its V3LiftExpr form, an enable in the commit,
+                // which may be under 'if (en)'
+                AstNode* condStmtsp = enCommitp;
+                const AstIf* const enIfp = VN_CAST(enCommitp, If);
+                if (enIfp && !skipLeadingIgnorableStmt(enIfp->elsesp())) {
+                    condStmtsp = enIfp->thensp();
+                }
+                const AstVarRef* lhsp;
+                AstNodeExpr* condp;
+                AstNodeExpr* thenp;
+                AstNodeExpr* elsep;
+                if (!condStateAssign(skipLeadingIgnorableStmt(condStmtsp), lhsp, condp, thenp,
+                                     elsep)) {
                     return false;
                 }
+                const AstVarRef* const nextRefp = VN_CAST(enabledArmp(thenp, elsep, lhsp), VarRef);
+                if (!nextRefp) return false;
+                stateVscp = lhsp->varScopep();
+                nextVscp = nextRefp->varScopep();
             }
             if (!emptyResetBranch && resetStateVscp != stateVscp) return false;
             if (!enableOnly) {

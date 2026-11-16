@@ -593,15 +593,15 @@
 ~000010     case (reset_en_q)
         // [FSM coverage]
 %000003        // [fsm_arc t.enable_u.reset_en_q::S0->S1]
-%000000        // [fsm_arc t.enable_u.reset_en_q::S1->S0]
-%000002        // [fsm_arc t.enable_u.reset_en_q::S1->S2]
-%000002        // [fsm_arc t.enable_u.reset_en_q::S2->S0]
+%000001        // [fsm_arc t.enable_u.reset_en_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.reset_en_q::S1->S2]
+%000001        // [fsm_arc t.enable_u.reset_en_q::S2->S0]
 %000003        // [fsm_state t.enable_u.reset_en_q::S0]
 %000003        // [fsm_state t.enable_u.reset_en_q::S1]
-%000002        // [fsm_state t.enable_u.reset_en_q::S2]
+%000001        // [fsm_state t.enable_u.reset_en_q::S2]
 %000005       S0: reset_en_d = S1;
-%000003       S1: reset_en_d = S2;
-%000002       S2: reset_en_d = S0;
+%000004       S1: if (en) reset_en_d = S2;
+%000001       S2: reset_en_d = S0;
 %000000       default: reset_en_d = S0;
             endcase
           end
@@ -681,6 +681,52 @@
 %000009   always_ff @(posedge clk) begin
 %000008     if (stall) stall_noreset_q <= stall_noreset_q;
 %000008     else stall_noreset_q <= stall_noreset_d;
+          end
+        
+%000002   state_t en_cond_q;
+%000002   state_t en_cond_d;
+ 000010   always_comb begin
+ 000010     en_cond_d = en_cond_q;
+~000010     case (en_cond_q)
+        // [FSM coverage]
+%000002        // [fsm_arc t.enable_u.en_cond_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.en_cond_q::S1->S0]
+%000001        // [fsm_arc t.enable_u.en_cond_q::S1->S2]
+%000000        // [fsm_arc t.enable_u.en_cond_q::S2->S0]
+%000002        // [fsm_state t.enable_u.en_cond_q::S0]
+%000002        // [fsm_state t.enable_u.en_cond_q::S1]
+%000001        // [fsm_state t.enable_u.en_cond_q::S2]
+%000004       S0: en_cond_d = S1;
+%000004       S1: en_cond_d = S2;
+%000002       S2: en_cond_d = S0;
+%000000       default: en_cond_d = S0;
+            endcase
+          end
+%000009   always_ff @(posedge clk) begin
+%000003     if (rst) en_cond_q <= S0;
+%000005     else if (en) en_cond_q <= sel ? en_cond_d : en_cond_q;
+          end
+        
+%000002   state_t if_en_cond_q;
+%000002   state_t if_en_cond_d;
+ 000010   always_comb begin
+ 000010     if_en_cond_d = if_en_cond_q;
+~000010     case (if_en_cond_q)
+        // [FSM coverage]
+%000002        // [fsm_arc t.enable_u.if_en_cond_q::S0->S1]
+%000001        // [fsm_arc t.enable_u.if_en_cond_q::S1->S2]
+%000001        // [fsm_arc t.enable_u.if_en_cond_q::S2->S0]
+%000002        // [fsm_state t.enable_u.if_en_cond_q::S0]
+%000002        // [fsm_state t.enable_u.if_en_cond_q::S1]
+%000001        // [fsm_state t.enable_u.if_en_cond_q::S2]
+%000004       S0: if_en_cond_d = S1;
+%000003       S1: if_en_cond_d = S2;
+%000003       S2: if_en_cond_d = S0;
+%000000       default: if_en_cond_d = S0;
+            endcase
+          end
+%000009   always_ff @(posedge clk) begin
+%000008     if (en) if_en_cond_q <= sel ? if_en_cond_d : if_en_cond_q;
           end
         
           // Not enables, so no FSM
@@ -780,6 +826,7 @@
 %000008       then_two_x <= 1'b1;
             end
           end
+        
           // A commit that loads a constant, not an enable
 %000003   state_t load_q;
 %000003   state_t load_d;
@@ -821,8 +868,6 @@
               .clk(clk),
               .rst(rst)
           );
-          // A second reset from S1 hits the active-low FSMs' reset arc S1->S0, which their
-          // next-state logic never takes
           // A second reset at cyc 4 from S1 hits the reset arcs; the enable is off once, at cyc 3
           fsm_enable enable_u (
               .clk(clk),
@@ -830,6 +875,8 @@
               .en(cyc != 3),
               .sel(cyc[0] || cyc == 2)
           );
+          // A second reset from S1 hits the active-low FSMs' reset arc S1->S0, which their
+          // next-state logic never takes
           fsm_reset_active_low reset_active_low_u (
               .clk(clk),
               .rst_n(!rst && cyc != 6)

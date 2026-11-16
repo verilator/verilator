@@ -438,7 +438,7 @@ module fsm_enable (
     reset_en_d = reset_en_q;
     case (reset_en_q)
       S0: reset_en_d = S1;
-      S1: reset_en_d = S2;
+      S1: if (en) reset_en_d = S2;
       S2: reset_en_d = S0;
       default: reset_en_d = S0;
     endcase
@@ -496,6 +496,37 @@ module fsm_enable (
   always_ff @(posedge clk) begin
     if (stall) stall_noreset_q <= stall_noreset_q;
     else stall_noreset_q <= stall_noreset_d;
+  end
+
+  state_t en_cond_q;
+  state_t en_cond_d;
+  always_comb begin
+    en_cond_d = en_cond_q;
+    case (en_cond_q)
+      S0: en_cond_d = S1;
+      S1: en_cond_d = S2;
+      S2: en_cond_d = S0;
+      default: en_cond_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) en_cond_q <= S0;
+    else if (en) en_cond_q <= sel ? en_cond_d : en_cond_q;
+  end
+
+  state_t if_en_cond_q;
+  state_t if_en_cond_d;
+  always_comb begin
+    if_en_cond_d = if_en_cond_q;
+    case (if_en_cond_q)
+      S0: if_en_cond_d = S1;
+      S1: if_en_cond_d = S2;
+      S2: if_en_cond_d = S0;
+      default: if_en_cond_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (en) if_en_cond_q <= sel ? if_en_cond_d : if_en_cond_q;
   end
 
   // Not enables, so no FSM
@@ -595,6 +626,7 @@ module fsm_enable (
       then_two_x <= 1'b1;
     end
   end
+
   // A commit that loads a constant, not an enable
   state_t load_q;
   state_t load_d;
@@ -636,8 +668,6 @@ module t (
       .clk(clk),
       .rst(rst)
   );
-  // A second reset from S1 hits the active-low FSMs' reset arc S1->S0, which their
-  // next-state logic never takes
   // A second reset at cyc 4 from S1 hits the reset arcs; the enable is off once, at cyc 3
   fsm_enable enable_u (
       .clk(clk),
@@ -645,6 +675,8 @@ module t (
       .en(cyc != 3),
       .sel(cyc[0] || cyc == 2)
   );
+  // A second reset from S1 hits the active-low FSMs' reset arc S1->S0, which their
+  // next-state logic never takes
   fsm_reset_active_low reset_active_low_u (
       .clk(clk),
       .rst_n(!rst && cyc != 6)
