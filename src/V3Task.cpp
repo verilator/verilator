@@ -676,7 +676,8 @@ class TaskVisitor final : public VNVisitor {
             if (portp->isRef() || portp->isConstRef()) {
                 const bool refArgOk = VN_IS(pinp, VarRef) || VN_IS(pinp, MemberRef)
                                       || VN_IS(pinp, StructSel) || VN_IS(pinp, ArraySel)
-                                      || VN_IS(pinp, DynArraySel) || VN_IS(pinp, QueueSel);
+                                      || VN_IS(pinp, DynArraySel) || VN_IS(pinp, QueueSel)
+                                      || VN_IS(pinp, AssocSel) || VN_IS(pinp, WildcardSel);
                 if (refArgOk) {
                     if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
                         varrefp->access(VAccess::READWRITE);

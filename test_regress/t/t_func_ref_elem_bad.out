@@ -1,0 +1,18 @@
+%Error: t/t_func_ref_elem_bad.v:36:26: Function/task ref argument is not of allowed type
+                                     : ... note: In instance 't'
+   36 |     cls.bump(cls.get_aa()[1]);
+      |                          ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_func_ref_elem_bad.v:37:26: Function/task ref argument is not of allowed type
+                                     : ... note: In instance 't'
+   37 |     cls.bump(cls.get_wc()[1]);
+      |                          ^
+%Error: t/t_func_ref_elem_bad.v:38:25: Function/task ref argument is not of allowed type
+                                     : ... note: In instance 't'
+   38 |     cls.bump(cls.get_q()[0]);
+      |                         ^
+%Error: t/t_func_ref_elem_bad.v:39:18: Function/task ref argument is not of allowed type
+                                     : ... note: In instance 't'
+   39 |     cls.bump(cls.get_v());
+      |                  ^~~~~
+%Error: Exiting due to

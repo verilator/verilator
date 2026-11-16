@@ -9098,6 +9098,9 @@ class WidthVisitor final : public VNVisitor {
                                       << portDTypep->prettyDTypeNameQ() << " but connection is "
                                       << pinDTypep->prettyDTypeNameQ() << ".");
                     }
+                } else if (portp->isRef() && !pinp->getVAccessTargetRecurse()) {
+                    // Not variable storage, e.g. a function's returned value, so writes are lost
+                    pinp->v3error("Function/task ref argument is not of allowed type");
                 } else if (portIfacep && portIfacep->isVirtual() && portp->isInput() && !pinIsNull
                            && !ifaceCastable.isAssignable()) {
                     pinp->v3error("Virtual interface argument "
