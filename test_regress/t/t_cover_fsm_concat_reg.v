@@ -18,14 +18,36 @@ module t (
 
   always_ff @(posedge clk) {hi, lo} <= rst ? 4'd0 : next;
 
+  initial cyc = 0;
+
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    rst <= (cyc == 0);
+    if (cyc == 5) begin
+      if ({hi, lo} != 4'd3) $stop;
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
+
+  fsm_enable_concat enable_concat_u (
+      .clk(clk),
+      .rst(rst),
+      .en(cyc[0])
+  );
+endmodule
+
+module fsm_enable_concat (
+    input logic clk,
+    input logic rst,
+    input logic en
+);
   // An enable whose then or else arm writes the state in a concatenation
   typedef enum logic [1:0] {
     S0 = 2'd0,
     S1 = 2'd1,
     S2 = 2'd2
   } state_t;
-  logic en;
-  assign en = cyc[0];
   state_t both_q;
   state_t both_d;
   logic both_x;
@@ -57,17 +79,5 @@ module t (
     if (rst) else_q <= S0;
     else if (en) else_q <= else_d;
     else {else_x, else_q} <= {else_x, else_q};
-  end
-
-  initial cyc = 0;
-
-  always @(posedge clk) begin
-    cyc <= cyc + 1;
-    rst <= (cyc == 0);
-    if (cyc == 5) begin
-      if ({hi, lo} != 4'd3) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
-    end
   end
 endmodule
