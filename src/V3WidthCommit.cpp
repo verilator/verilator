@@ -51,8 +51,10 @@ class WidthCommitVisitor final : public VNVisitor {
     //  AstNodeFTask::user2()    -> uint64_t. Non-zero if ever referenced (called)
     //  AstNew::user2()          -> uint64_t. Count of number of references, minus references in
     //  functions never called
+    //  AstVar::user3p()         -> AstNodeFTask*. Subroutine declaring the variable
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
 
     // STATE
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -65,6 +67,7 @@ class WidthCommitVisitor final : public VNVisitor {
     bool m_taskRefWarn = true;  // Allow task reference warnings
     bool m_underSel = false;  // Under a MemberRef handle or what a Sel reads, unless m_contReads
     bool m_underAlwaysEdged = false;  // Under always with sequential SenTree
+    bool m_hierLifetimeErr = false;  // Reported a hierarchical reference to automatic variable
     std::vector<AstNew*> m_virtualNewsp;  // Instantiations of virtual classes
     std::vector<AstNodeFTask*> m_tasksp;  // All the tasks, we will check if they are ever called
 
@@ -159,6 +162,21 @@ private:
                                                 << defp->warnContextSecondary());
             }
         }
+    }
+    // Error on a hierarchical reference to an automatic subroutine variable
+    void hierLifetimeCheck(AstNodeVarRef* nodep) {
+        AstVar* const varp = nodep->varp();
+        const AstNodeFTask* const ownerp = VN_AS(varp->user3p(), NodeFTask);
+        // References from the declaring subroutine are not detected, as V3LinkDot resolves
+        // a 'task.var' reference there the same as a plain 'var'
+        if (!ownerp || ownerp == m_ftaskp) return;
+        // V3LinkParse marks formals automatic, but they have their subroutine's lifetime
+        const VLifetime lifetime = varp->isIO() ? ownerp->lifetime() : varp->lifetime();
+        if (!lifetime.isAutomatic()) return;
+        nodep->v3error("Automatic variable " << varp->prettyNameQ()
+                                             << " cannot be referenced hierarchically"
+                                                " (IEEE 1800-2023 6.21, 13.3.1, 13.4.2).");
+        m_hierLifetimeErr = true;
     }
     void varLifetimeCheck(AstNode* nodep, AstVar* varp) {
         // Skip if we are under a member select (lhs of a dot)
@@ -448,6 +466,7 @@ private:
         editDType(nodep);
         classEncapCheck(nodep, nodep->varp(), VN_CAST(nodep->classOrPackagep(), Class));
         if (nodep->access().isWriteOrRW() || m_contReads) varLifetimeCheck(nodep, nodep->varp());
+        hierLifetimeCheck(nodep);
         if (VN_IS(nodep, VarRef))
             nodep->name("");  // Clear to save memory; nodep->name() will work via nodep->varp()
     }
@@ -663,9 +682,15 @@ public:
                 }
             });
         }
+        // Hierarchical references may precede the subroutine declaring the variable
+        nodep->foreach([](AstNodeFTask* ftaskp) {
+            ftaskp->foreach([ftaskp](AstVar* varp) { varp->user3p(ftaskp); });
+        });
         // Were changing widthMin's, so the table is now somewhat trashed
         nodep->typeTablep()->clearCache();
         iterate(nodep);
+        // Later passes may delete the subroutine declaring a wrongly referenced variable
+        if (m_hierLifetimeErr) V3Error::abortIfErrors();
         deadCheckTasks();
         // Don't want to AstTypeTable::repairCache, as all needed nodes
         // have been added back in; a repair would prevent dead nodes from
