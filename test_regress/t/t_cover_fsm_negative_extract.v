@@ -629,7 +629,7 @@ module fsm_positive_compound_reset_bad (
     end
   end
 endmodule
-module fsm_reg_enable_no_else_bad (
+module fsm_reg_single_compare_bad (
     input logic clk,
     input logic start
 );
@@ -818,7 +818,7 @@ module t (
       .go(start),
       .seed(cyc[0])
   );
-  fsm_reg_enable_no_else_bad reg_enable_no_else_u (
+  fsm_reg_single_compare_bad reg_single_compare_u (
       .clk(clk),
       .start(start)
   );

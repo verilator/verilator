@@ -835,6 +835,46 @@
             end
           end
         
+          // A commit that writes the state again after an enable 'if'
+%000003   state_t head_if_q;
+%000004   state_t head_if_d;
+ 000010   always_comb begin
+ 000010     head_if_d = head_if_q;
+ 000010     case (head_if_q)
+%000006       S0: head_if_d = S1;
+%000000       S1: head_if_d = S2;
+%000004       S2: head_if_d = S0;
+%000000       default: head_if_d = S0;
+            endcase
+          end
+%000009   always_ff @(posedge clk) begin
+%000006     if (rst) head_if_q <= S0;
+%000006     else begin
+%000005       if (en) head_if_q <= head_if_d;
+%000004       if (sel) head_if_q <= S2;
+            end
+          end
+        
+          // A plain commit that writes the state again
+%000003   state_t twice_else_q;
+%000004   state_t twice_else_d;
+ 000010   always_comb begin
+ 000010     twice_else_d = twice_else_q;
+ 000010     case (twice_else_q)
+%000006       S0: twice_else_d = S1;
+%000000       S1: twice_else_d = S2;
+%000004       S2: twice_else_d = S0;
+%000000       default: twice_else_d = S0;
+            endcase
+          end
+%000009   always_ff @(posedge clk) begin
+%000006     if (rst) twice_else_q <= S0;
+%000006     else begin
+%000006       twice_else_q <= twice_else_d;
+%000004       if (sel) twice_else_q <= S2;
+            end
+          end
+        
           // An enabled commit that writes the state again
 %000003   state_t twice_q;
 %000003   state_t twice_d;

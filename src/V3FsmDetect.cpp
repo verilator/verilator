@@ -1727,16 +1727,20 @@ class FsmDetectVisitor final : public VNVisitorConst {
                 return false;
             }
             // A commit of several statements must not write the state again, as only its first
-            // is modeled
-            if (VN_IS(enCommitp, NodeAssign)) {
-                for (AstNode* const restp : VNList<AstNode>{enCommitp->nextp()}) {
+            // is modeled: neither after the matched assignment nor after an enable 'if' at the
+            // head of the commit
+            const auto writesStateAfter = [stateVscp](AstNode* nodep) {
+                for (AstNode* const restp : VNList<AstNode>{nodep->nextp()}) {
                     if (restp->exists([stateVscp](const AstVarRef* refp) {
                             return refp->access().isWriteOrRW() && refp->varScopep() == stateVscp;
                         })) {
-                        return false;
+                        return true;
                     }
                 }
-            }
+                return false;
+            };
+            if (VN_IS(enCommitp, NodeAssign) && writesStateAfter(enCommitp)) return false;
+            if (enCommitp != elseNodep && writesStateAfter(elseNodep)) return false;
             if (!emptyResetBranch && resetStateVscp != stateVscp) return false;
             if (!enableOnly) {
                 cand.resetCond() = describeResetCond(ifp->condp(), activeLow);

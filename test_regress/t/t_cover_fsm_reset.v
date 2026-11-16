@@ -612,6 +612,46 @@ module fsm_enable (
     end
   end
 
+  // A commit that writes the state again after an enable 'if'
+  state_t head_if_q;
+  state_t head_if_d;
+  always_comb begin
+    head_if_d = head_if_q;
+    case (head_if_q)
+      S0: head_if_d = S1;
+      S1: head_if_d = S2;
+      S2: head_if_d = S0;
+      default: head_if_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) head_if_q <= S0;
+    else begin
+      if (en) head_if_q <= head_if_d;
+      if (sel) head_if_q <= S2;
+    end
+  end
+
+  // A plain commit that writes the state again
+  state_t twice_else_q;
+  state_t twice_else_d;
+  always_comb begin
+    twice_else_d = twice_else_q;
+    case (twice_else_q)
+      S0: twice_else_d = S1;
+      S1: twice_else_d = S2;
+      S2: twice_else_d = S0;
+      default: twice_else_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) twice_else_q <= S0;
+    else begin
+      twice_else_q <= twice_else_d;
+      if (sel) twice_else_q <= S2;
+    end
+  end
+
   // An enabled commit that writes the state again
   state_t twice_q;
   state_t twice_d;
