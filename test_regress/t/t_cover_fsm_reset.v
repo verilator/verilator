@@ -592,6 +592,26 @@ module fsm_enable (
 
   // Not enables, or unsupported ones, so no FSM
 
+  // An enabled commit whose first statement is not the state's: only the first is matched
+  state_t order_q;
+  state_t order_d;
+  always_comb begin
+    order_d = order_q;
+    case (order_q)
+      S0: order_d = S1;
+      S1: order_d = S2;
+      S2: order_d = S0;
+      default: order_d = S0;
+    endcase
+  end
+  logic [3:0] order_cnt;
+  always_ff @(posedge clk) begin
+    if (en) begin
+      order_cnt <= order_cnt + 4'd1;
+      order_q <= order_d;
+    end
+  end
+
   // An enabled commit that writes the state again
   state_t twice_q;
   state_t twice_d;

@@ -815,6 +815,26 @@
         
           // Not enables, or unsupported ones, so no FSM
         
+          // An enabled commit whose first statement is not the state's: only the first is matched
+%000003   state_t order_q;
+%000003   state_t order_d;
+ 000010   always_comb begin
+ 000010     order_d = order_q;
+ 000010     case (order_q)
+%000004       S0: order_d = S1;
+%000003       S1: order_d = S2;
+%000003       S2: order_d = S0;
+%000000       default: order_d = S0;
+            endcase
+          end
+%000004   logic [3:0] order_cnt;
+%000009   always_ff @(posedge clk) begin
+%000008     if (en) begin
+%000008       order_cnt <= order_cnt + 4'd1;
+%000008       order_q <= order_d;
+            end
+          end
+        
           // An enabled commit that writes the state again
 %000003   state_t twice_q;
 %000003   state_t twice_d;
