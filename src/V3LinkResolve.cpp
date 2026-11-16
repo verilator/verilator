@@ -412,7 +412,8 @@ class LinkResolveVisitor final : public VNVisitor {
                     if (varp->isReadOnly()) {
                     } else if (varp->isWritable()) {
                         if (varoutp) {
-                            varp->v3error("Multiple outputs not allowed in udp modules");
+                            varp->v3error("Multiple outputs not allowed in UDP modules "
+                                          "(IEEE 1800-2023 29.3.1)");
                         }
                         varoutp = varp;
                         // Tie off

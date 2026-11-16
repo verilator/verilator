@@ -7,10 +7,22 @@
 module t;
 
   logic [31:0] a;
+  string s;
+  real r;
+  // verilator lint_off SHORTREAL
+  shortreal sr;
+  // verilator lint_on SHORTREAL
 
   initial begin
     a = 1234;
     if (a ==? 1.0) $stop;  // Bad
+    if (a !=? 1.0) $stop;  // Bad
+    if (s ==? "1") $stop;  // Bad
+    if (s !=? "1") $stop;  // Bad
+    if (r ==? r) $stop;  // Bad
+    if (r !=? r) $stop;  // Bad
+    if (sr ==? sr) $stop;  // Bad
+    if (sr !=? sr) $stop;  // Bad
   end
 
 endmodule

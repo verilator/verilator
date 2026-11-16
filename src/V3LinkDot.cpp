@@ -173,6 +173,7 @@ class LinkDotState final {
     // NODE STATE
     // Cleared on Netlist
     //  AstNodeModule::user1p()         // VSymEnt*.      Last symbol created for this node
+    //  AstPin::user1p()                // VSymEnt*.      Scope of a defparam, for its value
     //  AstNodeModule::user2()          // bool.          Currently processing for recursion check
     //  ...  Note maybe more than one, as can be multiple hierarchy places
     //  AstVarScope::user2p()           // AstVarScope*.  Base alias for AstInline of this signal
@@ -2596,13 +2597,22 @@ class LinkDotParamVisitor final : public VNVisitor {
         UASSERT_OBJ(!hasPartSelect && !path.empty(), nodep, "Unexpected defparam path shape");
         string baddot;
         VSymEnt* okSymp = nullptr;
-        VSymEnt* const foundp = m_statep->findDotted(
-            nodep->fileline(), m_statep->getNodeSym(nodep), path, baddot, okSymp, true);
+        VSymEnt* const scopeSymp = m_statep->getNodeSym(nodep);
+        VSymEnt* const foundp
+            = m_statep->findDotted(nodep->fileline(), scopeSymp, path, baddot, okSymp, true);
         AstCell* const cellp = foundp ? VN_AS(foundp->nodep(), Cell) : nullptr;
         if (!cellp) {
             nodep->v3error("In defparam, instance " << path << " never declared");
         } else {
-            AstNodeExpr* const exprp = nodep->rhsp()->unlinkFrBack();
+            // Path from the defparam's scope, if the instance is under it
+            string belowPath;
+            const VSymEnt* symp = foundp;
+            for (; symp && symp != scopeSymp; symp = symp->parentp()) {
+                belowPath = VString::dot(symp->nodep()->name(), ".", belowPath);
+            }
+            // If under it, V3Param passes the value down from each instance of this module, so
+            // it uses the parameters of the module declaring it (IEEE 1800-2023 23.10.1)
+            AstNodeExpr* const exprp = symp ? nullptr : nodep->rhsp()->unlinkFrBack();
             UINFO(9, "Defparam cell " << path << "." << name << " attach-to " << cellp
                                       << "  <= " << exprp);
             // Don't need to check the name of the defparam exists.  V3Param does.
@@ -2612,6 +2622,14 @@ class LinkDotParamVisitor final : public VNVisitor {
             pinp->param(true);
             pinp->paramPath(path);
             cellp->addParamsp(pinp);
+            if (!exprp) {
+                pushDeletep(nodep->pathp()->unlinkFrBack());
+                targetp->replaceWith(
+                    new AstVarXRef{targetp->fileline(), name, belowPath, VAccess::WRITE});
+                VL_DO_DANGLING(pushDeletep(targetp), targetp);
+                return;
+            }
+            pinp->user1p(scopeSymp);  // For the value, see ResolveVisitor::visit(AstPin)
         }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
@@ -4217,6 +4235,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
     }
+    void visit(AstDefParam* nodep) override {
+        // Not the target, as the pin LinkDotParamVisitor added for it is linked instead, and
+        // V3Param finds the target in each instance of this module
+        LINKDOT_VISIT_START();
+        iterate(nodep->rhsp());
+    }
     void visit(AstPin* nodep) override {
         // Pin: Link to submodule's port
         LINKDOT_VISIT_START();
@@ -4241,7 +4265,19 @@ class LinkDotResolveVisitor final : public VNVisitor {
         {
             VL_RESTORER(m_pinp);
             m_pinp = nodep;
-            iterateChildren(nodep);
+            if (m_statep->existsNodeSym(nodep)) {  // Defparam value, see LinkDotParamVisitor
+                symIterateChildren(nodep, m_statep->getNodeSym(nodep));
+                if (AstNode* const refp = defParamModuleRefp(nodep->exprp())) {
+                    refp->v3warn(E_UNSUPPORTED, "Unsupported: defparam value using "
+                                                    << refp->prettyNameQ()
+                                                    << " of a module, for an instance not"
+                                                       " under the defparam");
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                    return;
+                }
+            } else {
+                iterateChildren(nodep);
+            }
         }
         if (!nodep->modVarp()) {
             UASSERT_OBJ(m_pinSymp, nodep, "Pin not under instance?");
@@ -4253,7 +4289,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // Primitive parameter is really a delay2 we can just ignore
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                     return;
-                } else if (nodep->param() && !nodep->exprp() && !nodep->svDotName()) {
+                } else if (nodep->param() && !nodep->exprp() && !nodep->svDotName()
+                           && nodep->paramPath().empty()) {
                     // Placeholder pin the parser makes for an empty '#()', to signal
                     // the user did type the '#()'. No further use, deleting.
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -4314,6 +4351,23 @@ class LinkDotResolveVisitor final : public VNVisitor {
             markAndCheckPinDup(nodep, foundp->nodep(), whatp);
         }
         // Early return() above when deleted
+    }
+
+    // Return a reference in a defparam's value to a declaration in a module, maybe in a class
+    // there. V3Param can't give the value of each instance of the module, when the instance the
+    // defparam sets is not under it, as V3Param specializes that instance first
+    static AstNode* defParamModuleRefp(AstNode* exprp) {
+        AstNode* resultp = nullptr;
+        exprp->foreach([&](AstNode* refp) {
+            refp->foreachLink([&](AstNode** linkpp, const char*) {
+                const AstNodeModule* modp = V3LinkDotIfaceCapture::findOwnerModule(*linkpp);
+                while (VN_IS(modp, Class)) {
+                    modp = V3LinkDotIfaceCapture::findOwnerModule(modp->aboveLoopp());
+                }
+                if (modp && !VN_IS(modp, Package)) resultp = refp;
+            });
+        });
+        return resultp;
     }
 
     static bool isDotThisReference(const AstDot* nodep) {

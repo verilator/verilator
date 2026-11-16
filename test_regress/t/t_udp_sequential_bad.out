@@ -1,4 +1,4 @@
-%Error: t/t_udp_sequential_bad.v:8:10: For combinational UDP, the output must not be a 'reg' data type
+%Error: t/t_udp_sequential_bad.v:8:10: For combinational UDP, the output must not be a 'reg' data type (IEEE 1800-2023 29.3.2)
                                      : ... note: In instance 'top'
     8 |   output dout;
       |          ^~~~

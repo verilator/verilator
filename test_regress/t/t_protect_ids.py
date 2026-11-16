@@ -28,6 +28,7 @@ test.execute()
 # 'to="PS"' indicates means we probably mis-protected something already protected
 # Use --debug-protect to assist debugging these
 test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "__idmap.xml", r'to="PS')
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__idmap.xml", r'to="=&gt;"')
 
 if test.vlt_all:
     # Check for secret in any outputs
