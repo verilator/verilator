@@ -660,6 +660,19 @@ size_t V3ParseImp::tokenPipeScanParens(size_t depth) {
     return depth;
 }
 
+void V3ParseImp::tokenPipeMarkEmptyConstraintSet(const size_t depth) {
+    // An empty IEEE constraint_set '{' '}' after if/foreach/else/'->' is ambiguous with an
+    // empty queue '{' '}' starting an expression, e.g. 'if (a) {} -b < 2;'. Resolve it as the
+    // empty set by relabeling the queued '{'; legal SystemVerilog has no empty queue directly
+    // after these tokens outside a constraint_set.
+    // yIF '(' ... ')' '{' '}'
+    //                 ^- depth
+    // yP_MINUSGT '{' '}'
+    //            ^- depth
+    if (tokenPeekp(depth)->token == '{' && tokenPeekp(depth + 1)->token == '}')
+        m_tokensAhead.at(depth).token = yP_CURLY__EMPTY;
+}
+
 size_t V3ParseImp::tokenPipeScanEqNew(size_t depth) {
     // Search around IEEE class_new to see if is expression
     // Return location of following token, or input if not found
@@ -744,9 +757,13 @@ void V3ParseImp::tokenPipeline() {
         || token == ':'  //
         || token == '='  //
         || token == yCONST__LEX  //
+        || token == yELSE  //
+        || token == yFOREACH  //
         || token == yGLOBAL__LEX  //
+        || token == yIF  //
         || token == yLOCAL__LEX  //
         || token == yNEW__LEX  //
+        || token == yP_MINUSGT  //
         || token == ySTATIC__LEX  //
         || token == yTAGGED__LEX  //
         || token == yTYPE__LEX  //
@@ -778,6 +795,12 @@ void V3ParseImp::tokenPipeline() {
             } else {
                 token = yCONST__ETC;
             }
+        } else if (token == yELSE || token == yP_MINUSGT) {
+            VL_RESTORER(yylval);  // Remember value, as about to read ahead
+            tokenPipeMarkEmptyConstraintSet(0);
+        } else if (token == yFOREACH || token == yIF) {
+            VL_RESTORER(yylval);  // Remember value, as about to read ahead
+            tokenPipeMarkEmptyConstraintSet(tokenPipeScanParens(0));
         } else if (token == yGLOBAL__LEX) {
             if (nexttok == yCLOCKING) {
                 token = yGLOBAL__CLOCKING;
