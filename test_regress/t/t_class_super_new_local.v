@@ -12,6 +12,7 @@ class Base;
 endclass
 
 class D extends Base;
+  int m = v + 1;
   function new(int a);
     int t = a * 2;
     super.new(t);
@@ -23,6 +24,7 @@ module t;
     D d;
     d = new(3);
     if (d.v != 6) $stop;
+    if (d.m != 7) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end

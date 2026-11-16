@@ -354,9 +354,9 @@ private:
             VL_DO_DANGLING(pushDeletep(initialp->unlinkFrBack()), initialp);
         }
         m_initialps.clear();
-        // IEEE 1800-2017 8.7: initialize properties after super.new
+        // IEEE 1800-2023 8.7: initialize properties after super.new
         AstNodeStmt* initp = nullptr;
-        if (!nodep->isInterfaceClass() && !m_ctorp->dpiImport() && !m_ctorp->taskPublic()) {
+        if (!nodep->isInterfaceClass() && !m_ctorp->taskPublic()) {
             const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);";
             initp = new AstCStmt{m_ctorp->fileline(), stmt, VCStmtType::CTOR_VAR_RESET_CALL};
         }
