@@ -235,6 +235,8 @@ public:
         // If nothing is ready, we are done
         if (!m_nextDomScopep) return nullptr;
         OrderMoveDomScope& currDomScope = *m_nextDomScopep;
+        OrderMoveDomScope::DomainList& currReadyDomainList
+            = m_readyDomainDomScopeps.at(currDomScope.domainp());
 
         OrderMoveVertex::List& currReadyList = currDomScope.readyVertices();
         UASSERT(!currReadyList.empty(), "DomScope on ready list, but has no ready vertices");
@@ -246,7 +248,7 @@ public:
         if (currReadyList.empty()) {
             currDomScope.isOnList(false);
             m_readyDomScopeps.unlink(&currDomScope);
-            m_readyDomainDomScopeps[currDomScope.domainp()].unlink(&currDomScope);
+            currReadyDomainList.unlink(&currDomScope);
         }
 
         // Remove dependency on vertex we are returning. This might add vertices to currReadyList.
@@ -262,9 +264,7 @@ public:
 
         // If no more ready vertices in the current DomScope, prefer to continue with a new scope
         // under the same domain.
-        if (currReadyList.empty()) {
-            m_nextDomScopep = m_readyDomainDomScopeps[currDomScope.domainp()].frontp();
-        }
+        if (currReadyList.empty()) { m_nextDomScopep = currReadyDomainList.frontp(); }
 
         // Finally yield the selected vertex
         return mVtxp;
