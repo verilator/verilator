@@ -19,7 +19,8 @@ ______________________________________________________________________
 - **Key files:** `verilated.h` (core model API), `verilated_types.h` (data
   types), `verilated_random.cpp` (constrained-random runtime), `verilated_cov.*`
   (coverage), `verilated_threads.*` (MT runtime), `verilated_timing.*`
-  (`--timing` runtime), `verilated_vcd_c.*`/`verilated_fst_c.*` (tracing).
+  (`--timing` runtime), `verilated_rtmd.*` (run time model descriptors),
+  `verilated_trace*.h` and `verilated_{vcd,fst,saif}_c.*` (tracing).
 - A runtime-only fix lives entirely here and does not rebuild `verilator_bin`.
 
 ______________________________________________________________________

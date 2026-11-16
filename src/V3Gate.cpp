@@ -277,6 +277,17 @@ class GateBuildVisitor final : public VNVisitorConst {
         const bool oneStmt = nodep->stmtsp() && !nodep->stmtsp()->nextp();
         iterateLogic(nodep, slow, oneStmt ? nullptr : "Multiple Stmts");
     }
+    void visit(AstRtmdVar* nodep) override {
+        // A descriptor reads its variable by address, so it is a consumer that can only be made
+        // to read another variable whole instead, see GateInline::optimizeSignals
+        if (!nodep->refp()) return;
+        UASSERT_OBJ(!m_logicVertexp, nodep, "Descriptor under logic");
+        VL_RESTORER(m_logicVertexp);
+        m_logicVertexp = new GateLogicVertex{m_graphp, nodep, nullptr, true};
+        m_logicVertexp->clearReducibleAndDedupable("Rtmd");
+        m_logicVertexp->setConsumed("Rtmd");
+        iterateChildrenConst(nodep);
+    }
     void visit(AstSenItem* nodep) override {
         VL_RESTORER(m_inSenItem);
         m_inSenItem = true;
@@ -757,6 +768,9 @@ class GateInline final {
                 }
 
                 if (!canInline) continue;  // Cannot optimize this replacement
+
+                // A descriptor can only read another variable whole
+                if (VN_IS(dstVtxp->nodep(), RtmdVar) && !VN_IS(substp, VarRef)) continue;
 
                 UINFOTREE(9, dstVtxp->nodep(), "", "inside");
 

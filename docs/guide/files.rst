@@ -65,10 +65,6 @@ For --cc/--sc, it creates:
      - Additional top-level internal C++ files
    - - *{prefix}*\ ___024root__Slow\ *{__n}*.cpp
      - Infrequent cold routines
-   - - *{prefix}*\ ___024root__Trace\ *{__n}*.cpp
-     - Wave file generation code (from --trace-\*)
-   - - *{prefix}*\ ___024root__Trace__Slow\ *{__n}*.cpp
-     - Wave file generation code (from --trace-\*)
    - - *{prefix}*\ __Classes\_\ *{index}{__n}*.cpp
      - Internal C++ files of classes
    - - *{prefix}*\ __Dpi.h
@@ -79,6 +75,8 @@ For --cc/--sc, it creates:
      - DPI export wrappers scoped to this particular model (from --dpi)
    - - *{prefix}*\ __Inlines.h
      - Inline support functions
+   - - *{prefix}*\ __Rtmd\ *{table}*\ Table\ *{__n}*\ __Slow.cpp
+     - Run time model descriptor tables (from --rtmd or --trace-\*)
    - - *{prefix}*\ __Syms.h
      - Global symbol table header
    - - *{prefix}*\ __Syms.cpp

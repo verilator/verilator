@@ -98,6 +98,7 @@
 #include "V3Randomize.h"
 #include "V3Reloop.h"
 #include "V3Reorder.h"
+#include "V3Rtmd.h"
 #include "V3Sampled.h"
 #include "V3Sched.h"
 #include "V3Scope.h"
@@ -112,7 +113,6 @@
 #include "V3ThreadPool.h"
 #include "V3Timing.h"
 #include "V3Trace.h"
-#include "V3TraceDecl.h"
 #include "V3Tristate.h"
 #include "V3Udp.h"
 #include "V3Undriven.h"
@@ -255,6 +255,11 @@ static void process() {
         //    Generate code for covergroups/coverpoints
         if (v3Global.useCovergroup()) V3Covergroup::covergroup(v3Global.rootp());
 
+        // Create the run time model descriptors
+        if (v3Global.opt.rtmd() && !v3Global.opt.serializeOnly()) {
+            V3Rtmd::buildAll(v3Global.rootp());
+        }
+
         // Resolve randsequence if they are used by the design
         if (v3Global.useRandSequence()) V3RandSequence::randSequenceNetlist(v3Global.rootp());
 
@@ -313,10 +318,8 @@ static void process() {
             v3Global.constRemoveXs(true);
         }
 
-        // Interface references feed trace file aliases and VPI name resolution
-        if (v3Global.opt.trace() || v3Global.opt.vpi()) {
-            V3Interface::interfaceAll(v3Global.rootp());
-        }
+        // Interface references feed VPI name resolution
+        if (v3Global.opt.vpi()) V3Interface::interfaceAll(v3Global.rootp());
 
         // --PRE-FLAT OPTIMIZATIONS------------------
 
@@ -346,6 +349,11 @@ static void process() {
             V3Scope::scopeAll(v3Global.rootp());
             V3LinkDot::linkDotScope(v3Global.rootp());
             V3Error::abortIfErrors();
+
+            // Finish the run time model descriptors now they are scoped
+            if (v3Global.opt.rtmd() && !v3Global.opt.serializeOnly()) {
+                V3Rtmd::scopedAll(v3Global.rootp());
+            }
 
             // FSM coverage needs scopes, but should otherwise run as early as possible before
             // later lowering rewrites user-visible clocked case structure.
@@ -425,12 +433,7 @@ static void process() {
             // Split single ALWAYS blocks into multiple blocks for better ordering chances
             if (v3Global.opt.fSplit()) V3Split::splitAll(v3Global.rootp());
 
-            // Create tracing sample points, before we start eliminating signals
-            if (v3Global.opt.trace()) V3TraceDecl::traceDeclAll(v3Global.rootp());
-
             // Convert forceable signals, process force/release statements.
-            // After V3TraceDecl so we don't trace additional signals inserted to implement
-            // forcing.
             // Convert forceable signals and assign/deassign statements in one combined pass set.
             // We reserve AST user slots across both sub-passes so helper pointers can be handed
             // directly from force discovery to assign/deassign lowering without rediscovery.
@@ -500,10 +503,7 @@ static void process() {
             V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyAllScoped(v3Global.rootp());
 
-            // Create tracing logic, since we ripped out some signals the user might want to trace
-            // Note past this point, we presume traced variables won't move between CFuncs
-            // (It's OK if untraced temporaries move around, or vars
-            // "effectively" activate the same way.)
+            // Build trace activity marker flags
             if (v3Global.opt.trace()) V3Trace::traceAll(v3Global.rootp());
 
             if (v3Global.opt.stats()) V3Stats::statsStageAll(v3Global.rootp(), "Scoped");
@@ -651,6 +651,7 @@ static void process() {
             V3EmitC::emitcSyms();
             V3EmitC::emitcConstPool();
             V3EmitC::emitcExecGraph();
+            V3EmitC::emitcRtmd();
             V3EmitC::emitcModel();
             V3EmitC::emitcPch();
             V3EmitC::emitcHeaders();

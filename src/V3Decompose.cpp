@@ -202,6 +202,8 @@ public:
     // The state of the pass, shared by the steps
     class State final {
         // NODE STATE
+        //  AstVarScope::user3()        -> bool: original variable that must be kept
+        const VNUser3InUse m_user3InUse;
         //  AstNodeDType::user4()       -> Components of the type, via dtypeComponents
         //  AstVarScope::user4()        -> Place: the original variable, via places
         const VNUser4InUse m_user4InUse;
@@ -647,6 +649,10 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
         // Reference not handled explicitly in splittable constructs is to the
         // whole of the Place it references, mark as such.
         if (Place* const placep = placeOf(nodep)) referencedWhole(nodep, placep);
+    }
+    void visit(AstRtmdVar* nodep) override {
+        // Ignore reference for splitting, but need to reconstruct the variable
+        if (nodep->refp()) nodep->vscp()->user3(true);
     }
     void visit(AstMemberRef* nodep) override {
         iterateChildrenConst(nodep);
@@ -1374,8 +1380,7 @@ class DecomposeRewrite final : public VNDeleter, public DecomposeBase {
         for (Place* const placep : m_state.rootps) {
             if (!placep->split) continue;
             const AstVarScope* const vscp = placep->vscp;
-            // Only traced ones at this point
-            if (!(vscp->varp()->isTrace() && vscp->isTrace())) continue;
+            if (!vscp->user3()) continue;
             AstActive* const activep = comboActive(vscp->scopep());
             driveFromComponents(placep, activep);
         }
