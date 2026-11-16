@@ -1088,11 +1088,10 @@ class FsmDetectVisitor final : public VNVisitorConst {
             AstNode* const stmtp = singleMeaningfulStmt(armp);
             return stmtp ? enabledCommitp(stmtp) : skipLeadingIgnorableStmt(armp);
         };
-        AstNode* const thenp = armCommitp(ifp->thensp());
-        if (!skipLeadingIgnorableStmt(ifp->elsesp())) return thenp;
-        AstNode* const elsep = armCommitp(ifp->elsesp());
-        if (holdsVar(elsep)) return thenp;
-        if (holdsVar(thenp)) return elsep;
+        if (!skipLeadingIgnorableStmt(ifp->elsesp())) return armCommitp(ifp->thensp());
+        // An arm of several statements does not hold
+        if (holdsVar(singleMeaningfulStmt(ifp->elsesp()))) return armCommitp(ifp->thensp());
+        if (holdsVar(singleMeaningfulStmt(ifp->thensp()))) return armCommitp(ifp->elsesp());
         return nodep;
     }
 
@@ -1164,14 +1163,17 @@ class FsmDetectVisitor final : public VNVisitorConst {
                                              AstVarScope*& fromVscp, AstNodeExpr*& condp,
                                              AstNodeExpr*& resetValuep, FsmStateValue& resetValue,
                                              bool& activeLow) {
-        if (AstNodeAssign* const assp = enabledCondAssign(stmtsp, stateVscp, fromVscp)) {
-            return assp;
-        }
         const AstVarRef* lhsp;
         AstNodeExpr* nextp;
         AstNodeAssign* const assp = condStateAssign(stmtsp, lhsp, condp, resetValuep, nextp);
         if (!assp) return nullptr;
         stateVscp = lhsp->varScopep();
+        if (const AstVarRef* const enabledRefp
+            = VN_CAST(enabledArmp(resetValuep, nextp, lhsp), VarRef)) {
+            resetValuep = nullptr;
+            fromVscp = enabledRefp->varScopep();
+            return assp;
+        }
         activeLow = !VN_IS(nextp, VarRef) && isSimpleResetCond(condp);
         if (activeLow) std::swap(resetValuep, nextp);
         AstVarRef* const nextRefp = VN_CAST(nextp, VarRef);

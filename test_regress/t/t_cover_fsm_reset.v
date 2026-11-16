@@ -590,7 +590,28 @@ module fsm_enable (
     else hold_cond_q <= hold_cond_q;
   end
 
-  // Not enables, so no FSM
+  // Not enables, or unsupported ones, so no FSM
+
+  // A reset arm whose first statement holds another register is still a reset
+  state_t reset_hold_q;
+  state_t reset_hold_d;
+  always_comb begin
+    reset_hold_d = reset_hold_q;
+    case (reset_hold_q)
+      S0: reset_hold_d = S1;
+      S1: reset_hold_d = S2;
+      S2: reset_hold_d = S0;
+      default: reset_hold_d = S0;
+    endcase
+  end
+  logic reset_hold_x;
+  always_ff @(posedge clk) begin
+    if (en) reset_hold_q <= reset_hold_d;
+    else begin
+      reset_hold_x <= reset_hold_x;
+      reset_hold_q <= S0;
+    end
+  end
 
   // Neither arm holds the state
   state_t neither_q;
