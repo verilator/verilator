@@ -117,7 +117,7 @@ public:
     // LCOV_EXCL_STOP
 };
 
-class SchedGraphBuilder final : public VNVisitor {
+class SchedGraphBuilder final : public VNVisitorConst {
     // NODE STATE
     // AstVarScope::user1p() -> SchedVarVertex
     // AstSenItem::user1p() -> SchedSenVertex
@@ -269,7 +269,7 @@ class SchedGraphBuilder final : public VNVisitor {
         const auto iter = [this](const LogicByScope& lbs) {
             for (const auto& entry : lbs) {
                 m_scopep = entry.m_scopep;
-                iterate(entry.m_activep);
+                iterateConst(entry.m_activep);
                 m_scopep = nullptr;
             }
         };

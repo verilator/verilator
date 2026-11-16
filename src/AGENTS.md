@@ -183,6 +183,8 @@ ______________________________________________________________________
 - State what was attempted and what was found: "Instance attempts to connect to
   'PARAM' as a parameter, but it is a variable". Add a `warnMore()` suggestion
   where possible.
+- Do not split "(IEEE ...)" comments between multiple lines, move where the
+  quotes break between different lines to avoid this.
 - Name warning codes object-first and short (`ASCRANGE`, not `RANGEASC`); rename
   via `renamedTo()` so old suppressions keep working.
 - Set warning suppression on `AstVar`, not `AstVarRef` -- VarRefs get recreated

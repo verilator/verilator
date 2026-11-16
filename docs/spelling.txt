@@ -389,6 +389,7 @@ Plunkett
 Poikela
 Popolon
 Popov
+Povišer
 Prabhat
 Prabhu
 Prateek
@@ -734,6 +735,7 @@ dehash
 demangling
 dep
 deparametrized
+deps
 deque
 der
 dereference

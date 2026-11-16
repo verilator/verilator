@@ -104,7 +104,7 @@
          "stmtsp": [
           {"type":"ASSIGNW","addr":"(FD)","loc":"d,16:21,16:22","dtypep":"(I)",
            "rhsp": [
-            {"type":"VARREF","name":"q","addr":"(GD)","loc":"d,16:21,16:22","dtypep":"(I)","access":"RD","varp":"(H)","varScopep":"(P)"}
+            {"type":"VARREF","name":"t.cell1.q","addr":"(GD)","loc":"d,16:21,16:22","dtypep":"(I)","access":"RD","varp":"(BC)","varScopep":"(AC)"}
           ],
            "lhsp": [
             {"type":"VARREF","name":"t.q","addr":"(HD)","loc":"d,16:21,16:22","dtypep":"(I)","access":"WR","varp":"(T)","varScopep":"(S)"}
@@ -174,7 +174,7 @@
          "stmtsp": [
           {"type":"ASSIGNW","addr":"(HE)","loc":"d,64:23,64:24","dtypep":"(I)",
            "rhsp": [
-            {"type":"VARREF","name":"q","addr":"(IE)","loc":"d,64:23,64:24","dtypep":"(I)","access":"RD","varp":"(H)","varScopep":"(P)"}
+            {"type":"VARREF","name":"t.cell1.q","addr":"(IE)","loc":"d,64:23,64:24","dtypep":"(I)","access":"RD","varp":"(BC)","varScopep":"(AC)"}
           ],
            "lhsp": [
             {"type":"VARREF","name":"t.cell2.q","addr":"(JE)","loc":"d,64:23,64:24","dtypep":"(I)","access":"WR","varp":"(SB)","varScopep":"(RB)"}

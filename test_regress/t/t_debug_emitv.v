@@ -735,6 +735,8 @@ module seq_event(input logic clk);
   end
 endmodule
 
+bind t Iface bound_iface (.clk(clk));
+
 package p;
   logic pkgvar;
 endpackage

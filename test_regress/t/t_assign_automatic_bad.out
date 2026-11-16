@@ -11,4 +11,12 @@
                                        : ... note: In instance 't'
    60 |     bad_auto[3:0] <= 2;   
       |     ^~~~~~~~
+%Error: t/t_assign_automatic_bad.v:70:17: Automatic lifetime variable not allowed in non-blocking timing control (IEEE 1800-2023 6.21): 'autom1'
+                                        : ... note: In instance 't'
+   70 |       areg <= @(autom1) 0;   
+      |                 ^~~~~~
+%Error: t/t_assign_automatic_bad.v:71:17: Automatic lifetime variable not allowed in non-blocking timing control (IEEE 1800-2023 6.21): 'autom2'
+                                        : ... note: In instance 't'
+   71 |       areg <= @(autom2) 0;   
+      |                 ^~~~~~
 %Error: Exiting due to

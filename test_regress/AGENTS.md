@@ -62,6 +62,8 @@ ______________________________________________________________________
   regex strings -- goldens are diffable and maintainable.
 - Use `test.glob_one()`/`test.glob_some()` and `test.timeout()` instead of raw
   `glob.glob()` and manual `time.time()` measurements.
+- Use `test.name` or another appropriate `test.` variable instead of hardcoding
+  the test name in the .py.
 - Coverage tests run `verilator_coverage` and verify individual bins and points,
   not just aggregate percentages.
 - Assert optimization stats with exact expected counts:

@@ -89,13 +89,11 @@ class UndrivenVarEntry final {
 
 public:
     // CONSTRUCTORS
-    explicit UndrivenVarEntry(AstVar* varp)
-        : m_varp{varp} {  // Construction for when a var is used
+    explicit UndrivenVarEntry(AstVar* varp)  // Construction for when a var is used
+        : m_varp{varp}
+        , m_wholeFlags(FLAGS_PER_BIT, false)  // Need () for sized-constructor
+        , m_bitFlags(varp->width() * FLAGS_PER_BIT, false) {  // Need () for sized-constructor
         UINFO(9, "create " << varp);
-        m_wholeFlags.resize(FLAGS_PER_BIT);
-        for (int i = 0; i < FLAGS_PER_BIT; i++) m_wholeFlags[i] = false;
-        m_bitFlags.resize(varp->width() * FLAGS_PER_BIT);
-        for (int i = 0; i < varp->width() * FLAGS_PER_BIT; i++) m_bitFlags[i] = false;
     }
     ~UndrivenVarEntry() = default;
 
@@ -740,12 +738,17 @@ class UndrivenVisitor final : public VNVisitorConst {
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
             if (m_inProcAssign && !nodep->varp()->varType().isProcAssignable()
                 && !nodep->varp()->isDeclTyped()  //
+                // A ref port is a variable, even without a data type (IEEE 1800-2023 23.2.2.3)
+                && !(nodep->varp()->isRef() && !nodep->varp()->isNet())  //
                 && !nodep->varp()->isClassMember() && !nodep->varp()->isFuncLocal()) {
                 nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intended var"
                                                << " (IEEE 1800-2023 6.5): "
                                                << nodep->prettyNameQ());
-            } else if (m_inContAssign && !nodep->varp()->varType().isContAssignable()
-                       && !nodep->fileline()->language().systemVerilog()) {
+            } else if (m_inContAssign && !nodep->fileline()->language().systemVerilog()
+                       && (!nodep->varp()->varType().isContAssignable()
+                           // A port declared with a data type, e.g. 'output reg', is a variable
+                           || (nodep->varp()->varType().isPort()
+                               && nodep->varp()->isDeclTyped()))) {
                 nodep->v3warn(CONTASSREG,
                               "Continuous assignment to reg, perhaps intended wire"
                                   << " (IEEE 1364-2005 6.1; Verilog only, legal in SV): "
@@ -1061,8 +1064,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     void visit(AstNodeCoverDecl*) override {}
     void visit(AstCoverInc*) override {}
     void visit(AstCoverToggle*) override {}
-    void visit(AstTraceDecl* nodep) override { nodep->v3fatalSrc("Should not exist yet"); }
-    void visit(AstTraceInc* nodep) override { nodep->v3fatalSrc("Should not exist yet"); }
+    void visit(AstRtmdHier*) override {}  // Descriptors are not a sink for UNUSED warnings
 
     // iterate
     void visit(AstConst* nodep) override {}

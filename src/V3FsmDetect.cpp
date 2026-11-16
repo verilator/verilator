@@ -449,6 +449,8 @@ struct FsmIfChainCandidate final {
 using FsmAliasMap = std::unordered_map<const AstVarScope*, FsmStateComparison>;
 using FsmCellPortMap = std::unordered_map<string, AstVarScope*>;
 using FsmCellPortAliasMap = std::unordered_map<const AstCell*, FsmCellPortMap>;
+// Target value of each conditional transition in a case item, with the node it is reported at
+using FsmCondTargets = std::vector<std::pair<FsmStateValue, AstNode*>>;
 
 struct StateConstLabel final {
     string text;
@@ -492,7 +494,7 @@ public:
 // small set of transition/selector forms that are already stable in the
 // normalized AST we see here. The remaining reject branches are therefore
 // mostly future-feature boundaries, not accidental dead code.
-class FsmDetectVisitor final : public VNVisitor {
+class FsmDetectVisitor final : public VNVisitorConst {
     // STATE - for current visit position (use VL_RESTORER)
     FsmState& m_state;
     AstScope* m_scopep = nullptr;  // Current scope
@@ -637,42 +639,54 @@ class FsmDetectVisitor final : public VNVisitor {
         explicit RegisterAlwaysAnalyzer(AstScope* scopep)
             : m_scopep{scopep} {}
 
-        std::vector<std::pair<AstCase*, AstNodeExpr*>>
+        std::vector<std::pair<AstCase*, FsmResetCondDesc>>
         oneBlockCandidates(AstAlways* alwaysp) const {
-            std::vector<std::pair<AstCase*, AstNodeExpr*>> candidates;
+            std::vector<std::pair<AstCase*, FsmResetCondDesc>> candidates;
             AstNode* const stmtsp = alwaysp->stmtsp();
             if (AstIf* const firstIfp = VN_CAST(stmtsp, If)) {
                 if (AstCase* const casep = VN_CAST(firstIfp->elsesp(), Case)) {
-                    candidates.emplace_back(casep,
-                                            FsmDetectVisitor::isSimpleResetCond(firstIfp->condp())
-                                                ? firstIfp->condp()
-                                                : nullptr);
+                    candidates.emplace_back(
+                        casep, FsmDetectVisitor::describeResetCond(firstIfp->condp()));
+                } else if (AstCase* const casep
+                           = VN_CAST(FsmDetectVisitor::emptyResetBodyp(firstIfp), Case)) {
+                    candidates.emplace_back(casep, FsmResetCondDesc{});
+                } else if (AstCase* const casep
+                           = VN_CAST(FsmDetectVisitor::activeLowResetBodyp(firstIfp), Case)) {
+                    candidates.emplace_back(casep, FsmDetectVisitor::describeResetCond(
+                                                       firstIfp->condp(), true /*activeLow*/));
                 }
             }
             for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
                 if (AstCase* const casep = VN_CAST(nodep, Case))
-                    candidates.emplace_back(casep, nullptr);
+                    candidates.emplace_back(casep, FsmResetCondDesc{});
             }
             return candidates;
         }
 
-        std::vector<std::pair<AstIf*, AstNodeExpr*>>
+        std::vector<std::pair<AstIf*, FsmResetCondDesc>>
         oneBlockIfCandidates(AstAlways* alwaysp) const {
-            std::vector<std::pair<AstIf*, AstNodeExpr*>> candidates;
+            std::vector<std::pair<AstIf*, FsmResetCondDesc>> candidates;
             AstNode* const stmtsp = alwaysp->stmtsp();
             // Reset-else FSMs should behave like the existing case path: reset
             // information is metadata, not part of steady-state dispatch.
             if (AstIf* const firstIfp = VN_CAST(stmtsp, If)) {
-                if (AstIf* const chainp
-                    = VN_CAST(FsmDetectVisitor::singleMeaningfulBranch(firstIfp->elsesp()), If)) {
-                    candidates.emplace_back(chainp,
-                                            FsmDetectVisitor::isSimpleResetCond(firstIfp->condp())
-                                                ? firstIfp->condp()
-                                                : nullptr);
+                if (AstIf* const chainp = VN_CAST(
+                        FsmDetectVisitor::skipLeadingIgnorableStmt(firstIfp->elsesp()), If)) {
+                    candidates.emplace_back(
+                        chainp, FsmDetectVisitor::describeResetCond(firstIfp->condp()));
+                } else if (AstIf* const chainp
+                           = VN_CAST(FsmDetectVisitor::emptyResetBodyp(firstIfp), If)) {
+                    candidates.emplace_back(chainp, FsmResetCondDesc{});
+                } else if (AstIf* const chainp
+                           = VN_CAST(FsmDetectVisitor::activeLowResetBodyp(firstIfp), If)) {
+                    candidates.emplace_back(chainp, FsmDetectVisitor::describeResetCond(
+                                                        firstIfp->condp(), true /*activeLow*/));
                 }
             }
             for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
-                if (AstIf* const ifp = VN_CAST(nodep, If)) candidates.emplace_back(ifp, nullptr);
+                if (AstIf* const ifp = VN_CAST(nodep, If)) {
+                    candidates.emplace_back(ifp, FsmResetCondDesc{});
+                }
             }
             return candidates;
         }
@@ -681,7 +695,8 @@ class FsmDetectVisitor final : public VNVisitor {
             return FsmDetectVisitor::matchRegisterAlways(alwaysp, m_scopep, cand);
         }
 
-        void buildOneBlockCandidate(AstAlways* alwaysp, AstVarScope* vscp, AstNodeExpr* resetCondp,
+        void buildOneBlockCandidate(AstAlways* alwaysp, AstVarScope* vscp,
+                                    const FsmResetCondDesc& resetCond,
                                     FsmRegisterCandidate& reg) const {
             reg.scopep(m_scopep);
             reg.alwaysp(alwaysp);
@@ -689,21 +704,22 @@ class FsmDetectVisitor final : public VNVisitor {
             reg.sampleVscp(vscp);
             reg.nextVscp(vscp);
             reg.senses() = FsmDetectVisitor::describeSenTree(alwaysp->sentreep());
-            reg.resetCond() = FsmDetectVisitor::describeResetCond(resetCondp);
+            reg.resetCond() = resetCond;
             reg.hasResetCond(reg.resetCond().varScopep != nullptr);
             reg.inclCond(vscp->varp()->attrFsmArcInclCond());
             AstIf* const firstIfp = VN_CAST(alwaysp->stmtsp(), If);
             if (firstIfp && reg.hasResetCond()) {
+                AstNode* const resetsp
+                    = reg.resetCond().activeLow ? firstIfp->elsesp() : firstIfp->thensp();
                 AstVarScope* resetStateVscp = nullptr;
                 const ResetAssignStatus resetStatus = FsmDetectVisitor::collectConstStateAssigns(
-                    firstIfp->thensp(), resetStateVscp, reg.resetArcs());
+                    resetsp, resetStateVscp, reg.resetArcs());
                 if (resetStatus == ResetAssignStatus::EMPTY) {
                     reg.resetArcs().clear();
                 } else if (resetStatus == ResetAssignStatus::NONE || resetStateVscp != vscp) {
                     reg.resetArcs().clear();
                     FsmStateValue resetValue;
-                    AstNode* const thenNodep
-                        = FsmDetectVisitor::singleMeaningfulBranch(firstIfp->thensp());
+                    AstNode* const thenNodep = FsmDetectVisitor::singleMeaningfulBranch(resetsp);
                     UASSERT_OBJ(thenNodep, firstIfp,
                                 "one-block reset fallback requires a non-empty reset branch");
                     AstNodeAssign* const resetAssp = FsmDetectVisitor::directConstStateAssignNode(
@@ -803,6 +819,7 @@ class FsmDetectVisitor final : public VNVisitor {
         struct ComboMatch final {
             const FsmRegisterCandidate* matchedp = nullptr;
             AstNode* warnNodep = nullptr;
+            bool holds = false;  // Whether next not assigned in the case holds the state
         };
 
     private:
@@ -825,11 +842,13 @@ class FsmDetectVisitor final : public VNVisitor {
                 } else if (selp->varScopep() != reg.stateVscp()) {
                     continue;
                 }
+                const bool holds = nextHolds(stmtsp, casep, reg);
                 AstNode* const warnNodep = FsmDetectVisitor::caseSupportedTransitionNode(
-                    casep, reg.nextVscp(), reg.inclCond());
+                    casep, reg.nextVscp(), reg.inclCond(), holds);
                 if (!warnNodep) continue;
                 match.matchedp = &reg;
                 match.warnNodep = warnNodep;
+                match.holds = holds;
             }
             return match;
         }
@@ -872,9 +891,18 @@ class FsmDetectVisitor final : public VNVisitor {
                             stmtsp, casep, reg.stateVscp(), reg.nextVscp())) {
                         return false;
                     }
-                    return FsmDetectVisitor::caseSupportedTransitionNode(casep, reg.nextVscp(),
-                                                                         reg.inclCond());
+                    return FsmDetectVisitor::caseSupportedTransitionNode(
+                        casep, reg.nextVscp(), reg.inclCond(), nextHolds(stmtsp, casep, reg));
                 });
+        }
+
+    private:
+        // Whether the canonical 'next = state' default reaches the case, so that leaving
+        // next unassigned holds the state.  A case on next has already been checked.
+        static bool nextHolds(AstNode* stmtsp, AstCase* casep, const FsmRegisterCandidate& reg) {
+            return VN_AS(casep->exprp(), VarRef)->varScopep() == reg.nextVscp()
+                   || FsmDetectVisitor::hasCanonicalNextStateDefaultBeforeCase(
+                       stmtsp, casep, reg.stateVscp(), reg.nextVscp(), false);
         }
     };
 
@@ -882,13 +910,32 @@ class FsmDetectVisitor final : public VNVisitor {
     // this pass after earlier normalization.
     static bool isSimpleResetCond(AstNodeExpr* condp) { return VN_IS(condp, VarRef); }
 
+    // Body of 'if (!rst) body', V3Const's fold of an empty reset 'if (rst) ; else body'.
+    // Any negation matches, as line coverage accepts any 'if (c) ; else body'.
+    static AstNode* emptyResetBodyp(AstIf* ifp) {
+        if (ifp->elsesp() || !VN_IS(ifp->condp(), Not)) return nullptr;
+        return skipLeadingIgnorableStmt(ifp->thensp());
+    }
+
+    // Body of 'if (rst_n) body; else reset', V3Const's form of 'if (!rst_n) reset; else body'
+    static AstNode* activeLowResetBodyp(AstIf* ifp) {
+        AstVarScope* vscp = nullptr;
+        FsmStateValue value;
+        if (!isSimpleResetCond(ifp->condp())
+            || !directConstStateAssignNode(skipLeadingIgnorableStmt(ifp->elsesp()), vscp, value)) {
+            return nullptr;
+        }
+        return skipLeadingIgnorableStmt(ifp->thensp());
+    }
+
     // Normalize the reset condition into a compact description so the lowering
     // phase can regenerate the same predicate after detection. By the time
     // this pass runs, active-low source forms such as "!rst_n" have already
     // been canonicalized to a positive-condition if/else shape, so only a
     // plain VarRef survives here.
-    static FsmResetCondDesc describeResetCond(AstNodeExpr* condp) {
+    static FsmResetCondDesc describeResetCond(AstNodeExpr* condp, bool activeLow = false) {
         FsmResetCondDesc desc;
+        desc.activeLow = activeLow;
         if (AstVarRef* const vrefp = VN_CAST(condp, VarRef)) {
             desc.varScopep = vrefp->varScopep();
         }
@@ -1003,21 +1050,47 @@ class FsmDetectVisitor final : public VNVisitor {
         return assp;
     }
 
-    // Match 'state = reset ? CONST : next', an active high reset folded into the commit
-    static AstNodeAssign* directCondStateVarAssign(AstNode* nodep, AstVarScope*& stateVscp,
-                                                   AstVarScope*& fromVscp, AstNodeExpr*& condp,
-                                                   FsmStateValue& resetValue) {
-        AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
-        if (!assp) return nullptr;
+    // Match 'state = reset ? CONST : next', an active high reset folded into the commit,
+    // or active low 'state = reset_n ? next : CONST'.
+    // Branch coverage makes V3LiftExpr rewrite it as 'if (reset) tmp = CONST; else tmp =
+    // next; state = tmp;' on a temporary, so match that form too.
+    static AstNodeAssign* condStateVarAssign(AstNode* stmtsp, AstVarScope*& stateVscp,
+                                             AstVarScope*& fromVscp, AstNodeExpr*& condp,
+                                             AstNodeExpr*& resetValuep, FsmStateValue& resetValue,
+                                             bool& activeLow) {
+        AstNodeAssign* assp = VN_CAST(singleMeaningfulStmt(stmtsp), NodeAssign);
+        AstNodeExpr* nextp;
+        if (assp) {
+            AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
+            if (!rhsp) return nullptr;
+            condp = rhsp->condp();
+            resetValuep = rhsp->thenp();
+            nextp = rhsp->elsep();
+        } else {
+            AstIf* const ifp = VN_CAST(stmtsp, If);
+            if (!ifp) return nullptr;
+            assp = VN_CAST(singleMeaningfulStmt(ifp->nextp()), NodeAssign);
+            AstVarRef* const tmpRefp = assp ? VN_CAST(assp->rhsp(), VarRef) : nullptr;
+            if (!tmpRefp || !tmpRefp->varp()->isTemp()) return nullptr;
+            // V3LiftExpr assigns its temporary in both arms; other passes' temporaries may not
+            AstNodeAssign* const thenAssp
+                = directStateAssign(singleMeaningfulStmt(ifp->thensp()), tmpRefp->varScopep());
+            AstNodeAssign* const elseAssp
+                = directStateAssign(singleMeaningfulStmt(ifp->elsesp()), tmpRefp->varScopep());
+            if (!thenAssp || !elseAssp) return nullptr;
+            condp = ifp->condp();
+            resetValuep = thenAssp->rhsp();
+            nextp = elseAssp->rhsp();
+        }
+        activeLow = !VN_IS(nextp, VarRef) && isSimpleResetCond(condp);
+        if (activeLow) std::swap(resetValuep, nextp);
         AstVarRef* const lhsp = VN_CAST(assp->lhsp()->baseFromp(true), VarRef);
-        AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
-        if (!rhsp || !lhsp) return nullptr;
-        AstVarRef* const elsep = VN_CAST(rhsp->elsep(), VarRef);
-        if (!elsep) return nullptr;
-        if (constValueStatus(rhsp->thenp(), resetValue) != ConstValueStatus::OK) return nullptr;
-        fromVscp = elsep->varScopep();
+        AstVarRef* const nextRefp = VN_CAST(nextp, VarRef);
+        if (!lhsp || !nextRefp) return nullptr;
+        if (constValueStatus(resetValuep, resetValue /*ref*/) != ConstValueStatus::OK)
+            return nullptr;
         stateVscp = lhsp->varScopep();
-        condp = rhsp->condp();
+        fromVscp = nextRefp->varScopep();
         return assp;
     }
 
@@ -1068,7 +1141,7 @@ class FsmDetectVisitor final : public VNVisitor {
 
     static bool hasCanonicalNextStateDefaultBeforeCase(AstNode* stmtsp, AstNode* targetp,
                                                        AstVarScope* stateVscp,
-                                                       AstVarScope* nextVscp) {
+                                                       AstVarScope* nextVscp, bool warn = true) {
         AstNode* const bodyp = skipLeadingIgnorableStmt(stmtsp);
         bool sawCanonicalDefault = false;
         for (AstNode* nodep = bodyp;; nodep = nodep->nextp()) {
@@ -1080,6 +1153,7 @@ class FsmDetectVisitor final : public VNVisitor {
                 AstVarRef* const rhsp = VN_CAST(assp->rhsp(), VarRef);
                 if (!lhsp || lhsp->varScopep() != nextVscp) continue;
                 if (sawCanonicalDefault) {
+                    if (!warn) return false;
                     const string nextName = nextVscp->varp()->prettyNameQ();
                     const string stateName = stateVscp->varp()->prettyNameQ();
                     assp->v3warn(COVERIGN,
@@ -1118,6 +1192,53 @@ class FsmDetectVisitor final : public VNVisitor {
         return true;
     }
 
+    // Transitions guarded by ifs: each arm is 'next = CONST', another such if, or leaves next
+    // unassigned, which adds no arc as the state holds
+    static bool guardedTargets(AstNode* stmtp, AstVarScope* stateVscp, FsmCondTargets& targets) {
+        if (!skipLeadingIgnorableStmt(stmtp)) return true;
+        AstNode* const nodep = singleMeaningfulStmt(stmtp);
+        if (AstIf* const ifp = VN_CAST(nodep, If)) {
+            // Without other coverage V3Const folds an if/else of two assignments into '?:',
+            // so leave that unsupported here, in either form
+            if (VN_IS(singleMeaningfulStmt(ifp->thensp()), NodeAssign)
+                && VN_IS(singleMeaningfulStmt(ifp->elsesp()), NodeAssign)) {
+                return false;
+            }
+            return guardedTargets(ifp->thensp(), stateVscp, targets)
+                   && guardedTargets(ifp->elsesp(), stateVscp, targets);
+        }
+        AstNodeAssign* const assp = directStateAssign(nodep, stateVscp);
+        FsmStateValue value;
+        if (!assp || constValueStatus(assp->rhsp(), value) != ConstValueStatus::OK) return false;
+        targets.emplace_back(value, assp);
+        return true;
+    }
+
+    // The if of a case item whose transitions are all guarded, where leaving next
+    // unassigned holds the state
+    static AstIf* caseItemGuardedIf(AstCaseItem* itemp, AstVarScope* stateVscp, bool holds,
+                                    FsmCondTargets& targets) {
+        AstIf* const ifp = VN_CAST(singleMeaningfulStmt(itemp->stmtsp()), If);
+        return holds && ifp && guardedTargets(itemp->stmtsp(), stateVscp, targets)
+                       && !targets.empty()
+                   ? ifp
+                   : nullptr;
+    }
+
+    // Targets of the conditional transitions of a case item: 'next = guard ? A : B', its
+    // if/else form, or guarded ifs
+    static bool caseItemCondTargets(AstCaseItem* itemp, AstVarScope* stateVscp, bool holds,
+                                    FsmCondTargets& targets) {
+        FsmStateValue thenValue;
+        FsmStateValue elseValue;
+        if (directStateCondConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)
+            || ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)) {
+            targets = {{thenValue, itemp->stmtsp()}, {elseValue, itemp->stmtsp()}};
+            return true;
+        }
+        return caseItemGuardedIf(itemp, stateVscp, holds, targets);
+    }
+
     // A guarded transition target: 'guard ? CONST : CONST'
     static bool condConstTargets(AstNodeExpr* exprp, FsmStateValue& thenValue,
                                  FsmStateValue& elseValue) {
@@ -1134,7 +1255,7 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     static AstNode* caseItemSupportedArcNode(AstCaseItem* itemp, AstVarScope* stateVscp,
-                                             bool inclCond) {
+                                             bool inclCond, bool holds) {
         if (itemp->isDefault()) {
             if (!inclCond) return nullptr;
         }
@@ -1151,15 +1272,16 @@ class FsmDetectVisitor final : public VNVisitor {
         if (ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)) {
             return singleMeaningfulBranch(itemp->stmtsp());
         }
-        return nullptr;
+        FsmCondTargets targets;
+        return caseItemGuardedIf(itemp, stateVscp, holds, targets);
     }
 
     // Combinational transition blocks are paired only through supported case
     // items that assign to the recorded next-state variable.
     static AstNode* caseSupportedTransitionNode(AstCase* casep, AstVarScope* stateVscp,
-                                                bool inclCond) {
+                                                bool inclCond, bool holds) {
         for (AstCaseItem* const itemp : casep->itemspList()) {
-            if (AstNode* const nodep = caseItemSupportedArcNode(itemp, stateVscp, inclCond))
+            if (AstNode* const nodep = caseItemSupportedArcNode(itemp, stateVscp, inclCond, holds))
                 return nodep;
         }
         return nullptr;
@@ -1471,23 +1593,26 @@ class FsmDetectVisitor final : public VNVisitor {
 
         AstNode* const stmtsp = skipLeadingIgnorableStmt(alwaysp->stmtsp());
         AstNode* const nodep = singleMeaningfulStmt(stmtsp);
-        if (!nodep) return false;
 
         AstVarScope* stateVscp = nullptr;
         AstVarScope* nextVscp = nullptr;
         if (AstIf* const ifp = VN_CAST(nodep, If)) {
             // Any reset condition is accepted; only a plain signal is described
-            if (!ifp->elsesp()) return false;
+            AstNode* resetsp = ifp->elsesp() ? ifp->thensp() : nullptr;
+            AstNode* commitp = ifp->elsesp() ? ifp->elsesp() : emptyResetBodyp(ifp);
+            if (!commitp) return false;
+            const bool activeLow = activeLowResetBodyp(ifp) != nullptr;
+            if (activeLow) std::swap(resetsp, commitp);
             AstVarScope* resetStateVscp = nullptr;
             const ResetAssignStatus resetStatus
-                = collectConstStateAssigns(ifp->thensp(), resetStateVscp, cand.resetArcs());
+                = collectConstStateAssigns(resetsp, resetStateVscp, cand.resetArcs());
             const bool emptyResetBranch = resetStatus == ResetAssignStatus::EMPTY;
             if (emptyResetBranch) {
                 cand.resetArcs().clear();
             } else if (resetStatus == ResetAssignStatus::NONE) {
                 cand.resetArcs().clear();
                 FsmStateValue resetValue;
-                AstNode* const thenNodep = singleMeaningfulBranch(ifp->thensp());
+                AstNode* const thenNodep = singleMeaningfulBranch(resetsp);
                 UASSERT_OBJ(thenNodep, ifp, "reset fallback requires a non-empty reset branch");
                 AstNodeAssign* const resetAssp
                     = directConstStateAssignNode(thenNodep, resetStateVscp, resetValue);
@@ -1496,20 +1621,22 @@ class FsmDetectVisitor final : public VNVisitor {
             } else if (resetStatus == ResetAssignStatus::MULTI_SAME_STATE) {
                 cand.resetArcs().clear();
             }
-            AstNode* const elseNodep = singleMeaningfulBranch(ifp->elsesp());
+            AstNode* const elseNodep = singleMeaningfulBranch(commitp);
             UASSERT_OBJ(elseNodep, ifp, "register reset match requires a non-empty commit branch");
             if (!nodeStateVarAssign(elseNodep, stateVscp, nextVscp)) return false;
             if (!emptyResetBranch && resetStateVscp != stateVscp) return false;
-            cand.resetCond() = describeResetCond(ifp->condp());
+            cand.resetCond() = describeResetCond(ifp->condp(), activeLow);
             cand.hasResetCond(cand.resetCond().varScopep != nullptr);
         } else {
             AstNodeExpr* resetCondp = nullptr;
+            AstNodeExpr* resetValuep = nullptr;
             FsmStateValue resetValue;
-            // Note the active low 'reset ? next : CONST' form is not accepted
-            if (AstNodeAssign* const assp
-                = directCondStateVarAssign(nodep, stateVscp, nextVscp, resetCondp, resetValue)) {
-                cand.resetArcs().emplace_back(resetValue, assp);
-                cand.resetCond() = describeResetCond(resetCondp);
+            bool activeLow = false;
+            if (AstNodeAssign* const assp = condStateVarAssign(
+                    stmtsp, stateVscp /*ref*/, nextVscp /*ref*/, resetCondp /*ref*/,
+                    resetValuep /*ref*/, resetValue /*ref*/, activeLow /*ref*/)) {
+                cand.resetArcs().emplace_back(resetValue, assp, resetValuep);
+                cand.resetCond() = describeResetCond(resetCondp, activeLow);
                 cand.hasResetCond(cand.resetCond().varScopep != nullptr);
             } else if (!nodeStateVarAssign(nodep, stateVscp, nextVscp)) {
                 return false;
@@ -1652,11 +1779,11 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     static bool collectStateSpace(AstCase* casep, AstVarScope* stateVscp, AstVarScope* assignVscp,
-                                  const std::vector<FsmResetArcDesc>& resetArcs,
+                                  bool holds, const std::vector<FsmResetArcDesc>& resetArcs,
                                   FsmStateSpace& stateSpace) {
         return collectStateSpaceFromValues(
             casep, stateVscp, resetArcs, stateSpace,
-            [casep, assignVscp, &stateSpace](const auto& visitValuep) {
+            [casep, assignVscp, holds, &stateSpace](const auto& visitValuep) {
                 for (AstCaseItem* const itemp : casep->itemspList()) {
                     if (!itemp->isDefault()) {
                         for (AstNodeExpr* const condp : itemp->condspList()) {
@@ -1675,6 +1802,14 @@ class FsmDetectVisitor final : public VNVisitor {
                             if (!visitValuep(condp->elsep())) return false;
                         } else if (!addOptionalTargetExprToStateSpace(assp->rhsp(), stateSpace)) {
                             return false;
+                        }
+                    }
+                    FsmCondTargets targets;
+                    if (caseItemGuardedIf(itemp, assignVscp, holds, targets)) {
+                        for (const std::pair<FsmStateValue, AstNode*>& target : targets) {
+                            if (!visitValuep(VN_AS(target.second, NodeAssign)->rhsp())) {
+                                return false;
+                            }
                         }
                     }
                 }
@@ -1725,7 +1860,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // this helper are deliberate subset boundaries: they document shapes we do
     // not yet model in this PR and that future FSM-detection work may widen.
     static bool emitCaseItemArcs(FsmGraph& graph, AstCaseItem* itemp, AstVarScope* stateVscp,
-                                 const FsmStateSpace& stateSpace, bool inclCond) {
+                                 const FsmStateSpace& stateSpace, bool inclCond, bool holds) {
         std::vector<std::pair<string, FsmStateValue>> froms;
         if (itemp->isDefault()) {
             if (!inclCond) return false;
@@ -1753,18 +1888,18 @@ class FsmDetectVisitor final : public VNVisitor {
             }
         }
 
-        FsmStateValue thenValue;
-        FsmStateValue elseValue;
-        if (directStateCondConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)
-            || ifStateConstAssign(itemp->stmtsp(), stateVscp, thenValue, elseValue)) {
-            if (!validateKnownStateValue(itemp->stmtsp(), stateSpace, thenValue, "target"))
+        FsmCondTargets targets;
+        if (caseItemCondTargets(itemp, stateVscp, holds, targets)) {
+            if (!std::all_of(targets.begin(), targets.end(), [&stateSpace](const auto& target) {
+                    return validateKnownStateValue(target.second, stateSpace, target.first,
+                                                   "target");
+                })) {
                 return true;
-            if (!validateKnownStateValue(itemp->stmtsp(), stateSpace, elseValue, "target"))
-                return true;
-            for (const FsmStateValue& branchValue : {thenValue, elseValue}) {
+            }
+            for (const std::pair<FsmStateValue, AstNode*>& target : targets) {
                 for (const std::pair<string, FsmStateValue>& from : froms) {
-                    graph.addArc(from.second, branchValue, false, true, itemp->isDefault(),
-                                 itemp->stmtsp()->fileline());
+                    graph.addArc(from.second, target.first, false, true, itemp->isDefault(),
+                                 target.second->fileline());
                 }
             }
             return true;
@@ -1837,11 +1972,14 @@ class FsmDetectVisitor final : public VNVisitor {
     // Turn one candidate case statement into the graph representation that the
     // later lowering phase will consume directly, while reviewers can still
     // inspect the extracted machine via DOT dumps.
-    void processCase(AstCase* casep, AstVarScope* assignVscp, const FsmRegisterCandidate& reg) {
+    void processCase(AstCase* casep, AstVarScope* assignVscp, const FsmRegisterCandidate& reg,
+                     bool holds) {
         UASSERT_OBJ(assignVscp, casep, "FSM case processing requires a non-null assignment var");
         AstVarScope* const stateVscp = reg.stateVscp();
         FsmStateSpace stateSpace;
-        if (!collectStateSpace(casep, stateVscp, assignVscp, reg.resetArcs(), stateSpace)) return;
+        if (!collectStateSpace(casep, stateVscp, assignVscp, holds, reg.resetArcs(), stateSpace)) {
+            return;
+        }
         DetectedFsm& entry = m_state.fsmFor(stateVscp);
         if (!entry.graphp) {
             entry.graphp.reset(new FsmGraph{});
@@ -1863,7 +2001,7 @@ class FsmDetectVisitor final : public VNVisitor {
         }
         for (AstCaseItem* const itemp : casep->itemspList()) {
             emitCaseItemArcs(*entry.graphp, itemp, assignVscp, stateSpace,
-                             entry.graphp->inclCond());
+                             entry.graphp->inclCond(), holds);
         }
     }
 
@@ -1906,11 +2044,11 @@ class FsmDetectVisitor final : public VNVisitor {
         const RegisterAlwaysAnalyzer analyzer{oneBlock.scopep()};
         AstAlways* const alwaysp = oneBlock.alwaysp();
         if (!alwaysp->sentreep() || !alwaysp->sentreep()->hasEdge()) return;
-        const std::vector<std::pair<AstCase*, AstNodeExpr*>> candidates
+        const std::vector<std::pair<AstCase*, FsmResetCondDesc>> candidates
             = analyzer.oneBlockCandidates(alwaysp);
 
         FsmCaseCandidate firstCand;
-        for (const std::pair<AstCase*, AstNodeExpr*>& cand : candidates) {
+        for (const std::pair<AstCase*, FsmResetCondDesc>& cand : candidates) {
             AstVarRef* const selp = VN_CAST(cand.first->exprp(), VarRef);
             AstVarScope* const vscp = selp ? selp->varScopep() : nullptr;
             if (!vscp) continue;
@@ -1919,7 +2057,7 @@ class FsmDetectVisitor final : public VNVisitor {
                 firstCand.stateVscp = vscp;
                 FsmRegisterCandidate reg;
                 analyzer.buildOneBlockCandidate(alwaysp, vscp, cand.second, reg);
-                processCase(cand.first, vscp, reg);
+                processCase(cand.first, vscp, reg, true);
             } else if (vscp != firstCand.stateVscp) {
                 cand.first->v3warn(FSMMULTI,
                                    "FSM coverage: multiple enum-typed case statements found in "
@@ -1939,9 +2077,9 @@ class FsmDetectVisitor final : public VNVisitor {
 
         // Case dispatch is more explicit and pre-existing behavior depends on
         // it winning when both shapes are present.
-        const std::vector<std::pair<AstIf*, AstNodeExpr*>> ifCandidates
+        const std::vector<std::pair<AstIf*, FsmResetCondDesc>> ifCandidates
             = analyzer.oneBlockIfCandidates(alwaysp);
-        for (const std::pair<AstIf*, AstNodeExpr*>& cand : ifCandidates) {
+        for (const std::pair<AstIf*, FsmResetCondDesc>& cand : ifCandidates) {
             const FsmAliasMap aliases = localAliasesBefore(alwaysp->stmtsp(), cand.first);
             FsmIfChainCandidate chain;
             if (!collectIfChain(cand.first, aliases, chain)) continue;
@@ -2007,7 +2145,7 @@ class FsmDetectVisitor final : public VNVisitor {
                 }
                 firstCand.warnNodep = matchedWarnNodep;
                 firstCand.stateVscp = const_cast<AstVarScope*>(matchedp->stateVscp());
-                processCase(casep, matchedp->nextVscp(), *matchedp);
+                processCase(casep, matchedp->nextVscp(), *matchedp, match.holds);
                 continue;
             }
             if (matchedp->stateVscp() != firstCand.stateVscp) {
@@ -2078,14 +2216,14 @@ class FsmDetectVisitor final : public VNVisitor {
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         m_scopep = nodep;
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
     // Collect processes first, then analyze FSM candidates once all alias and
     // register information is available.
     void visit(AstAlways* nodep) override {
         if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
             return;
         }
         // This avoids making one-block if-chain detection sensitive to whether
@@ -2118,18 +2256,18 @@ class FsmDetectVisitor final : public VNVisitor {
         // order should not affect whether an if-chain FSM is recognized.
         collectAliasFromAssign(nodep, m_stateAliases, m_ambiguousStateAliases);
         collectCellPortAlias(nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
     void visit(AstCell* nodep) override {
         // Cells are matched after the full traversal because linkdot lowers
         // uninlined port connections into sibling continuous assignments.
         if (m_scopep && fsmRegisterWrapperDesc(nodep)) addWrapperCell(m_scopep, nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
     // Continue the walk through the rest of the design hierarchy.
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -2137,7 +2275,7 @@ public:
     // phase starts mutating the AST with coverage machinery.
     FsmDetectVisitor(FsmState& state, AstNetlist* rootp)
         : m_state{state} {
-        iterate(rootp);
+        iterateConst(rootp);
         for (const std::pair<AstScope*, AstCell*>& wrapperCell : m_wrapperCells) {
             FsmRegisterCandidate reg;
             if (matchFsmWrapperCell(wrapperCell.first, wrapperCell.second, reg)) {

@@ -254,6 +254,7 @@ VL_INST_PUBLIC_BIN_FILES = \
 VL_INST_PRIVATE_SCRIPT_FILES = \
   verilator_ccache_report \
   verilator_includer \
+  verilator_module_deps \
 
 VL_INST_INC_BLDDIR_FILES = \
   include/verilated_config.h \
@@ -519,6 +520,7 @@ PY_PROGRAMS = \
   bin/verilator_difftree \
   bin/verilator_gantt \
   bin/verilator_includer \
+  bin/verilator_module_deps \
   bin/verilator_profcfunc \
   docs/bin/vl_sphinx_extract \
   docs/bin/vl_sphinx_fix \
@@ -584,7 +586,8 @@ format-bash:
 
 CLANGFORMAT = clang-format-21
 CLANGFORMAT_FLAGS = -i
-CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
+CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) \
+  test_regress/t/*.c* test_regress/t/*.cppm test_regress/t/*.h test_regress/t/*.ixx
 
 format-c clang-format:
 	$(CLANGFORMAT) --version

@@ -1061,7 +1061,7 @@ class AssertVisitor final : public VNVisitor {
                 AstCoverInc* const covincp = VN_AS(coverp->coverincsp(), CoverInc);
                 UASSERT_OBJ(covincp, coverp, "Missing AstCoverInc under assertion");
                 covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
-                if (message != "") covincp->declp()->comment(message);
+                if (message != "") covincp->declp()->comment(AstNode::prettyName(message));
                 // IEEE 1800-2023 16.4.2: Deferred coverage is flushed like a pending report
                 AstNodeStmt* creditsp = covincp;
                 if (obsDeferred) {
@@ -1213,8 +1213,17 @@ class AssertVisitor final : public VNVisitor {
                         propp = predp;
                     }
 
-                    // Record if this ends with an 'else' that does not have an if
-                    if (ifp->elsesp() && !nextifp) hasDefaultElse = true;
+                    // Record if this ends with an 'else' that does not have an if.  An else
+                    // holding only CoverIncs is one V3Coverage added; a source 'else ;' still
+                    // holds an empty begin.
+                    if (!nextifp) {
+                        for (const AstNode* const stmtp : ifp->elsespList()) {
+                            if (!VN_IS(stmtp, CoverInc)) {
+                                hasDefaultElse = true;
+                                break;
+                            }
+                        }
+                    }
 
                     ifp = nextifp;
                 } while (ifp);

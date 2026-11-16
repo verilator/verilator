@@ -91,7 +91,6 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
         VARDTYPE_NDECL(nullptr); \
         GRAMMARP->m_pinNum = (pinNumStart); \
         GRAMMARP->m_varLifetime = VLifetime::NONE; \
-        GRAMMARP->m_varDeclTyped = false; \
     }
 #define VARDECL(type) \
     { GRAMMARP->m_varDecl = VVarType::type; }
@@ -109,8 +108,12 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
         GRAMMARP->setDType(dtypep); \
         GRAMMARP->m_varDeclTyped = true; \
     }
+// Set the data type without making a typed declaration, e.g. a range-only port
 #define VARDTYPE_NDECL(dtypep) \
-    { GRAMMARP->setDType(dtypep); }  // Port that is range or signed only (not a decl)
+    { \
+        GRAMMARP->setDType(dtypep); \
+        GRAMMARP->m_varDeclTyped = false; \
+    }
 
 #define VARDONEA(fl, name, array, attrs) GRAMMARP->createVariable((fl), (name), (array), (attrs))
 #define VARDONEP(portp, array, attrs) \
@@ -632,6 +635,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_COSH         "$cosh"
 %token<fl>              yD_COUNTBITS    "$countbits"
 %token<fl>              yD_COUNTONES    "$countones"
+%token<fl>              yD_COVERAGE_CONTROL "$coverage_control"
 %token<fl>              yD_DIMENSIONS   "$dimensions"
 %token<fl>              yD_DISPLAY      "$display"
 %token<fl>              yD_DISPLAYB     "$displayb"
@@ -2608,7 +2612,6 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
 
         // IEEE 1800-2023 6.18.2 typedef with packed dimensions on an existing type identifier
         // Disambiguated from interface array access by requiring ':' inside the brackets
-        // (applies to both plain identifiers and type identifiers)
         |       yTYPEDEF id '[' constExpr ':' constExpr ']' packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
@@ -2616,13 +2619,13 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
                           AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull(rangep, $8), true);
                           $$ = GRAMMARP->createTypedef($<fl>9, *$9, $11, dtp, $10); }
 
-        // Same as above but for type identifiers (parameter types, etc.)
-        |       yTYPEDEF idType '[' constExpr ':' constExpr ']' packed_dimensionListE
+        // Same as above but for type identifiers (parameter types, etc.), which cannot be an
+        // interface array access so need no disambiguation
+        |       yTYPEDEF idType packedRange packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, nullptr, nullptr};
-                          AstNodeRange* const rangep = new AstRange{$3, $4, $6};
-                          AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull(rangep, $8), true);
-                          $$ = GRAMMARP->createTypedef($<fl>9, *$9, $11, dtp, $10); }
+                          AstNodeDType* const dtp = GRAMMARP->createArray(refp, addNextNull($3, $4), true);
+                          $$ = GRAMMARP->createTypedef($<fl>5, *$5, $7, dtp, $6); }
 
         |       yTYPEDEF idAny parameter_value_assignmentClass packed_dimensionListE
         /*cont*/    idAny variable_dimensionListE dtypeAttrListE ';'
@@ -3164,12 +3167,20 @@ rangeListE<nodeRangep>:         // IEEE: [{packed_dimension}]
         ;
 
 rangeList<nodeRangep>:          // IEEE: {packed_dimension}
-                anyrange                                { $$ = $1; }
-        |       rangeList anyrange                      { $$ = $1->addNext($2); }
+                packedRange                             { $$ = $1; }
+        |       rangeList packedRange                   { $$ = $1->addNext($2); }
         ;
 
 anyrange<nodeRangep>:
                 '[' constExpr ':' constExpr ']'         { $$ = new AstRange{$1, $2, $4}; }
+        ;
+
+packedRange<nodeRangep>:        // IEEE: packed_dimension, excluding unsized_dimension
+                anyrange                                { $$ = $1; }
+        //                      // Non-standard C-style size (V3LinkParse warns), accepted as other simulators
+        //                      // do, meaning '[0:size-1]' as for an unpacked dimension (IEEE 1800-2023 7.4.2)
+        |       '[' constExpr ']'
+                        { $$ = new AstRange{$1, new AstConst{$1, 0}, new AstSub{$1, $2, new AstConst{$1, 1}}, true}; }
         ;
 
 part_select_rangeList<nodePreSelp>:  // IEEE: part_select_range (as used after function calls)
@@ -3199,7 +3210,7 @@ packed_dimensionList<nodeRangep>:       // IEEE: { packed_dimension }
         ;
 
 packed_dimension<nodeRangep>:   // ==IEEE: packed_dimension
-                anyrange                                { $$ = $1; }
+                packedRange                             { $$ = $1; }
         |       '[' ']'
                         { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: [] dimensions"); }
         ;
@@ -3675,7 +3686,7 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                           newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
                           callp->fileline(newfl);
                           $$ = exprp->makeStmt(); }
-        |       yVOID yP_TICK '(' expr '.' task_subroutine_callNoMethod ')' ';'
+        |       yVOID yP_TICK '(' expr '.' task_method_call_body ')' ';'
                         { AstNodeExpr* const exprp = new AstDot{$5, false, $4, $6};
                           FileLine* const newfl = new FileLine{$6->fileline()};
                           newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
@@ -4185,7 +4196,7 @@ task_subroutine_callNoSemi<nodeStmtp>:  // similar to IEEE task_subroutine_call 
         //                      // Expr included here to resolve our not knowing what is a method call
         //                      // Expr here must result in a subroutine_call
                 task_subroutine_callNoMethod            { $$ = $1->makeStmt(); }
-        |       fexpr '.' task_subroutine_callNoMethod  { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
+        |       fexpr '.' task_method_call_body         { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
         |       system_t_stmt_call                      { $$ = $1; }
         //                      // Any system function as a task
         |       system_f_or_t_expr_call                 { $$ = new AstStmtExpr{$<fl>1, $1}; }
@@ -4194,6 +4205,12 @@ task_subroutine_callNoSemi<nodeStmtp>:  // similar to IEEE task_subroutine_call 
         //                      // Way over-permissive;
         //                      // IEEE: [ ySUPER '.' yNEW [ '(' list_of_arguments ')' ] ';' ]
         |       fexpr '.' class_newNoScope              { $$ = (new AstDot{$<fl>2, false, $1, $3})->makeStmt(); }
+        ;
+
+task_method_call_body<nodeExprp>:  // IEEE: method_call_body (as task)
+                task_subroutine_callNoMethod            { $$ = $1; }
+        //                      // IEEE: randomize_call
+        |       randomize_callNoParen                   { $$ = $1; }
         ;
 
 task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod (as task)
@@ -4208,12 +4225,7 @@ task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod 
         //                      // IEEE: randomize_call
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
-        |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, nullptr, $3}; }
-        |       funcRef yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
-                                                        { AstWithParse* const withParsep
-                                                              = new AstWithParse{$2, $1, $4, $6};
-                                                          withParsep->restricted(true);
-                                                          $$ = withParsep; }
+        |       funcRef randomize_callWith              { $$ = GRAMMARP->scrubWithParse($1, $2); }
         ;
 
 function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine_call (as function)
@@ -4234,12 +4246,24 @@ function_subroutine_callNoMethodNoWith<nodeExprp>:  // IEEE: part of function_su
         //                      // IEEE: randomize_call
         //                      // We implement randomize as a normal funcRef, since randomize isn't a keyword
         //                      // Note yNULL is already part of expressions, so they come for free
-        |       funcRef yWITH__CUR constraint_block     { $$ = new AstWithParse{$2, $1, nullptr, $3}; }
-        |       funcRef yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
-                                                        { AstWithParse* const withParsep
-                                                              = new AstWithParse{$2, $1, $4, $6};
-                                                          withParsep->restricted(true);
-                                                          $$ = withParsep; }
+        |       funcRef randomize_callWith              { $$ = GRAMMARP->scrubWithParse($1, $2); }
+        ;
+
+randomize_callNoParen<nodeExprp>:  // IEEE: part of randomize_call
+        //                      // Method call with a 'with' clause but no argument parentheses.
+        //                      // Scope randomize requires the parentheses (IEEE 1800-2023 18.12
+        //                      // Syntax 18-11) and the parser cannot tell a bare call from one.
+                idRandomize randomize_callWith
+                        { $$ = GRAMMARP->scrubWithParse(new AstFuncRef{$<fl>1, *$1}, $2); }
+        ;
+
+randomize_callWith<withParsep>:  // IEEE: part of randomize_call
+        //                      // with [ ( [ identifier_list ] ) ] constraint_block
+                yWITH__CUR constraint_block
+                        { $$ = new AstWithParse{$1, new AstParseHolder{$1}, nullptr, $2}; }
+        |       yWITH__PAREN_CUR '(' inlineConstraintIdListE ')' constraint_block
+                        { $$ = new AstWithParse{$1, new AstParseHolder{$1}, $3, $5};
+                          $$->restricted(true); }
         ;
 
 system_t_stmt_call<nodeStmtp>:  // IEEE: part of system_tf_call (as task returning statement)
@@ -4485,6 +4509,10 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
                         { $$ = new AstCountBits{$1, $3, $5, $7, $9};
                           BBUNSUP($11, "Unsupported: $countbits with more than 3 control fields"); }
         |       yD_COUNTONES '(' expr ')'               { $$ = new AstCountOnes{$1, $3}; }
+        |       yD_COVERAGE_CONTROL '(' expr ',' expr ',' expr ',' expr ')'  {
+                          const AstParseRef* const rootp = VN_CAST($9, ParseRef);
+                          $$ = new AstCoverageControl{$1, $3, $5, $7, rootp && rootp->name() == "$root"};
+                          DEL($9); }
         |       yD_DIMENSIONS '(' exprOrDataType ')'    { $$ = new AstAttrOf{$1, VAttrType::DIM_DIMENSIONS, $3}; }
         |       yD_DIST_CHI_SQUARE '(' expr ',' expr ')'        { $$ = new AstDistChiSquare{$1, $3, $5}; }
         |       yD_DIST_ERLANG '(' expr ',' expr ',' expr ')'   { $$ = new AstDistErlang{$1, $3, $5, $7}; }
@@ -5214,6 +5242,9 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
                         { $$ = new AstDot{$2, false, $1, $3}; }
         |       ~l~expr '.' function_subroutine_callNoMethod part_select_rangeList
                         { $$ = GRAMMARP->scrubSel(new AstDot{$2, false, $1, $3}, $4); }
+        //                      // method_call: randomize_call
+        |       ~l~expr '.' randomize_callNoParen
+                        { $$ = new AstDot{$2, false, $1, $3}; }
         //                      // method_call:array_method requires a '.'
         |       ~l~expr '.' array_methodWith
                         { $$ = new AstDot{$2, false, $1, $3}; }
@@ -5344,6 +5375,13 @@ exprPatternOrStream<nodeExprp>:  // IEEE: assignment_pattern_expression or strea
         //UNSUP ~l~exprScope assignment_pattern         { UNSUP }
                 data_type assignment_pattern            { $$ = $2; if ($2) $2->childDTypep($1); }
         |       assignment_pattern                      { $$ = $1; }
+        //                      // Non-standard keyed assignment pattern without the apostrophe, accepted
+        //                      // as other simulators do; a positional one is a concatenation
+        |       '{' patternMemberList '}'
+                        { $$ = new AstPattern{$1, $2};
+                          $1->v3warn(NONSTD, "Non-standard assignment pattern without leading apostrophe"
+                                             " (IEEE 1800-2023 10.9)\n"
+                                             << $1->warnMore() << "... Suggest use equivalent '{...}"); }
         |       streaming_concatenation                 { $$ = $1; }
         ;
 

@@ -8,7 +8,7 @@
 
 #include <verilated.h>
 
-#include "Vt_enum_public.h"
+#include VM_PREFIX_INCLUDE
 #include "Vt_enum_public_p3.h"
 #include "Vt_enum_public_p62.h"
 

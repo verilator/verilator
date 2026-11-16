@@ -77,6 +77,7 @@ public:
     AstRange* scrubRange(AstNodeRange* nrangep) VL_MT_DISABLED;
     AstRange* scrubRangeMulti(AstNodeRange* nrangep) VL_MT_DISABLED;
     AstNodePreSel* scrubSel(AstNodeExpr* fromp, AstNodePreSel* selp) VL_MT_DISABLED;
+    AstWithParse* scrubWithParse(AstNodeExpr* funcrefp, AstWithParse* withParsep) VL_MT_DISABLED;
     AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* nrangep,
                               bool isPacked) VL_MT_DISABLED;
     AstVar* createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp,

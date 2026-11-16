@@ -692,27 +692,37 @@ private:
         }
         AstEventControl* const controlp
             = new AstEventControl{nodep->fileline(), sentreep, nullptr};
+        // A non-constant delay is counted at runtime. The count is integral of 64 bits, as
+        // V3Width makes delays, or real, which is rounded (IEEE 1800-2023 6.12.1)
+        AstNodeDType* const cntDTypep = nodep->findBasicDType(VBasicDTypeKwd::UINT32);
+        if (valuep->isDouble()) {
+            valuep = new AstRToIRoundS{flp, valuep};
+            valuep->dtypep(cntDTypep);
+        } else {
+            valuep = new AstSel{flp, valuep, 0, cntDTypep->width()};
+        }
+        if (m_inSynchDrive) {
+            // The intra-assignment timing control waits for the cycles, which V3Timing counts.
+            // If the count is zero, it waits for none, like with a constant '##0'
+            // (IEEE 1800-2023 14.11)
+            controlp->countp(valuep);
+            nodep->replaceWith(controlp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
         const std::string delayName = m_cycleDlyNames.get(nodep);
         AstNodeExpr* throughoutp
             = nodep->throughoutp() ? nodep->throughoutp()->unlinkFrBack() : nullptr;
 
-        AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
-                                           nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
+        AstVar* const cntVarp
+            = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter", cntDTypep};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         AstBegin* const beginp = new AstBegin{flp, delayName + "__block", nullptr, true};
         beginp->addDeclsp(cntVarp);
-        // A non-constant delay is counted at runtime. The count is integral of 64 bits, as
-        // V3Width makes delays, or real, which is rounded (IEEE 1800-2023 6.12.1)
-        if (valuep->isDouble()) {
-            valuep = new AstRToIRoundS{flp, valuep};
-            valuep->dtypeFrom(cntVarp);
-        } else {
-            valuep = new AstSel{flp, valuep, 0, cntVarp->width()};
-        }
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
-        // If the count is zero, a synchronous drive waits for none, like with a constant '##0',
-        // and a procedural delay waits like a procedural '##0' (IEEE 1800-2023 14.11)
-        if (!constp && !m_inSynchDrive) {
+        // If the count is zero, a procedural delay waits like a procedural '##0'
+        // (IEEE 1800-2023 14.11)
+        if (!constp) {
             beginp->addStmtsp(new AstIf{
                 flp,
                 new AstEq{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}},
@@ -898,8 +908,8 @@ private:
             setsp = AstNode::addNext(setsp, newDrivenSetp(nodep->fileline(), drive));
         }
         if (!setsp) return;
-        if (AstBegin* const beginp = VN_CAST(nodep->timingControlp(), Begin)) {
-            beginp->addStmtsp(setsp);
+        if (AstEventControl* const controlp = VN_CAST(nodep->timingControlp(), EventControl)) {
+            controlp->addStmtsp(setsp);
         } else {
             nodep->addNextHere(setsp);
         }

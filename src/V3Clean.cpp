@@ -266,11 +266,6 @@ class CleanVisitor final : public VNVisitor {
         if (!VN_IS(nodep->backp(), And)) insertClean(nodep);
         ensureCleanAndNext(nodep->nodesp());
     }
-    void visit(AstTraceDecl* nodep) override {}  // Nothing to do here
-    void visit(AstTraceInc* nodep) override {
-        iterateChildren(nodep);
-        ensureCleanAndNext(nodep->valuep());
-    }
     void visit(AstTypedef* nodep) override {
         // No cleaning, or would loose pointer to enum
         iterateChildren(nodep);

@@ -252,10 +252,14 @@ std::vector<std::string> V3Global::verilatedCppFiles() {
     if (v3Global.opt.coverage()) result.emplace_back("verilated_cov.cpp");
     if (v3Global.opt.coverage() || v3Global.useCovergroup())
         result.emplace_back("verilated_covergroup.cpp");
+    if (v3Global.opt.rtmd()) result.emplace_back("verilated_rtmd.cpp");
     for (const string& base : v3Global.opt.traceSourceBases())
         result.emplace_back(base + "_c.cpp");
     if (v3Global.usesProbDist()) result.emplace_back("verilated_probdist.cpp");
-    if (v3Global.usesTiming()) result.emplace_back("verilated_timing.cpp");
+    if (v3Global.usesTiming()) {
+        result.emplace_back("verilated_timing.cpp");
+        if (v3Global.dpi()) result.emplace_back("verilated_dpi_call.cpp");
+    }
     if (v3Global.useRandomizeMethods()) {
         for (const string& source : v3Global.solverBackendp()->runtimeCppFiles())
             result.emplace_back(source);

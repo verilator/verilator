@@ -308,7 +308,7 @@ BRDA:2,0,"x%" <p_r> #( ::,0
 BRF:2
 BRH:0
 LF:1
-LH:1
+LH:0
 end_of_record
 
 $ verilator_coverage --write merged.dat names.dat

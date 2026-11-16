@@ -54,7 +54,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <deque>
-#include <functional>
 #include <limits>
 #include <map>
 #include <memory>
@@ -105,13 +104,13 @@ struct VlIfaceRefTableEntry;
 template <typename, typename>
 class VerilatedTrace;
 class VerilatedTraceBaseC;
-class VerilatedTraceConfig;
 class VerilatedVar;
 class VerilatedVarNameMap;
 class VerilatedVcd;
 class VerilatedVcdC;
 class VerilatedVcdSc;
 class VlCovRegistry;
+class VlRtmd;
 
 //=========================================================================
 // Basic types
@@ -321,33 +320,38 @@ public:
 #endif
 };
 
-// Internals: VlFileLineDebug stores a SystemVerilog source code location. Used in
-// VlCoroutineHandle for debugging purposes, and to locate covergroup weight errors.
+// Internals: VlFileLine and VlFileLineDebug store a SystemVerilog source code location.
+// VlFileLineDebug is used in VlCoroutineHandle for debugging purposes, and to locate covergroup
+// weight errors.
 
-class VlFileLineDebug final {
+class VlFileLine final {
     // MEMBERS
-#ifdef VL_DEBUG
-    const char* m_filename = nullptr;  // Filename from sources, nullptr for unlnown
+    const char* m_filename = nullptr;  // Filename from sources, nullptr for unknown
     int m_lineno = 0;  // Line number from sources
-#endif
 
 public:
     // CONSTRUCTORS
-    VlFileLineDebug() = default;
-    VlFileLineDebug(const char* filename, int lineno)
-#ifdef VL_DEBUG
+    VlFileLine() = default;
+    VlFileLine(const char* filename, int lineno)
         : m_filename{filename}
-        , m_lineno{lineno}
-#endif
-    {
-    }
+        , m_lineno{lineno} {}
 
     // METHODS
-#ifdef VL_DEBUG
     const char* filename() const { return m_filename; }
     int lineno() const { return m_lineno; }
-#endif
+    void filename(const char* filename) { m_filename = filename; }
+    void lineno(int lineno) { m_lineno = lineno; }
 };
+
+#ifdef VL_DEBUG
+using VlFileLineDebug = VlFileLine;
+#else
+class VlFileLineDebug final {
+public:
+    VlFileLineDebug() = default;
+    VlFileLineDebug(const char*, int) {}
+};
+#endif
 
 class VlExecutionProfilerBase;
 
@@ -364,7 +368,9 @@ class VerilatedModel VL_NOT_FINAL {
     uint32_t m_id = ~0U;  // Unique id of the model in its context
 
 protected:
+    const VlRtmd* m_rtmdp = nullptr;  // The run time model descriptors, iff generated
     bool m_didInit = false;  // Time 0 initialization has run
+    bool m_didDump = false;  // Traced since the last evaluation
 
     explicit VerilatedModel(VerilatedContext& context);
     virtual ~VerilatedModel();
@@ -382,15 +388,15 @@ public:
     // Orders models in the order they were added to their context
     bool operator<(const VerilatedModel& other) const { return m_id < other.m_id; }
 
+    // Public, but for internal use only. Rtmd of this model, if any
+    const VlRtmd* rtmd() const { return m_rtmdp; }
+
 private:
     // The following are for use by Verilator internals only
     template <typename, typename>
     friend class VerilatedTrace;
     friend class VerilatedContext;
     friend class VerilatedEvalLoop;
-
-    // Run-time trace configuration requested by this model
-    virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
 
     // Entry points called by VerilatedEvalLoop
     virtual void evalBegin() = 0;
@@ -537,10 +543,6 @@ private:
     static constexpr uint64_t TIME_UNSET = ~0ULL;
 
 protected:
-    // TYPES
-    using traceBaseModelCb_t
-        = std::function<void(VerilatedTraceBaseC*, int, int)>;  // Type of traceBaseModel callbacks
-
     // MEMBERS
     // Slow path variables
     mutable VerilatedMutex m_mutex;  // Mutex for most s_s/s_ns members
@@ -611,7 +613,6 @@ protected:
         bool m_warnUnsatConstr = true;  // Warn on unsatisfied constraints
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
-        std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
         int m_stdoutFD;  // Duplicated stdout file descriptor
         int m_stderrFD;  // Duplicated stderr file descriptor
         int m_logFD;  // Log file descriptor
@@ -929,9 +930,6 @@ public:
     static constexpr size_t serialized1Size() VL_PURE { return sizeof(m_s); }
     void* serialized1Ptr() VL_MT_UNSAFE { return &m_s; }
 
-    // Internal: trace registration
-    void traceBaseModelCbAdd(traceBaseModelCb_t cb) VL_MT_SAFE;
-
     // Internal: Check magic number
     static void checkMagic(const VerilatedContext* contextp);
     void selfTestClearMagic() { m_magic = 0x2; }
@@ -1140,6 +1138,7 @@ class Verilated final {
     } t_s;
 
     friend struct VerilatedInitializer;
+    friend class VlDpiCall;  // Copies t_s between threads on DPI thread handoff
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(Verilated);

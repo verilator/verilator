@@ -50,6 +50,7 @@ set(HEADERS
     V3AstNodeDType.h
     V3AstNodeExpr.h
     V3AstNodeOther.h
+    V3AstNodeRtmd.h
     V3AstNodeStmt.h
     V3AstPatterns.h
     V3Begin.h
@@ -64,6 +65,7 @@ set(HEADERS
     V3Cfg.h
     V3Class.h
     V3Clean.h
+    V3Coalesce.h
     V3Combine.h
     V3Common.h
     V3Const.h
@@ -172,6 +174,7 @@ set(HEADERS
     V3Randomize.h
     V3Reloop.h
     V3Reorder.h
+    V3Rtmd.h
     V3Rtti.h
     V3Sampled.h
     V3Sched.h
@@ -195,7 +198,6 @@ set(HEADERS
     V3ThreadPool.h
     V3Timing.h
     V3Trace.h
-    V3TraceDecl.h
     V3Tristate.h
     V3Udp.h
     V3Undriven.h
@@ -240,6 +242,7 @@ set(COMMON_SOURCES
     V3CfgLiveVariables.cpp
     V3Class.cpp
     V3Clean.cpp
+    V3Coalesce.cpp
     V3Combine.cpp
     V3Common.cpp
     V3ConstPool.cpp
@@ -280,6 +283,7 @@ set(COMMON_SOURCES
     V3EmitCMain.cpp
     V3EmitCModel.cpp
     V3EmitCPch.cpp
+    V3EmitCRtmd.cpp
     V3EmitCSyms.cpp
     V3EmitMk.cpp
     V3EmitMkJson.cpp
@@ -353,6 +357,8 @@ set(COMMON_SOURCES
     V3Randomize.cpp
     V3Reloop.cpp
     V3Reorder.cpp
+    V3Rtmd.cpp
+    V3RtmdScoped.cpp
     V3Sampled.cpp
     V3Sched.cpp
     V3SchedAcyclic.cpp
@@ -379,7 +385,6 @@ set(COMMON_SOURCES
     V3ThreadPool.cpp
     V3Timing.cpp
     V3Trace.cpp
-    V3TraceDecl.cpp
     V3Tristate.cpp
     V3Udp.cpp
     V3Undriven.cpp
@@ -420,8 +425,8 @@ add_custom_command(
     COMMAND ${PYTHON3}
     ARGS
         ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef
-        V3AstNodeExpr.h --astdef V3AstNodeOther.h --astdef V3AstNodeStmt.h
-        --dfgdef V3DfgVertices.h --classes
+        V3AstNodeExpr.h --astdef V3AstNodeOther.h --astdef V3AstNodeRtmd.h
+        --astdef V3AstNodeStmt.h --dfgdef V3DfgVertices.h --classes
 )
 list(
     APPEND GENERATED_FILES
@@ -532,8 +537,8 @@ foreach(astgen_name ${ASTGENERATED_NAMES})
         COMMAND ${PYTHON3}
         ARGS
             ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef
-            V3AstNodeExpr.h --astdef V3AstNodeOther.h --astdef V3AstNodeStmt.h
-            --dfgdef V3DfgVertices.h ${astgen_name}.cpp
+            V3AstNodeExpr.h --astdef V3AstNodeOther.h --astdef V3AstNodeRtmd.h
+            --astdef V3AstNodeStmt.h --dfgdef V3DfgVertices.h ${astgen_name}.cpp
     )
     list(APPEND GENERATED_FILES ${astgen_name}__gen.cpp)
 endforeach()

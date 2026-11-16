@@ -437,6 +437,11 @@ class DelayedRecord final : public VNVisitorConst, public DelayedBase {
                 lhsp = selp->fromp();
             } else if (const AstStructSel* const selp = VN_CAST(lhsp, StructSel)) {
                 lhsp = selp->fromp();
+            } else if (const AstCMethodHard* const callp = VN_CAST(lhsp, CMethodHard)) {
+                // Slice of an unpacked array, with constant bounds
+                UASSERT_OBJ(callp->method() == VCMethod::ARRAY_SLICE_REF, callp,
+                            "Unexpected method as target of NBA");
+                lhsp = callp->fromp();
             } else {
                 lhsp->v3fatalSrc("Unexpected LHS expression of NBA");
             }
@@ -526,7 +531,9 @@ class DelayedRecord final : public VNVisitorConst, public DelayedBase {
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_vtxp);
         FuncVertex* const vtxp = funcVtxp(nodep);
-        if (nodep->dpiImportPrototype() && nodep->dpiContext()) addEdge(vtxp, m_dpiExportCallVtxp);
+        // Context imports may call any export. Their wrappers invoke the import prototypes
+        // indirectly through runtime helpers, so record the callback edge at the wrapper.
+        if (nodep->dpiImportWrapper() && nodep->dpiContext()) addEdge(vtxp, m_dpiExportCallVtxp);
         if (nodep->dpiExportImpl()) addEdge(m_dpiExportCallVtxp, vtxp);
         m_vtxp = vtxp;
         iterateChildrenConst(nodep);
@@ -1116,6 +1123,9 @@ class DelayedRewrite final : public VNDeleter, public DelayedBase {
                 nodep = selp->fromp();
             } else if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
                 nodep = selp->fromp();
+            } else if (const AstCMethodHard* const callp = VN_CAST(nodep, CMethodHard)) {
+                // Slice of an unpacked array, bounds are constant so nothing to capture
+                nodep = callp->fromp();
             } else {
                 nodep->v3fatalSrc("Unexpected LHS expression of NBA");
             }

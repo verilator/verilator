@@ -33,10 +33,10 @@ gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" \
 
 if [ "$(jq length "${COMMENTS_FILE}")" -eq 0 ]; then
   # Nothing to say, so post nothing and mark the pull request as passing
-  gh pr edit "${PR_NUMBER}" --add-label "pr: claude-pass"
+  gh pr edit "${PR_NUMBER}" --add-label "pr-pass: claude"
 else
   # Clear any mark left by an earlier review
-  gh pr edit "${PR_NUMBER}" --remove-label "pr: claude-pass"
+  gh pr edit "${PR_NUMBER}" --remove-label "pr-pass: claude"
   # Add comments on files, not on the review as a whole
   jq '.[0].body |= "Consider the following AI review, which may be inaccurate. Click \"Resolve conversation\" on each item in GitHub and avoid commentary that only describes how it was resolved. When you think the pull request is ready to merge, and all tests are passing, make a comment to \"Request a human review or merge\".\n\n" + .
       | {event: "COMMENT", comments: .}' "${COMMENTS_FILE}" \

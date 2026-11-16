@@ -47,7 +47,4 @@ for line in sys.stdin:
     line = re.sub(r'(#line \d+ ".*)_pretmp', r'\1', line)
     # Fix 'register' storage class specifier is deprecated and incompatible with C++17
     line = re.sub(r'register ', '', line)
-    # Fix flex 2.6.5 renaming C-mode lexer's yy_flex_debug to yyflexdebug
-    if sys.argv[1] == 'V3PreLex':
-        line = re.sub(r'\byyflexdebug\b', 'yy_flex_debug', line)
     print(line, end='')

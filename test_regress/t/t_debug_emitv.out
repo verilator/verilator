@@ -1552,6 +1552,7 @@ module t;
             obj.delay_caller();
         end
     end
+    Iface bound_iface ();
     enum logic [2:0] {
         ZERO = 3'h0,
         ONE = 3'h1

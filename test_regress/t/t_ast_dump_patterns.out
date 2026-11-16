@@ -38,6 +38,7 @@ AST patterns with depth 1
             3 (AND (VARREF):a/a (CONST #A):b/b):a/a
             3 (ARRAYSEL (VARREF):(w64)u[0:0] (CONST ZERO):a/a):b/b
             3 (ARRAYSEL (VARREF):(w64)u[1:0] (CONST #A):a/a):b/b
+            3 (NEQ _:a/b _:a/b):a/1
             2 (ADD _:a/a (VARREF):a/a):a/a
             2 (CCALL [(VARREF):(w64)u[0:0], (VARREF):(w64)u[0:0]]):a/a
             2 (CCALL [(VARREF):(w64)u[0:0]]):a/1
@@ -47,7 +48,6 @@ AST patterns with depth 1
             2 (CCAST _:a/1):b/b
             2 (CONST #A):a/1
             2 (GT (CONST #A):a/a (VARREF):a/a):a/1
-            2 (NEQ _:a/b _:a/b):a/1
             2 (NOT _:a/1):a/1
             2 (OR _:a/a _:a/a):a/b
             2 (REDXOR (VARREF):a/b):a/1
@@ -57,11 +57,11 @@ AST patterns with depth 1
             2 (TRIGGERED (VARREF):(w64)u[1:0]):a/1
             1 (ARRAYSEL (VARREF):(w64)u[0:0] (VARREF):a/a):b/b
             1 (ARRAYSEL (VARREF):(w64)u[1:0] (VARREF):a/a):b/b
+            1 (CCAST _:a/1):a/b
             1 (CCAST _:a/b):a/b
             1 (CCAST _:a/b):c/c
             1 (CRESET):(w64)u[0:0]
             1 (CRESET):(w64)u[1:0]
-            1 (NEQ _:a/b _:a/b):a/c
             1 (TRIGGERED (VARREF):(w64)u[0:0]):a/1
 
 AST patterns with depth 2
@@ -90,12 +90,12 @@ AST patterns with depth 2
             4 (REDXOR (NEGATE _:a/1):a/a):b/1
             4 (SHIFTL (CCAST _:a/a):b/b (CONST #A):a/a):b/b
             4 (SHIFTL (REDXOR _:a/b):a/1 (CONST #A):a/a):a/a
+            3 (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1
             2 (ADD (CCAST (CONST #A):a/a):a/a (VARREF):a/a):a/a
             2 (AND (CONST #A):a/a (NOT _:a/1):a/1):a/1
             2 (AND (CONST #A):a/a (OR _:a/a _:a/a):a/b):a/b
             2 (CCAST (CCAST (VARREF):a/1):a/1):b/b
             2 (CCAST (SHIFTR _:a/a (CONST #A):b/b):a/a):b/1
-            2 (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1
             2 (NOT (CCAST _:a/1):a/1):a/1
             2 (OR (AND (CONST #A):a/a _:a/a):a/a (CCAST _:b/1):a/a):a/a
             2 (OR (OR _:a/a _:a/a):a/a (OR _:a/a _:a/b):a/c):a/d
@@ -120,12 +120,12 @@ AST patterns with depth 2
             1 (CCAST (CCALL [(VARREF):(w64)u[0:0]]):a/1):a/1
             1 (CCAST (CCALL [(VARREF):(w64)u[1:0]]):a/1):a/1
             1 (CCAST (CCAST _:a/b):a/b):c/c
+            1 (CCAST (NEQ _:a/b _:a/b):a/1):a/c
             1 (CCAST (OR _:a/a _:a/b):a/c):a/c
-            1 (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/c
             1 (OR (SHIFTL _:a/1 (CONST #A):a/a):a/a (NEQ _:a/b _:a/b):a/1):a/c
             1 (OR (SHIFTL _:a/b (CONST #A):a/a):a/a (OR _:a/a _:a/1):a/b):a/c
+            1 (SHIFTL (CCAST _:a/1):a/b (CONST #A):a/a):a/a
             1 (SHIFTL (NEQ _:a/b _:a/b):a/1 (CONST #A):a/a):a/a
-            1 (SHIFTL (NEQ _:a/b _:a/b):a/c (CONST #A):a/a):a/a
 
 AST patterns with depth 3
            18 (AND (CONST #A):a/a (SHIFTR (CCAST (VARREF):a/b):a/b (CONST #A):a/a):a/1):a/1
@@ -178,15 +178,16 @@ AST patterns with depth 3
             1 (AND (CONST #A):a/a (CCAST (SHIFTR _:b/b (CONST #A):a/a):b/b):a/1):a/1
             1 (AND (CONST #A):a/a (CCAST (SHIFTR _:b/b (CONST #B):a/a):b/b):a/1):a/1
             1 (CCAST (CCAST (OR _:a/a _:a/b):a/c):a/c):d/d
+            1 (CCAST (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1):a/c
             1 (CCAST (OR (SHIFTL _:a/b (CONST #A):a/a):a/a (OR _:a/a _:a/1):a/b):a/c):a/c
             1 (NOT (CCAST (CCALL [(VARREF):(w64)u[0:0]]):a/1):a/1):a/1
             1 (NOT (CCAST (CCALL [(VARREF):(w64)u[1:0]]):a/1):a/1):a/1
             1 (OR (AND (CONST #A):a/a (ARRAYSEL (VARREF):(w64)u[0:0] (CONST ZERO):b/b):a/a):a/a (CCAST (CCAST (VARREF):b/1):b/1):a/a):a/a
             1 (OR (AND (CONST #A):a/a (ARRAYSEL (VARREF):(w64)u[1:0] (CONST #B):b/b):a/a):a/a (CCAST (CCAST (VARREF):b/1):b/1):a/a):a/a
+            1 (OR (SHIFTL (CCAST _:a/1):a/b (CONST #A):a/a):a/a (OR (SHIFTL _:a/1 (CONST #B):a/a):a/a (NEQ _:a/c _:a/c):a/1):a/b):a/c
             1 (OR (SHIFTL (NEQ _:a/b _:a/b):a/1 (CONST #A):a/a):a/a (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1):a/c
-            1 (OR (SHIFTL (NEQ _:a/b _:a/b):a/c (CONST #A):a/a):a/a (OR (SHIFTL _:a/1 (CONST #B):a/a):a/a (NEQ _:a/b _:a/b):a/1):a/c):a/b
+            1 (SHIFTL (CCAST (NEQ _:a/b _:a/b):a/1):a/c (CONST #A):a/a):a/a
             1 (SHIFTL (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1 (CONST #A):a/a):a/a
-            1 (SHIFTL (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/c (CONST #A):a/a):a/a
 
 AST patterns with depth 4
            18 (CCAST (AND (CONST #A):a/a (SHIFTR (CCAST (VARREF):a/b):a/b (CONST #A):a/a):a/1):a/1):a/1
@@ -239,7 +240,8 @@ AST patterns with depth 4
             1 (AND (CONST #A):a/a (NOT (CCAST (CCALL [(VARREF):(w64)u[0:0]]):a/1):a/1):a/1):a/1
             1 (AND (CONST #A):a/a (NOT (CCAST (CCALL [(VARREF):(w64)u[1:0]]):a/1):a/1):a/1):a/1
             1 (CCAST (CCAST (OR (SHIFTL _:a/b (CONST #A):a/a):a/a (OR _:a/a _:a/1):a/b):a/c):a/c):d/d
-            1 (CCAST (OR (SHIFTL (NEQ _:a/b _:a/b):a/c (CONST #A):a/a):a/a (OR (SHIFTL _:a/1 (CONST #B):a/a):a/a (NEQ _:a/b _:a/b):a/1):a/c):a/b):a/b
+            1 (CCAST (OR (SHIFTL (CCAST _:a/1):a/b (CONST #A):a/a):a/a (OR (SHIFTL _:a/1 (CONST #B):a/a):a/a (NEQ _:a/c _:a/c):a/1):a/b):a/c):a/c
+            1 (OR (SHIFTL (CCAST (NEQ _:a/b _:a/b):a/1):a/c (CONST #A):a/a):a/a (OR (SHIFTL (NEQ _:a/b _:a/b):a/1 (CONST #B):a/a):a/a (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1):a/c):a/b
             1 (OR (SHIFTL (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1 (CONST #A):a/a):a/a (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1):a/c
-            1 (OR (SHIFTL (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/c (CONST #A):a/a):a/a (OR (SHIFTL (NEQ _:a/b _:a/b):a/1 (CONST #B):a/a):a/a (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1):a/c):a/b
+            1 (SHIFTL (CCAST (NEQ (CCAST (VARREF):a/b):a/b (CCAST (VARREF):a/b):a/b):a/1):a/c (CONST #A):a/a):a/a
 

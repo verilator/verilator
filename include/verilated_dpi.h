@@ -29,6 +29,11 @@
 #include "verilatedos.h"
 
 #include "verilated.h"  // Also presumably included by caller
+
+#if VM_TIMING
+#include "verilated_dpi_call.h"
+#endif
+
 #include "verilated_sym_props.h"
 
 #include "svdpi.h"
@@ -106,6 +111,146 @@ inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, const QData ld) VL_MT_SAFE {
     owp[1].aval = lwp[1];
     owp[1].bval = 0;
 }
+
+namespace VerilatedDpi {
+
+// DPI imported function being executed on this thread, defined in verilated_dpi.cpp
+extern thread_local VlFileLine t_fileline;
+// SV process of the active import, including synchronous calls made by an exported task
+extern thread_local VlProcessRef t_process;
+
+template <typename Callable, typename... Args>
+decltype(auto) callImportFunction(VlProcessRef process, const char* const filename,
+                                  const int lineno, Callable&& call, Args&&... args) {
+    if (VL_UNLIKELY(process)) {
+        VL_RESTORER_COPY(t_process);
+        t_process = std::move(process);
+        VL_RESTORER(t_fileline);
+        t_fileline.filename(filename);
+        t_fileline.lineno(lineno);
+        return call(std::forward<Args>(args)...);
+    }
+    VL_RESTORER(t_fileline);
+    t_fileline.filename(filename);
+    t_fileline.lineno(lineno);
+    return call(std::forward<Args>(args)...);
+}
+
+template <typename Callable, typename... Args>
+void callImportTask(VlProcessRef process, Callable&& call, Args&&... args) {
+    static_assert(std::is_same<decltype(call(std::forward<Args>(args)...)), int>::value,
+                  "DPI imported tasks should have 'int' return type (IEEE 1800-2023 35.5.4)");
+    // A new task call chain may be entered by evaluating another model from an import function.
+    VL_RESTORER(t_fileline);
+    t_fileline.filename(nullptr);
+    t_fileline.lineno(0);
+    if (VL_UNLIKELY(process)) {
+        VL_RESTORER_COPY(t_process);
+        t_process = std::move(process);
+        (void)call(std::forward<Args>(args)...);
+        return;
+    }
+    (void)call(std::forward<Args>(args)...);
+}
+
+#if VM_TIMING
+template <typename Callable, typename... Args>
+auto callExportFunction(Callable&& call, Args&&... args)
+    -> decltype(call(VlProcessRef{}, std::forward<Args>(args)...)) {
+    // Direct C callers have no importing SV process, so create an independent process.
+    VlProcessRef process = t_process;
+    if (!process) process = std::make_shared<VlProcess>();
+    return call(std::move(process), std::forward<Args>(args)...);
+}
+#endif
+
+template <typename Callable, typename... Args>
+auto callExportFunction(Callable&& call, Args&&... args)
+    -> decltype(call(std::forward<Args>(args)...)) {
+    return call(std::forward<Args>(args)...);
+}
+
+#if VM_TIMING
+
+// Resume the DPI call once the exported task completes
+inline VlCoroutine resumeDpiCallAfter(VlCoroutine coro, VlDpiCall* callp) {
+    // Notify the worker thread through callp in case the process was killed.
+    struct VlAbortNotify final {
+        VlDpiCall* callp;
+
+        ~VlAbortNotify() {
+            if (callp) callp->markAborted();
+        }
+    } notify{callp};
+    co_await coro;
+
+    notify.callp = nullptr;
+    callp->handoffWorker();
+}
+
+template <typename Callable, typename... Args>
+VlCoroutine awaitImportTask(VlProcessRef process, Callable&& call, Args&&... args) {
+    VlDpiCall dpiCall{std::move(process), [&]() {
+                          callImportTask(dpiCall.process(), std::forward<Callable>(call),
+                                         std::forward<Args>(args)...);
+                      }};
+    dpiCall.handoffWorker();
+    co_await dpiCall;
+}
+
+#endif
+
+static inline bool exportAborted() {
+#if VM_TIMING
+    VlDpiCall* const callp = VlDpiCall::current();
+    return callp && callp->exportAborted();
+#else
+    return false;
+#endif
+}
+
+#if VM_TIMING
+template <typename Callable, typename... Args>
+void callExportTaskImpl(std::true_type, Callable&& call, Args&&... args) {
+    // An exported task with timing is a coroutine. Suspend the DPI call until it completes.
+    VlDpiCall* const callp = VlDpiCall::current();
+    if (VL_UNLIKELY(!callp)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "DPI export with timing invoked outside of a DPI import thread");
+    }
+
+    // Call returns on the first delay or event control
+    VlCoroutine coro{
+        callExportFunction(std::forward<Callable>(call), std::forward<Args>(args)...)};
+    if (!coro.await_ready()) {
+        resumeDpiCallAfter(std::move(coro), callp);
+        VlDpiCall::stopWorker();
+    }
+}
+
+template <typename Callable, typename... Args>
+void callExportTaskImpl(std::false_type, Callable&& call, Args&&... args) {
+    callExportFunction(std::forward<Callable>(call), std::forward<Args>(args)...);
+}
+#endif
+
+template <typename Callable, typename... Args>
+void callExportTask(Callable&& call, Args&&... args) {
+    if (t_fileline.filename()) {
+        VL_FATAL_MT(t_fileline.filename(), t_fileline.lineno(), "",
+                    "DPI exported task called from function context (IEEE 1800-2023 35.8)");
+    }
+#if VM_TIMING
+    using IsCoroutine = std::is_same<decltype(callExportFunction(std::forward<Callable>(call),
+                                                                 std::forward<Args>(args)...)),
+                                     VlCoroutine>;
+    callExportTaskImpl(IsCoroutine{}, std::forward<Callable>(call), std::forward<Args>(args)...);
+#else
+    callExportFunction(std::forward<Callable>(call), std::forward<Args>(args)...);
+#endif
+}
+
+}  // namespace VerilatedDpi
 
 //======================================================================
 
