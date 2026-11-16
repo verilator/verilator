@@ -1698,7 +1698,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
             const bool hasElse = skipLeadingIgnorableStmt(ifp->elsesp());
             AstNode* resetsp = hasElse ? ifp->thensp() : nullptr;
             AstNode* commitp = hasElse ? ifp->elsesp() : emptyResetBodyp(ifp);
-            // 'if (en) commit', or an arm that holds the state: an enable without reset
+            // 'if (en) commit', or an arm that holds a register: an enable without reset
             const bool enableOnly = !commitp || (hasElse && enabledCommitp(ifp) != ifp);
             if (enableOnly) {
                 resetsp = nullptr;

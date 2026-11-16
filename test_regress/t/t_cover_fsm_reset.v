@@ -590,6 +590,24 @@ module fsm_enable (
     else hold_cond_q <= hold_cond_q;
   end
 
+  // An else that holds another register
+  state_t hold_other_q;
+  state_t hold_other_d;
+  always_comb begin
+    hold_other_d = hold_other_q;
+    case (hold_other_q)
+      S0: hold_other_d = S1;
+      S1: hold_other_d = S2;
+      S2: hold_other_d = S0;
+      default: hold_other_d = S0;
+    endcase
+  end
+  logic hold_other_x;
+  always_ff @(posedge clk) begin
+    if (en) hold_other_q <= hold_other_d;
+    else hold_other_x <= hold_other_x;
+  end
+
   // Not enables, or unsupported ones, so no FSM
 
   // An enabled commit whose first statement is not the state's: only the first is matched
@@ -671,7 +689,7 @@ module fsm_enable (
     end
   end
 
-  // A reset arm whose first statement holds another register is still a reset
+  // A reset arm of several statements is not a hold, even if the first holds a register
   state_t reset_hold_q;
   state_t reset_hold_d;
   always_comb begin
