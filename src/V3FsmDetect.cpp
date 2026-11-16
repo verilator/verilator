@@ -1078,6 +1078,18 @@ class FsmDetectVisitor final : public VNVisitorConst {
         return lhsp && rhsp && lhsp->varScopep() == rhsp->varScopep();
     }
 
+    // Whether a statement after 'nodep' in its list may write 'stateVscp'
+    static bool writesStateAfter(AstNode* nodep, const AstVarScope* stateVscp) {
+        for (AstNode* const restp : VNList<AstNode>{nodep->nextp()}) {
+            if (restp->exists([stateVscp](const AstVarRef* refp) {
+                    return refp->access().isWriteOrRW() && refp->varScopep() == stateVscp;
+                })) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Of 'if (en) commit', or an if/else whose other arm is 'x = x', return the commit,
     // through any depth of enables; else return nodep.  A commit of several statements,
     // e.g. V3LiftExpr's form of 'state = c ? next : state', is returned as its list.
@@ -1157,8 +1169,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
 
     // Match 'state = reset ? CONST : next', an active high reset folded into the commit,
     // or active low 'state = reset_n ? next : CONST', with or without an enable on next.
-    // An enable on the reset arm gives the same arcs, to CONST from every state.  Or match
-    // 'state = en ? next : state', an enable without reset, leaving 'resetValuep' null.
+    // An enable on the reset arm gives the same arcs, to CONST from every state.
     static AstNodeAssign* condStateVarAssign(AstNode* stmtsp, AstVarScope*& stateVscp,
                                              AstVarScope*& fromVscp, AstNodeExpr*& condp,
                                              AstNodeExpr*& resetValuep, FsmStateValue& resetValue,
@@ -1168,12 +1179,6 @@ class FsmDetectVisitor final : public VNVisitorConst {
         AstNodeAssign* const assp = condStateAssign(stmtsp, lhsp, condp, resetValuep, nextp);
         if (!assp) return nullptr;
         stateVscp = lhsp->varScopep();
-        if (const AstVarRef* const enabledRefp
-            = VN_CAST(enabledArmp(resetValuep, nextp, lhsp), VarRef)) {
-            resetValuep = nullptr;
-            fromVscp = enabledRefp->varScopep();
-            return assp;
-        }
         activeLow = !VN_IS(nextp, VarRef) && isSimpleResetCond(condp);
         if (activeLow) std::swap(resetValuep, nextp);
         AstVarRef* const nextRefp = VN_CAST(nextp, VarRef);
@@ -1729,18 +1734,10 @@ class FsmDetectVisitor final : public VNVisitorConst {
             // A commit of several statements must not write the state again, as only its first
             // is modeled: neither after the matched assignment nor after an enable 'if' at the
             // head of the commit
-            const auto writesStateAfter = [stateVscp](AstNode* nodep) {
-                for (AstNode* const restp : VNList<AstNode>{nodep->nextp()}) {
-                    if (restp->exists([stateVscp](const AstVarRef* refp) {
-                            return refp->access().isWriteOrRW() && refp->varScopep() == stateVscp;
-                        })) {
-                        return true;
-                    }
-                }
+            if (VN_IS(enCommitp, NodeAssign) && writesStateAfter(enCommitp, stateVscp)) {
                 return false;
-            };
-            if (VN_IS(enCommitp, NodeAssign) && writesStateAfter(enCommitp)) return false;
-            if (enCommitp != elseNodep && writesStateAfter(elseNodep)) return false;
+            }
+            if (enCommitp != elseNodep && writesStateAfter(elseNodep, stateVscp)) return false;
             if (!emptyResetBranch && resetStateVscp != stateVscp) return false;
             if (!enableOnly) {
                 cand.resetCond() = describeResetCond(ifp->condp(), activeLow);
@@ -1754,12 +1751,11 @@ class FsmDetectVisitor final : public VNVisitorConst {
             if (AstNodeAssign* const assp = condStateVarAssign(
                     stmtsp, stateVscp /*ref*/, nextVscp /*ref*/, resetCondp /*ref*/,
                     resetValuep /*ref*/, resetValue /*ref*/, activeLow /*ref*/)) {
-                if (resetValuep) {
-                    cand.resetArcs().emplace_back(resetValue, assp, resetValuep);
-                    cand.resetCond() = describeResetCond(resetCondp, activeLow);
-                    cand.hasResetCond(cand.resetCond().varScopep != nullptr);
-                }
-            } else if (!nodeStateVarAssign(nodep, stateVscp, nextVscp)) {
+                cand.resetArcs().emplace_back(resetValue, assp, resetValuep);
+                cand.resetCond() = describeResetCond(resetCondp, activeLow);
+                cand.hasResetCond(cand.resetCond().varScopep != nullptr);
+            } else if (!enabledCondAssign(stmtsp, stateVscp, nextVscp)
+                       && !nodeStateVarAssign(nodep, stateVscp, nextVscp)) {
                 return false;
             }
         }
