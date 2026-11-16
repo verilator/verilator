@@ -2898,9 +2898,9 @@ public:
                 = new AstCExpr{flp, AstCExpr::Pure{}, "vlSymsp->_vm_contextp__->assertOn()", 1};
             AstNodeExpr* const condp = new AstLogAnd{flp, assertOnp, pendingp};
             // The action block belongs to the directive (IEEE 1800-2023 16.14.6)
-            AstNode* firep;
+            AstNodeStmt* firep;
             AstAssert* const assertNodep = VN_CAST(assertp, Assert);
-            if (AstNode* const failsp = assertNodep ? assertNodep->failsp() : nullptr) {
+            if (AstNodeStmt* const failsp = assertNodep ? assertNodep->failsp() : nullptr) {
                 firep = failsp->cloneTree(true);
             } else {
                 AstDisplay* const dispp
