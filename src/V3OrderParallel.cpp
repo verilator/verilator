@@ -21,7 +21,6 @@
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Ast.h"
-#include "V3AstUserAllocator.h"
 #include "V3Control.h"
 #include "V3Error.h"
 #include "V3ExecGraph.h"
@@ -30,10 +29,12 @@
 #include "V3OrderCFuncEmitter.h"
 #include "V3OrderInternal.h"
 #include "V3OrderMTaskGraph.h"
+#include "V3VNUserAllocator.h"
 
 #include <map>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -59,7 +60,7 @@ static void checkDataHazards(OrderMTaskGraph& mTaskGraph) {
 
     // AstVarScope::user1 -> VarInfo instance for the variable (via 'varInfos')
     const VNUser1InUse user1InUse;
-    AstUser1Allocator<AstVarScope, VarInfo> varInfos;
+    VNUser1Allocator<AstVarScope, VarInfo> varInfos;
 
     // The variables accessed (in enumerated order, for stability).
     std::vector<AstVarScope*> vscps;
@@ -176,9 +177,12 @@ static std::unique_ptr<OrderMTaskGraph> partition(OrderMoveGraph& moveGraph) {
 
 class DpiThreadsVisitor final : public VNVisitorConst {
     int m_threads = 1;  // Max number of threads used by this mtask
+    std::unordered_set<const AstCFunc*> m_visitedps;  // Functions already visited
 
     // METHODS
     void visit(AstCFunc* nodep) override {
+        // Visit once, as functions can be recursive
+        if (!m_visitedps.emplace(nodep).second) return;
         m_threads = std::max(m_threads, V3Control::getHierWorkers(nodep->cname()));
         iterateChildrenConst(nodep);
     }

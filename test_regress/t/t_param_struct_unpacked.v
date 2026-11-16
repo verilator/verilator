@@ -201,6 +201,17 @@ module t;
   ) u_core_pkg ();
 
   initial begin
+    // Comparisons
+    begin
+      localparam bit EQ = CFG_LOCAL == cfg_pkg::CFG_PKG;
+      localparam bit NEQ = CFG_LOCAL != CFGS[2];
+      localparam bit CASE_EQ = CFG_LOCAL === CFGS[2];
+      localparam bit CASE_NEQ = CFG_LOCAL !== cfg_pkg::CFG_PKG;
+      `checkd(EQ, 1'b0);
+      `checkd(NEQ, 1'b0);
+      `checkd(CASE_EQ, 1'b1);
+      `checkd(CASE_NEQ, 1'b1);
+    end
     #1;
     $write("*-* All Finished *-*\n");
     $finish;

@@ -345,6 +345,7 @@ public:
     // as the parser errors etc generally make more sense pointing at the last parse point
     int lineno() const VL_MT_SAFE { return lastLineno(); }
     string source() const VL_MT_SAFE;
+    string sourceNextLine() const VL_MT_SAFE;
     string sourcePrefix(int toColumn) const VL_MT_SAFE;
     string prettySource() const VL_MT_SAFE;  // Source, w/stripped unprintables and newlines
     FileLine* parent() const VL_MT_SAFE { return m_parent; }
@@ -427,8 +428,7 @@ public:
     // OPERATORS
     void v3errorEnd(std::ostringstream& str, const string& extra = "")
         VL_RELEASE(V3Error::s().m_mutex);
-    void v3errorEndFatal(std::ostringstream& str) VL_ATTR_NORETURN
-        VL_RELEASE(V3Error::s().m_mutex) {
+    [[noreturn]] void v3errorEndFatal(std::ostringstream& str) VL_RELEASE(V3Error::s().m_mutex) {
         v3errorEnd(str);
         assert(0);  // LCOV_EXCL_LINE
         VL_UNREACHABLE;

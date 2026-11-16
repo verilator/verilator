@@ -332,4 +332,6 @@ BRDA:360,0,else,11
 DA:361,11
 BRF:184
 BRH:39
+LF:146
+LH:70
 end_of_record

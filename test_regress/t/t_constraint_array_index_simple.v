@@ -11,7 +11,7 @@
 
 // Comprehensive test that item.index in array reduction constraints is supported
 
-// Test 1: Basic item.index with sum
+// Test: Basic item.index with sum
 class Test1_BasicSum;
   rand int data[5];
 
@@ -21,7 +21,7 @@ class Test1_BasicSum;
   }
 endclass
 
-// Test 2: item.index with arithmetic
+// Test: item.index with arithmetic
 class Test2_IndexTimesTwo;
   rand int data[5];
 
@@ -31,7 +31,7 @@ class Test2_IndexTimesTwo;
   }
 endclass
 
-// Test 3: item + item.index
+// Test: item + item.index
 class Test3_ItemPlusIndex;
   rand int data[3];
 
@@ -41,7 +41,7 @@ class Test3_ItemPlusIndex;
   }
 endclass
 
-// Test 4: item.index with product
+// Test: item.index with product
 class Test4_Product;
   rand int data[4];
 
@@ -51,7 +51,7 @@ class Test4_Product;
   }
 endclass
 
-// Test 5: item.index with conditional
+// Test: item.index with conditional
 class Test5_Conditional;
   rand int data[6];
 
@@ -61,28 +61,28 @@ class Test5_Conditional;
   }
 endclass
 
-// Test 6: item.index with XOR
+// Test: item.index with XOR
 class Test6_Xor;
   rand int data[4];
 
   constraint c {data.xor() with (item.index) >= 0;}
 endclass
 
-// Test 7: item.index with AND
+// Test: item.index with AND
 class Test7_And;
   rand int data[4];
 
   constraint c {data.and() with (item + item.index) != 0;}
 endclass
 
-// Test 8: item.index with OR
+// Test: item.index with OR
 class Test8_Or;
   rand int data[4];
 
   constraint c {data.or() with (item - item.index) >= -10;}
 endclass
 
-// Test 9: Complex expression with item.index
+// Test: Complex expression with item.index
 class Test9_Complex;
   rand int data[4];
 
@@ -92,7 +92,7 @@ class Test9_Complex;
   }
 endclass
 
-// Test 10: Dynamic array
+// Test: Dynamic array
 class Test10_Dynamic;
   rand int data[];
 
@@ -107,7 +107,7 @@ class Test10_Dynamic;
   }
 endclass
 
-// Test 11: Larger array
+// Test: Larger array
 class Test11_LargerArray;
   rand int data[10];
 
@@ -116,7 +116,7 @@ class Test11_LargerArray;
   }
 endclass
 
-// Test 12: item.index with negative values
+// Test: item.index with negative values
 class Test12_Negative;
   rand int data[5];
 
@@ -125,14 +125,14 @@ class Test12_Negative;
   }
 endclass
 
-// Test 13: Just item (no index) - baseline test
+// Test: Just item (no index) - baseline test
 class Test13_JustItem;
   rand int data[3];
 
   constraint c {data.sum() with (item) <= 30;}
 endclass
 
-// Test 14: item.index only (no item reference)
+// Test: item.index only (no item reference)
 class Test14_IndexOnly;
   rand int data[5];
 
@@ -141,7 +141,7 @@ class Test14_IndexOnly;
   }
 endclass
 
-// Test 15: Position-dependent weighting
+// Test: Position-dependent weighting
 class Test15_PositionWeight;
   rand int data[6];
 
@@ -152,7 +152,7 @@ class Test15_PositionWeight;
   }
 endclass
 
-// Test 16: Alternating pattern based on index
+// Test: Alternating pattern based on index
 class Test16_AlternatingPattern;
   rand int data[8];
 
@@ -164,7 +164,7 @@ class Test16_AlternatingPattern;
   }
 endclass
 
-// Test 17: Index-based bounds
+// Test: Index-based bounds
 class Test17_IndexBounds;
   rand int data[5];
 
@@ -175,7 +175,7 @@ class Test17_IndexBounds;
   }
 endclass
 
-// Test 18: Progressive constraint
+// Test: Progressive constraint
 class Test18_Progressive;
   rand int data[6];
 
@@ -186,7 +186,7 @@ class Test18_Progressive;
   }
 endclass
 
-// Test 19: Distance from middle
+// Test: Distance from middle
 class Test19_DistanceFromMiddle;
   rand int data[10];
 
@@ -197,7 +197,7 @@ class Test19_DistanceFromMiddle;
   }
 endclass
 
-// Test 20: First half vs second half
+// Test: First half vs second half
 class Test20_HalfConstraint;
   rand int data[8];
 
@@ -208,7 +208,7 @@ class Test20_HalfConstraint;
   }
 endclass
 
-// Test 21: Modulo patterns
+// Test: Modulo patterns
 class Test21_ModuloPattern;
   rand int data[12];
 
@@ -219,7 +219,7 @@ class Test21_ModuloPattern;
   }
 endclass
 
-// Test 22: Index power
+// Test: Index power
 class Test22_IndexPower;
   rand int data[5];
 
@@ -230,7 +230,7 @@ class Test22_IndexPower;
   }
 endclass
 
-// Test 23: Boundary elements
+// Test: Boundary elements
 class Test23_BoundaryElements;
   rand int data[10];
 
@@ -241,7 +241,7 @@ class Test23_BoundaryElements;
   }
 endclass
 
-// Test 24: Cascading constraint
+// Test: Cascading constraint
 class Test24_CascadingConstraint;
   rand int data[7];
 
@@ -280,122 +280,122 @@ module t;
     Test24_CascadingConstraint t24;
     int i;
 
-    // Test 1: Basic sum
+    // Test: Basic sum
     t1 = new;
     i = t1.randomize();
     `checkd(i, 1)
 
-    // Test 2: Index times two
+    // Test: Index times two
     t2 = new;
     i = t2.randomize();
     `checkd(i, 1)
 
-    // Test 3: Item plus index
+    // Test: Item plus index
     t3 = new;
     i = t3.randomize();
     `checkd(i, 1)
 
-    // Test 4: Product
+    // Test: Product
     t4 = new;
     i = t4.randomize();
     `checkd(i, 1)
 
-    // Test 5: Conditional
+    // Test: Conditional
     t5 = new;
     i = t5.randomize();
     `checkd(i, 1)
 
-    // Test 6: XOR
+    // Test: XOR
     t6 = new;
     i = t6.randomize();
     `checkd(i, 1)
 
-    // Test 7: AND
+    // Test: AND
     t7 = new;
     i = t7.randomize();
     `checkd(i, 1)
 
-    // Test 8: OR
+    // Test: OR
     t8 = new;
     i = t8.randomize();
     `checkd(i, 1)
 
-    // Test 9: Complex
+    // Test: Complex
     t9 = new;
     i = t9.randomize();
     `checkd(i, 1)
 
-    // Test 10: Dynamic array
+    // Test: Dynamic array
     t10 = new;
     i = t10.randomize();
     `checkd(i, 1)
 
-    // Test 11: Larger array
+    // Test: Larger array
     t11 = new;
     i = t11.randomize();
     `checkd(i, 1)
 
-    // Test 12: Negative
+    // Test: Negative
     t12 = new;
     i = t12.randomize();
     `checkd(i, 1)
 
-    // Test 13: Just item
+    // Test: Just item
     t13 = new;
     i = t13.randomize();
     `checkd(i, 1)
 
-    // Test 14: Index only
+    // Test: Index only
     t14 = new;
     i = t14.randomize();
     `checkd(i, 1)
 
-    // Test 15: Position weight
+    // Test: Position weight
     t15 = new;
     i = t15.randomize();
     `checkd(i, 1)
 
-    // Test 16: Alternating pattern
+    // Test: Alternating pattern
     t16 = new;
     i = t16.randomize();
     `checkd(i, 1)
 
-    // Test 17: Index bounds
+    // Test: Index bounds
     t17 = new;
     i = t17.randomize();
     `checkd(i, 1)
 
-    // Test 18: Progressive
+    // Test: Progressive
     t18 = new;
     i = t18.randomize();
     `checkd(i, 1)
 
-    // Test 19: Distance from middle
+    // Test: Distance from middle
     t19 = new;
     i = t19.randomize();
     `checkd(i, 1)
 
-    // Test 20: Half constraint
+    // Test: Half constraint
     t20 = new;
     i = t20.randomize();
     `checkd(i, 1)
 
-    // Test 21: Modulo pattern
+    // Test: Modulo pattern
     t21 = new;
     i = t21.randomize();
     `checkd(i, 1)
 
-    // Test 22: Index power
+    // Test: Index power
     t22 = new;
     i = t22.randomize();
     `checkd(i, 1)
 
-    // Test 23: Boundary elements
+    // Test: Boundary elements
     t23 = new;
     i = t23.randomize();
     `checkd(i, 1)
 
-    // Test 24: Cascading constraint
+    // Test: Cascading constraint
     t24 = new;
     i = t24.randomize();
     `checkd(i, 1)

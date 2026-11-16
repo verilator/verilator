@@ -9,7 +9,7 @@
 
 #include "verilated.h"
 
-#include "Vt_threads_group_workers_sparse.h"
+#include VM_PREFIX_INCLUDE
 
 #include <cstdio>
 #include <thread>
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     VerilatedContext context;
     context.commandArgs(argc, argv);
     context.threads(2);
-    Vt_threads_group_workers_sparse model{&context};
+    VM_PREFIX model{&context};
     for (unsigned cycle = 0; cycle < 20; ++cycle) {
         model.clk = 0;
         model.eval();

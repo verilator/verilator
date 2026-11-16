@@ -25,6 +25,16 @@ test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
 
 test.files_identical(test.obj_dir + "/annotated/t_cover_line.v", test.golden_filename)
 
+# Branch coverage doesn't change line coverage
+test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
+              "--filter-type", "line",
+              "--annotate-points",
+              "--annotate", test.obj_dir + "/annotated-line",
+              test.obj_dir + "/coverage.dat"],
+         verilator_run=True)  # yapf:disable
+
+test.files_identical(test.obj_dir + "/annotated-line/t_cover_line.v", "t/t_cover_line_only.out")
+
 # Also try lcov
 test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
               "--write-info", test.obj_dir + "/coverage.info",
@@ -44,8 +54,8 @@ if float(version_match.group(1)) < 1.14:
               ", need version >= 1.14")
 
 test.run(cmd=[
-    "genhtml", test.obj_dir + "/coverage.info", "--branch-coverage", "--output-directory " +
-    test.obj_dir + "/html"
+    "genhtml", test.obj_dir + "/coverage.info", "--branch-coverage", "--no-function-coverage",
+    "--output-directory", test.obj_dir + "/html"
 ])
 
 test.passes()

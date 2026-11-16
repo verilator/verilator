@@ -20,11 +20,11 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3AstUserAllocator.h"
 #include "V3Graph.h"
 #include "V3OrderGraph.h"
 #include "V3OrderInternal.h"
 #include "V3Sched.h"
+#include "V3VNUserAllocator.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -73,7 +73,7 @@ public:
 // OrderBuildVisitor builds the ordering graph of the entire netlist, and
 // removes any nodes that are no longer required once the graph is built
 
-class OrderGraphBuilder final : public VNVisitor {
+class OrderGraphBuilder final : public VNVisitorConst {
     // TYPES
     enum VarUsage : uint8_t { VU_CON = 0x1, VU_GEN = 0x2 };
     enum VarAccess : uint8_t { VA_READ = 0x1, VA_WRITE = 0x2 };
@@ -88,7 +88,7 @@ class OrderGraphBuilder final : public VNVisitor {
     const VNUser2InUse user2InUse;
     const VNUser3InUse user3InUse;
     const VNUser4InUse user4InUse;
-    AstUser1Allocator<AstVarScope, OrderUser> m_orderUser;
+    VNUser1Allocator<AstVarScope, OrderUser> m_orderUser;
 
     // STATE
     OrderGraph* const m_graphp;  // The ordering graph built by this visitor
@@ -119,7 +119,7 @@ class OrderGraphBuilder final : public VNVisitor {
 
     // METHODS
 
-    void iterateLogic(AstNode* nodep) {
+    void iterateLogic(AstNodeProcedure* nodep) {
         UASSERT_OBJ(!m_logicVxp, nodep, "Should not nest");
         // Reset VarUsage and VarAccess
         AstNode::user2ClearTree();
@@ -130,7 +130,7 @@ class OrderGraphBuilder final : public VNVisitor {
         // Create LogicVertex for this logic node
         m_logicVxp = new OrderLogicVertex{m_graphp, m_scopep, m_domainp, m_hybridp, nodep};
         // Gather variable dependencies based on usage
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         if (m_parallel) {
             // Emit one access record for each variable this logic block accessed
             for (AstVarScope* const vscp : m_accessedVscps) {
@@ -189,7 +189,7 @@ class OrderGraphBuilder final : public VNVisitor {
         }
 
         // Analyze logic underneath
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstNodeVarRef* nodep) override {
         // As we explicitly not visit (see ignored nodes below) any subtree that is not relevant
@@ -352,13 +352,13 @@ class OrderGraphBuilder final : public VNVisitor {
     }
 
     void visit(AstNodeCCall* nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         accountEnqueuingCall(nodep);
     }
     // A covergroup sample() is not inlined and may read design signals through cross-scope
     // references held by the covergroup. This attributes those references to the calling block.
     void visit(AstCMethodCall* nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         accountEnqueuingCall(nodep);
         AstCFunc* const funcp = nodep->funcp();
         if (!funcp->isCovergroupSample()) return;
@@ -374,7 +374,7 @@ class OrderGraphBuilder final : public VNVisitor {
             instp = fromRefp->varScopep();
         }
         m_cgRefBoundps = &m_cgRefBindings.forSample(instp, VN_AS(funcp->scopep()->modp(), Class));
-        iterateChildren(funcp);
+        iterateChildrenConst(funcp);
     }
 
     //--- Logic akin to SystemVerilog Processes (AstNodeProcedure)
@@ -413,9 +413,6 @@ class OrderGraphBuilder final : public VNVisitor {
     }  // LCOV_EXCL_STOP
 
     //--- Verilator concoctions
-    void visit(AstCoverToggle* nodep) override {  //
-        iterateLogic(nodep);
-    }
     void visit(AstNbaCommit* nodep) override {
         UASSERT_OBJ(m_inPost, nodep, "AstNbaCommit should be in AstAlwaysPost");
         // Commit the NBAs enqueued by clocked logic in the same pass, with the other NBAs. Like
@@ -426,7 +423,7 @@ class OrderGraphBuilder final : public VNVisitor {
             = getVarVertex(nodep->queuep()->varScopep(), VarVertexType::POST);
         m_graphp->addHardEdge(postVxp, m_logicVxp, WEIGHT_POST);
         // Record edges for the variables that the commit might update
-        iterateAndNextNull(nodep->targetsp());
+        iterateAndNextConstNull(nodep->targetsp());
     }
 
     //--- Ignored nodes
@@ -443,7 +440,7 @@ class OrderGraphBuilder final : public VNVisitor {
     }
 
     //---
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
     // CONSTRUCTOR
     OrderGraphBuilder(const std::vector<V3Sched::LogicByScope*>& coll,
@@ -457,7 +454,7 @@ class OrderGraphBuilder final : public VNVisitor {
             for (const auto& entry : *lbsp) {
                 m_scopep = entry.m_scopep;
                 m_activeDomainp = m_graphp->domainp(entry.m_triggers);
-                iterate(entry.m_activep);
+                iterateConst(entry.m_activep);
                 m_scopep = nullptr;
                 m_activeDomainp = nullptr;
             }

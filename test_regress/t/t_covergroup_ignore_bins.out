@@ -4,7 +4,6 @@ t.cg.data.arr_rng[0] [ignore]: 0
 t.cg.data.arr_rng[1] [ignore]: 1
 t.cg.data.bad[0] [illegal]: 0
 t.cg.data.bad[1] [illegal]: 0
-t.cg.data.catch_all [ignore]: 0
 t.cg.data.high: 1
 t.cg.data.low: 1
 t.cg.data.reserved [ignore]: 2

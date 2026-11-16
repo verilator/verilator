@@ -20,7 +20,6 @@ module t;
       bins low = {[0 : 3]};
       bins high = {[8 : 11]};
       ignore_bins reserved = {[12 : 15]};
-      ignore_bins catch_all = default;  // default ignore-bin: all values not in other bins are ignored
       ignore_bins arr[] = {4, 5};  // array form: one ignore-bin per value
       ignore_bins arr_rng[] = {[14 : 15]};  // array form of a range: one ignore-bin per value
       wildcard ignore_bins wib = {4'b1?00};  // wildcard ignore-bin with don't-care bits

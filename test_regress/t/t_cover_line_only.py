@@ -20,4 +20,13 @@ test.execute()
 test.file_grep(test.obj_dir + "/coverage.dat", r'page.v_line/')
 test.file_grep_not(test.obj_dir + "/coverage.dat", r'page.v_branch/')
 
+# t_cover_line_cc checks it gets the same line points with branch coverage too
+test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
+              "--annotate-points",
+              "--annotate", test.obj_dir + "/annotated",
+              test.obj_dir + "/coverage.dat"],
+         verilator_run=True)  # yapf:disable
+
+test.files_identical(test.obj_dir + "/annotated/t_cover_line.v", test.golden_filename)
+
 test.passes()

@@ -124,10 +124,10 @@
 
 #include "V3Decompose.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3MemberMap.h"
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
+#include "V3VNUserAllocator.h"
 
 #include <algorithm>
 #include <memory>
@@ -202,15 +202,17 @@ public:
     // The state of the pass, shared by the steps
     class State final {
         // NODE STATE
+        //  AstVarScope::user3()        -> bool: original variable that must be kept
+        const VNUser3InUse m_user3InUse;
         //  AstNodeDType::user4()       -> Components of the type, via dtypeComponents
         //  AstVarScope::user4()        -> Place: the original variable, via places
         const VNUser4InUse m_user4InUse;
 
     public:
         // The components of the aggregate types, see DecomposeBase::dtypeComponents
-        AstUser4Allocator<AstNodeDType, std::vector<Component>> dtypeComponents;
+        VNUser4Allocator<AstNodeDType, std::vector<Component>> dtypeComponents;
         // The Places of the original variables, see DecomposeRecord::placeOf
-        AstUser4Allocator<AstVarScope, Place> places;
+        VNUser4Allocator<AstVarScope, Place> places;
         std::vector<Place*> rootps;  // The original Places, in creation order
         std::vector<std::vector<Select>> chains;  // Select chains addressing components
         std::vector<Assignment> assignments;  // Assignments to expand if a side is split
@@ -423,7 +425,7 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
                 // Eligible if no refusal reason returned
                 return !reasonp;
             }();
-            varp->user1(2 | eligible);
+            varp->user1(2 | (eligible ? 1 : 0));
         }
         // Return the cached result
         return varp->user1() & 1;
@@ -648,7 +650,11 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
         // whole of the Place it references, mark as such.
         if (Place* const placep = placeOf(nodep)) referencedWhole(nodep, placep);
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstRtmdVar* nodep) override {
+        // Ignore reference for splitting, but need to reconstruct the variable
+        if (nodep->refp()) nodep->vscp()->user3(true);
+    }
+    void visit(AstMemberRef* nodep) override {
         iterateChildrenConst(nodep);
         AstVar* const varp = nodep->varp();
         if (!isEligible(varp)) return;
@@ -681,7 +687,7 @@ class DecomposeDecision final : public DecomposeBase {
     // STATE
     std::vector<Place*> m_worklist;  // Places to consider splitting
     // The component AstVars of the AstVars, see the node state
-    AstUser1Allocator<AstVar, std::vector<AstVar*>> m_splitVarps;
+    VNUser1Allocator<AstVar, std::vector<AstVar*>> m_splitVarps;
     VDouble0 m_statSplitUnpackedOrig;  // Original AstVars of unpacked type split
     VDouble0 m_statSplitPackedOrig;  // Original AstVars of packed type split
     VDouble0 m_statSplitUnpackedComp;  // Component AstVars of unpacked type split
@@ -1358,7 +1364,7 @@ class DecomposeRewrite final : public VNDeleter, public DecomposeBase {
             AstNodeExpr* const rhsp = new AstVarRef{flp, childp->vscp, VAccess::READ};
             AstNodeExpr* const lhsRefp = new AstVarRef{flp, vscp, VAccess::WRITE};
             AstNodeExpr* const lhsp = newSelect(lhsRefp, placep->dtypep, i);
-            activep->addStmtsp(new AstAlways{new AstAssignW{flp, lhsp, rhsp}});
+            activep->addProcsp(new AstAlways{new AstAssignW{flp, lhsp, rhsp}});
         }
     }
 
@@ -1374,8 +1380,7 @@ class DecomposeRewrite final : public VNDeleter, public DecomposeBase {
         for (Place* const placep : m_state.rootps) {
             if (!placep->split) continue;
             const AstVarScope* const vscp = placep->vscp;
-            // Only traced ones at this point
-            if (!(vscp->varp()->isTrace() && vscp->isTrace())) continue;
+            if (!vscp->user3()) continue;
             AstActive* const activep = comboActive(vscp->scopep());
             driveFromComponents(placep, activep);
         }

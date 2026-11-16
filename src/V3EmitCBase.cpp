@@ -24,17 +24,53 @@
 // EmitCParentModule implementation
 
 EmitCParentModule::EmitCParentModule() {
-    const auto setAll = [](AstNodeModule* modp) -> void {
+    const auto setAll = [this](AstNodeModule* modp) -> void {
+        MemberData& moduleData = m_members(modp);
         for (AstNode* const nodep : modp->stmtspList()) {
             if (VN_IS(nodep, CFunc) || VN_IS(nodep, Var) || VN_IS(nodep, NodeCoverDecl)) {
                 nodep->user4p(modp);
             }
+            AstVar* const varp = VN_CAST(nodep, Var);
+            if (varp && !varp->isPrimaryIO()
+                && EmitCBaseVisitorConst::isExplicitlyConstructed(varp)) {
+                m_members(varp).index = moduleData.count++;
+            }
         }
-        modp->foreach([&](AstNodeCoverDecl* nodep) { nodep->user4p(modp); });
     };
     for (AstNode* const modp : v3Global.rootp()->modulespList()) {
         setAll(VN_AS(modp, NodeModule));
     }
+}
+
+//######################################################################
+// EmitCMemberGroups implementation
+
+EmitCMemberGroups::EmitCMemberGroups(const size_t nMembers)
+    : m_lim{static_cast<size_t>(v3Global.opt.compLimitMembers())} {
+    if (!m_lim || nMembers <= m_lim) return;
+    // Divide ceiling counts in stages instead of multiplying limits that may overflow.
+    const size_t l1Groups = (nMembers - 1) / m_lim + 1;
+    if (l1Groups > m_lim) {
+        m_l1s = m_lim;
+        const size_t l2Groups = (l1Groups - 1) / m_lim + 1;
+        if (l2Groups > m_lim) {
+            m_l2s = m_lim;
+            m_l3s = (l2Groups - 1) / m_lim + 1;
+        } else {
+            m_l2s = l2Groups;
+        }
+    } else {
+        m_l1s = l1Groups;
+    }
+}
+
+std::string EmitCMemberGroups::namedPath(const size_t idx) const {
+    std::string path;
+    // Each divisor is bounded by the member count when its grouping level is active.
+    if (m_l3s != 1) path += "__Vg" + std::to_string(idx / (m_lim * m_l2s * m_l1s)) + ".";
+    if (m_l2s != 1) path += "__Vg" + std::to_string(idx / (m_lim * m_l1s) % m_l2s) + ".";
+    if (m_l1s != 1) path += "__Vg" + std::to_string(idx / m_lim % m_l1s) + ".";
+    return path;
 }
 
 //######################################################################
@@ -106,7 +142,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
             args += "* vlSelf";
         }
     }
-    if (nodep->needProcess()) {
+    if (nodep->needsVlProcess()) {
         if (!args.empty()) args += ", ";
         args += "VlProcessRef vlProcess";
     }
@@ -115,21 +151,19 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
         args += nodep->argTypes();
     }
     // Might be a user function with argument list.
-    for (const AstNode* const stmtp : nodep->argspList()) {
-        if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
-            if (portp->isIO() && !portp->isFuncReturn()) {
-                if (!args.empty()) args += ", ";
-                if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
-                    args += portp->dpiArgType(true, false, cpp);
-                } else if (closureDTypep(portp)) {
-                    // Bound to the closure in the body, see EmitCFunc::visit(AstCFunc*)
-                    args += "VlClosure<" + EmitCUtil::symClassName() + ">* " + portp->nameProtect()
-                            + "p";
-                } else if (nodep->funcPublic()) {
-                    args += portp->cPubArgType(true, false);
-                } else {
-                    args += portp->vlArgType(true, false, true);
-                }
+    for (const AstVar* const portp : nodep->argspList()) {
+        if (portp->isIO() && !portp->isFuncReturn()) {
+            if (!args.empty()) args += ", ";
+            if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
+                args += portp->dpiArgType(true, false, cpp);
+            } else if (closureDTypep(portp)) {
+                // Bound to the closure in the body, see EmitCFunc::visit(AstCFunc*)
+                args += "VlClosure<" + EmitCUtil::symClassName() + ">* " + portp->nameProtect()
+                        + "p";
+            } else if (nodep->funcPublic()) {
+                args += portp->cPubArgType(true, false);
+            } else {
+                args += portp->vlArgType(true, false, true);
             }
         }
     }

@@ -56,10 +56,14 @@ ______________________________________________________________________
 - Error tests use `test.lint(fails=True, expect_filename=test.golden_filename)`
   and must not call `test.execute()`.
 - Error tests should use `test.lint(fails=True, ...` instead of `test.compile(fails=True, ...)`.
+- Make multiple `.py` driver files instead of calling `test.compile` multiple
+  times in the same `.py`, unless there is lots of setup needed.
 - Use `.out` golden files with `expect_filename` instead of inline `expect`
   regex strings -- goldens are diffable and maintainable.
 - Use `test.glob_one()`/`test.glob_some()` and `test.timeout()` instead of raw
   `glob.glob()` and manual `time.time()` measurements.
+- Use `test.name` or another appropriate `test.` variable instead of hardcoding
+  the test name in the .py.
 - Coverage tests run `verilator_coverage` and verify individual bins and points,
   not just aggregate percentages.
 - Assert optimization stats with exact expected counts:
@@ -143,3 +147,5 @@ ______________________________________________________________________
   typedef-wrapped variants.
 - Assert non-blocking-assignment results in the cycle immediately after they take
   effect, before later overwrites, using indices that change post-NBA.
+- Do not number tests e.g. `Test 1: ` just use `Test: `, to make it easier
+  to resolve conflicts and later add tests in the middle.

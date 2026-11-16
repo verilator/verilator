@@ -77,7 +77,7 @@ class UnknownVisitor final : public VNVisitor {
         if (m_ftaskp) {
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            m_ftaskp->prependStmtsp(varp);
+            m_ftaskp->prependDeclsp(varp);
         } else {
             m_modp->prependStmtsp(varp);
         }
@@ -90,7 +90,7 @@ class UnknownVisitor final : public VNVisitor {
 
         // Scan back to put the condlvalue above all selects (IE top of the lvalue)
         while (VN_IS(prep->backp(), NodeSel) || VN_IS(prep->backp(), Sel)
-               || VN_IS(prep->backp(), MemberSel) || VN_IS(prep->backp(), StructSel)) {
+               || VN_IS(prep->backp(), MemberRef) || VN_IS(prep->backp(), StructSel)) {
             prep = VN_AS(prep->backp(), NodeExpr);
         }
         if (VN_IS(prep->backp(), AssignForce) || VN_IS(prep->backp(), Release)) {
@@ -112,11 +112,13 @@ class UnknownVisitor final : public VNVisitor {
             UINFO(4, "Edit BOUNDLVALUE " << newp);
             replaceHandle.relink(newp);
         } else {
-            AstNode* stmtp = prep->backp();  // Grab above point before we replace 'prep'
-            while (!VN_IS(stmtp, NodeStmt)) stmtp = stmtp->backp();
+            AstNodeStmt* stmtp = nullptr;  // Grab above point before we replace 'prep'
+            for (AstNode* abovep = prep->backp(); !stmtp; abovep = abovep->backp()) {
+                stmtp = VN_CAST(abovep, NodeStmt);
+            }
             VNRelinker replaceHandle;
-            AstNode* const origStmtp = stmtp->unlinkFrBack(&replaceHandle);
-            AstNode* elseStmtp = nullptr;
+            AstNodeStmt* const origStmtp = stmtp->unlinkFrBack(&replaceHandle);
+            AstNodeStmt* elseStmtp = nullptr;
             const bool hasSideEffects = origStmtp->exists(
                 [](AstNode* const np) { return !np->isPure() || np->isTimingControl(); });
             if (hasSideEffects) {
@@ -128,8 +130,15 @@ class UnknownVisitor final : public VNVisitor {
                                                 prep->dtypep()};
                 addVar(varp);
                 AstNode* const prepCopyp = prep->clonep();
-                prepCopyp->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
+                // As written by the original, e.g. read-write as a library call's inout argument
+                prepCopyp->replaceWith(new AstVarRef{fl, varp, prep->getVAccessRecurse()});
                 VL_DO_DANGLING(pushDeletep(prepCopyp), prepCopyp);
+                // Start from the default value (IEEE 1800-2023 7.4.6), not what an earlier
+                // execution left, as an inout argument reads it, and push_back() extends it
+                elseStmtp = AstNode::addNext<AstNodeStmt, AstNodeStmt>(
+                    new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                  new AstCReset{fl, varp, false}},
+                    elseStmtp);
             }
             AstIf* const newp = new AstIf{fl, condp, origStmtp, elseStmtp};
             replaceHandle.relink(newp);
@@ -210,7 +219,7 @@ class UnknownVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         VL_RESTORER(m_allowXUnique);
-        if (nodep->isParam()) m_allowXUnique = false;
+        if (nodep->isParam() || nodep->constPoolEntry()) m_allowXUnique = false;
         iterateChildren(nodep);
     }
     void visitEqNeqCase(AstNodeBiop* nodep) {
@@ -464,14 +473,14 @@ class UnknownVisitor final : public VNVisitor {
             } else if (VN_IS(basefromp, Const)) {
                 // If it's a PARAMETER[bit], then basefromp may be a constant instead of a varrefp
             } else {
-                // Normally one of above, but might have MEMBERSEL or otherwise
+                // Normally one of above, but might have MEMBERREF or otherwise
             }
             // Find range of dtype we are selecting from
             int declElements = -1;
             AstNodeDType* const dtypep = nodep->fromp()->dtypep()->skipRefp();
             UASSERT_OBJ(dtypep, nodep, "Select of non-selectable type");
             const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType);
-            UASSERT_OBJ(adtypep, nodep, "Select from non-array " << dtypep->prettyTypeName());
+            UASSERT_OBJ(adtypep, nodep, "Select from non-array " << dtypep->prettyTypeNameQ());
             declElements = adtypep->elementsConst();
             UINFOTREE(9, nodep, "", "arraysel_old");
 
@@ -655,8 +664,7 @@ class KnownVisitor final : public VNVisitor {
     }
     void visit(AstFunc* const nodep) override {
         iterateChildren(nodep);
-        // VN_AS on purpose since fvarp should be either var or nullptr
-        if (const AstVar* const varp = VN_AS(nodep->fvarp(), Var)) nodep->dtypeFrom(varp);
+        if (const AstVar* const varp = nodep->fvarp()) nodep->dtypeFrom(varp);
     }
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 

@@ -77,7 +77,7 @@ class ResumeActiveBuilder final {
         }
         // Put it in an active
         AstActive* const activep = new AstActive{flp, "_timing", sentreep};
-        activep->addStmtsp(resumep->makeStmt());
+        activep->addProcsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, resumep->makeStmt()});
         m_lbs.add(m_scopeTopp, activep);
     }
 

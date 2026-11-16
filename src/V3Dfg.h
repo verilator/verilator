@@ -334,7 +334,7 @@ public:
     void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
         m_filelinep->v3errorEnd(str);
     }
-    void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN
+    [[noreturn]] void v3errorEndFatal(std::ostringstream& str) const
         VL_RELEASE(V3Error::s().m_mutex) {
         m_filelinep->v3errorEndFatal(str);
     }

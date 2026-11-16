@@ -112,6 +112,40 @@ module t (
     `checkd(c.count(), cyc[0] ? 11 : 0);
   end
 
+  // Concatenations with formatted strings
+  always @(posedge clk) begin
+    string fmt;
+    if (cyc == 5) begin
+      // Empty string
+      `checks({"", $sformatf("%0d", cyc)}, "5");
+      `checks({$sformatf("%0d", cyc), ""}, "5");
+      `checks({"", {" ", $sformatf("%0d", cyc)}}, " 5");
+      // Constant text in the format, where '%' is not a format code
+      `checks({"%d", $sformatf("%0d", cyc)}, "%d5");
+      `checks({$sformatf("%0d", cyc), "%%"}, "5%%");
+      // Two formats with their arguments
+      `checks({$sformatf("%0d", cyc), $sformatf("-%0h", cyc + 10)}, "5-f");
+      // Format of a format
+      `checks($sformatf("<%s|%0d>", $sformatf("%0d-%0h", cyc, cyc + 10), cyc), "<5-f|5>");
+      `checks($sformatf("[%3s]", $sformatf("%0d", cyc)), "[  5]");
+      // Format of a concatenation
+      fmt = cyc[0] ? "y" : "n";
+      `checks($sformatf("<%s>", {"%", $sformatf("%0d", cyc), fmt}), "<%5y>");
+      // Format of only a string
+      `checks({$sformatf("%s", fmt), "!"}, "y!");
+      $sformat(vstr, "%s", fmt);
+      `checks(vstr, "y");
+      begin
+        string copy;
+        $sformat(copy, "%s", fmt);
+        `checks(copy, "y");
+      end
+      // Format only known at runtime
+      fmt = cyc[0] ? "<%0d>" : "[%0d]";
+      `checks({"x", $sformatf(fmt, cyc)}, "x<5>");
+    end
+  end
+
   // Test loop
   always @(posedge clk) begin
     cyc <= cyc + 1;

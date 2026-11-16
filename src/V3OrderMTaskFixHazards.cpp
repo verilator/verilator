@@ -104,6 +104,7 @@
 
 #include <algorithm>
 #include <set>
+#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -112,9 +113,10 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // DpiImportCallVisitor
 
 // Scan node, indicate whether it contains a call to a DPI imported routine.
-class DpiImportCallVisitor final : public VNVisitor {
+class DpiImportCallVisitor final : public VNVisitorConst {
     bool m_hasDpiHazard = false;  // Found a DPI import call.
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
+    std::unordered_set<const AstCFunc*> m_visitedps;  // Functions already visited
     // METHODS
     void visit(AstCFunc* nodep) override {
         if (!m_tracingCall) return;
@@ -124,23 +126,24 @@ class DpiImportCallVisitor final : public VNVisitor {
                                  : !v3Global.opt.threadsDpiUnpure()) {
                 // If hierarchical DPI wrapper cost is not found or is of a 0 cost,
                 // we have a normal DPI which induces DPI hazard by default.
-                m_hasDpiHazard = V3Control::getProfileData(nodep->cname()) == 0;
-                UINFO(9, "DPI wrapper '" << nodep->cname()
-                                         << "' has dpi hazard = " << m_hasDpiHazard);
+                const bool dpiHazard = V3Control::getProfileData(nodep->cname()) == 0;
+                m_hasDpiHazard |= dpiHazard;
+                UINFO(9, "DPI wrapper '" << nodep->cname() << "' has dpi hazard = " << dpiHazard);
             }
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstNodeCCall* nodep) override {
-        iterateChildren(nodep);
-        // Enter the function and trace it
+        iterateChildrenConst(nodep);
+        // Enter the function and trace it, once, as functions can be recursive
+        if (!m_visitedps.emplace(nodep->funcp()).second) return;
         m_tracingCall = true;
-        iterate(nodep->funcp());
+        iterateConst(nodep->funcp());
     }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
     // CONSTRUCTORS
-    explicit DpiImportCallVisitor(AstNode* nodep) { iterate(nodep); }
+    explicit DpiImportCallVisitor(AstNode* nodep) { iterateConst(nodep); }
 
 public:
     static bool hasDpiHazard(AstNode* nodep) { return DpiImportCallVisitor{nodep}.m_hasDpiHazard; }

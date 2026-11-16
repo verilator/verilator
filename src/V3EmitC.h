@@ -32,6 +32,7 @@ public:
     static void emitcInlines() VL_MT_DISABLED;
     static void emitcModel() VL_MT_DISABLED;
     static void emitcPch() VL_MT_DISABLED;
+    static void emitcRtmd() VL_MT_DISABLED;
     static void emitcSyms(bool dpiHdrOnly = false) VL_MT_DISABLED;
 };
 

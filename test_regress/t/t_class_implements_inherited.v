@@ -113,6 +113,116 @@ endclass
 class from_override_cls extends override_cls implements f_if;
 endclass
 
+// Implementations from a parameterized base class
+class param_cls #(type T = int) implements f_if;
+  virtual function int get_f();
+    return 70;
+  endfunction
+endclass
+
+class from_param_cls extends param_cls #(int) implements f_if;
+endclass
+
+class pass_param_cls extends param_cls #(int);
+endclass
+
+class from_pass_param_cls extends pass_param_cls implements f_if;
+endclass
+
+// Implementations from a parameterized base class that does not implement the interface class
+class plain_param_cls #(int N = 1);
+  virtual function int get_f();
+    return 80 + N;
+  endfunction
+endclass
+
+class from_plain_param_cls extends plain_param_cls #(2) implements f_if;
+endclass
+
+class pass_plain_param_cls #(int N = 1) extends plain_param_cls #(N);
+endclass
+
+class from_pass_plain_param_cls extends pass_plain_param_cls #(3) implements f_if;
+endclass
+
+class param_from_plain_param_cls #(int N = 1) extends plain_param_cls #(N) implements f_if;
+endclass
+
+class type_from_plain_param_cls #(type T = plain_param_cls #(6)) extends T implements f_if;
+endclass
+
+// Implementations of a parameterized interface class and of a parameterized virtual class
+interface class g_if #(type T = int);
+  pure virtual function T get_g();
+endclass
+
+class from_g_if_cls extends plain_param_cls #(7) implements g_if #(int);
+  virtual function int get_g();
+    return 90;
+  endfunction
+endclass
+
+virtual class abstract_param_cls #(type T = int);
+  pure virtual function int get_h();
+endclass
+
+class from_abstract_param_cls extends abstract_param_cls #(int);
+  virtual function int get_h();
+    return 100;
+  endfunction
+endclass
+
+// Implementations through interface classes sharing base interface classes
+interface class dag0_if;
+  pure virtual function int get_dag();
+endclass
+interface class dag1_if extends dag0_if;
+endclass
+interface class dag2_if extends dag1_if, dag0_if;
+endclass
+interface class dag3_if extends dag2_if, dag1_if;
+endclass
+
+class dag_impl_cls;
+  virtual function int get_dag();
+    return 110;
+  endfunction
+endclass
+
+class from_dag_cls extends dag_impl_cls implements dag3_if;
+endclass
+
+class dag_param_cls #(int N = 1);
+  virtual function int get_dag();
+    return 110 + N;
+  endfunction
+endclass
+
+class from_param_dag_cls extends dag_param_cls #(2) implements dag3_if;
+endclass
+
+// A class nested in one implementing an interface class is checked on its own
+interface class f1_if;
+  pure virtual function int f();
+endclass
+interface class f2_if;
+  pure virtual function int f();
+endclass
+class nest_outer_param extends param_cls #(int) implements f1_if;
+  virtual function int f();
+    return 1;
+  endfunction
+  virtual class nest_inner extends param_cls #(int) implements f2_if;
+  endclass
+endclass
+class nest_outer extends base_cls implements f1_if;
+  virtual function int f();
+    return 2;
+  endfunction
+  virtual class nest_inner implements f2_if;
+  endclass
+endclass
+
 module t;
   initial begin
     derived_cls obj;
@@ -160,6 +270,71 @@ module t;
     ovobj = new;
     fifc = ovobj;
     `checkd(fifc.get_f(), 60)
+
+    begin
+      from_param_cls paobj;
+      from_pass_param_cls ppaobj;
+      paobj = new;
+      fifc = paobj;
+      `checkd(paobj.get_f(), 70)
+      `checkd(fifc.get_f(), 70)
+      ppaobj = new;
+      fifc = ppaobj;
+      `checkd(fifc.get_f(), 70)
+    end
+
+    begin
+      from_plain_param_cls plpobj;
+      from_pass_plain_param_cls pplpobj;
+      param_from_plain_param_cls #(4) pfp4obj;
+      param_from_plain_param_cls #(5) pfp5obj;
+      type_from_plain_param_cls tfpobj;
+      plpobj = new;
+      fifc = plpobj;
+      `checkd(plpobj.get_f(), 82)
+      `checkd(fifc.get_f(), 82)
+      pplpobj = new;
+      fifc = pplpobj;
+      `checkd(fifc.get_f(), 83)
+      pfp4obj = new;
+      fifc = pfp4obj;
+      `checkd(fifc.get_f(), 84)
+      pfp5obj = new;
+      fifc = pfp5obj;
+      `checkd(fifc.get_f(), 85)
+      tfpobj = new;
+      fifc = tfpobj;
+      `checkd(fifc.get_f(), 86)
+    end
+
+    begin
+      from_g_if_cls gobj2;
+      g_if #(int) gifc;
+      from_abstract_param_cls apobj;
+      abstract_param_cls #(int) apcls;
+      gobj2 = new;
+      gifc = gobj2;
+      `checkd(gifc.get_g(), 90)
+      `checkd(gobj2.get_f(), 87)
+      apobj = new;
+      apcls = apobj;
+      `checkd(apcls.get_h(), 100)
+    end
+
+    begin
+      from_dag_cls dobj;
+      from_param_dag_cls pdobj;
+      dag3_if difc;
+      dag0_if d0ifc;
+      dobj = new;
+      difc = dobj;
+      d0ifc = dobj;
+      `checkd(difc.get_dag(), 110)
+      `checkd(d0ifc.get_dag(), 110)
+      pdobj = new;
+      difc = pdobj;
+      `checkd(difc.get_dag(), 112)
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;

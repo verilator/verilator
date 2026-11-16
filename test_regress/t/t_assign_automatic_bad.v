@@ -61,4 +61,33 @@ module t (
     c.m_ok2[3:0] <= 2;  // OK: nonblocking class non-static, part of it
   end
 
+  // Nor reading automatic variables in the event control of a non-blocking assignment
+  reg areg;
+  task automatic ev_tsk;
+    reg autom1;
+    begin : ev_block
+      reg autom2;
+      areg <= @(autom1) 0;  // Error: automatic in non-blocking event control
+      areg <= @(autom2) 0;  // Error: automatic in non-blocking event control
+    end
+  endtask
+
+  class EvWaiter;
+    event trigger;
+    int m_val;
+    task wait_member;
+      int dly;
+      areg <= #(dly) 0;  // OK: delay is not an event control
+      @(m_val);  // OK: procedural event control on class member
+      areg <= @(m_val) 0;  // OK: class member in non-blocking event control
+      areg <= @trigger 0;  // OK: class event member in non-blocking event control
+    endtask
+    static task wait_trigger;
+      EvWaiter waiter;
+      waiter = new;
+      @waiter.trigger;  // OK: procedural event control
+      areg <= @waiter.trigger 0;  // OK: handle of a class property
+    endtask
+  endclass
+
 endmodule

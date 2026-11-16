@@ -397,7 +397,7 @@ AstNodeStmt* TriggerKit::newExtraTriggerAssignment(AstVarScope* vscp, uint32_t i
 void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const {
     FileLine* const flp = vscp->fileline();
     // Set the trigger bit, then clear the input variable
-    AstNode* const setp = newExtraTriggerAssignment(vscp, index);
+    AstNodeStmt* const setp = newExtraTriggerAssignment(vscp, index);
     setp->addNext(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
                                 new AstConst{flp, AstConst::BitFalse{}}});
     m_compVecp->prependStmtsp(setp);
@@ -462,7 +462,7 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
     }
 
     // Build post-update: prev = inst
-    AstNode* updp;
+    AstNodeStmt* updp;
     if (VN_IS(dtypep, UnpackArrayDType)) {
         AstCMethodHard* const cmhp = new AstCMethodHard{
             flp, wrPrev(prevVscp), VCMethod::UNPACKED_ASSIGN, rdInst(instVscp)};
@@ -476,7 +476,7 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
     AstVarRef* const refp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
     AstNodeExpr* const wordp = new AstArraySel{flp, refp, static_cast<int>(wordIndex)};
     AstNodeExpr* const trigLhsp = new AstSel{flp, wordp, static_cast<int>(bitIndex), 1};
-    AstNode* const setp = new AstAssign{flp, trigLhsp, neqp};
+    AstNodeStmt* const setp = new AstAssign{flp, trigLhsp, neqp};
 
     // Chain: set trigger bit -> update prev
     setp->addNext(updp);
@@ -697,11 +697,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
             AstNodeExpr* const wordp = new AstArraySel{flp, wr(kit.m_vscp), wrdIndex};
             AstNodeExpr* const lhsp = new AstSel{flp, wordp, bitIndex, 1};
             AstNodeExpr* const rhsp = new AstConst{flp, AstConst::BitTrue{}};
-            if (useAcc) {
-                initFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
-            } else {
-                initialTrigsp = AstNode::addNext(initialTrigsp, new AstAssign{flp, lhsp, rhsp});
-            }
+            initialTrigsp = AstNode::addNext(initialTrigsp, new AstAssign{flp, lhsp, rhsp});
         }
 
         // Add a debug statement for this trigger

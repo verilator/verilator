@@ -104,7 +104,7 @@ class DescopeVisitor final : public VNVisitor {
 
         if (VN_IS(scopep->modp(), Class)) {
             // Direct reference to class members are from within the class itself, references from
-            // outside the class must go via AstMemberSel
+            // outside the class must go via AstMemberRef
             return VSelfPointerText{VSelfPointerText::This{}};
         } else if (relativeRefOk && scopep == m_scopep) {
             return VSelfPointerText{VSelfPointerText::This{}};
@@ -172,7 +172,7 @@ class DescopeVisitor final : public VNVisitor {
                     } else {
                         callp->dtypeSetVoid();
                     }
-                    AstNode* const returnp = new AstCReturn{funcp->fileline(), callp};
+                    AstCReturn* const returnp = new AstCReturn{funcp->fileline(), callp};
 
                     if (moreOfSame) {
                         AstIf* const ifp = new AstIf{
@@ -220,6 +220,15 @@ class DescopeVisitor final : public VNVisitor {
     void visit(AstVarScope* nodep) override {
         // Delete the varscope when we're finished
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+    void visit(AstRtmdVar* nodep) override {
+        // Descriptors locate the value by its offset from the symbol table. That could be
+        // derived from an absolute self pointer ('(&vlSymsp->vlInst.scope)'), but a self pointer
+        // is only text, so the emitter would have to parse the scope back out of it. Record the
+        // scope itself instead, and leave the self pointer empty.
+        if (!nodep->refp()) return;
+        nodep->refScopep(nodep->vscp()->scopep());
+        nodep->refp()->varScopep(nullptr);
     }
     void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);

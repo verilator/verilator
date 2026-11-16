@@ -14,6 +14,7 @@ test.scenarios('simulator')
 test.compile(verilator_flags2=["--stats"])
 
 if test.vlt_all:
-    test.file_grep(test.stats, r'Optimizations, Gate sigs deduped\s+(\d+)', 6)
+    # Six in the arithmetic tree, plus one duplicate pair in each shared-clock scope.
+    test.file_grep(test.stats, r'Optimizations, Gate sigs deduped\s+(\d+)', 8)
 
 test.passes()

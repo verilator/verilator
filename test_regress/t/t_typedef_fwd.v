@@ -36,6 +36,14 @@ package P;
 
   typedef int generic_t;
 
+  class ClsC;
+`ifndef TEST_NO_TYPEDEFS
+    typedef cls_t;
+`endif
+    mailbox #(cls_t) m_q;  // <--- Error need forward decl (if TEST_NO_TYPEDEFS)
+    typedef int cls_t;
+  endclass
+
 endpackage
 
 module t;

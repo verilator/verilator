@@ -27,34 +27,23 @@
 %Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:17:31: Unsupported: covergroup value range '[...]'
    17 |       bins ranged = ([1 : 2], [3 : 4] => 5);
       |                               ^
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:20:33: Unsupported: 'iff' in default cover bin (guard ignored)
-   20 |       bins gated = default iff (gate);
-      |                                 ^~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:21:50: Unsupported: 'iff' in default cover bin (guard ignored)
-   21 |       ignore_bins ignored_gated[] = default iff (gate);
-      |                                                  ^~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:22:34: Unsupported: 'bins' explicit array size (treated as '[]')
-   22 |       illegal_bins illegal_gated[2] = default iff (gate);
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:20:34: Unsupported: 'bins' explicit array size (treated as '[]')
+   20 |       illegal_bins illegal_gated[2] = default iff (gate);
       |                                  ^
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:22:52: Unsupported: 'iff' in default cover bin (guard ignored)
-   22 |       illegal_bins illegal_gated[2] = default iff (gate);
-      |                                                    ^~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:23:35: Unsupported: 'sequence' in default cover bin
-   23 |       bins sequence_bin = default sequence;
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:21:35: Unsupported: 'sequence' in default cover bin
+   21 |       bins sequence_bin = default sequence;
       |                                   ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:24:37: Unsupported: 'sequence' in default cover bin
-   24 |       bins sequence_gated = default sequence iff (gate);
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:22:37: Unsupported: 'sequence' in default cover bin
+   22 |       bins sequence_gated = default sequence iff (gate);
       |                                     ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:25:46: Unsupported: 'sequence' in default cover bin
-   25 |       ignore_bins ignored_sequence = default sequence;
-      |                                              ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:26:52: Unsupported: 'sequence' in default cover bin
-   26 |       ignore_bins ignored_sequence_gated = default sequence iff (gate);
-      |                                                    ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:27:47: Unsupported: 'sequence' in default cover bin
-   27 |       illegal_bins illegal_sequence = default sequence;
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:23:47: Unsupported: 'sequence' in default cover bin
+   23 |       illegal_bins illegal_sequence = default sequence;
       |                                               ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:28:53: Unsupported: 'sequence' in default cover bin
-   28 |       illegal_bins illegal_sequence_gated = default sequence iff (gate);
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:24:53: Unsupported: 'sequence' in default cover bin
+   24 |       illegal_bins illegal_sequence_gated = default sequence iff (gate);
       |                                                     ^~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_parse_unsup.v:20:20: Unsupported: Array of default cover bins 'illegal_gated' (treated as one bin).
+                                                                 : ... note: In instance 't'
+   20 |       illegal_bins illegal_gated[2] = default iff (gate);
+      |                    ^~~~~~~~~~~~~
 %Error: Exiting due to

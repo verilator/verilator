@@ -71,7 +71,7 @@ class SliceVisitor final : public VNVisitor {
         if (!arrayp) {  // V3Width should have complained, but...
             if (!m_assignError) {
                 nodep->v3error(
-                    nodep->prettyTypeName()
+                    nodep->prettyTypeNameQ()
                     << " is not an unpacked array, but is in an unpacked array context");
             } else {
                 V3Error::incErrors();  // Otherwise might infinite loop
@@ -134,7 +134,7 @@ class SliceVisitor final : public VNVisitor {
                 return resultSelp;
             }
         } else if (VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel) || VN_IS(nodep, CMethodHard)
-                   || VN_IS(nodep, MemberSel) || VN_IS(nodep, StructSel)) {
+                   || VN_IS(nodep, MemberRef) || VN_IS(nodep, StructSel)) {
             UINFO(9, "  cloneSel(" << elements << "," << elemIdx << ") " << nodep);
             const int leOffset = !arrayp->rangep()->ascending()
                                      ? arrayp->rangep()->elementsConst() - 1 - elemIdx
@@ -142,7 +142,7 @@ class SliceVisitor final : public VNVisitor {
             newp = new AstArraySel{nodep->fileline(), nodep->cloneTree(false, needPure), leOffset};
         } else {
             if (!m_assignError) {
-                nodep->v3error(nodep->prettyTypeName()
+                nodep->v3error(nodep->prettyTypeNameQ()
                                << " unexpected in assignment to unpacked array");
             }
             m_assignError = true;
@@ -162,10 +162,12 @@ class SliceVisitor final : public VNVisitor {
         if (VN_IS(stp, CvtQueueToUnpack)) return false;
         if (VN_IS(stp, CReset)) return false;
 
-        // Any isSc variables must be expanded regardless of --fno-slice
+        // Any isSc variables must be expanded regardless of --fno-slice. So must an array
+        // constructor target (e.g. an output port connected to '{a, b}), as it has no whole
+        // array representation that could be assigned.
         const bool hasSc
             = nodep->exists([&](const AstVarRef* refp) -> bool { return refp->varp()->isSc(); });
-        if (!hasSc && !v3Global.opt.fSlice()) {
+        if (!hasSc && !VN_IS(nodep->lhsp(), ConsArray) && !v3Global.opt.fSlice()) {
             m_okConsArray = true;  // VL_RESTORER in visit(AstNodeAssign)
             return false;
         }
@@ -235,6 +237,16 @@ class SliceVisitor final : public VNVisitor {
         UASSERT_OBJ(!m_assignp || m_okConsArray, nodep,
                     "Array initialization should have been removed earlier");
     }
+    // An array value, e.g. from a cast, may be selected from, or converted whole, e.g. in a stream
+    void iterateOkConsArray(AstNodeExpr* const nodep) {
+        VL_RESTORER(m_okConsArray);
+        m_okConsArray = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstArraySel* nodep) override { iterateOkConsArray(nodep); }
+    void visit(AstCvtArrayToArray* nodep) override { iterateOkConsArray(nodep); }
+    void visit(AstCvtArrayToPacked* nodep) override { iterateOkConsArray(nodep); }
+    void visit(AstCvtUnpackToQueue* nodep) override { iterateOkConsArray(nodep); }
 
     template <typename T_NodeBiop>
     void expandBiOp(T_NodeBiop* biopp) {
@@ -288,12 +300,16 @@ class SliceVisitor final : public VNVisitor {
     void visit(AstSliceSel* nodep) override {
         // Slice used as a bare value, e.g. a $display argument. Build it via
         // VlUnpacked::slice<N_Out>(loIdx), as DYN_SLICE already does for Queues.
+        // As the target of an assignment, use VlUnpacked::sliceRef<N_Out>(loIdx) instead,
+        // which writes through to the array rather than to a copy.
+        const bool isTarget = m_assignp && VN_AS(m_assignp, NodeAssign)->lhsp() == nodep;
         iterateChildren(nodep);
         AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
         AstConst* const lop = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32,
                                            static_cast<uint32_t>(nodep->declRange().lo())};
         AstCMethodHard* const newp
-            = new AstCMethodHard{nodep->fileline(), fromp, VCMethod::ARRAY_SLICE};
+            = new AstCMethodHard{nodep->fileline(), fromp,
+                                 isTarget ? VCMethod::ARRAY_SLICE_REF : VCMethod::ARRAY_SLICE};
         newp->addPinsp(lop);
         newp->dtypeFrom(nodep);  // Reuse the already-correct sliced array dtype
         newp->didWidth(true);

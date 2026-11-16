@@ -23,9 +23,9 @@
 
 #include "V3Combine.h"
 
-#include "V3AstUserAllocator.h"
 #include "V3DupFinder.h"
 #include "V3Stats.h"
+#include "V3VNUserAllocator.h"
 
 #include <list>
 #include <vector>
@@ -53,8 +53,8 @@ class CombineVisitor final : VNVisitor {
     };
 
     // STATE
-    AstUser1Allocator<AstNodeModule, CFuncs> m_cfuncs;  // AstCFuncs under module
-    AstUser1Allocator<AstCFunc, CFuncInfo> m_cfuncInfo;  // Data associated with each AstCFunc
+    VNUser1Allocator<AstNodeModule, CFuncs> m_cfuncs;  // AstCFuncs under module
+    VNUser1Allocator<AstCFunc, CFuncInfo> m_cfuncInfo;  // Data associated with each AstCFunc
     AstNodeModule* m_modp = nullptr;  // Current module
     const V3Hasher m_hasher;  // For hashing
     VDouble0 m_cfuncsCombined;  // Statistic tracking
@@ -224,7 +224,8 @@ class CombineVisitor final : VNVisitor {
         if (nodep->funcp()->dontCombine()) return;
         // LCOV_EXCL_START
         // We cannot yet handle references via AstAddrOfCFunc, but currently those are
-        // only used in tracing functions, which are not combined. Blow up in case this changes.
+        // only taken of DPI import prototypes, which are not combined, and created by
+        // V3ExecGraph, which runs later. Blow up in case this changes.
         nodep->v3fatalSrc(
             "Don't know how to combine functions that are referenced via AstAddrOfCFunc");
         // LCOV_EXCL_STOP

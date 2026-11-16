@@ -79,7 +79,6 @@ class V3PreProcImp;
 # define yy_scan_buffer V3PreLex_scan_buffer
 # define yy_scan_string V3PreLex_scan_string
 # define yy_scan_bytes V3PreLex_scan_bytes
-# define yy_flex_debug V3PreLex_flex_debug
 # define yy_init_buffer V3PreLex_init_buffer
 # define yy_flush_buffer V3PreLex_flush_buffer
 # define yy_load_buffer_state V3PreLex_load_buffer_state

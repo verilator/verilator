@@ -321,7 +321,7 @@ module t (/*AUTOARG*/
 
   int cyc;
   int fo;
-  int sum;
+  int sum /*verilator forceable*/;
   real r;
   string str;
   int mod_val;
@@ -624,6 +624,10 @@ module t (/*AUTOARG*/
     defaults: coverpoint cg_sig {
       bins remaining[] = default;
     }
+    illegal_defaults: coverpoint cg_sig {
+      bins zero = {0};
+      illegal_bins remaining = default iff (cg_sig2[1]);
+    }
   endgroup
 
   // Covergroup with array transitions and an array-valued set expression.
@@ -731,9 +735,14 @@ module seq_event(input logic clk);
   end
 endmodule
 
+bind t Iface bound_iface (.clk(clk));
+
 package p;
   logic pkgvar;
 endpackage
+
+class ClsParamExt extends ClsParam #(bit, 2);
+endclass
 
 `verilator_config
 threads_group -module "sub"

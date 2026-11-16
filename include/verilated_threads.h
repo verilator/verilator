@@ -194,11 +194,15 @@ public:
 
 class VlThreadPool final : public VerilatedVirtualBase {
     // MEMBERS
-    std::vector<VlWorkerThread*> m_workers;  // our workers
+    VerilatedContext* const m_contextp;  // Context for newly acquired workers
+    std::vector<VlWorkerThread*> m_workers;  // Statically indexed simulation workers
 
     mutable VerilatedMutex m_mutex;  // Guards indexes of unassigned workers
     // Indexes of unassigned workers
     std::stack<size_t> m_unassignedWorkers VL_GUARDED_BY(m_mutex);
+    // Workers for blocking calls, separate from the statically indexed simulation workers.
+    // An acquired worker belongs to its caller until released back to the pool.
+    std::vector<VlWorkerThread*> m_idleWorkers VL_GUARDED_BY(m_mutex);
     // For sequentially generating task IDs to avoid shadowing
     std::atomic<unsigned> m_assignedTasks{0};
     std::string m_numaStatus;  // Status of NUMA assignment
@@ -207,11 +211,15 @@ public:
     // CONSTRUCTORS
     // Construct a thread pool with 'nThreads' dedicated threads. The thread
     // pool will create these threads and make them available to execute tasks
-    // via this->workerp(index)->addTask(...)
+    // via this->workerp(index)->addTask(...). Blocking calls acquire additional workers as needed.
     VlThreadPool(VerilatedContext* contextp, unsigned nThreads);
     ~VlThreadPool() override;
 
     // METHODS
+    /// Acquire an exclusive worker for a blocking call, creating one if needed.
+    VlWorkerThread* acquireWorker() VL_MT_SAFE_EXCLUDES(m_mutex);
+    /// Return a worker after its blocking call has finished accessing the call's state.
+    void releaseWorker(VlWorkerThread* workerp) VL_MT_SAFE_EXCLUDES(m_mutex);
     size_t assignWorkerIndex() {
         const VerilatedLockGuard lock{m_mutex};
         assert(!m_unassignedWorkers.empty());

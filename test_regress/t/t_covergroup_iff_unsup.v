@@ -14,15 +14,6 @@ module t;
       ignore_bins ignored = (1 => 2) iff (!enabled);
       illegal_bins illegal = (2 => 3) iff (enabled && value != 0);
     }
-    normal_default: coverpoint value {
-      bins fallback = default iff (enabled);
-    }
-    ignored_default: coverpoint value {
-      ignore_bins fallback = default iff (!enabled);
-    }
-    illegal_default: coverpoint value {
-      illegal_bins fallback = default iff (enabled && value != 0);
-    }
   endgroup
 
   cg inst = new;

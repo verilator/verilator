@@ -128,6 +128,45 @@ string VString::quoteStringLiteralForShell(const string& str) {
     return result;
 }
 
+string VString::escapeForMake(const string& str) {
+    string result;
+    result.reserve(str.size());
+    for (const char ch : str) {
+        if (ch == '$') {
+            result += "$$";
+        } else if (ch == '\\' || ch == ' ' || ch == '\t' || ch == '#' || ch == ':' || ch == '*'
+                   || ch == '?' || ch == '[' || ch == ']') {
+            result += '\\';
+            result += ch;
+        } else {
+            result += ch;
+        }
+    }
+    return result;
+}
+
+string VString::quoteForMakeShell(const string& str) {
+    string quoted = "'";
+    for (const char ch : str) {
+        if (ch == '\'') {
+            quoted += "'\\''";
+        } else {
+            quoted += ch;
+        }
+    }
+    quoted += "'";
+    string result;
+    result.reserve(quoted.size());
+    for (const char ch : quoted) {
+        if (ch == '$') {
+            result += "$$";
+        } else {
+            result += ch;
+        }
+    }
+    return result;
+}
+
 string VString::escapeStringForPath(const string& str) {
     if (str.find(R"(\\)") != string::npos)
         return str;  // if it has been escaped already, don't do it again

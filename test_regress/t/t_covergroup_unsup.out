@@ -54,29 +54,26 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:153:7: Unsupported: 'wildcard' transition list in cover bin
   153 |     { wildcard illegal_bins wlib_trans = ( 1 => 2 ); }
       |       ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:155:40: Unsupported: 'sequence' in default cover bin
-  155 |     { ignore_bins ib_def_seq = default sequence; }
-      |                                        ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:156:42: Unsupported: 'sequence' in default cover bin
-  156 |     { illegal_bins lib_def_seq = default sequence; }
+%Warning-COVERIGN: t/t_covergroup_unsup.v:155:42: Unsupported: 'sequence' in default cover bin
+  155 |     { illegal_bins lib_def_seq = default sequence; }
       |                                          ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:158:24: Unsupported: 'bins' explicit array size (treated as '[]')
-  158 |     { bins trans_sized[2] = ( 1 => 2 ); }
+%Warning-COVERIGN: t/t_covergroup_unsup.v:157:24: Unsupported: 'bins' explicit array size (treated as '[]')
+  157 |     { bins trans_sized[2] = ( 1 => 2 ); }
       |                        ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:161:7: Unsupported: 'wildcard' transition list in cover bin
-  161 |     { wildcard bins wb_long_trans = (
+%Warning-COVERIGN: t/t_covergroup_unsup.v:160:7: Unsupported: 'wildcard' transition list in cover bin
+  160 |     { wildcard bins wb_long_trans = (
       |       ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:172:20: Unsupported: 'with' in coverage select expression
-  172 |       bins bin_e = with (a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:171:20: Unsupported: 'with' in coverage select expression
+  171 |       bins bin_e = with (a);
       |                    ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:173:24: Unsupported: 'with' in coverage select expression
-  173 |       bins bin_not_e = ! with (a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:172:24: Unsupported: 'with' in coverage select expression
+  172 |       bins bin_not_e = ! with (a);
       |                        ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:177:25: Unsupported: 'with' in coverage select expression
-  177 |       bins bin_e_with = with (a) with (a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:176:25: Unsupported: 'with' in coverage select expression
+  176 |       bins bin_e_with = with (a) with (a);
       |                         ^~~~
-%Error-UNSUPPORTED: t/t_covergroup_unsup.v:202:5: Unsupported: covergroup inheritance (extends)
-  202 |     covergroup extends cg_empty;
+%Error-UNSUPPORTED: t/t_covergroup_unsup.v:201:5: Unsupported: covergroup inheritance (extends)
+  201 |     covergroup extends cg_empty;
       |     ^~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

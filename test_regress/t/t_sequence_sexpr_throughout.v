@@ -32,31 +32,31 @@ module t (
   int count_fail5 = 0;
   int count_fail6 = 0;
 
-  // Test 1: a |-> (cond throughout (1'b1 ##3 1'b1))
+  // Test: a |-> (cond throughout (1'b1 ##3 1'b1))
   // If a fires, cond must hold for 4 consecutive ticks (start + 3 delay ticks).
   assert property (@(posedge clk) disable iff (cyc < 10) a |-> (cond throughout (1'b1 ##3 1'b1)))
   else count_fail1 <= count_fail1 + 1;
 
-  // Test 2: a |-> (cond throughout (1'b1 ##1 b))
+  // Test: a |-> (cond throughout (1'b1 ##1 b))
   // If a fires, cond must hold for 2 ticks and b must be true at tick +1.
   assert property (@(posedge clk) disable iff (cyc < 10) a |-> (cond throughout (1'b1 ##1 b)))
   else count_fail2 <= count_fail2 + 1;
 
-  // Test 3: a |-> (cond throughout b)
+  // Test: a |-> (cond throughout b)
   // No delay: degenerates to a |-> (cond && b).
   assert property (@(posedge clk) disable iff (cyc < 10) a |-> (cond throughout b))
   else count_fail3 <= count_fail3 + 1;
 
-  // Test 4: throughout with range delay on RHS (IEEE 16.9.9)
+  // Test: throughout with range delay on RHS (IEEE 16.9.9)
   assert property (@(posedge clk) disable iff (cyc < 10) a |-> (a throughout (b ##[1:2] c)))
   else count_fail4 <= count_fail4 + 1;
 
-  // Test 5: throughout with temporal 'and' on RHS
+  // Test: throughout with temporal 'and' on RHS
   assert property (@(posedge clk) disable iff (cyc < 10)
       a |-> (a throughout ((b ##1 c) and (c ##1 b))))
   else count_fail5 <= count_fail5 + 1;
 
-  // Test 6: nested throughout
+  // Test: nested throughout
   assert property (@(posedge clk) disable iff (cyc < 10)
       a |-> (a throughout (b throughout (b ##1 c))))
   else count_fail6 <= count_fail6 + 1;

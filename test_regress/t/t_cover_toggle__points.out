@@ -232,7 +232,7 @@
 -000000  point: type=toggle comment=memory[121][1]:0->1 hier=top.t
 -000000  point: type=toggle comment=memory[121][1]:1->0 hier=top.t
         
-          wire [1023:0] largeish = {992'h0, cyc};
+          wire [1024:0] largeish = {cyc[2], 960'h0, cyc, cyc};
           // CHECK_COVER_MISSING(-1)
         
           always @ (posedge clk) begin
@@ -378,6 +378,25 @@
 -000001  point: type=toggle comment=toggle:1->0 hier=top.t.o1
           // CHECK_COVER(-1,"top.t.o1","toggle:0->1",1)
           // CHECK_COVER(-2,"top.t.o1","toggle:1->0",1)
+        
+          // coverage off
+          wire off_bare = toggle;
+          // CHECK_COVER_MISSING(-1)
+          // coverage on
+%000001   wire on_bare = toggle;
+-000001  point: type=toggle comment=on_bare:0->1 hier=top.t.o1
+-000001  point: type=toggle comment=on_bare:1->0 hier=top.t.o1
+          // CHECK_COVER(-1,"top.t.o1","on_bare:0->1",1)
+          // CHECK_COVER(-2,"top.t.o1","on_bare:1->0",1)
+          /* pragma coverage off */
+          wire off_pragma = toggle;
+          // CHECK_COVER_MISSING(-1)
+          // pragma coverage on
+%000001   wire on_pragma = toggle;
+-000001  point: type=toggle comment=on_pragma:0->1 hier=top.t.o1
+-000001  point: type=toggle comment=on_pragma:1->0 hier=top.t.o1
+          // CHECK_COVER(-1,"top.t.o1","on_pragma:0->1",1)
+          // CHECK_COVER(-2,"top.t.o1","on_pragma:1->0",1)
         
         endmodule
         

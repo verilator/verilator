@@ -22,24 +22,42 @@
 
 #include "V3Ast.h"
 #include "V3File.h"
+#include "V3VNUserAllocator.h"
 
 #include <cmath>
 #include <cstdarg>
 
 //######################################################################
 // Set user4p in all CFunc, Var, and coverage declarations to point to the
-// containing AstNodeModule
+// containing AstNodeModule, and number the explicitly constructed members
 
 class EmitCParentModule final {
+public:
+    struct MemberData final {
+        size_t index = 0;  // Index of an explicitly constructed member
+        size_t count = 0;  // Number of explicitly constructed members in a module
+    };
+
+private:
     // NODE STATE
     //   AstCFunc::user4p()          AstNodeModule* Parent module pointer
     //   AstVar::user4p()            AstNodeModule* Parent module pointer
     //   AstNodeCoverDecl::user4p()  AstNodeModule* Parent module pointer
+    //   AstVar::user3u()            MemberData* with serial member index
+    //   AstNodeModule::user3u()     MemberData* with serial member count
     const VNUser4InUse user4InUse;
+    const VNUser3InUse user3InUse;
+    VNUser3Allocator<AstNode, MemberData> m_members;  // Immutable after serial setup
 
 public:
     EmitCParentModule();
     VL_UNCOPYABLE(EmitCParentModule);
+
+    static const MemberData& data(const AstNode* nodep) VL_MT_STABLE {
+        const MemberData* const datap = nodep->user3u().to<const MemberData*>();
+        UASSERT_OBJ(datap, nodep, "Missing member grouping data.");
+        return *datap;
+    }
 
     static const AstNodeModule* get(const AstNode* nodep) VL_MT_STABLE {
         return VN_AS(nodep->user4p(), NodeModule);
@@ -104,8 +122,34 @@ public:
         UASSERT_OBJ(varp->constPoolEntry(), varp, "Not a constant pool variable");
         return topClassName() + "__ConstPool__" + varp->nameProtect();
     }
+    // Names of the run time model descriptor tables, which are also the names of their files
+    static std::string rtmdDataTypeTableName() { return topClassName() + "__RtmdDataTypeTable"; }
+    static std::string rtmdGlobalTableName() { return topClassName() + "__RtmdGlobalTable"; }
+    static std::string rtmdVarTypeTableName() { return topClassName() + "__RtmdVarTypeTable"; }
+    static std::string rtmdHierTableName() { return topClassName() + "__RtmdHierTable"; }
+    static std::string rtmdActSetTableName() { return topClassName() + "__RtmdActSetTable"; }
     // Return C++ class name for a module/class object
     static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE;
+};
+
+//######################################################################
+// Nesting of member variables in structs of at most --comp-limit-members members,
+// to avoid C++ compilers parsing large class bodies in quadratic time
+
+class EmitCMemberGroups final {
+    const size_t m_lim;  // Members per innermost struct, or 0 if not nesting
+    size_t m_l3s = 1;  // Number of outermost structs, 1 if there is no struct at this level
+    size_t m_l2s = 1;  // Number of middle structs in each outermost struct, likewise
+    size_t m_l1s = 1;  // Number of innermost structs in each middle struct, likewise
+
+public:
+    explicit EmitCMemberGroups(const size_t nMembers);
+    size_t lim() const { return m_lim; }
+    size_t l3s() const { return m_l3s; }
+    size_t l2s() const { return m_l2s; }
+    size_t l1s() const { return m_l1s; }
+    // Return access prefix of member 'idx' when the structs are named '__Vg<index>'
+    std::string namedPath(size_t idx) const;
 };
 
 //######################################################################
@@ -226,8 +270,7 @@ public:
     void splitSizeInc(const AstNode* nodep) {
         splitSizeInc(static_cast<size_t>(nodep->nodeCount()));
     }
-    bool splitNeeded(size_t splitLimit) const { return m_splitSize >= splitLimit; }
-    bool splitNeeded() const { return splitNeeded(m_splitLimit); }
+    bool splitNeeded() const { return m_splitSize >= m_splitLimit; }
 
     // If the given constructor/destructor statements, plus 'baseCost', exceed the
     // --output-split-cfuncs limit, split them into loose sub-functions
@@ -246,6 +289,18 @@ public:
 
     void puts(const string& str) { ofp()->puts(str); }
     void putns(const AstNode* nodep, const string& str) { ofp()->putns(nodep, str); }
+    void putOffsetofPragmaPush() {
+        // offsetof on the non-standard-layout generated classes works but warns, so suppress it
+        puts("\n#if defined(__GNUC__)\n");
+        puts("# pragma GCC diagnostic push\n");
+        puts("# pragma GCC diagnostic ignored \"-Winvalid-offsetof\"\n");
+        puts("#endif\n");
+    }
+    void putOffsetofPragmaPop() {
+        puts("\n#if defined(__GNUC__)\n");
+        puts("# pragma GCC diagnostic pop\n");
+        puts("#endif\n");
+    }
     void putsHeader() { ofp()->putsHeader(); }
     void putbs(const string& str) { ofp()->putbs(str); }
     void putnbs(const AstNode* nodep, const string& str) { ofp()->putnbs(nodep, str); }
@@ -274,10 +329,19 @@ public:
         const std::string name = varp->nameProtect();
         // Primary IOs live 'union { struct { HERE } __VprimaryPorts; }'
         if (varp->isPrimaryIO()) return "__VprimaryPorts." + name;
-        // Explicitly constructed variables live 'union { struct { HERE } __Vnontrivs; }'
-        if (isExplicitlyConstructed(varp)) return "__Vnontrivs." + name;
+        // Explicitly constructed variables live 'union { struct { HERE } __Vnontrivs; }',
+        // possibly in nested named structs
+        if (isExplicitlyConstructed(varp)) {
+            const EmitCMemberGroups groups{
+                EmitCParentModule::data(EmitCParentModule::get(varp)).count};
+            return "__Vnontrivs." + groups.namedPath(EmitCParentModule::data(varp).index) + name;
+        }
         // Otherwise they should be available in the local scope where emitted
         return name;
+    }
+    // Name of the instance member for the given scope
+    static std::string instName(const AstScope* scopep) {
+        return "vlInst." + VIdProtect::protectIf(scopep->nameDotless(), scopep->protect());
     }
     // Argument list; if 'cpp', C++ rather than a C header
     string cFuncArgs(const AstCFunc* nodep, bool cpp = true);

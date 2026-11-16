@@ -16,6 +16,8 @@ module t;
   int x = 0;
   int y = 0;
   int z = 0;
+  int w = 0;
+  int q[$];
 
   task automatic incr(input int i, input int expected);
     arr[i] = x++;
@@ -25,6 +27,11 @@ module t;
   function int get_y;
     y++;
     return y;
+  endfunction
+
+  function int get_w(int i);
+    w++;
+    return i;
   endfunction
 
   task automatic assign_side_effect(input int i, input int expected);
@@ -67,6 +74,16 @@ module t;
       if (y % (i + 1) < 5) `checkh(arr[y%(i+1)], i);
       `checkh(y, 2 * (i + 1));
     end
+
+    // Side effects in a 'with' clause of an index
+    q = '{1, 2};
+    arr[q.sum() with (get_w(item))] = 6;
+    `checkh(arr[3], 6);
+    `checkh(w, 2);
+    // Index 7 is out of bounds of arr[5]: the write is dropped, but the index is evaluated once
+    arr[q.sum() with (get_w(item))+4] = 7;
+    `checkh(w, 4);
+    `checkh(arr[3], 6);
 
     $write("*-* All Finished *-*\n");
     $finish;

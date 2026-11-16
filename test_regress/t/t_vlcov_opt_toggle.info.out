@@ -113,4 +113,6 @@ BRDA:313,0,data[1][1][6],0
 BRDA:313,0,data[1][1][7],0
 BRF:94
 BRH:6
+LF:17
+LH:10
 end_of_record

@@ -131,6 +131,7 @@ public:
         INSECURE,       // Insecure options
         INSIDETRUE,     // Inside range is always true
         LATCH,          // Latch detected outside of always_latch block
+        LATCHDLY,       // Delayed assignment in always_latch
         LITENDIAN,      // Little endian, renamed to ASCRANGE
         MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
         MISINDENT,      // Misleading indentation
@@ -240,20 +241,20 @@ public:
             "FINALDLY", "FSMMULTI", "FUNCTIMECTL", "FUTURE", "GENCLK", "GENUNNAMED", "HIERBLOCK",
             "HIERPARAM", "IEEEMAYDEPRECATE", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH",
             "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP",
-            "INITIALDLY", "INSECURE", "INSIDETRUE", "LATCH", "LITENDIAN", "MINTYPMAXDLY",
-            "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTIDRIVENPROC", "MULTITOP",
-            "NEVERMATCH", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NORETURN", "NOTREDOP",
-            "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT",
-            "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE",
-            "PROFOUTOFDATE", "PROTECTED", "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO",
-            "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SIMILARNAME", "SPECIFYIGN",
-            "SPLITVAR", "STATICVAR", "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET",
-            "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTPUBLIC",
-            "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR", "UNSIGNED", "UNUSED", "UNUSEDGENVAR",
-            "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USEBEFOREDECL", "USERERROR", "USERFATAL",
-            "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",
-            "WIDTHDIGITS", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
-            " MAX"};
+            "INITIALDLY", "INSECURE", "INSIDETRUE", "LATCH", "LATCHDLY", "LITENDIAN",
+            "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTIDRIVENPROC",
+            "MULTITOP", "NEVERMATCH", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NORETURN",
+            "NOTREDOP", "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING",
+            "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT",
+            "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED", "PROTOTYPEMIS", "RANDC", "REALCVT",
+            "REDEFMACRO", "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SIMILARNAME",
+            "SPECIFYIGN", "SPLITVAR", "STATICVAR", "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD",
+            "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT", "UNOPTFLAT",
+            "UNOPTPUBLIC", "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR", "UNSIGNED", "UNUSED",
+            "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USEBEFOREDECL",
+            "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH",
+            "WIDTHCONCAT", "WIDTHDIGITS", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY",
+            "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
@@ -687,8 +688,8 @@ public:
 
 // Global versions, so that if the class doesn't define an operator, we get the functions anyway.
 void v3errorEnd(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex) VL_MT_SAFE;
-void v3errorEndFatal(std::ostringstream& sstr)
-    VL_RELEASE(V3Error::s().m_mutex) VL_MT_SAFE VL_ATTR_NORETURN;
+[[noreturn]] void v3errorEndFatal(std::ostringstream& sstr)
+    VL_RELEASE(V3Error::s().m_mutex) VL_MT_SAFE;
 
 #ifdef VL_MT_DISABLED_CODE_UNIT
 #define VL_MT_DISABLED_CODE_UNIT_DEFINED 1

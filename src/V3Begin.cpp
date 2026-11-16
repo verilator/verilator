@@ -30,6 +30,7 @@
 
 #include "V3Begin.h"
 
+#include "V3ConstPool.h"
 #include "V3Stats.h"
 #include "V3String.h"
 #include "V3UniqueNames.h"
@@ -38,31 +39,18 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 
-class BeginState final {
-    // NODE STATE
-    // Entire netlist:
-    // AstNodeFTask::user1      -> bool, 1=processed
-    const VNUser1InUse m_inuser1;
-    bool m_anyFuncInBegin = false;  // Any function found inside a begin block
-
-public:
-    BeginState() = default;
-    ~BeginState() = default;
-    void userMarkChanged(AstNode* nodep) {
-        nodep->user1(true);
-        m_anyFuncInBegin = true;
-    }
-    bool anyFuncInBegin() const { return m_anyFuncInBegin; }
-};
-
-//######################################################################
-
 class BeginVisitor final : public VNVisitor {
     // NODE STATE
-    // AstCase::user1   -> bool, if already purified
+    // AstNode::user1      -> bool, mark processed to avoid repeated traversals
+    // AstVar::user2p      -> AstVarRef*, const pool entry of a parameter
+    const VNUser1InUse m_user1InUse;
+    const VNUser2InUse m_user2InUse;
 
-    // STATE - across all visitors
-    BeginState* const m_statep;  // Current global state
+    // STATE - nodes to fix up at the end, when all renames are done
+    std::vector<AstNodeVarRef*> m_paramRefps;  // References to parameters
+    std::vector<AstMemberRef*> m_paramMemberRefps;  // Member references to parameters
+    std::vector<AstNodeFTaskRef*> m_ftaskRefps;  // References to tasks
+    std::vector<AstIfaceRefDType*> m_ifaceRefDTypeps;  // Interface types of cells
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -75,7 +63,6 @@ class BeginVisitor final : public VNVisitor {
     string m_ftaskNamedScope;  // m_namedScope outside of current function/task
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
     int m_ifDepth = 0;  // Current if depth
-    bool m_keepBegins = false;  // True if begins should not be inlined
 
     // METHODS
 
@@ -120,24 +107,36 @@ class BeginVisitor final : public VNVisitor {
         }
     }
 
+    void moveToConstPool(AstNodeExpr* nodep, AstVar* varp) {
+        // Parameters are constants, so repoint references to a constant pool entry.
+        // The variable itself stays, e.g. for VPI, until V3Dead finds it unused.
+        if (!varp->user2p()) {
+            AstNodeExpr* const valuep = VN_AS(varp->valuep(), NodeExpr);
+            UASSERT_OBJ(valuep, varp, "Parameter without a value");
+            UASSERT_OBJ(valuep->isConstantTree(), varp, "Parameter with a non-constant value");
+            AstVarRef* const refp = V3ConstPool::find(valuep);
+            pushDeletep(refp);  // Always cloned, delete at the end
+            varp->user2p(refp);
+        }
+        AstNode* const newp = varp->user2p()->cloneTree(false);
+        newp->fileline(nodep->fileline());
+        nodep->replaceWithKeepDType(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
     // VISITORS
     void visit(AstForeach* nodep) override {
+        if (nodep->user1SetOnce()) return;
         VL_DO_DANGLING(V3Begin::convertToWhile(nodep), nodep);
     }
-    void visit(AstNodeAssign* nodep) override {
-        // Keep begin under assignment (in nodep->timingControlp())
-        VL_RESTORER(m_keepBegins);
-        m_keepBegins = true;
-        iterateChildren(nodep);
-    }
     void visit(AstNodeModule* nodep) override {
+        if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_modp);
         m_modp = nodep;
         // Rename it (e.g. class under a generate)
         if (m_unnamedScope != "") {
             nodep->name(dot(m_unnamedScope, nodep->name()));
             UINFO(8, "     rename to " << nodep->name());
-            m_statep->userMarkChanged(nodep);
         }
         VL_RESTORER_CLEAR(m_displayScope);
         VL_RESTORER_CLEAR(m_namedScope);
@@ -149,17 +148,18 @@ class BeginVisitor final : public VNVisitor {
         nodep->prependStmtsp(m_inlinesp);
     }
     void visit(AstNodeProcedure* nodep) override {
+        if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_procedurep);
         m_procedurep = nodep;
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
+        if (nodep->user1SetOnce()) return;
         UINFO(8, "  " << nodep);
         // Rename it
         if (m_unnamedScope != "") {
             nodep->name(dot(m_unnamedScope, nodep->name()));
             UINFO(8, "     rename to " << nodep->name());
-            m_statep->userMarkChanged(nodep);
         }
         // BEGIN wrapping a function rename that function, but don't affect
         // the inside function's variables.  We then restart with empty
@@ -182,16 +182,16 @@ class BeginVisitor final : public VNVisitor {
             initp->unlinkFrBack();
             m_ftaskp->addHereThisAsNext(initp);
         });
-        // Place lifted nodes at beginning of stmtsp, so Var nodes appear before referenced
-        nodep->prependStmtsp(m_liftedp);
+        // Place lifted nodes at beginning of declsp, so Var nodes appear before referenced
+        nodep->prependDeclsp(m_liftedp);
     }
     void visit(AstGenBlock* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // GenBlocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);
         VL_RESTORER_COPY(m_displayScope);
         VL_RESTORER_COPY(m_namedScope);
         VL_RESTORER_COPY(m_unnamedScope);
-        UASSERT_OBJ(!m_keepBegins, nodep, "Should be able to eliminate all AstGenBlock");
         dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
         iterateAndNextNull(nodep->itemsp());
         // Repalce node with body then delete
@@ -201,19 +201,16 @@ class BeginVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstFork* nodep) override {
+        if (nodep->user1SetOnce()) return;
         dotNames(nodep->name(), nodep->fileline(), "__FORK__");
-        iterateAndNextNull(nodep->stmtsp());
-        {
-            // Keep begins in forks to group their statements together
-            VL_RESTORER(m_keepBegins);
-            m_keepBegins = true;
-            iterateAndNextNull(nodep->forksp());
+        iterateChildren(nodep);
+        if (AstNode* const declsp = nodep->declsp()) {
+            // Only blocks made after V3LinkDot keep declarations to here, in functions; lift them
+            // to the function
+            UASSERT_OBJ(m_ftaskp, nodep, "Unlifted declarations outside a function");
+            m_liftedp = AstNode::addNextNull(m_liftedp, declsp->unlinkFrBackWithNext());
         }
         AstNode* addsp = nullptr;
-        if (AstNode* const declsp = nodep->declsp()) {
-            declsp->unlinkFrBackWithNext();
-            addsp = AstNode::addNext(addsp, declsp);
-        }
         if (AstNode* const stmtsp = nodep->stmtsp()) {
             stmtsp->unlinkFrBackWithNext();
             addsp = AstNode::addNext(addsp, stmtsp);
@@ -222,63 +219,23 @@ class BeginVisitor final : public VNVisitor {
         nodep->name("");
     }
     void visit(AstBegin* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // Begin blocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);
         VL_RESTORER_COPY(m_displayScope);
         VL_RESTORER_COPY(m_namedScope);
         VL_RESTORER_COPY(m_unnamedScope);
-        {
-            VL_RESTORER(m_keepBegins);
-            m_keepBegins = false;
-            dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
-            iterateChildren(nodep);
-        }
+        dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
+        iterateChildren(nodep);
 
         // Cleanup
-        if (m_keepBegins) {
-            nodep->name("");
-            return;
+        if (AstNode* const declsp = nodep->declsp()) {
+            // Only blocks made after V3LinkDot keep declarations to here, in functions; lift them
+            // to the function
+            UASSERT_OBJ(m_ftaskp, nodep, "Unlifted declarations outside a function");
+            m_liftedp = AstNode::addNextNull(m_liftedp, declsp->unlinkFrBackWithNext());
         }
         AstNode* addsp = nullptr;
-        if (AstNode* const declsp = nodep->declsp()) {
-            declsp->unlinkFrBackWithNext();
-            addsp = AstNode::addNext(addsp, declsp);
-        }
-        if (AstNode* const stmtsp = nodep->stmtsp()) {
-            stmtsp->unlinkFrBackWithNext();
-            addsp = AstNode::addNext(addsp, stmtsp);
-        }
-        if (addsp) {
-            nodep->replaceWith(addsp);
-        } else {
-            nodep->unlinkFrBack();
-        }
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
-    void visit(AstNodeBlock* nodep) override {
-        // Begin/Fork blocks were only useful in variable creation, change names and delete
-        UINFO(8, "  " << nodep);
-        VL_RESTORER_COPY(m_displayScope);
-        VL_RESTORER_COPY(m_namedScope);
-        VL_RESTORER_COPY(m_unnamedScope);
-        {
-            VL_RESTORER(m_keepBegins);
-            m_keepBegins = VN_IS(nodep, Fork);
-            dotNames(nodep->name(), nodep->fileline(),
-                     VN_IS(nodep, Fork) ? "__FORK__" : "__BEGIN__");
-            iterateChildren(nodep);
-        }
-
-        // Cleanup
-        if (m_keepBegins) {
-            nodep->name("");
-            return;
-        }
-        AstNode* addsp = nullptr;
-        if (AstNode* const declsp = nodep->declsp()) {
-            declsp->unlinkFrBackWithNext();
-            addsp = AstNode::addNext(addsp, declsp);
-        }
         if (AstNode* const stmtsp = nodep->stmtsp()) {
             stmtsp->unlinkFrBackWithNext();
             addsp = AstNode::addNext(addsp, stmtsp);
@@ -291,7 +248,7 @@ class BeginVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstVar* nodep) override {
-        if (nodep->user1SetOnce()) { return; }
+        if (nodep->user1SetOnce()) return;
         // If static variable, move it outside a function.
         if (nodep->lifetime().isStatic() && m_ftaskp) {
             const std::string newName
@@ -306,19 +263,24 @@ class BeginVisitor final : public VNVisitor {
                 // variable
                 AstVar* const portp = nodep->cloneTreePure(false);
                 nodep->replaceWith(portp);
+                // The clone has user1 set, as cloning copies it, so the port is skipped when
+                // visited next in place of this variable. So visit its children here.
+                iterateChildren(portp);
 
+                FileLine* const flp = nodep->fileline();
+
+                // Copy in
                 if (nodep->isInput() || nodep->isInout()) {
-                    AstAssign* const initAssignp = new AstAssign{
-                        nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
-                        new AstVarRef{portp->fileline(), portp, VAccess::READ}};
-                    portp->addNextHere(initAssignp);
+                    m_ftaskp->prependStmtsp(
+                        new AstAssign{flp, new AstVarRef{flp, nodep, VAccess::WRITE},
+                                      new AstVarRef{flp, portp, VAccess::READ}});
                 }
 
+                // Copy out
                 if (nodep->isWritable()) {
-                    AstAssign* const endAssignp = new AstAssign{
-                        nodep->fileline(), new AstVarRef{portp->fileline(), portp, VAccess::WRITE},
-                        new AstVarRef{nodep->fileline(), nodep, VAccess::READ}};
-                    m_ftaskp->addStmtsp(endAssignp);
+                    m_ftaskp->addStmtsp(new AstAssign{flp,
+                                                      new AstVarRef{flp, portp, VAccess::WRITE},
+                                                      new AstVarRef{flp, nodep, VAccess::READ}});
                 }
             } else {
                 nodep->unlinkFrBack();
@@ -329,19 +291,21 @@ class BeginVisitor final : public VNVisitor {
         } else if (m_unnamedScope != "") {
             // Rename it
             nodep->name(dot(m_unnamedScope, nodep->name()));
-            m_statep->userMarkChanged(nodep);
             // Move it under enclosing tree
             liftNode(nodep);
         }
+        // Only now, as the port cloned above would otherwise copy user1 of the visited children
+        iterateChildren(nodep);
     }
     void visit(AstInitialAutomaticStmt* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // Automatic sets go at the current location
         nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstInitialStaticStmt* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // As we moved static variables, move static initializers too
-        if (nodep->user1SetOnce()) return;  // Don't double-add text's
         AstNode* wasUnderp = m_ftaskp;
         if (!m_ftaskp) wasUnderp = m_procedurep;
         if (wasUnderp) {
@@ -357,20 +321,20 @@ class BeginVisitor final : public VNVisitor {
         }
     }
     void visit(AstTypedef* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // Lift out of functions too, as later passes expect typedefs only under the module
         const std::string scope
             = m_ftaskp ? dot(m_ftaskp->name(), m_unnamedScope) : m_unnamedScope;
         if (scope.empty()) return;
         // Rename it
         nodep->name(dot(scope, nodep->name()));
-        m_statep->userMarkChanged(nodep);
         // Move it under enclosing module
         m_modp->addStmtsp(nodep->unlinkFrBack());
     }
     void visit(AstCell* nodep) override {
+        if (nodep->user1SetOnce()) return;
         UINFO(8, "   CELL " << nodep);
         if (m_namedScope != "") {
-            m_statep->userMarkChanged(nodep);
             // Rename it
             nodep->name(dot(m_namedScope, nodep->name()));
             UINFO(8, "     rename to " << nodep->name());
@@ -380,27 +344,37 @@ class BeginVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstVarRef* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        if (nodep->varp()->isParam()) m_paramRefps.push_back(nodep);
+    }
     void visit(AstVarXRef* nodep) override {
-        UINFO(9, "   VARXREF " << nodep);
+        if (nodep->user1SetOnce()) return;
+        if (nodep->varp()->isParam()) m_paramRefps.push_back(nodep);
         const std::string& scope = m_ftaskp ? m_ftaskNamedScope : m_namedScope;
-        if (scope != "" && nodep->inlinedDots() == "") {
-            nodep->inlinedDots(scope);
-            UINFO(9, "    rescope to " << nodep);
-        }
+        if (scope != "" && nodep->inlinedDots() == "") nodep->inlinedDots(scope);
+    }
+    void visit(AstMemberRef* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        if (nodep->varp()->isParam()) m_paramMemberRefps.push_back(nodep);
+        iterateChildren(nodep);
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        UINFO(9, "   FTASKREF " << nodep);
+        if (nodep->user1SetOnce()) return;
+        m_ftaskRefps.push_back(nodep);
         const std::string& scope = m_ftaskp ? m_ftaskNamedScope : m_namedScope;
-        if (scope != "" && nodep->inlinedDots() == "") {
-            nodep->inlinedDots(scope);
-            UINFO(9, "    rescope to " << nodep);
-        }
+        if (scope != "" && nodep->inlinedDots() == "") nodep->inlinedDots(scope);
+        iterateChildren(nodep);
+    }
+    void visit(AstIfaceRefDType* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        if (nodep->cellp()) m_ifaceRefDTypeps.push_back(nodep);
         iterateChildren(nodep);
     }
     void visit(AstScopeName* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // If there's a %m in the display text, we add a special node that will contain the name()
         // Similar code in V3Inline
-        if (nodep->user1SetOnce()) return;  // Don't double-add text's
         // DPI svGetScope doesn't include function name, but %m does
         const std::string scname = nodep->forFormat() ? m_displayScope : m_namedScope;
         // To keep correct visual order, must add before exising
@@ -408,15 +382,18 @@ class BeginVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeCoverDecl* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // Don't need to fix path in coverage statements, they're not under
         // any BEGINs, but V3Coverage adds them all under the module itself.
         iterateChildren(nodep);
     }
-    void visit(AstCase* nodep) override { iterateChildren(nodep); }
+    void visit(AstCase* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+    }
     // VISITORS - LINT CHECK
-    void visit(AstIf* nodep) override {  // not AstNodeIf; other types not covered
-        VL_RESTORER(m_keepBegins);
-        m_keepBegins = false;
+    void visit(AstIf* nodep) override {
+        if (nodep->user1SetOnce()) return;
         // Check IFDEPTH warning - could be in other transform files if desire
         VL_RESTORER(m_ifDepth);
         if (m_ifDepth == -1 || v3Global.opt.ifDepth() < 1) {  // Turned off
@@ -431,59 +408,24 @@ class BeginVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override {
-        VL_RESTORER(m_keepBegins);
-        m_keepBegins = false;
+        if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
     }
 
-public:
     // CONSTRUCTORS
-    BeginVisitor(AstNetlist* nodep, BeginState* statep)
-        : m_statep{statep} {
+    explicit BeginVisitor(AstNetlist* nodep) {
         iterate(nodep);
-    }
-    ~BeginVisitor() override = default;
-};
-
-//######################################################################
-
-class BeginRelinkVisitor final : public VNVisitorConst {
-    // Replace tasks with new pointer
-private:
-    // NODE STATE
-    //  Input:
-    //   AstNodeFTask::user1p           // bool.  Node replaced, rename it
-
-    // VISITORS
-    void visit(AstNodeFTaskRef* nodep) override {
-        UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");
-        if (nodep->taskp()->user1()) {  // It was converted
-            UINFO(9, "    relinkFTask " << nodep);
-            nodep->name(nodep->taskp()->name());
+        // Fix up references, now that all renames are done
+        for (AstNodeVarRef* const refp : m_paramRefps) moveToConstPool(refp, refp->varp());
+        for (AstMemberRef* const refp : m_paramMemberRefps) moveToConstPool(refp, refp->varp());
+        for (AstNodeFTaskRef* const refp : m_ftaskRefps) refp->name(refp->taskp()->name());
+        for (AstIfaceRefDType* const dtypep : m_ifaceRefDTypeps) {
+            dtypep->cellName(dtypep->cellp()->name());
         }
-        iterateChildrenConst(nodep);
     }
-    void visit(AstVarRef* nodep) override {
-        if (nodep->varp()->user1()) {  // It was converted
-            UINFO(9, "    relinVarRef " << nodep);
-        }
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstIfaceRefDType* nodep) override {
-        // May have changed cell names
-        // TypeTable is always after all modules, so names are stable
-        UINFO(8, "   IFACEREFDTYPE " << nodep);
-        if (nodep->cellp()) nodep->cellName(nodep->cellp()->name());
-        UINFO(8, "       rename to " << nodep);
-        iterateChildrenConst(nodep);
-    }
-    //--------------------
-    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
-    // CONSTRUCTORS
-    BeginRelinkVisitor(AstNetlist* nodep, BeginState*) { iterateConst(nodep); }
-    ~BeginRelinkVisitor() override = default;
+    static void apply(AstNetlist* nodep) { BeginVisitor{nodep}; }
 };
 
 //######################################################################
@@ -491,17 +433,13 @@ public:
 
 void V3Begin::debeginAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    {
-        BeginState state;
-        { BeginVisitor{nodep, &state}; }
-        if (state.anyFuncInBegin()) BeginRelinkVisitor{nodep, &state};
-    }  // Destruct before checking
+    BeginVisitor::apply(nodep);
     V3Global::dumpCheckGlobalTree("begin", 0, dumpTreeEitherLevel() >= 3);
 }
 
-static AstNode* createForeachLoop(AstNodeForeach* /*nodep*/, AstNode* bodysp, bool arrayMayResize,
-                                  AstNodeExpr* subfromp, AstVar* varp, AstNodeExpr* leftp,
-                                  AstNodeExpr* rightp, VNType nodeType) {
+static AstNodeStmt* createForeachLoop(AstForeach* /*nodep*/, AstBegin* blockp, AstNodeStmt* bodysp,
+                                      bool arrayMayResize, AstNodeExpr* subfromp, AstVar* varp,
+                                      AstNodeExpr* leftp, AstNodeExpr* rightp, VNType nodeType) {
     FileLine* const fl = varp->fileline();
     AstNodeExpr* varRefp = new AstVarRef{fl, varp, VAccess::READ};
     AstNodeExpr* condp;
@@ -531,7 +469,7 @@ static AstNode* createForeachLoop(AstNodeForeach* /*nodep*/, AstNode* bodysp, bo
         sizeVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         sizeVarp->funcLocal(varp->isFuncLocal());
         sizeVarp->usedLoopIdx(true);  // Not technically an index, but used only inside loop
-        varp->addNext(sizeVarp);
+        blockp->addDeclsp(sizeVarp);
         sizeGetp
             = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::DYN_SIZE, nullptr};
         sizeGetp->dtypeSetUInt32();
@@ -546,14 +484,14 @@ static AstNode* createForeachLoop(AstNodeForeach* /*nodep*/, AstNode* bodysp, bo
                              incStmtp};
     }
     loopp->addStmtsp(incStmtp);
-    AstNode* const stmtsp = varp;  // New statements for outer loop
-    stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, leftp});
+    // New statements for outer loop
+    AstNodeStmt* const stmtsp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, leftp};
     stmtsp->addNext(loopp);
     return stmtsp;
 }
-static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp,
-                                        AstNodeExpr* subfromp, AstVar* varp,
-                                        const VNumRange& declRange) {
+static AstNodeStmt* createForeachLoopRanged(AstForeach* nodep, AstBegin* blockp,
+                                            AstNodeStmt* bodysp, AstNodeExpr* subfromp,
+                                            AstVar* varp, const VNumRange& declRange) {
     FileLine* const fl = varp->fileline();
     V3Number left{nodep, 32};
     V3Number right{nodep, 32};
@@ -563,26 +501,26 @@ static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp,
     right.setLongS(declRange.right());
     AstNodeExpr* const leftp = new AstConst{fl, left};
     AstNodeExpr* const rightp = new AstConst{fl, right};
-    return createForeachLoop(nodep, bodysp, false /*fixed array size*/, subfromp, varp, leftp,
-                             rightp,
+    return createForeachLoop(nodep, blockp, bodysp, false /*fixed array size*/, subfromp, varp,
+                             leftp, rightp,
                              declRange.left() <= declRange.right() ? VNType::LteS : VNType::GteS);
 }
-static AstNode* createForeachAssoc(FileLine* fl, AstVar* varp, AstNodeExpr* subfromp,
-                                   AstNodeDType* fromDtp, AstNode* bodyPointp) {
-    AstNode* loopp = varp;
+static AstNodeStmt* createForeachAssoc(FileLine* fl, AstBegin* blockp, AstVar* varp,
+                                       AstNodeExpr* subfromp, AstNodeDType* fromDtp,
+                                       AstNodeStmt* bodyPointp) {
     AstVar* const next_varp  // Iterator containing next element (to handle mid-array delete)
         = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vnext", varp};
     next_varp->usedLoopIdx(true);
     next_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
     next_varp->funcLocal(varp->isFuncLocal());
-    loopp->addNext(next_varp);
+    blockp->addDeclsp(next_varp);
 
     AstVar* const more_varp  // bool var. 0 = loop empty/done, 1 = continue with loop
         = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vmore", VFlagBitPacked{}, 1};
     more_varp->usedLoopIdx(true);  // Not technically an index, but used only inside loop
     more_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
     more_varp->funcLocal(varp->isFuncLocal());
-    loopp->addNext(more_varp);
+    blockp->addDeclsp(more_varp);
 
     AstNodeExpr* const firstp
         = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_FIRST,
@@ -594,8 +532,8 @@ static AstNode* createForeachAssoc(FileLine* fl, AstVar* varp, AstNodeExpr* subf
     nextp->dtypeSetInt();
 
     // _Vmore = array.first(__Vnext)
-    loopp->addNext(new AstAssign{fl, new AstVarRef{fl, more_varp, VAccess::WRITE},
-                                 new AstNeq{fl, new AstConst{fl, 0}, firstp}});
+    AstNodeStmt* const loopp = new AstAssign{fl, new AstVarRef{fl, more_varp, VAccess::WRITE},
+                                             new AstNeq{fl, new AstConst{fl, 0}, firstp}};
 
     // LOOP(if (!_Vmore) break;  ...)
     AstLoop* const lp = new AstLoop{fl};
@@ -648,17 +586,17 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     AstVar* const fromVarp = VN_IS(fromp, VarRef) ? VN_CAST(fromp, VarRef)->varp() : nullptr;
     AstNodeDType* fromDtp = fromp->dtypep()->skipRefp();
     const bool arrayMayResize = arrayMayResizeCheck(nodep->bodyp(), fromVarp);
-    // Split into for loop
+    // Split into for loop, in a block declaring the loop variables
+    AstBegin* const blockp = new AstBegin{nodep->fileline(), "", nullptr, true};
     // We record where the body needs to eventually go with bodyPointp
-    AstNode* bodyPointp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false};
-    AstNode* newp = nullptr;
-    AstNode* lastp = nodep;
+    AstNodeStmt* const bodyPointp
+        = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false};
+    blockp->addStmtsp(bodyPointp);
     // subfromp used to traverse each dimension of multi-d variable-sized unpacked array (queue,
     // dyn-arr and associative-arr)
     AstNodeExpr* subfromp = fromp->cloneTreePure(false);
     // Major dimension first
-    for (AstNode *argsp = headerp->elementsp(), *next_argsp; argsp; argsp = next_argsp) {
-        next_argsp = argsp->nextp();
+    for (AstNode* const argsp : headerp->elementspList()) {
         const bool empty = VN_IS(argsp, Empty);
         AstVar* const varp = VN_CAST(argsp, Var);
         UASSERT_OBJ(varp || empty, argsp, "Missing foreach loop variable");
@@ -668,11 +606,12 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
 
         FileLine* const fl = argsp->fileline();
         if (varp) {
-            AstNode* loopp = nullptr;
+            blockp->addDeclsp(varp);
+            AstNodeStmt* loopp = nullptr;
             VNRelinker handle;
-            lastp->unlinkFrBack(&handle);
+            bodyPointp->unlinkFrBack(&handle);
             if (const AstNodeArrayDType* const adtypep = VN_CAST(fromDtp, NodeArrayDType)) {
-                loopp = createForeachLoopRanged(nodep, bodyPointp, subfromp, varp,
+                loopp = createForeachLoopRanged(nodep, blockp, bodyPointp, subfromp, varp,
                                                 adtypep->declRange());
                 if (VN_IS(adtypep, UnpackArrayDType)) {
                     // Descend so later queue/dynamic/associative dimensions see this element.
@@ -692,11 +631,11 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 if (adtypep->isString()) {
                     AstConst* const leftp = new AstConst{fl, 0};
                     AstNodeExpr* const rightp = new AstLenN{fl, fromp->cloneTreePure(false)};
-                    loopp = createForeachLoop(nodep, bodyPointp, arrayMayResize, subfromp, varp,
-                                              leftp, rightp, VNType::Lt);
+                    loopp = createForeachLoop(nodep, blockp, bodyPointp, arrayMayResize, subfromp,
+                                              varp, leftp, rightp, VNType::Lt);
                 } else {
                     UASSERT_OBJ(adtypep->isRanged(), varp, "foreach on basic " << adtypep);
-                    loopp = createForeachLoopRanged(nodep, bodyPointp, subfromp, varp,
+                    loopp = createForeachLoopRanged(nodep, blockp, bodyPointp, subfromp, varp,
                                                     adtypep->declRange());
                 }
             } else if (VN_IS(fromDtp, DynArrayDType) || VN_IS(fromDtp, QueueDType)) {
@@ -706,8 +645,8 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
                 rightp->dtypeSetInt();
                 rightp->protect(false);
-                loopp = createForeachLoop(nodep, bodyPointp, arrayMayResize, subfromp, varp, leftp,
-                                          rightp, VNType::Lt);
+                loopp = createForeachLoop(nodep, blockp, bodyPointp, arrayMayResize, subfromp,
+                                          varp, leftp, rightp, VNType::Lt);
                 subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
                 subfromp->dtypep(fromDtp->subDTypep());
             } else if (VN_IS(fromDtp, AssocArrayDType)) {
@@ -716,7 +655,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 //            index__Vfirst = 0;
                 //            if (0 != array.first(index))
                 //                 do body while (index__Vfirst || 0 != array.next(index))
-                loopp = createForeachAssoc(fl, varp, subfromp, fromDtp, bodyPointp);
+                loopp = createForeachAssoc(fl, blockp, varp, subfromp, fromDtp, bodyPointp);
                 AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
                 subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
                 subfromp->dtypep(fromDtp->subDTypep());
@@ -724,19 +663,17 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
             UASSERT_OBJ(loopp, argsp, "unable to foreach " << fromDtp);
             // New loop goes UNDER previous loop
             handle.relink(loopp);
-            lastp = bodyPointp;
-            if (!newp) newp = loopp;
         }
         // Prep for next
         fromDtp = fromDtp->subDTypep();
     }
     VL_DO_DANGLING(subfromp->deleteTree(), subfromp);
     // The parser validates we don't have "foreach (array[,,,])"
-    AstNode* const bodyp = nodep->bodyp();
-    if (!newp) {
+    AstNodeStmt* const bodyp = nodep->bodyp();
+    if (!blockp->declsp()) {
         nodep->v3warn(NOEFFECT, "foreach with no loop variable has no effect");
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        if (!bodyPointp->backp()) VL_DO_DANGLING(bodyPointp->deleteTree(), bodyPointp);
+        VL_DO_DANGLING(blockp->deleteTree(), blockp);
         return nullptr;
     }
     if (bodyp) {
@@ -745,7 +682,8 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
         bodyPointp->unlinkFrBack();
     }
     VL_DO_DANGLING(bodyPointp->deleteTree(), bodyPointp);
+    nodep->replaceWith(blockp);
     VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    // UINFOTREE(1, newp, "", "foreach-new");
-    return newp;
+    // UINFOTREE(1, blockp, "", "foreach-new");
+    return blockp;
 }

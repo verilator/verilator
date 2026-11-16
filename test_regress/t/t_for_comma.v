@@ -37,6 +37,8 @@ module t;
     `checkc(5);
     for (a = 1; a < 3; a = a + 1, b = b + 1) begin c = c + 1 + a + b; end
     `checkc(6);
+    for (a = 1, b = 1; a < 3; a = a + 1) begin c = c + 1 + a + b; end
+    `checkc(7);
     for (int a = 1; a < 3; ) begin c = c + 1 + a + b; a = a + 10; end
     `checkc(2);
     for (int a = 1; a < 3; a = a + 1) begin c = c + 1 + a + b; end

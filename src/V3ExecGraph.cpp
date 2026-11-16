@@ -1126,7 +1126,7 @@ void processMTaskBodies(AstExecGraph* const execGraphp) {
         ExecMTask* const mtaskp = vtxp->as<ExecMTask>();
         AstCFunc* const funcp = mtaskp->funcp();
         // Temporarily unlink function body so we can add more statemetns
-        AstNode* stmtsp = funcp->stmtsp()->unlinkFrBackWithNext();
+        AstNodeStmt* stmtsp = funcp->stmtsp()->unlinkFrBackWithNext();
 
         // Helper function to make the code a bit more legible
         const auto addCStmt = [=](const string& stmt) -> void {  //

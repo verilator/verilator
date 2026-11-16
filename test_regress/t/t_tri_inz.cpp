@@ -3,7 +3,7 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-#include "Vt_tri_inz.h"
+#include VM_PREFIX_INCLUDE
 #include "Vt_tri_inz___024root.h"
 
 VM_PREFIX* tb = nullptr;

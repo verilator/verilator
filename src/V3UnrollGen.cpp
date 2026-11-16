@@ -86,7 +86,8 @@ class UnrollGenVisitor final : public VNVisitor {
 
         m_forVarp = VN_AS(initAssp->lhsp(), VarRef)->varp();
         if (!m_forVarp->isGenVar()) {
-            nodep->v3error("Non-genvar used in generate for: " << m_forVarp->prettyNameQ());
+            nodep->v3error("Non-genvar used in generate for: " << m_forVarp->prettyNameQ()
+                                                               << " (IEEE 1800-2023 27.4)");
         }
         V3Const::constifyParamsEdit(initAssp->rhsp());  // rhsp may change
 
@@ -131,9 +132,10 @@ class UnrollGenVisitor final : public VNVisitor {
         if (loopValuep) {
             AstConst* varValuep = new AstConst{nodep->fileline(), *loopValuep};
             // Iteration requires a back, so put under temporary node
-            AstBegin* tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep, false};
-            replaceVarRef(tempp->stmtsp(), varValuep);
-            clonep = tempp->stmtsp()->unlinkFrBackWithNext();
+            AstBegin* tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false};
+            tempp->addDeclsp(clonep);
+            replaceVarRef(tempp->declsp(), varValuep);
+            clonep = tempp->declsp()->unlinkFrBackWithNext();
             VL_DO_CLEAR(tempp->deleteTree(), tempp = nullptr);
             VL_DO_DANGLING(pushDeletep(varValuep), varValuep);
         }
@@ -215,9 +217,10 @@ class UnrollGenVisitor final : public VNVisitor {
                     if (oneloopp) {
                         // Iteration requires a back, so put under temporary node
                         AstBegin* const tempp
-                            = new AstBegin{oneloopp->fileline(), "[EditWrapper]", oneloopp, false};
-                        replaceVarRef(tempp->stmtsp(), varValuep);
-                        oneloopp = tempp->stmtsp()->unlinkFrBackWithNext();
+                            = new AstBegin{oneloopp->fileline(), "[EditWrapper]", nullptr, false};
+                        tempp->addDeclsp(oneloopp);
+                        replaceVarRef(tempp->declsp(), varValuep);
+                        oneloopp = tempp->declsp()->unlinkFrBackWithNext();
                         VL_DO_DANGLING(tempp->deleteTree(), tempp);
                     }
                     const string index = AstNode::encodeNumber(varValuep->toSInt());

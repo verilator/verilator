@@ -154,7 +154,7 @@ public:
     // Originally four-state, converted by V3Unknown to two-state domain
     virtual bool mimicsFourstate() const VL_MT_STABLE;
     // Ideally an IEEE $typename
-    virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
+    virtual string prettyDTypeName(bool) const { return prettyTypeNameQ(); }
     string prettyDTypeNameQ(bool full = false) const { return "'" + prettyDTypeName(full) + "'"; }
     string stateDTypeName() const { return this->isFourstate() ? "(4-state)" : "(2-state)"; }
     //

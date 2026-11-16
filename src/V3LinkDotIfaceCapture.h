@@ -82,7 +82,7 @@ public:
     // Walk a dot-separated cell path (e.g. "cca_io.tlb_io") starting from
     // startModp, returning the module at the end of the path.  Returns
     // nullptr if any component cannot be resolved.
-    static AstNodeModule* followCellPath(AstNodeModule* startModp, const string& cellPath);
+    static AstNodeModule* followCellPath(const AstNodeModule* startModp, const string& cellPath);
 
     static void captureTypedefContext(AstRefDType* refp, const char* stageLabel, int dotPos,
                                       const std::string& dotText, VSymEnt* dotSymp,

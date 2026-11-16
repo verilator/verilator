@@ -25,11 +25,12 @@
 
 #include "verilatedos.h"
 
+#include "verilated.h"
+
 #include <cstdint>
 #include <string>
 
 class VlCovMergedItems;
-class VlFileLineDebug;
 
 // Per-bin classification.  A bin's kind is which set it lives in (structural),
 // not a per-bin field.  Only Normal feeds coverage(); the rest are recorded.

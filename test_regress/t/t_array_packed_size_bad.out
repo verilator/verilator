@@ -1,0 +1,113 @@
+%Warning-NONSTD: t/t_array_packed_size.v:57:21: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                              : ... Suggest use equivalent '[0:size-1]'
+   57 |     automatic logic [7] v = crc[6:0];
+      |                     ^
+                 ... For warning description see https://verilator.org/warn/NONSTD?v=latest
+                 ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
+%Warning-NONSTD: t/t_array_packed_size.v:69:21: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                              : ... Suggest use equivalent '[0:size-1]'
+   69 |     automatic logic [65] v = {1'b1, crc};
+      |                     ^
+%Warning-NONSTD: t/t_array_packed_size.v:77:21: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                              : ... Suggest use equivalent '[0:size-1]'
+   77 |     automatic logic [3][5] v = crc[14:0];
+      |                     ^
+%Warning-NONSTD: t/t_array_packed_size.v:77:24: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                              : ... Suggest use equivalent '[0:size-1]'
+   77 |     automatic logic [3][5] v = crc[14:0];
+      |                        ^
+%Warning-NONSTD: t/t_array_packed_size.v:89:21: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                              : ... Suggest use equivalent '[0:size-1]'
+   89 |     automatic logic [3][5][7] v = {crc[40:0], crc};
+      |                     ^
+%Warning-NONSTD: t/t_array_packed_size.v:89:24: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                              : ... Suggest use equivalent '[0:size-1]'
+   89 |     automatic logic [3][5][7] v = {crc[40:0], crc};
+      |                        ^
+%Warning-NONSTD: t/t_array_packed_size.v:89:27: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                              : ... Suggest use equivalent '[0:size-1]'
+   89 |     automatic logic [3][5][7] v = {crc[40:0], crc};
+      |                           ^
+%Warning-NONSTD: t/t_array_packed_size.v:101:26: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  101 |     automatic logic [3:1][2] v = crc[5:0];
+      |                          ^
+%Warning-NONSTD: t/t_array_packed_size.v:102:21: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  102 |     automatic logic [2][3:1] w = crc[5:0];
+      |                     ^
+%Warning-NONSTD: t/t_array_packed_size.v:110:17: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  110 |   typedef logic [5] five_t;
+      |                 ^
+%Warning-NONSTD: t/t_array_packed_size.v:111:18: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  111 |   typedef five_t [3] five3_t;
+      |                  ^
+%Warning-NONSTD: t/t_array_packed_size.v:112:18: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  112 |   typedef five_t [WORDS] five_words_t;
+      |                  ^
+%Warning-NONSTD: t/t_array_packed_size.v:113:10: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  113 |   five_t [WORDS] five_words;
+      |          ^
+%Warning-NONSTD: t/t_array_packed_size.v:117:22: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  117 |     automatic five_t [2] w = crc[9:0];
+      |                      ^
+%Warning-NONSTD: t/t_array_packed_size.v:129:11: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  129 |     logic [3] a;
+      |           ^
+%Warning-NONSTD: t/t_array_packed_size.v:130:11: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  130 |     logic [4] b;
+      |           ^
+%Warning-NONSTD: t/t_array_packed_size.v:133:20: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  133 |     automatic ab_t [2] v = crc[13:0];
+      |                    ^
+%Warning-NONSTD: t/t_array_packed_size.v:140:28: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  140 |   function automatic logic [5] keep_index0(input [5] a);
+      |                            ^
+%Warning-NONSTD: t/t_array_packed_size.v:140:50: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  140 |   function automatic logic [5] keep_index0(input [5] a);
+      |                                                  ^
+%Warning-NONSTD: t/t_array_packed_size.v:156:8: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                              : ... Suggest use equivalent '[0:size-1]'
+  156 |   wire [5] net5 = crc[4:0];
+      |        ^
+%Warning-NONSTD: t/t_array_packed_size.v:157:8: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                              : ... Suggest use equivalent '[0:size-1]'
+  157 |   wire [5] rotated;
+      |        ^
+%Warning-NONSTD: t/t_array_packed_size.v:168:14: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  168 |   localparam [4] P = 4'b0001;
+      |              ^
+%Warning-NONSTD: t/t_array_packed_size.v:21:56: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                              : ... Suggest use equivalent '[0:size-1]'
+   21 |   function longint get_val(logic [127:0] indata, logic [WORDS][WORD_WIDTH/8] be);
+      |                                                        ^
+%Warning-NONSTD: t/t_array_packed_size.v:21:63: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                              : ... Suggest use equivalent '[0:size-1]'
+   21 |   function longint get_val(logic [127:0] indata, logic [WORDS][WORD_WIDTH/8] be);
+      |                                                               ^
+%Warning-NONSTD: t/t_array_packed_size.v:183:17: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  183 |     input logic [5] in,
+      |                 ^
+%Warning-NONSTD: t/t_array_packed_size.v:184:12: Non-standard C-style packed dimension '[size]' (IEEE 1800-2023 7.4.1)
+                                               : ... Suggest use equivalent '[0:size-1]'
+  184 |     output [5] out
+      |            ^
+%Warning-ASCRANGE: t/t_array_packed_size.v:175:12: Ascending bit range vector: left < right of bit range: [0:1]
+                                                 : ... note: In instance 't'
+  175 |   buf gates[WORDS] (gate_out, crc[WORDS-1:0]);
+      |            ^
+                   ... For warning description see https://verilator.org/warn/ASCRANGE?v=latest
+                   ... Use "/* verilator lint_off ASCRANGE */" and lint_on around source to disable this message.
+%Error: Exiting due to

@@ -124,7 +124,7 @@ module t;
   bit [89:0] wide90_result;
 
   initial begin
-    // Test 1: Basic case matches with void tag
+    // Test: Basic case matches with void tag
     v = tagged Invalid;
     result = 0;
     case (v) matches
@@ -133,7 +133,7 @@ module t;
     endcase
     `checkh(result, 1);
 
-    // Test 2: Case matches with value binding
+    // Test: Case matches with value binding
     v = tagged Valid (123);
     result = 0;
     case (v) matches
@@ -142,7 +142,7 @@ module t;
     endcase
     `checkh(result, 123);
 
-    // Test 3: Wide type case matching - 60-bit
+    // Test: Wide type case matching - 60-bit
     wt = tagged Wide60 (60'hFEDCBA987654321);
     wide60_result = 0;
     case (wt) matches
@@ -154,7 +154,7 @@ module t;
     `checkh(wide60_result, 60'hFEDCBA987654321);
 `endif
 
-    // Test 4: Wide type case matching - 90-bit
+    // Test: Wide type case matching - 90-bit
     wt = tagged Wide90 (90'hDE_ADBEEFCA_FEBABE12_3456);
     wide90_result = 0;
     case (wt) matches
@@ -166,7 +166,7 @@ module t;
     `checkh(wide90_result, 90'hDE_ADBEEFCA_FEBABE12_3456);
 `endif
 
-    // Test 5: Non-zero LSB case match
+    // Test: Non-zero LSB case match
     wt = tagged Byte8NonZeroLSB (8'hA5);
     result = 0;
     case (wt) matches
@@ -175,7 +175,7 @@ module t;
     endcase
     `checkh(result, 8'hA5);
 
-    // Test 6: Opposite endianness case match
+    // Test: Opposite endianness case match
     wt = tagged Word32LittleEndian (32'hDEADBEEF);
     result = 0;
     case (wt) matches
@@ -184,7 +184,7 @@ module t;
     endcase
     `checkh(result, 32'hDEADBEEF);
 
-    // Test 7: Array type case matching
+    // Test: Array type case matching
     at = tagged Arr '{10, 20, 30, 40};
     result = 0;
     case (at) matches
@@ -194,7 +194,7 @@ module t;
     endcase
     `checkh(result, 100);
 
-    // Test 8: Nested tagged union case matching
+    // Test: Nested tagged union case matching
     instr = tagged Jmp (tagged JmpC '{2'd1, 10'd256});
     result = 0;
     case (instr) matches
@@ -204,7 +204,7 @@ module t;
     endcase
     `checkh(result, 256);
 
-    // Test 9: Chandle case matching (no binding - VCS limitation)
+    // Test: Chandle case matching (no binding - VCS limitation)
     cht = tagged Invalid;
     result = 0;
     case (cht) matches
@@ -215,7 +215,7 @@ module t;
     endcase
     `checkh(result, 1);
 
-    // Test 10: Class reference case matching
+    // Test: Class reference case matching
     obj = new(42);
     clt = tagged Obj (obj);
     result = 0;
@@ -225,7 +225,7 @@ module t;
     endcase
     `checkh(result, 2);
 
-    // Test 11: Real member case matching
+    // Test: Real member case matching
     rt = tagged Invalid;
     result = 0;
     case (rt) matches
@@ -247,7 +247,7 @@ module t;
     endcase
     `checkh(result, 1);
 
-    // Test 12: Shortreal member case matching
+    // Test: Shortreal member case matching
     rt = tagged ShortRealVal (2.5);
     result = 0;
     case (rt) matches
@@ -260,7 +260,7 @@ module t;
     endcase
     `checkh(result, 1);
 
-    // Test 13: String member case matching
+    // Test: String member case matching
     st = tagged Invalid;
     result = 0;
     case (st) matches
@@ -280,7 +280,7 @@ module t;
     endcase
     `checkh(result, 1);
 
-    // Test 14: Enum member case matching
+    // Test: Enum member case matching
     et = tagged Invalid;
     result = 0;
     case (et) matches
@@ -301,7 +301,7 @@ module t;
     `checkh(result, 1);
 
 `ifndef VCS
-    // Test 15: Event member case matching
+    // Test: Event member case matching
     evt = tagged Invalid;
     result = 0;
     case (evt) matches

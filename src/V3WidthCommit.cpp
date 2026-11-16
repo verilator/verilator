@@ -63,7 +63,7 @@ class WidthCommitVisitor final : public VNVisitor {
     bool m_dynsizedelem = false;  // Under an element of a dynamically sized variable, not itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     bool m_taskRefWarn = true;  // Allow task reference warnings
-    bool m_underSel = false;  // Under a MemberSel handle or what a Sel reads, unless m_contReads
+    bool m_underSel = false;  // Under a MemberRef handle or what a Sel reads, unless m_contReads
     bool m_underAlwaysEdged = false;  // Under always with sequential SenTree
     std::vector<AstNew*> m_virtualNewsp;  // Instantiations of virtual classes
     std::vector<AstNodeFTask*> m_tasksp;  // All the tasks, we will check if they are ever called
@@ -127,7 +127,7 @@ private:
             local = anodep->isHideLocal();
             prot = anodep->isHideProtected();
         } else {
-            nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeName());
+            nodep->v3fatalSrc("ref to unhandled definition type " << defp->prettyTypeNameQ());
         }
         if (local || prot) {
             // In case of covergroup, the reference is to the enclosing class, not the covergroup
@@ -486,7 +486,19 @@ private:
         editDType(nodep);
     }
     void visit(AstAssignDly* nodep) override {
-        iterateAndNextNull(nodep->timingControlp());
+        {
+            // The event control is evaluated by the update, so reads must obey the same rules
+            VL_RESTORER(m_contNbap);
+            VL_RESTORER(m_contReads);
+            VL_RESTORER(m_inNba);
+            // A #delay is not an event control, so reads there are not restricted
+            if (!VN_IS(nodep->timingControlp(), Delay)) {
+                m_contNbap = "non-blocking timing control";
+                m_contReads = true;
+                m_inNba = true;
+            }
+            iterateAndNextNull(nodep->timingControlp());
+        }
         iterateAndNextNull(nodep->rhsp());
         {
             VL_RESTORER(m_contNbap);
@@ -547,7 +559,7 @@ private:
             }
         }
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         {
             VL_RESTORER(m_underSel);
             m_underSel = true;

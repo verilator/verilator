@@ -5,6 +5,8 @@
         // SPDX-FileCopyrightText: 2026 Wilson Snyder
         // SPDX-License-Identifier: CC0-1.0
         
+        // A 1-bit state is detected only with line and branch coverage both on, whatever the
+        // register's reset: V3Const folds 'go ? BUSY : IDLE' to 'go' unless both keep it
         module two_proc_empty_reset (
             input logic clk,
             input logic rst,
@@ -126,6 +128,153 @@
           end
         endmodule
         
+        module two_proc_wide_empty_reset (
+            input logic clk,
+            input logic rst,
+            input logic go
+        );
+          typedef enum logic [1:0] {
+            IDLE,
+            RUN,
+            DONE
+          } state_t;
+        
+%000001   state_t state = IDLE;
+          state_t state_next;
+        
+%000008   always_ff @(posedge clk) begin
+%000006     if (rst) begin
+            end
+%000006     else state <= state_next;
+          end
+        
+%000009   always_comb begin
+%000009     state_next = state;
+%000009     case (state)
+        // [FSM coverage]
+%000001        // [fsm_arc t.two_proc_wide_u.state::IDLE->RUN]
+%000001        // [fsm_arc t.two_proc_wide_u.state::RUN->DONE]
+%000001        // [fsm_state t.two_proc_wide_u.state::DONE]
+%000002        // [fsm_state t.two_proc_wide_u.state::IDLE]
+%000001        // [fsm_state t.two_proc_wide_u.state::RUN]
+%000007       IDLE: state_next = go ? RUN : IDLE;
+%000001       RUN: state_next = DONE;
+%000001       default: state_next = IDLE;
+            endcase
+          end
+        endmodule
+        
+        module chain_empty_reset (
+            input logic clk,
+            input logic rst,
+            input logic go
+        );
+          typedef enum logic [1:0] {
+            IDLE,
+            RUN,
+            DONE
+          } state_t;
+        
+%000001   state_t state = IDLE;
+%000001   logic busy = 1'b0;
+        
+          // Two statements per branch keep the chain from folding into one assignment
+%000008   always_ff @(posedge clk) begin
+%000002     if (rst) begin
+            end
+%000004     else if (state == IDLE) begin
+        // [FSM coverage]
+%000001        // [fsm_arc t.chain_u.state::IDLE->RUN]
+%000001        // [fsm_arc t.chain_u.state::RUN->DONE]
+%000001        // [fsm_state t.chain_u.state::DONE]
+%000002        // [fsm_state t.chain_u.state::IDLE]
+%000001        // [fsm_state t.chain_u.state::RUN]
+%000004       state <= go ? RUN : IDLE;
+%000004       busy <= go;
+            end
+%000001     else if (state == RUN) begin
+%000001       state <= DONE;
+%000001       busy <= 1'b1;
+            end
+%000001     else begin
+%000001       state <= IDLE;
+%000001       busy <= 1'b0;
+            end
+          end
+        endmodule
+        
+        module two_proc_negated_enable (
+            input logic clk,
+            input logic stall,
+            input logic go
+        );
+          typedef enum logic [1:0] {
+            IDLE,
+            RUN,
+            DONE
+          } state_t;
+        
+%000001   state_t state = IDLE;
+          state_t state_next;
+        
+          // Line coverage turns this into 'if (stall) ; else state <= state_next'
+%000008   always_ff @(posedge clk) begin
+%000006     if (!stall) state <= state_next;
+          end
+        
+%000009   always_comb begin
+%000009     state_next = state;
+%000009     case (state)
+        // [FSM coverage]
+%000001        // [fsm_arc t.negated_enable_u.state::IDLE->RUN]
+%000001        // [fsm_arc t.negated_enable_u.state::RUN->DONE]
+%000001        // [fsm_state t.negated_enable_u.state::DONE]
+%000002        // [fsm_state t.negated_enable_u.state::IDLE]
+%000001        // [fsm_state t.negated_enable_u.state::RUN]
+%000007       IDLE: state_next = go ? RUN : IDLE;
+%000001       RUN: state_next = DONE;
+%000001       default: state_next = IDLE;
+            endcase
+          end
+        endmodule
+        
+        module two_proc_compound_empty_reset (
+            input logic clk,
+            input logic rst,
+            input logic flush,
+            input logic go
+        );
+          typedef enum logic [1:0] {
+            IDLE,
+            RUN,
+            DONE
+          } state_t;
+        
+%000001   state_t state = IDLE;
+          state_t state_next;
+        
+%000008   always_ff @(posedge clk) begin
+%000005     if (rst || flush) begin
+            end
+%000005     else state <= state_next;
+          end
+        
+%000009   always_comb begin
+%000009     state_next = state;
+%000009     case (state)
+        // [FSM coverage]
+%000001        // [fsm_arc t.compound_u.state::IDLE->RUN]
+%000001        // [fsm_arc t.compound_u.state::RUN->DONE]
+%000001        // [fsm_state t.compound_u.state::DONE]
+%000002        // [fsm_state t.compound_u.state::IDLE]
+%000001        // [fsm_state t.compound_u.state::RUN]
+%000007       IDLE: state_next = go ? RUN : IDLE;
+%000001       RUN: state_next = DONE;
+%000001       default: state_next = IDLE;
+            endcase
+          end
+        endmodule
+        
         module t (
             input logic clk
         );
@@ -161,6 +310,31 @@
               .input_data(input_data),
               .output_data(output_data),
               .output_valid(output_valid)
+          );
+        
+          two_proc_wide_empty_reset two_proc_wide_u (
+              .clk(clk),
+              .rst(rst),
+              .go(go)
+          );
+        
+          chain_empty_reset chain_u (
+              .clk(clk),
+              .rst(rst),
+              .go(go)
+          );
+        
+          two_proc_negated_enable negated_enable_u (
+              .clk(clk),
+              .stall(rst),
+              .go(go)
+          );
+        
+          two_proc_compound_empty_reset compound_u (
+              .clk(clk),
+              .rst(rst),
+              .flush(cyc == 6),
+              .go(go)
           );
         
 %000001   initial begin

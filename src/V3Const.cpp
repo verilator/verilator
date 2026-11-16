@@ -1012,43 +1012,9 @@ class ConstVisitor final : public VNVisitor {
         return dtypep->isStreamableFixedAggregate() && dtypep->containsUnpackedStruct();
     }
 
-    AstStructSel* newStructSel(AstNodeExpr* const fromp, const AstMemberDType* const itemp) {
-        AstStructSel* const selp = new AstStructSel{fromp->fileline(), fromp, itemp->name()};
-        selp->dtypeFrom(itemp->dtypep());
-        return selp;
-    }
-
-    void collectFixedAggregateTerms(AstNodeExpr* const fromp, std::vector<AstNodeExpr*>& termps,
-                                    const bool packReal) {
-        const AstNodeDType* const dtypep = fromp->dtypep()->skipRefp();
-        if (const AstUnpackArrayDType* const unpackDtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            for (const int idx : unpackDtypep->declRange().seqLeftToRight()) {
-                AstArraySel* const selp
-                    = new AstArraySel{fromp->fileline(), fromp->cloneTreePure(false), idx};
-                collectFixedAggregateTerms(selp, termps, packReal);
-            }
-            VL_DO_DANGLING(pushDeletep(fromp), fromp);
-        } else if (const AstNodeUOrStructDType* const sdtypep
-                   = VN_CAST(dtypep, NodeUOrStructDType)) {
-            if (sdtypep->packed()) {
-                termps.push_back(fromp);
-                return;
-            }
-            for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
-                collectFixedAggregateTerms(newStructSel(fromp->cloneTreePure(false), itemp),
-                                           termps, packReal);
-            }
-            VL_DO_DANGLING(pushDeletep(fromp), fromp);
-        } else if (packReal && dtypep->isDouble()) {
-            termps.push_back(new AstRealToBits{fromp->fileline(), fromp});
-        } else {
-            termps.push_back(fromp);
-        }
-    }
-
     AstNodeExpr* packFixedAggregate(AstNodeExpr* const fromp) {
         std::vector<AstNodeExpr*> termps;
-        collectFixedAggregateTerms(fromp, termps, true);
+        V3Const::collectFixedAggregateTerms(deleter(), fromp, termps, true);
         UASSERT(!termps.empty(), "No stream terms");
         AstNodeExpr* resultp = termps[0];
         for (size_t i = 1; i < termps.size(); ++i) {
@@ -1061,7 +1027,7 @@ class ConstVisitor final : public VNVisitor {
                                        AstNodeExpr* srcp) {
         const int dstWidth = dstp->dtypep()->widthStream();
         std::vector<AstNodeExpr*> termps;
-        collectFixedAggregateTerms(dstp, termps, false);
+        V3Const::collectFixedAggregateTerms(deleter(), dstp, termps, false);
         int srcWidth = srcp->width();
         if (srcWidth < dstWidth) {
             AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dstWidth};
@@ -1093,6 +1059,52 @@ class ConstVisitor final : public VNVisitor {
     }
 
     bool operandConst(const AstNode* nodep) { return VN_IS(nodep, Const); }
+    bool operandLiteralFormat(const AstNode* nodep) {
+        const AstSFormatF* const fmtp = VN_CAST(nodep, SFormatF);
+        return fmtp && !fmtp->exprFormat();
+    }
+    bool operandsMergeableFormats(const AstNode* lhsp, const AstNode* rhsp) {
+        // Literal formats with the same context for formatting. Every format code has its own
+        // argument (see V3LinkResolve::expectFormat), so the formats can be concatenated.
+        if (!operandLiteralFormat(lhsp) || !operandLiteralFormat(rhsp)) return false;
+        const AstSFormatF* const lhsFmtp = VN_AS(lhsp, SFormatF);
+        const AstSFormatF* const rhsFmtp = VN_AS(rhsp, SFormatF);
+        return lhsFmtp->timeunit() == rhsFmtp->timeunit()
+               && lhsFmtp->missingArgChar() == rhsFmtp->missingArgChar() && !lhsFmtp->scopeNamep()
+               && !rhsFmtp->scopeNamep();
+    }
+    static AstNodeExpr* formattedStringp(const AstSFormatF* nodep) {
+        // The string argument which is all that the format 'nodep' formats, or nullptr
+        if (nodep->text() != "%s" || !nodep->exprsp() || nodep->exprsp()->nextp()) return nullptr;
+        AstNodeExpr* const argp = nodep->exprsp();
+        const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+        AstNodeExpr* const exprp = fargp ? fargp->exprp() : argp;
+        if (!AstSFormatArg::formatAttrDefauled(fargp, exprp->dtypep()).isString()) return nullptr;
+        return exprp;
+    }
+    std::string spliceString(AstSFormatF* nodep, AstNodeExpr* argp, AstNode* beforep) {
+        // Format for a plain %s of the argument 'argp', or of a part of it: constants become
+        // text, and formats and concatenations are spliced in, with the arguments they need moved
+        // before 'beforep'. Other expressions remain arguments.
+        const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+        AstNodeExpr* const exprp = fargp ? fargp->exprp() : argp;
+        std::string fmt;
+        if (const AstConst* const constp = VN_CAST(exprp, Const)) {
+            fmt = VString::quotePercent(constp->num().toString());
+        } else if (AstConcatN* const catp = VN_CAST(exprp, ConcatN)) {
+            fmt = spliceString(nodep, catp->lhsp(), beforep);
+            fmt += spliceString(nodep, catp->rhsp(), beforep);
+        } else if (operandsMergeableFormats(nodep, exprp)) {
+            AstSFormatF* const fmtp = VN_AS(exprp, SFormatF);
+            if (fmtp->exprsp()) beforep->addHereThisAsNext(fmtp->exprsp()->unlinkFrBackWithNext());
+            fmt = fmtp->text();
+        } else {
+            if (argp != beforep) beforep->addHereThisAsNext(argp->unlinkFrBack());
+            return "%s";
+        }
+        VL_DO_DANGLING(pushDeletep(argp->unlinkFrBack()), argp);
+        return fmt;
+    }
     bool operandAsvConst(const AstNode* nodep) {
         // BIASV(CONST, BIASV(CONST,...)) -> BIASV( BIASV_CONSTED(a,b), ...)
         const AstNodeBiComAsv* const bnodep = VN_CAST(nodep, NodeBiComAsv);
@@ -1139,6 +1151,8 @@ class ConstVisitor final : public VNVisitor {
         // BIASV(l,BIASV(CONSTrl,rr)) -> BIASV(CONSTrl,BIASV(l,rr)) ?
         const AstNodeBiComAsv* const bnodep = VN_CAST(nodep, NodeBiComAsv);
         if (!bnodep) return false;
+        // Would only swap two constants that operandAsvConst could not fold, forever
+        if (VN_IS(bnodep->lhsp(), Const)) return false;
         const AstNodeBiComAsv* const rnodep = VN_CAST(bnodep->rhsp(), NodeBiComAsv);
         if (!rnodep) return false;
         if (rnodep->type() != bnodep->type()) return false;
@@ -1302,7 +1316,7 @@ class ConstVisitor final : public VNVisitor {
             if (!replaced) falsesp.pop_back();
         }
     }
-    void matchIfCondCond(const AstNodeIf* nodep) {
+    void matchIfCondCond(const AstIf* nodep) {
         // Same condition on either leg of a condition means that
         // expression is either always true or always false
         if (VN_IS(nodep->backp(), If)) return;  // Was checked when visited parent
@@ -1311,13 +1325,13 @@ class ConstVisitor final : public VNVisitor {
         std::vector<AstNodeExpr*> falsesp;
         matchIfCondCondRecurse(nodep, truesp /*ref*/, falsesp /*ref*/);
     }
-    void matchIfCondCondRecurse(const AstNodeIf* nodep, std::vector<AstNodeExpr*>& truesp,
+    void matchIfCondCondRecurse(const AstIf* nodep, std::vector<AstNodeExpr*>& truesp,
                                 std::vector<AstNodeExpr*>& falsesp) {
         // Avoid O(n^2) compares
         // Could reduce cost with hash table, but seems unlikely to be worth cost
         if (truesp.size() > 4 || falsesp.size() > 4) return;
         if (!nodep->condp()->isPure()) return;
-        // A constant condition is folded by visit(AstNodeIf), once statements can be deleted
+        // A constant condition is folded by visit(AstIf), once statements can be deleted
         if (VN_IS(nodep->condp(), Const)) return;
         bool replaced = false;
         for (const AstNodeExpr* condp : truesp) {
@@ -1339,19 +1353,19 @@ class ConstVisitor final : public VNVisitor {
         // We only check the first statement of parent IF is an If
         // So we don't need to check for effects in the executing thensp/elsesp
         // altering the child't condition.  e.g. 'if (x) begin x=1; if (x) end'
-        if (const AstNodeIf* subIfp = VN_CAST(nodep->thensp(), NodeIf)) {
+        if (const AstIf* subIfp = VN_CAST(nodep->thensp(), If)) {
             if (!replaced) truesp.emplace_back(nodep->condp());
             matchIfCondCondRecurse(subIfp, truesp /*ref*/, falsesp /*ref*/);
             if (!replaced) truesp.pop_back();
         }
-        if (const AstNodeIf* subIfp = VN_CAST(nodep->elsesp(), NodeIf)) {
+        if (const AstIf* subIfp = VN_CAST(nodep->elsesp(), If)) {
             if (!replaced) falsesp.emplace_back(nodep->condp());
             matchIfCondCondRecurse(subIfp, truesp /*ref*/, falsesp /*ref*/);
             if (!replaced) falsesp.pop_back();
         }
     }
 
-    void matchIfSameLast(AstNodeIf* nodep) {
+    void matchIfSameLast(AstIf* nodep) {
         if (!nodep->thensp()) return;
         if (!nodep->elsesp()) return;
         if (!canDeleteStatements()) return;
@@ -1837,12 +1851,14 @@ class ConstVisitor final : public VNVisitor {
                || (!node1p->isLargerThan(SAME_TREE_MAX_NODES) && node1p->sameGateTree(node2p)
                    && node1p->isPure());
     }
-    bool ifSameAssign(const AstNodeIf* nodep) {
+    bool ifSameAssign(const AstIf* nodep) {
         const AstNodeAssign* const thensp = VN_CAST(nodep->thensp(), NodeAssign);
         const AstNodeAssign* const elsesp = VN_CAST(nodep->elsesp(), NodeAssign);
         if (!thensp || thensp->nextp()) return false;  // Must be SINGLE statement
         if (!elsesp || elsesp->nextp()) return false;
         if (thensp->type() != elsesp->type()) return false;  // Can't mix an assigndly with assign
+        // The merged assignment would keep only the 'then' intra-assignment timing control
+        if (!thensp->timingControlp()->sameGateTree(elsesp->timingControlp())) return false;
         if (!thensp->lhsp()->sameGateTree(elsesp->lhsp())) return false;
         if (!thensp->rhsp()->gateTree()) return false;
         if (!elsesp->rhsp()->gateTree()) return false;
@@ -1859,9 +1875,9 @@ class ConstVisitor final : public VNVisitor {
                && thensp->rhsp()->isPure()  //
                && elsesp->rhsp()->isPure();
     }
-    bool operandIfIf(const AstNodeIf* nodep) {
+    bool operandIfIf(const AstIf* nodep) {
         if (nodep->elsesp()) return false;
-        const AstNodeIf* const lowerIfp = VN_CAST(nodep->thensp(), NodeIf);
+        const AstIf* const lowerIfp = VN_CAST(nodep->thensp(), If);
         if (!lowerIfp || lowerIfp->nextp()) return false;
         if (nodep->type() != lowerIfp->type()) return false;
         if (AstNode::afterCommentp(lowerIfp->elsesp())) return false;
@@ -1977,7 +1993,7 @@ class ConstVisitor final : public VNVisitor {
         // The operand values are intentionally discarded
         FileLine* const stmtFlp = new FileLine{flp};
         stmtFlp->warnOff(V3ErrorCode::IGNOREDRETURN, true);
-        AstNode* stmtsp = nullptr;
+        AstNodeStmt* stmtsp = nullptr;
         for (AstNodeExpr* const opp : {nodep->lhsp(), nodep->rhsp()}) {
             if (!opp->isPure()) {
                 stmtsp = AstNode::addNext(stmtsp, new AstStmtExpr{stmtFlp, opp->unlinkFrBack()});
@@ -2095,6 +2111,28 @@ class ConstVisitor final : public VNVisitor {
     void replaceWRhs(AstNodeBiop* nodep) {
         // Keep RHS, remove LHS
         replaceWChild(nodep, nodep->rhsp());
+    }
+    void replaceConcatNFormat(AstConcatN* nodep) {
+        // CONCATN(CONST, SFORMATF) or CONCATN(SFORMATF, CONST) -> SFORMATF with the constant's
+        // text in its format
+        if (AstSFormatF* const fmtp = VN_CAST(nodep->rhsp(), SFormatF)) {
+            const std::string text = VN_AS(nodep->lhsp(), Const)->num().toString();
+            fmtp->text(VString::quotePercent(text) + fmtp->text());
+            replaceWChild(nodep, fmtp);
+        } else {
+            AstSFormatF* const lhsFmtp = VN_AS(nodep->lhsp(), SFormatF);
+            const std::string text = VN_AS(nodep->rhsp(), Const)->num().toString();
+            lhsFmtp->text(lhsFmtp->text() + VString::quotePercent(text));
+            replaceWChild(nodep, lhsFmtp);
+        }
+    }
+    void replaceConcatNFormats(AstConcatN* nodep) {
+        // CONCATN(SFORMATF(fa, aargs), SFORMATF(fb, bargs)) -> SFORMATF(fa fb, aargs bargs)
+        AstSFormatF* const lhsFmtp = VN_AS(nodep->lhsp(), SFormatF);
+        AstSFormatF* const rhsFmtp = VN_AS(nodep->rhsp(), SFormatF);
+        lhsFmtp->text(lhsFmtp->text() + rhsFmtp->text());
+        if (rhsFmtp->exprsp()) lhsFmtp->addExprsp(rhsFmtp->exprsp()->unlinkFrBackWithNext());
+        replaceWChild(nodep, lhsFmtp);
     }
     void replaceWLhsBool(AstNodeBiop* nodep) { replaceWChildBool(nodep, nodep->lhsp()); }
     void replaceWRhsBool(AstNodeBiop* nodep) { replaceWChildBool(nodep, nodep->rhsp()); }
@@ -2880,7 +2918,7 @@ class ConstVisitor final : public VNVisitor {
                     // commented out to not fail v3error-coverage-checks.
                     // else {
                     // nodep->v3error("Stream block size must be constant (got " <<
-                    // streamp->rhsp()->prettyTypeName() << ")");
+                    // streamp->rhsp()->prettyTypeNameQ() << ")");
                     // }
                     int srcElementBits = 0;
                     if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
@@ -2948,9 +2986,9 @@ class ConstVisitor final : public VNVisitor {
             const AstNode* errorp = simvis.whyNotNodep();
             if (!errorp) errorp = nodep;
             nodep->v3error("Expecting expression to be constant, but can't determine constant for "
-                           << nodep->prettyTypeName() << '\n'
+                           << nodep->prettyTypeNameQ() << '\n'
                            << errorp->warnOther() << "... Location of non-constant "
-                           << errorp->prettyTypeName() << ": " << simvis.whyNotMessage());
+                           << errorp->prettyTypeNameQ() << ": " << simvis.whyNotMessage());
             VL_DO_DANGLING(replaceZero(nodep), nodep);
         } else {
             // Fetch the result
@@ -3018,7 +3056,7 @@ class ConstVisitor final : public VNVisitor {
         if (it != m_containsMemberAccess.end()) return it->second;
         ++m_statMemberAccessVisits;
         bool result = false;
-        if (VN_IS(nodep, MemberSel) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall)) {
+        if (VN_IS(nodep, MemberRef) || VN_IS(nodep, MethodCall) || VN_IS(nodep, CMethodCall)) {
             result = true;
         } else if (const AstNodeFTaskRef* const funcRefp = VN_CAST(nodep, NodeFTaskRef)) {
             if (containsMemberAccessRecurse(funcRefp->taskp())) result = true;
@@ -3082,6 +3120,15 @@ class ConstVisitor final : public VNVisitor {
         } else if (!VN_IS(nodep->lhsp(), Const)) {
             return false;
         }
+        replaceWithSimulation(nodep);
+        return true;
+    }
+    bool matchAggregateEqConst(AstNodeBiop* nodep) {
+        // Equality of constant unpacked arrays or structs. V3Width allows no other operators on
+        // them, and made both operands the same type.
+        if (!VN_IS(nodep->lhsp(), ConsArray) && !VN_IS(nodep->lhsp(), ConsStruct)) return false;
+        if (!nodep->lhsp()->isConstantTree()) return false;
+        if (!nodep->rhsp()->isConstantTree()) return false;
         replaceWithSimulation(nodep);
         return true;
     }
@@ -3407,6 +3454,7 @@ class ConstVisitor final : public VNVisitor {
         m_hasJumpDelay = true;
         iterateChildren(nodep);
     }
+    void visit(AstRtmdVar*) override {}  // Descriptors reference the variable, even parameters
     void visit(AstNodeVarRef* nodep) override {
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->varp(), nodep, "Not linked");
@@ -3513,37 +3561,31 @@ class ConstVisitor final : public VNVisitor {
         }
     }
 
-    bool onlySenItemInSenTree(const AstSenItem* nodep) {
-        // Only one if it's not in a list
-        return (!nodep->nextp() && nodep->backp()->nextp() != nodep);
-    }
     void visit(AstSenItem* nodep) override {
         iterateChildren(nodep);
-        if (m_doNConst
-            && !v3Global.opt.timing().isSetTrue()  // If --timing, V3Sched would turn this into an
-                                                   // infinite loop. See #5080
-            && (VN_IS(nodep->sensp(), Const) || VN_IS(nodep->sensp(), EnumItemRef)
-                || (nodep->varrefp() && nodep->varrefp()->varp()->isParam()))) {
-            // Constants in sensitivity lists may be removed (we'll simplify later)
-            if (nodep->isClocked()) {  // A constant can never get a pos/negedge
-                if (onlySenItemInSenTree(nodep)) {
-                    if (nodep->edgeType() == VEdgeType::ET_CHANGED) {
-                        // TODO: This really is dodgy, as strictly compliant simulators will not
-                        //       execute this block, but but t_func_check relies on it
-                        nodep->replaceWith(
-                            new AstSenItem{nodep->fileline(), AstSenItem::Initial{}});
-                    } else {
-                        nodep->replaceWith(new AstSenItem{nodep->fileline(), AstSenItem::Never{}});
-                    }
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                } else {
-                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-                }
-            } else {  // Otherwise it may compute a result that needs to settle out
-                nodep->replaceWith(new AstSenItem{nodep->fileline(), AstSenItem::Combo{}});
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        if (!m_doNConst) return;
+        if (AstConst* const constp = VN_CAST(nodep->sensp(), Const)) {
+            // posedge/negedge on an expression that folded to constant either
+            // never triggers (posedge 0/negedge 1), or might trigger precisely
+            // once at time 0 (posedge 1/negedge 0), if the static initialization
+            // state of the expression was not that value. We can't check the
+            // latter easily so fire them once regardless by changing them to
+            // a 'change' sensitivity. V3ActiveTop deletes the never cases.
+            if ((nodep->edgeType() == VEdgeType::ET_POSEDGE && constp->num().bitIs1(0))
+                || (nodep->edgeType() == VEdgeType::ET_NEGEDGE && constp->num().bitIs0(0))) {
+                nodep->edgeType(VEdgeType::ET_CHANGED);
             }
-        } else if (m_doNConst && VN_IS(nodep->sensp(), Not)) {
+            if (nodep->edgeType() == VEdgeType::ET_CHANGED
+                && !(constp->dtypep() == constp->findBitDType() && constp->num().isEqOne())) {
+                // A change sensitivity behaves the same on any constant, so use the same constant
+                // for all, which makes them share a trigger. TODO: this is not quite right
+                // if the static initializer is the same as the constant, but oh well.
+                constp->replaceWith(new AstConst{constp->fileline(), AstConst::BitTrue{}});
+                VL_DO_DANGLING(pushDeletep(constp), constp);
+            }
+            return;
+        }
+        if (VN_IS(nodep->sensp(), Not)) {
             // V3Gate may propagate NOTs into clocks... Just deal with it
             AstNode* const sensp = nodep->sensp();
             AstNode* lastSensp = sensp;
@@ -3813,7 +3855,7 @@ class ConstVisitor final : public VNVisitor {
                 // commented out to not fail v3error-coverage-checks.
                 // else {
                 //    nodep->v3error("Stream block size must be constant (got " <<
-                //    streamp->rhsp()->prettyTypeName() << ")");
+                //    streamp->rhsp()->prettyTypeNameQ() << ")");
                 // }
                 int srcElementBits = 0;
                 if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
@@ -3848,7 +3890,7 @@ class ConstVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         iterateChildren(nodep);
         if (m_doNConst) {
             if (const AstConst* const constp = VN_CAST(nodep->condp(), Const)) {
@@ -3906,7 +3948,7 @@ class ConstVisitor final : public VNVisitor {
             } else if (!AstNode::afterCommentp(nodep->thensp())) {
                 UINFO(4, "IF({x}) nullptr {...} => IF(NOT{x}}: " << nodep);
                 AstNodeExpr* const condp = nodep->condp();
-                AstNode* const elsesp = nodep->elsesp();
+                AstNodeStmt* const elsesp = nodep->elsesp();
                 condp->unlinkFrBackWithNext();
                 elsesp->unlinkFrBackWithNext();
                 if (nodep->thensp()) {  // Must have been comment
@@ -3922,8 +3964,8 @@ class ConstVisitor final : public VNVisitor {
                 UINFO(4, "IF(NOT {x})  => IF(x) swapped if/else" << nodep);
                 AstNodeExpr* const condp
                     = VN_AS(nodep->condp(), NodeUniop)->lhsp()->unlinkFrBackWithNext();
-                AstNode* const thensp = nodep->thensp()->unlinkFrBackWithNext();
-                AstNode* const elsesp = nodep->elsesp()->unlinkFrBackWithNext();
+                AstNodeStmt* const thensp = nodep->thensp()->unlinkFrBackWithNext();
+                AstNodeStmt* const elsesp = nodep->elsesp()->unlinkFrBackWithNext();
                 AstIf* const ifp = new AstIf{nodep->fileline(), condp, elsesp, thensp};
                 ifp->isBoundsCheck(nodep->isBoundsCheck());  // Copy bounds check info
                 ifp->branchPred(nodep->branchPred().invert());
@@ -3946,7 +3988,7 @@ class ConstVisitor final : public VNVisitor {
                               // without due to short-circuiting
                        && operandIfIf(nodep)) {
                 UINFO(9, "IF({a}) IF({b}) => IF({a} && {b})");
-                AstNodeIf* const lowerIfp = VN_AS(nodep->thensp(), NodeIf);
+                AstIf* const lowerIfp = VN_AS(nodep->thensp(), If);
                 AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
                 AstNode* const lowerThensp = lowerIfp->thensp()->unlinkFrBackWithNext();
                 AstNodeExpr* const lowerCondp = lowerIfp->condp()->unlinkFrBackWithNext();
@@ -4044,16 +4086,16 @@ class ConstVisitor final : public VNVisitor {
             }
         }
         if (nodep->exprFormat()) return;  // Runtime, unfortunately  (unless constify format later)
-        bool anyconst = false;
+        bool foldable = false;  // Some argument is constant, a format, or a concatenation
         for (AstNode* const argp : nodep->exprspList()) {
             AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
             AstNode* const subargp = fargp ? fargp->exprp() : argp;
-            if (VN_IS(subargp, Const)) {
-                anyconst = true;
+            if (VN_IS(subargp, Const) || VN_IS(subargp, SFormatF) || VN_IS(subargp, ConcatN)) {
+                foldable = true;
                 break;
             }
         }
-        if (m_doNConst && anyconst) {
+        if (m_doNConst && foldable) {
             UINFO(9, "  Display in  " << nodep->text());
             string newFormat;
             string fmt;
@@ -4097,6 +4139,9 @@ class ConstVisitor final : public VNVisitor {
                                 // used as a format output as literal.
                                 fmt = VString::quotePercent(out);
                                 VL_DO_DANGLING(pushDeletep(argp->unlinkFrBack()), argp);
+                            } else if (ch == 's' && fmt.size() == 2) {
+                                UINFO(9, "     DispSplice: " << fmt << " -> " << subargp);
+                                fmt = spliceString(nodep, VN_AS(argp, NodeExpr), argp);
                             }
                             argp = nextp;
                         }
@@ -4118,14 +4163,13 @@ class ConstVisitor final : public VNVisitor {
             VL_DO_DANGLING(replaceConstString(nodep, nodep->text()), nodep);
             return;
         }
-        if (VN_IS(nodep->backp(), NodeAssign)  // Can't remove under Display etc
-            && nodep->text() == "%s" && VN_IS(nodep->exprsp(), SFormatArg)
-            && VN_AS(nodep->exprsp(), SFormatArg)->formatAttr().isString()
-            && !nodep->exprsp()->nextp()) {
-            UINFO(9, "  Display(%p, expr) -> constant expr " << nodep);
-            nodep->replaceWith(VN_AS(nodep->exprsp(), SFormatArg)->exprp()->unlinkFrBack());
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            return;
+        if (!nodep->hidden()) {  // Can't remove under Display etc
+            if (AstNodeExpr* const exprp = formattedStringp(nodep)) {
+                UINFO(9, "  Display(%s, expr) -> expr " << nodep);
+                nodep->replaceWith(exprp->unlinkFrBack());
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
         }
     }
     void visit(AstSFormat* nodep) override {
@@ -4142,6 +4186,14 @@ class ConstVisitor final : public VNVisitor {
                     = new AstConst{fmtp->fileline(), AstConst::String{}, fmtp->text()};
                 lhsp->unlinkFrBack();
                 nodep->replaceWith(new AstAssign{nodep->fileline(), lhsp, strp});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+            // Likewise if it is a string formatted as is
+            AstNodeExpr* const exprp = formattedStringp(fmtp);
+            if (basicp && basicp->isString() && exprp) {
+                lhsp->unlinkFrBack();
+                nodep->replaceWith(new AstAssign{nodep->fileline(), lhsp, exprp->unlinkFrBack()});
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
@@ -4371,6 +4423,10 @@ class ConstVisitor final : public VNVisitor {
     TREEOPA("AstNodeBiop {$lhsp.castConst, $rhsp.castConst, nodep->isPredictOptimizable()}",  "replaceConst(nodep)");
     TREEOPA("AstNodeUniop{$lhsp.castConst, nodep->isPredictOptimizable()}",  "replaceConst(nodep)");
     TREEOPA("AstNodeQuadop{$lhsp.castConst, $rhsp.castConst, $thsp.castConst, $fhsp.castConst}",  "replaceConst(nodep)");
+    TREEOP ("AstEq     {matchAggregateEqConst(nodep)}",  "DONE");
+    TREEOP ("AstEqCase {matchAggregateEqConst(nodep)}",  "DONE");
+    TREEOP ("AstNeq    {matchAggregateEqConst(nodep)}",  "DONE");
+    TREEOP ("AstNeqCase{matchAggregateEqConst(nodep)}",  "DONE");
     // Zero on one side or the other
     TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
     TREEOP ("AstAnd   {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
@@ -4414,6 +4470,12 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstShiftRSOvr{$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
     TREEOP ("AstSub   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
     TREEOP ("AstXor   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
+    // String concatenation
+    TREEOP ("AstConcatN {$lhsp.isZero, $rhsp}", "replaceWRhs(nodep)");  // Empty string
+    TREEOP ("AstConcatN {$lhsp, $rhsp.isZero}", "replaceWLhs(nodep)");  // Empty string
+    TREEOP ("AstConcatN {$lhsp.castConst, operandLiteralFormat($rhsp)}", "replaceConcatNFormat(nodep)");
+    TREEOP ("AstConcatN {operandLiteralFormat($lhsp), $rhsp.castConst}", "replaceConcatNFormat(nodep)");
+    TREEOP ("AstConcatN {operandsMergeableFormats($lhsp,,$rhsp)}", "replaceConcatNFormats(nodep)");
     // Non-zero on one side or the other
     TREEOP ("AstAnd   {$lhsp.isAllOnes, $rhsp}",        "replaceWRhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isTrue, $rhsp}",        "replaceWRhsBool(nodep)");
@@ -4685,7 +4747,7 @@ class ConstVisitor final : public VNVisitor {
             if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)
                 || VN_IS(nodep, Dot) || VN_IS(nodep, Text)) {
                 // ignore
-            } else if (VN_IS(nodep, Pattern) || VN_IS(nodep, PatMember)) {
+            } else if (VN_IS(nodep, Pattern) || VN_IS(nodep, PatternItem)) {
                 // A parameter override pattern is typed later, so only fold its members
                 iterateChildren(nodep);
             } else if (AstCellRef* const crp = VN_CAST(nodep, CellRef)) {
@@ -4697,7 +4759,7 @@ class ConstVisitor final : public VNVisitor {
                 return;
             } else {
                 nodep->v3error("Expecting expression to be constant, but can't convert a "
-                               << nodep->prettyTypeName() << " to constant.");
+                               << nodep->prettyTypeNameQ() << " to constant.");
             }
         } else {
             if (nodep->isTimingControl()) m_hasJumpDelay = true;
@@ -4768,6 +4830,34 @@ uint32_t ConstVisitor::s_globalPassNum = 0;
 
 //######################################################################
 // Const class functions
+
+void V3Const::collectFixedAggregateTerms(VNDeleter& deleter, AstNodeExpr* const fromp,
+                                         std::vector<AstNodeExpr*>& termps, const bool packReal,
+                                         const bool warnImpure) {
+    FileLine* const flp = fromp->fileline();
+    const AstNodeDType* const dtypep = fromp->dtypep()->skipRefp();
+    const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType);
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        for (const int index : adtypep->declRange().seqLeftToRight()) {
+            collectFixedAggregateTerms(
+                deleter,
+                new AstArraySel{flp, fromp->cloneTree(false, warnImpure), index - adtypep->lo()},
+                termps, packReal, warnImpure);
+        }
+    } else if (sdtypep && !sdtypep->packed()) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
+            AstStructSel* const selp
+                = new AstStructSel{flp, fromp->cloneTree(false, warnImpure), itemp->name()};
+            selp->dtypeFrom(itemp->dtypep());
+            selp->didWidth(true);
+            collectFixedAggregateTerms(deleter, selp, termps, packReal, warnImpure);
+        }
+    } else {
+        termps.push_back(packReal && dtypep->isDouble() ? new AstRealToBits{flp, fromp} : fromp);
+        return;
+    }
+    deleter.pushDeletep(fromp);
+}
 
 //! Force this cell node's parameter list to become a constant
 void V3Const::constifyParamsEdit(AstNode* nodep) {

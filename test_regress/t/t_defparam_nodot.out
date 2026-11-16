@@ -1,0 +1,11 @@
+%Error-UNSUPPORTED: t/t_defparam_nodot.v:9:16: Unsupported: defparam with no dot
+    9 |   defparam PAR = 5;
+      |                ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_defparam_nodot.v:13:17: Unsupported: defparam with no dot
+   13 |   defparam PAR1 = 1, PAR2 = 2;
+      |                 ^
+%Error-UNSUPPORTED: t/t_defparam_nodot.v:13:27: Unsupported: defparam with no dot
+   13 |   defparam PAR1 = 1, PAR2 = 2;
+      |                           ^
+%Error: Exiting due to

@@ -9,13 +9,4 @@
 %Warning-COVERIGN: t/t_covergroup_iff_unsup.v:15:52: Unsupported: 'iff' in transition cover bin (guard ignored)
    15 |       illegal_bins illegal = (2 => 3) iff (enabled && value != 0);
       |                                                    ^~
-%Warning-COVERIGN: t/t_covergroup_iff_unsup.v:18:36: Unsupported: 'iff' in default cover bin (guard ignored)
-   18 |       bins fallback = default iff (enabled);
-      |                                    ^~~~~~~
-%Warning-COVERIGN: t/t_covergroup_iff_unsup.v:21:43: Unsupported: 'iff' in default cover bin (guard ignored)
-   21 |       ignore_bins fallback = default iff (!enabled);
-      |                                           ^
-%Warning-COVERIGN: t/t_covergroup_iff_unsup.v:24:52: Unsupported: 'iff' in default cover bin (guard ignored)
-   24 |       illegal_bins fallback = default iff (enabled && value != 0);
-      |                                                    ^~
 %Error: Exiting due to

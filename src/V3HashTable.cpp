@@ -1031,16 +1031,16 @@ void testMap() {
 
     // 'insert' adds a key and a value as a plain pair, as std::unordered_map::insert does
     {
-        const std::pair<Map::iterator, bool> added = map.insert({std::string{"fresh"}, 5});
+        const std::pair<Map::iterator, bool> added = map.insert({"fresh"s, 5});
         UASSERT_SELFTEST(added.second, true);  // Added, as the key is new
         UASSERT_SELFTEST(added.first->second, 5);  // With the value given
-        const std::pair<Map::iterator, bool> again = map.insert({std::string{"fresh"}, 6});
+        const std::pair<Map::iterator, bool> again = map.insert({"fresh"s, 6});
         UASSERT_SELFTEST(again.second, false);  // Rejected, as the key is present
         UASSERT_SELFTEST(again.first->second, 5);  // And the value is untouched
     }
     UASSERT_SELFTEST(map.size(), N + 1);  // Just the one entry was added
     {
-        const Map::iterator it = map.find(std::string{"fresh"});
+        const Map::iterator it = map.find("fresh"s);
         UASSERT_SELFTEST(it != map.end(), true);  // Present before the erase
         UASSERT_SELFTEST(it->second, 5);  // Still holding the first value
         map.erase(it);
@@ -1048,13 +1048,13 @@ void testMap() {
     UASSERT_SELFTEST(map.size(), N);  // Back to the earlier content
 
     // Erasing by key removes just that entry, and says whether it did
-    UASSERT_SELFTEST(map.erase(std::string{"absent"}), false);  // No such key
+    UASSERT_SELFTEST(map.erase("absent"s), false);  // No such key
     UASSERT_SELFTEST(map.size(), N);  // So nothing was erased
-    UASSERT_SELFTEST(map.erase(std::string{"key0"}), true);  // That key is present
+    UASSERT_SELFTEST(map.erase("key0"s), true);  // That key is present
     UASSERT_SELFTEST(map.size(), N - 1);  // And just the one entry went
-    UASSERT_SELFTEST(map.contains(std::string{"key0"}), false);  // Namely that one
+    UASSERT_SELFTEST(map.contains("key0"s), false);  // Namely that one
     for (size_t i = 1; i < N; ++i) {
-        UASSERT_SELFTEST(map.contains("key" + std::to_string(i)), true);  // Others intact
+        UASSERT_SELFTEST(map.contains("key"s + std::to_string(i)), true);  // Others intact
     }
 }
 

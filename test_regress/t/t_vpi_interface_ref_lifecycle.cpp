@@ -22,7 +22,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
 int errors = 0;
 
@@ -31,10 +30,8 @@ static const std::set<std::string> refNames{
     "t.foo.arr[5]",  "t.foo.arr[6]",  "t.foo.arr[7]", "t.foo.arr[8]", "t.foo.arr[9]",
     "t.foo.arr[10]", "t.foo.arr[11]", "t.foo.plain"};
 
-static void check_live(vpiHandle scope = nullptr) {
-    const TestVpiHandle namedScope
-        = scope ? nullptr : vpi_handle_by_name(const_cast<PLI_BYTE8*>("t.foo"), nullptr);
-    if (!scope) scope = namedScope;
+static void check_live() {
+    const TestVpiHandle scope = vpi_handle_by_name(const_cast<PLI_BYTE8*>("t.foo"), nullptr);
     TEST_CHECK_NZ(scope);
     if (!scope) return;
     TestVpiHandle it = vpi_iterate(vpiInternalScope, scope);
@@ -81,50 +78,6 @@ static void check_live(vpiHandle scope = nullptr) {
     TEST_CHECK_EQ(remaining.size(), 0);
 }
 
-// Capture each model's leaf handle before teardown removes hierarchy-map entries.
-static std::vector<vpiHandle> leaf_scopes() {
-    std::vector<vpiHandle> scopes;
-    TestVpiHandle roots = vpi_iterate(vpiModule, nullptr);
-    TEST_CHECK_NZ(roots);
-    if (!roots) return scopes;
-    while (TestVpiHandle root = vpi_scan(roots)) {
-        TestVpiHandle children = vpi_iterate(vpiModule, root);
-        TEST_CHECK_NZ(children);
-        if (!children) continue;
-        while (vpiHandle child = vpi_scan(children)) scopes.push_back(child);
-        children.freed();
-    }
-    roots.freed();
-    return scopes;
-}
-
-static void check_colliding_models(VerilatedContext* contextp, bool destroyFirst) {
-    std::unique_ptr<VM_PREFIX> first{new VM_PREFIX{contextp, ""}};
-    const VerilatedIfaceRef* const original = contextp->ifaceRefFind("t.foo.plain");
-    TEST_CHECK_NZ(original);
-    std::unique_ptr<VM_PREFIX> second{new VM_PREFIX{contextp, ""}};
-    // Inserting another model must not invalidate pointers or replace the first lookup.
-    TEST_CHECK_EQ(contextp->ifaceRefFind("t.foo.plain"), original);
-    const auto scopes = leaf_scopes();
-    TEST_CHECK_EQ(scopes.size(), 2);
-    if (scopes.size() == 2) {
-        check_live(scopes[0]);
-        check_live(scopes[1]);
-        if (destroyFirst)
-            first.reset();
-        else
-            second.reset();
-        // The surviving model's iteration and name lookup must still resolve its references.
-        check_live(scopes[destroyFirst ? 1 : 0]);
-    }
-    for (vpiHandle scope : scopes) vpi_release_handle(scope);
-    first.reset();
-    second.reset();
-    for (const std::string& name : refNames) {
-        TEST_CHECK_Z(contextp->ifaceRefFind(name.c_str()));
-    }
-}
-
 int main(int argc, char** argv) {
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     contextp->commandArgs(argc, argv);
@@ -138,8 +91,6 @@ int main(int argc, char** argv) {
             TEST_CHECK_Z(contextp->ifaceRefFind(name.c_str()));
         }
     }
-    check_colliding_models(contextp.get(), false);
-    check_colliding_models(contextp.get(), true);
     if (errors) return 1;
     std::cout << "*-* All Finished *-*" << std::endl;
     return 0;

@@ -263,6 +263,10 @@
                                                             : ... note: In instance 't'
   163 |       bins streaming_condition[] = int'({<<{mask}}) != 0 ? values : other_values;
       |            ^~~~~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:168:12: Unsupported: Array of default cover bins 'remaining' (treated as one bin).
+                                                            : ... note: In instance 't'
+  168 |       bins remaining[2] = default;
+      |            ^~~~~~~~~
 %Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:175:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
   175 |       bins concat_condition[] = {1'b1 + 1'b1} == 2'b10 ? values : other_values;

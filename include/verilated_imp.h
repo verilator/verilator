@@ -212,6 +212,11 @@ protected:
     // Used by ifaceRefInsert, ifaceRefFind, ifaceRefErase, ifaceRefMap
     mutable VerilatedMutex m_ifaceRefMutex;  // Protect m_ifaceRefMap
     VerilatedIfaceRefMap m_ifaceRefMap VL_GUARDED_BY(m_ifaceRefMutex);
+
+    // Models attached to this context, keyed by their full hierarchical path
+    mutable VerilatedMutex m_modelsMutex;  // Protect m_models
+    std::map<std::string, VerilatedModel*> m_models VL_GUARDED_BY(m_modelsMutex);
+    uint32_t m_nextModelId VL_GUARDED_BY(m_modelsMutex) = 0;  // Id of the next model added
 };
 
 //======================================================================

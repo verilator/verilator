@@ -1,8 +1,0 @@
-%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:12:16: Unsupported: defparam with no dot
-   12 |   defparam PAR = 5;
-      |                ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_gen_defparam_multi.v:28:19: Unsupported: defparam with arrayed instance
-   28 |       defparam blk[i].u_m3.PAR3 = i;
-      |                   ^
-%Error: Exiting due to

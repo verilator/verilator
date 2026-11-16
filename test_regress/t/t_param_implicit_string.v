@@ -17,8 +17,16 @@ module sub #(
     parameter INDEX = 4096
 );
   parameter STRG = $sformatf("stringed[%0d]", INDEX);
+  typedef struct {
+    int unsigned F;
+    logic [32:0] G;
+  } s_t;
+  localparam s_t S = '{F: 32'd7, G: 33'h1_0000_0003};
+  localparam W = S;  // Implicit type from unpacked struct, issue #8236
   initial begin
     `checks(STRG, "stringed[4096]");
+    if (W.F != 7) $stop;
+    if (W.G != 33'h1_0000_0003) $stop;
     $finish;
   end
 endmodule

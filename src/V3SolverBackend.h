@@ -79,8 +79,8 @@ public:
     // nearest base. user2p is only set on the root class where __Vrandmode was created.
     static AstVar* randModeVarp(AstNodeModule* classp) VL_MT_DISABLED;
     // Guard stmtp by the mode bit, if the variable/constraint uses one
-    static AstNode* wrapIfMode(const RandomizeMode mode, AstVar* modeVarp,
-                               AstNode* stmtp) VL_MT_DISABLED;
+    static AstNodeStmt* wrapIfMode(const RandomizeMode mode, AstVar* modeVarp,
+                                   AstNodeStmt* stmtp) VL_MT_DISABLED;
 };
 
 //######################################################################

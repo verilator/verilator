@@ -207,6 +207,11 @@ List Of Warnings
       input a;
       assign a = 1'b1;
 
+   This error is not reported when a continuous assignment or port
+   connection drives a net input port from outside its module or interface,
+   either through a hierarchical reference or from an instance inserted by
+   ``bind``.
+
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
@@ -480,6 +485,9 @@ List Of Warnings
    Disabling this warning does not change execution, only suppresses the
    warning message.
 
+   Non-blocking assignments in an `always_latch` are reported as
+   :option:`LATCHDLY` instead.
+
    Faulty example:
 
    .. include:: ../../docs/gen/ex_COMBDLY_faulty.rst
@@ -497,10 +505,11 @@ List Of Warnings
    contains a non-blocking assignment ``<=``, or a non-blocking event trigger
    ``->>``. A DPI import declared with ``context`` is taken to call every DPI
    export. Unlike in the combinational logic block itself (see
-   :option:`COMBDLY`), Verilator cannot convert it to the blocking form, as the
-   function or task might also be called from elsewhere. A non-blocking
-   assignment in a function or task that is inlined becomes part of the
-   combinational logic block, so is reported as :option:`COMBDLY` instead.
+   :option:`COMBDLY` and :option:`LATCHDLY`), Verilator cannot convert it to
+   the blocking form, as the function or task might also be called from
+   elsewhere. A non-blocking assignment in an inlined function or task
+   becomes part of the calling block, so is reported as :option:`COMBDLY`
+   or :option:`LATCHDLY` instead.
 
    This error can be disabled. Disabling it is only safe if no non-blocking
    assignment executes at runtime through the reported call site. Otherwise the
@@ -1250,6 +1259,36 @@ List Of Warnings
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
+.. option:: LATCHDLY
+
+   Warns that Verilator does not support a non-blocking assignment ``<=``,
+   or a non-blocking event trigger ``->>``, in an ``always_latch``, and will
+   execute it as blocking.
+
+   This is fine for a typical clock gate, whose latch opens on the opposite
+   clock edge from the flops it drives. It matters when a flop reads the
+   latch output on the same clock edge that opens the latch, for example a
+   latch register file read on the edge it is written: the flop may then get
+   the latch's new value instead of its old one.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_LATCHDLY_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_LATCHDLY_msg.rst
+
+   To repair, replace the ``always_latch`` with an ``always`` that lists
+   every signal the block reads:
+
+   .. code-block:: sv
+
+      always @(en or d) if (en) q <= d;
+
+   Ignoring this warning may make Verilator simulations differ from other
+   simulators.
+
 .. option:: LIFETIME
 
    Error when a variable is referenced in a process that can outlive the process
@@ -1376,6 +1415,10 @@ List Of Warnings
    ignores blocks with ``begin``/``end``, as the ``end`` visually indicates
    the earlier statement's end.
 
+   Verilator also warns when a statement follows an ``end`` that starts its
+   line, on that same line, and the following line is indented deeper, as
+   this suggests an ``else`` was intended between them.
+
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
@@ -1388,6 +1431,17 @@ List Of Warnings
       if (something)
         statement_in_if;
         statement_not_in_if;  //<--- Warning
+
+   or
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 3
+
+      if (something) begin
+      end begin  //<--- Warning, was 'end' indented to be 'end else'?
+        statement;
+      end
 
    Results in:
 
@@ -1629,7 +1683,11 @@ List Of Warnings
    Warns when a non-standard language feature is used that has a standard
    equivalent, which might behave differently in corner cases. For example
    ``$psprintf`` system function is replaced by its standard equivalent
-   ``$sformatf``.
+   ``$sformatf``, and a C-style packed dimension ``[size]``, as accepted by
+   other simulators, by the ascending range ``[0:size-1]``. Likewise, a
+   keyed assignment pattern without the leading apostrophe, such as
+   ``{default: 0}`` as accepted by other simulators, is replaced by
+   ``'{default: 0}``.
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
@@ -2559,6 +2617,11 @@ List Of Warnings
    An error that a construct might be legal according to IEEE but is not
    currently supported by Verilator.
 
+   This includes DPI imported task calls in ``always`` processes when any DPI
+   exported task can suspend, even if the imported task does not call that
+   export. Calls through other tasks are also affected, as are ``always_comb``,
+   ``always_latch``, and ``always_ff`` processes.
+
    A typical workaround is to rewrite the construct into a more common
    alternative language construct.
 
@@ -2779,7 +2842,8 @@ List Of Warnings
 
    Verilator attempts to track the minimum width of unsized constants
    and will suppress the warning when the minimum width is appropriate to
-   fit the required size.
+   fit the required size. A size cast or an integral type cast can also
+   suppress operand width warnings within its expression.
 
    Disabling/enabling WIDTH is equivalent to disabling/enabling the
    :option:`WIDTHDIGITS`, :option:`WIDTHEXPAND`, :option:`WIDTHTRUNC`,
