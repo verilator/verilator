@@ -1070,23 +1070,30 @@ class FsmDetectVisitor final : public VNVisitorConst {
         return nextp ? enabledNextp(nextp, stateRefp) : exprp;
     }
 
-    // Of 'if (en) commit', or an if/else whose other arm is 'state = state', return the
-    // commit, through any depth of enables; else return nodep
+    // Whether 'nodep' is 'x = x', which holds x
+    static bool holdsVar(const AstNode* nodep) {
+        const AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
+        const AstVarRef* const lhsp = assp ? VN_CAST(assp->lhsp(), VarRef) : nullptr;
+        const AstVarRef* const rhsp = assp ? VN_CAST(assp->rhsp(), VarRef) : nullptr;
+        return lhsp && rhsp && lhsp->varScopep() == rhsp->varScopep();
+    }
+
+    // Of 'if (en) commit', or an if/else whose other arm is 'x = x', return the commit,
+    // through any depth of enables; else return nodep.  A commit of several statements,
+    // e.g. V3LiftExpr's form of 'state = c ? next : state', is returned as its list.
     static AstNode* enabledCommitp(AstNode* nodep) {
         AstIf* const ifp = VN_CAST(nodep, If);
         if (!ifp) return nodep;
-        AstNode* const thenp = enabledCommitp(singleMeaningfulStmt(ifp->thensp()));
-        if (!skipLeadingIgnorableStmt(ifp->elsesp())) return thenp ? thenp : nodep;
-        AstNodeAssign* const thenAssp = VN_CAST(thenp, NodeAssign);
-        AstNodeAssign* const elseAssp
-            = VN_CAST(enabledCommitp(singleMeaningfulStmt(ifp->elsesp())), NodeAssign);
-        if (!thenAssp || !elseAssp) return nodep;
-        const AstVarRef* const lhsp = VN_CAST(thenAssp->lhsp()->baseFromp(true), VarRef);
-        const AstVarRef* const elseLhsp = VN_CAST(elseAssp->lhsp()->baseFromp(true), VarRef);
-        if (!lhsp || !elseLhsp || lhsp->varScopep() != elseLhsp->varScopep()) return nodep;
-        AstNodeExpr* const nextp = enabledArmp(thenAssp->rhsp(), elseAssp->rhsp(), lhsp);
-        if (!nextp) return nodep;
-        return nextp == thenAssp->rhsp() ? thenAssp : elseAssp;
+        const auto armCommitp = [](AstNode* armp) {
+            AstNode* const stmtp = singleMeaningfulStmt(armp);
+            return stmtp ? enabledCommitp(stmtp) : skipLeadingIgnorableStmt(armp);
+        };
+        AstNode* const thenp = armCommitp(ifp->thensp());
+        if (!skipLeadingIgnorableStmt(ifp->elsesp())) return thenp;
+        AstNode* const elsep = armCommitp(ifp->elsesp());
+        if (holdsVar(elsep)) return thenp;
+        if (holdsVar(thenp)) return elsep;
+        return nodep;
     }
 
     // Return the value an arm of V3LiftExpr's form assigns its temporary; of an enable,
@@ -1133,6 +1140,22 @@ class FsmDetectVisitor final : public VNVisitorConst {
         return assp;
     }
 
+    // Match 'state = en ? next : state' or its V3LiftExpr form, an enable in the commit
+    static AstNodeAssign* enabledCondAssign(AstNode* stmtsp, AstVarScope*& stateVscp,
+                                            AstVarScope*& fromVscp) {
+        const AstVarRef* lhsp;
+        AstNodeExpr* condp;
+        AstNodeExpr* thenp;
+        AstNodeExpr* elsep;
+        AstNodeAssign* const assp = condStateAssign(stmtsp, lhsp, condp, thenp, elsep);
+        const AstVarRef* const nextRefp
+            = assp ? VN_CAST(enabledArmp(thenp, elsep, lhsp), VarRef) : nullptr;
+        if (!nextRefp) return nullptr;
+        stateVscp = lhsp->varScopep();
+        fromVscp = nextRefp->varScopep();
+        return assp;
+    }
+
     // Match 'state = reset ? CONST : next', an active high reset folded into the commit,
     // or active low 'state = reset_n ? next : CONST', with or without an enable on next.
     // An enable on the reset arm gives the same arcs, to CONST from every state.  Or match
@@ -1141,17 +1164,14 @@ class FsmDetectVisitor final : public VNVisitorConst {
                                              AstVarScope*& fromVscp, AstNodeExpr*& condp,
                                              AstNodeExpr*& resetValuep, FsmStateValue& resetValue,
                                              bool& activeLow) {
+        if (AstNodeAssign* const assp = enabledCondAssign(stmtsp, stateVscp, fromVscp)) {
+            return assp;
+        }
         const AstVarRef* lhsp;
         AstNodeExpr* nextp;
         AstNodeAssign* const assp = condStateAssign(stmtsp, lhsp, condp, resetValuep, nextp);
         if (!assp) return nullptr;
         stateVscp = lhsp->varScopep();
-        if (const AstVarRef* const enabledRefp
-            = VN_CAST(enabledArmp(resetValuep, nextp, lhsp), VarRef)) {
-            resetValuep = nullptr;
-            fromVscp = enabledRefp->varScopep();
-            return assp;
-        }
         activeLow = !VN_IS(nextp, VarRef) && isSimpleResetCond(condp);
         if (activeLow) std::swap(resetValuep, nextp);
         AstVarRef* const nextRefp = VN_CAST(nextp, VarRef);
@@ -1700,26 +1720,9 @@ class FsmDetectVisitor final : public VNVisitorConst {
             AstNode* const elseNodep = singleMeaningfulBranch(commitp);
             UASSERT_OBJ(elseNodep, ifp, "register reset match requires a non-empty commit branch");
             AstNode* const enCommitp = enabledCommitp(elseNodep);
-            if (!nodeStateVarAssign(enCommitp, stateVscp, nextVscp)) {
-                // 'state = en ? next : state' or its V3LiftExpr form, an enable in the commit,
-                // which may be under 'if (en)'
-                AstNode* condStmtsp = enCommitp;
-                const AstIf* const enIfp = VN_CAST(enCommitp, If);
-                if (enIfp && !skipLeadingIgnorableStmt(enIfp->elsesp())) {
-                    condStmtsp = enIfp->thensp();
-                }
-                const AstVarRef* lhsp;
-                AstNodeExpr* condp;
-                AstNodeExpr* thenp;
-                AstNodeExpr* elsep;
-                if (!condStateAssign(skipLeadingIgnorableStmt(condStmtsp), lhsp, condp, thenp,
-                                     elsep)) {
-                    return false;
-                }
-                const AstVarRef* const nextRefp = VN_CAST(enabledArmp(thenp, elsep, lhsp), VarRef);
-                if (!nextRefp) return false;
-                stateVscp = lhsp->varScopep();
-                nextVscp = nextRefp->varScopep();
+            if (!nodeStateVarAssign(enCommitp, stateVscp, nextVscp)
+                && !enabledCondAssign(enCommitp, stateVscp, nextVscp)) {
+                return false;
             }
             if (!emptyResetBranch && resetStateVscp != stateVscp) return false;
             if (!enableOnly) {

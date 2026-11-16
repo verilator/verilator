@@ -529,6 +529,67 @@ module fsm_enable (
     if (en) if_en_cond_q <= sel ? if_en_cond_d : if_en_cond_q;
   end
 
+  // An enabled commit of several statements, as an else commit may be
+  state_t then_two_q;
+  state_t then_two_d;
+  always_comb begin
+    then_two_d = then_two_q;
+    case (then_two_q)
+      S0: then_two_d = S1;
+      S1: then_two_d = S2;
+      S2: then_two_d = S0;
+      default: then_two_d = S0;
+    endcase
+  end
+  logic then_two_x;
+  always_ff @(posedge clk) begin
+    if (en) begin
+      then_two_q <= then_two_d;
+      then_two_x <= 1'b1;
+    end
+  end
+
+  state_t reset_two_en_q;
+  state_t reset_two_en_d;
+  always_comb begin
+    reset_two_en_d = reset_two_en_q;
+    case (reset_two_en_q)
+      S0: reset_two_en_d = S1;
+      S1: reset_two_en_d = S2;
+      S2: reset_two_en_d = S0;
+      default: reset_two_en_d = S0;
+    endcase
+  end
+  logic [3:0] reset_two_en_cnt;
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      reset_two_en_q <= S0;
+      reset_two_en_cnt <= '0;
+    end
+    else if (en) begin
+      reset_two_en_q <= reset_two_en_d;
+      reset_two_en_cnt <= reset_two_en_cnt + 4'd1;
+    end
+  end
+
+  // An explicit hold beside a conditional commit
+  state_t hold_cond_q;
+  state_t hold_cond_d;
+  always_comb begin
+    hold_cond_d = hold_cond_q;
+    case (hold_cond_q)
+      S0: hold_cond_d = S1;
+      S1: hold_cond_d = S2;
+      S2: hold_cond_d = S0;
+      default: hold_cond_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) hold_cond_q <= S0;
+    else if (en) hold_cond_q <= sel ? hold_cond_d : hold_cond_q;
+    else hold_cond_q <= hold_cond_q;
+  end
+
   // Not enables, so no FSM
 
   // Neither arm holds the state
@@ -607,24 +668,23 @@ module fsm_enable (
   end
   always_ff @(posedge clk) then_hold_q <= rst ? S0 : (en ? then_hold_q : (sel ? then_hold_d : b_d));
 
-  // A commit of several statements
-  state_t then_two_q;
-  state_t then_two_d;
+  // An enable on the reset arm as an if, unlike the conditional form of reset_en_q
+  state_t reset_if_en_q;
+  state_t reset_if_en_d;
   always_comb begin
-    then_two_d = then_two_q;
-    case (then_two_q)
-      S0: then_two_d = S1;
-      S1: then_two_d = S2;
-      S2: then_two_d = S0;
-      default: then_two_d = S0;
+    reset_if_en_d = reset_if_en_q;
+    case (reset_if_en_q)
+      S0: reset_if_en_d = S1;
+      S1: reset_if_en_d = S2;
+      S2: reset_if_en_d = S0;
+      default: reset_if_en_d = S0;
     endcase
   end
-  logic then_two_x;
   always_ff @(posedge clk) begin
-    if (en) begin
-      then_two_q <= then_two_d;
-      then_two_x <= 1'b1;
+    if (rst) begin
+      if (en) reset_if_en_q <= S0;
     end
+    else reset_if_en_q <= reset_if_en_d;
   end
 
   // A commit that loads a constant, not an enable
