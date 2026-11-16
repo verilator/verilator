@@ -2004,7 +2004,8 @@ class WidthVisitor final : public VNVisitor {
             bool hasPropertyOp = propp->isMultiCycleSva();
             if (!hasPropertyOp) {
                 propp->foreach([&](const AstNode* np) {
-                    if (VN_IS(np, Implication) || VN_IS(np, Until) || VN_IS(np, PropSpec)) {
+                    if (VN_IS(np, Implication) || VN_IS(np, Until) || VN_IS(np, PropSpec)
+                        || VN_IS(np, SEventually)) {
                         hasPropertyOp = true;
                     }
                 });

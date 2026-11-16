@@ -12,5 +12,11 @@ module t (input clk);
   assert property (@(posedge clk) always [0:3] (a |-> b));
   assert property (@(posedge clk) always [0:3] (a |=> b));
   assert property (@(posedge clk) always [0:3] (a ##1 b));
+  // s_eventually inside bounded always or s_always, also as a consequent and procedural
+  assert property (@(posedge clk) always [0:2] s_eventually b);
+  assert property (@(posedge clk) always [1:$] s_eventually b);
+  assert property (@(posedge clk) s_always [1:2] s_eventually b);
+  assert property (@(posedge clk) a |-> always [0:2] s_eventually b);
+  always @(posedge clk) assert property (a |-> always [0:2] s_eventually b);
 
 endmodule

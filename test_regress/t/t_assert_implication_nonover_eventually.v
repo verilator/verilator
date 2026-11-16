@@ -133,6 +133,18 @@ module t;
       `checkd(fail_ant2, 0);
     end
 
+  // A clocking event on both edges of clk (IEEE 1800-2023 9.4.2): a1 is sampled 1 at the
+  // falling edge in cycle 3 and at the rising edge that ends it, so there are two attempts,
+  // and both pass at the falling edge in cycle 6, where b1 is sampled 1
+  int pass_edge = 0, fail_edge = 0;
+  assert property (@(edge clk) a1 |=> s_eventually b1) pass_edge = pass_edge + 1;
+  else fail_edge = fail_edge + 1;
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkp(pass_edge, 2);
+      `checkd(fail_edge, 0);
+    end
+
   // Two attempts wait at the same time (from a3 in cycles 11 and 12) and both pass on b3 in
   // cycle 13
   logic a3 = 0, b3 = 0;

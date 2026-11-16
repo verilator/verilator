@@ -11,4 +11,24 @@
                                                  : ... note: In instance 't'
    14 |   assert property (@(posedge clk) always [0:3] (a ##1 b));
       |                                   ^~~~~~
+%Error-UNSUPPORTED: t/t_prop_always_unsup.v:16:35: Unsupported: property/sequence operator inside bounded always (IEEE 1800-2023 16.12.11)
+                                                 : ... note: In instance 't'
+   16 |   assert property (@(posedge clk) always [0:2] s_eventually b);
+      |                                   ^~~~~~
+%Error-UNSUPPORTED: t/t_prop_always_unsup.v:17:35: Unsupported: property/sequence operator inside bounded always (IEEE 1800-2023 16.12.11)
+                                                 : ... note: In instance 't'
+   17 |   assert property (@(posedge clk) always [1:$] s_eventually b);
+      |                                   ^~~~~~
+%Error-UNSUPPORTED: t/t_prop_always_unsup.v:18:35: Unsupported: property/sequence operator inside bounded always (IEEE 1800-2023 16.12.11)
+                                                 : ... note: In instance 't'
+   18 |   assert property (@(posedge clk) s_always [1:2] s_eventually b);
+      |                                   ^~~~~~~~
+%Error-UNSUPPORTED: t/t_prop_always_unsup.v:19:41: Unsupported: property/sequence operator inside bounded always (IEEE 1800-2023 16.12.11)
+                                                 : ... note: In instance 't'
+   19 |   assert property (@(posedge clk) a |-> always [0:2] s_eventually b);
+      |                                         ^~~~~~
+%Error-UNSUPPORTED: t/t_prop_always_unsup.v:20:48: Unsupported: property/sequence operator inside bounded always (IEEE 1800-2023 16.12.11)
+                                                 : ... note: In instance 't'
+   20 |   always @(posedge clk) assert property (a |-> always [0:2] s_eventually b);
+      |                                                ^~~~~~
 %Error: Exiting due to

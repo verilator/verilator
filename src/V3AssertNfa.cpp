@@ -853,26 +853,11 @@ class SvaNfaBuilder final {
         return res;
     }
 
-    // s_eventually is lowered by V3AssertPre, and only as the consequent of a chain of |-> and
-    // |=> (AssertNfaVisitor::checkEventuallyProp)
-    static BuildResult unsupportedEventuallyBuild(AstSEventually* nodep) {
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: s_eventually other than as the consequent"
-                                     " of a chain of |-> and |=>");
-        return BuildResult::failWithError();
-    }
-
     // always[lo:hi] / s_always[lo:hi] (IEEE 1800-2023 16.12.11).
     BuildResult buildPropAlways(AstPropAlways* nodep, SvaStateVertex* entryVtxp,
                                 bool isTopLevelStep = false) {
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const propp = nodep->propp();
-        // propp is tested as a boolean below, which an s_eventually in it is not
-        AstSEventually* eventuallyp = nullptr;
-        propp->exists([&](AstSEventually* np) {
-            eventuallyp = np;
-            return true;
-        });
-        if (eventuallyp) return unsupportedEventuallyBuild(eventuallyp);
         const unsigned lo = getConstUInt(nodep->loBoundp());
         if (VN_IS(nodep->hiBoundp(), Unbounded)) {
             // Weak always [lo:$]: unbounded upper bound (IEEE 1800-2023 16.12.11).
@@ -1706,9 +1691,6 @@ public:
                                 isTopLevelStep);
         }
         if (VN_IS(nodep, SNonConsRep)) return BuildResult::fail();
-        if (AstSEventually* const eventuallyp = VN_CAST(nodep, SEventually)) {
-            return unsupportedEventuallyBuild(eventuallyp);
-        }
         if (AstImplication* const implp = VN_CAST(nodep, Implication)) {
             return buildImplicationEdges(implp->lhsp(), implp->rhsp(), entryVtxp,
                                          implp->isOverlapped(), implp->isFollowedBy(),
@@ -1717,7 +1699,19 @@ public:
         if (AstUntil* const untilp = VN_CAST(nodep, Until)) {
             return buildUntil(untilp, entryVtxp, isTopLevelStep);
         }
-        // Boolean leaf (including LogAnd): return as finalCond
+        // Boolean leaf (including LogAnd): return as finalCond. An s_eventually in it, itself
+        // or under an operator such as 'not', is lowered only by V3AssertPre, and only as the
+        // consequent of a chain of |-> and |=> (AssertNfaVisitor::checkEventuallyProp)
+        AstSEventually* eventuallyp = nullptr;
+        nodep->exists([&](AstSEventually* np) {
+            eventuallyp = np;
+            return true;
+        });
+        if (eventuallyp) {
+            eventuallyp->v3warn(E_UNSUPPORTED, "Unsupported: s_eventually other than as the"
+                                               " consequent of a chain of |-> and |=>");
+            return BuildResult::failWithError();
+        }
         return {entryVtxp, nodep, {}};
     }
 
@@ -3440,11 +3434,14 @@ class AssertNfaVisitor final : public VNVisitor {
     // the implications above it if their antecedents are single-cycle. That lowering
     // delays only the antecedent of a |=> by one cycle, so a |=> must be the outermost
     // implication, and it applies disable iff only when an attempt starts, not while
-    // s_eventually waits (#9082). Returns true for a property whose chain of |-> and |=>
-    // ends in s_eventually: the first unsupported part of the chain, or a disable iff, is
-    // reported here, else the property is left to V3AssertPre. Returns false for any other
-    // property, which is built, and the builder reports an s_eventually it meets. A property
-    // that is not multi-cycle, such as a |-> s_eventually b, does not reach this function.
+    // s_eventually waits (#9082). Its process is forked by an always block on the clocking
+    // event, which V3Active makes combinational for a non-edge event such as @(clk); that
+    // block then does not converge. Returns true for a property whose chain of |-> and |=>
+    // ends in s_eventually: the first unsupported part of the chain, a disable iff, or a
+    // non-edge clocking event is reported here, else the property is left to V3AssertPre.
+    // Returns false for any other property, which is built, and the builder reports an
+    // s_eventually it meets. A property that is not multi-cycle, such as a |-> s_eventually
+    // b, does not reach this function.
     bool checkEventuallyProp(AstPropSpec* propp) {
         AstNodeExpr* const topp = propp->propp();
         AstNode* errp = nullptr;  // First unsupported part of the chain
@@ -3467,6 +3464,12 @@ class AssertNfaVisitor final : public VNVisitor {
         if (!errp && propp->disablep()) {
             errp = topp;
             whatp = "with disable iff in a multi-cycle property";
+        }
+        for (AstSenItem* sp = propp->sensesp(); sp && !errp; sp = VN_CAST(sp->nextp(), SenItem)) {
+            if (!sp->edgeType().anEdge()) {
+                errp = sp;
+                whatp = "with a non-edge clocking event in a multi-cycle property";
+            }
         }
         if (errp) {
             errp->v3warn(E_UNSUPPORTED, "Unsupported: s_eventually " << whatp);

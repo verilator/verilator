@@ -17,11 +17,13 @@ module t;
   // s_eventually is supported as the consequent of a chain of |-> and |=> whose antecedents have
   // no sequence operator, with a boolean operand; an exact [*1] around the operand or an
   // antecedent is accepted (b[*1] is b). Reported, one message per assertion: s_eventually
-  // anywhere else, also under always or s_always; an antecedent with a sequence operator, also
-  // a[*1:1]; a |=> that is not the outermost implication; disable iff, also a module default, in
-  // a multi-cycle property (here one with a |=> or a [*1]; a |-> s_eventually b is not
-  // multi-cycle and is not reported); an operand with a sequence or property operator, or with a
-  // sampled value function, also a global clocking one
+  // anywhere else, also under not after a |-> (s_eventually inside a bounded always or s_always
+  // is reported by t_prop_always_unsup); an antecedent with a sequence operator, also a[*1:1];
+  // a |=> that is not the outermost implication; disable iff, also a module default, in a
+  // multi-cycle property (here one with a |=> or a [*1]; a |-> s_eventually b is not
+  // multi-cycle and is not reported); a clocking event without an edge, such as @(clk), in a
+  // multi-cycle property; an operand with a sequence or property operator, a nested
+  // s_eventually included, or with a sampled value function, also a global clocking one
   logic a = 0, b = 0, c = 0;
   global clocking @(posedge clk);
   endclocking
@@ -30,13 +32,10 @@ module t;
   assert property (@(posedge clk) a |-> c |=> s_eventually b);
   assert property (@(posedge clk) a |-> c |=> c |=> s_eventually b);
   assert property (@(posedge clk) a |=> not s_eventually b);
+  assert property (@(posedge clk) a |=> c |-> not s_eventually b);
   assert property (@(posedge clk) not (a |=> s_eventually b));
   assert property (@(posedge clk) a |-> (s_eventually b) and c);
   assert property (@(posedge clk) a #=# s_eventually b);
-  assert property (@(posedge clk) always [0:2] s_eventually b);
-  assert property (@(posedge clk) always [1:$] s_eventually b);
-  assert property (@(posedge clk) s_always [1:2] s_eventually b);
-  assert property (@(posedge clk) a |-> always [0:2] s_eventually b);
   assert property (@(posedge clk) disable iff (c) a |=> s_eventually b);
   assert property (@(posedge clk) disable iff (c) a |-> s_eventually b[*1]);
   assert property (@(posedge clk) disable iff (c) a[*1] |-> s_eventually b);
@@ -60,6 +59,8 @@ module t;
   assert property (@(posedge clk) a |-> s_eventually $changing_gclk(b));
   assert property (@(posedge clk) a |-> s_eventually (b or c));
   assert property (@(posedge clk) a |-> s_eventually (b ##1 c));
+  assert property (@(posedge clk) a |=> s_eventually (s_eventually b));
+  assert property (@(posedge clk) s_eventually (s_eventually b));
   // The operand is checked after its named sequences and properties are inlined; a named
   // property is reported at its body
   sequence s_seq; b ##1 c; endsequence
@@ -82,7 +83,14 @@ module t;
   assert property (@(posedge clk) if (c) s_eventually b else (a[=1]))
     $display("pass");
   always @(posedge clk) assert property (a |=> s_eventually b[*2]);
+  // A clocking event without an edge, also in a cover property, after |=> c |->, and with a
+  // disable iff, which is reported first
+  assert property (@(clk) a |=> s_eventually b);
+  cover property (@(clk) a |=> s_eventually b);
+  assert property (@(clk) a |=> c |-> s_eventually b);
+  assert property (@(clk) disable iff (c) a |=> s_eventually b);
   sub u_sub (.clk(clk), .rst(c), .a(a), .b(b));
+  sub_change u_chg (.clk(clk), .a(a), .b(b));
 
   always @(posedge clk) begin
     ++cyc;
@@ -105,4 +113,15 @@ module sub (
   assert property (@(posedge clk) b |=> s_eventually a);
   // An unsupported part of the chain is reported before the disable iff
   assert property (@(posedge clk) a |-> b |=> s_eventually a);
+endmodule
+
+// The same from a default clocking block
+module sub_change (
+    input clk,
+    input a,
+    input b
+);
+  default clocking cb @(clk);
+  endclocking
+  assert property (a |=> s_eventually b);
 endmodule

@@ -1095,9 +1095,10 @@ private:
     }
     // What in the operand of s_eventually the process below cannot evaluate, or nullptr.
     // The process tests the operand as a boolean at each clock tick, so it cannot evaluate a
-    // sequence or property operator. It is forked when the attempt starts and reads a copy,
-    // made then, of the history that $past, $rose, $fell, $stable and $changed use, so these
-    // see the history of the attempt's first tick. The future-value global clocking functions
+    // sequence or property operator, a nested s_eventually included (which isMultiCycleSva()
+    // does not count). It is forked when the attempt starts and reads a copy, made then, of the
+    // history that $past, $rose, $fell, $stable and $changed use, so these see the history of
+    // the attempt's first tick. The future-value global clocking functions
     // ($future_gclk, $rising_gclk, ...) are reported too: V3Assert evaluates them by delaying
     // every other variable of the assertion by one tick, which it cannot do for the
     // variables that this process writes.
@@ -1107,7 +1108,7 @@ private:
             sampled |= VN_IS(np, Past) || VN_IS(np, Rose) || VN_IS(np, Fell) || VN_IS(np, Stable)
                        || VN_IS(np, Future) || VN_IS(np, Rising) || VN_IS(np, Falling)
                        || VN_IS(np, Steady);
-            return np->isMultiCycleSva();
+            return np->isMultiCycleSva() || VN_IS(np, SEventually);
         });
         if (multiCycle) return "sequence or property operator";
         if (sampled) return "sampled value function";
