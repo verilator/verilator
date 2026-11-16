@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// Per-attempt s_always end-of-simulation failure multiplicity.
+// s_always end-of-simulation failures. Comments below describe #7946 per-attempt multiplicity; golden reflects its revert (#8258)
 
 module t (
 `ifdef VERILATOR
