@@ -1,0 +1,16 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// Paths through unsupported containers: an instance array, a primitive, an interface signal
+insert_dpihook -callback "instrument_var" -var "top_module.u[0].sig"
+insert_dpihook -callback "instrument_var" -var "top_module.ud.a"
+insert_dpihook -callback "instrument_var" -var "top_module.ud.a.m"
+insert_dpihook -callback "instrument_var" -var "top_module.bi.p.a"
+// Member paths to an unpacked aggregate and into a variable of a generate block
+insert_dpihook -callback "cb" -var "top_module.s.arr"
+insert_dpihook -callback "cb" -var "top_module.g[0].gs.b"

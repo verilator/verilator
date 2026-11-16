@@ -8655,8 +8655,7 @@ vltItem:
         |       vltInlineFront vltDModuleE vltDFTaskE
                         { V3Control::addInline($<fl>1, *$2, *$3, $1); }
         |       yVLT_INSERT_DPIHOOK yVLT_D_CALLBACK yaSTRING yVLT_D_VAR yaSTRING
-                        { v3Global.setNeedDpiHooks();
-                          V3Control::addHookInsertCfg($<fl>1, *$3, *$5); }
+                        { V3Control::addHookInsertCfg($<fl>1, *$3, *$5); }
         |       yVLT_COVERAGE_BLOCK_OFF vltDFile
                         { V3Control::addCoverageBlockOff(*$2, 0); }
         |       yVLT_COVERAGE_BLOCK_OFF vltDFile yVLT_D_LINES yaINTNUM

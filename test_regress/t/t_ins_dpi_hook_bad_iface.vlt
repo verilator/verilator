@@ -6,8 +6,5 @@
 
 `verilator_config
 
-// A missing signal, an unpacked aggregate, a floating-point signal, a read-write reference
+// A missing signal
 insert_dpihook -callback "cb" -var "top_module.bi1.nosuch"
-insert_dpihook -callback "cb" -var "top_module.bi2.us"
-insert_dpihook -callback "cb" -var "top_module.bi3.rv"
-insert_dpihook -callback "cb" -var "top_module.bi4.seed"

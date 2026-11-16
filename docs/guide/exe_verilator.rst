@@ -661,7 +661,7 @@ Summary:
    re-evaluated every step. Larger values re-evaluate less often. This trades
    temporal resolution of the injected behavior for simulation speed. Must be
    at least 1. Only has an effect when a configuration file declares at least
-   one `insert_dpihook` directive.
+   one :option:`insert_dpihook` directive.
 
 .. option:: --dump-<srcfile>
 

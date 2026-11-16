@@ -28,8 +28,6 @@
 
 #include "V3Control.h"
 
-#include <optional>
-
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 // Widest value a DPI function may return (IEEE 1800 35.5.5) (wider targets use
@@ -121,7 +119,8 @@ static bool isAggregateLeafDType(AstNodeDType* dtypep) {
 struct HookInsertEntry final {
     string callback;  // Name of the DPI callback function to insert
     string varTarget;  // Target variable name within the module
-    AccessPath accessPath;  // Member/index steps into the target var ("a.b[i]"); empty for scalars
+    DpiHookAccessPath
+        accessPath;  // Member/index steps into the target var ("a.b[i]"); empty for scalars
     AstVar* origVarp = nullptr;  // Original variable pointer
     AstVar* hookedVarp = nullptr;  // Cloned variable pointer from original with edits
     string hookedName;
@@ -136,19 +135,18 @@ struct HookInsertEntry final {
     AstVar* aggregateVarp = nullptr;  // The original unpacked aggregate var
     string genScope;  // Generate-block prefix in source notation ("lane[0]")
     string origTarget;  // Target as the user specified
-    std::optional<uint32_t> elemIndex() const {
-        if (accessPath.size() == 1 && accessPath.front().isIndex) return accessPath.front().index;
-        return std::nullopt;
-    }
+    FileLine* cfgFl = nullptr;  // Location of the insert_dpihook directive
+    bool hasElemIndex() const { return accessPath.size() == 1 && accessPath.front().isIndex; }
+    uint32_t elemIndex() const { return accessPath.front().index; }
     bool hasMemberStep() const {
-        for (const StepIntoTarget& step : accessPath)
+        for (const DpiHookStep& step : accessPath)
             if (!step.isIndex) return true;
         return false;
     }
     // Access path in source notation (".a", "[2].x"), used for messages
     string accessPathText() const {
         string s;
-        for (const StepIntoTarget& step : accessPath)
+        for (const DpiHookStep& step : accessPath)
             s += step.isIndex ? ("[" + std::to_string(step.index) + "]") : ("." + step.member);
         return s;
     }
@@ -156,7 +154,7 @@ struct HookInsertEntry final {
     // Keeps per-leaf hook var names unique when several members of one struct var are hooked
     string accessPathSuffix() const {
         string s;
-        for (const StepIntoTarget& step : accessPath)
+        for (const DpiHookStep& step : accessPath)
             s += step.isIndex ? ("_" + std::to_string(step.index)) : ("_" + step.member);
         return s;
     }
@@ -219,7 +217,9 @@ struct PathFilterResult final {
 // A target path provided by the testbench that is not matched by any of the case item provides
 // a warning
 static void insertDefaultCases(const std::unordered_map<AstNodeModule*, AstCase*>& caseCache) {
-    for (const auto& [modp, casep] : caseCache) {
+    for (const auto& itr : caseCache) {
+        AstNodeModule* const modp = itr.first;
+        AstCase* const casep = itr.second;
         FileLine* const fl = casep->fileline();
         AstVar* const targetVarp = VN_AS(casep->exprp(), VarRef)->varp();
         AstConst* const emptyConstp = new AstConst{fl, AstConst::VerilogStringLiteral{}, ""};
@@ -369,7 +369,8 @@ using InstPathMap = std::map<InstPathKey, AstVar*>;
 static AstNodeModule* cellOwnerModp(const AstCell* cellp) {
     for (AstNode* parentp = getParentp(cellp); parentp; parentp = getParentp(parentp))
         if (AstNodeModule* const modp = VN_CAST(parentp, NodeModule)) return modp;
-    return nullptr;
+    cellp->v3fatalSrc("Cell outside of a module");
+    return nullptr;  // LCOV_EXCL_LINE
 }
 static string cellFlatName(const AstCell* cellp) {
     string name = cellp->name();
@@ -402,10 +403,11 @@ struct ChainStep final {
     AstNodeDType* dtypep = nullptr;  // Type of selected part
 };
 // The selects `path` applies to `rootVarp`, when the path is already checked against its type
-static std::vector<ChainStep> accessChainSteps(const AstVar* rootVarp, const AccessPath& path) {
+static std::vector<ChainStep> accessChainSteps(const AstVar* rootVarp,
+                                               const DpiHookAccessPath& path) {
     std::vector<ChainStep> steps;
     AstNodeDType* dtypep = rootVarp->dtypep()->skipRefp();
-    for (const StepIntoTarget& step : path) {
+    for (const DpiHookStep& step : path) {
         ChainStep out;
         if (step.isIndex) {
             AstUnpackArrayDType* const adtypep = VN_AS(dtypep, UnpackArrayDType);
@@ -554,7 +556,6 @@ class HookInsertTargetFinder final {
     AstNode* m_targetScopep = nullptr;  // Innermost scope holding the target var
     bool m_error = false;  // Resolving the current target failed
     bool m_foundVar = false;  // Found targeted variable of the current config
-    int m_errCountAtTarget = 0;  // Error count when resolving the current target started
     string m_curHier;  // Instance path resolved so far
     string m_target;  // Current config key
     HookInsertTarget* m_targetp = nullptr;  // Config of the current key
@@ -597,10 +598,12 @@ class HookInsertTargetFinder final {
     static string genBlockName(const string& name, uint32_t idx) {
         return name + "__BRA__" + std::to_string(idx) + "__KET__";
     }
+    FileLine* targetFl() const { return m_targetp->entries.front().cfgFl; }
     static AstNode* scopeDeclsp(AstNode* scopep) {
         if (AstNodeModule* const modp = VN_CAST(scopep, NodeModule)) return modp->stmtsp();
         if (AstGenBlock* const genBlockp = VN_CAST(scopep, GenBlock)) return genBlockp->itemsp();
-        return nullptr;
+        scopep->v3fatalSrc("Scope is neither a module nor a generate block");
+        return nullptr;  // LCOV_EXCL_LINE
     }
     static AstCell* scopeChildCellp(AstNode* scopep, const string& name) {
         for (AstNode* declp = scopeDeclsp(scopep); declp; declp = declp->nextp()) {
@@ -645,14 +648,19 @@ class HookInsertTargetFinder final {
         }
         return nullptr;
     }
+    struct PathComponent final {
+        string name;
+        bool hasIndex;
+        uint32_t index;
+    };
     // Split path component into its name and optional array index
-    // "arr[2]" -> {"arr", 2}, "u" -> {"u", nullopt}
-    static std::pair<string, std::optional<uint32_t>> parseComponent(const string& part) {
+    // "arr[2]" -> {"arr", true, 2}, "u" -> {"u", false, 0}
+    static PathComponent parseComponent(const string& part) {
         const auto open = part.find('[');
-        if (open == string::npos || part.back() != ']') return {part, std::nullopt};
+        if (open == string::npos || part.back() != ']') return {part, false, 0};
         const string index = part.substr(open + 1, part.size() - open - 2);
-        if (!isDpiHookConfigNumber(index)) return {part, std::nullopt};
-        return {part.substr(0, open), static_cast<uint32_t>(std::stoul(index))};
+        if (!isDpiHookConfigNumber(index)) return {part, false, 0};
+        return {part.substr(0, open), true, static_cast<uint32_t>(std::stoul(index))};
     }
     static bool isPartOfAssign(const AstNode* nodep) {
         for (const AstNode* curp = nodep; curp->backp(); curp = curp->backp()) {
@@ -665,10 +673,10 @@ class HookInsertTargetFinder final {
         const std::deque<string> targetParts = VString::split(m_target, '.');
         AstNodeModule* const topModp = m_netlistp->topModulep();
         if (targetParts.empty() || targetParts.front() != topModp->name()) {
-            topModp->fileline()->v3error("DPI-hook insertion of target '"
-                                         << m_target
-                                         << "' could not find initial 'module' in "
-                                            "'topModule.instance.__'");
+            targetFl()->v3error("DPI-hook insertion of target '"
+                                << m_target
+                                << "' could not find initial 'module' in "
+                                   "'topModule.instance.__'");
             m_error = true;
             return;
         }
@@ -677,10 +685,10 @@ class HookInsertTargetFinder final {
         string genScope;
         m_curHier = targetParts.front();
         for (size_t i = 1; i < targetParts.size(); ++i) {
-            const auto [partName, partIdx] = parseComponent(targetParts[i]);
-            AstCell* const targetCellp
-                = partIdx ? arrayedIfaceCellp(curScopep, partName, partIdx.value())
-                          : scopeChildCellp(curScopep, partName);
+            const PathComponent part = parseComponent(targetParts[i]);
+            AstCell* const targetCellp = part.hasIndex
+                                             ? arrayedIfaceCellp(curScopep, part.name, part.index)
+                                             : scopeChildCellp(curScopep, part.name);
             if (targetCellp && targetCellp->modp()) {
                 AstNodeModule* const childModp = targetCellp->modp();
                 m_targetp->modps.push_back(curModp);
@@ -697,13 +705,12 @@ class HookInsertTargetFinder final {
             }
             // Not a cell: if it names a variable, this is the instance/var boundary
             // and the remaining components are a member/index access path into it
-            if (scopeChildVarp(curScopep, partName)) {
+            if (scopeChildVarp(curScopep, part.name)) {
                 if (!genScope.empty()) {
-                    curScopep->fileline()->v3error(
-                        "DPI-hook insertion of target '"
-                        << m_target
-                        << "': a member path into a variable of a generate block is not"
-                           " supported");
+                    targetFl()->v3warn(
+                        E_UNSUPPORTED,
+                        "Unsupported: DPI-hook insertion of target '"
+                            << m_target << "': a member path into a variable of a generate block");
                     m_error = true;
                     return;
                 }
@@ -712,35 +719,35 @@ class HookInsertTargetFinder final {
             }
             // An indexed component may be an unrolled generate-loop iteration (e.g. "lane[0]")
             // Therefore descend into generate block and pin the var there
-            if (AstGenBlock* const genBlockp
-                = childGenBlockp(scopeDeclsp(curScopep),
-                                 partIdx ? genBlockName(partName, partIdx.value()) : partName)) {
+            if (AstGenBlock* const genBlockp = childGenBlockp(
+                    scopeDeclsp(curScopep),
+                    part.hasIndex ? genBlockName(part.name, part.index) : part.name)) {
                 curScopep = genBlockp;
                 genScope += (genScope.empty() ? "" : ".") + targetParts[i];
                 m_curHier += "." + targetParts[i];
                 continue;
             }
-            if (partIdx) {
-                AstCell* const arrayCellp = arrayedInstCellp(curScopep, partName, partIdx.value());
+            if (part.hasIndex) {
+                AstCell* const arrayCellp = arrayedInstCellp(curScopep, part.name, part.index);
                 if (arrayCellp) {
-                    arrayCellp->fileline()->v3error(
-                        "DPI-hook insertion of target '"
-                        << m_target << "': arrayed module instances are not supported");
+                    targetFl()->v3warn(E_UNSUPPORTED, "Unsupported: DPI-hook insertion of target '"
+                                                          << m_target
+                                                          << "': arrayed module instances");
                     m_error = true;
                     return;
                 }
             }
             // Neither a cell nor a var -> missing instance
             if (i == 1) {
-                curModp->fileline()->v3error("DPI-hook insertion of target '"
-                                             << m_target
-                                             << "' could not find initial 'instance' in "
-                                                "'topModule.instance.__'");
+                targetFl()->v3error("DPI-hook insertion of target '"
+                                    << m_target
+                                    << "' could not find initial 'instance' in "
+                                       "'topModule.instance.__'");
             } else {
-                curModp->fileline()->v3error("DPI-hook insertion of target '"
-                                             << m_target
-                                             << "' could not find 'instance' in "
-                                                "'__.instance.__'");
+                targetFl()->v3error("DPI-hook insertion of target '"
+                                    << m_target
+                                    << "' could not find 'instance' in "
+                                       "'__.instance.__'");
             }
             m_error = true;
             return;
@@ -751,10 +758,9 @@ class HookInsertTargetFinder final {
                 resolveInterfacePath(ifacep);
                 return;
             }
-            curModp->fileline()->v3error("DPI-hook insertion of target '"
-                                         << m_target
-                                         << "' resolves to a non-module container, which is not"
-                                            " supported");
+            targetFl()->v3warn(E_UNSUPPORTED, "Unsupported: DPI-hook insertion of target '"
+                                                  << m_target
+                                                  << "' resolving to a non-module container");
             m_error = true;
             return;
         }
@@ -772,33 +778,33 @@ class HookInsertTargetFinder final {
         AstModule* const origModp = VN_CAST(modp, Module);
         if (!origModp) {
             if (VN_IS(modp, Iface)) {
-                modp->fileline()->v3error(
-                    "DPI-hook insertion of target '"
-                    << m_target
-                    << "': a member path into an interface signal is not supported (target the"
-                       " whole signal instead)");
+                targetFl()->v3warn(E_UNSUPPORTED,
+                                   "Unsupported: DPI-hook insertion of target '"
+                                       << m_target << "': a member path into an interface signal\n"
+                                       << targetFl()->warnMore()
+                                       << "... Suggest hook the whole signal");
             } else {
-                modp->fileline()->v3error("DPI-hook insertion of target '"
-                                          << m_target
-                                          << "' resolves to a non-module container, which is not"
-                                             " supported");
+                targetFl()->v3warn(E_UNSUPPORTED, "Unsupported: DPI-hook insertion of target '"
+                                                      << m_target
+                                                      << "' resolving to a non-module container");
             }
             m_error = true;
             return;
         }
-        const auto [varName, varIdx] = parseComponent(parts[boundaryIdx]);
-        AccessPath prefixSteps;
-        if (varIdx) prefixSteps.push_back(StepIntoTarget{true, varIdx.value(), ""});
+        const PathComponent varPart = parseComponent(parts[boundaryIdx]);
+        DpiHookAccessPath prefixSteps;
+        if (varPart.hasIndex) prefixSteps.push_back(DpiHookStep{true, varPart.index, ""});
         for (size_t j = boundaryIdx + 1; j < parts.size(); ++j) {
-            const auto [memberName, memberIdx] = parseComponent(parts[j]);
-            prefixSteps.push_back(StepIntoTarget{false, 0, memberName});
-            if (memberIdx) prefixSteps.push_back(StepIntoTarget{true, memberIdx.value(), ""});
+            const PathComponent memberPart = parseComponent(parts[j]);
+            prefixSteps.push_back(DpiHookStep{false, 0, memberPart.name});
+            if (memberPart.hasIndex)
+                prefixSteps.push_back(DpiHookStep{true, memberPart.index, ""});
         }
         for (auto& entry : m_targetp->entries) {
-            AccessPath full = prefixSteps;
-            full.push_back(StepIntoTarget{false, 0, entry.varTarget});  // the original last part
-            for (const StepIntoTarget& step : entry.accessPath) full.push_back(step);
-            entry.varTarget = varName;
+            DpiHookAccessPath full = prefixSteps;
+            full.push_back(DpiHookStep{false, 0, entry.varTarget});  // the original last part
+            for (const DpiHookStep& step : entry.accessPath) full.push_back(step);
+            entry.varTarget = varPart.name;
             entry.accessPath = std::move(full);
         }
         m_targetp->origModp = origModp;
@@ -815,10 +821,9 @@ class HookInsertTargetFinder final {
             const HookInsertEntry& entry = m_targetp->entries[ei];
             AstVar* const sigVarp = scopeChildVarp(ifacep, entry.varTarget);
             if (!sigVarp) {
-                ifacep->fileline()->v3error("DPI-hook insertion of target '"
-                                            << m_target << "': signal '" << entry.varTarget
-                                            << "' not found in interface '" << ifacep->name()
-                                            << "'");
+                entry.cfgFl->v3error("DPI-hook insertion of target '"
+                                     << m_target << "': signal '" << entry.varTarget
+                                     << "' not found in interface '" << ifacep->name() << "'");
                 m_error = true;
                 return;
             }
@@ -826,11 +831,12 @@ class HookInsertTargetFinder final {
             const AstStructDType* const structp = VN_CAST(dtypep, StructDType);
             if (entry.hasMemberStep() || (structp && !structp->packed())
                 || VN_IS(dtypep, UnpackArrayDType)) {
-                sigVarp->fileline()->v3error(
-                    "DPI-hook insertion of target '"
-                    << m_target << "." << entry.varTarget
-                    << "': aggregate or member-addressed interface signals are not supported;"
-                       " target a packed leaf signal");
+                sigVarp->fileline()->v3warn(
+                    E_UNSUPPORTED, "Unsupported: DPI-hook insertion of target '"
+                                       << m_target << "." << entry.varTarget
+                                       << "': aggregate or member-addressed interface signal\n"
+                                       << sigVarp->fileline()->warnMore()
+                                       << "... Suggest hook a packed leaf");
                 m_error = true;
                 return;
             }
@@ -851,11 +857,11 @@ class HookInsertTargetFinder final {
                 for (auto& entry : m_targetp->entries) {
                     if (!entry.origVarp || refp->varp() != entry.origVarp) continue;
                     if (refp->access().isRW()) {
-                        refp->fileline()->v3error(
-                            "DPI-hook insertion of target '"
-                            << m_target << "." << entry.varTarget
-                            << "': a read-write reference to an interface signal is not"
-                               " supported");
+                        refp->fileline()->v3warn(
+                            E_UNSUPPORTED,
+                            "Unsupported: DPI-hook insertion of target '"
+                                << m_target << "." << entry.varTarget
+                                << "': a read-write reference to an interface signal");
                         m_error = true;
                     } else if (refp->access().isWriteOnly()) {
                         entry.writeRefps.push_back(refp);
@@ -883,6 +889,15 @@ class HookInsertTargetFinder final {
                     targetVarps.push_back(varp);
                     break;
                 }
+        }
+        std::set<string> foundNames;
+        for (const AstVar* const varp : targetVarps) foundNames.insert(varp->name());
+        for (const HookInsertEntry& entry : m_targetp->entries) {
+            if (foundNames.count(entry.varTarget)) continue;
+            entry.cfgFl->v3error("DPI-hook insertion of target '"
+                                 << entry.origTarget
+                                 << "' could not find 'var' in '__.instance.var'");
+            m_error = true;
         }
         for (AstVar* const varp : targetVarps)
             for (size_t ei = 0; ei < m_targetp->entries.size(); ++ei)
@@ -919,10 +934,6 @@ class HookInsertTargetFinder final {
                 }
             });
         }
-        if (!m_foundVar && V3Error::errorCount() == m_errCountAtTarget)
-            origModp->fileline()->v3error("DPI-hook insertion of target '"
-                                          << m_target
-                                          << "' could not find 'var' in '__.instance.var'");
     }
     void buildAggregateMirror(AstVar* aggregateVarp, const std::vector<AstNodeExpr*>& leafps,
                               const std::vector<int>& widths, int totalW) {
@@ -977,11 +988,14 @@ class HookInsertTargetFinder final {
         AstNodeDType* const dtypep = aggregateVarp->dtypep()->skipRefp();
         const int nLeaves = aggregateLeafCount(dtypep);
         if (nLeaves > DPIHOOK_MAX_AGGREGATE_LEAVES) {
-            aggregateVarp->fileline()->v3error(
-                "Target variable '"
-                << aggregateVarp->name() << "' in '" << m_curHier << "' flattens to " << nLeaves
-                << " leaves, too large to hook as a whole (limit " << DPIHOOK_MAX_AGGREGATE_LEAVES
-                << "); target individual elements instead");
+            aggregateVarp->fileline()->v3warn(
+                E_UNSUPPORTED, "Unsupported: Target variable '"
+                                   << aggregateVarp->name() << "' in '" << m_curHier
+                                   << "' flattens to " << nLeaves
+                                   << " leaves, too large to hook as a whole (limit "
+                                   << DPIHOOK_MAX_AGGREGATE_LEAVES << ")\n"
+                                   << aggregateVarp->fileline()->warnMore()
+                                   << "... Suggest hook individual elements");
             return;
         }
         std::vector<AstNodeExpr*> leafps;
@@ -995,22 +1009,27 @@ class HookInsertTargetFinder final {
     bool checkHookableType(AstVar* targetVarp, const string& what, AstNodeDType* dtypep) {
         const AstBasicDType* const basicp = dtypep->basicp();
         if (!basicp || isDynamicContainer(dtypep->skipRefp())) {
-            targetVarp->fileline()->v3error(
-                "Target variable '" << what << "' in '" << m_curHier
-                                    << "' has an unpacked or aggregate type that cannot be hooked"
-                                       " directly; only packed (bit-vector) types are supported");
+            targetVarp->fileline()->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: Target variable '"
+                    << what << "' in '" << m_curHier
+                    << "' has an unpacked or aggregate type that cannot be hooked directly; only"
+                       " packed (bit-vector) types are supported");
             return false;
         }
         if (!basicp->isLiteralType()) {
-            targetVarp->fileline()->v3error("Target variable '" << what << "' in '" << m_curHier
-                                                                << "' must be a supported type");
+            targetVarp->fileline()->v3warn(E_UNSUPPORTED, "Unsupported: Target variable '"
+                                                              << what << "' in '" << m_curHier
+                                                              << "' of type "
+                                                              << dtypep->prettyDTypeNameQ());
             return false;
         }
         if (basicp->isDouble()) {
-            targetVarp->fileline()->v3error("Target variable '"
-                                            << what << "' in '" << m_curHier
-                                            << "' is a floating-point type, which has no"
-                                               " gate-level representation and cannot be hooked");
+            targetVarp->fileline()->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: Target variable '"
+                    << what << "' in '" << m_curHier
+                    << "' is a floating-point type, which has no gate-level representation");
             return false;
         }
         return true;
@@ -1020,29 +1039,29 @@ class HookInsertTargetFinder final {
         const ClockUseVisitor clockUse{m_netlistp, targetVarp,
                                        accessChainSteps(targetVarp, entry.accessPath)};
         if (clockUse.isClock()) {
-            targetVarp->fileline()->v3error(
-                "Target variable '"
-                << what << "' in '" << m_curHier
-                << "' is used as a clock or asynchronous reset (it appears in an"
-                   " edge-sensitive sensitivity list); hooking such a signal is not"
-                   " supported");
+            targetVarp->fileline()->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: Target variable '"
+                    << what << "' in '" << m_curHier
+                    << "' is used as a clock or asynchronous reset (it appears in an"
+                       " edge-sensitive sensitivity list)");
             return true;
         }
         if (clockUse.isEventControl()) {
             // The block would keep waiting on the unhooked value
-            targetVarp->fileline()->v3error(
-                "Target variable '" << what << "' in '" << m_curHier
-                                    << "' is read in an event control without an edge"
-                                       " (e.g. 'always @("
-                                    << targetVarp->prettyName() << entry.accessPathText()
-                                    << " or ...)'); hooking such a signal is not supported");
+            targetVarp->fileline()->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: Target variable '"
+                    << what << "' in '" << m_curHier
+                    << "' is read in an event control without an edge (e.g. 'always @("
+                    << targetVarp->prettyName() << entry.accessPathText() << " or ...)')");
             return true;
         }
         return false;
     }
-    AstNodeDType* resolveLeafDTypep(AstVar* varp, const AccessPath& path) {
+    AstNodeDType* resolveLeafDTypep(AstVar* varp, const DpiHookAccessPath& path) {
         AstNodeDType* dtypep = varp->dtypep()->skipRefp();
-        for (const StepIntoTarget& step : path) {
+        for (const DpiHookStep& step : path) {
             if (step.isIndex) {
                 AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType);
                 if (!adtypep) {
@@ -1093,11 +1112,12 @@ class HookInsertTargetFinder final {
             AstNodeDType* const leafDTypep = resolveLeafDTypep(targetVarp, entry.accessPath);
             if (!leafDTypep) return;  // error already emitted
             if (!isAggregateLeafDType(leafDTypep)) {
-                targetVarp->fileline()->v3error(
-                    "DPI-hook target '"
-                    << targetVarp->name() << "' in '" << m_curHier
-                    << "': the addressed member is an unpacked aggregate, which is not"
-                       " supported; target a scalar or packed leaf");
+                targetVarp->fileline()->v3warn(
+                    E_UNSUPPORTED, "Unsupported: DPI-hook target '"
+                                       << targetVarp->name() << "' in '" << m_curHier
+                                       << "': the addressed member is an unpacked aggregate\n"
+                                       << targetVarp->fileline()->warnMore()
+                                       << "... Suggest hook a scalar or packed leaf");
                 return;
             }
             if (!checkHookableType(targetVarp, what, leafDTypep)) return;
@@ -1111,7 +1131,7 @@ class HookInsertTargetFinder final {
         AstNodeDType* const dtypep = targetVarp->dtypep()->skipRefp();
         AstStructDType* const structp = VN_CAST(dtypep, StructDType);
         const bool wholeAggregate
-            = !entry.elemIndex()
+            = !entry.hasElemIndex()
               && ((structp && !structp->packed()) || VN_IS(dtypep, UnpackArrayDType));
         if (wholeAggregate) {
             string leafPath;
@@ -1125,31 +1145,29 @@ class HookInsertTargetFinder final {
             return;
         }
         AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType);
-        if (entry.elemIndex() && !adtypep) {
+        if (entry.hasElemIndex() && !adtypep) {
             targetVarp->fileline()->v3error(
-                "DPI-hook target '" << targetVarp->name() << "' in '" << m_curHier << "': index ["
-                                    << entry.elemIndex().value() << "] applied to "
-                                    << targetVarp->dtypep()->skipRefp()->prettyDTypeNameQ()
-                                    << "; element access is supported on unpacked arrays"
-                                       " only. Hook the whole signal instead");
+                "DPI-hook target '"
+                << targetVarp->name() << "' in '" << m_curHier << "': index [" << entry.elemIndex()
+                << "] applied to " << targetVarp->dtypep()->skipRefp()->prettyDTypeNameQ()
+                << "; element access is supported on unpacked arrays only\n"
+                << targetVarp->fileline()->warnMore() << "... Suggest hook the whole signal");
             return;
         }
-        if (entry.elemIndex() && adtypep
-            && !isElemIndexInRange(adtypep, entry.elemIndex().value())) {
-            targetVarp->fileline()->v3error("Element index "
-                                            << entry.elemIndex().value()
-                                            << " is out of range for target variable '"
-                                            << targetVarp->name() << "' in '" << m_curHier << "' ("
-                                            << adtypep->elementsConst() << " elements)");
+        if (entry.hasElemIndex() && adtypep && !isElemIndexInRange(adtypep, entry.elemIndex())) {
+            targetVarp->fileline()->v3error(
+                "Element index " << entry.elemIndex() << " is out of range for target variable '"
+                                 << targetVarp->name() << "' in '" << m_curHier << "' ("
+                                 << adtypep->elementsConst() << " elements)");
             return;
         }
-        AstNodeDType* const valueDTypep = entry.elemIndex() ? adtypep->subDTypep() : dtypep;
+        AstNodeDType* const valueDTypep = entry.hasElemIndex() ? adtypep->subDTypep() : dtypep;
         if (!checkHookableType(targetVarp, what, valueDTypep)) return;
         if (isReadInSensitivity(targetVarp, entry)) return;
         const string hookedName = "dpiHooked_" + targetVarp->name() + entry.accessPathSuffix()
                                   + entry.genScopeSuffix();
         setVarAt(entryIdx, targetVarp, hookedName,
-                 entry.elemIndex() && adtypep ? adtypep->subDTypep() : nullptr);
+                 entry.hasElemIndex() && adtypep ? adtypep->subDTypep() : nullptr);
         m_foundVar = true;
     }
 
@@ -1168,7 +1186,6 @@ public:
             m_targetModp = nullptr;
             m_foundVar = false;
             m_error = false;
-            m_errCountAtTarget = V3Error::errorCount();
             navigateToTarget();
             if (m_error) m_targetp->error = true;
         }
@@ -1859,11 +1876,11 @@ class DpiOverrideBuilder final {
         }
     }
     void routeElementTarget(AstVar* targetVarp) {
-        if (!m_targetEntry.elemIndex()) return;
+        if (!m_targetEntry.hasElemIndex()) return;
         const AstUnpackArrayDType* const adtypep
             = VN_CAST(targetVarp->dtypep()->skipRefp(), UnpackArrayDType);
         if (!adtypep) return;
-        const uint32_t idx = elemPos(adtypep, m_targetEntry.elemIndex().value());
+        const uint32_t idx = elemPos(adtypep, m_targetEntry.elemIndex());
         FileLine* const fl = m_targetModp->fileline();
         m_preVarp = new AstVar{fl, VVarType::VAR, hookBaseName(targetVarp) + "_elem",
                                m_targetEntry.hookedVarp->dtypep()};
@@ -1896,7 +1913,8 @@ class DpiOverrideBuilder final {
                 nodep = aggregateSelFromp(nodep);
             }
         }
-        return nullptr;
+        v3fatalSrc("Hooked read without a variable reference");
+        return nullptr;  // LCOV_EXCL_LINE
     }
     static AstNodeExpr* newSelReadp(FileLine* fl, const AstNode* rootp, AstVar* selResVarp) {
         if (const AstVarXRef* const xrefp = VN_CAST(rootp, VarXRef))
@@ -1910,7 +1928,7 @@ class DpiOverrideBuilder final {
     }
     void redirectElementReads(AstVar* targetVarp) {
         const uint32_t idx = elemPos(VN_AS(targetVarp->dtypep()->skipRefp(), UnpackArrayDType),
-                                     m_targetEntry.elemIndex().value());
+                                     m_targetEntry.elemIndex());
         std::vector<std::pair<AstArraySel*, AstNodeVarRef*>> reads;
         std::vector<std::pair<AstArraySel*, AstNodeVarRef*>> dynReads;
         foreachModule([&](AstNode* nodep) {
@@ -1924,9 +1942,10 @@ class DpiOverrideBuilder final {
                 dynReads.emplace_back(selp, refp);
             }
         });
-        for (const auto& [selp, rootRefp] : reads)
-            replaceReadWithSelRes(selp, rootRefp, m_selResVarp);
-        for (const auto& [selp, rootRefp] : dynReads) {
+        for (const auto& itr : reads) replaceReadWithSelRes(itr.first, itr.second, m_selResVarp);
+        for (const auto& itr : dynReads) {
+            AstArraySel* const selp = itr.first;
+            AstNodeVarRef* const rootRefp = itr.second;
             AstNodeExpr* const bitp = selp->bitp();
             const int idxWidth = bitp->width();
             if (!bitp->isPure()) continue;
@@ -2020,8 +2039,7 @@ class DpiOverrideBuilder final {
             if (!matchesAccessChain(exprp, targetVarp)) return;
             reads.emplace_back(exprp, readRootRefp(exprp));
         });
-        for (const auto& [exprp, rootRefp] : reads)
-            replaceReadWithSelRes(exprp, rootRefp, m_selResVarp);
+        for (const auto& itr : reads) replaceReadWithSelRes(itr.first, itr.second, m_selResVarp);
     }
     static bool isReadByAssignTo(const AstNode* nodep, const AstVar* lhsVarp) {
         for (const AstNode* backp = nodep->backp(); backp; backp = backp->backp()) {
@@ -2071,7 +2089,7 @@ class DpiOverrideBuilder final {
             if (refp->varp() != aggregateVarp || !refp->access().isReadOnly()
                 || refp == leafRootRefp)
                 return;
-            if (m_targetEntry.elemIndex()) {
+            if (m_targetEntry.hasElemIndex()) {
                 // In case of element read, the hooked one is redirected, the others are not hooked
                 const AstArraySel* const selp = VN_CAST(refp->backp(), ArraySel);
                 if (selp && selp->fromp() == refp
@@ -2094,7 +2112,7 @@ class DpiOverrideBuilder final {
             name = m_targetEntry.aggregateVarp->name();
         } else {
             name = targetVarp->name();
-            for (const StepIntoTarget& step : m_targetEntry.accessPath)
+            for (const DpiHookStep& step : m_targetEntry.accessPath)
                 name += step.isIndex ? ("[" + std::to_string(step.index) + "]")
                                      : ("." + step.member);
         }
@@ -2260,7 +2278,7 @@ class DpiOverrideBuilder final {
             redirectViewReads(m_targetEntry.aggregateVarp, targetVarp);
             return;
         }
-        if (m_targetEntry.elemIndex()) {
+        if (m_targetEntry.hasElemIndex()) {
             m_targetModp->addStmtsp(m_selResVarp);
             redirectElementReads(targetVarp);
             redirectViewReads(targetVarp, targetVarp);
@@ -2445,7 +2463,8 @@ class DpiHookInserter final {
 
     // METHODS
     const HookInsertEntry* existingEntryp(AstNodeModule* modp, const HookInsertEntry& candidate) {
-        for (const auto& [key, target] : m_insertCfg) {
+        for (const auto& itr : m_insertCfg) {
+            const HookInsertTarget& target = itr.second;
             if (target.hookLogicContainerp() != modp) continue;
             for (const auto& entry : target.entries) {
                 if (entry.done && entry.origVarp == candidate.origVarp
@@ -2469,35 +2488,23 @@ public:
         std::map<std::pair<const AstNodeModule*, string>, AstNodeFTask*> callbackCache;
         std::unordered_map<AstNodeModule*, std::set<string>> caseChildCells;
         std::vector<std::pair<string, HookInsertTarget*>> sortedCfg;
-        for (auto& [key, target] : m_insertCfg) sortedCfg.emplace_back(key, &target);
+        for (auto& itr : m_insertCfg) sortedCfg.emplace_back(itr.first, &itr.second);
 
         // descending Depth (Amount of elements in modps)
-        std::sort(sortedCfg.begin(), sortedCfg.end(), [](const auto& a, const auto& b) {
+        std::stable_sort(sortedCfg.begin(), sortedCfg.end(), [](const auto& a, const auto& b) {
             const size_t depthA = a.second->modps.size();
             const size_t depthB = b.second->modps.size();
             return depthA > depthB;  // bigger = deeper = earlier
         });
-        for (auto& [key, target] : sortedCfg) {
-            if (target->error) {
-                m_netlistp->fileline()->v3error(
-                    "Incomplete hook-insertion configuration for target '"
-                    << key << "'; see the error above");
-                return;
-            }
+        for (const auto& itr : sortedCfg) {
+            HookInsertTarget* const target = itr.second;
+            if (target->error) continue;
             HookPathRouter pathRouter{m_netlistp,         *target,       dtypeCache, caseCache,
                                       targetLoopVarCache, caseChildCells};
             pathRouter.insert();
-            // Validate all entries before sorting
-            for (auto& entry : target->entries) {
-                if (!entry.found) {
-                    m_netlistp->fileline()->v3error(
-                        "Incomplete hook-insertion configuration for target '"
-                        << entry.origTarget << "'; see the error above");
-                    return;
-                }
-            }
             // Insert hook logic for each entry
             for (auto& entry : target->entries) {
+                if (!entry.found) continue;
                 AstVar* const origVarp = entry.origVarp;
                 const HookInsertEntry* const priorp
                     = existingEntryp(target->hookLogicContainerp(), entry);
@@ -2517,6 +2524,7 @@ public:
                 }
             }
         }
+        if (V3Error::errorCount()) return;
         insertDefaultCases(caseCache);
         insertBindCheck(m_netlistp);
     }
@@ -2527,15 +2535,17 @@ public:
 
 static std::map<string, HookInsertTarget> buildWorkingCfg() {
     std::map<string, HookInsertTarget> insertCfg;
-    for (const auto& [targetName, cfgEntries] : V3Control::getHookInsertCfg()) {
+    for (const auto& itr : V3Control::getHookInsertCfg()) {
+        const string& targetName = itr.first;
         HookInsertTarget& target = insertCfg[targetName];
-        for (const HookInsertCfgEntry& cfgEntry : cfgEntries) {
+        for (const HookInsertCfgEntry& cfgEntry : itr.second) {
             HookInsertEntry entry;
             entry.callback = cfgEntry.callback;
             entry.varTarget = cfgEntry.varTarget;
             entry.accessPath = cfgEntry.accessPath;
+            entry.cfgFl = cfgEntry.fl;
             entry.origTarget = targetName + "." + cfgEntry.varTarget;
-            for (const StepIntoTarget& step : cfgEntry.accessPath) {
+            for (const DpiHookStep& step : cfgEntry.accessPath) {
                 entry.origTarget
                     += step.isIndex ? "[" + std::to_string(step.index) + "]" : "." + step.member;
             }

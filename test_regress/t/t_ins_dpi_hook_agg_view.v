@@ -53,6 +53,8 @@ module sub (
     w[cyc[0]] <= 8'h30 + cyc[7:0];
   end
 
+  always @(posedge clk) if (cyc == 5) $display("[%0d] direct p=%04x", cyc, pk(p));
+
   assign mem2 = mem;
   assign p2 = p;
   assign w2 = w;

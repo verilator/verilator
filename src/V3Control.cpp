@@ -917,7 +917,7 @@ public:
         const string varTarget = target.substr(pos + 1);
         return {prefix, varTarget};
     }
-    string splitElemIndex(FileLine* fl, const string& varTarget, AccessPath& accessPath) {
+    string splitElemIndex(FileLine* fl, const string& varTarget, DpiHookAccessPath& accessPath) {
         const auto open = varTarget.find('[');
         if (open == string::npos) return varTarget;
         if (varTarget.back() != ']') {
@@ -930,7 +930,7 @@ public:
             fl->v3error("Element index must be a non-negative integer: '" << varTarget << "'.");
             return varTarget.substr(0, open);
         }
-        accessPath.push_back(StepIntoTarget{true, static_cast<uint32_t>(std::stoul(index)), ""});
+        accessPath.push_back(DpiHookStep{true, static_cast<uint32_t>(std::stoul(index)), ""});
         return varTarget.substr(0, open);
     }
     // Add the hook-insertion config data to the map to create the initial map (Used in verilog.y)
@@ -942,11 +942,17 @@ public:
                         << fl->warnMore()
                         << "... The periodic evaluation trigger of a DPI hook is a delay");
         }
+        if (m_hookInsertCfg.empty() && v3Global.opt.hierarchical()) {
+            fl->v3warn(E_UNSUPPORTED, "Unsupported: insert_dpihook with --hierarchical");
+        }
+        if (m_hookInsertCfg.empty() && !v3Global.opt.libCreate().empty()) {
+            fl->v3warn(E_UNSUPPORTED, "Unsupported: insert_dpihook with --lib-create");
+        }
         const auto result = splitPrefixAndVar(fl, target);
         const auto prefix = result.first;
-        AccessPath accessPath;
+        DpiHookAccessPath accessPath;
         const auto varTarget = splitElemIndex(fl, result.second, accessPath);
-        m_hookInsertCfg[prefix].push_back(HookInsertCfgEntry{callback, varTarget, accessPath});
+        m_hookInsertCfg[prefix].push_back(HookInsertCfgEntry{callback, varTarget, accessPath, fl});
     }
     std::map<string, std::vector<HookInsertCfgEntry>>& getHookInsertCfg() {
         return m_hookInsertCfg;

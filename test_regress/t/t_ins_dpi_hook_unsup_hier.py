@@ -10,10 +10,11 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_ins_dpi_hook_bad_type.v"
 
 vlt_filename = "t/" + test.name + ".vlt"
 
-test.compile(fails=True, v_flags2=["--timing", vlt_filename], expect_filename=test.golden_filename)
+test.compile(fails=True,
+             v_flags2=["--timing --hierarchical", vlt_filename],
+             expect_filename=test.golden_filename)
 
 test.passes()

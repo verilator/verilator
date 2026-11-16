@@ -232,7 +232,7 @@ static void process() {
         v3Global.widthMinUsage(VWidthMinUsage::MATCHES_WIDTH);
 
         // Hook-insert design with the configurations given in .vlt file
-        if (v3Global.needDpiHooks()) {
+        if (!V3Control::getHookInsertCfg().empty()) {
             v3Global.dpi(true);
             V3InsertDPIHook::hookInsert(v3Global.rootp());
         }

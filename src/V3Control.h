@@ -31,15 +31,15 @@
 // Make one step into the target signal, after the instance path is resolved.
 // "-var" string is separated into instance path, var name and residual access path
 // (e.g. "a.b[i].c.d[j]").
-struct StepIntoTarget final {
+struct DpiHookStep final {
     bool isIndex = false;  // true: array index; false: member name
     uint32_t index = 0;  // Array element index, when isIndex
     string member;  // Member name, when !isIndex
-    bool operator==(const StepIntoTarget& other) const {
+    bool operator==(const DpiHookStep& other) const {
         return isIndex == other.isIndex && index == other.index && member == other.member;
     }
 };
-using AccessPath = std::vector<StepIntoTarget>;
+using DpiHookAccessPath = std::vector<DpiHookStep>;
 
 // Longest run of digits accepted in the configuration (e.g. element index,
 // generate-scope or interface-array index) is nine digits since it always fits 32-bit int
@@ -52,7 +52,8 @@ inline bool isDpiHookConfigNumber(const string& s) {
 struct HookInsertCfgEntry final {
     string callback;  // Name of the DPI callback function to insert
     string varTarget;  // Target variable name within the module
-    AccessPath accessPath;  // Member/index steps into the target var (e.g. "a.b[i]")
+    DpiHookAccessPath accessPath;  // Member/index steps into the target var (e.g. "a.b[i]")
+    FileLine* fl;  // Location of the insert_dpihook directive
 };
 
 //######################################################################
