@@ -644,7 +644,7 @@ module fsm_reg_enable_no_else_bad (
     if (state_q == S0) state_d = S1;
     else state_d = S0;
   end
-  // An enable with no else is not a reset guard
+  // An enabled register, but the next-state if has a single state compare, so no FSM
   always_ff @(posedge clk) begin
     if (start) state_q <= state_d;
   end

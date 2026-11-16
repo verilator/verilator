@@ -592,6 +592,25 @@ module fsm_enable (
 
   // Not enables, or unsupported ones, so no FSM
 
+  // An enabled commit that writes the state again
+  state_t twice_q;
+  state_t twice_d;
+  always_comb begin
+    twice_d = twice_q;
+    case (twice_q)
+      S0: twice_d = S1;
+      S1: twice_d = S2;
+      S2: twice_d = S0;
+      default: twice_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (en) begin
+      twice_q <= twice_d;
+      if (rst) twice_q <= S0;
+    end
+  end
+
   // A reset arm whose first statement holds another register is still a reset
   state_t reset_hold_q;
   state_t reset_hold_d;
@@ -658,7 +677,7 @@ module fsm_enable (
   end
   always_ff @(posedge clk) reset_sel_q <= rst ? (sel ? a_d : b_d) : reset_sel_d;
 
-  // An else that holds another register
+  // An else that loads the state from another register
   state_t other_hold_q;
   state_t other_hold_d;
   always_comb begin
