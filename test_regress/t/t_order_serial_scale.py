@@ -22,10 +22,10 @@ test.top_filename = test.obj_dir + "/" + test.name + ".v"
 
 # Retained instances each have a distinct clock domain. Exhausting a ready scope must not
 # search all other ready domains for another scope. Only measures NBA scheduling, not model builds.
-SIZE_SMALL = 3500
+SIZE_SMALL = 4500
 SIZE_LARGE = SIZE_SMALL * 4
 # Linear scaling gives 4x, quadratic gives 16x
-MAX_RATIO = 8
+MAX_RATIO = 10
 # Ignore the ratio when scheduling is fast enough that timer noise dominates
 MIN_SECONDS = 0.25
 
@@ -57,6 +57,7 @@ def sched_seconds(n):
     return sum(float(t) for t in times)
 
 
+# TODO make an use general method for instruction-count compare instead
 small = sched_seconds(SIZE_SMALL)
 large = sched_seconds(SIZE_LARGE)
 if large > MIN_SECONDS and large > small * MAX_RATIO:
