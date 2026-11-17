@@ -1018,13 +1018,15 @@ class ParamProcessor final {
         // srcModp. Any other reference to a class cloned with newModp (e.g. nested in it) links
         // to the cloned class, so relink its parameter pins to the cloned class's formals while
         // clonep() is still valid.
-        newModp->foreach([newModp](const AstClassRefDType* refp) {
-            if (refp->classp() == newModp) return;
-            for (AstPin* const pinp : VNList<AstPin>{refp->paramsp()}) pinp->cloneRelinkGen();
-        });
-        newModp->foreach([newModp](const AstClassOrPackageRef* refp) {
-            if (refp->classOrPackageSkipp() == newModp) return;
-            for (AstPin* const pinp : VNList<AstPin>{refp->paramsp()}) pinp->cloneRelinkGen();
+        newModp->foreach([newModp](const AstNode* nodep) {
+            AstPin* paramsp = nullptr;
+            if (const AstClassRefDType* const refp = VN_CAST(nodep, ClassRefDType)) {
+                if (refp->classp() != newModp) paramsp = refp->paramsp();
+            } else if (const AstClassOrPackageRef* const refp
+                       = VN_CAST(nodep, ClassOrPackageRef)) {
+                if (refp->classOrPackageSkipp() != newModp) paramsp = refp->paramsp();
+            }
+            for (AstPin* const pinp : VNList<AstPin>{paramsp}) pinp->cloneRelinkGen();
         });
 
         // Mark the source module as a parameterized template now that a specialized
