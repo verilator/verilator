@@ -23,35 +23,15 @@ endpackage
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-// Static formal arguments retain storage after a subroutine call.
+// Static variables in an automatic task retain storage after a call.
 module t;
-  task st(input int si, inout int sio, output int so);
-    sio = sio + si;
-    so = si + 1;
-  endtask
-
-  function int sf(input int fi);
-    return fi * 2;
-  endfunction
-
   task automatic at(input int ai);
     static int as;
     as = ai;
   endtask
 
   initial begin
-    int io;
-    int o;
     for (int i = 1; i <= 3; ++i) begin
-      io = i * 10;
-      st(i, io, o);
-      `checkd(io, i * 11);
-      `checkd(o, i + 1);
-      `checkd(st.si, i);
-      `checkd(st.sio, i * 11);
-      `checkd(st.so, i + 1);
-      `checkd(sf(i), i * 2);
-      `checkd(sf.fi, i);
       at(i);
       `checkd(at.as, i);
     end

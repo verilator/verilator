@@ -10,7 +10,7 @@ module automatic t;
     static int as;
     av = ai;
     as = ai;
-    $display("%0d", at.av);  // Hierarchical even within the declaring task.
+    $display("%0d", at.av);  // No diagnostic is expected for a reference inside its declaring task.
   endtask
 
   function automatic int af(input int fi);
