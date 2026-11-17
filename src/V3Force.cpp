@@ -85,6 +85,7 @@ public:
         std::unordered_map<AstAssignForce*, ForceInfo> m_forces;
         std::unordered_map<string, int> m_forcePathToIndex;
         int m_nextForcePathIndex = 1;  // Start at 1 so 0 can be the base path (whole signal)
+        bool m_hasArrayPath = false;  // A forced path has an array select
 
     private:
         static void buildForcePathKeyRecurse(AstNodeExpr* nodep, string& out) {
@@ -98,6 +99,13 @@ public:
                 AstNodeExpr* const fromp = selp->fromp();
                 buildForcePathKeyRecurse(fromp, out);
                 out += "|T" + selp->name();
+                return;
+            }
+            if (const AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
+                buildForcePathKeyRecurse(selp->fromp(), out);
+                // Only a read may have a non-constant index, which matches no forced path
+                const AstConst* const constp = VN_CAST(selp->bitp(), Const);
+                out += "|A" + (constp ? cvtToStr(constp->toSInt()) : "?");
                 return;
             }
             nodep->v3fatalSrc("Unsupported: opaque force path selector "
@@ -316,7 +324,9 @@ public:
                                      bool requireConstRangeSelect) {
         ForceRangeInfo info;
         info.m_arrayInfo = getArraySelInfo(lhsp);
-        info.m_hasArraySel = !info.m_arrayInfo.m_sels.empty();
+        // An array select below a struct variable is instead part of an opaque path
+        info.m_hasArraySel
+            = !info.m_arrayInfo.m_sels.empty() && isUnpackedArrayDType(varp->dtypep());
 
         info.m_padMsb = isBitwiseDType(varp) ? (varp->width() - 1) : 0;
 
@@ -359,6 +369,7 @@ public:
             // for force, release, and readback.
             VarForceInfo& varInfo = getOrCreateVarInfo(getOneVarRef(lhsp)->varScopep());
             const int index = varInfo.getOrCreateForcePathIndex(lhsp);
+            if (!info.m_arrayInfo.m_sels.empty()) varInfo.m_hasArrayPath = true;
             info.m_rangeLsb = index;
             info.m_rangeMsb = index;
         }
@@ -1503,7 +1514,7 @@ class ForceReplaceVisitor final : public VNVisitor {
         if (m_state.isNotReplaceable(baseRefp) || !varInfop
             || !ForceState::isUnpackedArrayDType(varp->dtypep())
             || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
-            iterateChildren(nodep);
+            visit(static_cast<AstNode*>(nodep));  // May be an opaque path of a struct
             return;
         }
 
@@ -1622,6 +1633,15 @@ class ForceReplaceVisitor final : public VNVisitor {
                             nodep->replaceWith(readExprp);
                             VL_DO_DANGLING(pushDeletep(nodep), nodep);
                             return;
+                        }
+                        if (varInfop->m_hasArrayPath && baseRefp->access().isReadOnly()) {
+                            for (const AstArraySel* const selp :
+                                 ForceState::getArraySelInfo(exprp).m_sels) {
+                                if (VN_IS(selp->bitp(), Const)) continue;
+                                selp->v3warn(E_UNSUPPORTED,
+                                             "Unsupported: Non-constant array index reading a "
+                                             "struct with a forced array element");
+                            }
                         }
                     }
                 }
