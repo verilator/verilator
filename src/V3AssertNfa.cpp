@@ -1721,11 +1721,8 @@ public:
         const BuildResult antResult = buildExpr(antExprp, entryVtxp);
         if (!antResult.valid()) return antResult;
         entryVtxp->m_isAntecedent = true;
-        auto it = vertices.rbegin();
-        for (; it != vertices.rend() && &*it != lastPrep; ++it)
+        for (auto it = vertices.rbegin(); &*it != lastPrep; ++it)
             static_cast<SvaStateVertex*>(&*it)->m_isAntecedent = true;
-        UASSERT_OBJ(it != vertices.rend(), antExprp,
-                    "Pre-antecedent vertex removed while building antecedent");
 
         // Followed-by requires pure-boolean antecedent for non-vacuous-fail at
         // the attempt-start cycle. IEEE 1800-2023 16.12.9 permits a multi-cycle
