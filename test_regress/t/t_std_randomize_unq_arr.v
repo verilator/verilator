@@ -93,8 +93,10 @@ module t;
       int randomize_result;
       randomize_result = std::randomize(a) with { unique {a}; };
       `checkd(randomize_result, 1);
+      `checkd(a[0] != a[1], 1);
       randomize_result = std::randomize(b) with { b[0] == b[1]; };
       `checkd(randomize_result, 1);
+      `checkd(b[0], b[1]);
     end
 
     $write("*-* All Finished *-*\n");
