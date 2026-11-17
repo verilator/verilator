@@ -1,4 +1,5 @@
-// DESCRIPTION: Verilator: Hierarchical access to static subroutine storage
+// DESCRIPTION: Verilator: Dotted reference that uses another dotted reference
+// as the select expression
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
