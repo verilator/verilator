@@ -31,7 +31,8 @@ ______________________________________________________________________
   features are allowed only in `--timing` code paths.
 - **Public API naming and docs.** Prefix public classes and types with
   `Verilated`/`Vl` to avoid collisions with user code, and document the API with
-  `///` comments -- they feed doc generation.
+  `///` comments -- they feed doc generation. This applies only to public-called
+  API functions; in headers marked internal, and internal-only functions use `//`.
 - **No exceptions in runtime code** -- use error returns or assertions; exceptions
   add overhead on every path.
 - **Use fixed-width model types** (`CData`/`SData`/`IData`/`QData`/`VlWide`), never
