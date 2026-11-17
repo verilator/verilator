@@ -86,6 +86,17 @@ module t;
     `check_rand_unq(fix_arr, 1, 10, 10);
     `check_rand_unq(fix_static_arr, 1, 10, 10);
 
+    // A unique constraint applies only to its own std::randomize call (issue #8882)
+    begin
+      bit [1:0] a[2];
+      bit [1:0] b[2];
+      int randomize_result;
+      randomize_result = std::randomize(a) with { unique {a}; };
+      `checkd(randomize_result, 1);
+      randomize_result = std::randomize(b) with { b[0] == b[1]; };
+      `checkd(randomize_result, 1);
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

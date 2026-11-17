@@ -1795,10 +1795,7 @@ void VlRandomizer::clearConstraints() {
 }
 
 void VlRandomizer::clearAll() {
-    m_constraints.clear();
-    m_constraintVarNames.clear();
-    m_constraintVarEnds.clear();
-    m_softConstraints.clear();
+    clearConstraints();
     m_vars.clear();
     m_randcVarNames.clear();
     m_randcUsedValues.clear();
