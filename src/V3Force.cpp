@@ -368,6 +368,10 @@ public:
             // source path onto a synthetic index in VlForceVec and use that index consistently
             // for force, release, and readback.
             VarForceInfo& varInfo = getOrCreateVarInfo(getOneVarRef(lhsp)->varScopep());
+            for (const AstArraySel* const selp : info.m_arrayInfo.m_sels) {
+                UASSERT_OBJ(VN_IS(selp->bitp(), Const), selp,
+                            "Unsupported: force on non-constant array select");
+            }
             const int index = varInfo.getOrCreateForcePathIndex(lhsp);
             if (!info.m_arrayInfo.m_sels.empty()) varInfo.m_hasArrayPath = true;
             info.m_rangeLsb = index;
