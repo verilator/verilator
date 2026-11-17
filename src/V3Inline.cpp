@@ -342,6 +342,9 @@ class InlineModGraphBuilder final : public VNVisitor {
         iterateChildrenConst(nodep);
     }
 
+    // Descriptors are not logic, so do not count towards the size
+    void visit(AstNodeRtmdItem*) override {}
+
     // Base node
     void visit(AstNode* nodep) override {
         if (m_modVtxp) m_modVtxp->sizeInc();

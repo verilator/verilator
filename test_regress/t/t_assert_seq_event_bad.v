@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off DECLFILENAME
 module t (
   input clk
 );
