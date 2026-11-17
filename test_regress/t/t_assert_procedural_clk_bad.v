@@ -12,6 +12,14 @@ module t (
   initial cyc = 1;
   wire [7:0] cyc_copy = cyc[7:0];
 
+  // Checking logic outside the procedure cannot read its automatic variables
+  always @(negedge clk) begin
+    for (int i = 0; i < 2; ++i) assert property (cyc[i] |=> cyc[i]);
+  end
+
+  // A reach cannot tell which event woke the procedure
+  always @(negedge clk or cyc_copy) assert property (cyc[0] |=> cyc[1]);
+
   always @(posedge clk) begin
     if (cyc != 0) begin
       cyc <= cyc + 1;

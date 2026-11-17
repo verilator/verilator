@@ -1,10 +1,18 @@
-%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:19:9: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
-                                                        : ... note: In instance 't'
-   19 |         assume property (@(posedge clk) cyc == 9);
-      |         ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:17:54: Unsupported: automatic variable 'i' in a procedural concurrent assertion (IEEE 1800-2023 16.14.6.1)
+                                                         : ... note: In instance 't'
+   17 |     for (int i = 0; i < 2; ++i) assert property (cyc[i] |=> cyc[i]);
+      |                                                      ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:20:9: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
+%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:21:37: Unsupported: procedural concurrent assertion in a procedure with several events, not all 'posedge' or 'negedge'
+                                                         : ... note: In instance 't'
+   21 |   always @(negedge clk or cyc_copy) assert property (cyc[0] |=> cyc[1]);
+      |                                     ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:27:9: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
                                                         : ... note: In instance 't'
-   20 |         assume property (@(negedge clk) cyc == 9);
+   27 |         assume property (@(posedge clk) cyc == 9);
+      |         ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:28:9: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
+                                                        : ... note: In instance 't'
+   28 |         assume property (@(negedge clk) cyc == 9);
       |         ^~~~~~
 %Error: Exiting due to
