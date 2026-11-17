@@ -339,10 +339,7 @@ Summary:
         transitions in the code,
 
       * Count of how many times FSM transitioned from all used states to a
-        reset state,
-
-      * Count of how many times FSM transitioned from any terminal state to
-        default state.
+        reset state.
 
     * `auto-expand`
 

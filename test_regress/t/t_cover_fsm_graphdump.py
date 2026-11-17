@@ -19,6 +19,5 @@ for dot_filename in dot_files:
     test.file_grep(dot_filename, r'digraph v3graph')
 
 test.file_grep_any(dot_files, r'ANY')
-test.file_grep_any(dot_files, r'default')
 
 test.passes()

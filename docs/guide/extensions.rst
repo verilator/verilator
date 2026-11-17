@@ -386,9 +386,16 @@ a hidden reset-only summary.
 
 .. option:: /*verilator&32;fsm_arc_include_cond_full*/
 
-Works the same as :option:`/*verilator&32;fsm_state*/` and additionally
-keeps conditional branch arcs that would otherwise be skipped by the
-conservative extractor.
+Deprecated, aliases to :option:`/*verilator&32;fsm_state*/`,
+:option:`/*verilator&32;fsm_state_auto*/`,
+:option:`/*verilator&32;fsm_state_auto_expand*/` and
+:option:`/*verilator&32;fsm_state_full*/` respectively.
+
+In versions before 5.056:
+
+Works the same as the matching :option:`/*verilator&32;fsm_state*/` form
+and additionally keeps transitions under input conditions, which are now
+always reported.
 
 .. _verilator_hier_block:
 

@@ -53,11 +53,9 @@
 %000003        // [fsm_arc t.state_default::S0->S2]
 %000000        // [fsm_arc t.state_default::S1->S0]
 %000002        // [fsm_arc t.state_default::S2->S0]
-%000000        // [fsm_arc t.state_default::S3->S0]
 %000003        // [fsm_state t.state_default::S0]
 %000000        // [fsm_state t.state_default::S1] *** UNCOVERED ***
 %000003        // [fsm_state t.state_default::S2]
-%000000        // [fsm_state t.state_default::S3] *** UNCOVERED ***
 %000003         S0:
 %000003         if (start) state_default <= S1;
 %000003         else state_default <= S2;
@@ -77,12 +75,8 @@
         // [FSM coverage]
 %000001        // [fsm_arc t.state_reset_incl::S0->S1]
 %000000        // [fsm_arc t.state_reset_incl::S1->S0]
-%000000        // [fsm_arc t.state_reset_incl::S2->S0]
-%000000        // [fsm_arc t.state_reset_incl::S3->S0]
 %000001        // [fsm_state t.state_reset_incl::S0]
 %000001        // [fsm_state t.state_reset_incl::S1]
-%000000        // [fsm_state t.state_reset_incl::S2] *** UNCOVERED ***
-%000000        // [fsm_state t.state_reset_incl::S3] *** UNCOVERED ***
 %000001         S0: state_reset_incl <= S1;
 %000004         default: state_reset_incl <= S1;
               endcase
@@ -98,12 +92,8 @@
         // [FSM coverage]
 %000001        // [fsm_arc t.state_reset_excl::S0->S1]
 %000000        // [fsm_arc t.state_reset_excl::S1->S0]
-%000000        // [fsm_arc t.state_reset_excl::S2->S0]
-%000000        // [fsm_arc t.state_reset_excl::S3->S0]
 %000001        // [fsm_state t.state_reset_excl::S0]
 %000001        // [fsm_state t.state_reset_excl::S1]
-%000000        // [fsm_state t.state_reset_excl::S2] *** UNCOVERED ***
-%000000        // [fsm_state t.state_reset_excl::S3] *** UNCOVERED ***
 %000001         S0: state_reset_excl <= S1;
 %000004         default: state_reset_excl <= S1;
               endcase

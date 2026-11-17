@@ -235,6 +235,7 @@
             else begin
 %000002       case (state6)
         // [FSM coverage]
+%000001        // [fsm_arc t.state6::S2_ALT_PATH->S2_ERR]
 %000000        // [fsm_arc t.state6::S2_ALT_PATH->S2_IDLE]
 %000001        // [fsm_arc t.state6::S2_COMPLETING->S2_DONE]
 %000000        // [fsm_arc t.state6::S2_COMPLETING->S2_IDLE]

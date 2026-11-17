@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage keeps zero-hit records for near-miss plain always shapes
+# DESCRIPTION: Verilator: FSM coverage warns of enum registers given values outside the enum
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -9,12 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 
-test.compile(verilator_flags2=['--cc --coverage-fsm', '-Werror-COVERIGN'])
-
-test.execute()
-
-test.files_identical(test.obj_dir + "/coverage.dat", "t/" + test.name + ".out")
+test.lint(verilator_flags2=["--coverage-fsm"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

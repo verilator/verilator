@@ -110,7 +110,7 @@ public:
         ENUMVALUE,      // Error: enum type needs explicit cast
         EOFNEWLINE,     // End-of-file missing newline
         FINALDLY,       // Final delayed statement
-        FSMMULTI,       // Multiple FSM candidates in one always block
+        FSMMULTI,       // Multiple FSMs in one block. Historical, never issued.
         FUNCTIMECTL,    // Functions cannot have timing/delay/wait
         FUTURE,         // Feature is under development and not yet supported
         GENCLK,         // Generated Clock. Historical, never issued.

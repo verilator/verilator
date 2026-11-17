@@ -1,13 +1,12 @@
-// DESCRIPTION: Verilator: FSM coverage ignores grouped unsupported FSM extraction patterns
+// DESCRIPTION: Verilator: FSM coverage of less common FSM shapes
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Group unsupported extraction shapes that must compile and run cleanly while
-// emitting no FSM coverage points at all.
+// Less common FSM shapes, each in its own module.
 
-module fsm_caseitem_varrhs_bad (
+module fsm_caseitem_varrhs (
     input logic clk
 );
 
@@ -48,7 +47,7 @@ module fsm_caseitem_varrhs_bad (
   end
 endmodule
 
-module fsm_caseitem_then_nonconst_bad (
+module fsm_caseitem_then_nonconst (
     input logic clk
 );
 
@@ -89,7 +88,7 @@ module fsm_caseitem_then_nonconst_bad (
   end
 endmodule
 
-module fsm_caseitem_else_nonconst_bad (
+module fsm_caseitem_else_nonconst (
     input logic clk
 );
 
@@ -130,7 +129,7 @@ module fsm_caseitem_else_nonconst_bad (
   end
 endmodule
 
-module fsm_oneblock_then_bad (
+module fsm_oneblock_then (
     input logic clk
 );
 
@@ -173,7 +172,7 @@ module fsm_oneblock_then_bad (
   end
 endmodule
 
-module fsm_oneblock_else_bad (
+module fsm_oneblock_else (
     input logic clk
 );
 
@@ -216,7 +215,7 @@ module fsm_oneblock_else_bad (
   end
 endmodule
 
-module fsm_combo_sel_expr_bad (
+module fsm_combo_sel_expr (
     input logic clk
 );
 
@@ -303,7 +302,7 @@ module fsm_normalized_if_noelse (
   end
 endmodule
 
-module fsm_normalized_if_then_nonconst_bad (
+module fsm_normalized_if_then_nonconst (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -345,7 +344,7 @@ module fsm_normalized_if_then_nonconst_bad (
   end
 endmodule
 
-module fsm_normalized_if_else_nonconst_bad (
+module fsm_normalized_if_else_nonconst (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -387,7 +386,7 @@ module fsm_normalized_if_else_nonconst_bad (
   end
 endmodule
 
-module fsm_normalized_if_temp_mismatch_bad (
+module fsm_normalized_if_temp_mismatch (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -427,7 +426,7 @@ module fsm_normalized_if_temp_mismatch_bad (
   end
 endmodule
 
-module fsm_normalized_if_then_state_else_other_bad (
+module fsm_normalized_if_then_state_else_other (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -466,7 +465,7 @@ module fsm_normalized_if_then_state_else_other_bad (
   end
 endmodule
 
-module fsm_normalized_if_same_temp_nofollow_bad (
+module fsm_normalized_if_same_temp_nofollow (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -511,7 +510,7 @@ module fsm_normalized_if_same_temp_nofollow_bad (
   end
 endmodule
 
-module fsm_normalized_if_follow_nonvar_bad (
+module fsm_normalized_if_follow_nonvar (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -547,7 +546,7 @@ module fsm_normalized_if_follow_nonvar_bad (
           tmp_a = S2;
           aux = 1'b0;
         end
-        // Final follow-up is not a plain var-to-var state assignment.
+        // The temporary is only read by a comparison
         aux = (tmp_a == S1);
       end
       default: state_d = S0;
@@ -558,7 +557,7 @@ module fsm_normalized_if_follow_nonvar_bad (
   end
 endmodule
 
-module fsm_normalized_if_follow_wrongfrom_bad (
+module fsm_normalized_if_follow_wrongfrom (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -595,7 +594,7 @@ module fsm_normalized_if_follow_wrongfrom_bad (
           tmp_a = S2;
           aux = 1'b0;
         end
-        // Final follow-up reads from the wrong source temp.
+        // The next state comes from another variable, not the temporary
         state_d = other_d;
       end
       default: state_d = S0;
@@ -606,7 +605,7 @@ module fsm_normalized_if_follow_wrongfrom_bad (
   end
 endmodule
 
-module fsm_normalized_if_follow_wronglhs_bad (
+module fsm_normalized_if_follow_wronglhs (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -643,7 +642,7 @@ module fsm_normalized_if_follow_wronglhs_bad (
           tmp_a = S2;
           aux = 1'b0;
         end
-        // Final follow-up writes the wrong lhs instead of state_d.
+        // The temporary goes to another variable, not the next state
         other_d = tmp_a;
       end
       default: state_d = S0;
@@ -654,7 +653,7 @@ module fsm_normalized_if_follow_wronglhs_bad (
   end
 endmodule
 
-module fsm_case_next_wrongrhs_bad (
+module fsm_case_next_wrongrhs (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -745,7 +744,7 @@ module fsm_forced_if_wide (
 
 endmodule
 
-module fsm_reset_commit_mismatch_bad (
+module fsm_reset_commit_mismatch (
     input logic clk
 );
 
@@ -794,7 +793,7 @@ module fsm_reset_commit_mismatch_bad (
 
 endmodule
 
-module fsm_reset_then_bad (
+module fsm_reset_then (
     input logic clk
 );
 
@@ -917,26 +916,26 @@ module t (
 
   integer cyc;
 
-  fsm_caseitem_varrhs_bad caseitem_varrhs_bad_u (.clk(clk));
-  fsm_caseitem_then_nonconst_bad caseitem_then_nonconst_bad_u (.clk(clk));
-  fsm_caseitem_else_nonconst_bad caseitem_else_nonconst_bad_u (.clk(clk));
-  fsm_oneblock_then_bad oneblock_then_bad_u (.clk(clk));
-  fsm_oneblock_else_bad oneblock_else_bad_u (.clk(clk));
-  fsm_combo_sel_expr_bad combo_sel_expr_bad_u (.clk(clk));
+  fsm_caseitem_varrhs caseitem_varrhs_u (.clk(clk));
+  fsm_caseitem_then_nonconst caseitem_then_nonconst_u (.clk(clk));
+  fsm_caseitem_else_nonconst caseitem_else_nonconst_u (.clk(clk));
+  fsm_oneblock_then oneblock_then_u (.clk(clk));
+  fsm_oneblock_else oneblock_else_u (.clk(clk));
+  fsm_combo_sel_expr combo_sel_expr_u (.clk(clk));
   fsm_normalized_if_noelse normalized_if_noelse_u (.clk(clk));
-  fsm_normalized_if_then_nonconst_bad normalized_if_then_nonconst_bad_u (.clk(clk));
-  fsm_normalized_if_else_nonconst_bad normalized_if_else_nonconst_bad_u (.clk(clk));
-  fsm_normalized_if_temp_mismatch_bad normalized_if_temp_mismatch_bad_u (.clk(clk));
-  fsm_normalized_if_then_state_else_other_bad normalized_if_then_state_else_other_bad_u (.clk(clk));
-  fsm_normalized_if_same_temp_nofollow_bad normalized_if_same_temp_nofollow_bad_u (.clk(clk));
-  fsm_normalized_if_follow_nonvar_bad normalized_if_follow_nonvar_bad_u (.clk(clk));
-  fsm_normalized_if_follow_wrongfrom_bad normalized_if_follow_wrongfrom_bad_u (.clk(clk));
-  fsm_normalized_if_follow_wronglhs_bad normalized_if_follow_wronglhs_bad_u (.clk(clk));
-  fsm_case_next_wrongrhs_bad case_next_wrongrhs_bad_u (.clk(clk));
+  fsm_normalized_if_then_nonconst normalized_if_then_nonconst_u (.clk(clk));
+  fsm_normalized_if_else_nonconst normalized_if_else_nonconst_u (.clk(clk));
+  fsm_normalized_if_temp_mismatch normalized_if_temp_mismatch_u (.clk(clk));
+  fsm_normalized_if_then_state_else_other normalized_if_then_state_else_other_u (.clk(clk));
+  fsm_normalized_if_same_temp_nofollow normalized_if_same_temp_nofollow_u (.clk(clk));
+  fsm_normalized_if_follow_nonvar normalized_if_follow_nonvar_u (.clk(clk));
+  fsm_normalized_if_follow_wrongfrom normalized_if_follow_wrongfrom_u (.clk(clk));
+  fsm_normalized_if_follow_wronglhs normalized_if_follow_wronglhs_u (.clk(clk));
+  fsm_case_next_wrongrhs case_next_wrongrhs_u (.clk(clk));
   fsm_forced_wide forced_wide_u (.clk(clk));
   fsm_forced_if_wide forced_if_wide_u (.clk(clk));
-  fsm_reset_commit_mismatch_bad reset_commit_mismatch_bad_u (.clk(clk));
-  fsm_reset_then_bad reset_then_bad_u (.clk(clk));
+  fsm_reset_commit_mismatch reset_commit_mismatch_u (.clk(clk));
+  fsm_reset_then reset_then_u (.clk(clk));
   fsm_oneblock_guarded oneblock_guarded_u (.clk(clk));
   fsm_forced_guarded forced_guarded_u (.clk(clk));
 
