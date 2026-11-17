@@ -15,8 +15,21 @@ module t;
     logic [7:0] mem[2];
     logic flag;
   } st_t;
+  typedef struct {
+    logic [3:0] f;
+    logic [3:0] g;
+  } leaf_t;
+  typedef struct {
+    leaf_t l[2];
+    logic [7:0] tag;
+  } mid_t;
+  typedef struct {
+    mid_t m;
+    int id;
+  } top_t;
   st_t s;
   st_t s2;  // Only s2.flag is forced
+  top_t n;
   logic [7:0] q;
   logic [7:0] m;
   int i;
@@ -64,6 +77,29 @@ module t;
     `checkh(q, 8'h67);
     `checkh(m, 8'h04);
     `checkh(s.flag, 1'b1);
+    // Member of a struct in an array in a struct member
+    n.m.l[0].f = 4'h1;
+    n.m.l[0].g = 4'h2;
+    n.m.l[1].f = 4'h3;
+    n.m.l[1].g = 4'h4;
+    n.m.tag = 8'h55;
+    n.id = 9;
+    force n.m.l[1].g = 4'ha;
+    #1;
+    `checkh(n.m.l[1].g, 4'ha);
+    `checkh(n.m.l[1].f, 4'h3);
+    `checkh(n.m.l[0].g, 4'h2);
+    `checkh(n.m.tag, 8'h55);
+    n.m.l[1].g = 4'h0;
+    n.m.l[1].f = 4'h6;
+    #1;
+    `checkh(n.m.l[1].g, 4'ha);
+    `checkh(n.m.l[1].f, 4'h6);
+    release n.m.l[1].g;
+    n.m.l[1].g = 4'h1;
+    #1;
+    `checkh(n.m.l[1].g, 4'h1);
+    `checkh(n.id, 9);
     $write("*-* All Finished *-*\n");
     $finish;
   end
