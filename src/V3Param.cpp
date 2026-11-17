@@ -1013,12 +1013,19 @@ class ParamProcessor final {
         } else {
             newModp = srcModp->cloneTree(false);
         }
-        // AstPin normally retains links to external module formals across cloning. For a cloned
-        // interface, relink pins whose formals were cloned with the interface while clonep() is
-        // still valid, so nested parameterized classes use the cloned interface parameters.
-        if (AstIface* const newIfacep = VN_CAST(newModp, Iface)) {
-            newIfacep->foreach([](AstPin* pinp) { pinp->cloneRelinkGen(); });
-        }
+        // AstCells and their AstPins keep their links across cloning, even a recursive cell's to
+        // srcModp, and replaceRefsRecurse below links a class's references to itself back to
+        // srcModp. Any other reference to a class cloned with newModp (e.g. nested in it) links
+        // to the cloned class, so relink its parameter pins to the cloned class's formals while
+        // clonep() is still valid.
+        newModp->foreach([newModp](const AstClassRefDType* refp) {
+            if (refp->classp() == newModp) return;
+            for (AstPin* const pinp : VNList<AstPin>{refp->paramsp()}) pinp->cloneRelinkGen();
+        });
+        newModp->foreach([newModp](const AstClassOrPackageRef* refp) {
+            if (refp->classOrPackageSkipp() == newModp) return;
+            for (AstPin* const pinp : VNList<AstPin>{refp->paramsp()}) pinp->cloneRelinkGen();
+        });
 
         // Mark the source module as a parameterized template now that a specialized
         // clone exists.  This suppresses width/type errors on the unresolved template
