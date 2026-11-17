@@ -846,7 +846,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 
 %token<fl>              yP_COLON__BEGIN ":-then-begin"
 %token<fl>              yP_COLON__FORK  ":-then-fork"
-%token<fl>              yP_CURLY__EMPTY "{-then-}"      // Used when constraint_set is '{' '}'
+%token<fl>              yP_CURLY__EMPTY "{"             // Used when constraint_set is '{' '}'
 %token<fl>              yP_EQ__NEW      "=-then-new"
 %token<fl>              yP_PAR__IGNORE  "(-ignored"     // Used when sequence_expr:expr:( is ignored
 %token<fl>              yP_PAR__STRENGTH "(-for-strength"

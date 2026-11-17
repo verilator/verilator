@@ -661,14 +661,8 @@ size_t V3ParseImp::tokenPipeScanParens(size_t depth) {
 }
 
 void V3ParseImp::tokenPipeMarkEmptyConstraintSet(const size_t depth) {
-    // An empty IEEE constraint_set '{' '}' after if/foreach/else/'->' is ambiguous with an
-    // empty queue '{' '}' starting an expression, e.g. 'if (a) {} -b < 2;'. Resolve it as the
-    // empty set by relabeling the queued '{'; legal SystemVerilog has no empty queue directly
-    // after these tokens outside a constraint_set.
-    // yIF '(' ... ')' '{' '}'
-    //                 ^- depth
-    // yP_MINUSGT '{' '}'
-    //            ^- depth
+    // '{' '}' after if/foreach/else/'->' is an empty constraint_set, not an empty queue
+    // starting the next expression as in 'if (a) {} -b < 2;'.
     if (tokenPeekp(depth)->token == '{' && tokenPeekp(depth + 1)->token == '}')
         m_tokensAhead.at(depth).token = yP_CURLY__EMPTY;
 }
