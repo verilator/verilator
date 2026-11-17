@@ -16,8 +16,10 @@ module t;
     logic flag;
   } st_t;
   st_t s;
+  st_t s2;  // Only s2.flag is forced
   logic [7:0] q;
   logic [7:0] m;
+  int i;
   assign q = s.arr[1].value;
   assign m = s.mem[1];
 
@@ -33,6 +35,14 @@ module t;
     `checkh(q, 8'h5a);
     `checkh(m, 8'h03);
     `checkh(s.flag, 1'b1);
+    // Non-constant index read, force outside of the arrays
+    s2.arr[1].value = 8'h3c;
+    s2.flag = 1'b0;
+    force s2.flag = 1'b1;
+    i = 1;
+    #1;
+    `checkh(s2.arr[i].value, 8'h3c);
+    `checkh(s2.flag, 1'b1);
     // Force inside of the arrays
     force s.arr[1].value = 8'ha5;
     force s.mem[1] = 8'h30;
