@@ -815,7 +815,7 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
     // Every awaited SenTree
     std::vector<BeforeTrig> m_beforeTrigs;
     // Map containing vectors of SenItems that share the same prevValue variable
-    std::unordered_map<VNRef<AstNode>, std::vector<AstSenItem*>> m_senExprToSenItem;
+    std::unordered_map<VNRef<AstNode>, std::vector<const AstSenItem*>> m_senExprToSenItem;
 
     // METHODS
     // Returns node which is used for grouping SenItems in `m_senExprToSenItem`
@@ -827,19 +827,17 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
     // Populates `m_senExprToSenItem` with every group of SenItems that share the same prevValue
     // variable. Groups that contain only one type of an edge are omitted.
     void fillSenExprToSenItem() {
-        for (const BeforeTrig& beforeTrig : m_beforeTrigs) {
-            for (AstSenItem* const senItemp : beforeTrig.m_senTreep->sensespList()) {
-                const VEdgeType edge = senItemp->edgeType();
-                if (edge.anEdge() || edge == VEdgeType::ET_CHANGED
-                    || edge == VEdgeType::ET_HYBRID) {
-                    m_senExprToSenItem[*getSenHashNode(senItemp)].push_back(senItemp);
-                }
+        for (const AstSenItem* const senItemp : m_trigKit.trigIdx2SenItem()) {
+            if (!senItemp) continue;  // Padding and extra triggers have no sensitivity item.
+            const VEdgeType edge = senItemp->edgeType();
+            if (edge.anEdge() || edge == VEdgeType::ET_CHANGED || edge == VEdgeType::ET_HYBRID) {
+                m_senExprToSenItem[*getSenHashNode(senItemp)].push_back(senItemp);
             }
         }
 
         std::vector<VNRef<AstNode>> toRemove;
         for (const auto& senExprToSenTree : m_senExprToSenItem) {
-            std::vector<AstSenItem*> senItemps = senExprToSenTree.second;
+            const std::vector<const AstSenItem*>& senItemps = senExprToSenTree.second;
             toRemove.push_back(senExprToSenTree.first);
             for (size_t i = 1; i < senItemps.size(); ++i) {
                 if (senItemps[i]->edgeType() != senItemps[i - 1]->edgeType()) {
@@ -984,7 +982,7 @@ public:
                     emplaceAt(m_senExprBuilder.build(itemp).first, idx);
                     auto iter = m_senExprToSenItem.find(*getSenHashNode(itemp));
                     if (iter != m_senExprToSenItem.end()) {
-                        for (AstSenItem* const additionalItemp : iter->second) {
+                        for (const AstSenItem* const additionalItemp : iter->second) {
                             const size_t idx = m_trigKit.senItem2TrigIdx(additionalItemp);
                             emplaceAt(m_senExprBuilder.build(additionalItemp).first, idx);
                         }
