@@ -2786,7 +2786,12 @@ class WidthVisitor final : public VNVisitor {
         const double timePrescale = constp->num().toDouble();
         UASSERT_OBJ(!v3Global.rootp()->timeprecision().isNone(), nodep, "Never set precision?");
         const double time = timePrescale / nodep->timeunit().multiplier();
-        // IEEE claims you should round to time precision here, but no simulator seems to do this
+        const VTimescale prec = v3Global.rootp()->timeprecision();
+        const double precTicks = timePrescale / prec.multiplier();
+        if (!V3Number::epsilonEqual(precTicks, std::round(precTicks)))
+            nodep->v3warn(TIMEPRECTRUNC, "Time literal is not a multiple of time precision '"
+                                             << prec.ascii() << "'");
+        // IEEE claims you should round to time precision here, but most simulators do not
         AstConst* const newp = new AstConst{nodep->fileline(), AstConst::RealDouble{}, time};
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);

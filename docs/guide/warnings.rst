@@ -2401,6 +2401,29 @@ List Of Warnings
    correctly.
 
 
+.. option:: TIMEPRECTRUNC
+
+   Warns that a time is not a multiple of the time precision, for example
+   using the time literal ``#1ps``, when the precision is 10ps. IEEE
+   requires delays be rounded to the time precision (IEEE 1800-2023
+   3.14.1), although most simulators use the unrounded value.
+
+   Ignoring this warning will result in the unrounded delay being used;
+   results may vary between simulators depending on the rounding versus
+   truncation behavior of that simulator.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_TIMEPRECTRUNC_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_TIMEPRECTRUNC_msg.rst
+
+   Recommend using a literal that is a multiple of the time precision, or a
+   finer time precision.
+
+
 .. option:: TIMESCALEMOD
 
    Warns that "\`timescale" is used in some but not all modules.
