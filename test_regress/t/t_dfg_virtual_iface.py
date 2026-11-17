@@ -16,7 +16,7 @@ test.compile(verilator_flags2=['--binary', '--stats'])
 test.execute()
 
 # Logic not accessed through the virtual interface is optimized
-test.file_grep(test.stats, r'Optimizations, DFG, AstToDfg, representable\s+(\d+)', 6)
+test.file_grep(test.stats, r'Optimizations, DFG, AstToDfg, representable\s+(\d+)', 10)
 test.file_grep(test.stats, r'Optimizations, DFG, AstToDfg, non-representable \(var\)\s+(\d+)', 0)
 
 test.passes()

@@ -598,7 +598,6 @@ inline bool isSupported(const AstVarScope* vscp) {
     // Check the AstVar
     AstVar* const varp = vscp->varp();
     if (varp->isIfaceRef()) return false;  // Cannot handle interface references
-    if (varp->sensIfacep()) return false;  // Accessed through a virtual interface
     if (varp->delayp()) return false;  // Cannot handle delayed variables
     if (varp->isSc()) return false;  // SystemC variables are special and rare, we can ignore
     return DfgDataType::fromAst(varp->dtypep());
