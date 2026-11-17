@@ -142,4 +142,12 @@
                                                    : ... note: In instance 't.sub'
   198 |     bit [6:0] partial;
       |               ^~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:209:9: Signal is not driven, nor used: 'unu_local'
+                                                  : ... note: In instance 't.sub'
+  209 |     int unu_local;   
+      |         ^~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:213:9: Signal is not used: 'unr_local'
+                                                  : ... note: In instance 't.sub'
+  213 |     int unr_local;   
+      |         ^~~~~~~~~
 %Error: Exiting due to

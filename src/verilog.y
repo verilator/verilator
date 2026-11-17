@@ -6712,9 +6712,6 @@ sequence_declaration<sequencep>:  // ==IEEE: sequence_declaration
                           $$->addDeclsp($2);
                           $$->exprp($4);
                           GRAMMARP->endLabel($<fl>6, $$, $6);
-                          // Sequence declarations are allowed; they are inlined by V3AssertPre.
-                          // Sequences in unsupported contexts are reported by assertPreAll
-                          // after inlining.
                         }
         |       sequence_declarationFront sequence_port_listE ';' assertion_variable_declarationList
         /*cont*/    sequence_declarationBodyExpr yENDSEQUENCE endLabelE

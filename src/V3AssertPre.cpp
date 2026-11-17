@@ -1855,14 +1855,13 @@ private:
         m_defaultDisablep = nodep->defaultDisablep();
         iterateChildren(nodep);
     }
+    // Property and sequence declarations are removed here, after V3Undriven, which lints the
+    // variables they declare and read
     void visit(AstProperty* nodep) override {
-        // The body will be visited when will be substituted in place of property reference
-        // (AstSchemaRef)
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstSequence* nodep) override {
-        // Sequence declarations are not visited directly; their bodies are inlined
-        // at call sites by visit(AstSchemaRef*). Collect for post-traversal cleanup.
+        // Collect for post-traversal cleanup
         m_seqsToCleanup.push_back(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -1878,7 +1877,7 @@ public:
         for (AstVarXRef* xrefp : m_xrefsp) xrefp->name(xrefp->varp()->name());
         // Clean up sequence declarations after inlining.
         // Referenced sequences that were inlined have isReferenced cleared.
-        // Remaining referenced sequences are in unsupported contexts (e.g. @seq event).
+        // Remaining referenced sequences are in unsupported contexts
         for (AstSequence* seqp : m_seqsToCleanup) {
             if (seqp->isReferenced()) {
                 seqp->v3warn(E_UNSUPPORTED,
