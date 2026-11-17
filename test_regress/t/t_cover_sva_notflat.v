@@ -59,4 +59,8 @@ module Test (
   cyc_eq_5 :
   cover property (@(posedge clk) cyc == 5) $display("*COVER: Cyc==5");
 
+  // Unlabeled covers in the same scope need their own trace signals
+  cover property (@(posedge clk) cyc == 6);
+  cover property (@(posedge clk) cyc == 7);
+
 endmodule

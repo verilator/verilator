@@ -95,11 +95,12 @@ class UdpVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         if (m_outputVars.size() != 1) {
             m_outputVars.back()->v3error(
-                m_outputVars.size()
-                << " output ports for UDP table, there must be one output port");
+                m_outputVars.size() << " output ports for UDP table, there must be one output port"
+                                       " (IEEE 1800-2023 29.3.1)");
         }
         if (!m_isFirstOutput) {
-            m_inputVars[0]->v3error("First UDP port must be the output port");
+            m_inputVars[0]->v3error(
+                "First UDP port must be the output port (IEEE 1800-2023 29.3.1)");
         }
         m_oFieldVarp = m_outputVars[0];
 
@@ -113,11 +114,12 @@ class UdpVisitor final : public VNVisitor {
     void visit(AstUdpTableLine* nodep) override {
         FileLine* const fl = nodep->fileline();
         if (!nodep->udpIsCombo() && !m_oFieldVarp->isBitLogic()) {
-            m_oFieldVarp->v3error("For sequential UDP, the output must be of 'reg' data type");
+            m_oFieldVarp->v3error("For sequential UDP, the output must be of 'reg' data type"
+                                  " (IEEE 1800-2023 29.3.2)");
         }
         if (nodep->udpIsCombo() && m_oFieldVarp->isBitLogic()) {
-            m_oFieldVarp->v3error(
-                "For combinational UDP, the output must not be a 'reg' data type");
+            m_oFieldVarp->v3error("For combinational UDP, the output must not be a 'reg' data type"
+                                  " (IEEE 1800-2023 29.3.2)");
         }
         AstNode* iNodep = nodep->iFieldsp();
         AstNode* oNodep = nodep->oFieldsp();

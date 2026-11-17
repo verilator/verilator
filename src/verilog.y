@@ -91,7 +91,6 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
         VARDTYPE_NDECL(nullptr); \
         GRAMMARP->m_pinNum = (pinNumStart); \
         GRAMMARP->m_varLifetime = VLifetime::NONE; \
-        GRAMMARP->m_varDeclTyped = false; \
     }
 #define VARDECL(type) \
     { GRAMMARP->m_varDecl = VVarType::type; }
@@ -109,8 +108,12 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
         GRAMMARP->setDType(dtypep); \
         GRAMMARP->m_varDeclTyped = true; \
     }
+// Set the data type without making a typed declaration, e.g. a range-only port
 #define VARDTYPE_NDECL(dtypep) \
-    { GRAMMARP->setDType(dtypep); }  // Port that is range or signed only (not a decl)
+    { \
+        GRAMMARP->setDType(dtypep); \
+        GRAMMARP->m_varDeclTyped = false; \
+    }
 
 #define VARDONEA(fl, name, array, attrs) GRAMMARP->createVariable((fl), (name), (array), (attrs))
 #define VARDONEP(portp, array, attrs) \
@@ -632,6 +635,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_COSH         "$cosh"
 %token<fl>              yD_COUNTBITS    "$countbits"
 %token<fl>              yD_COUNTONES    "$countones"
+%token<fl>              yD_COVERAGE_CONTROL "$coverage_control"
 %token<fl>              yD_DIMENSIONS   "$dimensions"
 %token<fl>              yD_DISPLAY      "$display"
 %token<fl>              yD_DISPLAYB     "$displayb"
@@ -4505,6 +4509,10 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
                         { $$ = new AstCountBits{$1, $3, $5, $7, $9};
                           BBUNSUP($11, "Unsupported: $countbits with more than 3 control fields"); }
         |       yD_COUNTONES '(' expr ')'               { $$ = new AstCountOnes{$1, $3}; }
+        |       yD_COVERAGE_CONTROL '(' expr ',' expr ',' expr ',' expr ')'  {
+                          const AstParseRef* const rootp = VN_CAST($9, ParseRef);
+                          $$ = new AstCoverageControl{$1, $3, $5, $7, rootp && rootp->name() == "$root"};
+                          DEL($9); }
         |       yD_DIMENSIONS '(' exprOrDataType ')'    { $$ = new AstAttrOf{$1, VAttrType::DIM_DIMENSIONS, $3}; }
         |       yD_DIST_CHI_SQUARE '(' expr ',' expr ')'        { $$ = new AstDistChiSquare{$1, $3, $5}; }
         |       yD_DIST_ERLANG '(' expr ',' expr ',' expr ')'   { $$ = new AstDistErlang{$1, $3, $5, $7}; }

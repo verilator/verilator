@@ -81,6 +81,7 @@ module t;
   two_dee_t two_dee_sig;
 
   int i;
+  real r;
   initial begin
     if (logic8bit != 8'h12) $stop;
     if (4'shf > 4'sh0) $stop;
@@ -150,6 +151,12 @@ module t;
     if (abc_t'(i).next(int_t'(2)) != A) $stop;
     the_intf.octets = 16'habcd;
     if (the_intf.octets[idx_t'(1)] != 8'hab) $stop;
+
+    // Integral cast as operand of a real operator (issue #9205)
+    r = int'(allones[7:0]) * 0.5;
+    if (r != 127.5) $stop;
+    r = 2.0 / int'(i + 1);
+    if (r != 1.0) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

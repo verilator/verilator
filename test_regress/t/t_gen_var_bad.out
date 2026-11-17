@@ -1,4 +1,4 @@
-%Error: t/t_gen_var_bad.v:10:5: Non-genvar used in generate for: 'i'
+%Error: t/t_gen_var_bad.v:10:5: Non-genvar used in generate for: 'i' (IEEE 1800-2023 27.4)
                               : ... note: In instance 't'
    10 |     for (i = 0; i < 3; i = i + 1) begin   
       |     ^~~

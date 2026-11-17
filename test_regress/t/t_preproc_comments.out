@@ -1124,3 +1124,17 @@ EXP: ja32 p q
 ja32 p q
 
 `line 783 "t/t_preproc.v" 0
+//======================================================================
+// Other simulators' coverage off/on comments
+// coverage off
+/* pragma coverage on */
+// tool coverage off
+// other coverage on
+// verilator coverage off
+// verilator coverage_on
+// coverage offset is not a pragma
+// coverage on -item s is not either
+// two words coverage off is not either
+// coverage
+
+`line 796 "t/t_preproc.v" 0

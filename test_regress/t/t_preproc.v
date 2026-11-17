@@ -779,3 +779,16 @@ EXP: ja32 z y
 `JOIN_ARGS(32, z)
 EXP: ja32 p q
 `JA_32``(p, q)
+
+//======================================================================
+// Other simulators' coverage off/on comments
+// coverage off
+/* pragma coverage on */
+// tool coverage off
+// other coverage on
+// verilator coverage off
+// verilator coverage_on
+// coverage offset is not a pragma
+// coverage on -item s is not either
+// two words coverage off is not either
+// coverage

@@ -32,6 +32,21 @@ module subtask (
   endtask
 endmodule
 
+// A ref port without a data type is still a variable (IEEE 1800-2023 23.2.2.3).
+module subimplicit (
+    ref p,
+    input bit clk,
+    input int cyc,
+    ref r
+);
+  always @(posedge clk) begin
+    if (cyc == 1) begin
+      p <= 1'b1;
+      r <= 1'b1;
+    end
+  end
+endmodule
+
 module t;
 
   bit clk = 0;
@@ -50,11 +65,21 @@ module t;
       x
   );
   subtask st (.z(w));
+  logic p = 1'b0;
+  logic r = 1'b0;
+  subimplicit si (
+      .p(p),
+      .clk(clk),
+      .cyc(cyc),
+      .r(r)
+  );
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 2) begin
       `checkd(x, 100)  // Written by 's'
+      `checkd(p, 1'b1)  // Written by 'si'
+      `checkd(r, 1'b1)  // Written by 'si'
     end
     else if (cyc == 3) begin
       x <= 200;

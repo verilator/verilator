@@ -576,7 +576,12 @@ void VlcTop::writeInfo(const string& filename) {
                              infoPoints.end());
             os << "DA:" << sc.lineno() << "," << daCount << "\n";
             if (opt.countOk(daCount)) ++linesHit;
-            if (infoPoints.size() <= 1) continue;
+            // A lone point is a branch only on its own line, e.g. an else-if arm, not on the
+            // other lines of its block
+            if (infoPoints.size() == 1
+                && (infoPoints.front()->type() != "branch"
+                    || infoPoints.front()->lineno() != sc.lineno()))
+                continue;
             branchesFound += static_cast<int>(infoPoints.size());
             int point_num = 0;
             for (const VlcPoint* pointp : infoPoints) {

@@ -207,6 +207,11 @@ List Of Warnings
       input a;
       assign a = 1'b1;
 
+   This error is not reported when a continuous assignment or port
+   connection drives a net input port from outside its module or interface,
+   either through a hierarchical reference or from an instance inserted by
+   ``bind``.
+
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
@@ -480,6 +485,9 @@ List Of Warnings
    Disabling this warning does not change execution, only suppresses the
    warning message.
 
+   Non-blocking assignments in an `always_latch` are reported as
+   :option:`LATCHDLY` instead.
+
    Faulty example:
 
    .. include:: ../../docs/gen/ex_COMBDLY_faulty.rst
@@ -497,10 +505,11 @@ List Of Warnings
    contains a non-blocking assignment ``<=``, or a non-blocking event trigger
    ``->>``. A DPI import declared with ``context`` is taken to call every DPI
    export. Unlike in the combinational logic block itself (see
-   :option:`COMBDLY`), Verilator cannot convert it to the blocking form, as the
-   function or task might also be called from elsewhere. A non-blocking
-   assignment in a function or task that is inlined becomes part of the
-   combinational logic block, so is reported as :option:`COMBDLY` instead.
+   :option:`COMBDLY` and :option:`LATCHDLY`), Verilator cannot convert it to
+   the blocking form, as the function or task might also be called from
+   elsewhere. A non-blocking assignment in an inlined function or task
+   becomes part of the calling block, so is reported as :option:`COMBDLY`
+   or :option:`LATCHDLY` instead.
 
    This error can be disabled. Disabling it is only safe if no non-blocking
    assignment executes at runtime through the reported call site. Otherwise the
@@ -1249,6 +1258,36 @@ List Of Warnings
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
+
+.. option:: LATCHDLY
+
+   Warns that Verilator does not support a non-blocking assignment ``<=``,
+   or a non-blocking event trigger ``->>``, in an ``always_latch``, and will
+   execute it as blocking.
+
+   This is fine for a typical clock gate, whose latch opens on the opposite
+   clock edge from the flops it drives. It matters when a flop reads the
+   latch output on the same clock edge that opens the latch, for example a
+   latch register file read on the edge it is written: the flop may then get
+   the latch's new value instead of its old one.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_LATCHDLY_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_LATCHDLY_msg.rst
+
+   To repair, replace the ``always_latch`` with an ``always`` that lists
+   every signal the block reads:
+
+   .. code-block:: sv
+
+      always @(en or d) if (en) q <= d;
+
+   Ignoring this warning may make Verilator simulations differ from other
+   simulators.
 
 .. option:: LIFETIME
 
@@ -2360,6 +2399,29 @@ List Of Warnings
 
    Ignoring this warning will only slow simulations; it will simulate
    correctly.
+
+
+.. option:: TIMEPRECTRUNC
+
+   Warns that a time is not a multiple of the time precision, for example
+   using the time literal ``#1ps``, when the precision is 10ps. IEEE
+   requires delays be rounded to the time precision (IEEE 1800-2023
+   3.14.1), although most simulators use the unrounded value.
+
+   Ignoring this warning will result in the unrounded delay being used;
+   results may vary between simulators depending on the rounding versus
+   truncation behavior of that simulator.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_TIMEPRECTRUNC_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_TIMEPRECTRUNC_msg.rst
+
+   Recommend using a literal that is a multiple of the time precision, or a
+   finer time precision.
 
 
 .. option:: TIMESCALEMOD

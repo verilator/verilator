@@ -2089,7 +2089,9 @@ class VlTest:
             else:  # Future: support numeric exit code?
                 self.error("fails=" + str(fails) + " is not legal value")
         if fails and not status:
-            self.error("Exec of " + self._error_cmd_simplify(cmd) + " ok, but expected to fail")
+            if fails != 'ignore':
+                self.error("Exec of " + self._error_cmd_simplify(cmd) +
+                           " ok, but expected to fail")
         if self.errors or self._skips:
             return False
 

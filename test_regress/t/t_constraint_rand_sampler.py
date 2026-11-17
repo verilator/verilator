@@ -22,5 +22,9 @@ test.execute(all_run_flags=[
     '+verilator+rand+sampler+default', '+check_varied', '+verilator+solver+file+' + log
 ])
 test.file_grep(log, r'; sampler: default')
+# The solver accepts every command, so no runtime-declared name clashes with a variable
+test.file_grep_not(log, r'\(error')
+# The UniGen2 diversification literals that d0 is named after are declared
+test.file_grep(log, r'\(declare-fun __Vd0 ')
 
 test.passes()

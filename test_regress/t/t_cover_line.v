@@ -370,9 +370,101 @@ module cond(input logic clk, input int cyc);
   assign pstruct.a = cyc == 1 ? 16'd2 : 16'd3;
   assign pstruct.b = 16'd0;
 
+  // An enum register, so the case below keeps its enum type
+  typedef enum logic [2:0] {
+    E_A,
+    E_B,
+    E_C,
+    E_D,
+    E_E
+  } e_t;
+  e_t ev;
+  always @(posedge clk) ev <= e_t'(cyc[2:0]);
+
   always @(posedge clk) begin
     if (cyc == 2) $display("%08x", pstruct);
-    // An else-if chain (line points only) and an if/else (branch points too) on one line
+    // An else-if chain and an if/else on one line
     if (cyc == 3) l = 1; else if (cyc == 4) l = 0; else l = 1; if (cyc == 5) l = 0; else l = 1;
+    // An else-if chain with an if/else nested in an arm
+    if (cyc == 3) l = 1;
+    else if (cyc[0]) begin
+      if (cyc == 5) l = 0;
+      else l = 1;
+    end
+    else l = 0;
+    // $stop turns coverage off in its leg, which drops the branch points of its whole chain
+    if (cyc == 3) l = 1;
+    else if (cyc != 100) l = 0;
+    else $stop;
+    if (cyc == 100) $stop;
+    else if (cyc == 3) l = 1;
+    else l = 0;
+    // A case without a default gets a point for no item matching, unless its items match
+    // every value or a pragma says one matches
+    // verilator lint_off CASEINCOMPLETE
+    case (cyc[2:0])
+      3'd3: l = 1;
+      3'd4: l = 0;
+    endcase
+    // verilator lint_on CASEINCOMPLETE
+    case (cyc[0])
+      1'b0: l = 1;
+      1'b1: l = 0;
+    endcase
+    casez (cyc[1:0])
+      2'b1?: l = 1;
+      2'b0?: l = 0;
+    endcase
+    unique case (1'b1)
+      cyc[0]: l = 1;
+      !cyc[0]: l = 0;
+    endcase
+    case (1'b1)  /* verilator full_case */
+      cyc[0]: l = 1;
+      !cyc[0]: l = 0;
+    endcase
+    priority case (1'b1)
+      cyc[0]: l = 1;
+      !cyc[0]: l = 0;
+    endcase
+    // Items that aren't constants can't be proven to match every value
+    case (cyc[0])
+      cyc[1]: l = 1;
+    endcase
+    // unique0 allows no item to match, and items naming every value of an enum don't cover
+    // its unnamed values
+    unique0 case (ev)
+      E_A: l = 1;
+      E_B: l = 0;
+      E_C: l = 1;
+      E_D: l = 0;
+      E_E: l = 1;
+    endcase
+  end
+
+  // A $error in an assertion's action block turns coverage off only inside the assertion
+  logic n;
+  always @(posedge clk) begin
+    assert (cyc < 100) else $error("cyc too large");
+    if (cyc[0]) begin
+      assert (cyc < 100) else $error("cyc too large");
+      n = 1;
+    end
+    else n = 0;
+  end
+
+  // Likewise for $stop and $fatal, including in a case item followed by statements
+  logic n2;
+  always @(posedge clk) begin
+    case (cyc[1:0])
+      2'd0: begin
+        assert (cyc < 100) else $stop;
+        n2 = 0;
+      end
+      default: begin
+        assert (cyc < 100) else $fatal(1, "cyc too large");
+        n2 = 1;
+      end
+    endcase
   end
 endmodule
