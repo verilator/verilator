@@ -1013,21 +1013,6 @@ class ParamProcessor final {
         } else {
             newModp = srcModp->cloneTree(false);
         }
-        // AstCells and their AstPins keep their links across cloning, even a recursive cell's to
-        // srcModp, and replaceRefsRecurse below links a class's references to itself back to
-        // srcModp. Any other reference to a class cloned with newModp (e.g. nested in it) links
-        // to the cloned class, so relink its parameter pins to the cloned class's formals while
-        // clonep() is still valid.
-        newModp->foreach([newModp](const AstNode* nodep) {
-            AstPin* paramsp = nullptr;
-            if (const AstClassRefDType* const refp = VN_CAST(nodep, ClassRefDType)) {
-                if (refp->classp() != newModp) paramsp = refp->paramsp();
-            } else if (const AstClassOrPackageRef* const refp
-                       = VN_CAST(nodep, ClassOrPackageRef)) {
-                if (refp->classOrPackageSkipp() != newModp) paramsp = refp->paramsp();
-            }
-            for (AstPin* const pinp : VNList<AstPin>{paramsp}) pinp->cloneRelinkGen();
-        });
 
         // Mark the source module as a parameterized template now that a specialized
         // clone exists.  This suppresses width/type errors on the unresolved template
@@ -2286,7 +2271,21 @@ class ParamProcessor final {
         nodep->ifacep(VN_AS(newModp, Iface));
         return newModp;
     }
+    // Link the parameter pins of a class reference to the formals of the class it references.
+    // Cloning keeps AstPin links, so after cloning a module, interface, or class, a reference to
+    // a class nested in it links to the cloned class, but its pins to the template's formals.
+    void relinkClassRefPins(AstPin* paramsp, const AstNodeModule* classp) {
+        for (AstPin* const pinp : VNList<AstPin>{paramsp}) {
+            if (const AstVar* const varp = pinp->modVarp()) {
+                pinp->modVarp(VN_AS(m_memberMap.findMember(classp, varp->name()), Var));
+            } else if (const AstParamTypeDType* const typep = pinp->modPTypep()) {
+                pinp->modPTypep(
+                    VN_AS(m_memberMap.findMember(classp, typep->name()), ParamTypeDType));
+            }
+        }
+    }
     AstNodeModule* classRefDeparam(AstClassOrPackageRef* nodep, AstNodeModule* srcModp) {
+        relinkClassRefPins(nodep->paramsp(), srcModp);
         resolveDefaultParams(nodep);
         AstNodeModule* const newModp
             = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false);
@@ -2304,6 +2303,7 @@ class ParamProcessor final {
         return newModp;
     }
     AstNodeModule* classRefDeparam(AstClassRefDType* nodep, AstNodeModule* srcModp) {
+        relinkClassRefPins(nodep->paramsp(), srcModp);
         resolveDefaultParams(nodep);
         AstNodeModule* const newModp
             = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false);

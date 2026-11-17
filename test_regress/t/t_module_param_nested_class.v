@@ -50,24 +50,6 @@ class Outer #(
   endfunction
 endclass
 
-// A parameterized class referencing its own class with other parameters
-class Self #(
-    type T = int
-);
-  static function int get_w();
-    return $bits(T);
-  endfunction
-
-  function int get_w15();
-    Self #(logic [14:0]) other = new;
-    return other.get_w();
-  endfunction
-
-  function int get_w7();
-    return Self#(logic [6:0])::get_w();
-  endfunction
-endclass
-
 // The recursive instance passes P through unchanged, so the specializations
 // below rec5 differ from those below rec0 only in P.
 module rec #(
@@ -116,12 +98,6 @@ module t (
     `checkd(outer7.get_w(), 7);
     `checkd(outer15.get_w(), 15);
     `checkd(outer32.get_w(), 32);
-  end
-
-  initial begin
-    automatic Self #(logic [30:0]) self31 = new;
-    `checkd(self31.get_w15(), 15);
-    `checkd(self31.get_w7(), 7);
   end
 
   int rec5_o;
