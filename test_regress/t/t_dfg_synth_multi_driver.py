@@ -16,7 +16,6 @@ test.lint(verilator_flags2=["--stats", "--no-debug-check", f"-GN={DRIVERS}"],
           make_main=False,
           verilator_make_gmake=False)
 
-# Expand the multi-driven x once despite all its drivers, plus y once.
 test.file_grep(test.stats,
                r'Optimizations, DFG, Synthesis, synt / selection variable expansions\s+(\d+)', 2)
 

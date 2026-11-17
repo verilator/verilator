@@ -398,8 +398,8 @@ private:
         addStat("synt / input CFG cyclic", m_synt.cfgCyclic);
 
         addStat("synt / joins using path predicate", m_synt.joinUsingPathPredicate);
-        addStat("synt / selection variable expansions", m_synt.selectVarExpansions);
         addStat("synt / joins using branch condition", m_synt.joinUsingBranchCondition);
+        addStat("synt / selection variable expansions", m_synt.selectVarExpansions);
     }
 };
 
