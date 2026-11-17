@@ -2720,6 +2720,7 @@ VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData star
     : m_hex{hex}
     , m_bits{bits}
     , m_filename(filename)  // Need () or GCC 4.8 false warning
+    , m_start{start}
     , m_end{end}
     , m_descending{start > end}
     , m_addr{start} {
@@ -2735,6 +2736,16 @@ VlReadMem::~VlReadMem() {
         std::fclose(m_fp);
         m_fp = nullptr;
     }
+}
+bool VlReadMem::checkRange(QData addr) const {
+    if (m_end == ~0ULL) return true;
+    const bool inRange
+        = m_descending ? (addr <= m_start && addr >= m_end) : (addr >= m_start && addr <= m_end);
+    if (VL_LIKELY(inRange)) return true;
+    VL_WARN_MT(m_filename.c_str(), m_linenum, "",
+               "$readmem file data outside memory range "
+               "(IEEE 1800-2023 21.4)");
+    return false;
 }
 bool VlReadMem::get(QData& addrr, std::string& valuer) {
     if (VL_UNLIKELY(!m_fp)) return false;
@@ -2763,6 +2774,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
             // printf("Got data @%lx = %s\n", m_addr, valuer.c_str());
             ungetc(c, m_fp);
             addrr = m_addr;
+            if (VL_UNLIKELY(!checkRange(addrr))) return false;
             if (m_descending) {
                 --m_addr;
             } else {
@@ -2814,6 +2826,8 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
         }
         lastCh = c;
     }
+
+    if (VL_UNLIKELY(inData && !checkRange(m_addr))) return false;
 
     const bool beforeEnd = m_descending ? m_addr >= m_end : m_addr <= m_end;
     if (VL_UNLIKELY(m_end != ~0ULL && beforeEnd && !m_anyAddr)) {

@@ -570,12 +570,15 @@ class VlReadMem final {
     const bool m_hex;  // Hex format
     const int m_bits;  // Bit width of values
     const std::string& m_filename;  // Filename
-    const QData m_end;  // End address (as specified by user)
+    const QData m_start;  // Start address (as specified by user)
+    const QData m_end;  // End address (as specified by user), or ~0 when not specified
     const bool m_descending;  // Start address is above end, so addresses decrement
     FILE* m_fp = nullptr;  // File handle for filename
     QData m_addr = 0;  // Next address to read
     int m_linenum = 0;  // Line number last read from file
     bool m_anyAddr = false;  // Had address directive in the file
+    bool checkRange(QData addr) const;
+
 public:
     VlReadMem(bool hex, int bits, const std::string& filename, QData start, QData end);
     ~VlReadMem();
