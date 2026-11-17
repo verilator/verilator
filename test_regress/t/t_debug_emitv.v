@@ -495,6 +495,14 @@ module t (/*AUTOARG*/
   property p1;
     @(clk) sum[0]
   endproperty
+  property p_args(x, y);
+    @(posedge clk) x
+  endproperty
+  property p_chain;
+    p_args(in, sum[1])
+  endproperty
+
+  assert_chain: assert property (p_chain);
 
   assert property (@(clk) not ##1 in);
 

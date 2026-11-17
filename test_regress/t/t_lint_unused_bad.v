@@ -203,4 +203,25 @@ module sub;
     $bboxed(obj.partial[0]);
   end
 
+  // A property-local variable is reported once, not for each instance
+  logic prop_clk = 0;
+  property p_local_unused;
+    int unu_local;  // Totally unused
+    @(posedge prop_clk) 1'b1;
+  endproperty
+  property p_local_unread;
+    int unr_local;  // Assigned but unused
+    @(posedge prop_clk) (1'b1, unr_local = 1) |-> 1'b1;
+  endproperty
+  assert property (p_local_unused);
+  assert property (p_local_unused);
+  assert property (p_local_unread);
+  assert property (p_local_unread);
+  property p_local_init;
+    int ini_local = 1;  // Initialized and only read
+    @(posedge prop_clk) ini_local == 1;
+  endproperty
+  assert property (p_local_init);
+  assert property (p_local_init);
+
 endmodule

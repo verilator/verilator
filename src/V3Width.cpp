@@ -8764,7 +8764,6 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->declsp(), nullptr);
         iterateCheckSelf(nodep, "SeqBody", nodep->exprp(), SELF, BOTH);
         nodep->didWidth(true);
-        // Keep all sequences for now; cleanup happens after V3AssertPre inlining.
     }
     void visit(AstSchemaRef* nodep) override {
         if (nodep->didWidth()) return;
