@@ -58,6 +58,5 @@ module t;
     r = takes_int(w);  // Array to scalar argument
     q = {q, cw};  // Concatenation item is neither an element nor array of elements
     n2 = n3;  // Unmatched array sizes
-    b = 1 inside {w};  // Inside not specified on associative arrays
   end
 endmodule

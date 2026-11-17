@@ -1195,6 +1195,11 @@ public:
     void erase(const T_Key& index) { m_map.erase(index); }
     // Return 0/1 if element exists. Verilog: function int exists(input index)
     int exists(const T_Key& index) const { return m_map.find(index) != m_map.end(); }
+    // inside (set membership operator)
+    bool inside(const T_Value& value) const {
+        return std::any_of(m_map.cbegin(), m_map.cend(),
+                           [&](const auto& pair) { return pair.second == value; });
+    }
     // Return first element.  Verilog: function int first(ref index);
     int first(T_Key& indexr) const {
         const auto it = m_map.cbegin();

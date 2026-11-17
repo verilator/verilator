@@ -651,6 +651,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             selp = new AstArraySel{fl, arrayp, idxp};
         else if (VN_IS(arrDtp, AssocArrayDType))
             selp = new AstAssocSel{fl, arrayp, idxp};
+        else if (VN_IS(arrDtp, WildcardArrayDType))
+            selp = new AstWildcardSel{fl, arrayp, idxp};
         UASSERT_OBJ(selp, arrayp, "Selecting from non-array?");
         selp->dtypep(arrDtp->subDTypep());
         return selp;
@@ -2585,8 +2587,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (nodep->method() == VCMethod::ARRAY_INSIDE) {
             const bool randArr = nodep->fromp()->user1();
 
-            AstVar* const newVarp
-                = new AstVar{fl, VVarType::BLOCKTEMP, "__Vinside", nodep->findIntDType()};
+            const AstNodeDType* const arrDtp = nodep->fromp()->dtypep()->skipRefp();
+            AstNodeDType* idxDtp;
+            if (const AstAssocArrayDType* const adtp = VN_CAST(arrDtp, AssocArrayDType)) {
+                idxDtp = adtp->keyDTypep();
+            } else if (VN_IS(arrDtp, WildcardArrayDType)) {
+                idxDtp = nodep->findStringDType();
+            } else {
+                idxDtp = nodep->findIntDType();
+            }
+            AstVar* const newVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vinside", idxDtp};
             AstNodeExpr* const idxRefp = new AstVarRef{nodep->fileline(), newVarp, VAccess::READ};
             AstForeachHeader* const headerp
                 = new AstForeachHeader{fl, nodep->fromp()->cloneTreePure(false), newVarp};
