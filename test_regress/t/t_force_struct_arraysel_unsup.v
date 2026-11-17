@@ -7,15 +7,20 @@
 module t;
   typedef struct {
     struct {logic [7:0] value;} arr[2];
+    logic [7:0] mem[2];
     logic flag;
   } st_t;
   st_t s;
+  st_t so;  // Only so.mem is forced
   int i;
   logic [7:0] q;
+  logic [7:0] qo;
   assign q = s.arr[i].value;
+  assign qo = so.arr[i].value;
 
   initial begin
     force s.arr[1].value = 8'ha5;
+    force so.mem[1] = 8'h30;
     $finish;
   end
 endmodule
