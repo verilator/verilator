@@ -69,11 +69,16 @@ module t (
   // A reach off the assertion's clock starts an attempt at its next tick
   int pass_off_tick = 0;
   int fail_off_tick = 0;
+  int pass_off_tick2 = 0;
+  int fail_off_tick2 = 0;
   always @(posedge clk) begin
     if (cyc % 10 == 2) begin
       assert property (@(negedge clk) ##1 cyc % 10 == 4) ++pass_off_tick;
       else ++fail_off_tick;
     end
+    if (cyc % 10 == 5 || cyc % 10 == 7)
+      assert property (@(negedge clk) ##1 cyc % 10 == 7) ++pass_off_tick2;
+      else ++fail_off_tick2;
   end
 
   // A first step entering a multi-cycle delay
@@ -95,6 +100,48 @@ module t (
     if (cyc % 10 == 1 || cyc % 10 == 3 || cyc % 10 == 4)
       assert property (cyc % 10 != 5 throughout ##3 1) ++pass_together;
       else ++fail_together;
+  end
+
+  // A multi-cycle antecedent not matched at the first step is a vacuous pass
+  int pass_seq_ante = 0;
+  int fail_seq_ante = 0;
+  always @(negedge clk) begin
+    if (cyc % 10 == 2 || cyc % 10 == 5 || cyc % 10 == 8)
+      assert property (cyc % 10 < 6 ##1 cyc % 10 != 4 |-> cyc % 10 == 6) ++pass_seq_ante;
+      else ++fail_seq_ante;
+  end
+
+  // Strong obligations that complete before the end of simulation
+  int pass_strong = 0;
+  int fail_strong = 0;
+  int pass_strong_named = 0;
+  int fail_strong_named = 0;
+  string scope_strong_named = "";
+  always @(negedge clk) begin
+    if (cyc % 10 == 2 || cyc % 10 == 6)
+      assert property (s_always [1:2] cyc % 10 != 4) ++pass_strong;
+      else ++fail_strong;
+    begin : strong_named
+      if (cyc % 10 == 5)
+        assert property (s_always [1:2] cyc % 10 >= 6) begin
+          ++pass_strong_named;
+          scope_strong_named = $sformatf("%m");
+        end
+        else ++fail_strong_named;
+    end
+  end
+
+  // An unnamed assertion in a generate block is in the block's scope
+  int fail_gen = 0;
+  string scope_gen = "";
+  if (1) begin : gen
+    always @(negedge clk)
+      if (cyc % 10 == 5)
+        assert property (##1 cyc % 10 == 7)
+        else begin
+          ++fail_gen;
+          scope_gen = $sformatf("%m");
+        end
   end
 
   int count_cover = 0;
@@ -122,6 +169,15 @@ module t (
       else ++fail_events;
   end
 
+  // An event qualified by iff wakes the procedure only while its condition holds
+  int pass_events_iff = 0;
+  int fail_events_iff = 0;
+  always @(posedge clk or negedge evt iff cyc % 20 == 3) begin
+    if (!evt || cyc % 10 == 6)
+      assert property (##1 (cyc % 10 == 4 || cyc % 10 == 7)) ++pass_events_iff;
+      else ++fail_events_iff;
+  end
+
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
     $write("[%0t] cyc==%0d crc=%x rst_l=%b req=%b gnt=%b gated=%0d ref=%0d\n", $time, cyc, crc,
@@ -147,16 +203,29 @@ module t (
       `checks(scope_named, "top.t.named");
       `checkd(pass_off_tick, 10);
       `checkd(fail_off_tick, 0);
+      `checkd(pass_off_tick2, 10);
+      `checkd(fail_off_tick2, 10);
       `checkd(pass_delay, 20);
       `checkd(fail_delay, 10);
       `checkd(pass_delay_imp, 20);
       `checkd(pass_together, 10);
       `checkd(fail_together, 20);
+      `checkd(pass_seq_ante, 20);
+      `checkd(fail_seq_ante, 10);
+      `checkd(pass_strong, 10);
+      `checkd(fail_strong, 10);
+      `checkd(pass_strong_named, 10);
+      `checkd(fail_strong_named, 0);
+      `checks(scope_strong_named, "top.t.strong_named");
+      `checkd(fail_gen, 10);
+      `checks(scope_gen, "top.t.gen");
       `checkd(count_cover, 10);
       `checkd(pass_disable, 10);
       `checkd(fail_disable, 0);
       `checkd(pass_events, 20);
       `checkd(fail_events, 0);
+      `checkd(pass_events_iff, 15);
+      `checkd(fail_events_iff, 0);
       $write("*-* All Finished *-*\n");
       $finish;
     end

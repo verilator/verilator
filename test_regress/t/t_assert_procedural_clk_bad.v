@@ -23,6 +23,9 @@ module t (
   // A ranged cycle delay entered in the first cycle
   always @(negedge clk) if (cyc[0]) assert property (cyc[1] ##[0:2] cyc[2]);
 
+  // A sequence 'and' with an operand ending in the first cycle
+  always @(negedge clk) if (cyc[0]) assert property (cyc[1] and (cyc[2] ##1 cyc[3]));
+
   always @(posedge clk) begin
     if (cyc != 0) begin
       cyc <= cyc + 1;
