@@ -7816,9 +7816,14 @@ class WidthVisitor final : public VNVisitor {
                 // A streaming target legally unpacks an aggregate (IEEE 1800-2023 11.4.14)
                 if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType()
                     && (!lhsRefp || !rhsRefp) && !VN_IS(nodep->lhsp(), NodeStream)) {
-                    nodep->v3error("Illegal assignment between unpacked aggregate and "
-                                   "integral type (IEEE 1800-2023 7.6)"
-                                   << warnDTypes(nodep, lhsDtp, rhsDtp));
+                    const bool needsIndex = rhsRefp && VN_IS(rhsDtp, UnpackArrayDType);
+                    const string hint = needsIndex ? "\n" + V3Error::warnMore()
+                                                         + "... Array needs an array index"
+                                                   : string{};
+                    nodep->v3error(
+                        "Illegal assignment between unpacked aggregate and integral type "
+                        "(IEEE 1800-2023 7.6)"
+                        << hint << warnDTypes(nodep, lhsDtp, rhsDtp));
                 }
             }
 
@@ -10526,9 +10531,13 @@ class WidthVisitor final : public VNVisitor {
         const bool isRhsAggregate = rhsDtp->isAggregateType();
         if (!isLhsAggregate && !isRhsAggregate) return;
         if (isLhsAggregate ^ isRhsAggregate) {
+            const bool needsIndex = isRhsAggregate && VN_IS(rhsDtp, UnpackArrayDType);
+            const string hint = needsIndex
+                                    ? "\n" + V3Error::warnMore() + "... Array needs an array index"
+                                    : string{};
             nodep->v3error(
                 "Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)"
-                << warnDTypes(nodep, lhsDtp, rhsDtp, lhsName, rhsName));
+                << hint << warnDTypes(nodep, lhsDtp, rhsDtp, lhsName, rhsName));
             return;
         } else if (VN_IS(lhsDtp, QueueDType) && VN_IS(rhsDtp, EmptyQueueDType)) {
             return;
