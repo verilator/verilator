@@ -366,7 +366,7 @@ AstVarScope* TriggerKit::newTrigVec(const std::string& name) const {
 
 uint32_t TriggerKit::extraTriggerIndex(uint32_t index) const {
     UASSERT(index <= m_nExtraWords * WORD_SIZE, "Invalid external trigger index");
-    return index + m_nSenseWords * WORD_SIZE;
+    return index + nSenses();
 }
 
 std::set<uint32_t> TriggerKit::triggerIndices(const AstSenTree* senTreep, bool pre) const {
@@ -407,7 +407,7 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) co
 // Creates: trigger[bit] = (vscp != prev); prev = vscp;
 void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc* initFuncp,
                                                  AstVarScope* instVscp, uint32_t index) const {
-    index += m_nSenseWords * WORD_SIZE;
+    index += nSenses();
     const uint32_t wordIndex = index / WORD_SIZE;
     const uint32_t bitIndex = index % WORD_SIZE;
 
@@ -827,8 +827,9 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
     // Populates `m_senExprToSenItem` with every group of SenItems that share the same prevValue
     // variable. Groups that contain only one type of an edge are omitted.
     void fillSenExprToSenItem() {
-        for (const AstSenItem* const senItemp : m_trigKit.trigIdx2SenItem()) {
-            if (!senItemp) continue;  // Padding and extra triggers have no sensitivity item.
+        for (uint32_t i = 0; i < m_trigKit.nSenses(); ++i) {
+            const AstSenItem* const senItemp = m_trigKit.trigIdx2SenItem()[i];
+            if (!senItemp) continue;  // Word-alignment padding.
             const VEdgeType edge = senItemp->edgeType();
             if (edge.anEdge() || edge == VEdgeType::ET_CHANGED || edge == VEdgeType::ET_HYBRID) {
                 m_senExprToSenItem[*getSenHashNode(senItemp)].push_back(senItemp);
