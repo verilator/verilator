@@ -243,43 +243,56 @@ releases. In particular, :vlopt:`--coverage-fsm` and the Verilator-specific
 FSM metacomments below should be treated as subject to change while the
 interface settles.
 
-A state machine is a register, written by one clocked process, whose next
-value depends on its current value and is always either one of a set of
-constants or unchanged. Verilator finds such registers from the logic
-itself, in the common coding styles: a single clocked process, or a clocked
-process with a separate combinational next-state block or continuous
-assignment; ``case``, ``casez``, ``if``/``else if`` or ``?:`` dispatch on
-the state; next-state values assigned by default and overridden; enables;
-and compound or active-low resets. The states are the constants the logic
-assigns to the register, compares it with in its next-state logic, or uses
-as the label of a ``case`` on it anywhere in the module, named after the
-enum item, parameter or localparam where possible (of two parameters with
-one value, the first used); an enum value the logic never uses, or a value
-outside the enum, is not a state. A transition is reported from each state
-to every constant the logic can then give the register, under whatever
-input conditions; a transition only under conditions that cannot hold
-together, for example a parameter condition that is false, or both ``en``
-and ``!en``, is not reported, and leaving the register unchanged is not a
-transition. The reset is a condition at the top of the clocked process that
-does not depend on the state, with a constant on one side, as in ``if (rst)
-state <= IDLE``; transitions into that constant under it are reported as
-reset arcs, also when the condition is an ordinary input that loads a
-constant.
+A state machine is a register that one clocked process writes, whose next
+value depends on its current value, and whose next value is always a
+constant or its current value. Verilator finds these registers by
+evaluating the logic, so it handles the common coding styles:
 
-These limits of the current implementation may change: a register written
-by two clocked processes, or by a process whose event control is an
-expression rather than a signal, is not reported, nor is one whose
-next-state logic has too many paths; assignments inside tasks, inside
-loops, or through a concatenation or a part select are not followed; copies
-and decodes of the state and chains of temporaries are followed only a few
-levels deep; conditions are related only through the subexpressions they
-share; and a ``case inside`` item with a range is not modeled.
+- One clocked process, or a clocked process with a separate combinational
+  next-state block or continuous assignment.
+- ``case``, ``casez``, ``if``/``else if`` or ``?:`` on the state.
+- A default next state that a later assignment overrides.
+- Enables.
+- Compound or active-low resets.
 
-A one-bit register is left to toggle coverage unless declared with an enum
-type or :option:`/*verilator&32;fsm_state*/`. A register whose next value
-is not always a constant, such as a counter or a value copied from an
-input, is not a state machine, unless so declared, in which case the
-non-constant values are ignored.
+The states are the constants that the logic assigns to the register,
+compares it with in its next-state logic, or uses as ``case`` labels on it
+anywhere in the module. Each state is named after its enum item, parameter
+or localparam where there is one. When two parameters have the same value,
+the first one used names the state. An enum value that the logic never uses
+is not a state, and neither is a value outside the enum.
+
+A transition goes from a state to each constant that the logic can assign
+the register in that state, under any input condition. Verilator leaves out
+a transition whose conditions cannot all hold, for example a parameter
+condition that is false, or both ``en`` and ``!en``. Leaving the register
+unchanged is not a transition.
+
+The reset is a condition at the top of the clocked process that does not
+depend on the state and loads a constant, as in ``if (rst) state <= IDLE``.
+Transitions into that constant under the condition are reported as reset
+arcs. An ordinary input that loads a constant at the top of the clocked
+process is also taken as a reset.
+
+The current implementation has these limits, which may change:
+
+- A register is not reported if two clocked processes write it, or if the
+  process that writes it has an expression rather than a signal as its
+  event control.
+- A register is not reported if its next-state logic has too many paths.
+- Assignments inside tasks or loops, or through a concatenation or a part
+  select, are not followed.
+- Copies and decodes of the state, and chains of temporaries, are followed
+  only a few levels deep.
+- Conditions are related only through the subexpressions they share.
+- A ``case inside`` item with a range is not modeled.
+
+A one-bit register is left to toggle coverage unless it is declared with an
+enum type or :option:`/*verilator&32;fsm_state*/`. A register whose next
+value is not always a constant, such as a counter or a value copied from an
+input, is not a state machine. If such a register is declared with an enum
+type or ``fsm_state``, it is reported, and its non-constant values are
+ignored.
 
 The following metacomments may be attached to the state variable to steer
 the extracted coverage model:
