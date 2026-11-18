@@ -3776,7 +3776,7 @@ inline void _vl_insert_W_elem(WDataOutP owp, const VlWide<N_Words>& ld, int hbit
 template <typename T, size_t N_MaxSize>
 inline std::string VL_CVT_PACK_STR_NR(int lbits, IData rd,
                                       const VlQueue<T, N_MaxSize>& q) VL_MT_SAFE {
-    const QData streamBits = static_cast<QData>(q.size()) * lbits;
+    QData streamBits = static_cast<QData>(q.size()) * lbits;
     // A slice at least as wide as the stream does not reorder it
     const bool reorder = rd && rd < streamBits;
     // The stream rounded to words, and an index a slice past it, must fit the int bit counts
@@ -3785,8 +3785,8 @@ inline std::string VL_CVT_PACK_STR_NR(int lbits, IData rd,
                         std::numeric_limits<int>::max() - VL_EDATASIZE - VL_BYTESIZE))) {
         const std::string msg = "Streaming concatenation of " + std::to_string(streamBits)
                                 + " bits into a string exceeds the supported size";
-        VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
-        return "";
+        streamBits = 0;  // Converts to an empty string if the fatal error is deferred
+        VL_FATAL_MT("", 0, "", msg.c_str());
     }
     const int obits = static_cast<int>(streamBits);
     if (VL_UNLIKELY(!obits)) return "";
