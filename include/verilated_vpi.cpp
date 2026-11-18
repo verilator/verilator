@@ -29,11 +29,21 @@
 #include <memory>
 #define VERILATOR_VERILATED_VPI_CPP_
 
+// On MSVC++ we want vpi_user.h to declare the VPI functions as exports, not imports
+#define PLI_PROTOTYPES
+#define PROTO_PARAMS(params) params
+#undef XXTERN
+#define XXTERN PLI_EXTERN PLI_DLLESPEC
+#undef EETERN
+#define EETERN PLI_EXTERN PLI_DLLESPEC
+
+#include "vltstd/vpi_user.h"
+
+// These must come after vpi_user.h, as verilated_vpi.h includes vpi_user.h itself and
+// vpi_user.h's include guard makes a second inclusion a no-op
 #include "verilated.h"
 #include "verilated_imp.h"
 #include "verilated_vpi.h"
-
-#include "vltstd/vpi_user.h"
 
 #include <algorithm>
 #include <cstdarg>
