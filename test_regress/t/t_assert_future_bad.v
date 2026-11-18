@@ -36,6 +36,11 @@ module t (
     assert final ($changing_gclk(a));
   end
 
+  // A $cast task argument is not a property or sequence expression
+  typedef enum logic {E0} e_t;
+  e_t e;
+  always @(posedge clk) $cast(e, $future_gclk(a));
+
   initial $stop;
 
 endmodule
