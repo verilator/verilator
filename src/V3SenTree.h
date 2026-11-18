@@ -36,7 +36,6 @@ class SenTreeFinder final {
     AstTopScope* const m_topScopep;  // Top scope to add global SenTrees to
     std::unordered_set<VNRef<AstSenTree>> m_trees;  // Set of global SenTrees
     AstSenTree* m_combop = nullptr;  // The unique combinational domain SenTree
-    AstSenTree* m_initialp = nullptr;  // The unique initial domain SenTree
 
     VL_UNCOPYABLE(SenTreeFinder);
 
@@ -60,7 +59,6 @@ public:
         for (AstSenTree* const senTreep : m_topScopep->senTreespList()) {
             m_trees.emplace(*senTreep);
             if (senTreep->hasCombo()) m_combop = senTreep;
-            if (senTreep->hasInitial()) m_initialp = senTreep;
         }
     }
 
@@ -85,13 +83,6 @@ public:
     AstSenTree* getComb() {
         if (!m_combop) m_combop = makeUnique<AstSenItem::Combo>();
         return m_combop;
-    }
-
-    // Return the global initial AstSenTree.
-    // If no such global SenTree exists create one and add it to the stored AstTopScope.
-    AstSenTree* getInitial() {
-        if (!m_initialp) m_initialp = makeUnique<AstSenItem::Initial>();
-        return m_initialp;
     }
 };
 

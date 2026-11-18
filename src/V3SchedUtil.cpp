@@ -25,6 +25,7 @@
 #include "V3Order.h"
 #include "V3Sched.h"
 #include "V3SenExprBuilder.h"
+#include "V3StaticPrefix.h"
 #include "V3Stats.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -222,29 +223,44 @@ void splitCheck(AstCFunc* const ofuncp) {
     if (subFuncp) splitCheckFinishSubFunc(ofuncp, subFuncp, argVscps);
 }
 
-std::unordered_set<const AstVarScope*>
-computeImplicitSensitivities(const AstNodeProcedure* procp) {
-    // Dangerous assumption:
-    // A variable read after the process assigned it earlier (in tree order, with a read-write
-    // reference counting as an assignment) is not an implicit sensitivity, considering it
-    // something like:
-    //      foo = 1
-    //      foo = foo + 1
-    // Note this will break though:
-    //      if (sometimes) foo = 1
-    //      foo = foo + 1
-    // TODO: Do this properly with liveness analysis (i.e.: if live, it's an implicit sensitivity)
+std::unordered_set<const AstVarScope*> computeImplicitSensitivities(AstNodeProcedure* procp,
+                                                                    V3StaticPrefix& staticPrefix) {
     std::unordered_set<const AstVarScope*> implicitSensitivities;
-    std::unordered_set<const AstVarScope*> assigned;
-    procp->foreach([&](const AstVarRef* refp) {
-        const AstVarScope* const vscp = refp->varScopep();
-        if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()) {
-            assigned.emplace(vscp);
-        }
-        if (refp->access().isReadOrRW() && !assigned.count(vscp)) {
-            implicitSensitivities.emplace(vscp);
-        }
-    });
+    const AstAlways* const alwaysp = VN_CAST(procp, Always);
+    if (alwaysp
+        && (alwaysp->keyword() == VAlwaysKwd::ALWAYS_COMB
+            || alwaysp->keyword() == VAlwaysKwd::ALWAYS_LATCH)) {
+        // The longest static prefixes read, except those also written (IEEE 1800-2023 9.2.2.2.1).
+        // This is an approximation: by now optimizations (e.g. constant propagation, loop
+        // unrolling) may have made constant some indices that were not constant after
+        // elaboration, so the prefixes found here can be narrower than the standard's. This can
+        // remove or add sensitivities, which changes results only if bits are read before being
+        // written (ALWCOMBORDER), or if a write with a non-constant index covered a read of bits
+        // written in a different block (MULTIDRIVEN).
+        implicitSensitivities = staticPrefix.readNotWritten(procp);
+    } else {
+        // Dangerous assumption:
+        // A variable read after the process assigned it earlier (in tree order, with a read-write
+        // reference counting as an assignment) is not an implicit sensitivity, considering it
+        // something like:
+        //      foo = 1
+        //      foo = foo + 1
+        // Note this will break though:
+        //      if (sometimes) foo = 1
+        //      foo = foo + 1
+        // TODO: Do this properly with liveness analysis (i.e.: if live, it's an implicit
+        // sensitivity)
+        std::unordered_set<const AstVarScope*> assigned;
+        procp->foreach([&](const AstVarRef* refp) {
+            const AstVarScope* const vscp = refp->varScopep();
+            if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()) {
+                assigned.emplace(vscp);
+            }
+            if (refp->access().isReadOrRW() && !assigned.count(vscp)) {
+                implicitSensitivities.emplace(vscp);
+            }
+        });
+    }
     // Reads through forced values the process computes itself do not trigger it either
     VarScopeSet forceReadEdgeIgnores;
     collectForceReadEdgeIgnores(procp, forceReadEdgeIgnores);

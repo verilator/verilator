@@ -36,28 +36,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Active class functions
 
 class ActiveTopVisitor final : public VNVisitor {
-    // NODE STATE
-    // AstVarScope::user1()  // bool.  Processed
-
     // STATE
     SenTreeFinder m_finder;  // Find global sentree's / add them under the AstTopScope
-
-    // METHODS
-    static bool isInitial(AstNode* nodep) {
-        const VNUser1InUse user1InUse;
-        // Return true if no variables that read.
-        return nodep->forall([&](const AstVarRef* refp) -> bool {
-            AstVarScope* const vscp = refp->varScopep();
-            // Note: Use same heuristic as ordering does to ignore written variables
-            // TODO: Use live variable analysis.
-            if (refp->access().isWriteOnly()) {
-                vscp->user1(true);
-                return true;
-            }
-            // Read or ReadWrite: OK if written before
-            return vscp->user1();
-        });
-    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -126,22 +106,6 @@ class ActiveTopVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(sentreep), sentreep);
             }
             nodep->sentreep(wantp);
-        }
-
-        // If this is combinational logic that does not read any variables, then it really is an
-        // initial block in disguise, so move such logic under an Initial AstActive, V3Order would
-        // prune these otherwise.
-        // TODO: we should warn for these if they were 'always @*' as some (including strictly
-        //       compliant) simulators will never execute these.
-        if (nodep->sentreep()->hasCombo()) {
-            FileLine* const flp = nodep->fileline();
-            AstActive* initialp = nullptr;
-            for (AstNodeProcedure* const logicp : nodep->procspList()) {
-                if (!isInitial(logicp)) continue;
-                if (!initialp) initialp = new AstActive{flp, "", m_finder.getInitial()};
-                initialp->addProcsp(logicp->unlinkFrBack());
-            }
-            if (initialp) nodep->addHereThisAsNext(initialp);
         }
     }
     void visit(AstNodeProcedure* nodep) override {  // LCOV_EXCL_LINE

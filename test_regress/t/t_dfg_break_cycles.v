@@ -374,15 +374,10 @@ module t (
   assign ALWAYS_1 = always_1;
   // verilator lint_on ALWCOMBORDER
 
-  // verilator lint_off ALWCOMBORDER
   logic [3:0] always_2;
-  always_comb begin
-    always_2[2:0] = 3'((always_2 << 1) | 4'(rand_a[0]));
-    always_2[3] = rand_a[0];
-  end
+  assign always_2 = {rand_a[0], 3'((always_2 << 1) | 4'(rand_a[0]))};
   `signal(ALWAYS_2, 4);  // UNOPTFLAT
   assign ALWAYS_2 = always_2;
-  // verilator lint_on ALWCOMBORDER
 
   // verilator lint_off ALWCOMBORDER
   logic [4:0] always_3;
@@ -430,7 +425,7 @@ module t (
   `signal(PACKED_0_LSB, 1);
   assign PACKED_0_LSB = packed_0_lsb;
 
-  logic [3:0] packed_1;  // Bit 3 deliberately undriven
+  logic [3:0] packed_1;  // UNOPTFLAT, bit 3 deliberately undriven
   assign packed_1[1] = rand_a[0];
   always_comb begin
     packed_1[2] = rand_a[1];
@@ -444,7 +439,7 @@ module t (
   //////////////////////////////////////////////////////////////////////////
 
   // verilator lint_off UNOPTFLAT
-  logic array_5[0:6];
+  logic array_5[0:6];  // UNOPTFLAT
   // Unconnected d[0:3]
   assign array_5[4] = array_5[0] ? array_5[0] : array_5[1];
   assign array_5[5] = array_5[2] ? array_5[2] : array_5[3];
