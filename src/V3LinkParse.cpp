@@ -54,6 +54,7 @@ class LinkParseVisitor final : public VNVisitor {
     AstNodeModule* m_valueModp = nullptr;  // Module to move initial values into
     AstNodeModule* m_modp = nullptr;  // Current module
     bool m_inInterface = false;  // True when inside interface declaration
+    bool m_inWaitCond = false;  // True when inside wait condition
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
     AstRSProd* m_rsProdp = nullptr;  // Current randsequence production
@@ -851,33 +852,12 @@ class LinkParseVisitor final : public VNVisitor {
     }
     void visit(AstWait* nodep) override {
         cleanFileline(nodep);
-        nodep->condp()->foreach([this](AstNode* itemp) {
-            bool bad = false;
-            if (AstExprStmt* const exprstmtp = VN_CAST(itemp, ExprStmt)) {
-                for (AstNode* const stmtp : exprstmtp->stmtspList()) {
-                    if (!VN_IS(stmtp, NodeAssign)) continue;
-                    stmtp->v3error(
-                        "Assignment operator not allowed in a wait statement condition\n"
-                        << stmtp->warnMore()
-                        << "... Suggest use '==' to compare, or move the assignment out"
-                           " of the wait condition");
-                    bad = true;
-                    break;
-                }
-            } else if (VN_IS(itemp, PostInc) || VN_IS(itemp, PostDec) || VN_IS(itemp, PreInc)
-                       || VN_IS(itemp, PreDec)) {
-                itemp->v3error("Pre/post increment/decrement operator not allowed in a wait "
-                               "statement condition\n"
-                               << itemp->warnMore()
-                               << "... Suggest move the increment or decrement out of the wait"
-                                  " condition");
-                bad = true;
-            }
-            if (!bad) return;
-            itemp->replaceWith(new AstConst{itemp->fileline(), AstConst::BitFalse{}});
-            VL_DO_DANGLING(pushDeletep(itemp), itemp);
-        });
-        iterateChildren(nodep);
+        {
+            VL_RESTORER(m_inWaitCond);
+            m_inWaitCond = true;
+            iterate(nodep->condp());
+        }
+        iterateAndNextNull(nodep->stmtsp());
         if (nodep->condp()->isZero()) {
             // Special case "wait(0)" we won't throw WAITCONST as user wrote
             // it that way with presumed intent - UVM does this.
@@ -885,6 +865,44 @@ class LinkParseVisitor final : public VNVisitor {
             newfl->warnOff(V3ErrorCode::WAITCONST, true);
             nodep->fileline(newfl);
         }
+    }
+    void visit(AstExprStmt* nodep) override {
+        cleanFileline(nodep);
+        if (!m_inWaitCond) {
+            iterateChildren(nodep);
+            return;
+        }
+        bool bad = false;
+        for (AstNode* const stmtp : nodep->stmtspList()) {
+            if (!VN_IS(stmtp, NodeAssign)) continue;
+            stmtp->v3error("Assignment operator not allowed in a wait statement condition "
+                           "(IEEE 1800-2023 11.3.6)\n"
+                           << stmtp->warnMore()
+                           << "... Suggest move the assignment out of the wait condition");
+            bad = true;
+        }
+        if (!bad) {
+            iterateChildren(nodep);
+            return;
+        }
+        nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstNodeUniop* nodep) override {
+        cleanFileline(nodep);
+        if (!m_inWaitCond
+            || !(VN_IS(nodep, PostInc) || VN_IS(nodep, PostDec) || VN_IS(nodep, PreInc)
+                 || VN_IS(nodep, PreDec))) {
+            iterateChildren(nodep);
+            return;
+        }
+        nodep->v3error(
+            "Pre/post increment/decrement operator not allowed in a wait statement condition "
+            "(IEEE 1800-2023 11.3.6)\n"
+            << nodep->warnMore()
+            << "... Suggest move the increment or decrement out of the wait condition");
+        nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNodeModule* nodep) override {
         ++m_statModules;
