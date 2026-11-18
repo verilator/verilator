@@ -9008,34 +9008,16 @@ class WidthVisitor final : public VNVisitor {
                                   << " requires a compatible interface type, parameters, and "
                                      "modport.");
                 } else if (portp->isWritable()) {
-                    // Compare element widths, not the container widths of queues/dynamic arrays.
+                    // Packed output arguments need an lvalue resize for the copy back. Unpacked
+                    // arguments use array assignment conversions instead.
                     const int portWidth = portDTypep->elemDTypep()->width();
                     const int pinWidth = pinDTypep->elemDTypep()->width();
-                    const bool sizesMatch = unpackedArraySizesMatch(portDTypep, pinDTypep);
-                    if (portWidth != pinWidth || !sizesMatch) {
-                        if (!sizesMatch) {
-                            pinp->v3warn(WIDTH, "Function output argument "
-                                                    << portp->prettyNameQ()
-                                                    << " requires matching unpacked array sizes "
-                                                       "(IEEE 1800-2023 7.6)."
-                                                    << warnDTypes(pinp, portDTypep, pinDTypep,
-                                                                  "Port", "Connection"));
-                        } else {
-                            pinp->v3widthWarn(portWidth, pinWidth,
-                                              "Function output argument "
-                                                  << portp->prettyNameQ() << " requires "
-                                                  << portWidth << " bits, but connection's "
-                                                  << pinp->prettyTypeNameQ() << " generates "
-                                                  << pinWidth << " bits.");
-                        }
-                        // Unpacked arguments use array assignment conversions, not packed
-                        // resizing.
-                        if (!(portDTypep->isNonPackedArray() && pinDTypep->isNonPackedArray())) {
-                            VNRelinker relinkHandle;
-                            pinp->unlinkFrBack(&relinkHandle);
-                            AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
-                            relinkHandle.relink(newp);
-                        }
+                    if (portWidth != pinWidth
+                        && !(portDTypep->isNonPackedArray() && pinDTypep->isNonPackedArray())) {
+                        VNRelinker relinkHandle;
+                        pinp->unlinkFrBack(&relinkHandle);
+                        AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
+                        relinkHandle.relink(newp);
                     }
                 }
                 if (portp->direction() != VDirection::REF

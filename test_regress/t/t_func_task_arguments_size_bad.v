@@ -12,9 +12,18 @@ module t;
     values[0] = 1;
   endtask
 
+  task automatic write_array(output arr3_t values);
+    values = '{1, 2, 3};
+  endtask
+
   initial begin
     arr4_t values;
     update_array(values);
+  end
+
+  initial begin
+    arr4_t values;
+    write_array(values);
   end
 
   typedef bit [6:0] narrow_rows_t[2:1][5:3];
