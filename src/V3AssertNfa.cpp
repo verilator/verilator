@@ -1835,10 +1835,7 @@ struct ProcLink final {
         for (AstVarRef* const refp : refps) {
             AstConst* const constp = newTypedConstp(refp->fileline(), refp->dtypep(),
                                                     firstStepValues.at(refp->varp()));
-            if (refp == clonep) {
-                VL_DO_DANGLING(refp->deleteTree(), refp);
-                return constp;
-            }
+            UASSERT_OBJ(refp != clonep, exprp, "First-step expression is a bare register");
             refp->replaceWith(constp);
             VL_DO_DANGLING(refp->deleteTree(), refp);
         }
