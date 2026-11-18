@@ -38,6 +38,7 @@
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
+#include <algorithm>
 #include <unordered_set>
 #include <vector>
 
@@ -3465,10 +3466,11 @@ class AssertNfaVisitor final : public VNVisitor {
     // module's procedural assertions on that clock. A reach sees it once the tick's
     // processes have run.
     AstVar* tickTimeVarp(AstSenTree* senTreep) {
-        for (AstAlways* const alwaysp : m_tickTimeAlways) {
-            if (alwaysp->sentreep()->sameTree(senTreep)) {
-                return VN_AS(VN_AS(alwaysp->stmtsp(), AssignDly)->lhsp(), VarRef)->varp();
-            }
+        const auto it = std::find_if(
+            m_tickTimeAlways.begin(), m_tickTimeAlways.end(),
+            [&](const AstAlways* alwaysp) { return alwaysp->sentreep()->sameTree(senTreep); });
+        if (it != m_tickTimeAlways.end()) {
+            return VN_AS(VN_AS((*it)->stmtsp(), AssignDly)->lhsp(), VarRef)->varp();
         }
         FileLine* const flp = senTreep->fileline();
         AstTime* const timep = new AstTime{flp, v3Global.rootp()->timeprecision()};
