@@ -9021,16 +9021,18 @@ class WidthVisitor final : public VNVisitor {
                                   << portp->prettyNameQ()
                                   << " requires a compatible interface type, parameters, and "
                                      "modport.");
-                } else if (portp->isWritable() && pinp->width() != portp->width()) {
-                    pinp->v3widthWarn(portp->width(), pinp->width(),
-                                      "Function output argument "
-                                          << portp->prettyNameQ() << " requires " << portp->width()
-                                          << " bits, but connection's " << pinp->prettyTypeNameQ()
-                                          << " generates " << pinp->width() << " bits.");
-                    VNRelinker relinkHandle;
-                    pinp->unlinkFrBack(&relinkHandle);
-                    AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
-                    relinkHandle.relink(newp);
+                } else if (portp->isWritable()) {
+                    // Packed output arguments need an lvalue resize for the copy back. Unpacked
+                    // arguments use array assignment conversions instead.
+                    const int portWidth = portDTypep->elemDTypep()->width();
+                    const int pinWidth = pinDTypep->elemDTypep()->width();
+                    if (portWidth != pinWidth
+                        && !(portDTypep->isNonPackedArray() && pinDTypep->isNonPackedArray())) {
+                        VNRelinker relinkHandle;
+                        pinp->unlinkFrBack(&relinkHandle);
+                        AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
+                        relinkHandle.relink(newp);
+                    }
                 }
                 if (portp->direction() != VDirection::REF
                     && ((VN_IS(portDTypep, BasicDType) && pinDTypep->isNonPackedArray())
@@ -10971,6 +10973,7 @@ class WidthVisitor final : public VNVisitor {
                 && !unpackedArraySizesMatch(expDtp, underDtp)) {
                 parentp->v3error("Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)"
                                  << warnDTypes(parentp, expDtp, underDtp));
+                warnOn = false;  // Suppress cascading warnings for the incompatible assignment
             }
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
