@@ -43,7 +43,7 @@
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Error: t/t_assignment_compatibility_bad.v:42:23: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
                                                 : ... note: In instance 't'
-                                                : ... Array needs an array index
+        ... Array needs an array index
                                                 : ... Left-hand data type: 'logic'
                                                 : ... Right-hand data type: 'logic$[0:1]'
    42 |   assign nonAggregate = unpackedA;
