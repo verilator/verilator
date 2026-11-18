@@ -81,6 +81,21 @@ module t (
       else ++fail_off_tick2;
   end
 
+  // Off-tick reach on the other clock edge, including a first step entering a ranged delay
+  int pass_off_tick_pos = 0;
+  int fail_off_tick_pos = 0;
+  int pass_off_tick_range = 0;
+  int fail_off_tick_range = 0;
+  always @(negedge clk) begin
+    if (cyc % 10 == 2 || cyc % 10 == 5)
+      assert property (@(posedge clk) ##1 cyc % 10 == 3) ++pass_off_tick_pos;
+      else ++fail_off_tick_pos;
+    if (cyc % 10 == 2 || cyc % 10 == 5 || cyc % 10 == 8)
+      assert property (@(posedge clk) cyc % 10 >= 2 ##[0:2] cyc % 10 % 4 == 0)
+        ++pass_off_tick_range;
+      else ++fail_off_tick_range;
+  end
+
   // A first step entering a multi-cycle delay
   int pass_delay = 0;
   int fail_delay = 0;
@@ -205,6 +220,10 @@ module t (
       `checkd(fail_off_tick, 0);
       `checkd(pass_off_tick2, 10);
       `checkd(fail_off_tick2, 10);
+      `checkd(pass_off_tick_pos, 10);
+      `checkd(fail_off_tick_pos, 10);
+      `checkd(pass_off_tick_range, 20);
+      `checkd(fail_off_tick_range, 10);
       `checkd(pass_delay, 20);
       `checkd(fail_delay, 10);
       `checkd(pass_delay_imp, 20);
