@@ -204,6 +204,7 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
     if (!funcp->ifdef().empty()) putns(funcp, "#ifdef " + funcp->ifdef() + "\n");
     if (funcp->isConstructor()) emitCDefaultConstructor(modp);
     if (cLinkage) putns(funcp, "extern \"C\" ");
+    if (funcp->dpiImportPrototype()) putns(funcp, "DPI_DLLISPEC ");
     if (funcp->isStatic() && funcp->isProperMethod()) putns(funcp, "static ");
     if (funcp->isVirtual()) {
         UASSERT_OBJ(funcp->isProperMethod(), funcp, "Virtual function is not a proper method");

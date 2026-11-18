@@ -1841,10 +1841,12 @@ void EmitCSyms::emitDpiHdr() {
             if (!firstImp++) puts("\n// DPI IMPORTS\n");
             putsDecoration(nodep, "// DPI import" + sourceLoc + "\n");
         }
+        const std::string spec
+            = nodep->dpiExportDispatcher() ? "extern DPI_DLLESPEC "s : "extern DPI_DLLISPEC "s;
         if (nodep->dpiCDeclOverride()) {
-            putns(nodep, "extern " + nodep->dpiCDecl() + ";\n");
+            putns(nodep, spec + nodep->dpiCDecl() + ";\n");
         } else {
-            putns(nodep, "extern " + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
+            putns(nodep, spec + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
                              + cFuncArgs(nodep, false) + ");\n");
         }
     }
@@ -1910,7 +1912,8 @@ void EmitCSyms::emitDpiImp() {
         // Prevent multi-definition if used by multiple models
         puts("#ifndef VL_DPIDECL_" + name + "_\n");
         puts("#define VL_DPIDECL_" + name + "_\n");
-        putns(nodep, nodep->rtnTypeVoid() + " " + name + "(" + cFuncArgs(nodep) + ") {\n");
+        putns(nodep, "DPI_DLLESPEC " + nodep->rtnTypeVoid() + " " + name + "(" + cFuncArgs(nodep)
+                         + ") {\n");
         puts("// DPI export" + sourceLoc + "\n");
         putns(nodep, "return " + topClassName() + "::" + name + "(");
         std::string comma;
