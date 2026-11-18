@@ -327,7 +327,7 @@ public:
 //######################################################################
 // The next value of a register as a decision DAG
 
-class FsmNextNode;
+struct FsmNextNode;
 
 // A condition, with the values the block had assigned to the variables it reads
 struct FsmCond final {
@@ -344,17 +344,17 @@ struct FsmCondOrder final {
 // A node of the DAG giving a register's next value
 struct FsmNextNode final {
     enum class Kind : uint8_t {
-        CONST,  // A constant
-        OPAQUE,  // Not modeled: a write through a select, a call, a loop
+        CONSTANT,  // A constant
+        UNMODELED,  // Not modeled: a write through a select, a call, a loop
         EXPR,  // An expression over variables, kept for conditions that read the variable
         REF,  // A variable's value from before the block ran
         MUX,  // One of two values, chosen by a condition
         LOW  // The low bits of a value, narrowed when the DAG is resolved
     };
-    Kind kind = Kind::OPAQUE;
-    V3Number num{static_cast<AstNode*>(nullptr), 1, 0};  // CONST: the value, as assigned
-    string label;  // CONST: name of the parameter the value came from, if any
-    const AstNode* srcp = nullptr;  // CONST: the assignment, or the constant
+    Kind kind = Kind::UNMODELED;
+    V3Number num{static_cast<AstNode*>(nullptr), 1, 0};  // CONSTANT: the value, as assigned
+    string label;  // CONSTANT: name of the parameter the value came from, if any
+    const AstNode* srcp = nullptr;  // CONSTANT: the assignment, or the constant
     AstVarScope* refVscp = nullptr;  // REF: the variable
     // MUX: the condition; EXPR: the expression; LOW: the select, as an expression
     const FsmCond* condp = nullptr;
@@ -423,13 +423,13 @@ class FsmDetectVisitor final : public VNVisitorConst {
     // TYPES
     // A leaf reached when a DAG is evaluated for one state
     struct Leaf final {
-        enum class Kind : uint8_t { CONST, HOLD, OPAQUE };
+        enum class Kind : uint8_t { CONSTANT, HOLD, UNMODELED };
         Kind kind;
-        V3Number num;  // CONST: the value
-        const AstNode* srcp;  // CONST: the assignment, or the constant
+        V3Number num;  // CONSTANT: the value
+        const AstNode* srcp;  // CONSTANT: the assignment, or the constant
         bool topWhen;  // The value the register's top-level condition had on the leaf's path
     };
-    enum class Tri : uint8_t { FALSE, TRUE, UNKNOWN };
+    enum class Tri : uint8_t { IS_FALSE, IS_TRUE, UNKNOWN };
     // A condition, and the undecided conditions taken on the path to it; kept in std::map,
     // as a pair with a vector has no std::hash, and only looked up or folded over
     using SeenKey = std::pair<const FsmCond*, std::vector<std::pair<const FsmCond*, bool>>>;
@@ -473,7 +473,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
     std::deque<FsmNextNode> m_nodes;  // Arena of DAG nodes
     std::deque<FsmCond> m_conds;  // Arena of conditions
     std::vector<AstNode*> m_ownedExprps;  // Synthesized condition expressions
-    const FsmNextNode* m_opaquep = nullptr;  // Shared OPAQUE node
+    const FsmNextNode* m_opaquep = nullptr;  // Shared UNMODELED node
     std::unordered_map<AstVarScope*, const FsmNextNode*> m_refs;  // Shared REF nodes
     std::unordered_map<const AstScope*, std::vector<AstCell*>>
         m_wrapperCells;  // Register wrappers, by scope
@@ -519,7 +519,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
     const FsmNextNode* constant(const V3Number& num, const AstNode* srcp, const string& label) {
         m_nodes.emplace_back();
         FsmNextNode& node = m_nodes.back();
-        node.kind = FsmNextNode::Kind::CONST;
+        node.kind = FsmNextNode::Kind::CONSTANT;
         node.num = num;
         node.srcp = srcp;
         node.label = label;
@@ -762,7 +762,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
     // and the register's own value stays a hold if no bits are dropped; any other leaf is a
     // value the states don't name, as an expression leaf is
     const FsmNextNode* lowBits(const FsmNextNode* nodep, int width, ResolveMemo& memo) {
-        if (nodep->kind == FsmNextNode::Kind::CONST) {
+        if (nodep->kind == FsmNextNode::Kind::CONSTANT) {
             return constant(FsmStateSet::toWidth(nodep->num, width), nodep->srcp, nodep->label);
         }
         if (nodep->kind == FsmNextNode::Kind::REF && nodep->refVscp->width() <= width) {
@@ -828,7 +828,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
                             V3Number& num) {
         bool found = false;
         for (const Leaf& leaf : leaves) {
-            if (leaf.kind == Leaf::Kind::OPAQUE) return false;
+            if (leaf.kind == Leaf::Kind::UNMODELED) return false;
             const V3Number& lnum = leaf.kind == Leaf::Kind::HOLD ? stateNum : leaf.num;
             const int width = std::max(lnum.width(), num.width());
             if (found
@@ -963,7 +963,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
         }
         // Choosing among values the DAG doesn't model decides nothing
         const bool anyModeled = std::any_of(leaves.begin(), leaves.end(), [](const Leaf& leaf) {
-            return leaf.kind != Leaf::Kind::OPAQUE;
+            return leaf.kind != Leaf::Kind::UNMODELED;
         });
         return anyModeled ? undecidedp : nullptr;
     }
@@ -1016,7 +1016,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
         AstNode* const foldedp = V3Const::constifyEdit(clonep);
         Tri result = Tri::UNKNOWN;
         if (const AstConst* const constp = VN_CAST(foldedp, Const)) {
-            result = constp->num().isNeqZero() ? Tri::TRUE : Tri::FALSE;
+            result = constp->num().isNeqZero() ? Tri::IS_TRUE : Tri::IS_FALSE;
         }
         VL_DO_DANGLING(foldedp->deleteTree(), foldedp);
         return result;
@@ -1026,7 +1026,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
             = eval.path.find(condp);
         if (pit != eval.path.end()) {
             ++eval.pathUses;
-            return pit->second ? Tri::TRUE : Tri::FALSE;
+            return pit->second ? Tri::IS_TRUE : Tri::IS_FALSE;
         }
         const std::unordered_map<const FsmCond*, Tri>::const_iterator it
             = eval.condMemo.find(condp);
@@ -1059,22 +1059,22 @@ class FsmDetectVisitor final : public VNVisitorConst {
     }
     // The leaf a node other than a MUX is in this state
     static Leaf leafOf(const FsmNextNode* nodep, const Eval& eval) {
-        if (nodep->kind == FsmNextNode::Kind::CONST) {
-            return Leaf{Leaf::Kind::CONST, nodep->num, nodep->srcp, eval.topWhen};
+        if (nodep->kind == FsmNextNode::Kind::CONSTANT) {
+            return Leaf{Leaf::Kind::CONSTANT, nodep->num, nodep->srcp, eval.topWhen};
         }
         if (nodep->kind == FsmNextNode::Kind::REF) {
             // Resolving leaves only the register itself as a REF
             UASSERT_OBJ(nodep->refVscp == eval.stateVscp, nodep->refVscp, "Unresolved variable");
             return Leaf{Leaf::Kind::HOLD, eval.stateNum, nullptr, eval.topWhen};
         }
-        return Leaf{Leaf::Kind::OPAQUE, eval.stateNum, nullptr, eval.topWhen};
+        return Leaf{Leaf::Kind::UNMODELED, eval.stateNum, nullptr, eval.topWhen};
     }
     // The leaves a DAG reaches in this state
     void evaluate(const FsmNextNode* nodep, Eval& eval, std::vector<Leaf>& leaves, int depth) {
         // Shared parts of a DAG are visited once per path through them; tryRegister gives up on
         // a register whose paths are too many
         if (++eval.steps > EVAL_STEPS_MAX) {
-            leaves.push_back(Leaf{Leaf::Kind::OPAQUE, eval.stateNum, nullptr, eval.topWhen});
+            leaves.push_back(Leaf{Leaf::Kind::UNMODELED, eval.stateNum, nullptr, eval.topWhen});
             return;
         }
         if (nodep->kind != FsmNextNode::Kind::MUX) {
@@ -1097,7 +1097,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
         }
         const bool unknown = result == Tri::UNKNOWN;
         for (const bool value : {true, false}) {
-            if (result == (value ? Tri::FALSE : Tri::TRUE)) continue;
+            if (result == (value ? Tri::IS_FALSE : Tri::IS_TRUE)) continue;
             // An undecided condition keeps its value for the rest of the path
             if (unknown) eval.path[nodep->condp] = value;
             if (nodep == eval.topp) eval.topWhen = value;
@@ -1239,7 +1239,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
             const FsmNextNode* const nodep = stack.back();
             stack.pop_back();
             if (!seen.insert(nodep).second) continue;
-            if (nodep->kind == FsmNextNode::Kind::CONST) {
+            if (nodep->kind == FsmNextNode::Kind::CONSTANT) {
                 named.emplace_back(nodep->label, nodep->num);
             } else if (nodep->kind == FsmNextNode::Kind::MUX) {
                 collectCompares(nodep->condp->exprp, nodep->condp, stateVscp, width, 0, named);
@@ -1293,7 +1293,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
         // Decided the same way everywhere, it isn't a reset
         if (results.size() == 1 && !results.count(Tri::UNKNOWN)) return;
         for (const FsmNextNode* const sidep : {treep->thenp, treep->elsep}) {
-            if (sidep->kind == FsmNextNode::Kind::CONST) {
+            if (sidep->kind == FsmNextNode::Kind::CONSTANT) {
                 resetpr = sidep;
                 normalWhenr = sidep != treep->thenp;
                 return;
@@ -1318,7 +1318,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
         for (size_t from = 0; from < states.size(); ++from) {
             for (const Leaf& leaf : stateLeaves[from]) {
                 if (hasReset && leaf.topWhen != normalWhen) continue;
-                if (leaf.kind == Leaf::Kind::OPAQUE) {
+                if (leaf.kind == Leaf::Kind::UNMODELED) {
                     if (declared) continue;  // The declaration says it is an FSM
                     return false;
                 }
