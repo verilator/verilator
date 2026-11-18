@@ -206,6 +206,8 @@ module t (
   wire rej_b = cyc == 2 || cyc == 4 || cyc == 6 || cyc == 8;
   wire rej_c = cyc == 6;
   int rej_dis_fail = 0, rej_cover = 0, rej_not_fail = 0, rej_abort_fail = 0;
+  int rej_late_true_fail = 0, rej_late_c_fail = 0, rej_late_one_fail = 0, rej_late_false_fail = 0;
+  int rej_nested_fail = 0, rej_conseq_fail = 0;
 
   // Disabled at 8, which also discards attempts 5-6 failing there
   assert property (@(posedge clk) disable iff (cyc == 8) rej_b [->2] |-> 1'b0)
@@ -216,6 +218,20 @@ module t (
   // Abort at 5 fails attempts 3-5, including 3-4 that would pass at 6
   assert property (@(posedge clk) sync_reject_on (cyc == 5) (rej_b [->2] |-> rej_c))
   else rej_abort_fail++;
+  // Abort at 8 fails attempts 5-8, including 5-6 completing there and 8 starting there
+  assert property (@(posedge clk) sync_reject_on (cyc == 8) (rej_b [->2] |-> 1'b1))
+  else rej_late_true_fail++;
+  assert property (@(posedge clk) sync_reject_on (cyc == 8) (rej_b [->2] |-> rej_c))
+  else rej_late_c_fail++;
+  assert property (@(posedge clk) sync_reject_on (cyc == 8) (rej_b [->1] |-> 1'b0))
+  else rej_late_one_fail++;
+  assert property (@(posedge clk) sync_reject_on (cyc == 8) (rej_b [->2] |-> 1'b0))
+  else rej_late_false_fail++;
+  assert property (@(posedge clk)
+      sync_reject_on (cyc == 8) (rej_b [->2] |-> sync_reject_on (cyc == 4) rej_c))
+  else rej_nested_fail++;
+  assert property (@(posedge clk) rej_b [->2] |-> sync_reject_on (cyc == 8) rej_c)
+  else rej_conseq_fail++;
 
   always @(negedge clk) begin
     if (cyc == 12) begin
@@ -252,6 +268,12 @@ module t (
       `checkd(rej_cover, 2);
       `checkd(rej_not_fail, 2);
       `checkd(rej_abort_fail, 7);
+      `checkd(rej_late_true_fail, 4);
+      `checkd(rej_late_c_fail, 7);
+      `checkd(rej_late_one_fail, 9);
+      `checkd(rej_late_false_fail, 9);
+      `checkd(rej_nested_fail, 7);
+      `checkd(rej_conseq_fail, 5);
       $write("*-* All Finished *-*\n");
       $finish;
     end

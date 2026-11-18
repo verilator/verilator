@@ -176,7 +176,7 @@ module t;
     `checkd(fail_goto, 9);
     `checkd(fail_goto2, 11);
     // Known overcount (IEEE 1800-2023: 5) until a range ring retires attempts after first match
-    `checkd(fail_goto_range, 9);
+    `checkd(fail_goto_range, 7);
     // Known overcount (IEEE 1800-2023: 4) until a range ring retires attempts after first match
     `checkd(fail_goto_range2, 6);
     `checkd(fail_delay, 12);

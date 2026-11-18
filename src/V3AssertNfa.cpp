@@ -85,6 +85,8 @@ public:
     AstNodeExpr* m_abortClearp = nullptr;
     // OWNED; reject-abort fire condition rejecting all represented live threads
     AstNodeExpr* m_abortRejectp = nullptr;
+    // OWNED; reject-abort fire condition whose abort sources count this terminal's attempts
+    AstNodeExpr* m_termAbortRejectp = nullptr;
     // Liveness terminal (IEEE weak semantics): reject must not fire from this source
     bool m_isUnbounded = false;
     // Temporal sequence AND combiner; IEEE 1800-2023 16.9.5
@@ -116,6 +118,8 @@ public:
             VL_DO_DANGLING(m_delayRingAdvanceCondp->deleteTree(), m_delayRingAdvanceCondp);
         if (m_abortClearp) VL_DO_DANGLING(m_abortClearp->deleteTree(), m_abortClearp);
         if (m_abortRejectp) VL_DO_DANGLING(m_abortRejectp->deleteTree(), m_abortRejectp);
+        if (m_termAbortRejectp)
+            VL_DO_DANGLING(m_termAbortRejectp->deleteTree(), m_termAbortRejectp);
         if (m_andLhsCondp) VL_DO_DANGLING(m_andLhsCondp->deleteTree(), m_andLhsCondp);
         if (m_andRhsCondp) VL_DO_DANGLING(m_andRhsCondp->deleteTree(), m_andRhsCondp);
     }
@@ -1527,18 +1531,25 @@ class SvaNfaBuilder final {
         return resultp;
     }
 
+    // True if a same-tick Link chain carries threads from a vertex whose abort rejection counts
+    static bool linkFedByAbortReject(const SvaStateVertex* vtxp,
+                                     const std::unordered_set<const V3GraphEdge*>& preEdges) {
+        for (const V3GraphEdge& edger : vtxp->inEdges()) {
+            if (preEdges.count(&edger)) continue;
+            const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
+            if (tedger.m_consumesCycle) continue;
+            const auto* const fromp = static_cast<const SvaStateVertex*>(tedger.fromVtxp());
+            if (fromp->m_abortRejectp || linkFedByAbortReject(fromp, preEdges)) return true;
+        }
+        return false;
+    }
+
     // True when unguarded ring-wide rejection or a same-tick Link chain already accounts the
     // attempt: a required-step Link covers both outcomes; followed-by pairs both edges.
     static bool chainAccountsSource(const SvaStateVertex* srcp,
                                     const std::unordered_set<const V3GraphEdge*>& preEdges) {
         if (srcp->m_delayRingSize && srcp->m_throughoutConds.empty()) return true;
-        for (const V3GraphEdge& edger : srcp->inEdges()) {
-            if (preEdges.count(&edger)) continue;
-            const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
-            if (tedger.m_consumesCycle) continue;
-            const auto* const fromp = static_cast<const SvaStateVertex*>(tedger.fromVtxp());
-            if (fromp->m_abortRejectp) return true;
-        }
+        if (linkFedByAbortReject(srcp, preEdges)) return true;
         bool plainNonSink = false;
         bool markedSink = false;
         for (const V3GraphEdge& edger : srcp->outEdges()) {
@@ -1677,6 +1688,9 @@ class SvaNfaBuilder final {
             if (finalCondp->backp()) finalCondp = finalCondp->cloneTreePure(false);
             finalCondp
                 = new AstLogAnd{flp, finalCondp, new AstLogNot{flp, abortFireExpr(condp, flp)}};
+            AstNodeExpr*& termRejectp = bodyResult.termVertexp->m_termAbortRejectp;
+            AstNodeExpr* const firep = abortFireExpr(condp, flp);
+            termRejectp = termRejectp ? new AstLogOr{flp, termRejectp, firep} : firep;
         }
         return {bodyResult.termVertexp, finalCondp, bodyResult.midSources};
     }
@@ -2330,7 +2344,8 @@ class SvaNfaLowering final {
     // Builder only adds Links (non-clocked) to matchVertex via addLink in
     // wireMatchAndMidSources. For cover sequence, also count each end-of-match
     // so the action can be replayed without unrolling endpoints.
-    void computeTerminalMatchAndReject(LowerCtx& c, SignalSet& sigs, const bool needMatchCount) {
+    void computeTerminalMatchAndReject(LowerCtx& c, SignalSet& sigs, const bool needMatchCount,
+                                       const bool needThreadFailCount) {
         for (const SvaTransEdge* const tedgep : c.graph.allEdges()) {
             if (tedgep->toVtxp() != c.graph.m_matchVertexp) continue;
             SvaStateVertex* const fromVtxp = tedgep->fromVtxp();
@@ -2369,9 +2384,14 @@ class SvaNfaLowering final {
                 sigs.terminalActivep = orExprs(c.flp, sigs.terminalActivep, srcSigp);
             } else {
                 if (fromVtxp->m_countsAttempts) {
-                    sigs.rejectCountp
-                        = addCountp(c.flp, sigs.rejectCountp,
-                                    fromVtxp->datap()->stateCountSigp->cloneTreePure(false));
+                    // Thread fail counts include abort sources, which count these attempts
+                    AstNodeExpr* const abortp
+                        = needThreadFailCount ? fromVtxp->m_termAbortRejectp : nullptr;
+                    sigs.rejectCountp = addCountp(
+                        c.flp, sigs.rejectCountp,
+                        fromVtxp->datap()->stateCountSigp->cloneTreePure(false),
+                        abortp ? new AstLogNot{c.flp, sampled(abortp->cloneTreePure(false))}
+                               : nullptr);
                 }
                 sigs.terminalActivep
                     = orExprs(c.flp, sigs.terminalActivep, srcSigp->cloneTreePure(false));
@@ -2465,7 +2485,7 @@ class SvaNfaLowering final {
                              const bool needThroughoutThreadFailCount, const bool needMatchCount) {
         SignalSet sigs;
 
-        computeTerminalMatchAndReject(c, sigs, needMatchCount);
+        computeTerminalMatchAndReject(c, sigs, needMatchCount, needThreadFailCount);
 
         // Phase 3a: required-step rejection.
         // Builder only sets m_rejectOnFail on non-clocked Links with m_condp
