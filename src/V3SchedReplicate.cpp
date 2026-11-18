@@ -116,28 +116,21 @@ public:
 
 class SchedReplicateLogicVertex final : public SchedReplicateVertex {
     VL_RTTI_IMPL(SchedReplicateLogicVertex, SchedReplicateVertex)
-    AstScope* const m_scopep;  // The enclosing AstScope of the logic node
-    AstSenTree* const m_senTreep;  // The sensitivity of the logic node
-    AstNodeProcedure* const m_procp;  // The process this vertex represents
+    const Process& m_process;  // The process this vertex represents
     RegionFlags const m_assignedRegion;  // The region this logic is originally assigned to
 
 public:
-    SchedReplicateLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* senTreep,
-                              AstNodeProcedure* procp, RegionFlags assignedRegion)
+    SchedReplicateLogicVertex(V3Graph* graphp, const Process& process, RegionFlags assignedRegion)
         : SchedReplicateVertex{graphp}
-        , m_scopep{scopep}
-        , m_senTreep{senTreep}
-        , m_procp{procp}
+        , m_process{process}
         , m_assignedRegion{assignedRegion} {
         addDrivingRegions(assignedRegion);
     }
-    AstScope* scopep() const { return m_scopep; }
-    AstSenTree* senTreep() const { return m_senTreep; }
-    AstNodeProcedure* procp() const { return m_procp; }
+    const Process& process() const { return m_process; }
     RegionFlags assignedRegion() const { return m_assignedRegion; }
 
     // For graph dumping
-    string name() const override VL_MT_STABLE { return m_procp->fileline()->ascii(); };
+    string name() const override VL_MT_STABLE { return m_process.m_procp->fileline()->ascii(); };
     string dotShape() const override { return "rectangle"; }
 };
 
@@ -187,67 +180,38 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
         new V3GraphEdge{graphp.get(), fromp, top, 1};
     };
 
-    const auto addLogic = [&](RegionFlags region, AstScope* scopep, AstActive* activep) {
-        AstSenTree* const senTreep = activep->sentreep();
-
-        // Predicate for whether a read of the given variable triggers this block
-        std::function<bool(AstVarScope*)> readTriggersThisLogic;
-
-        const VNUser4InUse user4InUse;  // bool: Explicit sensitivity of hybrid logic just below
-
-        if (senTreep->hasClocked()) {
-            // Clocked logic is never triggered by reads
-            readTriggersThisLogic = [](AstVarScope*) { return false; };
-        } else if (senTreep->hasCombo()) {
-            // Combinational logic is always triggered by reads
-            readTriggersThisLogic = [](AstVarScope*) { return true; };
-        } else {
-            UASSERT_OBJ(senTreep->hasHybrid(), activep, "unexpected");
-            // Hybrid logic is triggered by all reads, except for reads of the explicit
-            // sensitivities
-            readTriggersThisLogic = [](AstVarScope* vscp) { return !vscp->user4(); };
-            senTreep->foreach([](const AstVarRef* refp) {  //
-                refp->varScopep()->user4(true);
-            });
-        }
-
-        for (AstNodeProcedure* const nodep : activep->procspList()) {
+    const auto addLogic = [&](RegionFlags region, const ProcessList& procList) {
+        for (const Process& process : procList) {
+            AstNodeProcedure* const nodep = process.m_procp;
             SchedReplicateLogicVertex* const lvtxp
-                = new SchedReplicateLogicVertex{graphp.get(), scopep, senTreep, nodep, region};
+                = new SchedReplicateLogicVertex{graphp.get(), process, region};
             const VNUser2InUse user2InUse;
             const VNUser3InUse user3InUse;
-
-            V3Sched::util::VarScopeSet forceReadEdgeIgnores;
-            V3Sched::util::collectForceReadEdgeIgnores(nodep, forceReadEdgeIgnores);
 
             nodep->foreach([&](AstVarRef* refp) {
                 AstVarScope* const vscp = refp->varScopep();
                 SchedReplicateVarVertex* const vvtxp = getVarVertex(vscp);
                 // If written, add logic -> var edge
-                // Note: See V3Order for why AlwaysPostponed is safe to be ignored. We ignore it
-                // as otherwise we would end up with a false cycle.
+                // Note: See V3Order for why AlwaysPostponed is safe to be ignored. We ignore
+                // it as otherwise we would end up with a false cycle.
                 if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()
                     && !vscp->user2SetOnce() && !VN_IS(nodep, AlwaysPostponed)) {  //
                     addEdge(lvtxp, vvtxp);
                 }
-                // If read, add var -> logic edge. Checked after the write, as in V3SchedAcyclic,
-                // so a read-write reference counts only as a write
+                // If an implicit sensitivity, add var -> logic edge. Clocked logic has none.
                 if (refp->access().isReadOrRW() && !vscp->user3SetOnce()
-                    && readTriggersThisLogic(vscp) && !vscp->user2()
-                    && !forceReadEdgeIgnores.count(vscp)) {  //
+                    && process.m_implicitSen.count(vscp)) {  //
                     addEdge(vvtxp, lvtxp);
                 }
             });
         }
     };
 
-    for (const auto& entry : logicRegions.m_pre) addLogic(ACTIVE, entry.m_scopep, entry.m_activep);
-    for (const auto& entry : logicRegions.m_act) addLogic(ACTIVE, entry.m_scopep, entry.m_activep);
-    for (const auto& entry : logicRegions.m_nba) addLogic(NBA, entry.m_scopep, entry.m_activep);
-    for (const auto& entry : logicRegions.m_obs)
-        addLogic(OBSERVED, entry.m_scopep, entry.m_activep);
-    for (const auto& entry : logicRegions.m_react)
-        addLogic(REACTIVE, entry.m_scopep, entry.m_activep);
+    addLogic(ACTIVE, logicRegions.m_pre);
+    addLogic(ACTIVE, logicRegions.m_act);
+    addLogic(NBA, logicRegions.m_nba);
+    addLogic(OBSERVED, logicRegions.m_obs);
+    addLogic(REACTIVE, logicRegions.m_react);
 
     return graphp;
 }
@@ -277,11 +241,13 @@ LogicReplicas replicate(Graph* graphp) {
     LogicReplicas result;
     for (V3GraphVertex& vtx : graphp->vertices()) {
         if (SchedReplicateLogicVertex* const lvtxp = vtx.cast<SchedReplicateLogicVertex>()) {
-            const auto replicateTo = [&](LogicByScope& lbs) {
-                lbs.add(lvtxp->scopep(), lvtxp->senTreep(), lvtxp->procp()->cloneTree(false));
+            const Process& process = lvtxp->process();
+            const auto replicateTo = [&](ProcessList& procList) {
+                procList.add({process.m_scopep, process.m_senTreep,
+                              process.m_procp->cloneTree(false), process.m_implicitSen});
             };
             const uint8_t targetRegions = lvtxp->drivingRegions() & ~lvtxp->assignedRegion();
-            UASSERT(!lvtxp->senTreep()->hasClocked() || targetRegions == 0,
+            UASSERT(!process.m_senTreep->hasClocked() || targetRegions == 0,
                     "replicating clocked logic");
             if (targetRegions & INPUT) replicateTo(result.m_ico);
             if (targetRegions & ACTIVE) replicateTo(result.m_act);
