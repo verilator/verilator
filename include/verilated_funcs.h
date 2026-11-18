@@ -3776,16 +3776,24 @@ inline void _vl_insert_W_elem(WDataOutP owp, const VlWide<N_Words>& ld, int hbit
 template <typename T, size_t N_MaxSize>
 inline std::string VL_CVT_PACK_STR_NR(int lbits, IData rd,
                                       const VlQueue<T, N_MaxSize>& q) VL_MT_SAFE {
-    const int obits = q.size() * lbits;
+    const QData streamBits = static_cast<QData>(q.size()) * lbits;
+    // A slice at least as wide as the stream does not reorder it
+    const bool reorder = rd && rd < streamBits;
+    // The stream rounded to words, and an index a slice past it, must fit the int bit counts
+    // below
+    if (VL_UNLIKELY(streamBits + (reorder ? rd : 0) > static_cast<QData>(
+                        std::numeric_limits<int>::max() - VL_EDATASIZE - VL_BYTESIZE))) {
+        const std::string msg = "Streaming concatenation of " + std::to_string(streamBits)
+                                + " bits into a string exceeds the supported size";
+        VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
+        return "";
+    }
+    const int obits = static_cast<int>(streamBits);
     if (VL_UNLIKELY(!obits)) return "";
     // A string is a dynamic array of bytes, so the stream is filled with zero bits on the
     // right to whole bytes (IEEE 1800-2023 11.4.14, 6.24.3)
     const int pbits = VL_BYTES_I(obits) * VL_BYTESIZE;
-    // A slice at least as wide as the stream does not reorder it
-    const bool reorder = rd && rd < static_cast<IData>(obits);
-    // Pack the elements, the first one most significant, as for a packed value. VL_PACK_W_R*
-    // pack into a fixed output, with a function per element type the emitter picks, so the
-    // elements of any type are inserted here.
+    // Pack the elements, the first one most significant, as for a packed value
     const int offset = reorder ? 0 : pbits - obits;
     std::vector<EData> packed(VL_WORDS_I(pbits));
     for (int i = 0; i < q.size(); ++i) {
@@ -3795,11 +3803,11 @@ inline std::string VL_CVT_PACK_STR_NR(int lbits, IData rd,
     if (reorder) {
         std::vector<EData> streamed(packed.size());
         VL_STREAML_WWI(obits, WDataOutP::external(streamed.data()),
-                       WDataOutP::external(packed.data()), rd);
+                       WDataInP::external(packed.data()), rd);
         VL_SHIFTL_WWI(pbits, pbits, 32, WDataOutP::external(packed.data()),
-                      WDataOutP::external(streamed.data()), pbits - obits);
+                      WDataInP::external(streamed.data()), pbits - obits);
     }
-    return VL_CVT_PACK_STR_NW(packed.size(), WDataOutP::external(packed.data()));
+    return VL_CVT_PACK_STR_NW(packed.size(), WDataInP::external(packed.data()));
 }
 inline std::string VL_CVT_PACK_STR_NN(const std::string& lhs) VL_PURE { return lhs; }
 inline std::string& VL_CVT_PACK_STR_NN(std::string& lhs) VL_PURE { return lhs; }

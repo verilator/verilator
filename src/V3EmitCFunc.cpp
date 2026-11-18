@@ -436,7 +436,7 @@ void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
         const AstNodeDType* const elemDtp
             = streamp->lhsp()->dtypep()->skipRefp()->subDTypep()->skipRefp();
         if (elemDtp->isIntegralOrPacked()) {
-            // A queue or dynamic array of packed elements, as V3Const packs fixed-size operands
+            // A queue or dynamic array of packed elements, as V3Width packs fixed-size operands
             putnbs(nodep, "VL_CVT_PACK_STR_NR(");
             puts(cvtToStr(elemDtp->width()));
             puts(", ");
@@ -445,6 +445,8 @@ void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
             puts(", ");
             iterateAndNextConstNull(streamp->lhsp());
         } else {
+            UASSERT_OBJ(elemDtp->isString() && VN_IS(streamp, StreamR), nodep,
+                        "Stream assigned to a string should be unsupported in V3Width");
             putnbs(nodep, "VL_CVT_PACK_STR_ND(");
             iterateAndNextConstNull(nodep);
         }

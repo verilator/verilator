@@ -58,9 +58,6 @@ public:
     static void collectFixedAggregateTerms(VNDeleter& deleter, AstNodeExpr* fromp,
                                            std::vector<AstNodeExpr*>& termps, bool packReal,
                                            bool warnImpure = true) VL_MT_DISABLED;
-    // Return a fixed-width stream assigned to a string, filled with zero bits on the right to
-    // whole bytes, as a string is a dynamic array of bytes (IEEE 1800-2023 11.4.14, 6.24.3)
-    static AstNodeExpr* padStringStream(AstNodeExpr* streamp) VL_MT_DISABLED;
 };
 
 #endif  // Guard

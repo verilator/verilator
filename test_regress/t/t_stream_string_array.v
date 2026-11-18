@@ -87,13 +87,24 @@ module t;
 
   // Queue and dynamic array operands
   typedef byte bqt_t[$];
+  typedef enum logic [7:0] {
+    EA = 8'h41,
+    EB = 8'h42
+  } e_t;
+  typedef struct packed {
+    logic [3:0] hi;
+    logic [3:0] lo;
+  } ps_t;
   task automatic queueOperands();
     byte bq[$];
     byte bbq[$:3];
     byte bd[];
+    e_t eq[$];
+    ps_t pq[$];
     int iq[$];
     logic [3:0] nq[$];
     logic [71:0] wq[$];
+    logic [64:0] vq[$];
     bqt_t bqt;
     logic [7:0] a;
     string str;
@@ -113,6 +124,26 @@ module t;
     bd[1] = a + 5;
     str = {>>{bd}};
     `checks(str, "EF");
+    bd = new[3];
+    bd[0] = a + 1;
+    bd[1] = a + 2;
+    bd[2] = a + 3;
+    str = {<<8{bd}};
+    `checks(str, "DCB");
+    str = {<<16{bd}};
+    `checks(str, "CDB");
+    eq = '{e_t'(a), e_t'(a + 1)};
+    str = {>>{eq}};
+    `checks(str, "AB");
+    str = {<<8{eq}};
+    `checks(str, "BA");
+    pq = '{'{a[7:4], a[3:0] + 4'd2}, '{a[7:4], a[3:0] + 4'd3}};
+    str = {>>{pq}};
+    `checks(str, "CD");
+    str = {<<8{pq}};
+    `checks(str, "DC");
+    str = {<<4{pq}};
+    `checks(str, "D4");
     iq = '{{a, a + 8'd1, a + 8'd2, a + 8'd3}};
     str = {>>{iq}};
     `checks(str, "ABCD");
@@ -129,6 +160,11 @@ module t;
     `checks(str, "ABCDEFGHI");
     str = {<<8{wq}};
     `checks(str, "IHGFEDCBA");
+    vq = '{{1'b0, a, 56'h42434445464748}, {1'b1, a + 8'd8, 56'h4a4b4c4d4e4f50}};
+    str = {>>{vq}};
+    `checks(str, "\x20\xa1\x21\xa2\x22\xa3\x23\xa4\x52\x52\x92\xd3\x13\x53\x93\xd4");
+    str = {<<8{vq}};
+    `checks(str, "PONMLKJI\x91\x8e\x8c\x8a\x88\x86\x84\x82");
     bq = '{a + 1, 8'h82};
     str = {<<{bq}};
     `checks(str, "AB");
@@ -144,15 +180,23 @@ module t;
     `checks(str, "");
   endtask
 
-  // A stream wider than 64 bits takes the whole string
+  // A stream wider than 64 bits takes the whole string, queue or dynamic array
   task automatic wideStream();
     logic [127:0] w128;
+    byte bq[$];
+    byte bd[];
     logic [7:0] a;
     string str;
     a = charA();
     w128 = {a, 120'h42434445464748494a4b4c4d4e4f50};
     str = {>>{w128}};
     `checks(str, "ABCDEFGHIJKLMNOP");
+    bq = {>>{w128}};
+    `checkd(bq.size(), 16);
+    `checkd(bq[15], 8'h50);
+    bd = {>>{bq}};
+    `checkd(bd.size(), 16);
+    `checkd(bd[0], a);
   endtask
 
   // String queue operands, and a string typedef target
@@ -181,17 +225,28 @@ module t;
     a = charA();
     return '{a + 2, a + 3};
   endfunction
+  function automatic us_t getStruct();
+    us_t us;
+    ++calls;
+    us.a = charA() + 4;
+    us.b = '{us.a + 1, us.a + 2};
+    return us;
+  endfunction
   task automatic singleEvaluation();
     string str;
     str = {>>{getPair()}};
     `checks(str, "CD");
     `checkd(calls, 1);
+    str = {>>{getStruct()}};
+    `checks(str, "EFG");
+    `checkd(calls, 2);
   endtask
 
   localparam logic [11:0] P12 = 12'h142;
   // A string target is resized to whole bytes, and the stream is filled with zero bits on the
   // right (IEEE 1800-2023 11.4.14), as a string is a dynamic array of bytes (6.24.3). Streams
-  // of 12 bits, 'h142 or 'h241 reversed in 4-bit slices, give "\x14\x20" or "\x24\x10".
+  // of 12 bits, 'h142, or 'h241 or 'h421 reversed in 4-bit or 8-bit slices, give "\x14\x20",
+  // "\x24\x10" or "\x42\x10".
   task automatic padding();
     logic [11:0] p;
     logic [3:0] un3[3];
@@ -214,6 +269,10 @@ module t;
     `checks(str, "\x14\x20");
     str = {<<4{nq}};
     `checks(str, "\x24\x10");
+    str = {<<8{nq}};
+    `checks(str, "\x42\x10");
+    str = {<<8{p}};
+    `checks(str, "\x42\x10");
     // A cast is not a stream, so converts the value
     str = string'(p);
     `checks(str, "\x01\x42");
@@ -239,6 +298,33 @@ module t;
     `checks(str, "HGFEDCBA@");
   endtask
 
+  // A fixed-size unpacked operand converts in a constant or always_comb context too
+  localparam pair_t PAIR = '{8'h44, 8'h45};
+  localparam string PAIR_STR = {>>{PAIR}};
+  localparam us_t US = '{a: 8'h41, b: '{8'h42, 8'h43}};
+  localparam string US_STR = {>>{US}};
+  localparam logic [23:0] PACKED = 24'h414243;
+  localparam string PACKED_STR = {>>{PACKED}};
+  function automatic us_t defStruct();
+    us_t us;
+    us.a = 8'h44;
+    us.b = '{8'h45, 8'h46};
+    return us;
+  endfunction
+  string combStructStr;
+  string combPairStr;
+  always_comb combStructStr = {>>{defStruct()}};
+  always_comb combPairStr = {>>{PAIR}};
+  task automatic constantContexts();
+    `checks(PAIR_STR, "DE");
+    `checks(US_STR, "ABC");
+    `checks(PACKED_STR, "ABC");
+  endtask
+  final begin
+    `checks(combStructStr, "DEF");
+    `checks(combPairStr, "DE");
+  end
+
   initial begin
     stringOperands();
     fixedUnpacked();
@@ -247,6 +333,7 @@ module t;
     stringQueueOperands();
     singleEvaluation();
     padding();
+    constantContexts();
     $write("*-* All Finished *-*\n");
     $finish;
   end
