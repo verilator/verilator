@@ -23,12 +23,11 @@ test.top_filename = test.obj_dir + "/t_opt_dedupe_domains_scale.v"
 # Instances each clocked by their own clock, all assigning the same right-hand side. V3Gate
 # dedupes the two assignments within each instance, and must not compare those of different
 # instances with each other. Only measures V3Gate, the model is not built.
-SIZE_SMALL = 1000
-SIZE_LARGE = SIZE_SMALL * 4
-# Linear scaling gives 4x, quadratic gives 16x
-MAX_RATIO = 8
-# Ignore the ratio when V3Gate is fast enough that timer noise dominates
-MIN_SECONDS = 0.5
+SIZE_RATIO = 4
+SIZE_SMALL = 100
+SIZE_LARGE = SIZE_SMALL * SIZE_RATIO
+RATIO_MIN = 3
+RATIO_MAX = 6  # Linear scaling gives 4x, quadratic gives 16x
 
 
 def gen(filename, n):
@@ -50,9 +49,9 @@ def gen(filename, n):
         fh.write("endmodule\n")
 
 
-def gate_seconds(n):
+def verilation(n):
     gen(test.top_filename, n)
-    test.compile(verilator_flags2=["--stats", "--no-debug-check"],
+    test.compile(verilator_flags2=["--stats", "--debug", "--debugi 0", "--no-debug-check"],
                  make_main=False,
                  verilator_make_gmake=False)
     with open(test.stats, 'r', encoding="utf8") as fh:
@@ -60,18 +59,15 @@ def gate_seconds(n):
     deduped = re.search(r'Optimizations, Gate sigs deduped\s+(\d+)', stats)
     if not deduped or deduped.group(1) != str(n):
         test.error(f"Expected {n} deduped signals in " + test.stats)
-    times = re.findall(r'Stage, Elapsed time \(sec\), \d+_gate\s+(\S+)', stats)
-    if not times:
-        test.error("Gate elapsed time not found in " + test.stats)
-    return sum(float(t) for t in times)
+    return test.op_count_read(test.stats)
 
 
-small = gate_seconds(SIZE_SMALL)
-large = gate_seconds(SIZE_LARGE)
-print(f"V3Gate: {SIZE_SMALL} instances {small:.3f}s, {SIZE_LARGE} instances {large:.3f}s")
-if large > MIN_SECONDS and large > small * MAX_RATIO:
-    test.error("V3Gate time scaled superlinearly with clock domains: " +
-               f"{SIZE_SMALL} instances took {small:.3f}s, " +
-               f"{SIZE_LARGE} instances took {large:.3f}s (over {MAX_RATIO}x)")
+test.op_count_ok(
+    verilation(SIZE_SMALL),
+    verilation(SIZE_LARGE),
+    RATIO_MIN,
+    RATIO_MAX,
+    # TODO .*
+    r'^(?!.*dfg).*$')
 
 test.passes()

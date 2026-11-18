@@ -54,6 +54,7 @@ extern "C" const char* __asan_default_options() {
 
 void V3Global::boot() {
     UASSERT(!m_rootp, "call once");
+    VIsCached::clearCacheTree();
     m_rootp = new AstNetlist;
     m_constPoolp = new V3ConstPool;
     m_libMapp = new V3LibMap;

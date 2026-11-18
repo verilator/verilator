@@ -1478,6 +1478,7 @@ void AstNode::foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& f
 
     // Visit given node, enqueue children for traversal
     const auto visit = [&](Node* currp) {
+        V3Global::opCountInc();
         // Type test this node
         if (AstNode::privateTypeTest<T_Arg_NonConst>(currp)) {
             // Call the client function
@@ -1562,6 +1563,7 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable&
 
     // Visit given node, enqueue children for traversal, return true if result determined.
     const auto visit = [&](Node* currp) {
+        V3Global::opCountInc();
         // Type test this node
         if (AstNode::privateTypeTest<T_Arg_NonConst>(currp)) {
             // Call the client function
