@@ -7,8 +7,6 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-import re
-
 import vltest_bootstrap
 
 test.scenarios('vlt')
@@ -22,12 +20,11 @@ test.top_filename = test.obj_dir + "/" + test.name + ".v"
 
 # Instances of one small module under a single parent instance. V3Inline inlines each of them,
 # and their parent into the top. Only measures inlining time, the model is not built.
-SIZE_SMALL = 4000
-SIZE_LARGE = SIZE_SMALL * 4
-# Linear scaling gives 4x, quadratic gives 16x
-MAX_RATIO = 8
-# Ignore the ratio when V3Inline is fast enough that timer noise dominates
-MIN_SECONDS = 0.5
+SIZE_RATIO = 4
+SIZE_SMALL = 100
+SIZE_LARGE = SIZE_SMALL * SIZE_RATIO
+RATIO_MIN = 3
+RATIO_MAX = 8  # Linear scaling gives 4x, quadratic gives 16x
 
 
 def gen(filename, n):
@@ -47,28 +44,22 @@ endmodule
 """)
 
 
-def inline_seconds(n):
+def verilation(n):
     gen(test.top_filename, n)
-    test.compile(verilator_flags2=["--stats", "--no-debug-check"],
+    test.compile(verilator_flags2=["--stats", "--debug", "--debugi 0", "--no-debug-check"],
                  make_main=False,
                  verilator_make_gmake=False)
-    with open(test.stats, 'r', encoding="utf8") as fh:
-        stats = fh.read()
-    inlined = re.search(r'Optimizations, Inlined instances\s+(\d+)', stats)
-    inline = re.search(r'Stage, Elapsed time \(sec\), \d+_inline\s+(\S+)', stats)
-    if not inlined or not inline:
-        test.error("Inlined instances or inline elapsed time not found in " + test.stats)
-    # The leaf instances, the mid instance, and the top module instance under $root
-    if int(inlined.group(1)) != n + 2:
-        test.error(f"Inlined {inlined.group(1)} instances, expected {n + 2}")
-    return float(inline.group(1))
+    test.file_cache_clear()
+    test.file_grep(test.stats, r'Optimizations, Inlined instances\s+(\d+)', n + 2)
+    return test.op_count_read(test.stats)
 
 
-small = inline_seconds(SIZE_SMALL)
-large = inline_seconds(SIZE_LARGE)
-if large > MIN_SECONDS and large > small * MAX_RATIO:
-    test.error("V3Inline time scaled superlinearly with instances: " +
-               f"{SIZE_SMALL} instances took {small:.3f}s, " +
-               f"{SIZE_LARGE} instances took {large:.3f}s (over {MAX_RATIO}x)")
+test.op_count_ok(
+    verilation(SIZE_SMALL),
+    verilation(SIZE_LARGE),
+    RATIO_MIN,
+    RATIO_MAX,
+    # TODO use .*
+    r'^(?!.*dfg).*$')
 
 test.passes()

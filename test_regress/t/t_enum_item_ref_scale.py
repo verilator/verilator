@@ -7,20 +7,17 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-import re
-
 import vltest_bootstrap
 
 test.scenarios('vlt')
 test.top_filename = test.obj_dir + "/t_enum_item_ref_scale.v"
 
 # One enum with each item referenced once
-SIZE_SMALL = 4000
-SIZE_LARGE = SIZE_SMALL * 4
-# Linear scaling gives 4x, quadratic gives 16x
-MAX_RATIO = 8
-# Ignore the ratio when V3Width is fast enough that timer noise dominates
-MIN_SECONDS = 0.5
+SIZE_RATIO = 4
+SIZE_SMALL = 500
+SIZE_LARGE = SIZE_SMALL * SIZE_RATIO
+RATIO_MIN = 3
+RATIO_MAX = 8  # Linear scaling gives 4x, quadratic gives 16x
 
 
 def gen(filename, n):
@@ -38,23 +35,14 @@ def gen(filename, n):
         fh.write("endmodule\n")
 
 
-def width_seconds(n):
+def verilation(n):
     gen(test.top_filename, n)
-    test.compile(verilator_flags2=["--stats", "--no-debug-check"],
+    test.compile(verilator_flags2=["--stats", "--debug", "--debugi 0", "--no-debug-check"],
                  make_main=False,
                  verilator_make_gmake=False)
-    with open(test.stats, 'r', encoding="utf8") as fh:
-        width = re.search(r'Stage, Elapsed time \(sec\), \d+_width\s+(\S+)', fh.read())
-    if not width:
-        test.error("Width elapsed time not found in " + test.stats)
-    return float(width.group(1))
+    return test.op_count_read(test.stats)
 
 
-small = width_seconds(SIZE_SMALL)
-large = width_seconds(SIZE_LARGE)
-if large > MIN_SECONDS and large > small * MAX_RATIO:
-    test.error("V3Width time scaled superlinearly with enum size: " +
-               f"{SIZE_SMALL} items took {small:.3f}s, " +
-               f"{SIZE_LARGE} items took {large:.3f}s (over {MAX_RATIO}x)")
+test.op_count_ok(verilation(SIZE_SMALL), verilation(SIZE_LARGE), RATIO_MIN, RATIO_MAX, r'.*')
 
 test.passes()
