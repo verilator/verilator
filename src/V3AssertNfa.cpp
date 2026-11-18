@@ -2715,11 +2715,8 @@ class SvaNfaLowering final {
         }
     }
 
-    // Strong s_always[m:n] end-of-simulation liveness: if any in-window state
-    // is still set at $finish, the universal-quantifier window never completed
-    // (IEEE 1800-2023 16.12.11 strong semantics). Fire the assertion failure
-    // from a final block; V3Assert turns the DT_ERROR display into the standard
-    // "Assertion failed in %m" message.
+    // Strong obligations pending at $finish fail once per attempt, from a final block:
+    // s_eventually attempts and incomplete s_always[m:n] windows (IEEE 1800-2023 16.12.11)
     // pending = sum{strong attempt counts}
     //           + |{strong state registers, strong delay live counts != 0};
     void addStrongPendingFinal(AstNodeCoverOrAssert* const assertp,
