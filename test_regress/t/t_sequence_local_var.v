@@ -76,11 +76,9 @@ module t (
   // --- Scenario: local variable assigned in a sequence instance ---
   // A local variable passed as an entire actual argument to an untyped formal may be
   // assigned in the instance (IEEE 1800-2023 16.10)
-  // verilator lint_off ASSIGNIN
   sequence s_capture(lv);
     (valid, lv = cyc[0]);
   endsequence
-  // verilator lint_on ASSIGNIN
   property p_capture;
     bit prev;
     @(posedge clk) s_capture(prev) |=> (cyc[0] != prev);
