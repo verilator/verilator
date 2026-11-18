@@ -201,6 +201,22 @@ module t (
   cover sequence (@(posedge clk) inst_b [->2]) goto_cover++;
   cover sequence (@(posedge clk) inst_b [->1:2]) goto_range_cover++;
 
+  // Attempts started at 0-2 reach the second occurrence at 4, 3-4 at 6, 5-6 at 8; later ones
+  // never complete. Only those completing at 6 satisfy the consequent.
+  wire rej_b = cyc == 2 || cyc == 4 || cyc == 6 || cyc == 8;
+  wire rej_c = cyc == 6;
+  int rej_dis_fail = 0, rej_cover = 0, rej_not_fail = 0, rej_abort_fail = 0;
+
+  // Disabled at 8, which also discards attempts 5-6 failing there
+  assert property (@(posedge clk) disable iff (cyc == 8) rej_b [->2] |-> 1'b0)
+  else rej_dis_fail++;
+  cover property (@(posedge clk) rej_b [->2] |-> rej_c) rej_cover++;
+  assert property (@(posedge clk) not (rej_b [->2] |-> rej_c))
+  else rej_not_fail++;
+  // Abort at 5 fails attempts 3-5, including 3-4 that would pass at 6
+  assert property (@(posedge clk) sync_reject_on (cyc == 5) (rej_b [->2] |-> rej_c))
+  else rej_abort_fail++;
+
   always @(negedge clk) begin
     if (cyc == 12) begin
       `checkd(imp_pass, 10);
@@ -232,6 +248,10 @@ module t (
       `checkd(goto_abort_fail, 9);
       `checkd(goto_cover, 3);
       `checkd(goto_range_cover, 8);
+      `checkd(rej_dis_fail, 5);
+      `checkd(rej_cover, 2);
+      `checkd(rej_not_fail, 2);
+      `checkd(rej_abort_fail, 7);
       $write("*-* All Finished *-*\n");
       $finish;
     end
