@@ -7816,9 +7816,12 @@ class WidthVisitor final : public VNVisitor {
                 // A streaming target legally unpacks an aggregate (IEEE 1800-2023 11.4.14)
                 if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType()
                     && (!lhsRefp || !rhsRefp) && !VN_IS(nodep->lhsp(), NodeStream)) {
-                    nodep->v3error("Illegal assignment between unpacked aggregate and "
-                                   "integral type (IEEE 1800-2023 7.6)"
-                                   << warnDTypes(nodep, lhsDtp, rhsDtp));
+                    nodep->v3error(
+                        "Illegal assignment between unpacked aggregate and integral type "
+                        "(IEEE 1800-2023 7.6)"
+                        << (rhsRefp && VN_IS(rhsDtp, UnpackArrayDType) ? arrayIndexHint(nodep)
+                                                                       : string{})
+                        << warnDTypes(nodep, lhsDtp, rhsDtp));
                 }
             }
 
@@ -10482,6 +10485,9 @@ class WidthVisitor final : public VNVisitor {
                + " data type: " + lhsDtp->prettyDTypeNameQ() + lhsState + "\n" + nodep->warnMore()
                + "... " + rhsName + " data type: " + rhsDtp->prettyDTypeNameQ() + rhsState;
     }
+    static string arrayIndexHint(const AstNode* nodep) VL_REQUIRES(V3Error::s().m_mutex) {
+        return "\n" + nodep->warnMore() + "... Array needs an array index";
+    }
     // Fixed-size unpacked arrays are assignment compatible only with the same number of
     // elements in each dimension (IEEE 1800-2023 7.6); dynamically sized ones always are
     static bool unpackedArraySizesMatch(const AstNodeDType* lhsDtp, const AstNodeDType* rhsDtp) {
@@ -10528,6 +10534,8 @@ class WidthVisitor final : public VNVisitor {
         if (isLhsAggregate ^ isRhsAggregate) {
             nodep->v3error(
                 "Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)"
+                << (isRhsAggregate && VN_IS(rhsDtp, UnpackArrayDType) ? arrayIndexHint(nodep)
+                                                                      : string{})
                 << warnDTypes(nodep, lhsDtp, rhsDtp, lhsName, rhsName));
             return;
         } else if (VN_IS(lhsDtp, QueueDType) && VN_IS(rhsDtp, EmptyQueueDType)) {
