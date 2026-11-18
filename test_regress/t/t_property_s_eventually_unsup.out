@@ -1,10 +1,22 @@
-%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:14:35: Unsupported: cycle delay in s_eventually
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:14:35: Unsupported: multi-cycle sequence or property operand of s_eventually
                                                            : ... note: In instance 't'
    14 |   assert property (@(posedge clk) s_eventually ##1 1);
       |                                   ^~~~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:15:35: Unsupported: cycle delay in s_eventually
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:15:35: Unsupported: multi-cycle sequence or property operand of s_eventually
                                                            : ... note: In instance 't'
    15 |   assert property (@(negedge clk) s_eventually ##1 1);
       |                                   ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:18:45: Unsupported: s_eventually as an operand of a property operator
+                                                           : ... note: In instance 't'
+   18 |   assert property (@(posedge clk) cyc[0] or s_eventually cyc[1]);
+      |                                             ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:20:35: Unsupported: multi-cycle sequence or property operand of s_eventually
+                                                           : ... note: In instance 't'
+   20 |   assert property (@(posedge clk) s_eventually s_eventually cyc[0]);
+      |                                   ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:23:52: Unsupported: s_eventually in a property with an unsupported sequence operator
+                                                           : ... note: In instance 't'
+   23 |   assert property (@(posedge clk) cyc[0] [= 2] |-> s_eventually cyc[1]);
+      |                                                    ^~~~~~~~~~~~
 %Error: Exiting due to

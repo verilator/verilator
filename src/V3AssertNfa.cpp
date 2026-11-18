@@ -51,6 +51,7 @@ class SvaStateVertex;
 // Per-vertex algorithm data, stored via V3GraphVertex::userp() during lowering
 struct SvaVertexData final {
     AstVar* stateVarp = nullptr;  // NBA state register for this vertex
+    AstVar* attemptCountVarp = nullptr;  // Pending attempts of an m_countsAttempts vertex
     AstVar* delayRingVarp = nullptr;  // Packed occupancy bits or per-slot match counts
     AstVar* delayRingHeadVarp
         = nullptr;  // Cached outgoing slot; isolates readers from in-place writes
@@ -100,6 +101,9 @@ public:
     bool m_strongPending = false;
     // Ring introduced for the checked portion of a bounded strong s_always window.
     bool m_strongAlwaysRing = false;
+    // Attempts from different cycles merge here; count them so each runs its action
+    // (IEEE 1800-2023 16.14.1)
+    bool m_countsAttempts = false;
 
     // CONSTRUCTORS
     explicit SvaStateVertex(V3Graph* graphp)
@@ -319,6 +323,26 @@ static AstAlways* newAssertAlways(FileLine* flp, VAlwaysKwd kwd, AstSenTree* sen
     return alwaysp;
 }
 
+// remaining = countp; while (remaining > alreadyRun) { bodyp; --remaining; }
+static AstNodeStmt* newActionReplayp(AstVar* const remainingVarp, AstNodeExpr* const countp,
+                                     AstNodeStmt* const bodyp, const uint32_t alreadyRun) {
+    FileLine* const flp = bodyp->fileline();
+    AstNodeStmt* const stmtsp
+        = new AstAssign{flp, new AstVarRef{flp, remainingVarp, VAccess::WRITE}, countp};
+    AstLoop* const loopp = new AstLoop{flp};
+    loopp->addStmtsp(
+        new AstLoopTest{flp, loopp,
+                        new AstGt{flp, new AstVarRef{flp, remainingVarp, VAccess::READ},
+                                  newTypedConstp(flp, remainingVarp->dtypep(), alreadyRun)}});
+    loopp->addStmtsp(bodyp);
+    loopp->addStmtsp(
+        new AstAssign{flp, new AstVarRef{flp, remainingVarp, VAccess::WRITE},
+                      new AstSub{flp, new AstVarRef{flp, remainingVarp, VAccess::READ},
+                                 newTypedConstp(flp, remainingVarp->dtypep(), 1)}});
+    stmtsp->addNext(loopp);
+    return stmtsp;
+}
+
 //######################################################################
 // NFA Builder
 
@@ -332,7 +356,8 @@ class SvaNfaBuilder final {
     std::vector<AstNodeExpr*> m_outerAbortStack;
     bool m_inUnboundedScope = false;  // Sticky: nodes created after inherit liveness
     bool m_markStrongPending = false;  // Mark new vertices as strong s_always in-window
-    // A cover only records matches, so a pending obligation at $finish is not a failure
+    // A pending strong obligation at $finish is not a failure: a cover only records matches,
+    // and under `not` the inner failure makes the directive hold
     bool m_noEosFailure = false;
     // IEEE 1800-2023 16.14.3 cover sequence: each end-of-match fires the action,
     // not just the first. Builder builds parallel-branch (no first-match-wins)
@@ -916,23 +941,19 @@ class SvaNfaBuilder final {
         if (minN == 0) return BuildResult::fail();
         const bool hasMax = repp->maxCountp() != nullptr;
         const unsigned maxN = hasMax ? getConstUInt(repp->maxCountp()) : minN;
-        if (m_isCoverSeq) {
-            // Several attempts may coalesce in the one-bit wait vertex before reaching the ring,
-            // so a cover sequence action block could run too few times.
-            warnEndpointUnsupported(flp, "a goto repetition");
-            return BuildResult::failWithError();
-        }
-
         AstVar* const hoistVarp = tryHoistSampled(exprp, flp, 2);
 
-        // The first guardedEdge is the ##1 before waiting for a match. In the wait state, false
-        // takes the clocked self-loop, while true takes the zero-delay guardedLink on that tick.
+        // The first occurrence may be on the entry tick
+        // (IEEE 1800-2023 16.9.2.1: empty ##1 b is b).
         SvaStateVertex* const waitVtxp = scopedCreateVertex();
-        guardedEdge(entryVtxp, waitVtxp, flp);
-        guardedEdge(waitVtxp, waitVtxp,
-                    new AstLogNot{flp, sampledRefOrClone(hoistVarp, exprp, flp)}, flp);
+        waitVtxp->m_countsAttempts = true;
+        waitVtxp->m_replayAbortReject = true;
         SvaStateVertex* currentp = scopedCreateVertex();
-        guardedLink(waitVtxp, currentp, sampledRefOrClone(hoistVarp, exprp, flp), flp);
+        for (SvaStateVertex* const fromp : {entryVtxp, waitVtxp}) {
+            guardedEdge(fromp, waitVtxp,
+                        new AstLogNot{flp, sampledRefOrClone(hoistVarp, exprp, flp)}, flp);
+            guardedLink(fromp, currentp, sampledRefOrClone(hoistVarp, exprp, flp), flp);
+        }
 
         if (minN > 1) {
             SvaStateVertex* const ringVtxp = addDelayChain(
@@ -1461,6 +1482,37 @@ class SvaNfaBuilder final {
         return {waitCp, acceptCondp, {}};
     }
 
+    // s_eventually p (IEEE 1800-2023 16.12.9) as `1 s_until p`, without until's reject sink
+    // waitC is unbounded so its match feeds terminalActive only; waitR holds the EOS obligation
+    BuildResult buildSEventually(AstSEventually* nodep, SvaStateVertex* entryVtxp,
+                                 bool isTopLevelStep) {
+        FileLine* const flp = nodep->fileline();
+        AstNodeExpr* const exprp = nodep->exprp();
+        if (!isTopLevelStep) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: s_eventually as an operand of a property operator");
+            return BuildResult::failWithError();
+        }
+        if (exprp->exists([](const AstNodeExpr* np) { return np->isMultiCycleSva(); })) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: multi-cycle sequence or property operand of s_eventually");
+            return BuildResult::failWithError();
+        }
+
+        SvaStateVertex* const waitCp = scopedCreateVertex();
+        SvaStateVertex* const waitRp = scopedCreateVertex();
+        waitCp->m_isUnbounded = true;
+        waitCp->m_countsAttempts = true;
+        waitRp->m_strongPending = !m_noEosFailure;
+        waitRp->m_countsAttempts = true;
+
+        guardedLink(entryVtxp, waitCp, flp);
+        guardedLink(waitRp, waitCp, flp);
+        guardedEdge(waitCp, waitRp, new AstLogNot{flp, sampled(exprp->cloneTreePure(false))}, flp);
+
+        return {waitCp, exprp->cloneTreePure(false), {}};
+    }
+
     // IEEE 1800-2023 16.12.14 property abort operators. Sync and async share
     // the same NFA encoding: AstSampled already gives matured values at every
     // maturing clocking event, and async firing "between clocks" is not
@@ -1503,6 +1555,17 @@ class SvaNfaBuilder final {
             }
         }
         return plainNonSink && markedSink;
+    }
+
+    // An unconditional same-tick body Link hands every thread of srcp to a vertex that counts it
+    static bool relaysThreads(const SvaStateVertex* srcp,
+                              const std::unordered_set<const V3GraphEdge*>& preEdges) {
+        for (const V3GraphEdge& edger : srcp->outEdges()) {
+            if (preEdges.count(&edger)) continue;
+            const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
+            if (!tedger.m_consumesCycle && !tedger.m_condp && !tedger.m_rejectOnFail) return true;
+        }
+        return false;
     }
 
     // Reject edge: fires when the source is live and the abort samples true.
@@ -1553,10 +1616,14 @@ class SvaNfaBuilder final {
 
         gateBodyEdgesOnAbort(preEdges, condp, kind, flp);
 
-        // Live-thread sources for the abort edge: entry + new body vertices,
-        // minus reject sinks (they carry reject fuel, not live-thread fuel).
+        // Abort sources: entry and new body vertices, minus reject sinks and vertices whose
+        // threads another source or the accepting terminal already counts
+        const auto isSource = [&](const SvaStateVertex* sp) {
+            if (relaysThreads(sp, preEdges)) return false;
+            return !(kind.isAccept() && sp == bodyResult.termVertexp && bodyResult.finalCondp);
+        };
         std::vector<SvaStateVertex*> abortSources;
-        abortSources.push_back(entryVtxp);
+        if (isSource(entryVtxp)) abortSources.push_back(entryVtxp);
         for (V3GraphVertex& vtxr : m_graph.m_graph.vertices()) {
             if (preExisting.count(&vtxr)) continue;
             auto* const sp = static_cast<SvaStateVertex*>(&vtxr);
@@ -1572,8 +1639,7 @@ class SvaNfaBuilder final {
                 sp->m_abortRejectp
                     = sp->m_abortRejectp ? new AstLogOr{flp, sp->m_abortRejectp, firep} : firep;
             }
-            if (sp->m_isRejectSink) continue;
-            abortSources.push_back(sp);
+            if (!sp->m_isRejectSink && isSource(sp)) abortSources.push_back(sp);
         }
 
         auto sampledAbortFire = [&]() -> AstNodeExpr* {
@@ -1584,11 +1650,13 @@ class SvaNfaBuilder final {
         if (kind.isAccept()) {
             // Match-only sink fed by $sampled(abort-fire) from every live source;
             // registered as midSource so it never contributes a reject.
-            SvaStateVertex* const acceptSinkp = scopedCreateVertex();
-            for (SvaStateVertex* const srcp : abortSources)
-                guardedLink(srcp, acceptSinkp, sampledAbortFire(), flp);
             std::vector<SvaStateVertex*> midSources = bodyResult.midSources;
-            midSources.push_back(acceptSinkp);
+            if (!abortSources.empty()) {
+                SvaStateVertex* const acceptSinkp = scopedCreateVertex();
+                for (SvaStateVertex* const srcp : abortSources)
+                    guardedLink(srcp, acceptSinkp, sampledAbortFire(), flp);
+                midSources.push_back(acceptSinkp);
+            }
             AstNodeExpr* finalCondp = bodyResult.finalCondp;
             if (finalCondp) {
                 if (finalCondp->backp()) finalCondp = finalCondp->cloneTreePure(false);
@@ -1706,6 +1774,9 @@ public:
         }
         if (AstUntil* const untilp = VN_CAST(nodep, Until)) {
             return buildUntil(untilp, entryVtxp, isTopLevelStep);
+        }
+        if (AstSEventually* const sevp = VN_CAST(nodep, SEventually)) {
+            return buildSEventually(sevp, entryVtxp, isTopLevelStep);
         }
         // Boolean leaf (including LogAnd): return as finalCond
         return {entryVtxp, nodep, {}};
@@ -1940,6 +2011,7 @@ class SvaNfaLowering final {
         AstNodeExpr* requiredStepRejectp = nullptr;  // Per-source reject from rejectOnFail Links
         AstNodeExpr* throughoutRejectp = nullptr;  // Reject when a throughout guard drops
         AstNodeExpr* threadFailCountp = nullptr;  // Number of threads rejected on this tick
+        AstNodeExpr* rejectCountp = nullptr;  // Counted attempts failing a terminal check
     };
 
     // Disable condition also aborts attempts between clock events. A constant disable
@@ -1979,7 +2051,9 @@ class SvaNfaLowering final {
             const SvaStateVertex* const vtxp = static_cast<const SvaStateVertex*>(&vtxr);
             if (!vtxp->datap()->stateVarp) continue;
 
+            AstVar* const countVarp = vtxp->datap()->attemptCountVarp;
             AstNodeExpr* nextStatep = nullptr;
+            AstNodeExpr* nextCountp = nullptr;
             for (const V3GraphEdge& edger : vtxp->inEdges()) {
                 const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
                 if (!tedger.m_consumesCycle) continue;
@@ -1995,6 +2069,11 @@ class SvaNfaLowering final {
                         = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
                     srcSigp = new AstLogAnd{c.flp, srcSigp, notDisp};
                 }
+                if (countVarp) {
+                    nextCountp = addCountp(c.flp, nextCountp,
+                                           fromVtxp->datap()->stateCountSigp->cloneTreePure(false),
+                                           srcSigp->cloneTreePure(false));
+                }
                 nextStatep = orExprs(c.flp, nextStatep, srcSigp);
             }
 
@@ -2005,12 +2084,22 @@ class SvaNfaLowering final {
             AstAssignDly* const assignp = new AstAssignDly{
                 c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::WRITE}, nextStatep};
             bodyp = AstNode::addNextNull(bodyp, assignp);
+            if (countVarp) {
+                bodyp->addNext(
+                    new AstAssignDly{c.flp, new AstVarRef{c.flp, countVarp, VAccess::WRITE},
+                                     addCountp(c.flp, nullptr, nextCountp, notKillActive(c))});
+            }
             if (asyncDisable) {
                 clearp = AstNode::addNextNull(
                     clearp,
                     new AstAssignDly{
                         c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::WRITE},
                         new AstConst{c.flp, AstConst::BitFalse{}}});
+                if (countVarp) {
+                    clearp->addNext(
+                        new AstAssignDly{c.flp, new AstVarRef{c.flp, countVarp, VAccess::WRITE},
+                                         newTypedConstp(c.flp, m_u32DTypep, 0)});
+                }
             }
         }
         if (bodyp) addStateAlways(c, bodyp, clearp);
@@ -2027,6 +2116,7 @@ class SvaNfaLowering final {
             AstVar* const wrappedp = vtxp->datap()->delayRingWrappedVarp;
             const uint32_t size = static_cast<uint32_t>(vtxp->m_delayRingSize);
 
+            const bool storesCounts = vtxp->datap()->delayRingCounts;
             AstNodeExpr* incomingp = nullptr;
             AstNodeExpr* incomingOverflowp = nullptr;
             for (const V3GraphEdge& edger : vtxp->inEdges()) {
@@ -2042,7 +2132,7 @@ class SvaNfaLowering final {
                 // IEEE 1800-2023 16.14.1/16.14.3: assertion alternatives belong to one
                 // evaluation; only cover sequence counts each end-of-match.
                 AstNodeExpr* contribp
-                    = countMatches
+                    = countMatches || storesCounts
                           ? fromVtxp->datap()->stateCountSigp->cloneTreePure(false)
                           : new AstExtend{c.flp,
                                           fromVtxp->datap()->stateSigp->cloneTreePure(false),
@@ -2069,7 +2159,6 @@ class SvaNfaLowering final {
                                          : addCountp(c.flp, incomingp, contribp);
             }
             UASSERT_OBJ(incomingp, vtxp, "Delay ring has no incoming edge");
-            const bool storesCounts = vtxp->datap()->delayRingCounts;
             AstNodeExpr* const incomingCountp
                 = storesCounts
                       ? incomingp->cloneTreePure(false)
@@ -2279,6 +2368,11 @@ class SvaNfaLowering final {
             } else if (fromVtxp->m_isUnbounded || fromVtxp->m_isAndCombiner) {
                 sigs.terminalActivep = orExprs(c.flp, sigs.terminalActivep, srcSigp);
             } else {
+                if (fromVtxp->m_countsAttempts) {
+                    sigs.rejectCountp
+                        = addCountp(c.flp, sigs.rejectCountp,
+                                    fromVtxp->datap()->stateCountSigp->cloneTreePure(false));
+                }
                 sigs.terminalActivep
                     = orExprs(c.flp, sigs.terminalActivep, srcSigp->cloneTreePure(false));
                 sigs.rejectBasep = orExprs(c.flp, sigs.rejectBasep, srcSigp);
@@ -2290,13 +2384,12 @@ class SvaNfaLowering final {
                     "No terminal edge to match vertex");
     }
 
-    AstNodeExpr* newThroughoutThreadFailCountp(LowerCtx& c, AstVar* const delayRingLiveCountVarp,
+    AstNodeExpr* newThroughoutThreadFailCountp(LowerCtx& c, AstVar* const countVarp,
                                                AstNodeExpr* const stateExprp,
                                                AstNodeExpr* const enablep) {
         AstNodeExpr* const activeThreadCountp
-            = delayRingLiveCountVarp
-                  ? static_cast<AstNodeExpr*>(
-                        new AstVarRef{c.flp, delayRingLiveCountVarp, VAccess::READ})
+            = countVarp
+                  ? static_cast<AstNodeExpr*>(new AstVarRef{c.flp, countVarp, VAccess::READ})
                   : new AstExtend{c.flp, stateExprp->cloneTreePure(false), m_u32DTypep->width()};
         return addCountp(c.flp, nullptr, activeThreadCountp, enablep);
     }
@@ -2344,11 +2437,14 @@ class SvaNfaLowering final {
                 }
             }
             if (needThreadFailCount) {
-                AstNodeExpr* const contributionp
-                    = newThroughoutThreadFailCountp(c, vtxp->datap()->delayRingLiveCountVarp,
-                                                    stateExprp, rejectCondp->cloneTreePure(false));
+                AstVar* const countVarp = vtxp->datap()->delayRingLiveCountVarp
+                                              ? vtxp->datap()->delayRingLiveCountVarp
+                                              : vtxp->datap()->attemptCountVarp;
+                AstNodeExpr* const contributionp = newThroughoutThreadFailCountp(
+                    c, countVarp, stateExprp, rejectCondp->cloneTreePure(false));
                 sigs.threadFailCountp = addCountp(c.flp, sigs.threadFailCountp, contributionp);
-                if (vtxp->m_abortRejectp && vtxp->m_delayRingAdvanceCondp) {
+                if (vtxp->m_abortRejectp && vtxp->m_delayRingAdvanceCondp
+                    && !vtxp->m_countsAttempts) {
                     // An advancing ring thread also occupies its same-tick match vertex in the
                     // unrolled NFA, so abort rejection must replay both fail actions.
                     AstNodeExpr* const abortAndAdvancep = new AstLogAnd{
@@ -2395,10 +2491,13 @@ class SvaNfaLowering final {
             AstNodeExpr* const notCondp = new AstLogNot{c.flp, condp};
             AstNodeExpr* const rawFailp = new AstLogAnd{c.flp, srcSigp, notCondp};
             if (needThreadFailCount) {
-                // thread_fail_count += fail;
-                sigs.threadFailCountp = addCountp(
-                    c.flp, sigs.threadFailCountp,
-                    new AstExtend{c.flp, rawFailp->cloneTreePure(false), m_u32DTypep->width()});
+                // thread_fail_count += fail ? attempts : 0;
+                AstNodeExpr* const attemptsp
+                    = fromVtxp->m_countsAttempts
+                          ? fromVtxp->datap()->stateCountSigp->cloneTreePure(false)
+                          : newTypedConstp(c.flp, m_u32DTypep, 1);
+                sigs.threadFailCountp = addCountp(c.flp, sigs.threadFailCountp, attemptsp,
+                                                  rawFailp->cloneTreePure(false));
             }
             AstNodeExpr* const failp = gateNotKill(c, rawFailp);
             sigs.requiredStepRejectp = orExprs(c.flp, sigs.requiredStepRejectp, failp);
@@ -2417,6 +2516,19 @@ class SvaNfaLowering final {
             }
             sigs.matchCountp = gateCheckedCountp(c.flp, sigs.matchCountp, sigs.matchCountOverflowp,
                                                  notKillActive(c));
+        }
+        if (sigs.rejectCountp) {
+            AstNodeExpr* enablep = notKillActive(c);
+            if (c.matchCondp) {
+                enablep = new AstLogAnd{
+                    c.flp, enablep,
+                    new AstLogNot{c.flp, sampled(c.matchCondp->cloneTreePure(false))}};
+            }
+            if (c.disableExprp) {
+                enablep = new AstLogAnd{
+                    c.flp, enablep, new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)}};
+            }
+            sigs.rejectCountp = addCountp(c.flp, nullptr, sigs.rejectCountp, enablep);
         }
         sigs.terminalActivep = gateNotKill(c, sigs.terminalActivep);
         sigs.rejectBasep = gateNotKill(c, sigs.rejectBasep);
@@ -2483,9 +2595,13 @@ class SvaNfaLowering final {
             if (vtxp->datap()->stateVarp) {
                 vtxp->datap()->stateSigp
                     = new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::READ};
-                vtxp->datap()->stateCountSigp = new AstExtend{
-                    c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::READ},
-                    m_u32DTypep->width()};
+                if (AstVar* const countVarp = vtxp->datap()->attemptCountVarp) {
+                    vtxp->datap()->stateCountSigp = new AstVarRef{c.flp, countVarp, VAccess::READ};
+                } else {
+                    vtxp->datap()->stateCountSigp = new AstExtend{
+                        c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::READ},
+                        m_u32DTypep->width()};
+                }
             } else if (vtxp->datap()->delayRingVarp) {
                 if (vtxp->m_isFixedDelayRing) {
                     // state_count = wrapped ? head : 0; state = state_count != 0;
@@ -2597,6 +2713,61 @@ class SvaNfaLowering final {
                 vtxp->datap()->stateCountOverflowSigp = nextStateCountOverflowp;
             }
         }
+    }
+
+    // Strong s_always[m:n] end-of-simulation liveness: if any in-window state
+    // is still set at $finish, the universal-quantifier window never completed
+    // (IEEE 1800-2023 16.12.11 strong semantics). Fire the assertion failure
+    // from a final block; V3Assert turns the DT_ERROR display into the standard
+    // "Assertion failed in %m" message.
+    // pending = sum{strong attempt counts}
+    //           + |{strong state registers, strong delay live counts != 0};
+    void addStrongPendingFinal(AstNodeCoverOrAssert* const assertp,
+                               const std::vector<SvaStateVertex*>& vtx,
+                               const std::string& baseName) {
+        FileLine* const flp = assertp->fileline();
+        AstNodeExpr* pendingCountp = nullptr;
+        AstNodeExpr* pendingAnyp = nullptr;
+        for (const SvaStateVertex* const vtxp : vtx) {
+            if (!vtxp->m_strongPending) continue;
+            if (AstVar* const countVarp = vtxp->datap()->attemptCountVarp) {
+                pendingCountp
+                    = addCountp(flp, pendingCountp, new AstVarRef{flp, countVarp, VAccess::READ});
+            } else if (vtxp->datap()->stateVarp) {
+                pendingAnyp = orExprs(flp, pendingAnyp,
+                                      new AstVarRef{flp, vtxp->datap()->stateVarp, VAccess::READ});
+            } else if (vtxp->m_strongAlwaysRing) {
+                pendingAnyp = orExprs(
+                    flp, pendingAnyp,
+                    delayRingHasLiveThreadsp(flp, vtxp->datap()->delayRingLiveCountVarp));
+            }
+        }
+        if (pendingAnyp) {
+            pendingCountp = addCountp(flp, pendingCountp,
+                                      new AstExtend{flp, pendingAnyp, m_u32DTypep->width()});
+        }
+        if (!pendingCountp) return;
+        // The action block belongs to the directive (IEEE 1800-2023 16.14.6)
+        AstNodeStmt* firep;
+        AstAssert* const assertNodep = VN_CAST(assertp, Assert);
+        if (AstNodeStmt* const failsp = assertNodep ? assertNodep->failsp() : nullptr) {
+            firep = failsp->cloneTree(true);
+        } else {
+            AstDisplay* const dispp
+                = new AstDisplay{flp, VDisplayType::DT_ERROR, "", nullptr, nullptr};
+            dispp->fmtp()->timeunit(m_modp->timeunit());
+            firep = dispp;
+            if (v3Global.opt.stopFail()) firep->addNext(new AstStop{flp, false});
+        }
+        AstVar* const remainingVarp
+            = new AstVar{flp, VVarType::MODULETEMP, baseName + "__pending", m_u32DTypep};
+        remainingVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+        m_modp->addStmtsp(remainingVarp);
+        AstCExpr* const assertOnp
+            = new AstCExpr{flp, AstCExpr::Pure{}, "vlSymsp->_vm_contextp__->assertOn()", 1};
+        m_modp->addStmtsp(new AstFinal{
+            flp,
+            new AstIf{flp, assertOnp, newActionReplayp(remainingVarp, pendingCountp, firep, 0)}});
     }
 
 public:
@@ -2742,36 +2913,44 @@ public:
         }
 
         // A packed range ring can emit several live endpoints without needing per-slot counts.
-        // Widen only a ring whose input can already carry multiplicity.
+        // Widen only a ring whose input can already carry multiplicity. Attempt counts propagate
+        // to every reachable vertex.
         std::vector<bool> ringNeedsMultiplicity(N);
         const bool countMatches = countsMatches(assertp);
-        if (countMatches) {
-            std::vector<bool> stateMayHaveMultiplicity(N);
-            std::vector<int> multiplicityWork;
-            for (int i = 0; i < N; ++i) {
-                const bool multipleInputs = vtx[i]->inEdges().size() > 1;
-                const bool isRing = vtx[i]->m_delayRingSize;
-                ringNeedsMultiplicity[i] = isRing && multipleInputs;
-                const bool startsMultiplicity = isRing
-                                                    ? !vtx[i]->m_isFixedDelayRing
-                                                    : multipleInputs && !vtx[i]->datap()->needsReg;
-                if (startsMultiplicity) {
-                    stateMayHaveMultiplicity[i] = true;
-                    multiplicityWork.push_back(i);
-                }
+        std::vector<bool> stateMayHaveMultiplicity(N);
+        std::vector<int> multiplicityWork;
+        bool countsAttempts = false;
+        for (int i = 0; i < N; ++i) {
+            if (vtx[i]->m_countsAttempts) countsAttempts = true;
+            const bool multipleInputs = vtx[i]->inEdges().size() > 1;
+            const bool isRing = vtx[i]->m_delayRingSize;
+            ringNeedsMultiplicity[i] = countMatches && isRing && multipleInputs;
+            const bool startsMultiplicity
+                = vtx[i]->m_countsAttempts
+                  || (countMatches
+                      && (isRing ? !vtx[i]->m_isFixedDelayRing
+                                 : multipleInputs && !vtx[i]->datap()->needsReg));
+            if (startsMultiplicity) {
+                stateMayHaveMultiplicity[i] = true;
+                multiplicityWork.push_back(i);
             }
-            for (size_t wi = 0; wi < multiplicityWork.size(); ++wi) {
-                for (const V3GraphEdge& edger : vtx[multiplicityWork[wi]]->outEdges()) {
-                    const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
-                    const int ti = tedger.toVtxp()->color();
-                    const bool isRing = vtx[ti]->m_delayRingSize;
-                    if (isRing) ringNeedsMultiplicity[ti] = true;
-                    // Match and reject sinks have no outgoing edges, so they stop naturally.
-                    const bool stopsMultiplicity = !isRing && vtx[ti]->datap()->needsReg;
-                    if (stateMayHaveMultiplicity[ti] || stopsMultiplicity) { continue; }
-                    stateMayHaveMultiplicity[ti] = true;
-                    multiplicityWork.push_back(ti);
-                }
+        }
+        for (size_t wi = 0; wi < multiplicityWork.size(); ++wi) {
+            const SvaStateVertex* const fromVtxp = vtx[multiplicityWork[wi]];
+            for (const V3GraphEdge& edger : fromVtxp->outEdges()) {
+                const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
+                const int ti = tedger.toVtxp()->color();
+                const bool isRing = vtx[ti]->m_delayRingSize;
+                // A range ring keeps already-matched attempts, so counting it overcounts on abort
+                if (!countMatches && isRing && !vtx[ti]->m_isFixedDelayRing) continue;
+                if (isRing) ringNeedsMultiplicity[ti] = true;
+                if (fromVtxp->m_countsAttempts) vtx[ti]->m_countsAttempts = true;
+                // Match and reject sinks have no outgoing edges, so they stop naturally.
+                const bool stopsMultiplicity
+                    = !isRing && vtx[ti]->datap()->needsReg && !vtx[ti]->m_countsAttempts;
+                if (stateMayHaveMultiplicity[ti] || stopsMultiplicity) continue;
+                stateMayHaveMultiplicity[ti] = true;
+                multiplicityWork.push_back(ti);
             }
         }
 
@@ -2801,7 +2980,7 @@ public:
             }
             if (vtx[i]->m_delayRingSize) {
                 const std::string base = baseName + "__d" + std::to_string(i);
-                const bool storesCounts = countMatches && ringNeedsMultiplicity[i];
+                const bool storesCounts = ringNeedsMultiplicity[i];
                 AstNodeDType* ringDTypep = nullptr;
                 if (storesCounts) {
                     // int unsigned ring [size];
@@ -2853,6 +3032,13 @@ public:
             varp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(varp);
             vtx[i]->datap()->stateVarp = varp;
+            if (vtx[i]->m_countsAttempts) {
+                AstVar* const countVarp
+                    = new AstVar{regFlp, VVarType::MODULETEMP, varName + "_count", m_u32DTypep};
+                countVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+                m_modp->addStmtsp(countVarp);
+                vtx[i]->datap()->attemptCountVarp = countVarp;
+            }
         }
 
         // Build lowering context for phase sub-functions.
@@ -2873,51 +3059,10 @@ public:
         emitKillAckNba(c);
 
         // Phase 3/3a/3b: Compute terminal match/reject signals (cleans up stateSig).
-        const SignalSet sigs
-            = computeSignals(c, needThreadFailCount, needThroughoutThreadFailCount, countMatches);
+        const SignalSet sigs = computeSignals(
+            c, needThreadFailCount, needThroughoutThreadFailCount, countMatches || countsAttempts);
 
-        // Strong s_always[m:n] end-of-simulation liveness: if any in-window state
-        // is still set at $finish, the universal-quantifier window never completed
-        // (IEEE 1800-2023 16.12.11 strong semantics). Fire the assertion failure
-        // from a final block; V3Assert turns the DT_ERROR display into the standard
-        // "Assertion failed in %m" message.
-        // pending = |{strong state registers, strong delay live counts != 0};
-        AstNodeExpr* pendingp = nullptr;
-        for (int i = 0; i < N; ++i) {
-            if (!vtx[i]->m_strongPending) continue;
-            AstNodeExpr* pendingExprp = nullptr;
-            if (vtx[i]->datap()->stateVarp) {
-                pendingExprp = new AstVarRef{flp, vtx[i]->datap()->stateVarp, VAccess::READ};
-            } else if (vtx[i]->m_strongAlwaysRing) {
-                pendingExprp
-                    = delayRingHasLiveThreadsp(flp, vtx[i]->datap()->delayRingLiveCountVarp);
-            } else {
-                continue;
-            }
-            if (!pendingp) {
-                pendingp = pendingExprp;
-            } else {
-                pendingp = new AstLogOr{flp, pendingp, pendingExprp};
-            }
-        }
-        if (pendingp) {
-            AstCExpr* const assertOnp
-                = new AstCExpr{flp, AstCExpr::Pure{}, "vlSymsp->_vm_contextp__->assertOn()", 1};
-            AstNodeExpr* const condp = new AstLogAnd{flp, assertOnp, pendingp};
-            // The action block belongs to the directive (IEEE 1800-2023 16.14.6)
-            AstNodeStmt* firep;
-            AstAssert* const assertNodep = VN_CAST(assertp, Assert);
-            if (AstNodeStmt* const failsp = assertNodep ? assertNodep->failsp() : nullptr) {
-                firep = failsp->cloneTree(true);
-            } else {
-                AstDisplay* const dispp
-                    = new AstDisplay{flp, VDisplayType::DT_ERROR, "", nullptr, nullptr};
-                dispp->fmtp()->timeunit(m_modp->timeunit());
-                firep = dispp;
-                if (v3Global.opt.stopFail()) firep->addNext(new AstStop{flp, false});
-            }
-            m_modp->addStmtsp(new AstFinal{flp, new AstIf{flp, condp, firep}});
-        }
+        addStrongPendingFinal(assertp, vtx, baseName);
 
         // Clear userp on every vertex before vertexData is destroyed.
         for (int i = 0; i < N; ++i) vtx[i]->userp(nullptr);
@@ -2938,7 +3083,7 @@ class AssertNfaVisitor final : public VNVisitor {
     SvaNfaLowering* m_loweringp = nullptr;  // NFA-to-hardware lowering engine
     AstSenTree* m_sampledValueClockp = nullptr;  // Inherited clock during scoped attachment
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
-    V3UniqueNames m_failCountNames{"__VnfaRemainingFailCount"};  // Fail replay counter names
+    V3UniqueNames m_replayCountNames{"__VnfaReplayCount"};  // Action replay counter names
 
     template <typename T_Node>
     void visitSampledValue(T_Node* const nodep) {
@@ -3046,9 +3191,13 @@ class AssertNfaVisitor final : public VNVisitor {
                                   assertp->directive(), /*vacuous=*/true);
         }
 
+        // A negated consequent that only fails never passes nonvacuously
+        if (!nonvacuousMatchp) nonvacuousMatchp = new AstConst{flp, AstConst::BitFalse{}};
         AstIf* const nonvacuousp
             = newPassOnIf(flp, nonvacuousMatchp, passsp, assertp->userType(), assertp->directive(),
                           /*vacuous=*/false);
+        // An attempt matching on a tick where another fails still runs the pass action
+        if (assertp->failsp()) assertp->prependFailsp(nonvacuousp->cloneTree(false));
         splitsp = AstNode::addNextNull<AstNodeStmt>(splitsp, nonvacuousp);
         assertp->addPasssp(splitsp);
     }
@@ -3136,34 +3285,25 @@ class AssertNfaVisitor final : public VNVisitor {
         if (threadFailCountp) {
             UASSERT_OBJ(threadFailReplaySenTreep, assertp,
                         "Thread fail count missing sensitivity tree");
-            AstNodeStmt* const failsp = assertp->failsp();
-            FileLine* const flp = assertp->fileline();
             // IEEE 1800-2023 16.12 requires one action-block evaluation per failed
             // thread. AstAssert handles the first, so replay the rest here.
-            AstVar* const remainingFailCountVarp
-                = new AstVar{flp, VVarType::MODULETEMP, m_failCountNames.get(""),
-                             m_modp->findBasicDType(VBasicDTypeKwd::UINT32)};
-            remainingFailCountVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-            m_modp->addStmtsp(remainingFailCountVarp);
-            AstNodeStmt* const replayStmtsp = new AstAssign{
-                flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE}, threadFailCountp};
-            AstLoop* const replayLoopp = new AstLoop{flp};
-            replayLoopp->addStmtsp(new AstLoopTest{
-                flp, replayLoopp,
-                new AstGt{flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::READ},
-                          newTypedConstp(flp, remainingFailCountVarp->dtypep(), 1)}});
-            replayLoopp->addStmtsp(newIfAssertFailOn(failsp->cloneTree(true), assertp->directive(),
-                                                     assertp->userType()));
-            AstSub* const decrementedFailCountp
-                = new AstSub{flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::READ},
-                             newTypedConstp(flp, remainingFailCountVarp->dtypep(), 1)};
-            replayLoopp->addStmtsp(
-                new AstAssign{flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE},
-                              decrementedFailCountp});
-            replayStmtsp->addNext(replayLoopp);
-            m_modp->addStmtsp(
-                newAssertAlways(flp, VAlwaysKwd::ALWAYS, threadFailReplaySenTreep, replayStmtsp));
+            addActionReplay(threadFailReplaySenTreep, threadFailCountp,
+                            newIfAssertFailOn(assertp->failsp()->cloneTree(true),
+                                              assertp->directive(), assertp->userType()));
         }
+    }
+
+    // Run bodyp countp - 1 times on each senTreep event, after the directive's own run
+    void addActionReplay(AstSenTree* const senTreep, AstNodeExpr* const countp,
+                         AstNodeStmt* const bodyp) {
+        FileLine* const flp = bodyp->fileline();
+        AstVar* const remainingVarp
+            = new AstVar{flp, VVarType::MODULETEMP, m_replayCountNames.get(""),
+                         m_modp->findBasicDType(VBasicDTypeKwd::UINT32)};
+        remainingVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+        m_modp->addStmtsp(remainingVarp);
+        m_modp->addStmtsp(newAssertAlways(flp, VAlwaysKwd::ALWAYS, senTreep,
+                                          newActionReplayp(remainingVarp, countp, bodyp, 1)));
     }
 
     static bool splitsImplicationPasssp(const AstNodeCoverOrAssert* assertp,
@@ -3316,10 +3456,6 @@ class AssertNfaVisitor final : public VNVisitor {
     // Returns the PropSpec to lower, or nullptr when fully handled here.
     AstPropSpec* prepareAssertionProp(AstNodeCoverOrAssert* assertp) {
         if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
-            // Leave a chain of property instances to V3AssertPre: the NFA lowering
-            // reports one fail for attempts failing in the same cycle, e.g. after a goto
-            // repetition antecedent, but each attempt fails (IEEE 1800-2023 16.14.1).
-            if (specp->fromInstanceChain()) return nullptr;
             if (hoistClockedSeq(specp)) return nullptr;
         }
 
@@ -3335,6 +3471,43 @@ class AssertNfaVisitor final : public VNVisitor {
         if (!hasMultiCycleExpr(propp)) return nullptr;
         if (isBareTopLevelUntil(propp)) return nullptr;
         return propp;
+    }
+
+    // Merged attempts complete together; each runs its pass action, or under `not` its
+    // fail action (IEEE 1800-2023 16.14.1, 16.14.3)
+    void addAttemptMatchReplay(AstNodeCoverOrAssert* const assertp, AstPropSpec* const propp,
+                               AstSenTree* const senTreep, AstNodeExpr* const matchCountp,
+                               const bool negated) {
+        FileLine* const flp = assertp->fileline();
+        AstAssert* const assertAssertp = VN_CAST(assertp, Assert);
+        AstNodeStmt* replayp = nullptr;
+        if (assertAssertp && !negated && assertAssertp->passsp()) {
+            replayp = newPassOnIf(flp, new AstConst{flp, AstConst::BitTrue{}},
+                                  assertAssertp->passsp()->cloneTree(true), assertp->userType(),
+                                  assertp->directive(), /*vacuous=*/false);
+        } else if (assertAssertp && negated && assertAssertp->failsp()) {
+            replayp = newIfAssertFailOn(assertAssertp->failsp()->cloneTree(true),
+                                        assertp->directive(), assertp->userType());
+        }
+        if (VN_IS(assertp, Cover) && !negated) {
+            propp->matchCountp(matchCountp);
+        } else if (replayp) {
+            addActionReplay(senTreep->cloneTree(false), matchCountp, replayp);
+        } else {
+            pushDeletep(matchCountp);
+        }
+    }
+
+    AstNodeExpr* addAttemptRejectCountp(AstNodeCoverOrAssert* const assertp,
+                                        AstNodeExpr* const threadFailCountp,
+                                        AstNodeExpr* const rejectCountp, const bool negated) {
+        const AstAssert* const assertAssertp = VN_CAST(assertp, Assert);
+        if (!assertAssertp || negated || !assertAssertp->failsp()) {
+            pushDeletep(rejectCountp);
+            return threadFailCountp;
+        }
+        if (!threadFailCountp) return rejectCountp;
+        return new AstAdd{assertp->fileline(), threadFailCountp, rejectCountp};
     }
 
     void processAssertion(AstNodeCoverOrAssert* assertp) {
@@ -3401,7 +3574,7 @@ class AssertNfaVisitor final : public VNVisitor {
 
         SvaGraph graph;
         SvaNfaBuilder builder{graph,      m_modp,     m_propTempNames,
-                              isCoverSeq, isSeqEvent, coverp != nullptr};
+                              isCoverSeq, isSeqEvent, coverp != nullptr || negated};
 
         const BuildResult result = buildAssertionGraph(builder, graph, seqBodyp, parts, flp);
         if (result.valid()) wireMatchAndMidSources(graph, result, flp);
@@ -3444,9 +3617,17 @@ class AssertNfaVisitor final : public VNVisitor {
         AstNodeExpr* matchExprp = nullptr;
         AstNodeExpr* const outputExprp = m_loweringp->assembleResult(
             assertp, negated, result.finalCondp, signals, needMatch ? &matchExprp : nullptr);
+        if (signals.matchCountp && !countMatches) {
+            addAttemptMatchReplay(assertp, propp, senTreep, signals.matchCountp, negated);
+        }
+        AstNodeExpr* threadFailCountp = signals.threadFailCountp;
+        if (signals.rejectCountp) {
+            threadFailCountp
+                = addAttemptRejectCountp(assertp, threadFailCountp, signals.rejectCountp, negated);
+        }
         if (result.finalCondp && !result.finalCondp->backp()) pushDeletep(result.finalCondp);
-        finishDirective(assertp, parts, senTreep, outputExprp, matchExprp, signals.matchCountp,
-                        signals.threadFailCountp);
+        finishDirective(assertp, parts, senTreep, outputExprp, matchExprp,
+                        countMatches ? signals.matchCountp : nullptr, threadFailCountp);
         VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
 
         UINFO(4, "NFA converted assertion at " << flp << endl);

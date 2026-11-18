@@ -214,9 +214,6 @@ class AssertElabVisitor final : public VNVisitor {
     void inlineProperty(AstPropSpec* outerSpecp, AstSchemaRef* schemaRefp,
                         const AstProperty* propp) {
         AstPropSpec* const propSpecp = cloneProperty(schemaRefp, propp);
-        if (outerSpecp->fromInstanceChain() || instancedProperty(propSpecp)) {
-            propSpecp->fromInstanceChain(true);
-        }
 
         // Merge disable iff (IEEE 1800-2023 16.12.1)
         if (outerSpecp->disablep() && propSpecp->disablep()) {
@@ -245,10 +242,6 @@ class AssertElabVisitor final : public VNVisitor {
         } else if (specp->sensesp()) {
             schemaRefp->v3warn(E_UNSUPPORTED,
                                "Unsupported: clock event in a nested property instance");
-        } else if (specp->propp()->exists(
-                       [](const AstNodeExpr* np) { return np->isMultiCycleSva(); })) {
-            schemaRefp->v3warn(E_UNSUPPORTED,
-                               "Unsupported: multi-cycle body in a nested property instance");
         } else {
             // The instance a chain resolves to is checked next, report it at this instance
             if (instancedProperty(specp)) specp->propp()->fileline(schemaRefp->fileline());

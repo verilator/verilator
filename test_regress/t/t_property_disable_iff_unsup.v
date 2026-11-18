@@ -15,5 +15,5 @@ module t (
     $finish;
   end
 
-  assert property (@(posedge clk) disable iff ($sampled(val)) s_eventually 1);
+  assert property (@(posedge clk) disable iff ($sampled(val)) val until val);
 endmodule

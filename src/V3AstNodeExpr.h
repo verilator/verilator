@@ -2363,6 +2363,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    bool isMultiCycleSva() const override { return true; }
 };
 class AstSExpr final : public AstNodeExpr {
     // Sequence expression

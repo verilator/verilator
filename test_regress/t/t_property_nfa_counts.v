@@ -170,6 +170,8 @@ module t (
   wire inst_a = cyc == 2;
   wire inst_b = cyc == 2 || cyc == 4;
   int inst_or_fail = 0, inst_goto_fail = 0;
+  int goto_fail = 0, goto_next_fail = 0, goto_range_fail = 0, goto_abort_fail = 0;
+  int goto_cover = 0, goto_range_cover = 0;
 
   property p_or(x, y, z);
     x |=> y || z;
@@ -188,6 +190,16 @@ module t (
   else inst_or_fail++;
   assert property (@(posedge clk) p_goto_chain(inst_b, 1'b0))
   else inst_goto_fail++;
+  assert property (@(posedge clk) inst_b [->2] |-> 1'b0)
+  else goto_fail++;
+  assert property (@(posedge clk) inst_b [->2] |=> 1'b0)
+  else goto_next_fail++;
+  assert property (@(posedge clk) inst_b [->2:3] |-> 1'b0)
+  else goto_range_fail++;
+  assert property (@(posedge clk) sync_reject_on (cyc == 8) inst_b [->3])
+  else goto_abort_fail++;
+  cover sequence (@(posedge clk) inst_b [->2]) goto_cover++;
+  cover sequence (@(posedge clk) inst_b [->1:2]) goto_range_cover++;
 
   always @(negedge clk) begin
     if (cyc == 12) begin
@@ -214,6 +226,12 @@ module t (
       `checkd(throughout_or_fail, 3);
       `checkd(inst_or_fail, 1);
       `checkd(inst_goto_fail, 3);
+      `checkd(goto_fail, 3);
+      `checkd(goto_next_fail, 3);
+      `checkd(goto_range_fail, 3);
+      `checkd(goto_abort_fail, 9);
+      `checkd(goto_cover, 3);
+      `checkd(goto_range_cover, 8);
       $write("*-* All Finished *-*\n");
       $finish;
     end
