@@ -265,6 +265,8 @@ class DescopeVisitor final : public VNVisitor {
         // nodep->funcp()->scopep(nullptr);
     }
     void visit(AstScopeName* nodep) override {
+        // $dumpvars resolves from the caller's full design path.
+        if (VN_IS(nodep->backp(), DumpCtl)) return;
         // Print a %m under this instance as its vlNamep, which holds its pretty name, plus the
         // rest of the path, so the instances' code can be V3Combined. Not with --protect-ids, as
         // vlNamep then holds the protected name, while %m prints the original.
