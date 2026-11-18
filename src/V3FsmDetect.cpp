@@ -333,6 +333,8 @@ struct FsmNextNode;
 struct FsmCond final {
     AstNodeExpr* exprp = nullptr;
     std::vector<std::pair<AstVarScope*, const FsmNextNode*>> bindings;
+    std::vector<AstVarScope*> reads;  // Variables the expression reads, each once, in tree order
+    std::vector<const AstNodeBiop*> compares;  // Its equalities, in tree order
     size_t index = 0;  // Creation order, so a path lists its conditions the same way
     size_t size = 0;  // Nodes in the expression
 };
@@ -575,10 +577,17 @@ class FsmDetectVisitor final : public VNVisitorConst {
         FsmCond& cond = m_conds.back();
         cond.exprp = exprp;
         cond.index = m_conds.size() - 1;
+        std::unordered_set<const AstVarScope*> seen;
         exprp->foreach([&](const AstNode* nodep) {
             ++cond.size;
+            if (const AstNodeBiop* const biopp = VN_CAST(nodep, NodeBiop)) {
+                if (isEquality(biopp)) cond.compares.push_back(biopp);
+                return;
+            }
             const AstVarRef* const refp = VN_CAST(nodep, VarRef);
-            if (!refp || m_dlyVscps.count(refp->varScopep())) return;
+            if (!refp || !seen.insert(refp->varScopep()).second) return;
+            cond.reads.push_back(refp->varScopep());
+            if (m_dlyVscps.count(refp->varScopep())) return;
             const FsmEnv::const_iterator it = env.find(refp->varScopep());
             if (it != env.end()) cond.bindings.emplace_back(it->first, it->second);
         });  // LCOV_EXCL_LINE
@@ -1034,12 +1043,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
         const int uses = eval.pathUses;
         // A variable given one of several values, earlier in this cycle or combinationally,
         // e.g. the state after 'if (start) state = S1;': split the path on what chooses the value
-        std::vector<AstVarScope*> vscps;
-        std::unordered_set<const AstVarScope*> seen;
-        condp->exprp->foreach([&](const AstVarRef* refp) {
-            if (seen.insert(refp->varScopep()).second) vscps.push_back(refp->varScopep());
-        });
-        for (AstVarScope* const vscp : vscps) {
+        for (AstVarScope* const vscp : condp->reads) {
             const FsmNextNode* const nodep = boundNodep(condp, vscp, eval.stateVscp);
             if (!nodep) continue;
             if (const FsmCond* const undecidedp = undecidedCond(nodep, eval, depth)) {
@@ -1173,10 +1177,9 @@ class FsmDetectVisitor final : public VNVisitorConst {
     }
     // The values a condition compares the state with, including in the expressions assigned to
     // the variables it reads
-    void collectCompares(AstNodeExpr* exprp, const FsmCond* condp, AstVarScope* stateVscp,
-                         int width, int depth, NamedValues& named) const {
-        exprp->foreach([&](const AstNodeBiop* biopp) {
-            if (!isEquality(biopp)) return;
+    void collectCompares(const FsmCond* condp, AstVarScope* stateVscp, int width, int depth,
+                         NamedValues& named) const {
+        for (const AstNodeBiop* const biopp : condp->compares) {
             for (const AstNode* const sidep : {biopp->lhsp(), biopp->rhsp()}) {
                 const AstConst* const constp = VN_CAST(sidep, Const);
                 const AstNodeExpr* const otherp
@@ -1190,17 +1193,16 @@ class FsmDetectVisitor final : public VNVisitorConst {
                 named.emplace_back(VN_IS(otherp, Concat) ? string{} : constp->origParamName(),
                                    field);
             }
-        });
+        }
         if (depth >= SUBST_DEPTH_MAX) return;
-        exprp->foreach([&](const AstVarRef* refp) {
-            const FsmNextNode* const nodep = boundNodep(condp, refp->varScopep(), stateVscp);
+        for (AstVarScope* const vscp : condp->reads) {
+            const FsmNextNode* const nodep = boundNodep(condp, vscp, stateVscp);
             if (nodep
                 && (nodep->kind == FsmNextNode::Kind::EXPR
                     || nodep->kind == FsmNextNode::Kind::LOW)) {
-                collectCompares(nodep->condp->exprp, nodep->condp, stateVscp, width, depth + 1,
-                                named);
+                collectCompares(nodep->condp, stateVscp, width, depth + 1, named);
             }
-        });
+        }
     }
     // The labels of every case on the state in the scope, including items that leave the
     // state unchanged, whose branch merged with the hold and so isn't in the DAG
@@ -1242,7 +1244,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
             if (nodep->kind == FsmNextNode::Kind::CONSTANT) {
                 named.emplace_back(nodep->label, nodep->num);
             } else if (nodep->kind == FsmNextNode::Kind::MUX) {
-                collectCompares(nodep->condp->exprp, nodep->condp, stateVscp, width, 0, named);
+                collectCompares(nodep->condp, stateVscp, width, 0, named);
                 // 'then' first, so of two names for one value the earlier one names the state
                 stack.push_back(nodep->elsep);
                 stack.push_back(nodep->thenp);
