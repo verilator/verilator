@@ -54,12 +54,6 @@ def verilation(n):
     return test.op_count_read(test.stats)
 
 
-test.op_count_ok(
-    verilation(SIZE_SMALL),
-    verilation(SIZE_LARGE),
-    RATIO_MIN,
-    RATIO_MAX,
-    # TODO use .*
-    r'^(?!.*dfg).*$')
+test.op_count_ok(verilation(SIZE_SMALL), verilation(SIZE_LARGE), RATIO_MIN, RATIO_MAX, r'.*')
 
 test.passes()
