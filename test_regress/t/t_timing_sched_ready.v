@@ -48,6 +48,14 @@ module t;
     @(posedge falling_clk);
   end
 
+  bit changed_clk = 0;
+  int changed_count = 0;
+  always @(changed_clk) ++changed_count;
+  initial begin
+    #1 changed_clk = 1;
+    @(negedge changed_clk);
+  end
+
   initial begin
     #40;
     `checkd(cnt1, 20);
@@ -55,6 +63,7 @@ module t;
     `checkd(time3, 9);
     `checkd(rising_count, 1);
     `checkd(falling_count, 1);
+    `checkd(changed_count, 1);
     $write("*-* All Finished *-*\n");
     $finish;
   end
