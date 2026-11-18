@@ -93,6 +93,14 @@ static AstClassRefDType* classRefDTypeOfNode(AstNode* nodep) {
     return dtp ? VN_CAST(dtp->skipRefOrNullp(), ClassRefDType) : nullptr;
 }
 
+// Instance path without the empty names of unnamed generate blocks, as V3LinkDot has no scope
+// for them
+static string defparamPath(const string& path) {
+    string result;
+    for (const string& name : VString::split(path, '.')) result = VString::dot(result, ".", name);
+    return result;
+}
+
 //######################################################################
 // Hierarchical block and parameter db (modules without parameters are also handled)
 
@@ -343,6 +351,8 @@ class ParamProcessor final {
     std::map<AstNodeModule*, DefaultValueMap> m_defaultParameterValues;
     // Module -> a defparam in it or below it, or nullptr (see nestedDefparamp)
     std::map<const AstNodeModule*, const AstPin*> m_nestedDefparamps;
+    // "instance.parameter" path -> value of a defparam, see ParamVisitor::visit(AstDefParam)
+    std::unordered_map<std::string, AstNodeExpr*> m_defparamValues;
     VNDeleter m_deleter;  // Used to delay deletion of nodes
     // Class default type paramater dependencies
     std::vector<std::pair<AstParamTypeDType*, int>> m_classTypeParams;
@@ -664,34 +674,8 @@ class ParamProcessor final {
             }
         }
     }
-    static bool hasDescendantDefparams(const AstNodeModule* modp,
-                                       std::set<const AstNodeModule*>& visited) {
-        if (!visited.insert(modp).second) return false;
-        for (AstNode* const stmtp : modp->stmtspList()) {
-            AstCell* const cellp = VN_CAST(stmtp, Cell);
-            if (!cellp) continue;
-            for (AstPin* const pinp : cellp->paramspList()) {
-                if (!pinp->paramPath().empty()) {
-                    visited.erase(modp);
-                    return true;
-                }
-            }
-            if (AstNodeModule* const childModp = cellp->modp()) {
-                if (hasDescendantDefparams(childModp, visited)) {
-                    visited.erase(modp);
-                    return true;
-                }
-            }
-        }
-        visited.erase(modp);
-        return false;
-    }
-    static bool hasDescendantDefparams(const AstNodeModule* modp) {
-        std::set<const AstNodeModule*> visited;
-        return hasDescendantDefparams(modp, visited);
-    }
-    // Return a defparam in the module or below it. Unlike hasDescendantDefparams, also look
-    // inside generate constructs. Memoized, so each module is searched once.
+    // Return a defparam in the module or below it, including inside generate constructs.
+    // Memoized, so each module is searched once.
     const AstPin* nestedDefparamp(const AstNodeModule* modp) {
         const auto pair = m_nestedDefparamps.emplace(modp, nullptr);
         if (!pair.second) return pair.first->second;  // Searched, or being searched
@@ -2141,7 +2125,8 @@ class ParamProcessor final {
                 }
             }
         }
-        if (!any_overrides && VN_IS(nodep, Cell) && hasDescendantDefparams(srcModp)) {
+        if (VN_IS(nodep, Cell) && nestedDefparamp(srcModp)) {
+            // Defparams may give each instance different values (see nodeDeparam)
             longname += "__Vdefparam" + V3Hash{srcModp->someInstanceName()}.toString();
             any_overrides = true;
         }
@@ -2467,6 +2452,12 @@ class ParamProcessor final {
     }
 
 public:
+    // A defparam, in this instance of its module, gives the parameter at 'path' this value
+    void defparamValue(const string& path, AstNodeExpr* valuep) {
+        m_deleter.pushDeletep(valuep);
+        m_defparamValues[path] = valuep;
+    }
+
     // Find 'name' declared in classp or a class it extends, setting memberClassp to the declaring
     // class. V3LinkDot defers names inherited through a parameterized base until the base is
     // specialized, so each base is specialized on the way. Inherited parameters use the
@@ -2560,10 +2551,22 @@ public:
 
         if (AstCell* const cellp = VN_CAST(nodep, Cell)) {
             for (AstPin* const pinp : cellp->paramspList()) {
-                if (!pinp->paramPath().empty() && instanceName != pinp->paramPath()
-                    && !VString::endsWith(instanceName, "." + pinp->paramPath())) {
-                    VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
+                if (pinp->paramPath().empty()) continue;
+                if (!pinp->exprp()) {  // Value from the instance of the defparam's module
+                    const auto it
+                        = m_defparamValues.find(defparamPath(instanceName) + "." + pinp->name());
+                    if (it != m_defparamValues.end()) {
+                        pinp->exprp(it->second->cloneTree(false));
+                        continue;
+                    }
+                    // No value: the defparam sets another instance of this module, or is in a
+                    // generate block not built. ParamVisitor::iterateDefParams registers values
+                    // before specializing any instance they may set.
+                } else if (instanceName == pinp->paramPath()
+                           || VString::endsWith(instanceName, "." + pinp->paramPath())) {
+                    continue;
                 }
+                VL_DO_DANGLING(m_deleter.pushDeletep(pinp->unlinkFrBack()), pinp);
             }
             // Nested generic-iface forwarding (#7454): rewrite VarRef placeholders
             // left by V3LinkDot to concrete IfaceRefDTypes now that the enclosing
@@ -2940,6 +2943,19 @@ class ParamVisitor final : public VNVisitor {
 
     // METHODS
 
+    // Register the defparams of a scope, before an instance they set is specialized, possibly
+    // early as an interface (see visit(AstDefParam))
+    void iterateDefParams(AstNode* stmtsp) {
+        for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
+            if (AstDefParam* const defParamp = VN_CAST(nodep, DefParam)) {
+                iterate(defParamp);
+            } else if (const AstGenBlock* const blockp = VN_CAST(nodep, GenBlock)) {
+                // Unnamed, so in this scope (see LinkDotFindVisitor::visit(AstGenBlock))
+                if (blockp->name().empty()) iterateDefParams(blockp->itemsp());
+            }
+        }
+    }
+
     void processWorkQ() {
         UASSERT(!m_iterateModule, "Should not nest");
         std::multimap<ParamState::WQKey, AstNodeModule*> workQueue;
@@ -2985,6 +3001,7 @@ class ParamVisitor final : public VNVisitor {
                     VL_RESTORER(m_modIfaceRefsDone);
                     m_modp = modp;
                     m_modIfaceRefsDone = false;
+                    iterateDefParams(modp->stmtsp());
                     iterateChildren(modp);
                 }
             }
@@ -3318,8 +3335,8 @@ class ParamVisitor final : public VNVisitor {
             AstCell* const cellp = VN_CAST(nodep, Cell);
             if (!cellParamsReferenceIfacePorts(cellp)) {
                 AstNodeModule* const srcModp = cellp->modp();
-                AstNodeModule* const newModp
-                    = m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
+                AstNodeModule* const newModp = m_processor.nodeDeparam(
+                    cellp, srcModp, m_modp, m_modp->someInstanceName() + m_generateHierName);
                 // Retarget template REFDTYPEs to the clone's types.
                 if (V3LinkDotIfaceCapture::enabled() && cellp->modp() != srcModp) {
                     m_processor.retargetIfaceRefs(m_modp, cellp->name());
@@ -3878,11 +3895,23 @@ class ParamVisitor final : public VNVisitor {
         } else {
             VL_RESTORER_COPY(m_generateHierName);
             m_generateHierName += "." + nodep->prettyName();
+            iterateDefParams(nodep->itemsp());
             iterateChildren(nodep);
         }
     }
     void visit(AstGenFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("GENFOR should have been wrapped in BEGIN");
+    }
+    void visit(AstDefParam* nodep) override {
+        // The parameters of this instance of the module are known, and the generate blocks
+        // above expanded, so nodeDeparam can give the value (IEEE 1800-2023 23.10.1)
+        checkParamNotHierRecurse(nodep->rhsp());
+        const AstVarXRef* const targetp = VN_AS(nodep->targetp(), VarXRef);
+        const string instanceName
+            = m_modp->someInstanceName() + m_generateHierName + "." + targetp->dotted();
+        m_processor.defparamValue(defparamPath(instanceName) + "." + targetp->name(),
+                                  nodep->rhsp()->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstGenCase* nodep) override {
         UINFO(9, "  GENCASE " << nodep);

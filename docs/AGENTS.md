@@ -9,8 +9,6 @@ Read the repository-root [AGENTS.md](../AGENTS.md) first for process and cross-c
 
 ## Writing rules
 
-- Rewrap paragraphs after editing -- keep consistent line length in `*.rst` files.
-
 - Document only stable, implemented features -- never planned or in-development capabilities; prevents user confusion and support burden.
 
 - Explain WHAT and WHEN, not HOW -- conceptual purpose and practical use cases over implementation mechanics; describe behavior ("optimized as pure", not "treated as pure") and clarify ambiguous referents ("in the internals of Verilator").
@@ -25,7 +23,19 @@ Read the repository-root [AGENTS.md](../AGENTS.md) first for process and cross-c
 
 - Document all flags with descriptions, not just syntax.
 
+- A new option needs an `.. option::` entry in `exe_verilator.rst`, kept sorted
+
+- A new comment extension goes in `extensions.rst`
+
+- A new output file type needs `files.rst`, `bin/verilator`, and the `Makefile.in` format list updated.
+
+- Generate warning examples into `docs/gen` rather than hand-writing them, and describe the general condition, not just one syntax form.
+
+- Match terminology in `internals.rst` to the code names, and rename in both places together.
+
 ## reStructuredText mechanics
+
+- Rewrap paragraphs after editing -- keep consistent line length in `*.rst` files.
 
 - Use the `:vlopt:` role for Verilator option references -- makes cross-references clickable and consistent.
 

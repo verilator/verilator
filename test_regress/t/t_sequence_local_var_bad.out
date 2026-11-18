@@ -1,0 +1,10 @@
+%Error-ASSIGNIN: t/t_sequence_local_var_bad.v:14:9: Assigning to input/const variable: 'x'
+                                                  : ... note: In instance 't'
+   14 |     (1, x = 1);
+      |         ^
+                 ... For error description see https://verilator.org/warn/ASSIGNIN?v=latest
+%Error-ASSIGNIN: t/t_sequence_local_var_bad.v:19:9: Assigning to input/const variable: 'in'
+                                                  : ... note: In instance 't'
+   19 |     (1, in = 1);
+      |         ^~
+%Error: Exiting due to

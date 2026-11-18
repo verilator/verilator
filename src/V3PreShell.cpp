@@ -61,21 +61,31 @@ protected:
                 // Synthesis compatibility
                 s_preprocp->defineCmdLine(prefl, "SYSTEMVERILOG", "1");  // LEAK_OK
                 // IEEE predefined
-                s_preprocp->defineCmdLine(prefl, "SV_COV_START", "0");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_STOP", "1");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_RESET", "2");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_CHECK", "3");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_MODULE", "10");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_HIER", "11");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_ASSERTION", "20");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_FSM_STATE", "21");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_STATEMENT", "22");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_TOGGLE", "23");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_OVERFLOW", "-2");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_ERROR", "-1");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_NOCOV", "0");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_OK", "1");
-                s_preprocp->defineCmdLine(prefl, "SV_COV_PARTIAL", "2");
+#define VL_DEFINE_SV_COV(name) \
+    s_preprocp->defineCmdLine(prefl, #name, std::to_string(VSvCov::name))
+                VL_DEFINE_SV_COV(SV_COV_START);
+                VL_DEFINE_SV_COV(SV_COV_STOP);
+                VL_DEFINE_SV_COV(SV_COV_RESET);
+                VL_DEFINE_SV_COV(SV_COV_CHECK);
+                VL_DEFINE_SV_COV(SV_COV_MODULE);
+                VL_DEFINE_SV_COV(SV_COV_HIER);
+                VL_DEFINE_SV_COV(SV_COV_ASSERTION);
+                VL_DEFINE_SV_COV(SV_COV_FSM_STATE);
+                VL_DEFINE_SV_COV(SV_COV_STATEMENT);
+                VL_DEFINE_SV_COV(SV_COV_TOGGLE);
+                VL_DEFINE_SV_COV(SV_COV_LINE);
+                VL_DEFINE_SV_COV(SV_COV_BRANCH);
+                VL_DEFINE_SV_COV(SV_COV_CONDITION);
+                VL_DEFINE_SV_COV(SV_COV_EXPRESSION);
+                VL_DEFINE_SV_COV(SV_COV_EXPR);
+                VL_DEFINE_SV_COV(SV_COV_FSM_TRANS);
+                VL_DEFINE_SV_COV(SV_COV_ALL);
+                VL_DEFINE_SV_COV(SV_COV_OVERFLOW);
+                VL_DEFINE_SV_COV(SV_COV_ERROR);
+                VL_DEFINE_SV_COV(SV_COV_NOCOV);
+                VL_DEFINE_SV_COV(SV_COV_OK);
+                VL_DEFINE_SV_COV(SV_COV_PARTIAL);
+#undef VL_DEFINE_SV_COV
             }
         }
     }

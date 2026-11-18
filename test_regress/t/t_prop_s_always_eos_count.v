@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
-// Per-attempt s_always end-of-simulation failure multiplicity.
+// s_always end-of-simulation failures. Comments below describe #7946 per-attempt multiplicity; golden reflects its revert (#8258)
 
 module t (
 `ifdef VERILATOR
@@ -68,6 +68,10 @@ module t (
 
   // A pending strong cover obligation is not an EOS failure.
   cover property (@(posedge clk) s_always[1: 3] 1'b1);
+
+  // A severity task in the action block keeps its message format at EOS
+  assert property (@(posedge clk) s_always[1: 3] 1'b1)
+  else $error("EOS_ERROR");
 
   // The default action carries the same per-attempt multiplicity.
   assert property (@(posedge clk) s_always[1: 3] 1'b1);

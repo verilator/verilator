@@ -6,7 +6,10 @@
 
 
 module t (
-    r
+    r,
+    rr,
+    ri,
+    wr
 );
 
   output r;
@@ -15,4 +18,41 @@ module t (
 
   assign r = 1'b0;  // Bad
 
+  reg rr;
+  output rr;
+  output integer ri;
+  wire wr;
+  output wr;
+
+  assign rr = 1'b0;  // Bad
+  assign ri = 0;  // Bad
+  assign wr = 1'b0;
+
+  sub sub (
+      .a(),
+      .b(),
+      .c(),
+      .d(),
+      .e(),
+      .f(),
+      .g()
+  );
+endmodule
+
+module sub (
+    output reg a,
+    b,
+    output c,
+    output signed [1:0] d,
+    output wire e,
+    output integer f,
+    output wire integer g
+);
+  assign a = 1'b0;  // Bad
+  assign b = 1'b0;  // Bad
+  assign c = 1'b0;
+  assign d = 2'b0;
+  assign e = 1'b0;
+  assign f = 0;  // Bad
+  assign g = 0;
 endmodule

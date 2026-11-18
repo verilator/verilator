@@ -39,4 +39,71 @@
                               : ... note: In instance 't'
    29 |   sub_ref i_sub_ref (.r({>>{ref_var}}));
       |                          ^~
+%Error: t/t_stream_bad.v:48:16: Streaming concatenation assigned to 'byte$[int]', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3).
+                              : ... note: In instance 't'
+   48 |     assoc_dest = {>>{source_q}};
+      |                ^
+%Error: t/t_stream_bad.v:49:16: Streaming concatenation assigned to 'byte$[int]', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3).
+                              : ... note: In instance 't'
+   49 |     assoc_dest = {<<8{source_d}};
+      |                ^
+%Error: t/t_stream_bad.v:50:19: Streaming concatenation assigned to 'byte$[*]', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3).
+                              : ... note: In instance 't'
+   50 |     wildcard_dest = {<<8{source_q}};
+      |                   ^
+%Error: t/t_stream_bad.v:51:19: Streaming concatenation assigned to 'byte$[*]', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3).
+                              : ... note: In instance 't'
+   51 |     wildcard_dest = {>>{source_d}};
+      |                   ^
+%Error: t/t_stream_bad.v:52:23: Streaming concatenation assigned to 'byte$[int]$[]', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3).
+                              : ... note: In instance 't'
+   52 |     dyn_of_assoc_dest = {>>{source_q}};
+      |                       ^
+%Error: t/t_stream_bad.v:53:25: Streaming concatenation assigned to 'byte$[int]$[$]', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3).
+                              : ... note: In instance 't'
+   53 |     queue_of_assoc_dest = {>>{source_q}};
+      |                         ^
+%Error: t/t_stream_bad.v:54:16: Streaming concatenation assigned to 'class Cls', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3).
+                              : ... note: In instance 't'
+   54 |     class_dest = {>>{source_q}};
+      |                ^
+%Error: t/t_stream_bad.v:55:17: Streaming concatenation assigned to 'struct t.assoc_struct_t', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3).
+                              : ... note: In instance 't'
+   55 |     struct_dest = {>>{source_q}};
+      |                 ^
+%Error: t/t_stream_bad.v:83:15: Streaming concatenation assigned to 'struct t.nest_assoc_t', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3).
+                              : ... note: In instance 't'
+   83 |     nest_dest = {>>{source_q}};
+      |               ^
+%Error: t/t_stream_bad.v:99:16: Streaming concatenation assigned to 'union t.union_t', but 'union t.union_t' is not a bit-stream type (IEEE 1800-2023 11.4.14).
+                              : ... note: In instance 't'
+   99 |     union_dest = {>>{source_q}};
+      |                ^
+%Error: t/t_stream_bad.v:100:15: Streaming concatenation assigned to 'real', but 'real' is not a bit-stream type (IEEE 1800-2023 11.4.14).
+                               : ... note: In instance 't'
+  100 |     real_dest = {>>{source_q}};
+      |               ^
+%Error: t/t_stream_bad.v:101:16: Streaming concatenation assigned to 'event', but 'event' is not a bit-stream type (IEEE 1800-2023 11.4.14).
+                               : ... note: In instance 't'
+  101 |     event_dest = {>>{source_q}};
+      |                ^
+%Error-UNSUPPORTED: t/t_stream_bad.v:101:16: Assignment to and from event in statically scheduled context.
+                                           : ... note: In instance 't'
+                                           : Static event scheduling won't be able to handle this.
+                                           : ... Suggest move the event into a completely dynamic context, eg. a class,  and reference it only from such context.
+  101 |     event_dest = {>>{source_q}};
+      |                ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_stream_bad.v:102:19: Streaming concatenation assigned to 'real$[]', but 'real$[]' is not a bit-stream type (IEEE 1800-2023 11.4.14).
+                               : ... note: In instance 't'
+  102 |     real_dyn_dest = {>>{source_q}};
+      |                   ^
+%Error: t/t_stream_bad.v:103:22: Streaming concatenation assigned to 'chandle$[]', but 'chandle$[]' is not a bit-stream type (IEEE 1800-2023 11.4.14).
+                               : ... note: In instance 't'
+  103 |     chandle_dyn_dest = {>>{source_q}};
+      |                      ^
+%Error: t/t_stream_bad.v:104:20: Streaming concatenation assigned to 'event$[]', but 'event$[]' is not a bit-stream type (IEEE 1800-2023 11.4.14).
+                               : ... note: In instance 't'
+  104 |     event_dyn_dest = {>>{source_q}};
+      |                    ^
 %Error: Exiting due to

@@ -342,6 +342,9 @@ class InlineModGraphBuilder final : public VNVisitor {
         iterateChildrenConst(nodep);
     }
 
+    // Descriptors are not logic, so do not count towards the size
+    void visit(AstNodeRtmdItem*) override {}
+
     // Base node
     void visit(AstNode* nodep) override {
         if (m_modVtxp) m_modVtxp->sizeInc();
@@ -430,7 +433,6 @@ void inlineScope(AstScope* scopep, AstCell* cellp, const std::string& prefix,
             vscp->varp(newVarp);
             vscp->dtypeFrom(newVarp);
         }
-        if (!cellp->isTrace()) vscp->trace(false);
         parentScopep->addVarsp(vscp->unlinkFrBack());
     }
 

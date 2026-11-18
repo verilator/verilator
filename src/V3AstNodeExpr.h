@@ -1270,6 +1270,29 @@ public:
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
 };
+class AstCoverageControl final : public AstNodeExpr {
+    // $coverage_control, replaced in V3Width
+    // @astgen op1 := controlp : AstNodeExpr
+    // @astgen op2 := coverageTypep : AstNodeExpr
+    // @astgen op3 := scopeDefp : AstNodeExpr
+    const bool m_rootInstance;  // The modules_or_instance argument is $root
+public:
+    AstCoverageControl(FileLine* fl, AstNodeExpr* controlp, AstNodeExpr* coverageTypep,
+                       AstNodeExpr* scopeDefp, bool rootInstance)
+        : ASTGEN_SUPER_CoverageControl(fl)
+        , m_rootInstance{rootInstance} {
+        this->controlp(controlp);
+        this->coverageTypep(coverageTypep);
+        this->scopeDefp(scopeDefp);
+    }
+    ASTGEN_MEMBERS_AstCoverageControl;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool rootInstance() const { return m_rootInstance; }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
+};
 class AstCvtArrayToArray final : public AstNodeExpr {
     // Copy/Cast from dynamic/unpacked types to dynamic/unpacked types
     // @astgen op1 := fromp : AstNodeExpr

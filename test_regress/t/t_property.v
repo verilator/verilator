@@ -51,6 +51,20 @@ module Test (
 
   restrict property (@(posedge clk) cyc == 1);  // Ignored in simulators
 
+  // Property instances in a restrict are ignored too
+  property p_cycles(x);
+    x ##1 x;
+  endproperty
+  property p_posedge(x);
+    @(posedge clk) x;
+  endproperty
+  property p_negedge(x);
+    @(negedge clk) x;
+  endproperty
+  restrict property (@(posedge clk) p_cycles(cyc == 1) or cyc == 2);
+  restrict property (@(posedge clk) p_posedge(cyc == 1) and cyc == 2);
+  restrict property (@(posedge clk) p_negedge(cyc == 1));
+
   // Unclocked is not supported:
   //   assert property (cyc != 6);
 

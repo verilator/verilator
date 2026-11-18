@@ -14,10 +14,12 @@ module t (
 
   integer cyc = 0;
   // verilator lint_off REALCVT
-  time    digits = 5432109876.543210ns;  // Will round to time units
+  // verilator lint_off TIMEPRECTRUNC
+  time digits = 5432109876.543210ns;  // Will round to time units
   realtime rdigits = 5432109876.543210ns;  // Will round to time precision
-  time    high_acc = 64'd12345678901234567890;  // Would lose accuracy if calculated in double
+  time high_acc = 64'd12345678901234567890;  // Would lose accuracy if calculated in double
   // verilator lint_on REALCVT
+  // verilator lint_on TIMEPRECTRUNC
 
   always @ (posedge clk) begin
     cyc <= cyc + 1;

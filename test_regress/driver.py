@@ -2089,7 +2089,9 @@ class VlTest:
             else:  # Future: support numeric exit code?
                 self.error("fails=" + str(fails) + " is not legal value")
         if fails and not status:
-            self.error("Exec of " + self._error_cmd_simplify(cmd) + " ok, but expected to fail")
+            if fails != 'ignore':
+                self.error("Exec of " + self._error_cmd_simplify(cmd) +
+                           " ok, but expected to fail")
         if self.errors or self._skips:
             return False
 
@@ -2775,6 +2777,57 @@ class VlTest:
                         self.error(self.top_filename + ":" + str(flineno) +
                                    ": Unknown CHECK request: " + line)
 
+    def op_count_read(self, filename: str) -> dict:
+        """Read operation counts from given __stats filename, return dict for op_count_ok."""
+        op_dict = {}
+        with open(filename, 'r', encoding="utf8") as fh:
+            for m in re.finditer(r'Stage, Operation count, (\S+)\s+([0-9.]+)', fh.read()):
+                m_v = float(m.group(2))
+                op_dict[m.group(1)] = m_v
+        if not op_dict:
+            self.error_keep_going("Operation counts not found in " + filename)
+        op_dict['_FILENAME'] = filename  # Hack to avoid making structure
+        return op_dict
+
+    def op_count_ok(self, op_dict_a: dict, op_dict_b: dict, min_ratio: float, max_ratio: float,
+                    key_re: str) -> None:
+        """Given two outputs from op_count_read, return scale factor or 0.0 if no data.
+        If given min_ratio > got_ratio > given max_ratio, give an error.
+        Only use keys matching key_re matches for collecting results."""
+        worse_ratio = 0.0
+        worse_key = None
+        for k in sorted(op_dict_a.keys()):
+            if k == '_FILENAME':
+                continue
+            a_v = op_dict_a[k]
+            b_v = op_dict_b[k]
+            if not a_v or not b_v:
+                continue
+            ratio = b_v / a_v
+            if ratio > max_ratio:
+                print(f"- op_count_ok note ratio {ratio:0.3f} in stage '{k}'" +
+                      f" counts {a_v:0.3f}:{b_v:0.3f}")
+            # Ignore equals as means didn't change anything or e.g. no debug turned on
+            if a_v == b_v:
+                continue
+            if worse_ratio < ratio and re.search(key_re, k):
+                worse_ratio = ratio
+                worse_key = k
+
+        filename_a = op_dict_a['_FILENAME']
+        filename_b = op_dict_b['_FILENAME']
+        if not worse_key:
+            self.error_keep_going(
+                f"Operation counts didn't differ between {filename_a} {filename_b}")
+            self.error_keep_going("Perhaps verilator wasn't run with --debug?")
+            return
+        print(f"- op_count_ok got ratio of {worse_ratio:.3f}" +
+              f" at stage {worse_key} in {filename_a} {filename_b}")
+        if worse_ratio < min_ratio or worse_ratio > max_ratio:
+            self.error_keep_going(
+                f"Operation count scaled incorrectly with design size at stage '{worse_key}', " +
+                f"got ratio {worse_ratio:.3f} expected {min_ratio:.3f}..{max_ratio:.3f}")
+
     @staticproperty
     def cfg_with_ccache() -> bool:  # pylint: disable=no-method-argument
         if VlTest._cached_cfg_with_ccache is None:
@@ -2848,6 +2901,9 @@ class VlTest:
         for filename in filenames:
             msg += filename + "\n"
         self.error(msg)
+
+    def file_cache_clear(self) -> None:
+        self._file_contents_cache = {}
 
     def file_contents(self, filename: str) -> str:
         if filename not in self._file_contents_cache:

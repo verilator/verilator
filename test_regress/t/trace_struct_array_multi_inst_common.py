@@ -64,8 +64,6 @@ def run(test):
         f"--{mode}",
         f"--trace-{fmt}",
         "--trace-structs",
-        "--output-split-ctrace",
-        "10",
     ]
 
     test.compile(verilator_flags2=flags)

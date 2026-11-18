@@ -82,6 +82,7 @@
 #include "V3LinkLValue.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
+#include "V3PreShell.h"
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"
@@ -412,6 +413,7 @@ class WidthVisitor final : public VNVisitor {
         m_unpackedConversionDTypes;
     ContainingClassFinder m_containingClassFinder;  // Finds the class containing a node
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
+    std::unordered_set<const AstVar*> m_seqUntypedFormals;  // Untyped formals of current sequence
     std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
 
     static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
@@ -695,6 +697,31 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstTimeD* nodep) override { nodep->dtypeSetDouble(); }
     void visit(AstTimePrecision* nodep) override { nodep->dtypeSetInteger2State(); }
     void visit(AstGetInitialRandomSeed* nodep) override { nodep->dtypeSetInt(); }
+    void visit(AstCoverageControl* nodep) override {
+        // VL_COVERAGE_CONTROL checks the other arguments when called
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* newp;
+        if (!v3Global.opt.coverage()) {
+            // Without coverage the model has no coverage runtime to call
+            newp = new AstConst{fl, AstConst::Signed32{}, VSvCov::SV_COV_NOCOV};
+        } else if (!nodep->rootInstance()) {
+            newp = new AstConst{fl, AstConst::Signed32{}, VSvCov::SV_COV_ERROR};
+        } else {
+            iterateCheckSigned32(nodep, "control", nodep->controlp(), BOTH);
+            iterateCheckSigned32(nodep, "coverage type", nodep->coverageTypep(), BOTH);
+            iterateCheckSigned32(nodep, "scope", nodep->scopeDefp(), BOTH);
+            AstCFuncHard* const callp
+                = new AstCFuncHard{fl, VCFunction::COVERAGE_CONTROL,
+                                   new AstCExpr{fl, "vlSymsp->_vm_contextp__->coveragep()"}};
+            callp->addPinsp(nodep->controlp()->unlinkFrBack());
+            callp->addPinsp(nodep->coverageTypep()->unlinkFrBack());
+            callp->addPinsp(nodep->scopeDefp()->unlinkFrBack());
+            callp->dtypeSetInt();
+            newp = callp;
+        }
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstTimeUnit* nodep) override {
         nodep->replaceWith(
             new AstConst{nodep->fileline(), AstConst::Signed32{}, nodep->timeunit().powerOfTen()});
@@ -2760,7 +2787,12 @@ class WidthVisitor final : public VNVisitor {
         const double timePrescale = constp->num().toDouble();
         UASSERT_OBJ(!v3Global.rootp()->timeprecision().isNone(), nodep, "Never set precision?");
         const double time = timePrescale / nodep->timeunit().multiplier();
-        // IEEE claims you should round to time precision here, but no simulator seems to do this
+        const VTimescale prec = v3Global.rootp()->timeprecision();
+        const double precTicks = timePrescale / prec.multiplier();
+        if (!V3Number::epsilonEqual(precTicks, std::round(precTicks)))
+            nodep->v3warn(TIMEPRECTRUNC, "Time literal is not a multiple of time precision '"
+                                             << prec.ascii() << "'");
+        // IEEE claims you should round to time precision here, but most simulators do not
         AstConst* const newp = new AstConst{nodep->fileline(), AstConst::RealDouble{}, time};
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -3730,17 +3762,25 @@ class WidthVisitor final : public VNVisitor {
     }
     // True if a bit-stream type (IEEE 1800-2023 6.24.3), assuming a class is one, and if 'dest',
     // one without an associative array or class, as these are illegal in a destination type
-    static bool isBitstreamDType(const AstNodeDType* dtypep, const bool dest) {
+    static bool isBitstreamDType(const AstNodeDType* const dtypep, const bool dest) {
+        std::unordered_set<const AstStructDType*> checked;
+        return isBitstreamDTypeRecurse(dtypep, dest, checked);
+    }
+    // A struct type can be shared by many members, so each is checked once. A struct seen again
+    // passed its first check, as any failure ends the whole check.
+    static bool isBitstreamDTypeRecurse(const AstNodeDType* dtypep, const bool dest,
+                                        std::unordered_set<const AstStructDType*>& checked) {
         dtypep = dtypep->skipRefp();
         if (const AstStructDType* const sdtypep = VN_CAST(dtypep, StructDType)) {
+            if (!checked.emplace(sdtypep).second) return true;
             for (const AstMemberDType* const memberp : sdtypep->memberspList()) {
-                if (!isBitstreamDType(memberp->subDTypep(), dest)) return false;
+                if (!isBitstreamDTypeRecurse(memberp->subDTypep(), dest, checked)) return false;
             }
             return true;
         }
         const bool assoc = VN_IS(dtypep, AssocArrayDType) || VN_IS(dtypep, WildcardArrayDType);
         if (dtypep->isNonPackedArray() || assoc) {
-            return !(dest && assoc) && isBitstreamDType(dtypep->subDTypep(), dest);
+            return !(dest && assoc) && isBitstreamDTypeRecurse(dtypep->subDTypep(), dest, checked);
         }
         return dtypep->isIntegralOrPacked() || dtypep->isString()
                || (!dest && VN_IS(dtypep, ClassRefDType));
@@ -4185,6 +4225,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3error("Assigning to const ref variable: " << nodep->prettyNameQ());
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isInput()
                    && !nodep->varp()->isFuncLocal() && nodep->varp()->isReadOnly()
+                   && !m_seqUntypedFormals.count(nodep->varp())
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
                    && !VN_IS(m_writerp, AssignForce) && !VN_IS(m_writerp, Release)) {
@@ -5201,6 +5242,10 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstCMethodHard* nodep) override {
         // Never created before V3Width, so no need to redo it
         UASSERT_OBJ(nodep->dtypep(), nodep, "CMETHODCALLs should have already been sized");
+    }
+    void visit(AstCFuncHard* nodep) override {
+        // Never created before V3Width, so no need to redo it
+        UASSERT_OBJ(nodep->dtypep(), nodep, "CFUNCHARDs should have already been sized");
     }
 
     void visit(AstMethodCall* nodep) override {
@@ -8703,8 +8748,7 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
         nodep->doingWidth(true);
-        // Temporaries made for the body are property-local variables, promoted per instance by
-        // V3AssertPre/V3AssertNfa
+        // Temporaries made for the body are property-local variables, promoted per instance
         VL_RESTORER(m_propertyp);
         m_propertyp = nodep;
         userIterateAndNext(nodep->declsp(), nullptr);
@@ -8716,12 +8760,20 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSequence* nodep) override {
         // IEEE 1800-2023 16.7 (sequence declarations), 16.8 (sequence instances)
         // Width-check the sequence body so expressions are typed for later inlining.
-        // Referenced sequences in assertion context will be inlined by V3AssertPre.
         if (nodep->didWidth()) return;
+        // An untyped formal may be assigned when its actual is a local variable
+        // (IEEE 1800-2023 16.8.1, 16.10)
+        VL_RESTORER_COPY(m_seqUntypedFormals);
+        m_seqUntypedFormals.clear();
+        for (AstNode* const declp : nodep->declspList()) {
+            const AstVar* const varp = VN_CAST(declp, Var);
+            if (!varp || !varp->isInput()) continue;
+            const AstBasicDType* const basicp = VN_CAST(varp->childDTypep(), BasicDType);
+            if (basicp && basicp->implicit()) m_seqUntypedFormals.insert(varp);
+        }
         userIterateAndNext(nodep->declsp(), nullptr);
         iterateCheckSelf(nodep, "SeqBody", nodep->exprp(), SELF, BOTH);
         nodep->didWidth(true);
-        // Keep all sequences for now; cleanup happens after V3AssertPre inlining.
     }
     void visit(AstSchemaRef* nodep) override {
         if (nodep->didWidth()) return;
@@ -12191,6 +12243,27 @@ public:
         // Check width of stream and wrap if needed
         if (AstNodeStream* const streamp = VN_CAST(nodep->rhsp(), NodeStream)) {
             AstNodeDType* const lhsDTypeSkippedRefp = lhsDTypep->skipRefp();
+            const bool bitstream = isBitstreamDType(lhsDTypeSkippedRefp, false);
+            if (!bitstream || !isBitstreamDType(lhsDTypeSkippedRefp, true)) {
+                if (!bitstream) {
+                    nodep->v3error("Streaming concatenation assigned to "
+                                   << lhsDTypeSkippedRefp->prettyDTypeNameQ() << ", but "
+                                   << lhsDTypeSkippedRefp->prettyDTypeNameQ()
+                                   << " is not a bit-stream type (IEEE 1800-2023 11.4.14).");
+                } else {
+                    nodep->v3error("Streaming concatenation assigned to "
+                                   << lhsDTypeSkippedRefp->prettyDTypeNameQ()
+                                   << ", but an associative array or class is illegal in the"
+                                      " destination type (IEEE 1800-2023 6.24.3).");
+                }
+                AstConst* const newp
+                    = new AstConst{streamp->fileline(), AstConst::BitFalseErroring{}};
+                newp->dtypeFrom(lhsDTypep);
+                newp->didWidth(true);
+                streamp->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(streamp), streamp);
+                return;
+            }
             const int lwidth = lhsDTypeSkippedRefp->widthStream();
             const int rwidth = streamp->lhsp()->dtypep()->skipRefp()->widthStream();
             if (lwidth != 0 && lwidth < rwidth) {
@@ -12200,7 +12273,7 @@ public:
                                        << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
             }
             if (VN_IS(streamp->lhsp()->dtypep()->skipRefp(), QueueDType)
-                && !VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
+                && !lhsDTypeSkippedRefp->isDynamicallySized()) {
                 const int queueElementSize = streamp->lhsp()->dtypep()->subDTypep()->width();
                 UASSERT_OBJ(queueElementSize <= lwidth, nodep, "LHS < RHS");
             }

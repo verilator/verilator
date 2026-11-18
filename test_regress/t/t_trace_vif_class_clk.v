@@ -11,6 +11,15 @@ interface clk_iface;
   bit clk;
 endinterface
 
+// Interface containing a sub-interface, only accessed through the containing interface
+interface sub_iface;
+  bit clk;
+endinterface
+
+interface top_iface;
+  sub_iface sub ();
+endinterface
+
 class clk_driver;
   virtual clk_iface vif;
   function new(virtual clk_iface vif);
@@ -23,14 +32,30 @@ class clk_driver;
   endtask
 endclass
 
+// Writes a sub-interface member through a chained virtual interface select
+class sub_toggler;
+  virtual top_iface vif;
+  function new(virtual top_iface vif);
+    this.vif = vif;
+  endfunction
+
+  function void toggle();
+    vif.sub.clk = ~vif.sub.clk;
+  endfunction
+endclass
+
 module t;
   clk_iface ci ();
   clk_driver drv;
+  top_iface ti ();
+  sub_toggler tog;
 
   int x = 0;
   always @(posedge ci.clk) x = x + 1;
+  always @(negedge ci.clk) tog.toggle();
 
   initial begin
+    tog = new(ti);
     drv = new(ci);
     drv.run();
   end

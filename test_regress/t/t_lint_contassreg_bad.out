@@ -1,6 +1,26 @@
-%Error-CONTASSREG: t/t_lint_contassreg_bad.v:16:10: Continuous assignment to reg, perhaps intended wire (IEEE 1364-2005 6.1; Verilog only, legal in SV): 'r'
+%Error-CONTASSREG: t/t_lint_contassreg_bad.v:19:10: Continuous assignment to reg, perhaps intended wire (IEEE 1364-2005 6.1; Verilog only, legal in SV): 'r'
                                                   : ... note: In instance 't'
-   16 |   assign r = 1'b0;   
+   19 |   assign r = 1'b0;   
       |          ^
                    ... For error description see https://verilator.org/warn/CONTASSREG?v=latest
+%Error-CONTASSREG: t/t_lint_contassreg_bad.v:27:10: Continuous assignment to reg, perhaps intended wire (IEEE 1364-2005 6.1; Verilog only, legal in SV): 'rr'
+                                                  : ... note: In instance 't'
+   27 |   assign rr = 1'b0;   
+      |          ^~
+%Error-CONTASSREG: t/t_lint_contassreg_bad.v:28:10: Continuous assignment to reg, perhaps intended wire (IEEE 1364-2005 6.1; Verilog only, legal in SV): 'ri'
+                                                  : ... note: In instance 't'
+   28 |   assign ri = 0;   
+      |          ^~
+%Error-CONTASSREG: t/t_lint_contassreg_bad.v:51:10: Continuous assignment to reg, perhaps intended wire (IEEE 1364-2005 6.1; Verilog only, legal in SV): 'a'
+                                                  : ... note: In instance 't.sub'
+   51 |   assign a = 1'b0;   
+      |          ^
+%Error-CONTASSREG: t/t_lint_contassreg_bad.v:52:10: Continuous assignment to reg, perhaps intended wire (IEEE 1364-2005 6.1; Verilog only, legal in SV): 'b'
+                                                  : ... note: In instance 't.sub'
+   52 |   assign b = 1'b0;   
+      |          ^
+%Error-CONTASSREG: t/t_lint_contassreg_bad.v:56:10: Continuous assignment to reg, perhaps intended wire (IEEE 1364-2005 6.1; Verilog only, legal in SV): 'f'
+                                                  : ... note: In instance 't.sub'
+   56 |   assign f = 0;   
+      |          ^
 %Error: Exiting due to

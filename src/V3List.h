@@ -21,6 +21,7 @@
 #include "verilatedos.h"
 
 #include "V3Error.h"
+#include "V3Global.h"
 
 #include <type_traits>
 #include <utility>
@@ -124,6 +125,7 @@ class V3List final {
         T_IteratorElement& operator*() const {
             UDEBUGONLY(UASSERT(m_currp, "Dereferencing end of list iterator"););
             prefetch(step(m_currp), m_currp);
+            V3Global::opCountInc();
             return *static_cast<T_IteratorElement*>(m_currp);
         }
         // Pre increment
@@ -195,6 +197,7 @@ class V3List final {
             T_IteratorElement* operator*() const {
                 UDEBUGONLY(UASSERT(m_currp, "Dereferencing end of list iterator"););
                 prefetch(m_nextp, m_currp);
+                V3Global::opCountInc();
                 return static_cast<T_IteratorElement*>(m_currp);
             }
             // Pre increment - Keeps hold of current next pointer.

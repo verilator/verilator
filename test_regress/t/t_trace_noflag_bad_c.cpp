@@ -16,8 +16,8 @@ int main(int argc, char** argv) {
     contextp->traceEverOn(true);
     std::unique_ptr<VerilatedVcdC> tfp{new VerilatedVcdC};
     const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get()}};
-    topp->trace(tfp.get(), 99);  // Error!
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/dump.vcd");  // Error! shall put to the next line!
+    topp->trace(tfp.get(), 99);
+    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/dump.vcd");  // Error!
     tfp->dump(0);
     tfp->close();
     return 0;

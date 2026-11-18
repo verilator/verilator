@@ -34,10 +34,8 @@
 #include "V3Const.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
-#include "V3Task.h"
 #include "V3UniqueNames.h"
 
-#include <set>
 #include <unordered_set>
 #include <vector>
 
@@ -312,6 +310,15 @@ static AstNodeStmt* newIfAssertFailOn(AstNodeStmt* bodyp, VAssertDirectiveType d
     return ifp;
 }
 
+static AstAlways* newAssertAlways(FileLine* flp, VAlwaysKwd kwd, AstSenTree* sentreep,
+                                  AstNodeStmt* bodyp) {
+    AstAlways* const alwaysp = new AstAlways{flp, kwd, sentreep, bodyp};
+    alwaysp->foreach([](AstNodeVarRef* nodep) {
+        nodep->fileline()->modifyWarnOff(V3ErrorCode::SYNCASYNCNET, true);
+    });
+    return alwaysp;
+}
+
 //######################################################################
 // NFA Builder
 
@@ -325,7 +332,8 @@ class SvaNfaBuilder final {
     std::vector<AstNodeExpr*> m_outerAbortStack;
     bool m_inUnboundedScope = false;  // Sticky: nodes created after inherit liveness
     bool m_markStrongPending = false;  // Mark new vertices as strong s_always in-window
-    bool m_isCover = false;  // Cover directives do not fail at end-of-simulation
+    // A cover only records matches, so a pending obligation at $finish is not a failure
+    bool m_noEosFailure = false;
     // IEEE 1800-2023 16.14.3 cover sequence: each end-of-match fires the action,
     // not just the first. Builder builds parallel-branch (no first-match-wins)
     // topology when true. Default false preserves cover_property semantics.
@@ -519,7 +527,7 @@ class SvaNfaBuilder final {
         m_modp->addStmtsp(tempVarp);
         AstAssign* const assignp = new AstAssign{flp, new AstVarRef{flp, tempVarp, VAccess::WRITE},
                                                  sampled(exprp->cloneTreePure(false))};
-        m_modp->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS_COMB, nullptr, assignp});
+        m_modp->addStmtsp(newAssertAlways(flp, VAlwaysKwd::ALWAYS_COMB, nullptr, assignp));
         return tempVarp;
     }
 
@@ -885,7 +893,7 @@ class SvaNfaBuilder final {
         // not flagged; an attempt whose final tick coincides with $finish is still
         // flagged, matching the strong reference. Weak always[m:n] is not marked.
         VL_RESTORER(m_markStrongPending);
-        m_markStrongPending = nodep->isStrong();
+        m_markStrongPending = nodep->isStrong() && !m_noEosFailure;
         // Check the first in-window tick, then reuse a guarded fixed-delay ring
         // for the remaining ticks instead of creating one state per cycle.
         SvaStateVertex* currentp = addDelayChain(entryVtxp, lo, flp);
@@ -1417,7 +1425,7 @@ class SvaNfaBuilder final {
         SvaStateVertex* const waitCp = scopedCreateVertex();
         SvaStateVertex* const waitRp = scopedCreateVertex();
         waitCp->m_isUnbounded = true;
-        waitRp->m_strongPending = nodep->isStrong() && !m_isCover;
+        waitRp->m_strongPending = nodep->isStrong() && !m_noEosFailure;
 
         // Entry and back-loop Links carry no condition; throughout-folding still applies.
         guardedLink(entryVtxp, waitCp, flp);
@@ -1613,11 +1621,11 @@ public:
     }
 
     SvaNfaBuilder(SvaGraph& graph, AstNodeModule* modp, V3UniqueNames& propTempNames,
-                  bool isCoverSeq = false, bool isSeqEvent = false, bool isCover = false)
+                  bool isCoverSeq = false, bool isSeqEvent = false, bool noEosFailure = false)
         : m_graph{graph}
         , m_modp{modp}
         , m_propTempNames{propTempNames}
-        , m_isCover{isCover}
+        , m_noEosFailure{noEosFailure}
         , m_isCoverSeq{isCoverSeq}
         , m_isSeqEvent{isSeqEvent} {}
 
@@ -1951,13 +1959,13 @@ class SvaNfaLowering final {
     // Callers pass a null clearp when the disable cannot rise between clock events.
     void addStateAlways(LowerCtx& c, AstNodeStmt* bodyp, AstNodeStmt* clearp) {
         m_modp->addStmtsp(
-            new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), bodyp});
+            newAssertAlways(c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), bodyp));
         if (!clearp) return;
-        m_modp->addStmtsp(new AstAlways{
+        m_modp->addStmtsp(newAssertAlways(
             c.flp, VAlwaysKwd::ALWAYS,
             new AstSenTree{c.flp, new AstSenItem{c.flp, VEdgeType::ET_POSEDGE,
                                                  c.disableExprp->cloneTreePure(false)}},
-            clearp});
+            clearp));
     }
 
     // Phase 2/2b/2c: Emit NBA register updates and in-place delay-ring writes.
@@ -2224,7 +2232,7 @@ class SvaNfaLowering final {
             = new AstAssignDly{c.flp, new AstVarRef{c.flp, c.killVarp, VAccess::WRITE},
                                assertKillGet(c.flp, c.assertType, c.directiveType)};
         m_modp->addStmtsp(
-            new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), ackp});
+            newAssertAlways(c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), ackp));
     }
 
     // Phase 3/3a/3b: Compute terminal match/reject signals, required-step reject,
@@ -2456,8 +2464,8 @@ class SvaNfaLowering final {
 
         if (sigs.matchCountOverflowp) {
             m_modp->addStmtsp(
-                new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false),
-                              newCountOverflowWarning(c.flp, sigs.matchCountOverflowp)});
+                newAssertAlways(c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false),
+                                newCountOverflowWarning(c.flp, sigs.matchCountOverflowp)));
             sigs.matchCountOverflowp = nullptr;
         }
 
@@ -2896,11 +2904,18 @@ public:
             AstCExpr* const assertOnp
                 = new AstCExpr{flp, AstCExpr::Pure{}, "vlSymsp->_vm_contextp__->assertOn()", 1};
             AstNodeExpr* const condp = new AstLogAnd{flp, assertOnp, pendingp};
-            AstDisplay* const dispp
-                = new AstDisplay{flp, VDisplayType::DT_ERROR, "", nullptr, nullptr};
-            dispp->fmtp()->timeunit(m_modp->timeunit());
-            AstNodeStmt* const firep = dispp;
-            if (v3Global.opt.stopFail()) firep->addNext(new AstStop{flp, false});
+            // The action block belongs to the directive (IEEE 1800-2023 16.14.6)
+            AstNodeStmt* firep;
+            AstAssert* const assertNodep = VN_CAST(assertp, Assert);
+            if (AstNodeStmt* const failsp = assertNodep ? assertNodep->failsp() : nullptr) {
+                firep = failsp->cloneTree(true);
+            } else {
+                AstDisplay* const dispp
+                    = new AstDisplay{flp, VDisplayType::DT_ERROR, "", nullptr, nullptr};
+                dispp->fmtp()->timeunit(m_modp->timeunit());
+                firep = dispp;
+                if (v3Global.opt.stopFail()) firep->addNext(new AstStop{flp, false});
+            }
             m_modp->addStmtsp(new AstFinal{flp, new AstIf{flp, condp, firep}});
         }
 
@@ -2922,10 +2937,8 @@ class AssertNfaVisitor final : public VNVisitor {
     AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff
     SvaNfaLowering* m_loweringp = nullptr;  // NFA-to-hardware lowering engine
     AstSenTree* m_sampledValueClockp = nullptr;  // Inherited clock during scoped attachment
-    V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable names
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
     V3UniqueNames m_failCountNames{"__VnfaRemainingFailCount"};  // Fail replay counter names
-    std::set<const AstProperty*> m_inliningProps;  // Recursion guard for inlineNamedProperty
 
     template <typename T_Node>
     void visitSampledValue(T_Node* const nodep) {
@@ -2950,125 +2963,6 @@ class AssertNfaVisitor final : public VNVisitor {
             }
             graph.addLink(srcVtxp, graph.m_matchVertexp, condp);
             srcVtxp->m_isUnbounded = true;
-        }
-    }
-
-    void inlineNamedProperty(AstPropSpec* outerSpecp, AstSchemaRef* schemaRefp,
-                             const AstProperty* propyp) {
-        // Recursion guard: IEEE 1800-2023 16.12.1 forbids recursive properties.
-        // V3Width emits "Recursive property call" for direct recursion before this
-        // pass runs; this catches any nested-inlining cycle that slips past.
-        if (!m_inliningProps.emplace(propyp).second) {
-            schemaRefp->v3error("Illegal recursive property reference");  // LCOV_EXCL_LINE
-            return;  // LCOV_EXCL_LINE
-        }
-        struct Guard final {
-            std::set<const AstProperty*>& setr;
-            const AstProperty* keyp;
-            ~Guard() { setr.erase(keyp); }
-        } guard{m_inliningProps, propyp};
-        AstPropSpec* const propSpecp = propyp->specp()->cloneTree(false);
-
-        const V3TaskConnects tconnects = V3Task::taskConnects(schemaRefp);
-        std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
-        for (const auto& tconnect : tconnects) {
-            portMap[tconnect.first] = tconnect.second->exprp();
-        }
-
-        // Promote property-local variables to module-level temps (IEEE 16.10).
-        std::unordered_map<const AstVar*, AstVar*> localVarMap;
-        for (AstNode* const declp : propyp->declspList()) {
-            if (AstVar* const varp = VN_CAST(declp, Var)) {
-                if (!varp->isIO()) {
-                    const string newName = m_propVarNames.get(varp);
-                    AstVar* const newVarp = new AstVar{varp->fileline(), VVarType::MODULETEMP,
-                                                       newName, varp->dtypep()};
-                    newVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-                    m_modp->addStmtsp(newVarp);
-                    localVarMap[varp] = newVarp;
-                }
-            }
-        }
-
-        propSpecp->foreach([&](AstVarRef* refp) {
-            const auto portIt = portMap.find(refp->varp());
-            if (portIt != portMap.end()) {
-                refp->replaceWith(portIt->second->cloneTree(false));
-                VL_DO_DANGLING(pushDeletep(refp), refp);
-                return;
-            }
-            const auto localIt = localVarMap.find(refp->varp());
-            if (localIt != localVarMap.end()) refp->varp(localIt->second);
-        });  // LCOV_EXCL_LINE -- gcov attributes lambda's implicit return to `})`
-
-        for (const auto& tconnect : tconnects) {
-            pushDeletep(tconnect.second->exprp()->unlinkFrBack());
-        }
-        V3AssertCommon::checkSvaInstanceDelays(propSpecp, schemaRefp);
-
-        // Merge disable iff (IEEE 1800-2023 16.12.1)
-        if (outerSpecp->disablep() && propSpecp->disablep()) {
-            outerSpecp->v3error("disable iff expression before property call "
-                                "and in its body is not legal");
-            pushDeletep(propSpecp->disablep()->unlinkFrBack());
-        }
-        if (outerSpecp->disablep()) {
-            propSpecp->disablep(outerSpecp->disablep()->unlinkFrBack());
-        }
-
-        if (outerSpecp->sensesp() && propSpecp->sensesp()) {
-            outerSpecp->v3warn(E_UNSUPPORTED,
-                               "Unsupported: Clock event before property call and in its body");
-            pushDeletep(propSpecp->sensesp()->unlinkFrBack());
-        }
-        if (outerSpecp->sensesp()) {
-            AstSenItem* const sensesp = outerSpecp->sensesp();
-            sensesp->unlinkFrBack();
-            propSpecp->sensesp(sensesp);
-        }
-
-        outerSpecp->replaceWith(propSpecp);
-        VL_DO_DANGLING(pushDeletep(outerSpecp), outerSpecp);
-    }
-
-    void inlineSequenceRef(AstSchemaRef* schemaRefp, AstSequence* seqp) {
-        AstNodeExpr* const clonedp = seqp->exprp()->cloneTree(false);
-
-        const V3TaskConnects tconnects = V3Task::taskConnects(schemaRefp);
-        std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
-        for (const auto& tconnect : tconnects) {
-            portMap[tconnect.first] = tconnect.second->exprp();
-        }
-        clonedp->foreach([&](AstVarRef* refp) {
-            const auto it = portMap.find(refp->varp());
-            if (it != portMap.end()) {
-                refp->replaceWith(it->second->cloneTree(false));
-                VL_DO_DANGLING(pushDeletep(refp), refp);
-            }
-        });
-        for (const auto& tconnect : tconnects) {
-            pushDeletep(tconnect.second->exprp()->unlinkFrBack());
-        }
-        V3AssertCommon::checkSvaInstanceDelays(clonedp, schemaRefp);
-        schemaRefp->replaceWith(clonedp);
-        VL_DO_DANGLING(pushDeletep(schemaRefp), schemaRefp);
-        // Clear referenced flag so V3AssertPre cleanup does not emit
-        // spurious UNSUPPORTED for sequences that were already inlined here.
-        seqp->isReferenced(false);
-    }
-
-    // Must run before hasMultiCycleExpr() so NFA sees sequence bodies.
-    void inlineAllSequenceRefs(AstNode* rootp) {
-        bool changed = true;
-        while (changed) {
-            changed = false;
-            rootp->foreach([&](AstSchemaRef* schemaRefp) {
-                if (changed) return;
-                if (AstSequence* const seqp = VN_CAST(schemaRefp->schemap(), Sequence)) {
-                    inlineSequenceRef(schemaRefp, seqp);
-                    changed = true;
-                }
-            });
         }
     }
 
@@ -3268,7 +3162,7 @@ class AssertNfaVisitor final : public VNVisitor {
                               decrementedFailCountp});
             replayStmtsp->addNext(replayLoopp);
             m_modp->addStmtsp(
-                new AstAlways{flp, VAlwaysKwd::ALWAYS, threadFailReplaySenTreep, replayStmtsp});
+                newAssertAlways(flp, VAlwaysKwd::ALWAYS, threadFailReplaySenTreep, replayStmtsp));
         }
     }
 
@@ -3418,20 +3312,14 @@ class AssertNfaVisitor final : public VNVisitor {
         return nullptr;
     }
 
-    // Inline property/sequence refs and reject unsupported shapes.
+    // Reject unsupported shapes.
     // Returns the PropSpec to lower, or nullptr when fully handled here.
     AstPropSpec* prepareAssertionProp(AstNodeCoverOrAssert* assertp) {
         if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
-            if (AstSchemaRef* const schemaRefp = VN_CAST(specp->propp(), SchemaRef)) {
-                if (const AstProperty* const propyp = VN_CAST(schemaRefp->schemap(), Property)) {
-                    inlineNamedProperty(specp, schemaRefp, propyp);
-                }
-            }
-        }
-
-        inlineAllSequenceRefs(assertp->propp());
-
-        if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
+            // Leave a chain of property instances to V3AssertPre: the NFA lowering
+            // reports one fail for attempts failing in the same cycle, e.g. after a goto
+            // repetition antecedent, but each attempt fails (IEEE 1800-2023 16.14.1).
+            if (specp->fromInstanceChain()) return nullptr;
             if (hoistClockedSeq(specp)) return nullptr;
         }
 
@@ -3445,15 +3333,6 @@ class AssertNfaVisitor final : public VNVisitor {
         }
 
         if (!hasMultiCycleExpr(propp)) return nullptr;
-        // A nested property instance keeps its body behind the call; lowering would drop it.
-        if (propp->exists(
-                [](const AstSchemaRef* refp) { return VN_IS(refp->schemap(), Property); })) {
-            assertp->v3warn(E_UNSUPPORTED,
-                            "Unsupported: property instance inside a multi-cycle property "
-                            "expression");
-            VL_DO_DANGLING(pushDeletep(assertp->unlinkFrBack()), assertp);
-            return nullptr;
-        }
         if (isBareTopLevelUntil(propp)) return nullptr;
         return propp;
     }
@@ -3512,6 +3391,10 @@ class AssertNfaVisitor final : public VNVisitor {
             VL_RESTORER(m_sampledValueClockp);
             m_sampledValueClockp = senTreep;
             iterate(propp->propp());
+            // The final block clones the action block, so resolve its clocks while in scope
+            if (AstAssert* const ap = VN_CAST(assertp, Assert)) {
+                iterateAndNextNull(ap->failsp());
+            }
         }
 
         FileLine* const flp = assertp->fileline();
