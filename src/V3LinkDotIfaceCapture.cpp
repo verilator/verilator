@@ -474,7 +474,7 @@ public:
 
 class VerifyNoDeadRefsVisitor final : public VNVisitor {
     const LiveNodes& m_liveNodes;
-    AstNodeModule* m_ownerModp = nullptr; // Closest NodeModule on the path to the root
+    AstNodeModule* m_ownerModp = nullptr;  // Closest NodeModule on the path to the root
     bool m_inTypeTable = false;
 
     void checkLink(AstRefDType* refp, AstNode* targetp, const char* linkName) {
