@@ -449,8 +449,8 @@ using LiveNodes = std::unordered_set<const AstNode*>;
 // NODE STATE
 //  AstNode::user1p() -> AstNodeModule* owning the node during verifyNoDeadRefs()
 class LiveNodeOwnerVisitor final : public VNVisitor {
-    LiveNodes& m_liveNodes;
-    AstNodeModule* m_ownerModp = nullptr;
+    LiveNodes& m_liveNodes;  // Set of live nodes being filled
+    AstNodeModule* m_ownerModp = nullptr;  // Closest NodeModule on the path to the root
 
     void visit(AstNode* nodep) override {
         m_liveNodes.insert(nodep);
@@ -473,9 +473,9 @@ public:
 };
 
 class VerifyNoDeadRefsVisitor final : public VNVisitor {
-    const LiveNodes& m_liveNodes;
+    const LiveNodes& m_liveNodes;  // Set of live nodes
     AstNodeModule* m_ownerModp = nullptr;  // Closest NodeModule on the path to the root
-    bool m_inTypeTable = false;
+    bool m_inTypeTable = false;  // flag signaling that visitor has entered type table
 
     void checkLink(AstRefDType* refp, AstNode* targetp, const char* linkName) {
         const bool targetIsLive = m_liveNodes.count(targetp);
