@@ -13,5 +13,4 @@ test.scenarios('linter')
 
 test.lint(verilator_flags2=['--assert'], fails=True, expect_filename=test.golden_filename)
 
-
 test.passes()
