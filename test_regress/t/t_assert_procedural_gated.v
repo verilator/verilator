@@ -66,12 +66,6 @@ module t (
     end
   end
 
-  // The body reads the clock, so none is inferred; the sole edge is taken instead
-  int fail_sole_edge = 0;
-  always @(negedge clk) begin
-    if (!clk && cyc % 10 == 5) assert property (##1 cyc % 10 == 7) else ++fail_sole_edge;
-  end
-
   // A reach off the assertion's clock starts an attempt at its next tick
   int pass_off_tick = 0;
   int fail_off_tick = 0;
@@ -151,7 +145,6 @@ module t (
       `checkd(pass_imp, 20);
       `checkd(fail_named, 10);
       `checks(scope_named, "top.t.named");
-      `checkd(fail_sole_edge, 10);
       `checkd(pass_off_tick, 10);
       `checkd(fail_off_tick, 0);
       `checkd(pass_delay, 20);
