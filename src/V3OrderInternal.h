@@ -30,7 +30,7 @@
 class AstVarScope;
 
 namespace V3Sched {
-class LogicByScope;
+class ProcessList;
 };  // namespace V3Sched
 
 //============================================================================
@@ -39,7 +39,7 @@ namespace V3Order {
 
 std::unique_ptr<OrderGraph> buildOrderGraph(const V3Sched::TriggerKit& trigKit,  //
                                             AstVarScope* trigVscp,  //
-                                            const std::vector<V3Sched::LogicByScope*>& coll,  //
+                                            const std::vector<V3Sched::ProcessList*>& coll,  //
                                             const V3Sched::CovergroupRefBindings& cgRefBindings,
                                             bool parallel);
 
