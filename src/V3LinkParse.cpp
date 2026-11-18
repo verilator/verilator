@@ -851,6 +851,17 @@ class LinkParseVisitor final : public VNVisitor {
     }
     void visit(AstWait* nodep) override {
         cleanFileline(nodep);
+        nodep->condp()->foreach([](AstExprStmt* exprstmtp) {
+            for (AstNode* const stmtp : exprstmtp->stmtspList()) {
+                if (AstNodeAssign* const assignp = VN_CAST(stmtp, NodeAssign)) {
+                    assignp->v3error("Assignment operator not allowed in a wait statement "
+                                     "condition (IEEE 1800-2023 11.3.6)\n"
+                                     << assignp->warnMore()
+                                     << "... Suggest use '==' to compare, or move the assignment"
+                                        " out of the wait condition");
+                }
+            }
+        });
         iterateChildren(nodep);
         if (nodep->condp()->isZero()) {
             // Special case "wait(0)" we won't throw WAITCONST as user wrote

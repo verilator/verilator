@@ -1,0 +1,10 @@
+%Error: t/t_wait_assign_bad.v:14:16: Assignment operator not allowed in a wait statement condition (IEEE 1800-2023 11.3.6)
+                                   : ... Suggest use '==' to compare, or move the assignment out of the wait condition
+   14 |     wait ((foo = bar) == 23);
+      |                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_wait_assign_bad.v:16:16: Assignment operator not allowed in a wait statement condition (IEEE 1800-2023 11.3.6)
+                                   : ... Suggest use '==' to compare, or move the assignment out of the wait condition
+   16 |     wait ((foo += bar) == 23);
+      |                ^~
+%Error: Exiting due to
