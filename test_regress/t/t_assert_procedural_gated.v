@@ -82,6 +82,52 @@ module t (
     end
   end
 
+  // A first step entering a multi-cycle delay
+  int pass_delay = 0;
+  int fail_delay = 0;
+  int pass_delay_imp = 0;
+  always @(negedge clk) begin
+    if (cyc % 10 >= 2 && cyc % 10 <= 4)
+      assert property (cyc % 10 != 4 ##2 (cyc % 10 == 4 || cyc % 10 == 5)) ++pass_delay;
+      else ++fail_delay;
+    if (cyc % 10 == 2 || cyc % 10 == 3)
+      assert property (cyc % 10 == 2 |-> ##3 cyc % 10 == 5) ++pass_delay_imp;
+  end
+
+  // Attempts failing at the same tick each run the fail action
+  int pass_together = 0;
+  int fail_together = 0;
+  always @(negedge clk) begin
+    if (cyc % 10 == 1 || cyc % 10 == 3 || cyc % 10 == 4)
+      assert property (cyc % 10 != 5 throughout ##3 1) ++pass_together;
+      else ++fail_together;
+  end
+
+  int count_cover = 0;
+  always @(negedge clk) begin
+    if (cyc % 10 == 2 || cyc % 10 == 3) cover property (##2 cyc % 10 == 5) ++count_cover;
+  end
+
+  // A disable between ticks ends a pending attempt with no action
+  int pass_disable = 0;
+  int fail_disable = 0;
+  always @(negedge clk) begin
+    if (cyc % 10 == 2 || cyc % 10 == 5)
+      assert property (disable iff (cyc % 10 == 3) ##1 cyc % 10 != 9 ##1 cyc % 10 != 4)
+        ++pass_disable;
+      else ++fail_disable;
+  end
+
+  // Woken by the clock, an attempt starts at once; by the other event, at the next tick
+  wire evt = !(!clk && cyc % 10 == 3);
+  int pass_events = 0;
+  int fail_events = 0;
+  always @(posedge clk or negedge evt) begin
+    if (!evt || cyc % 10 == 6)
+      assert property (##1 (cyc % 10 == 4 || cyc % 10 == 7)) ++pass_events;
+      else ++fail_events;
+  end
+
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
     $write("[%0t] cyc==%0d crc=%x rst_l=%b req=%b gnt=%b gated=%0d ref=%0d\n", $time, cyc, crc,
@@ -108,6 +154,16 @@ module t (
       `checkd(fail_sole_edge, 10);
       `checkd(pass_off_tick, 10);
       `checkd(fail_off_tick, 0);
+      `checkd(pass_delay, 20);
+      `checkd(fail_delay, 10);
+      `checkd(pass_delay_imp, 20);
+      `checkd(pass_together, 10);
+      `checkd(fail_together, 20);
+      `checkd(count_cover, 10);
+      `checkd(pass_disable, 10);
+      `checkd(fail_disable, 0);
+      `checkd(pass_events, 20);
+      `checkd(fail_events, 0);
       $write("*-* All Finished *-*\n");
       $finish;
     end

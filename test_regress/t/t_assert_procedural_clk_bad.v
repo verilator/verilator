@@ -20,6 +20,9 @@ module t (
   // A reach cannot tell which event woke the procedure
   always @(negedge clk or cyc_copy) assert property (cyc[0] |=> cyc[1]);
 
+  // A ranged cycle delay entered in the first cycle
+  always @(negedge clk) if (cyc[0]) assert property (cyc[1] ##[0:2] cyc[2]);
+
   always @(posedge clk) begin
     if (cyc != 0) begin
       cyc <= cyc + 1;
