@@ -84,6 +84,8 @@ biggest review cost. Apply this while writing code, not only before submitting:
 - Less code does not mean terser code: do not trade clarity for brevity. Keep
   descriptive names, straightforward control flow, and comments that explain why,
   but brief and to the point -- do not explain behaviour obvious from the code.
+- Comments are best as one or two lines. They never describe previous behavior, PR
+  history, tests, or information replicated and better described in comments elsewhere.
 
 ## Build and run a test
 
@@ -107,7 +109,9 @@ ______________________________________________________________________
 - [ ] Every bug fix has a test that fails *without* the fix; include the issue's
   own reproducer when possible.
 - [ ] New code aims for 100% line coverage; branch coverage far below line coverage
-  signals guards callers never violate -- justify or remove them.
+  signals guards callers never violate -- justify or remove them. Do not use
+  `LCOV_EXCL` for reachable code: cover it with a test, or delete the dead branch
+  and use `UASSERT_OBJ` for the impossible case.
 - [ ] Followed "Write the least code that works": every new flag, guard, special
   case, or helper maintains an invariant the existing code does not already
   guarantee, and anything removable without a test failing is deleted.
@@ -123,11 +127,11 @@ ______________________________________________________________________
 
 ## Drafting a PR
 
-- [ ] Do not post a PR directly, a human in the loop is required. You may
+- Do not post a PR directly, a human in the loop is required. You may
   prepare the message for the PR, but then must ask the user to 1. manually
   clean up the issue text, and 2. post it manually.
 
-- [ ] When creating a pull request message, omit itemized lists of changed
+- When creating a pull request message, omit itemized lists of changed
   files and changes, since reviewers already have access to the diff.
 
 ## Pick the right diagnostic (and its required test)
@@ -152,18 +156,18 @@ The API you choose determines which test must accompany the change.
 
 ## Cross-cutting code rules
 
-- [ ] No non-ASCII characters in C++ sources or headers: write `--` (two ASCII
+- No non-ASCII characters in C++ sources or headers: write `--` (two ASCII
   hyphens) rather than a Unicode em-dash, and a plain `'` rather than a smart
   quote. At write time, not when CI complains.
-- [ ] Lists stay sorted: lexer/parser tokens, option declarations, enum values,
+- Lists stay sorted: lexer/parser tokens, option declarations, enum values,
   configure feature lists, documented option lists.
-- [ ] `bin/` scripts are Python (distributed cross-platform); `nodist/` may use
+- `bin/` scripts are Python (distributed cross-platform); `nodist/` may use
   bash and platform-specific code (developer-only, not packaged).
-- [ ] Runtime code in `include/` targets C++14 (`--no-timing` builds must work);
+- Runtime code in `include/` targets C++14 (`--no-timing` builds must work);
   C++20 only in timing code paths.
-- [ ] In `include/` public headers, prefix public classes with `Verilated`/`Vl`
+- In `include/` public headers, prefix public classes with `Verilated`/`Vl`
   and document the API with `///` comments.
-- [ ] A new code pattern is applied globally or not at all -- no one-off
+- A new code pattern is applied globally or not at all -- no one-off
   convention in a single file.
 
 ## Commits

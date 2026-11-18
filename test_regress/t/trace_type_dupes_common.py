@@ -18,7 +18,7 @@ def run(test):
         case "default":
             pass
         case "structs":
-            flags.extend(["--trace-structs", "--output-split-ctrace 10"])
+            flags.append("--trace-structs")
         case _:
             test.error(f"Unhandled test variant '{variant}'")
 

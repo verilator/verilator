@@ -413,6 +413,7 @@ class WidthVisitor final : public VNVisitor {
         m_unpackedConversionDTypes;
     ContainingClassFinder m_containingClassFinder;  // Finds the class containing a node
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
+    std::unordered_set<const AstVar*> m_seqUntypedFormals;  // Untyped formals of current sequence
     std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
 
     static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
@@ -2786,7 +2787,12 @@ class WidthVisitor final : public VNVisitor {
         const double timePrescale = constp->num().toDouble();
         UASSERT_OBJ(!v3Global.rootp()->timeprecision().isNone(), nodep, "Never set precision?");
         const double time = timePrescale / nodep->timeunit().multiplier();
-        // IEEE claims you should round to time precision here, but no simulator seems to do this
+        const VTimescale prec = v3Global.rootp()->timeprecision();
+        const double precTicks = timePrescale / prec.multiplier();
+        if (!V3Number::epsilonEqual(precTicks, std::round(precTicks)))
+            nodep->v3warn(TIMEPRECTRUNC, "Time literal is not a multiple of time precision '"
+                                             << prec.ascii() << "'");
+        // IEEE claims you should round to time precision here, but most simulators do not
         AstConst* const newp = new AstConst{nodep->fileline(), AstConst::RealDouble{}, time};
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -4219,6 +4225,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3error("Assigning to const ref variable: " << nodep->prettyNameQ());
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isInput()
                    && !nodep->varp()->isFuncLocal() && nodep->varp()->isReadOnly()
+                   && !m_seqUntypedFormals.count(nodep->varp())
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
                    && !VN_IS(m_writerp, AssignForce) && !VN_IS(m_writerp, Release)) {
@@ -8756,10 +8763,19 @@ class WidthVisitor final : public VNVisitor {
         // Width-check the sequence body so expressions are typed for later inlining.
         // Referenced sequences in assertion context will be inlined by V3AssertPre.
         if (nodep->didWidth()) return;
+        // An untyped formal may be assigned when its actual is a local variable
+        // (IEEE 1800-2023 16.8.1, 16.10)
+        VL_RESTORER_COPY(m_seqUntypedFormals);
+        m_seqUntypedFormals.clear();
+        for (AstNode* const declp : nodep->declspList()) {
+            const AstVar* const varp = VN_CAST(declp, Var);
+            if (!varp || !varp->isInput()) continue;
+            const AstBasicDType* const basicp = VN_CAST(varp->childDTypep(), BasicDType);
+            if (basicp && basicp->implicit()) m_seqUntypedFormals.insert(varp);
+        }
         userIterateAndNext(nodep->declsp(), nullptr);
         iterateCheckSelf(nodep, "SeqBody", nodep->exprp(), SELF, BOTH);
         nodep->didWidth(true);
-        // Keep all sequences for now; cleanup happens after V3AssertPre inlining.
     }
     void visit(AstSchemaRef* nodep) override {
         if (nodep->didWidth()) return;

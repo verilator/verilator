@@ -2752,6 +2752,8 @@ class LinkDotScopeVisitor final : public VNVisitor {
     VSymEnt* m_modSymp = nullptr;  // Symbol entry for current module
     // Deferred AliasScope processing - must be done outer-to-inner for correct alias resolution
     std::vector<std::pair<AstAliasScope*, VSymEnt*>> m_deferredAliasScopes;
+    std::vector<AstRtmdIfaceRef*> m_rtmdIfaceRefs;  // RtmdIfaceRefs to resolve at the end
+    std::vector<AstScope*> m_scopesWithRtmdp;  // Scopes with a rtmdp() set
 
     // METHODS
 public:
@@ -2843,6 +2845,7 @@ private:
             m_statep->insertIfaceModSym(ifacep, m_modSymp);
         }
         m_scopep = nodep;
+        if (nodep->rtmdp()) m_scopesWithRtmdp.push_back(nodep);
         iterateChildren(nodep);
     }
     void visit(AstVarScope* nodep) override {  // ScopeVisitor::
@@ -2929,6 +2932,10 @@ private:
         iterateChildren(nodep);
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
+    void visit(AstRtmdIfaceRef* nodep) override {  // ScopeVisitor::
+        // Defer until all alias scopes are resolved
+        m_rtmdIfaceRefs.push_back(nodep);
+    }
     void visit(AstAliasScope* nodep) override {  // ScopeVisitor::
         // Defer AliasScope processing - must process outer scopes before inner ones
         // so that nested interface port alias resolution works correctly
@@ -2995,6 +3002,23 @@ private:
         // We have stored the link, we don't need these any more
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
+    void processRtmdIfaceRefs() {
+        // Link each descriptor interface reference to the inlined scope of the target interface
+        for (AstRtmdIfaceRef* const nodep : m_rtmdIfaceRefs) {
+            AstVarScope* const vscp = nodep->refp()->varScopep();
+            const AstVarScope* const ifaceVscp = getAlias(vscp);
+            // The scope of the interface instance, which is never the top, so has a descriptor
+            AstRtmdHier* const levelp = ifaceVscp->scopep()->rtmdp();
+            UASSERT_OBJ(levelp, nodep, "Interface reference target has no descriptor");
+            nodep->ifaceRtmdp(levelp);
+            // The reference is not needed any more
+            pushDeletep(nodep->refp()->unlinkFrBack());
+        }
+        m_rtmdIfaceRefs.clear();
+        // Scope to descriptor links are not needed any more
+        for (AstScope* const scopep : m_scopesWithRtmdp) scopep->rtmdp(nullptr);
+        m_scopesWithRtmdp.clear();
+    }
     void processDeferredAliasScopes() {
         // Sort by hierarchy depth (shallower first) so outer aliases are resolved before inner
         // Pre-compute depth map to avoid O(N log N * D) complexity in sort comparisons
@@ -3033,6 +3057,8 @@ public:
         iterate(rootp);
         // Process deferred AliasScopes in outer-to-inner order
         processDeferredAliasScopes();
+        // Then the descriptor interface references that depend on them
+        processRtmdIfaceRefs();
     }
     ~LinkDotScopeVisitor() override = default;
 };
@@ -5041,15 +5067,24 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // We drop __BRA__??__KET__ as cells don't have that naming yet
                     AstVar* const ifaceRefVarp
                         = findIfaceTopVarp(nodep, parentEntp, cellp->name());
-                    //
+                    // Nested cell (e.g. 'o.l.mp'): reference ifaceRefVarp via the prefix
+                    // Modports only legal under `interface` so can just look back one dot
+                    const size_t cellPos = m_ds.m_dotText.rfind('.');
+                    const string cellScope
+                        = cellPos == string::npos ? "" : m_ds.m_dotText.substr(0, cellPos);
                     ok = true;
                     m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
                     m_ds.m_dotSymp = foundp;
                     m_ds.m_dotPos = DP_SCOPE;
                     UINFO(9, indent() << "modport -> iface varref " << foundp->nodep());
                     // We lose the modport name here, so we cannot detect mismatched modports.
-                    AstNodeExpr* newp
-                        = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                    AstNodeExpr* newp;
+                    if (cellScope.empty()) {
+                        newp = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                    } else {
+                        newp = new AstVarXRef{nodep->fileline(), ifaceRefVarp, cellScope,
+                                              VAccess::READ};
+                    }
 
                     AstCellArrayRef* const cellarrayrefp
                         = VN_CAST(m_ds.m_unlinkedScopep, CellArrayRef);
@@ -5065,6 +5100,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         newp->user3(true);  // Don't process again
                         VL_DO_DANGLING(pushDeletep(cellarrayrefp->unlinkFrBack()), cellarrayrefp);
                         m_ds.m_unlinkedScopep = nullptr;
+                    } else if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep
+                               && lastStates.m_dotPos == DP_FINAL) {
+                        newp = new AstUnlinkedRef{nodep->fileline(), newp, newp->name(),
+                                                  m_ds.m_unlinkedScopep->unlinkFrBack()};
+                        m_ds.m_unlinkedScopep = nullptr;
+                        m_ds.m_unresolvedCell = false;
                     }
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);

@@ -1,0 +1,15 @@
+%Warning-TIMEPRECTRUNC: t/t_lint_timeprectrunc_bad.v:12:13: Time literal is not a multiple of time precision '10ps'
+                                                          : ... note: In instance 't'
+   12 |     #(500 * 1ps);
+      |             ^~~
+                        ... For warning description see https://verilator.org/warn/TIMEPRECTRUNC?v=latest
+                        ... Use "/* verilator lint_off TIMEPRECTRUNC */" and lint_on around source to disable this message.
+%Warning-TIMEPRECTRUNC: t/t_lint_timeprectrunc_bad.v:13:6: Time literal is not a multiple of time precision '10ps'
+                                                         : ... note: In instance 't'
+   13 |     #1ps;
+      |      ^~~
+%Warning-TIMEPRECTRUNC: t/t_lint_timeprectrunc_bad.v:14:6: Time literal is not a multiple of time precision '10ps'
+                                                         : ... note: In instance 't'
+   14 |     #0.015ns;
+      |      ^~~~~~~
+%Error: Exiting due to

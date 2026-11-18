@@ -683,7 +683,6 @@ public:
     // Encode user name into internal C representation
     static string encodeName(const string& namein);
     static string encodeNumber(int64_t num);  // Encode number into internal C representation
-    static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const { return prettyName(name()); }
     // Name for messages to the user, by default prettyName(), but friendlier for some nodes,
     // such as a specialized class, whose name() is internal
@@ -1479,6 +1478,7 @@ void AstNode::foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& f
 
     // Visit given node, enqueue children for traversal
     const auto visit = [&](Node* currp) {
+        V3Global::opCountInc();
         // Type test this node
         if (AstNode::privateTypeTest<T_Arg_NonConst>(currp)) {
             // Call the client function
@@ -1563,6 +1563,7 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable&
 
     // Visit given node, enqueue children for traversal, return true if result determined.
     const auto visit = [&](Node* currp) {
+        V3Global::opCountInc();
         // Type test this node
         if (AstNode::privateTypeTest<T_Arg_NonConst>(currp)) {
             // Call the client function
@@ -1804,6 +1805,7 @@ AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
 #include "V3AstNodeDType.h"
 #include "V3AstNodeOther.h"
 #include "V3AstNodeExpr.h"
+#include "V3AstNodeRtmd.h"
 #include "V3AstNodeStmt.h"
 // clang-format on
 

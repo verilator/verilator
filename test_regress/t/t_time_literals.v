@@ -17,6 +17,7 @@ module t;
   // realtime value scaled to timeunit, rounded to timeprecision
   initial begin
     // verilator lint_off REALCVT
+    // verilator lint_off TIMEPRECTRUNC
     t = 1s; `checkd(t, 64'd1000000000);
     t = 2ms; `checkd(t, 2000000);
     t = 1ms; `checkd(t, 1000000);

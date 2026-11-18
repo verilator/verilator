@@ -497,40 +497,12 @@ void V3Options::decorations(FileLine* fl, const string& arg) {  // --decorations
     }
 }
 
-std::vector<std::string> V3Options::traceClassBases() const VL_MT_SAFE {
-    std::vector<std::string> result;
-    if (traceEnabledFst()) result.emplace_back("VerilatedFst");
-    if (traceEnabledSaif()) result.emplace_back("VerilatedSaif");
-    if (traceEnabledVcd()) result.emplace_back("VerilatedVcd");
-    return result;
-}
-std::vector<std::string> V3Options::traceClassLangs() const VL_MT_SAFE {
-    std::vector<std::string> result;
-    for (const auto& cbase : traceClassBases())
-        result.emplace_back(cbase + (systemC() ? "Sc" : "C"));
-    return result;
-}
 std::vector<std::string> V3Options::traceSourceBases() const VL_MT_SAFE {
     std::vector<std::string> result;
     if (traceEnabledFst()) result.emplace_back("verilated_fst");
     if (traceEnabledSaif()) result.emplace_back("verilated_saif");
     if (traceEnabledVcd()) result.emplace_back("verilated_vcd");
     return result;
-}
-std::vector<std::string> V3Options::traceSourceLangs() const VL_MT_SAFE {
-    std::vector<std::string> result = traceSourceBases();
-    for (std::string& str : result) str += systemC() ? "_sc"s : "_c"s;
-    return result;
-}
-std::string V3Options::traceClassBase() const VL_MT_SAFE {
-    // Deprecated - Needs to be fixed to support multiple trace, issue #5813
-    UASSERT(!traceClassBases().empty(), "Call traceClassBase only when trace() enabled");
-    return traceClassBases().front();
-}
-std::string V3Options::traceClassLang() const VL_MT_SAFE {
-    // Deprecated - Needs to be fixed to support multiple trace, issue #5813
-    UASSERT(!traceClassBases().empty(), "Call traceClassLang only when trace() enabled");
-    return traceClassLangs().front();
 }
 
 //######################################################################
@@ -1046,6 +1018,10 @@ void V3Options::notify() VL_MT_DISABLED {
             cmdfl->v3warn(INSECURE,
                           "Using --protect-ids with --trace may expose private design details\n"
                               + cmdfl->warnMore() + "... Suggest remove --trace.");
+        } else if (rtmd()) {  // Implied by --trace, so warn only once
+            cmdfl->v3warn(INSECURE,
+                          "Using --protect-ids with --rtmd may expose private design details\n"
+                              + cmdfl->warnMore() + "... Suggest remove --rtmd.");
         }
         if (vpi()) {
             cmdfl->v3warn(INSECURE,
@@ -1053,6 +1029,9 @@ void V3Options::notify() VL_MT_DISABLED {
                               + cmdfl->warnMore() + "... Suggest remove --vpi.");
         }
     }
+
+    // Tracing needs the run time model descriptors
+    if (trace()) m_rtmd = true;
 
     // Default some options if not turned on or off
     if (v3Global.opt.skipIdentical().isDefault()) {
@@ -1075,7 +1054,6 @@ void V3Options::notify() VL_MT_DISABLED {
 
     // Default split limits if not specified
     if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
-    if (m_outputSplitCTrace < 0) m_outputSplitCTrace = m_outputSplit;
 
     if (v3Global.opt.main() && v3Global.opt.systemC()) {
         cmdfl->v3warn(E_UNSUPPORTED,
@@ -1738,11 +1716,16 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             fl->v3error("--output-split-cfuncs must be >= 0: " << valp);
         }
     });
-    DECL_OPTION("-output-split-ctrace", CbVal, [this, fl](const char* valp) {
-        m_outputSplitCTrace = std::atoi(valp);
-        if (m_outputSplitCTrace < 0) {
-            fl->v3error("--output-split-ctrace must be >= 0: " << valp);
-        }
+    DECL_OPTION("-output-split-ctrace", CbVal, [fl](const char*) {
+        fl->v3warn(DEPRECATED, "Option '--output-split-ctrace' is deprecated and has no effect.");
+    });
+    DECL_OPTION("-output-split-rtmd", CbVal, [this, fl](const char* valp) {
+        const int rows = std::atoi(valp);
+        if (rows < 0) fl->v3error("--output-split-rtmd must be >= 0: " << valp);
+        // Rounded down to a power of two, and not split if 0
+        m_outputSplitRtmdLog2 = 0;
+        while ((int64_t{2} << m_outputSplitRtmdLog2) <= rows) ++m_outputSplitRtmdLog2;
+        if (rows <= 0) m_outputSplitRtmdLog2 = 32;
     });
 
     DECL_OPTION("-P", Set, &m_preprocNoLine);
@@ -1833,6 +1816,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (m_replicationLimit < 0) fl->v3error("--replication-limit must be >= 0: " << valp);
     });
     DECL_OPTION("-rr", CbCall, []() {});  // Processed only in bin/verilator shell
+    DECL_OPTION("-rtmd", OnOff, &m_rtmd);
     DECL_OPTION("-runtime-debug", CbCall, [this, fl]() {
         decorations(fl, "node");
         addCFlags("-ggdb");

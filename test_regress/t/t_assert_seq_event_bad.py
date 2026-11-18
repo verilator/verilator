@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(expect_filename=test.golden_filename, verilator_flags2=['--timing'], fails=True)
+# -Wall: no lint warnings on the rejected event control
+test.lint(expect_filename=test.golden_filename, verilator_flags2=['-Wall', '--timing'], fails=True)
 
 test.passes()

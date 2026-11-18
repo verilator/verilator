@@ -6,9 +6,27 @@
 import argparse
 import os
 import re
+import textwrap
 #from pprint import pprint,pformat
 
 #######################################################################
+
+
+def author_cleanup(author: str, email: str) -> str:
+    """Return cleaned author, or "" to ignore"""
+    if re.search(r'antmicro', email):
+        return author + ", Antmicro Ltd."
+    if re.search(r'github action', author):
+        return ""
+    if re.search(r'secturion', email):
+        return author + ", Secturion Systems, Inc."
+    if re.search(r'stud\.uni-heidelberg', email):
+        return author + ", Heidelberg University"
+    if re.search(r'tenstorrent', email):
+        return author + ", Testorrent USA, Inc."
+    if re.search(r'verilator-bot', author):
+        return ""
+    return author
 
 
 def message_section(msg: str) -> int:
@@ -29,7 +47,7 @@ def message_section(msg: str) -> int:
         return 70
     if re.match(r'^Fix', msg, flags=re.IGNORECASE):
         return 80
-    if re.match(r'^(Internals|CI|Tests)', msg, flags=re.IGNORECASE):
+    if re.match(r'^(CI|Commentary|Internals|Merge|Tests)', msg, flags=re.IGNORECASE):
         return -1
     if re.match(r'^Bump.* from .* to .*', msg, flags=re.IGNORECASE):  # dependabot
         return -1
@@ -39,8 +57,10 @@ def message_section(msg: str) -> int:
 def process() -> None:
     cmd = "git log"
 
+    authors = {}
     msgs = {}
-    msg_authors = {}
+    issues = {}
+    since_last_merge = True
     with os.popen(cmd) as fh:
         author = ""
         lineno = 0
@@ -55,7 +75,10 @@ def process() -> None:
             if re.match(r'^commit', line):
                 key = None
                 continue
-            if re.search(r'Commentary: Changes update', line):
+            if re.search(r'Commentary: Changes update', line):  # Last merge
+                since_last_merge = False
+                continue
+            if re.search(r'Version bump', line):  # Last release
                 break
 
             am = re.match(r'^Author: (.*) <(.*)>', line)
@@ -64,57 +87,41 @@ def process() -> None:
             if am:
                 email = am.group(2)
                 author = am.group(1)
-                if re.search(r'verilator-bot', author):
-                    author = ""
-                    continue
-                if re.search(r'antmicro', email):
-                    author += ", Antmicro Ltd."
-                if re.search(r'stud\.uni-heidelberg', email):
-                    author += ", Heidelberg University"
-                if re.search(r'tenstorrent', email):
-                    author += ", Testorrent USA, Inc."
-                if re.search(r'secturion', email):
-                    author += ", Secturion Systems, Inc."
-                if re.search(r'github action', author):
-                    author = ""
-                    continue
+                author = author_cleanup(author, email)
 
             elif author != "" and dm:
                 msg = dm.group(1)
 
-                mid = re.search(r'\(#([0-9][0-9][0-9][0-9]+)', line)
-                if mid:
-                    bug_id = mid.group(1)
-                else:
-                    bug_id = " %d" % lineno
+                bug_id = " %d" % lineno
+                for m in re.finditer(r'\(#([0-9][0-9][0-9][0-9]+)', line):
+                    bug_id = m.group(1)
+                    issues[bug_id] = True
 
                 section = message_section(msg)
                 if section >= 0:
                     key = "%06s_%06s_%06d" % (section, bug_id, lineno)
-                    msgs[key] = '* ' + msg
-                    msg_authors[key] = author
+                    if since_last_merge:
+                        msgs[key] = '* ' + msg
+                    authors[author] = True
                     # print("i [%s]  %s [%s]" % (key, msg, author))
 
                 author = ""
 
             elif key:
-                m = re.search(r'(fix|fixes) *#\(?([0-9][0-9][0-9][0-9]+)',
-                              line,
-                              flags=re.IGNORECASE)
-                if m:
+                for m in re.finditer(r'(fix|fixes) *#\(?([0-9][0-9][0-9][0-9]+)',
+                                     line,
+                                     flags=re.IGNORECASE):
                     bug_id = m.group(2)
-                    if ("#" + bug_id) not in msgs[key]:
-                        # print("K %s" % line)
-                        msgs[key] += ' (#' + bug_id + ')'
-
-    if not msgs:
-        print("No Changes need to be inserted.")
-        return
+                    # print("K %s" % line)
+                    issues[bug_id] = True
+                    if since_last_merge:
+                        if ("#" + bug_id) not in msgs[key]:
+                            # print("K %s" % line)
+                            msgs[key] += ' (#' + bug_id + ')'
 
     print()
     print("Insertion-sort the following lines into 'Changes' file:")
     print()
-
     dedup = {}
     for key in sorted(msgs.keys()):
         if msgs[key] not in dedup:
@@ -122,7 +129,27 @@ def process() -> None:
             msg = msgs[key]
             if not re.search(r'\.$', msg):
                 msg += '.'
-            print(msg + ' [' + msg_authors[key] + ']')
+            print(msg)
+
+    print()
+    print("**Issues resolved:**")
+    print()
+    text = ""
+    for key in sorted(issues.keys()):
+        text += " " if text else ""
+        text += "(#" + key + ")"
+    lines = textwrap.wrap(text, width=75)
+    print("\n".join(lines))
+
+    print()
+    print("**Contributors:**")
+    print()
+    text = ""
+    for key in sorted(authors.keys()):
+        text += " " if text else ""
+        text += "[" + key + "]"
+    lines = textwrap.wrap(text, width=75)
+    print("\n".join(lines))
 
     print()
     print("You may now want to clean up spelling, and commit:")
