@@ -118,6 +118,10 @@
               .state_i(state_d),
               .state_o(state_q)
           );
+        
+          // A later read of the q port through the instance doesn't replace its connection
+          logic [1:0] mirror;
+          always_comb mirror = u_state_regs.state_o;
         endmodule
         
         module fsm_noargs_hint (

@@ -40,8 +40,8 @@
             end
           end
         
-          // This FSM gives the reporting path both ordinary arcs and a synthetic
-          // default arc so annotate/write-info exercise FSM-arc filtering.
+          // This FSM gives the reporting path ordinary arcs and reset arcs for
+          // annotate and write-info.
 %000007   always_ff @(posedge clk) begin
 %000005     if (rst) begin
 %000002       state_default <= S0;

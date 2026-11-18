@@ -27,10 +27,10 @@ test.run(cmd=[
 
 test.files_identical(test.obj_dir + "/annotated/" + test.name + ".v", test.golden_filename)
 
-test.file_grep(test.stats, r'Coverage, FSM registers tried\s+(\d+)', 88)
-test.file_grep(test.stats, r'Coverage, FSMs found\s+(\d+)', 57)
-test.file_grep(test.stats, r'Coverage, FSM states\s+(\d+)', 168)
-test.file_grep(test.stats, r'Coverage, FSM arcs\s+(\d+)', 200)
+test.file_grep(test.stats, r'Coverage, FSM registers tried\s+(\d+)', 94)
+test.file_grep(test.stats, r'Coverage, FSMs found\s+(\d+)', 62)
+test.file_grep(test.stats, r'Coverage, FSM states\s+(\d+)', 184)
+test.file_grep(test.stats, r'Coverage, FSM arcs\s+(\d+)', 221)
 test.file_grep(test.stats, r'Coverage, FSM registers with too many paths\s+(\d+)', 1)
 
 test.passes()

@@ -1851,6 +1851,143 @@
           end
         endmodule
         
+        // The next-state logic in an instance of its own
+        module fsm_child_logic (
+            input logic [1:0] state,
+            input logic go,
+            output logic [1:0] nxt
+        );
+          always_comb begin
+            nxt = state;
+~000010     case (state)
+        // [FSM coverage]
+ 000010        // [fsm_arc t.child_next_u.state2::2'h0->2'h1]
+%000000        // [fsm_arc t.child_next_u.state2::2'h1->2'h0]
+ 000010        // [fsm_arc t.child_next_u.state2::2'h1->2'h2]
+%000009        // [fsm_arc t.child_next_u.state2::2'h2->2'h0]
+ 000010        // [fsm_arc t.child_next_u.state::2'h0->2'h1]
+%000000        // [fsm_arc t.child_next_u.state::2'h1->2'h0]
+ 000010        // [fsm_arc t.child_next_u.state::2'h1->2'h2]
+%000009        // [fsm_arc t.child_next_u.state::2'h2->2'h0]
+ 000010        // [fsm_state t.child_next_u.state2::2'h0]
+ 000010        // [fsm_state t.child_next_u.state2::2'h1]
+ 000010        // [fsm_state t.child_next_u.state2::2'h2]
+ 000010        // [fsm_state t.child_next_u.state::2'h0]
+ 000010        // [fsm_state t.child_next_u.state::2'h1]
+ 000010        // [fsm_state t.child_next_u.state::2'h2]
+              2'd0: if (go) nxt = 2'd1;
+              2'd1: nxt = 2'd2;
+              default: nxt = 2'd0;
+            endcase
+          end
+        endmodule
+        
+        // Two instances, so their ports are copies rather than the parent's variables
+        module fsm_child_next (
+            input logic clk,
+            input logic rst,
+            input logic go
+        );
+          logic [1:0] state, nxt, state2, nxt2;
+          fsm_child_logic logic_u (.*);
+          fsm_child_logic logic2_u (
+              .state(state2),
+              .go(go),
+              .nxt(nxt2)
+          );
+          always_ff @(posedge clk) state <= rst ? 2'd0 : nxt;
+          always_ff @(posedge clk) state2 <= rst ? 2'd0 : nxt2;
+        endmodule
+        
+        // The last split of a chain has a constant on both sides: neither is the reset
+        module fsm_both_constant (
+            input logic clk,
+            input logic rst_n,
+            input logic go
+        );
+          import fsm_styles_pkg::*;
+          st_t state;
+          always_ff @(posedge clk)
+~000011     if (state == S1 && go) state <= S2;
+        // [FSM coverage]
+ 000010        // [fsm_arc t.both_constant_u.state::S0->S1]
+%000000        // [fsm_arc t.both_constant_u.state::S1->S0]
+ 000010        // [fsm_arc t.both_constant_u.state::S1->S2]
+ 000010        // [fsm_arc t.both_constant_u.state::S2->S0]
+ 000011        // [fsm_state t.both_constant_u.state::S0]
+ 000010        // [fsm_state t.both_constant_u.state::S1]
+ 000010        // [fsm_state t.both_constant_u.state::S2]
+            else if (state == S2) state <= S0;
+            else if (rst_n) state <= S1;
+            else state <= S0;
+        endmodule
+        
+        // A later statement overriding the reset: the reset is still the first if
+        module fsm_reset_override (
+            input logic clk,
+            input logic rst,
+            input logic go,
+            input logic abort
+        );
+          import fsm_styles_pkg::*;
+          st_t state;
+          always_ff @(posedge clk) begin
+            if (rst) state <= S0;
+            else
+~000011       case (state)
+        // [FSM coverage]
+%000009        // [fsm_arc t.reset_override_u.state::S0->S1]
+%000001        // [fsm_arc t.reset_override_u.state::S0->S3]
+%000000        // [fsm_arc t.reset_override_u.state::S1->S0]
+%000009        // [fsm_arc t.reset_override_u.state::S1->S2]
+%000000        // [fsm_arc t.reset_override_u.state::S1->S3]
+%000009        // [fsm_arc t.reset_override_u.state::S2->S0]
+%000000        // [fsm_arc t.reset_override_u.state::S2->S3]
+%000001        // [fsm_arc t.reset_override_u.state::S3->S0]
+ 000011        // [fsm_state t.reset_override_u.state::S0]
+%000009        // [fsm_state t.reset_override_u.state::S1]
+%000009        // [fsm_state t.reset_override_u.state::S2]
+%000001        // [fsm_state t.reset_override_u.state::S3]
+                S0: if (go) state <= S1;
+                S1: state <= S2;
+                default: state <= S0;
+              endcase
+            if (abort) state <= S3;
+          end
+        endmodule
+        
+        class fsm_token;
+        endclass
+        
+        // A condition comparing class handles, which aren't bit patterns
+        module fsm_class_compare (
+            input logic clk,
+            input logic rst,
+            input logic go,
+            input logic done
+        );
+          import fsm_styles_pkg::*;
+          st_t state;
+          fsm_token a, b;
+          initial a = new;
+          always_ff @(posedge clk) b <= done ? a : null;
+          always_ff @(posedge clk)
+            if (rst) state <= S0;
+            else
+~000020       case (state)
+        // [FSM coverage]
+ 000010        // [fsm_arc t.class_compare_u.state::S0->S1]
+ 000010        // [fsm_arc t.class_compare_u.state::S0->S2]
+%000009        // [fsm_arc t.class_compare_u.state::S1->S0]
+ 000010        // [fsm_arc t.class_compare_u.state::S2->S0]
+ 000020        // [fsm_state t.class_compare_u.state::S0]
+ 000010        // [fsm_state t.class_compare_u.state::S1]
+ 000010        // [fsm_state t.class_compare_u.state::S2]
+                S0: state <= (a == b) ? S1 : S2;
+                default: if (go) state <= S0;
+              endcase
+        endmodule
+        
         module t (
             input logic clk
         );
@@ -1915,6 +2052,10 @@
           fsm_wide_next wide_next_u (.*);
           fsm_unfollowed_writes unfollowed_writes_u (.*);
           fsm_not_fsms not_fsms_u (.*);
+          fsm_child_next child_next_u (.*);
+          fsm_both_constant both_constant_u (.*);
+          fsm_reset_override reset_override_u (.*);
+          fsm_class_compare class_compare_u (.*);
         
           initial cyc = 0;
         

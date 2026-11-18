@@ -23,11 +23,17 @@
 //      an FSM if, with the register equal to each of its state values in
 //      turn (the constants the logic assigns to it or compares it with), the
 //      DAG reaches only constants and holds, and some condition depends on
-//      the state. Each constant reached is an arc from that state. A
-//      top-level split on a state-independent condition with a constant on
-//      one side is the reset. The graphs are then lowered into coverage
-//      declarations, previous-state tracking, and the active blocks that
-//      count states and arcs in the generated model.
+//      the state. Each constant reached is an arc from that state. An enum
+//      or fsm_state register may reach other values too, which are ignored,
+//      and an fsm_state one needs no condition on the state. Of the block's
+//      top-level splits with a constant on one side, the first in the source
+//      whose condition doesn't read the register or depend on the state is
+//      the reset. A register's next value is followed into the instances
+//      below its scope, as a variable connected to a whole port belongs to
+//      both scopes, but not out of it; a condition sees the values of its own
+//      block's scope. The graphs are then lowered into coverage declarations,
+//      previous-state tracking, and the active blocks that count states and
+//      arcs in the generated model.
 //
 //*************************************************************************
 
@@ -77,8 +83,8 @@ class FsmStateValue final {
     }
 
 public:
-    // Default value is used only for synthetic pseudo-states such as ANY and
-    // default, which never use m_num as a real Verilog state encoding.
+    // Default value is used only for the synthetic reset source ANY, which never uses m_num
+    // as a real Verilog state encoding.
     FsmStateValue()
         : m_key{"1:1'h0"}
         , m_num{static_cast<AstNode*>(nullptr), 1, 0} {}
@@ -123,8 +129,6 @@ struct FsmWrapperRoles final {
     string clkPort;
     string rstPort;
     string rstValParam;
-    bool hasRstActiveLow = false;
-    bool rstActiveLow = false;
 };
 
 static bool fsmWrapperResetPolarityFromWrapperAst(AstCell* cellp, const string& portName,
@@ -212,7 +216,7 @@ public:
     ~FsmPseudoVertex() override = default;
 
     string name() const override VL_MT_SAFE { return label(); }
-    string dotColor() const override { return isResetAny() ? "darkgreen" : "orange"; }
+    string dotColor() const override { return "darkgreen"; }
     string dotShape() const override { return "diamond"; }
 };
 
@@ -337,6 +341,7 @@ struct FsmCond final {
     std::vector<const AstNodeBiop*> compares;  // Its equalities, in tree order
     size_t index = 0;  // Creation order, so a path lists its conditions the same way
     size_t size = 0;  // Nodes in the expression
+    const AstScope* scopep = nullptr;  // Scope of the block the condition is in
 };
 // Conditions in creation order, so a path lists the same way on every run
 struct FsmCondOrder final {
@@ -429,7 +434,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
         Kind kind;
         V3Number num;  // CONSTANT: the value
         const AstNode* srcp;  // CONSTANT: the assignment, or the constant
-        bool topWhen;  // The value the register's top-level condition had on the leaf's path
+        int load;  // The top-level load (see Eval) the leaf is the constant of, or -1
     };
     enum class Tri : uint8_t { IS_FALSE, IS_TRUE, UNKNOWN };
     // A condition, and the undecided conditions taken on the path to it; kept in std::map,
@@ -449,8 +454,10 @@ class FsmDetectVisitor final : public VNVisitorConst {
         int pathUses = 0;  // Lookups of 'path': a result that used one isn't memoized
         int steps = 0;  // DAG nodes visited
         const FsmCond* undecidedp = nullptr;  // First undecided condition met, depth first
-        const FsmNextNode* topp = nullptr;  // The register's DAG, whose condition leaves record
-        bool topWhen = false;  // Value of 'topp's condition on this path
+        // Conditions of the top-level loads: the clocked process's own top-level splits with a
+        // constant on one side, outermost first; one of them may be the reset
+        std::vector<const FsmCond*> loads;
+        int load = -1;  // The load whose constant is being evaluated, or -1
         Eval(AstVarScope* vscp, const V3Number& num, std::map<SeenKey, std::set<Tri>>& seenr)
             : stateVscp{vscp}
             , stateNum{num}
@@ -459,6 +466,21 @@ class FsmDetectVisitor final : public VNVisitorConst {
     struct Arc final {
         size_t from;
         size_t to;
+    };
+    // A combinationally driven value, and the scope of the logic driving it
+    struct CombVal final {
+        const FsmNextNode* nodep = nullptr;
+        const AstScope* scopep = nullptr;
+    };
+    // A case statement, and its scope
+    struct ScopedCase final {
+        const AstCase* casep = nullptr;
+        const AstScope* scopep = nullptr;
+    };
+    // A clocked block, with the values it gives the variables it writes
+    struct Clocked final {
+        AstAlways* alwaysp = nullptr;
+        FsmEnv env;
     };
     // Values the logic gives a register or compares it with, each with its label
     using NamedValues = std::vector<std::pair<string, V3Number>>;
@@ -480,25 +502,26 @@ class FsmDetectVisitor final : public VNVisitorConst {
     std::unordered_map<const AstScope*, std::vector<AstCell*>>
         m_wrapperCells;  // Register wrappers, by scope
     std::vector<AstScope*> m_scopeps;  // Every scope, in tree order
-    std::unordered_map<const AstScope*, std::vector<const AstCase*>>
-        m_casesByScope;  // Case statements, by scope
+    std::vector<ScopedCase> m_cases;  // Every case statement, in tree order
     AstScope* m_scopep = nullptr;  // Scope being traversed
     VDouble0 m_statRegisters;  // Registers tried as FSMs
     VDouble0 m_statFsms;  // FSMs found
     VDouble0 m_statStates;  // States of the FSMs found
     VDouble0 m_statArcs;  // Arcs of the FSMs found, without reset arcs
     VDouble0 m_statTooManyPaths;  // Registers given up on at EVAL_STEPS_MAX
-
-    // STATE - for the current scope
-    std::unordered_map<AstVarScope*, const FsmNextNode*>
-        m_combVals;  // Combinationally driven values
+    std::unordered_map<const AstVarScope*, CombVal> m_combVals;  // Combinationally driven values
     std::unordered_map<AstVarScope*, int> m_clockedWriters;  // Clocked blocks writing each var
-    std::unordered_map<const AstVarScope*, std::vector<const AstCase*>>
+    std::unordered_map<const AstScope*, std::vector<Clocked>>
+        m_clockedByScope;  // Clocked blocks, by scope
+    std::unordered_map<const AstVarScope*, std::vector<ScopedCase>>
         m_casesByVar;  // Case statements on each variable, directly or through copies
-    std::unordered_set<const AstVarScope*>
-        m_dlyVscps;  // Variables the block being walked writes with '<='
+    const AstScope* m_tryScopep = nullptr;  // Scope of the register being tried
+    const AstScope* m_walkScopep = nullptr;  // Scope of the block being walked
     FsmCellPortMap m_cellPorts;  // Variables connected to the ports of wrapper cells
     FsmCellPortMap m_cellChildPorts;  // The port variables themselves
+
+    // STATE - for the block being walked
+    std::unordered_set<const AstVarScope*> m_dlyVscps;  // Variables the block writes with '<='
 
     // METHODS - DAG construction
     const FsmNextNode* opaque() {
@@ -577,6 +600,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
         FsmCond& cond = m_conds.back();
         cond.exprp = exprp;
         cond.index = m_conds.size() - 1;
+        cond.scopep = m_walkScopep;
         std::unordered_set<const AstVarScope*> seen;
         exprp->foreach([&](const AstNode* nodep) {
             ++cond.size;
@@ -785,6 +809,27 @@ class FsmDetectVisitor final : public VNVisitorConst {
         memo[nodep] = resultp;
         return resultp;
     }
+    // Whether a scope is the register's, or an instance's below it: the register's logic is
+    // followed into the instances it contains, not out to the logic driving its own scope
+    bool belowTry(const AstScope* scopep) const {
+        for (; scopep; scopep = scopep->aboveScopep()) {
+            if (scopep == m_tryScopep) return true;
+        }
+        return false;
+    }
+    // A variable's combinational value, if logic in 'scopep' drives it, or with nullptr, logic at
+    // or below the register's scope: its next value is followed into the instances below, and a
+    // condition sees the values of its own block's scope and copies from any scope, such as the
+    // port connections of an instance of a module used more than once
+    const FsmNextNode* combValue(const AstVarScope* vscp, const AstScope* scopep) const {
+        const std::unordered_map<const AstVarScope*, CombVal>::const_iterator it
+            = m_combVals.find(vscp);
+        if (it == m_combVals.end()) return nullptr;
+        const bool visible = scopep ? it->second.scopep == scopep
+                                          || it->second.nodep->kind == FsmNextNode::Kind::REF
+                                    : belowTry(it->second.scopep);
+        return visible ? it->second.nodep : nullptr;
+    }  // LCOV_EXCL_LINE
     // REF nodes: the register itself stays a REF (a hold), a combinationally driven variable
     // becomes its own DAG, anything else is opaque; LOW nodes are narrowed
     const FsmNextNode* resolve(const FsmNextNode* nodep, AstVarScope* stateVscp,
@@ -799,14 +844,10 @@ class FsmDetectVisitor final : public VNVisitorConst {
         if (nodep->kind == FsmNextNode::Kind::REF) {
             if (nodep->refVscp == stateVscp) {
                 resultp = nodep;
-            } else {
-                const std::unordered_map<AstVarScope*, const FsmNextNode*>::const_iterator cit
-                    = m_combVals.find(nodep->refVscp);
-                if (cit != m_combVals.end()) {
-                    memo[nodep] = opaque();  // Cycle guard
-                    resultp = resolve(cit->second, stateVscp, memo);
-                }
-            }  // LCOV_EXCL_LINE
+            } else if (const FsmNextNode* const valuep = combValue(nodep->refVscp, nullptr)) {
+                memo[nodep] = opaque();  // Cycle guard
+                resultp = resolve(valuep, stateVscp, memo);
+            }
         } else if (nodep->kind == FsmNextNode::Kind::LOW) {
             ResolveMemo lowMemo;
             resultp = lowBits(resolve(nodep->thenp, stateVscp, memo), nodep->condp->exprp->width(),
@@ -915,7 +956,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
             knownBits(extp->lhsp(), bits, lsb, xz);
         }
     }
-    // An equality or inequality; case and wildcard inequalities became these before this pass
+    // An equality or inequality; case and wildcard (in)equalities became these before this pass
     static bool isEquality(const AstNodeBiop* biopp) {
         return VN_IS(biopp, Eq) || VN_IS(biopp, EqWild) || VN_IS(biopp, Neq);
     }
@@ -932,6 +973,8 @@ class FsmDetectVisitor final : public VNVisitorConst {
         for (std::vector<AstNodeBiop*>::const_reverse_iterator it = cmps.rbegin();
              it != cmps.rend(); ++it) {
             AstNodeBiop* const cmpp = *it;
+            // A class handle or string isn't a bit pattern (a handle has no bits here)
+            if (!cmpp->lhsp()->dtypep()->skipRefp()->isIntegralOrPacked()) continue;
             const int width = std::max(cmpp->lhsp()->width(), cmpp->rhsp()->width());
             std::vector<Bit> lbits(width, Bit::UNKNOWN);
             std::vector<Bit> rbits(width, Bit::UNKNOWN);
@@ -1064,21 +1107,26 @@ class FsmDetectVisitor final : public VNVisitorConst {
     // The leaf a node other than a MUX is in this state
     static Leaf leafOf(const FsmNextNode* nodep, const Eval& eval) {
         if (nodep->kind == FsmNextNode::Kind::CONSTANT) {
-            return Leaf{Leaf::Kind::CONSTANT, nodep->num, nodep->srcp, eval.topWhen};
+            return Leaf{Leaf::Kind::CONSTANT, nodep->num, nodep->srcp, eval.load};
         }
         if (nodep->kind == FsmNextNode::Kind::REF) {
             // Resolving leaves only the register itself as a REF
             UASSERT_OBJ(nodep->refVscp == eval.stateVscp, nodep->refVscp, "Unresolved variable");
-            return Leaf{Leaf::Kind::HOLD, eval.stateNum, nullptr, eval.topWhen};
+            return Leaf{Leaf::Kind::HOLD, eval.stateNum, nullptr, eval.load};
         }
-        return Leaf{Leaf::Kind::UNMODELED, eval.stateNum, nullptr, eval.topWhen};
+        return Leaf{Leaf::Kind::UNMODELED, eval.stateNum, nullptr, eval.load};
+    }
+    // The constant side of a MUX, the 'then' side if both are; nullptr if neither is
+    static const FsmNextNode* constantSide(const FsmNextNode* nodep) {
+        if (nodep->thenp->kind == FsmNextNode::Kind::CONSTANT) return nodep->thenp;
+        return nodep->elsep->kind == FsmNextNode::Kind::CONSTANT ? nodep->elsep : nullptr;
     }
     // The leaves a DAG reaches in this state
     void evaluate(const FsmNextNode* nodep, Eval& eval, std::vector<Leaf>& leaves, int depth) {
         // Shared parts of a DAG are visited once per path through them; tryRegister gives up on
         // a register whose paths are too many
         if (++eval.steps > EVAL_STEPS_MAX) {
-            leaves.push_back(Leaf{Leaf::Kind::UNMODELED, eval.stateNum, nullptr, eval.topWhen});
+            leaves.push_back(Leaf{Leaf::Kind::UNMODELED, eval.stateNum, nullptr, eval.load});
             return;
         }
         if (nodep->kind != FsmNextNode::Kind::MUX) {
@@ -1104,8 +1152,16 @@ class FsmDetectVisitor final : public VNVisitorConst {
             if (result == (value ? Tri::IS_FALSE : Tri::IS_TRUE)) continue;
             // An undecided condition keeps its value for the rest of the path
             if (unknown) eval.path[nodep->condp] = value;
-            if (nodep == eval.topp) eval.topWhen = value;
-            evaluate(value ? nodep->thenp : nodep->elsep, eval, leaves, depth);
+            const FsmNextNode* const sidep = value ? nodep->thenp : nodep->elsep;
+            const int load = eval.load;
+            if (sidep == constantSide(nodep)) {
+                const std::vector<const FsmCond*>::const_iterator it
+                    = std::find(eval.loads.begin(), eval.loads.end(), nodep->condp);
+                eval.load
+                    = it == eval.loads.end() ? -1 : static_cast<int>(it - eval.loads.begin());
+            }
+            evaluate(sidep, eval, leaves, depth);
+            eval.load = load;
             if (unknown) eval.path.erase(nodep->condp);
         }
     }
@@ -1118,11 +1174,9 @@ class FsmDetectVisitor final : public VNVisitorConst {
         const FsmNextNode* nodep = bindingOf(*condp, vscp);
         for (int depth = 0; depth < SUBST_DEPTH_MAX; ++depth) {
             if (!nodep) {
-                const std::unordered_map<AstVarScope*, const FsmNextNode*>::const_iterator it
-                    = m_combVals.find(vscp);
-                if (it == m_combVals.end()) return nullptr;
-                nodep = it->second;
-            }  // LCOV_EXCL_LINE
+                nodep = combValue(vscp, condp->scopep);
+                if (!nodep) return nullptr;
+            }
             if (nodep->kind != FsmNextNode::Kind::REF || nodep->refVscp == stateVscp) return nodep;
             vscp = nodep->refVscp;
             nodep = nullptr;
@@ -1204,15 +1258,17 @@ class FsmDetectVisitor final : public VNVisitorConst {
             }
         }
     }
-    // The labels of every case on the state in the scope, including items that leave the
-    // state unchanged, whose branch merged with the hold and so isn't in the DAG
+    // The labels of every case on the state in the scope, including items that leave the state
+    // unchanged, whose branch merged with the hold and so isn't in the DAG
     void collectCaseLabels(AstVarScope* stateVscp, int width, NamedValues& named) const {
-        const FsmCond noBindings;
-        const std::unordered_map<const AstVarScope*, std::vector<const AstCase*>>::const_iterator
-            it
+        FsmCond noBindings;
+        const std::unordered_map<const AstVarScope*, std::vector<ScopedCase>>::const_iterator it
             = m_casesByVar.find(stateVscp);
         if (it == m_casesByVar.end()) return;
-        for (const AstCase* const casep : it->second) {
+        for (const ScopedCase& scase : it->second) {
+            if (scase.scopep != m_tryScopep) continue;
+            noBindings.scopep = scase.scopep;
+            const AstCase* const casep = scase.casep;
             const int lsb = stateLsb(casep->exprp(), &noBindings, stateVscp);
             if (lsb < 0) continue;
             for (const AstCaseItem* const itemp : casep->itemspList()) {
@@ -1229,8 +1285,8 @@ class FsmDetectVisitor final : public VNVisitorConst {
             }
         }
     }
-    // The states: the values the logic assigns to the register or compares it with; for an
-    // enum, the items among them
+    // The states: the values the logic assigns to the register or compares it with, and the
+    // labels of cases on it; for an enum, the items among them
     void stateSpace(AstVarScope* stateVscp, const FsmNextNode* treep, const AstEnumDType* enump,
                     FsmStateSet& states) const {
         const int width = stateVscp->width();
@@ -1279,28 +1335,44 @@ class FsmDetectVisitor final : public VNVisitorConst {
         }  // LCOV_EXCL_LINE
         return flp;
     }
-    // The reset: the clocked process's own top-level split, 'clockedCondp', on a condition the
-    // state doesn't decide but the inputs may, with a constant on one side
-    static void findReset(const FsmNextNode* treep, const FsmCond* clockedCondp,
-                          const std::map<SeenKey, std::set<Tri>>& seenResults,
-                          const FsmNextNode*& resetpr, bool& normalWhenr) {
-        if (treep->condp != clockedCondp) return;
-        std::set<Tri> results;
-        for (const std::pair<const SeenKey, std::set<Tri>>& it : seenResults) {
-            if (it.first.first != treep->condp) continue;
-            // On one path, the same result in every state
-            if (it.second.size() != 1) return;
-            results.insert(*it.second.begin());
-        }  // LCOV_EXCL_LINE
-        // Decided the same way everywhere, it isn't a reset
-        if (results.size() == 1 && !results.count(Tri::UNKNOWN)) return;
-        for (const FsmNextNode* const sidep : {treep->thenp, treep->elsep}) {
-            if (sidep->kind == FsmNextNode::Kind::CONSTANT) {
-                resetpr = sidep;
-                normalWhenr = sidep != treep->thenp;
-                return;
+    // The reset: of the top-level loads (see Eval), the first in the source whose condition
+    // doesn't read the register, and that the state doesn't decide but the inputs may; -1 if
+    // none. The first, as a later 'if (abort) state <= IDLE;' overrides an earlier 'if (rst)'
+    // and so is outermost.
+    static int findReset(const std::vector<const FsmNextNode*>& loads,
+                         const AstVarScope* stateVscp,
+                         const std::map<SeenKey, std::set<Tri>>& seenResults) {
+        int reset = -1;
+        for (size_t i = 0; i < loads.size(); ++i) {
+            const FsmCond* const condp = loads[i]->condp;
+            // A case item on the state, e.g. 'G1: gamma = G2;' after 'if (start) gamma = G1;'
+            if (std::find(condp->reads.begin(), condp->reads.end(), stateVscp)
+                != condp->reads.end()) {
+                continue;
+            }
+            // With a constant on both sides, neither is known to be the reset's
+            if (loads[i]->thenp->kind == FsmNextNode::Kind::CONSTANT
+                && loads[i]->elsep->kind == FsmNextNode::Kind::CONSTANT) {
+                continue;
+            }
+            std::set<Tri> results;
+            bool stateDecides = false;
+            for (const std::pair<const SeenKey, std::set<Tri>>& it : seenResults) {
+                if (it.first.first != condp) continue;
+                // On one path, the same result in every state
+                if (it.second.size() != 1) stateDecides = true;
+                results.insert(*it.second.begin());
+            }  // LCOV_EXCL_LINE
+            // Decided by the state, or the same way everywhere, it isn't a reset
+            if (stateDecides || (results.size() < 2 && !results.count(Tri::UNKNOWN))) continue;
+            if (reset < 0
+                || condp->exprp->fileline()->operatorCompare(
+                       *loads[reset]->condp->exprp->fileline())
+                       < 0) {
+                reset = static_cast<int>(i);
             }
         }
+        return reset;
     }
     // A constant an enum register is given that is not in the enum
     static void warnOutsideEnum(const AstVarScope* stateVscp, const V3Number& num,
@@ -1310,16 +1382,15 @@ class FsmDetectVisitor final : public VNVisitorConst {
                                    << FsmStateValue{num}.warnText()
                                    << " is not present in the declared enum");
     }
-    // Arcs from each state: the constants its leaves reach, leaving out, when there is a reset,
-    // the leaves where the reset condition holds. Returns false for a register whose value
-    // isn't one of its constants.
+    // Arcs from each state: the constants its leaves reach, leaving out the reset's constant,
+    // 'reset' being its index in the top-level loads (see Eval) or -1. Returns false for a
+    // register whose value isn't one of its constants.
     bool collectArcs(AstVarScope* stateVscp, const std::vector<std::vector<Leaf>>& stateLeaves,
-                     bool hasReset, bool normalWhen, bool declared, const FsmStateSet& states,
-                     std::vector<Arc>& arcs) {
+                     int reset, bool declared, const FsmStateSet& states, std::vector<Arc>& arcs) {
         std::unordered_set<const AstNode*> warned;
         for (size_t from = 0; from < states.size(); ++from) {
             for (const Leaf& leaf : stateLeaves[from]) {
-                if (hasReset && leaf.topWhen != normalWhen) continue;
+                if (reset >= 0 && leaf.load == reset) continue;
                 if (leaf.kind == Leaf::Kind::UNMODELED) {
                     if (declared) continue;  // The declaration says it is an FSM
                     return false;
@@ -1370,6 +1441,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
     }
     void tryRegister(const FsmCandidate& cand, const FsmNextNode* nextp) {
         ++m_statRegisters;
+        m_tryScopep = cand.scopep;
         AstVarScope* const stateVscp = cand.stateVscp;
         if (!stateVscp->dtypep()->skipRefp()->isIntegralOrPacked()) return;  // real, string
         const int width = stateVscp->width();
@@ -1386,11 +1458,22 @@ class FsmDetectVisitor final : public VNVisitorConst {
         if (states.size() < 2) return;
         // Evaluate the DAG with the state equal to each state value; the next state must depend
         // on the state through some condition
+        // The top-level loads, from the clocked process's own DAG, also under a select of the low
+        // bits of the next state
+        std::vector<const FsmNextNode*> loads;
+        for (const FsmNextNode* nodep
+             = nextp->kind == FsmNextNode::Kind::LOW ? nextp->thenp : nextp;
+             nodep->kind == FsmNextNode::Kind::MUX;) {
+            const FsmNextNode* const constp = constantSide(nodep);
+            if (!constp) break;
+            loads.push_back(nodep);
+            nodep = constp == nodep->thenp ? nodep->elsep : nodep->thenp;
+        }
         std::map<SeenKey, std::set<Tri>> seenResults;
         std::vector<std::vector<Leaf>> stateLeaves(states.size());
         for (size_t i = 0; i < states.size(); ++i) {
             Eval eval{stateVscp, states.states()[i].second, seenResults};
-            eval.topp = treep;
+            for (const FsmNextNode* const loadp : loads) eval.loads.push_back(loadp->condp);
             evaluate(treep, eval, stateLeaves[i], 0);
             if (eval.steps > EVAL_STEPS_MAX) {  // Too many paths to follow
                 ++m_statTooManyPaths;
@@ -1399,23 +1482,15 @@ class FsmDetectVisitor final : public VNVisitorConst {
         }
         FileLine* const dispatchFlp = dispatchFileline(seenResults);
         if (!dispatchFlp && !stateVscp->varp()->attrFsmState()) return;
-        const FsmNextNode* resetp = nullptr;
-        bool normalWhen = false;
-        // The clocked process's top split, also under a select of the low bits of the next state
-        const FsmNextNode* const topp
-            = nextp->kind == FsmNextNode::Kind::LOW ? nextp->thenp : nextp;
-        findReset(treep, topp->kind == FsmNextNode::Kind::MUX ? topp->condp : nullptr, seenResults,
-                  resetp, normalWhen);
-        const bool hasReset = resetp;
+        const int reset = findReset(loads, stateVscp, seenResults);
+        const FsmNextNode* resetp = reset < 0 ? nullptr : constantSide(loads[reset]);
         // No reset arc to a value outside the enum
         if (resetp && states.index(resetp->num) == states.size()) {
-            warnOutsideEnum(stateVscp, resetp->num, resetp->srcp);
+            warnOutsideEnum(stateVscp, FsmStateSet::toWidth(resetp->num, width), resetp->srcp);
             resetp = nullptr;
         }
         std::vector<Arc> arcs;
-        if (!collectArcs(stateVscp, stateLeaves, hasReset, normalWhen, declared, states, arcs)) {
-            return;
-        }
+        if (!collectArcs(stateVscp, stateLeaves, reset, declared, states, arcs)) return;
         addGraph(cand, dispatchFlp ? dispatchFlp : cand.flp, states, resetp, arcs);
     }
 
@@ -1496,6 +1571,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
             cand.senses.push_back(rstSense);
             AstVarRef* const rstRefp = new AstVarRef{cellp->fileline(), resetVscp, VAccess::READ};
             m_ownedExprps.push_back(rstRefp);
+            m_walkScopep = scopep;
             const FsmCond* const condp = makeCond(rstRefp, FsmEnv{});
             const FsmNextNode* const resetp
                 = constant(resetValuep->num(), resetValuep, resetValuep->origParamName());
@@ -1538,16 +1614,16 @@ class FsmDetectVisitor final : public VNVisitorConst {
     }
     // Index a case under each variable its expression reads, and the variables those copy, as
     // isStateRef follows them
-    void indexCase(const AstCase* casep) {
-        casep->exprp()->foreach([&](const AstVarRef* refp) {
-            AstVarScope* vscp = refp->varScopep();
+    void indexCase(const ScopedCase& scase) {
+        scase.casep->exprp()->foreach([&](const AstVarRef* refp) {
+            const AstVarScope* vscp = refp->varScopep();
             for (int depth = 0; vscp && depth <= SUBST_DEPTH_MAX; ++depth) {
-                m_casesByVar[vscp].push_back(casep);
-                const std::unordered_map<AstVarScope*, const FsmNextNode*>::const_iterator it
+                m_casesByVar[vscp].push_back(scase);
+                const std::unordered_map<const AstVarScope*, CombVal>::const_iterator it
                     = m_combVals.find(vscp);
                 const bool copy
-                    = it != m_combVals.end() && it->second->kind == FsmNextNode::Kind::REF;
-                vscp = copy ? it->second->refVscp : nullptr;
+                    = it != m_combVals.end() && it->second.nodep->kind == FsmNextNode::Kind::REF;
+                vscp = copy ? it->second.nodep->refVscp : nullptr;
             }
         });
     }
@@ -1557,11 +1633,11 @@ class FsmDetectVisitor final : public VNVisitorConst {
         const int cmp = a.first->varp()->fileline()->operatorCompare(*b.first->varp()->fileline());
         return cmp != 0 ? cmp < 0 : a.first->varp()->name() < b.first->varp()->name();
     }
-    void processScope(AstScope* scopep) {
-        m_combVals.clear();
-        m_clockedWriters.clear();
-        m_cellPorts.clear();
-        m_cellChildPorts.clear();
+    // The values a scope's blocks assign, its clocked blocks, and the connections of its wrapper
+    // cells. Every scope is collected before any register is tried: a variable connected to a
+    // whole port is one variable of both scopes, so an instance's logic may drive its parent's.
+    void collectScope(AstScope* scopep) {
+        m_walkScopep = scopep;
         std::vector<AstAlways*> clocked;
         for (AstNode* const nodep : VNList<AstNode>{scopep->blocksp()}) {
             AstAlways* const alwaysp = VN_CAST(nodep, Always);
@@ -1572,37 +1648,46 @@ class FsmDetectVisitor final : public VNVisitorConst {
             }
             // Combinational: a continuous assignment, in a block of its own at this stage (as
             // an if, for a tristate), or an always block
-            if (AstNodeAssign* const assp = VN_CAST(alwaysp->stmtsp(), NodeAssign)) {
-                collectCellPortAlias(scopep, assp);
+            if (alwaysp->keyword() == VAlwaysKwd::CONT_ASSIGN) {
+                if (AstNodeAssign* const assp = VN_CAST(alwaysp->stmtsp(), NodeAssign)) {
+                    collectCellPortAlias(scopep, assp);
+                }
             }
             FsmEnv env;
             collectDlyWrites(alwaysp->stmtsp());
             walk(alwaysp->stmtsp(), env);
-            for (const FsmEnv::value_type& it : env) m_combVals[it.first] = it.second;
+            for (const FsmEnv::value_type& it : env) {
+                CombVal& value = m_combVals[it.first];
+                value.nodep = it.second;
+                value.scopep = scopep;
+            }  // LCOV_EXCL_LINE
         }
-        m_casesByVar.clear();
-        for (const AstCase* const casep : m_casesByScope[scopep]) indexCase(casep);
-        std::vector<FsmEnv> envs(clocked.size());
-        for (size_t i = 0; i < clocked.size(); ++i) {
-            collectDlyWrites(clocked[i]->stmtsp());
-            walk(clocked[i]->stmtsp(), envs[i]);
-            for (const FsmEnv::value_type& it : envs[i]) ++m_clockedWriters[it.first];
-        }
-        for (size_t i = 0; i < clocked.size(); ++i) {
+        std::vector<Clocked>& blocks = m_clockedByScope[scopep];
+        for (AstAlways* const alwaysp : clocked) {
+            blocks.emplace_back();
+            blocks.back().alwaysp = alwaysp;
+            collectDlyWrites(alwaysp->stmtsp());
+            walk(alwaysp->stmtsp(), blocks.back().env);
+            for (const FsmEnv::value_type& it : blocks.back().env) ++m_clockedWriters[it.first];
+        }  // LCOV_EXCL_LINE
+    }
+    // Try the registers of a scope's clocked blocks, then its wrapper cells
+    void processScope(AstScope* scopep) {
+        for (const Clocked& block : m_clockedByScope[scopep]) {
             std::vector<FsmSenDesc> senses;
-            if (!collectSenses(clocked[i], senses)) continue;
-            std::vector<Written> regs{envs[i].begin(), envs[i].end()};
+            if (!collectSenses(block.alwaysp, senses)) continue;
+            std::vector<Written> regs{block.env.begin(), block.env.end()};
             std::stable_sort(regs.begin(), regs.end(), declaredBefore);
             for (const Written& it : regs) {
                 // A register written by two blocks is not a state
                 if (m_clockedWriters[it.first] != 1) continue;
                 FsmCandidate cand;
                 cand.scopep = scopep;
-                cand.alwaysp = clocked[i];
+                cand.alwaysp = block.alwaysp;
                 cand.stateVscp = it.first;
                 cand.sampleVscp = it.first;
                 cand.senses = senses;
-                cand.flp = clocked[i]->fileline();
+                cand.flp = block.alwaysp->fileline();
                 tryRegister(cand, it.second);
             }
         }
@@ -1624,7 +1709,9 @@ class FsmDetectVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
     }
     void visit(AstCase* nodep) override {
-        m_casesByScope[m_scopep].push_back(nodep);
+        m_cases.emplace_back();
+        m_cases.back().casep = nodep;
+        m_cases.back().scopep = m_scopep;
         iterateChildrenConst(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -1634,6 +1721,8 @@ public:
     FsmDetectVisitor(FsmState& state, AstNetlist* rootp)
         : m_state{state} {
         iterateConst(rootp);
+        for (AstScope* const scopep : m_scopeps) collectScope(scopep);
+        for (const ScopedCase& scase : m_cases) indexCase(scase);
         for (AstScope* const scopep : m_scopeps) processScope(scopep);
     }
     ~FsmDetectVisitor() override {
@@ -1671,6 +1760,13 @@ class FsmCoverIncBuilder final {
     AstConst* makeConst(const uint64_t value) {
         V3Number num{static_cast<AstNode*>(nullptr), m_prevVscp->width()};
         num.setQuad(value);
+        num.isSigned(m_prevVscp->dtypep()->isSigned());
+        return new AstConst{m_flp, num};
+    }
+    // A state's value, which may be wider than 64 bits
+    AstConst* makeConst(const V3Number& value) {
+        V3Number num{static_cast<AstNode*>(nullptr), m_prevVscp->width()};
+        num.opAssign(value);
         num.isSigned(m_prevVscp->dtypep()->isSigned());
         return new AstConst{m_flp, num};
     }
@@ -1743,7 +1839,9 @@ class FsmCoverIncBuilder final {
         }
         case VFsmExpandType::AUTO: {
             arcCountWithExpansion = m_edgesCount;
-            if (m_resetVertexp) {
+            // Each reset target gets an arc from every state; the graph always has a reset
+            // vertex, which has no arcs when there is no reset
+            if (!m_resetVertexp->outEdges().empty()) {
                 UASSERT_OBJ(m_states.size() >= m_resetVertexp->outEdges().size(),
                             m_graph.sampleVarScopep(),
                             "Reset has more out edges than possible states?");
@@ -1824,7 +1922,7 @@ class FsmCoverIncBuilder final {
                 if (const FsmStateVertex* const fromp = edge.fromp()->cast<FsmStateVertex>()) {
                     if (!handledSoureces.emplace(fromp).second) continue;
                     arcCasep->addItemsp(new AstCaseItem{
-                        m_flp, makeConst(fromp->value().num().toUQuad()),
+                        m_flp, makeConst(fromp->value().num()),
                         (fromp != toStatep) ? buildCoverIncStmtp(fromp->label(), toStateLabel)
                                             : nullptr});
                 }
@@ -1833,7 +1931,7 @@ class FsmCoverIncBuilder final {
         for (const FsmStateVertex* const fromp : m_states) {
             if (handledSoureces.find(fromp) != handledSoureces.end()) continue;
             arcCasep->addItemsp(new AstCaseItem{
-                m_flp, makeConst(fromp->value().num().toUQuad()),
+                m_flp, makeConst(fromp->value().num()),
                 (fromp != toStatep)
                     ? buildCoverIncStmtp(fromp->label(), toStateLabel, "artificial")
                     : nullptr});
@@ -1864,7 +1962,7 @@ class FsmCoverIncBuilder final {
             const FsmStateVertex* const fromp = arcp->fromp()->as<FsmStateVertex>();
             if (fromp != toStatep) {
                 arcCasep->addItemsp(
-                    new AstCaseItem{m_flp, makeConst(fromp->value().num().toUQuad()),
+                    new AstCaseItem{m_flp, makeConst(fromp->value().num()),
                                     buildCoverIncStmtp(fromp->label(), toStatep->label())});
             }
         }
@@ -1880,13 +1978,22 @@ public:
         , m_modPrettyName{graph.scopep()->modp()->prettyName()} {
         initExistingStates();
         AstVarScope* const sampleVscp = graph.sampleVarScopep();
-        const VFsmExpandType expand
-            = graph.stateVarScopep()->varp()->attrFsmStateExpand() != VFsmExpandType::DEFAULT
-                  ? graph.stateVarScopep()->varp()->attrFsmStateExpand()
-                  : v3Global.opt.coverageFsmExpand();
+        const bool expandFromOption
+            = graph.stateVarScopep()->varp()->attrFsmStateExpand() == VFsmExpandType::DEFAULT;
+        VFsmExpandType expand = expandFromOption
+                                    ? v3Global.opt.coverageFsmExpand()
+                                    : graph.stateVarScopep()->varp()->attrFsmStateExpand();
 
         {
-            const size_t arcCountWithExpansion = getArcCountWithExpansion(expand);
+            size_t arcCountWithExpansion = getArcCountWithExpansion(expand);
+            // The option's expansion applies to every FSM, so one it would make too large, e.g.
+            // 'full' on a wide register, gets the default; a metacomment's request is an error
+            if (expandFromOption
+                && arcCountWithExpansion
+                       > static_cast<size_t>(v3Global.opt.coverageFsmMaxArcs())) {
+                expand = VFsmExpandType::AUTO;
+                arcCountWithExpansion = getArcCountWithExpansion(expand);
+            }
             if (VL_UNLIKELY(v3Global.opt.coverageFsmMaxArcs() < 0 || ~arcCountWithExpansion == 0ULL
                             || arcCountWithExpansion
                                    > static_cast<size_t>(v3Global.opt.coverageFsmMaxArcs()))) {
@@ -1920,13 +2027,12 @@ public:
             // State coverage fires when the FSM enters a state from any other
             // value, so repeated self-holds do not count as new entries.
             AstCoverOtherDecl* const declp = buildStateCoverDecl(statep->label());
-            initialStateCasep->addItemsp(
-                new AstCaseItem{m_flp, makeConst(statep->value().num().toUQuad()),
-                                new AstCoverInc{m_flp, declp, true}});
+            initialStateCasep->addItemsp(new AstCaseItem{m_flp, makeConst(statep->value().num()),
+                                                         new AstCoverInc{m_flp, declp, true}});
             const bool expandAllOrReset
                 = expandAll || (resetTargets.find(statep) != resetTargets.end());
             arcCasep->addItemsp(new AstCaseItem{
-                m_flp, makeConst(statep->value().num().toUQuad()),
+                m_flp, makeConst(statep->value().num()),
                 AstNode::addNext<AstNodeStmt>(
                     new AstCoverInc{m_flp, declp},
                     expandAllOrReset

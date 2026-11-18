@@ -1406,6 +1406,99 @@ module fsm_not_fsms (
   end
 endmodule
 
+// The next-state logic in an instance of its own
+module fsm_child_logic (
+    input logic [1:0] state,
+    input logic go,
+    output logic [1:0] nxt
+);
+  always_comb begin
+    nxt = state;
+    case (state)
+      2'd0: if (go) nxt = 2'd1;
+      2'd1: nxt = 2'd2;
+      default: nxt = 2'd0;
+    endcase
+  end
+endmodule
+
+// Two instances, so their ports are copies rather than the parent's variables
+module fsm_child_next (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  logic [1:0] state, nxt, state2, nxt2;
+  fsm_child_logic logic_u (.*);
+  fsm_child_logic logic2_u (
+      .state(state2),
+      .go(go),
+      .nxt(nxt2)
+  );
+  always_ff @(posedge clk) state <= rst ? 2'd0 : nxt;
+  always_ff @(posedge clk) state2 <= rst ? 2'd0 : nxt2;
+endmodule
+
+// The last split of a chain has a constant on both sides: neither is the reset
+module fsm_both_constant (
+    input logic clk,
+    input logic rst_n,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge clk)
+    if (state == S1 && go) state <= S2;
+    else if (state == S2) state <= S0;
+    else if (rst_n) state <= S1;
+    else state <= S0;
+endmodule
+
+// A later statement overriding the reset: the reset is still the first if
+module fsm_reset_override (
+    input logic clk,
+    input logic rst,
+    input logic go,
+    input logic abort
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge clk) begin
+    if (rst) state <= S0;
+    else
+      case (state)
+        S0: if (go) state <= S1;
+        S1: state <= S2;
+        default: state <= S0;
+      endcase
+    if (abort) state <= S3;
+  end
+endmodule
+
+class fsm_token;
+endclass
+
+// A condition comparing class handles, which aren't bit patterns
+module fsm_class_compare (
+    input logic clk,
+    input logic rst,
+    input logic go,
+    input logic done
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  fsm_token a, b;
+  initial a = new;
+  always_ff @(posedge clk) b <= done ? a : null;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else
+      case (state)
+        S0: state <= (a == b) ? S1 : S2;
+        default: if (go) state <= S0;
+      endcase
+endmodule
+
 module t (
     input logic clk
 );
@@ -1470,6 +1563,10 @@ module t (
   fsm_wide_next wide_next_u (.*);
   fsm_unfollowed_writes unfollowed_writes_u (.*);
   fsm_not_fsms not_fsms_u (.*);
+  fsm_child_next child_next_u (.*);
+  fsm_both_constant both_constant_u (.*);
+  fsm_reset_override reset_override_u (.*);
+  fsm_class_compare class_compare_u (.*);
 
   initial cyc = 0;
 

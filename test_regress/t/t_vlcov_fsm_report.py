@@ -15,8 +15,8 @@ test.scenarios('simulator')
 
 # This regression targets the reporting side of FSM coverage rather than the
 # detector itself. The generated coverage.dat contains state points, ordinary
-# arcs, reset arcs, and reset-include arcs so verilator_coverage
-# exercises the FSM-specific filtering and annotation code paths.
+# arcs and reset arcs, so verilator_coverage exercises its FSM annotation
+# code paths.
 test.compile(verilator_flags2=['--cc --coverage'])
 
 test.execute()

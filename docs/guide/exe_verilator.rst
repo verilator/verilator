@@ -367,6 +367,9 @@ Summary:
 .. option:: --coverage-fsm-max-arcs <value>
 
    Specifies the maximum count of FSM transitions to be tracked by coverage for a single FSM.
+   An FSM that the :vlopt:`--coverage-fsm-expand` mode would take past this limit, such
+   as a wide register under `full`, uses `auto` instead. Exceeding the limit is an error
+   for a mode given by a metacomment on the state variable, or under `auto`.
 
    Defaults to 4096.
 
