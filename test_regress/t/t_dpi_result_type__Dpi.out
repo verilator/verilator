@@ -16,41 +16,56 @@ extern "C" {
 
 
 // DPI EXPORTS
-extern svBitVecVal e_array_2_state_1();
-extern svBitVecVal e_array_2_state_32();
-extern svBit e_bit();
-extern svBit e_bit_t();
-extern svBitVecVal e_bit_t_array_1();
-extern svBitVecVal e_bit_t_array_32();
-extern char e_byte();
-extern char e_byte_t();
-extern unsigned char e_byte_unsigned();
-extern unsigned char e_byte_unsigned_t();
-extern void* e_chandle();
-extern void* e_chandle_t();
-extern int e_int();
-extern int e_int_t();
-extern unsigned int e_int_unsigned();
-extern unsigned int e_int_unsigned_t();
-extern svLogic e_logic();
-extern svLogic e_logic_t();
-extern long long e_longint();
-extern long long e_longint_t();
-extern unsigned long long e_longint_unsigned();
-extern unsigned long long e_longint_unsigned_t();
-extern double e_real();
-extern double e_real_t();
-extern short e_shortint();
-extern short e_shortint_t();
-extern unsigned short e_shortint_unsigned();
-extern unsigned short e_shortint_unsigned_t();
-extern const char* e_string();
-extern const char* e_string_t();
-extern svBitVecVal e_struct_2_state_1();
-extern svBitVecVal e_struct_2_state_32();
-extern svBitVecVal e_union_2_state_1();
-extern svBitVecVal e_union_2_state_32();
-extern void e_void();
+// Define VL_API_EXPORT or VL_API_IMPORT to override these defaults
+#ifndef VL_API_EXPORT
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__CYGWIN__)
+#define VL_API_EXPORT __declspec(dllexport)
+#else
+#define VL_API_EXPORT
+#endif
+#endif
+#ifndef VL_API_IMPORT
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__CYGWIN__)
+#define VL_API_IMPORT __declspec(dllimport)
+#else
+#define VL_API_IMPORT
+#endif
+#endif
+extern VL_API_IMPORT svBitVecVal e_array_2_state_1();
+extern VL_API_IMPORT svBitVecVal e_array_2_state_32();
+extern VL_API_IMPORT svBit e_bit();
+extern VL_API_IMPORT svBit e_bit_t();
+extern VL_API_IMPORT svBitVecVal e_bit_t_array_1();
+extern VL_API_IMPORT svBitVecVal e_bit_t_array_32();
+extern VL_API_IMPORT char e_byte();
+extern VL_API_IMPORT char e_byte_t();
+extern VL_API_IMPORT unsigned char e_byte_unsigned();
+extern VL_API_IMPORT unsigned char e_byte_unsigned_t();
+extern VL_API_IMPORT void* e_chandle();
+extern VL_API_IMPORT void* e_chandle_t();
+extern VL_API_IMPORT int e_int();
+extern VL_API_IMPORT int e_int_t();
+extern VL_API_IMPORT unsigned int e_int_unsigned();
+extern VL_API_IMPORT unsigned int e_int_unsigned_t();
+extern VL_API_IMPORT svLogic e_logic();
+extern VL_API_IMPORT svLogic e_logic_t();
+extern VL_API_IMPORT long long e_longint();
+extern VL_API_IMPORT long long e_longint_t();
+extern VL_API_IMPORT unsigned long long e_longint_unsigned();
+extern VL_API_IMPORT unsigned long long e_longint_unsigned_t();
+extern VL_API_IMPORT double e_real();
+extern VL_API_IMPORT double e_real_t();
+extern VL_API_IMPORT short e_shortint();
+extern VL_API_IMPORT short e_shortint_t();
+extern VL_API_IMPORT unsigned short e_shortint_unsigned();
+extern VL_API_IMPORT unsigned short e_shortint_unsigned_t();
+extern VL_API_IMPORT const char* e_string();
+extern VL_API_IMPORT const char* e_string_t();
+extern VL_API_IMPORT svBitVecVal e_struct_2_state_1();
+extern VL_API_IMPORT svBitVecVal e_struct_2_state_32();
+extern VL_API_IMPORT svBitVecVal e_union_2_state_1();
+extern VL_API_IMPORT svBitVecVal e_union_2_state_32();
+extern VL_API_IMPORT void e_void();
 
 // DPI IMPORTS
 extern void check_exports();

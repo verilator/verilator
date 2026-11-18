@@ -74,10 +74,25 @@ extern "C" {
 
 
     // DPI EXPORTS
+    // Define VL_API_EXPORT or VL_API_IMPORT to override these defaults
+#ifndef VL_API_EXPORT
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__CYGWIN__)
+#define VL_API_EXPORT __declspec(dllexport)
+#else
+#define VL_API_EXPORT
+#endif
+#endif
+#ifndef VL_API_IMPORT
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__CYGWIN__)
+#define VL_API_IMPORT __declspec(dllimport)
+#else
+#define VL_API_IMPORT
+#endif
+#endif
     // DPI export at t/t_dpi_struct_unpacked.v:183:17
-    extern void dpix_array(const eval* i, eval* o);
+    extern VL_API_IMPORT void dpix_array(const eval* i, eval* o);
     // DPI export at t/t_dpi_struct_unpacked.v:175:17
-    extern void dpix_outer(const outer_t* i, outer_t* o, outer_t* io);
+    extern VL_API_IMPORT void dpix_outer(const outer_t* i, outer_t* o, outer_t* io);
 
     // DPI IMPORTS
     // DPI import at t/t_dpi_struct_unpacked.v:79:32

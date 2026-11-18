@@ -43,6 +43,12 @@ class EmitCPch final : public EmitCBaseVisitorConst {
         puts("# error \"Including multiple precompiled header files\"\n");
         puts("#endif\n");
         puts("#define VL_PCH_INCLUDED\n");
+        if (v3Global.dpi()) {
+            // The model header may include the DPI header, so also needed here for __Dpi.cpp
+            puts("\n// In the model, declare the DPI export functions as exports, not imports\n");
+            puts("#undef VL_API_IMPORT\n");
+            puts("#define VL_API_IMPORT VL_API_EXPORT\n");
+        }
 
         puts("\n");
         puts("\n#include \"verilated.h\"\n");
