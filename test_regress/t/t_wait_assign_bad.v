@@ -12,8 +12,13 @@ module t;
     int foo;
     // verilator lint_off ASSIGNEQEXPR
     wait ((foo = bar) == 23);
-    // verilator lint_on ASSIGNEQEXPR
     wait ((foo += bar) == 23);
+    wait (((foo = bar) == 1) && ((foo -= 1) != 0));
+    // verilator lint_on ASSIGNEQEXPR
+    wait (foo++ == 23);
+    wait (foo-- == 23);
+    wait (++foo == 23);
+    wait (--foo);
   endtask
 
 endmodule

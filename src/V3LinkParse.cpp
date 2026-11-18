@@ -851,16 +851,31 @@ class LinkParseVisitor final : public VNVisitor {
     }
     void visit(AstWait* nodep) override {
         cleanFileline(nodep);
-        nodep->condp()->foreach([](AstExprStmt* exprstmtp) {
-            for (AstNode* const stmtp : exprstmtp->stmtspList()) {
-                if (AstNodeAssign* const assignp = VN_CAST(stmtp, NodeAssign)) {
-                    assignp->v3error("Assignment operator not allowed in a wait statement "
-                                     "condition (IEEE 1800-2023 11.3.6)\n"
-                                     << assignp->warnMore()
-                                     << "... Suggest use '==' to compare, or move the assignment"
-                                        " out of the wait condition");
+        nodep->condp()->foreach([this](AstNode* itemp) {
+            bool bad = false;
+            if (AstExprStmt* const exprstmtp = VN_CAST(itemp, ExprStmt)) {
+                for (AstNode* const stmtp : exprstmtp->stmtspList()) {
+                    if (!VN_IS(stmtp, NodeAssign)) continue;
+                    stmtp->v3error(
+                        "Assignment operator not allowed in a wait statement condition\n"
+                        << stmtp->warnMore()
+                        << "... Suggest use '==' to compare, or move the assignment out"
+                           " of the wait condition");
+                    bad = true;
+                    break;
                 }
+            } else if (VN_IS(itemp, PostInc) || VN_IS(itemp, PostDec) || VN_IS(itemp, PreInc)
+                       || VN_IS(itemp, PreDec)) {
+                itemp->v3error("Pre/post increment/decrement operator not allowed in a wait "
+                               "statement condition\n"
+                               << itemp->warnMore()
+                               << "... Suggest move the increment or decrement out of the wait"
+                                  " condition");
+                bad = true;
             }
+            if (!bad) return;
+            itemp->replaceWith(new AstConst{itemp->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(itemp), itemp);
         });
         iterateChildren(nodep);
         if (nodep->condp()->isZero()) {
