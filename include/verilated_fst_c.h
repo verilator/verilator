@@ -151,6 +151,15 @@ template <>
 void VerilatedFst::Super::set_time_resolution(const std::string& unit);
 template <>
 void VerilatedFst::Super::dumpvars(int level, const std::string& hier);
+template <>
+void VerilatedFst::Super::dumpvarsExact(const std::string& name);
+template <>
+void VerilatedFst::Super::dumpvarsScope(int level, const std::string& name);
+template <>
+void VerilatedFst::Super::dumpvarsRelative(int level, const std::string& name,
+                                           const std::string& caller, const std::string& root);
+template <>
+std::vector<std::string> VerilatedFst::Super::dumpvarsUnmatched() const;
 #endif
 
 //=============================================================================
@@ -249,6 +258,20 @@ public:
     // If level = 0, dump everything and hier is then ignored
     void dumpvars(int level, const std::string& hier) VL_MT_SAFE {
         m_sptrace.dumpvars(level, hier);
+    }
+    // Also dump the variable with exactly this name, see VerilatedTrace::dumpvarsExact
+    void dumpvarsExact(const std::string& name) VL_MT_SAFE { m_sptrace.dumpvarsExact(name); }
+    // Also dump variables at or below this scope, see VerilatedTrace::dumpvarsScope
+    void dumpvarsScope(int level, const std::string& name) VL_MT_SAFE {
+        m_sptrace.dumpvarsScope(level, name);
+    }
+    // dumpvarsExact() names the last open() did not declare
+    void dumpvarsRelative(int level, const std::string& name, const std::string& caller,
+                          const std::string& root) VL_MT_SAFE {
+        m_sptrace.dumpvarsRelative(level, name, caller, root);
+    }
+    std::vector<std::string> dumpvarsUnmatched() const VL_MT_SAFE {
+        return m_sptrace.dumpvarsUnmatched();
     }
 
     // Internal class access

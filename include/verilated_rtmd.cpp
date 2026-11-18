@@ -204,7 +204,7 @@ std::string VlRtmdDataType::toString() const {
 //=========================================================================
 // VlRtmdHierListener::Path
 
-std::string VlRtmdHierListener::Path::name() const {
+std::string VlRtmdHierListener::Path::name(char separator) const {
     std::string name = m_rootp->hierName();
     for (const Entry& entry : m_entries) {
         const VlRtmdHierRow* const rowp = entry.first;
@@ -213,7 +213,7 @@ std::string VlRtmdHierListener::Path::name() const {
             if (pushp->m_kind == VlRtmdHierRow::Push::Kind::ROOT) continue;
             if (pushp->m_kind == VlRtmdHierRow::Push::Kind::ROOTIO) continue;
         }
-        if (!name.empty()) name += '.';  // Root name might be empty
+        if (!name.empty()) name += separator;  // Root name might be empty
         if (const VlRtmdHierRow::Instance* const instancep = rowp->instancep()) {
             name += instancep->m_namep;
         } else if (const VlRtmdHierRow::IfaceRef* const ifaceRefp = rowp->ifaceRefp()) {
@@ -431,7 +431,7 @@ void VlRtmdHierListener::walkRows(const VerilatedModel& model, const VlRtmdHierR
 
         if (const VlRtmdHierRow::Partition* const partp = rowp->partitionp()) {
             // The partition model is registered, under its hierarchical path (its %m)
-            const auto it = m_models.find(m_path.name() + '.' + partp->m_namep);
+            const auto it = m_models.find(pathName() + '.' + partp->m_namep);
             assert(it != m_models.end());
             walkModel(*it->second, rowp);
             continue;
