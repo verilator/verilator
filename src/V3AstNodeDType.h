@@ -76,7 +76,7 @@ public:
     /// are compound when methods calls operate on object, or when
     /// under another compound-requiring object e.g. class
     virtual bool isCompound() const = 0;
-    // Integral or packed, allowed inside an unpacked union/struct
+    // Integral or packed, allowed inside a packed union/struct
     virtual bool isIntegralOrPacked() const { return !isCompound(); }
     // (Slow) recurse down to find basic data type
     virtual AstBasicDType* basicp() const VL_MT_STABLE = 0;
