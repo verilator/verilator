@@ -2016,7 +2016,7 @@ public:
 int AstToDfgSynthesize::AstVarScopeComparator::s_vscpIdCounter = 0;
 
 // Decide which DfgLogic to attempt to synthesize
-static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
+static void dfgSelectLogicForSynthesis(DfgGraph& dfg, V3DfgSynthesisContext& ctx) {
     // If we are told to synthesize everything, we will do so ...
     if (v3Global.opt.fDfgSynthesizeAll()) {
         for (DfgVertex& vtx : dfg.opVertices()) {
@@ -2086,6 +2086,7 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
         logic.foreachSink([&](DfgVertex& sink) {
             DfgUnresolved* unresolvedp = sink.as<DfgUnresolved>();
             if (!isVisited.insert(unresolvedp).second) return false;
+            ++ctx.m_synt.selectVarExpansions;
             unresolvedp->foreachSource([&](DfgVertex& sibling) {
                 DfgLogic& siblingLogic = *sibling.as<DfgLogic>();
                 if (!siblingLogic.selectedForSynthesis()) worklist.push_front(siblingLogic);
@@ -2098,7 +2099,7 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
 
 void V3DfgPasses::synthesize(DfgGraph& dfg, V3DfgContext& ctx) {
     // Select which DfgLogic to attempt to synthesize
-    dfgSelectLogicForSynthesis(dfg);
+    dfgSelectLogicForSynthesis(dfg, ctx.m_synthContext);
     // Synthesize them - also removes un-synthesized DfgLogic, so must run even if nothing selected
     AstToDfgSynthesize::apply(dfg, ctx.m_synthContext);
 }

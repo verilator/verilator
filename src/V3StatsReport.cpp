@@ -203,6 +203,7 @@ void V3Stats::addStat(const V3Statistic& stat) { StatsReport::addStat(stat); }
 double V3Stats::getStatSum(const string& name) { return StatsReport::getStatSum(name); }
 
 void V3Stats::statsStage(const string& name) {
+    static uint64_t s_lastOpCount = -1;
     static double s_lastWallTime = -1;
     static int s_fileNumber = 0;
 
@@ -214,6 +215,11 @@ void V3Stats::statsStage(const string& name) {
     s_lastWallTime = wallTime;
     V3Stats::addStatPerf("Stage, Elapsed time (sec), " + digitName, wallTimeDelta);
     V3Stats::addStatPerf("Stage, Elapsed time (sec), TOTAL", wallTimeDelta);
+
+    const uint64_t opDelta = V3Global::opCount() - s_lastOpCount;
+    s_lastOpCount = V3Global::opCount();
+    V3Stats::addStatPerf("Stage, Operation count, " + digitName, opDelta);
+    V3Stats::addStatPerf("Stage, Operation count, TOTAL", opDelta);
 
     uint64_t memPeak;
     uint64_t memCurrent;
