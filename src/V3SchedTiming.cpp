@@ -229,7 +229,9 @@ class TransformForksVisitor final : public VNVisitor {
                 AstVar* const newvarp
                     = new AstVar{varp->fileline(), VVarType::BLOCKTEMP, varp->name(), varp};
                 newvarp->funcLocal(true);
-                newvarp->direction(passByValue ? VDirection::INPUT : VDirection::REF);
+                newvarp->direction(passByValue          ? VDirection::INPUT
+                                   : varp->isConstRef() ? VDirection::CONSTREF
+                                                        : VDirection::REF);
                 funcp->addArgsp(newvarp);
                 AstVarScope* const newvscp
                     = new AstVarScope{newvarp->fileline(), funcp->scopep(), newvarp};
