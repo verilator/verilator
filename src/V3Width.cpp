@@ -3527,6 +3527,8 @@ class WidthVisitor final : public VNVisitor {
                                         new AstNToI{nodep->fileline(), fromp, intDtp}};
                 } else if (!basicp->isString() && fromDtp->isString()) {
                     newp = new AstNToI{nodep->fileline(), nodep->fromp()->unlinkFrBack(), toDtp};
+                } else if (basicp->isString() && !fromDtp->isString()) {
+                    newp = new AstCvtPackString{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
                 } else if (!basicp->isDouble() && !fromDtp->isDouble()) {
                     AstNodeDType* const origDTypep = nodep->dtypep();
                     if (!VN_IS(fromDtp, StreamDType)) {

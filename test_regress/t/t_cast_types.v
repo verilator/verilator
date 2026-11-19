@@ -4,8 +4,9 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-`define TRY_ASSIGN(a, b) a = b
-`define TRY_CAST(a, b) a = type(a)'(b)
+`define TRY_ASSIGN(a, b) begin a = b; $display("%p", a); end
+`define TRY_CAST(a, b) begin a = type(a)'(b); $display("%p", a); end
+
 `ifdef VERILATOR
 `define TRY_DYNAMIC(a, b) // UNSUP $cast
 `define TRY_BAD(a, b) // UNSUP $cast
