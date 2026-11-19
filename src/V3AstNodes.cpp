@@ -1480,11 +1480,11 @@ const char* AstConsStruct::broken() const {
     BROKEN_RTN(memberp);
     return nullptr;
 }
-AstNodeExpr* AstConsStruct::memberValuep(const string& name) const {
+AstNodeExpr* AstConsStruct::memberValuep(const AstMemberDType* memberp) const {
     for (AstConsStructItem* const itemp : itemspList()) {
-        if (itemp->memberp()->name() == name) return itemp->valuep();
+        if (itemp->memberp() == memberp) return itemp->valuep();
     }
-    v3fatalSrc("Structure value without member '" << name << "'");
+    v3fatalSrc("Structure value without member '" << memberp->name() << "'");
     return nullptr;
 }
 void AstConsStructItem::dump(std::ostream& str) const {
@@ -2223,6 +2223,7 @@ void AstMemberDType::dump(std::ostream& str) const {
     if (isConstrainedRand()) str << " [CSRAND]";
     if (rand().isRandomizable()) str << " [" << rand() << "]";
     if (lsb()) str << " lsb=" << lsb();
+    str << " index=" << index();
     if (name() != "") str << " name=" << name();
     if (tag() != "") str << " tag=" << tag();
 }
@@ -2230,6 +2231,7 @@ void AstMemberDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isConstrainedRand);
     if (rand().isRandomizable()) dumpJsonStr(str, "rand", rand().ascii());
     if (lsb() != 0) dumpJsonStr(str, "lsb", std::to_string(lsb()));
+    dumpJsonNumFunc(str, index);
     dumpJsonStrFunc(str, name);
     dumpJsonStrFunc(str, tag);
     dumpJsonGen(str);
@@ -3471,6 +3473,14 @@ void AstNodeTriop::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 bool AstNodeTriop::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
     return m_purity.get();
+}
+const char* AstNodeUOrStructDType::broken() const {
+    int index = 0;
+    for (const AstMemberDType* const itemp : memberspList()) {
+        BROKEN_RTN(itemp->parentp() != this);
+        BROKEN_RTN(itemp->index() != index++);
+    }
+    return nullptr;
 }
 string AstNodeUOrStructDType::dpiName() const {
     // C has no scopes, so the name the typedef declaring it gives, without the scope
