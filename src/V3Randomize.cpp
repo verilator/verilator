@@ -1595,6 +1595,10 @@ class RandomizeVisitor final : public VNVisitor {
                 return new AstVar{fl, VVarType::VAR, m_randArrayUniqueNames.get(""),
                                   VN_AS(tempDTypep, AssocArrayDType)->keyDTypep()};
             }
+            if (VN_IS(tempDTypep, WildcardArrayDType)) {
+                return new AstVar{fl, VVarType::VAR, m_randArrayUniqueNames.get(""),
+                                  dtypep->findStringDType()};
+            }
             return new AstVar{fl, VVarType::VAR, m_randArrayUniqueNames.get(""),
                               dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
         };
@@ -1619,6 +1623,8 @@ class RandomizeVisitor final : public VNVisitor {
                         new AstConst{fl, 0}, V3Number::log2b(aryDTypep->hi()) + 1}};
             } else if (VN_IS(tempDTypep, AssocArrayDType)) {
                 tempElementp = new AstAssocSel{fl, tempExprp, tempRefp};
+            } else if (VN_IS(tempDTypep, WildcardArrayDType)) {
+                tempElementp = new AstWildcardSel{fl, tempExprp, tempRefp};
             } else if (VN_IS(tempDTypep, QueueDType)) {
                 tempElementp
                     = new AstCMethodHard{fl, tempExprp, VCMethod::DYN_AT_WRITE_APPEND, tempRefp};
@@ -1686,6 +1692,8 @@ class RandomizeVisitor final : public VNVisitor {
             return createArrayForeachLoop(fl, unpackarrayDtp, exprp, outputVarp);
         } else if (AstAssocArrayDType* const assocarrayDtp = VN_CAST(memberDtp, AssocArrayDType)) {
             return createArrayForeachLoop(fl, assocarrayDtp, exprp, outputVarp);
+        } else if (AstWildcardArrayDType* const wildDtp = VN_CAST(memberDtp, WildcardArrayDType)) {
+            return createArrayForeachLoop(fl, wildDtp, exprp, outputVarp);
         } else {
             AstNodeExpr* valp;
             if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
