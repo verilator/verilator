@@ -866,26 +866,18 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->fileline(newfl);
         }
     }
-    void visit(AstExprStmt* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         cleanFileline(nodep);
         if (!m_inWaitCond) {
             iterateChildren(nodep);
             return;
         }
-        bool bad = false;
-        for (AstNode* const stmtp : nodep->stmtspList()) {
-            if (!VN_IS(stmtp, NodeAssign)) continue;
-            stmtp->v3error("Assignment operator not allowed in a wait statement condition "
-                           "(IEEE 1800-2023 11.3.6)\n"
-                           << stmtp->warnMore()
-                           << "... Suggest move the assignment out of the wait condition");
-            bad = true;
-        }
-        if (!bad) {
-            iterateChildren(nodep);
-            return;
-        }
-        nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+        nodep->v3error("Assignment operator not allowed in a wait statement condition "
+                       "(IEEE 1800-2023 11.3.6)\n"
+                       << nodep->warnMore()
+                       << "... Suggest move the assignment out of the wait condition");
+        AstConst* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        nodep->replaceWith(new AstStmtExpr{nodep->fileline(), newp});
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNodeUniop* nodep) override {
