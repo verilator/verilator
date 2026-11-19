@@ -71,6 +71,21 @@ module t_constraint_unsat;
       $stop;
     end
 
+    // Test: std::randomize reports only the failing call's constraints (issue #8882)
+    $display("\n=== Test: std::randomize conflict (y > 10 && y < 5) after a valid call ===");
+    begin
+      bit [3:0] x;
+      bit [3:0] y;
+      if (std::randomize(x) with { x < 5; } != 1) $stop;
+      if (std::randomize(y) with { y > 10; y < 5; } == 0) begin
+        $display("Expected failure: conflicting constraints detected");
+      end
+      else begin
+        $display("ERROR: Should have failed with conflicting constraints");
+        $stop;
+      end
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end
