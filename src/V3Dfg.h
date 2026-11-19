@@ -598,6 +598,10 @@ inline bool isSupported(const AstVarScope* vscp) {
     // Check the AstVar
     AstVar* const varp = vscp->varp();
     if (varp->isIfaceRef()) return false;  // Cannot handle interface references
+    // Written through a virtual interface (AstVar::user1 bit1, set by DataflowOptimize).
+    // DFG would convert its other writers to cont assignments, which V3Delayed treats as
+    // exclusive, resulting in potentially missed BLKANDNBLKs.
+    if (varp->user1() & 0x02) return false;
     if (varp->delayp()) return false;  // Cannot handle delayed variables
     if (varp->isSc()) return false;  // SystemC variables are special and rare, we can ignore
     return DfgDataType::fromAst(varp->dtypep());

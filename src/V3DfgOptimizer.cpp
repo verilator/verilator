@@ -118,11 +118,10 @@ class DataflowOptimize final {
                 return;
             }
         });
-        // Mark all instances of variables accessed through a member reference
+        // Mark all instances of variables read through a member reference.
+        // Written vars are rejected by V3Dfg::isSupported.
         for (AstVarScope* const vscp : ifaceVscps) {
-            const int flags = vscp->varp()->user1();
-            if (flags & 0x01) DfgVertexVar::setHasExtRdRefs(vscp);
-            if (flags & 0x02) DfgVertexVar::setHasExtWrRefs(vscp);
+            if (vscp->varp()->user1() & 0x01) DfgVertexVar::setHasExtRdRefs(vscp);
         }
     }
 
