@@ -29,6 +29,11 @@
 #include <memory>
 #define VERILATOR_VERILATED_VPI_CPP_
 
+// VL_API_EXPORT, when defined, also marks the VPI functions
+#if defined(VL_API_EXPORT) && !defined(PLI_DLLESPEC)
+#define PLI_DLLESPEC VL_API_EXPORT
+#endif
+
 // On MSVC++ we want vpi_user.h to declare the VPI functions as exports, not imports
 #define PLI_PROTOTYPES
 #define PROTO_PARAMS(params) params
