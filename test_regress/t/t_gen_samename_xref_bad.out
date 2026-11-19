@@ -1,0 +1,31 @@
+%Error: t/t_gen_samename_xref_bad.v:52:32: Can't find definition of 'u_b'
+                                         : ... note: In instance 't'
+   52 |     $display("%0d", u_r1.g.u_b.mem);
+      |                                ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_gen_samename_xref_bad.v:53:28: Can't find definition of 'last_only' in dotted signal: 'u_r1.g.last_only'
+                                         : ... note: In instance 't'
+   53 |     $display("%0d", u_r1.g.last_only);
+      |                            ^~~~~~~~~
+        ... Known scopes under 'last_only': <no instances found>
+%Error: t/t_gen_samename_xref_bad.v:54:32: Can't find definition of 'u_a' in dotted task/function: 'u_r0.g.u_a.get'
+                                         : ... note: In instance 't'
+   54 |     $display("%0d", u_r0.g.u_a.get());
+      |                                ^~~
+        ... Known scopes under 'get': u_b
+%Error: t/t_gen_samename_xref_bad.v:55:34: Can't find definition of 'inner' in dotted task/function: 'u_r0.g.inner.get'
+                                         : ... note: In instance 't'
+   55 |     $display("%0d", u_r0.g.inner.get());
+      |                                  ^~~
+        ... Known scopes under 'get': u_b
+%Error: t/t_gen_samename_xref_bad.v:56:27: Can't find definition of 'g' in dotted task/function: 'u_s.g.get'
+                                         : ... note: In instance 't'
+   56 |     $display("%0d", u_s.g.get());
+      |                           ^~~
+        ... Known scopes under 'get': <no instances found>
+%Error: t/t_gen_samename_xref_bad.v:57:33: Can't find definition of 'g' in dotted task/function: 'u_s.g.inner.get'
+                                         : ... note: In instance 't'
+   57 |     $display("%0d", u_s.g.inner.get());
+      |                                 ^~~
+        ... Known scopes under 'get': <no instances found>
+%Error: Exiting due to
