@@ -660,11 +660,11 @@ size_t V3ParseImp::tokenPipeScanParens(size_t depth) {
     return depth;
 }
 
-void V3ParseImp::tokenPipeMarkEmptyConstraintSet(const size_t depth) {
-    // '{' '}' after if/foreach/else/'->' is an empty constraint_set, not an empty queue
-    // starting the next expression as in 'if (a) {} -b < 2;'.
-    if (tokenPeekp(depth)->token == '{' && tokenPeekp(depth + 1)->token == '}')
-        m_tokensAhead.at(depth).token = yP_CURLY__EMPTY;
+bool V3ParseImp::tokenPipeScanEmptyConstraintSet(const size_t depth) {
+    // Return if the '{' at depth is followed by '}', so it is an empty constraint_set rather
+    // than an empty queue starting the next expression, as in 'if (a) {} -b < 2;'.
+    UASSERT(tokenPeekp(depth)->token == '{', "Start with '{'");
+    return tokenPeekp(depth + 1)->token == '}';
 }
 
 size_t V3ParseImp::tokenPipeScanEqNew(size_t depth) {
@@ -790,11 +790,24 @@ void V3ParseImp::tokenPipeline() {
                 token = yCONST__ETC;
             }
         } else if (token == yELSE || token == yP_MINUSGT) {
-            VL_RESTORER(yylval);  // Remember value, as about to read ahead
-            tokenPipeMarkEmptyConstraintSet(0);
+            if (nexttok == '{') {
+                VL_RESTORER(yylval);  // Remember value, as about to read ahead
+                if (tokenPipeScanEmptyConstraintSet(0)) {
+                    m_tokensAhead.at(0).token = yP_CURLY__EMPTY;
+                } else {
+                    m_tokensAhead.at(0).token = '{';
+                }
+            }
         } else if (token == yFOREACH || token == yIF) {
             VL_RESTORER(yylval);  // Remember value, as about to read ahead
-            tokenPipeMarkEmptyConstraintSet(tokenPipeScanParens(0));
+            const size_t depth = tokenPipeScanParens(0);
+            if (tokenPeekp(depth)->token == '{') {
+                if (tokenPipeScanEmptyConstraintSet(depth)) {
+                    m_tokensAhead.at(depth).token = yP_CURLY__EMPTY;
+                } else {
+                    m_tokensAhead.at(depth).token = '{';
+                }
+            }
         } else if (token == yGLOBAL__LEX) {
             if (nexttok == yCLOCKING) {
                 token = yGLOBAL__CLOCKING;
