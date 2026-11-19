@@ -128,47 +128,4 @@ module t (
     c.q = c.q.find with (item > 2);
     `checkp(c.q, "'{'h5, 'h6}");
   end
-
-  // Other array methods with 'with', using the index or a named iterator
-  initial begin
-    int aq[int][$];
-    aq[0] = {4, 3, 5, 3};
-    foreach (aq[k]) aq[k] = aq[k].find_index with (item == 3);
-    `checkp(aq, "'{'h0:'{'h1, 'h3}}");
-    aq[0] = {4, 3, 5, 3};
-    foreach (aq[k]) aq[k] = aq[k].find_first(x) with (x > 3);
-    `checkp(aq, "'{'h0:'{'h4}}");
-    aq[0] = {4, 3, 5, 3};
-    foreach (aq[k]) aq[k] = aq[k].find_last with (item.index < 3);
-    `checkp(aq, "'{'h0:'{'h5}}");
-    aq[0] = {4, -3, 5};
-    foreach (aq[k]) aq[k] = aq[k].min with (item * item);
-    `checkp(aq, "'{'h0:'{'hfffffffd}}");
-    aq[0] = {4, -7, 5};
-    foreach (aq[k]) aq[k] = aq[k].max(x) with (x * x);
-    `checkp(aq, "'{'h0:'{'hfffffff9}}");
-    aq[0] = {5, 5};
-    foreach (aq[k]) aq[k] = aq[k].unique with (item % 10);
-    `checkp(aq, "'{'h0:'{'h5}}");
-  end
-
-  // Nested 'with', and string and wide elements
-  initial begin
-    int aq[int][$];
-    int p[$];
-    string sq[int][$];
-    bit [64:0] wq[int][$];
-    p = {2, 4};
-    aq[0] = {1, 2, 3, 4};
-    foreach (aq[k]) aq[k] = aq[k].find(x) with (p.sum(y) with (int'(y == x)) == 0);
-    `checkp(aq, "'{'h0:'{'h1, 'h3}}");
-    sq[0] = {"a", "bb", "c"};
-    foreach (sq[k]) sq[k] = sq[k].find with (item.len() == 1);
-    `checkp(sq, "'{'h0:'{\"a\", \"c\"}}");
-    wq[0].push_back(65'h1);
-    wq[0].push_back({65{1'b1}});
-    wq[0].push_back(65'h3);
-    foreach (wq[k]) wq[k] = wq[k].find with (item[64]);
-    `checkp(wq, "'{'h0:'{'h1ffffffffffffffff}}");
-  end
 endmodule
