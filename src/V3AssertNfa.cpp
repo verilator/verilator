@@ -2551,11 +2551,8 @@ class SvaNfaLowering final {
                               : nullptr;
                     if (te.m_condp) {
                         AstNodeExpr* const enablep = te.m_condp->cloneTreePure(false);
-                        countContributionp
-                            = countMatches
-                                  ? gateCheckedCountp(c.flp, countContributionp,
-                                                      countContributionOverflowp, enablep)
-                                  : addCountp(c.flp, nullptr, countContributionp, enablep);
+                        countContributionp = gateCheckedCountp(
+                            c.flp, countContributionp, countContributionOverflowp, enablep);
                     }
                     nextStateCountp
                         = countMatches
