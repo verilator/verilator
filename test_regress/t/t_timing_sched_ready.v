@@ -31,11 +31,39 @@ module t;
     time3 = $time;
   end
 
+  // Awaiting the opposite edge must not consume a pending static process trigger.
+  bit rising_clk = 0;
+  int rising_count = 0;
+  always @(posedge rising_clk) ++rising_count;
+  initial begin
+    #1 rising_clk = 1;
+    @(negedge rising_clk);
+  end
+
+  bit falling_clk = 1;
+  int falling_count = 0;
+  always @(negedge falling_clk) ++falling_count;
+  initial begin
+    #1 falling_clk = 0;
+    @(posedge falling_clk);
+  end
+
+  bit changed_clk = 0;
+  int changed_count = 0;
+  always @(changed_clk) ++changed_count;
+  initial begin
+    #1 changed_clk = 1;
+    @(negedge changed_clk);
+  end
+
   initial begin
     #40;
     `checkd(cnt1, 20);
     `checkd(cnt2, 10);
     `checkd(time3, 9);
+    `checkd(rising_count, 1);
+    `checkd(falling_count, 1);
+    `checkd(changed_count, 1);
     $write("*-* All Finished *-*\n");
     $finish;
   end
