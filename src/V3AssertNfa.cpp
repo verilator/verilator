@@ -1718,9 +1718,12 @@ public:
         // Vertices are appended, so those after the current tail belong to the antecedent
         V3GraphVertex::List& vertices = m_graph.m_graph.vertices();
         const V3GraphVertex* const lastPrep = vertices.backp();
+        // entryVtxp can be shared with other operands, so is not marked; instead the
+        // guards the antecedent adds to it are removed again below
+        std::vector<AstNodeExpr*>& entryConds = entryVtxp->m_throughoutConds;
+        const size_t entryCondsNum = entryConds.size();
         const BuildResult antResult = buildExpr(antExprp, entryVtxp);
         if (!antResult.valid()) return antResult;
-        entryVtxp->m_isAntecedent = true;
         for (auto it = vertices.rbegin(); &*it != lastPrep; ++it)
             static_cast<SvaStateVertex*>(&*it)->m_isAntecedent = true;
 
@@ -1751,10 +1754,16 @@ public:
         }
         // Antecedent vertices do not reject on a dropped throughout guard, so a guard
         // dropped on the last tick must instead prevent the match
-        for (AstNodeExpr* const tcp : antResult.termVertexp->m_throughoutConds) {
-            AstNodeExpr* const sp = sampled(tcp->cloneTreePure(false));
+        const std::vector<AstNodeExpr*>& termConds = antResult.termVertexp->m_throughoutConds;
+        for (size_t i = antResult.termVertexp == entryVtxp ? entryCondsNum : 0;
+             i < termConds.size(); ++i) {
+            AstNodeExpr* const sp = sampled(termConds[i]->cloneTreePure(false));
             antMatchp = antMatchp ? new AstLogAnd{flp, antMatchp, sp} : sp;
         }
+        for (size_t i = entryCondsNum; i < entryConds.size(); ++i) {
+            VL_DO_DANGLING(entryConds[i]->deleteTree(), entryConds[i]);
+        }
+        entryConds.resize(entryCondsNum);
         // Followed-by non-vacuous fail: rejectOnFail fires when the attempt
         // is live (termVtx reachable) and sampled(antecedent) is false.
         if (isFollowedBy) {

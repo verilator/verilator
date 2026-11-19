@@ -39,6 +39,28 @@ module t (
   int count_fail9_ref = 0;
   int count_fail10 = 0;
   int count_fail10_ref = 0;
+  int count_fail11 = 0;
+  int count_fail11_ref = 0;
+  int count_fail12 = 0;
+  int count_fail12_ref = 0;
+  int count_fail13 = 0;
+  int count_fail13_ref = 0;
+  int count_fail14 = 0;
+  int count_fail14_ref = 0;
+  int count_fail15 = 0;
+  int count_fail15_ref = 0;
+  int count_fail16 = 0;
+  int count_fail16_ref = 0;
+  int count_fail17 = 0;
+  int count_fail17_ref = 0;
+  int count_fail18 = 0;
+  int count_fail18_ref = 0;
+  int count_fail19 = 0;
+  int count_fail19_ref = 0;
+  int count_fail20 = 0;
+  int count_fail20_ref = 0;
+  int count_fail21 = 0;
+  int count_fail22 = 0;
 
   // Test 1: a |-> (cond throughout (1'b1 ##3 1'b1))
   // If a fires, cond must hold for 4 consecutive ticks (start + 3 delay ticks).
@@ -97,6 +119,80 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 10) ((cond && a) ##1 (cond && a)) |-> b)
   else count_fail10_ref <= count_fail10_ref + 1;
 
+  // Single-cycle antecedent
+  assert property (@(posedge clk) disable iff (cyc < 10) (cond throughout a) |-> b)
+  else count_fail11 <= count_fail11 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) (cond && a) |-> b)
+  else count_fail11_ref <= count_fail11_ref + 1;
+
+  // Followed-by fails on a non-matching antecedent (IEEE 1800-2023 16.12.9)
+  assert property (@(posedge clk) disable iff (cyc < 10) (cond throughout a) #-# b)
+  else count_fail12 <= count_fail12 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) (cond && a) #-# b)
+  else count_fail12_ref <= count_fail12_ref + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) (cond throughout a) #=# b)
+  else count_fail13 <= count_fail13 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) (cond && a) #=# b)
+  else count_fail13_ref <= count_fail13_ref + 1;
+
+  // An abort still accepts during the antecedent
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      accept_on (c && b) ((cond throughout (1'b1 ##1 a)) |=> (b ##1 b)))
+  else count_fail14 <= count_fail14 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      accept_on (c && b) ((cond ##1 (cond && a)) |=> (b ##1 b)))
+  else count_fail14_ref <= count_fail14_ref + 1;
+
+  // Implication nested in a consequent
+  assert property (@(posedge clk) disable iff (cyc < 10) a |-> ((cond throughout b) |-> c))
+  else count_fail15 <= count_fail15 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) a |-> ((cond && b) |-> c))
+  else count_fail15_ref <= count_fail15_ref + 1;
+
+  // A guard in the consequent still fails when dropped
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      (cond throughout (a ##1 b)) |-> (c throughout (a ##1 b)))
+  else count_fail16 <= count_fail16 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      ((cond && a) ##1 (cond && b)) |-> (c throughout (a ##1 b)))
+  else count_fail16_ref <= count_fail16_ref + 1;
+
+  // The guard of another operand sharing the start of the implication still fails when
+  // dropped; only the antecedent is rewritten in the reference
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      (cond throughout a) and ((c throughout b) |-> a))
+  else count_fail17 <= count_fail17 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) (cond throughout a) and ((c && b) |-> a))
+  else count_fail17_ref <= count_fail17_ref + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      ((c throughout (b ##1 b)) |-> a) and (cond throughout (a ##1 a)))
+  else count_fail18 <= count_fail18 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      (((c && b) ##1 (c && b)) |-> a) and (cond throughout (a ##1 a)))
+  else count_fail18_ref <= count_fail18_ref + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      (cond throughout (1'b1 ##1 1'b1)) and ((c throughout (b ##1 b)) |-> a))
+  else count_fail19 <= count_fail19 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      (cond throughout (1'b1 ##1 1'b1)) and (((c && b) ##1 (c && b)) |-> a))
+  else count_fail19_ref <= count_fail19_ref + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      (cond throughout 1'b1) or ((c throughout b) |-> a))
+  else count_fail20 <= count_fail20 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      (cond throughout 1'b1) or ((c && b) |-> a))
+  else count_fail20_ref <= count_fail20_ref + 1;
+
+  // The implication has no guard of its own, so the other operand is unaffected: the guard
+  // drops at cyc 15, failing the one attempt started then, respectively the two attempts
+  // started at cyc 14 and 15. Blocking increments count same-tick failures separately.
+  wire guard = (cyc != 15);
+  wire never = (cyc > 200);
+  assert property (@(posedge clk) (guard throughout 1'b1) and (if (never) never))
+  else count_fail21 = count_fail21 + 1;
+  assert property (@(posedge clk) (never |-> never) and (guard throughout (1'b1 ##1 1'b1)))
+  else count_fail22 = count_fail22 + 1;
+
   // Throughout with range-delay, pure-boolean RHS: the range-delay SExpr
   // generates midSource vertices that inherit the throughout guard.
   // Exercises the throughoutCond clone path in wireMatchAndMidSources.
@@ -134,6 +230,28 @@ module t (
       `checkd(count_fail9_ref, 23);
       `checkd(count_fail10, 3);
       `checkd(count_fail10_ref, 3);
+      `checkd(count_fail11, 11);
+      `checkd(count_fail11_ref, 11);
+      `checkd(count_fail12, 75);
+      `checkd(count_fail12_ref, 75);
+      `checkd(count_fail13, 67);
+      `checkd(count_fail13_ref, 67);
+      `checkd(count_fail14, 6);
+      `checkd(count_fail14_ref, 6);
+      `checkd(count_fail15, 7);
+      `checkd(count_fail15_ref, 7);
+      `checkd(count_fail16, 6);
+      `checkd(count_fail16_ref, 6);
+      `checkd(count_fail17, 50);
+      `checkd(count_fail17_ref, 50);
+      `checkd(count_fail18, 51);
+      `checkd(count_fail18_ref, 51);
+      `checkd(count_fail19, 45);
+      `checkd(count_fail19_ref, 45);
+      `checkd(count_fail20, 45);
+      `checkd(count_fail20_ref, 45);
+      `checkd(count_fail21, 1);
+      `checkd(count_fail22, 2);
       $write("*-* All Finished *-*\n");
       $finish;
     end
