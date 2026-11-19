@@ -414,11 +414,18 @@ function(verilate TARGET)
 
     file(MAKE_DIRECTORY ${VDIR})
 
+    # '--' so that a path containing '=' is not taken for a variable (CMake >= 3.24)
+    set(_VERILATOR_ENV_END)
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+        set(_VERILATOR_ENV_END --)
+    endif()
+
     set(VERILATOR_COMMAND
         "${CMAKE_COMMAND}"
         -E
         env
         "VERILATOR_ROOT=${VERILATOR_ROOT}"
+        ${_VERILATOR_ENV_END}
         ${VERILATOR_BIN_COMMAND}
         --compiler
         ${COMPILER}
