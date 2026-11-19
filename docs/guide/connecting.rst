@@ -307,8 +307,8 @@ export the functions from a DLL, and on other platforms they are empty.
 Define either macro when compiling to override its default.
 
 When defined, ``VL_API_EXPORT`` also takes precedence over the svdpi.h and
-vpi_user.h defaults of ``DPI_DLLESPEC`` and ``PLI_DLLESPEC``, which mark the
-svdpi.h and VPI functions the model defines.
+vpi_user.h defaults of ``DPI_DLLESPEC`` and ``PLI_DLLESPEC``, which mark
+the svdpi.h and VPI functions the model defines.
 
 Note that if the DPI task or function accesses any register or net within
 the RTL, it will require a scope to be set. This can be done using the
