@@ -35,15 +35,16 @@ int main(int argc, char** argv) {
 
     const std::vector<std::string> insts = {"u_v", "u_s", "u_e", "u_i", "u_ie"};
     for (size_t k = 0; k < insts.size(); ++k) {
-        topp->DPIHOOK_CASE_ID[k] = static_cast<int>(k) + 1;
-        topp->DPIHOOK_PATH[k][0] = insts[k];
-        topp->DPIHOOK_PATH[k][1] = "t";
+        topp->__Vdpihook_id[k] = static_cast<int>(k) + 1;
+        topp->__Vdpihook_path[k][0] = insts[k];
+        topp->__Vdpihook_path[k][1] = "t";
     }
 
     while (!contextp->gotFinish()) {
+        topp->__Vdpihook_trigger = !topp->__Vdpihook_trigger;
         topp->eval();
         if (!topp->eventsPending()) break;
-        contextp->time(topp->nextTimeSlot());
+        contextp->timeInc(1);
     }
     if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");

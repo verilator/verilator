@@ -33,20 +33,21 @@ int main(int argc, char** argv) {
     contextp->commandArgs(argc, argv);
     const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(), "top_module"}};
 
-    topp->DPIHOOK_CASE_ID[0] = 1;
-    topp->DPIHOOK_PATH[0][0] = "u";
-    topp->DPIHOOK_PATH[0][1] = "rf[5]";
-    topp->DPIHOOK_CASE_ID[1] = 2;
-    topp->DPIHOOK_PATH[1][0] = "u";
-    topp->DPIHOOK_PATH[1][1] = "wm";
-    topp->DPIHOOK_CASE_ID[2] = 3;
-    topp->DPIHOOK_PATH[2][0] = "u";
-    topp->DPIHOOK_PATH[2][1] = "rf[6]";
+    topp->__Vdpihook_id[0] = 1;
+    topp->__Vdpihook_path[0][0] = "u";
+    topp->__Vdpihook_path[0][1] = "rf[5]";
+    topp->__Vdpihook_id[1] = 2;
+    topp->__Vdpihook_path[1][0] = "u";
+    topp->__Vdpihook_path[1][1] = "wm";
+    topp->__Vdpihook_id[2] = 3;
+    topp->__Vdpihook_path[2][0] = "u";
+    topp->__Vdpihook_path[2][1] = "rf[6]";
 
     while (!contextp->gotFinish()) {
+        topp->__Vdpihook_trigger = !topp->__Vdpihook_trigger;
         topp->eval();
         if (!topp->eventsPending()) break;
-        contextp->time(topp->nextTimeSlot());
+        contextp->timeInc(1);
     }
     if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");

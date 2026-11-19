@@ -1,0 +1,13 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// An element and a variable named like it, a generate-scope variable and one named like it
+insert_dpihook -callback "cb" -var "top_module.mem[2]"
+insert_dpihook -callback "cb" -var "top_module.mem_2"
+insert_dpihook -callback "cb" -var "top_module.g[0].x"
+insert_dpihook -callback "cb" -var "top_module.x_g_0"

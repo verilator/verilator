@@ -30,13 +30,14 @@ int main(int argc, char** argv) {
     const std::unique_ptr<VM_PREFIX> topp{new VM_PREFIX{contextp.get(), "top_module"}};
 
     const std::vector<std::string> path = {"s", "o"};
-    topp->DPIHOOK_CASE_ID[0] = 1;
-    for (size_t j = 0; j < path.size(); ++j) topp->DPIHOOK_PATH[0][j] = path[j];
+    topp->__Vdpihook_id[0] = 1;
+    for (size_t j = 0; j < path.size(); ++j) topp->__Vdpihook_path[0][j] = path[j];
 
     while (!contextp->gotFinish()) {
+        topp->__Vdpihook_trigger = !topp->__Vdpihook_trigger;
         topp->eval();
         if (!topp->eventsPending()) break;
-        contextp->time(topp->nextTimeSlot());
+        contextp->timeInc(1);
     }
     if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");

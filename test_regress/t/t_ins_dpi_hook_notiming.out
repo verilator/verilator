@@ -1,0 +1,11 @@
+[4] mod=80 if=11 nested=22 gen=00
+[9] mod=80 if=11 nested=22 gen=00
+[14] mod=80 if=11 nested=22 gen=01
+[19] mod=80 if=11 nested=22 gen=01
+[24] mod=81 if=11 nested=22 gen=02
+[29] mod=81 if=11 nested=22 gen=02
+[34] mod=81 if=11 nested=22 gen=44
+[39] mod=81 if=11 nested=22 gen=44
+[44] mod=81 if=11 nested=22 gen=02
+[49] mod=81 if=11 nested=22 gen=02
+*-* All Finished *-*

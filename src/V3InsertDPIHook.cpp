@@ -150,27 +150,15 @@ struct HookInsertEntry final {
             s += step.isIndex ? ("[" + std::to_string(step.index) + "]") : ("." + step.member);
         return s;
     }
-    // Name-safe suffix encoding for access path ("_a", "_arr_2_x")
+    // Name-safe suffix encoding for access path ("[2].x" -> "__05b2__05d__02ex")
     // Keeps per-leaf hook var names unique when several members of one struct var are hooked
     string accessPathSuffix() const {
-        string s;
-        for (const DpiHookStep& step : accessPath)
-            s += step.isIndex ? ("_" + std::to_string(step.index)) : ("_" + step.member);
-        return s;
+        return accessPath.empty() ? "" : AstNode::encodeName(accessPathText());
     }
-    // Generate name-safe suffix for generate-block scope ("lane[0]" -> "_lane_0")
+    // Generate name-safe suffix for generate-block scope ("lane[0]" -> "__040lane__05b0__05d")
     // Keeps hook var names unique across unrolled generate copies
     string genScopeSuffix() const {
-        if (genScope.empty()) return "";
-        string s = "_";
-        for (const char c : genScope) {
-            if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
-                s += c;
-            } else if (c == '[' || c == '.') {
-                s += '_';
-            }
-        }
-        return s;
+        return genScope.empty() ? "" : AstNode::encodeName("@" + genScope);
     }
 };
 struct HookInsertTarget final {
@@ -186,6 +174,29 @@ struct HookInsertTarget final {
                       : static_cast<AstNodeModule*>(origModp);
     }  // The container receiving the hook logic
 };
+struct HookLookups final {
+    std::unordered_map<const AstNodeModule*, AstVar*> caseIdVarps;
+    std::unordered_map<const AstNodeModule*, AstVar*> hookPathVarps;
+    std::unordered_map<const AstNodeModule*, AstVar*> triggerVarps;
+    std::set<std::pair<const AstCell*, string>> cellPins;
+    std::unordered_map<const AstNodeModule*, std::unordered_map<string, AstNodeFTask*>> ftasks;
+    static AstVar* varp(const std::unordered_map<const AstNodeModule*, AstVar*>& varps,
+                        const AstNodeModule* modp) {
+        const auto it = varps.find(modp);
+        return it == varps.end() ? nullptr : it->second;
+    }
+    AstNodeFTask* ftaskp(const AstNodeModule* modp, const string& name) {
+        auto it = ftasks.find(modp);
+        if (it == ftasks.end()) {
+            it = ftasks.emplace(modp, std::unordered_map<string, AstNodeFTask*>{}).first;
+            for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp())
+                if (AstNodeFTask* const ftaskp = VN_CAST(stmtp, NodeFTask))
+                    it->second.emplace(ftaskp->name(), ftaskp);
+        }
+        const auto nameIt = it->second.find(name);
+        return nameIt == it->second.end() ? nullptr : nameIt->second;
+    }
+};
 
 //######################################################################
 // Shared builder for the "path filter" always-block emitted by path router
@@ -196,7 +207,7 @@ struct PathFilterConfig final {
     AstNodeModule* modp = nullptr;  // Module/iface receiving the always block (also fileline src)
     AstBasicDType* intDTypep = nullptr;  // Signed-int dtype for the loop index (pre-registered)
     AstBasicDType* stringDTypep = nullptr;  // String dtype for the decoded part (pre-registered)
-    AstVar* hookPathVarp = nullptr;  // DPIHOOK_PATH input being decoded
+    AstVar* hookPathVarp = nullptr;  // __Vdpihook_path input being decoded
     string targetVarName;  // Name of the decoded-part variable
     VLifetime targetVarLifetime;  // Lifetime of the decoded-part variable
     bool targetVarHasUserInit = false;  // Whether to mark the decoded-part var hasUserInit
@@ -248,17 +259,13 @@ static AstNodeExpr* newAnyTargetBoundp(FileLine* fl, AstVar* hookPathVarp) {
     }
     return boundp;
 }
-// The path filter samples DPIHOOK_PATH once, at time zero (see buildPathFilter), so a
+// The path filter samples __Vdpihook_path once, at time zero (see buildPathFilter), so a
 // testbench that binds after the first eval() hooks nothing at all. Without a check that
 // mistake is silent, so latch at time zero whether anything was bound and compare at the
 // end of the simulation. Both ends run once, outside of any eval.
-static void insertBindCheck(AstNetlist* netlistp) {
+static void insertBindCheck(AstNetlist* netlistp, const HookLookups& lookups) {
     AstNodeModule* const topModp = netlistp->topModulep();
-    AstVar* hookPathVarp = nullptr;
-    for (AstNode* stmtp = topModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-        AstVar* const varp = VN_CAST(stmtp, Var);
-        if (varp && varp->isInput() && varp->name() == "DPIHOOK_PATH") hookPathVarp = varp;
-    }
+    AstVar* const hookPathVarp = HookLookups::varp(lookups.hookPathVarps, topModp);
     UASSERT_OBJ(hookPathVarp, topModp, "DPI-hook: path input missing in top module");
     AstTypeTable* const typeTablep = VN_CAST(netlistp->miscsp(), TypeTable);
     FileLine* const fl = topModp->fileline();
@@ -274,7 +281,7 @@ static void insertBindCheck(AstNetlist* netlistp) {
                                          newAnyTargetBoundp(fl, hookPathVarp)}});
     AstDisplay* const warnp = new AstDisplay{
         fl, VDisplayType::DT_WARNING,
-        "DPI-hook: DPIHOOK_PATH was written after the first eval(); the binding is sampled"
+        "DPI-hook: __Vdpihook_path was written after the first eval(); the binding is sampled"
         " once, at time zero, so no target was hooked",
         nullptr, nullptr};
     // A warning provides the simulation time
@@ -334,12 +341,6 @@ static PathFilterResult buildPathFilter(const PathFilterConfig& cfg) {
     loopBeginp->addStmtsp(loopp);
     // Create the always block
     AstBegin* const beginp = new AstBegin{fl, "", nullptr, false};
-    if (VN_IS(modp, Iface)) {
-        AstDelay* const delayp
-            = new AstDelay{fl, new AstConst{fl, AstConst::WidthedValue{}, 64, 0}, false};
-        delayp->timeunit(v3Global.rootp()->timeunit());
-        beginp->addStmtsp(delayp);
-    }
     beginp->addStmtsp(loopBeginp);
     if (!cfg.declTargetInLoopBody) beginp->addDeclsp(targetVarp);
     beginp->name(cfg.alwaysName);
@@ -380,18 +381,6 @@ static string cellFlatName(const AstCell* cellp) {
             if (!genBlockp->implied()) name = genBlockp->name() + "__DOT__" + name;
     }
     return name;
-}
-static AstGenBlock* cellGenBlockp(const AstCell* cellp) {
-    for (AstNode* parentp = getParentp(cellp); parentp; parentp = getParentp(parentp)) {
-        if (VN_IS(parentp, NodeModule)) break;
-        if (AstGenBlock* const genBlockp = VN_CAST(parentp, GenBlock))
-            if (!genBlockp->implied()) return genBlockp;
-    }
-    return nullptr;
-}
-static string flatNameTail(const string& flatName) {
-    const size_t pos = flatName.rfind("__DOT__");
-    return pos == string::npos ? flatName : flatName.substr(pos + 7);
 }
 // One select of the AST chain from a target variable to the leaf its access path addresses
 struct ChainStep final {
@@ -559,6 +548,13 @@ class HookInsertTargetFinder final {
     string m_curHier;  // Instance path resolved so far
     string m_target;  // Current config key
     HookInsertTarget* m_targetp = nullptr;  // Config of the current key
+    struct ScopeNames final {
+        std::unordered_map<string, AstCell*> cells;
+        std::unordered_map<string, AstVar*> vars;
+        std::unordered_map<string, AstGenBlock*> genBlocks;
+    };
+    std::unordered_map<const AstNode*, ScopeNames>
+        m_scopeNames;  // Name index of each scope, built on first lookup
 
     // Collect `assignp` if it reads the resolved target variable, with matching done by
     // variable identity, not by name. An output target is driven from its hook instead,
@@ -605,48 +601,53 @@ class HookInsertTargetFinder final {
         scopep->v3fatalSrc("Scope is neither a module nor a generate block");
         return nullptr;  // LCOV_EXCL_LINE
     }
-    static AstCell* scopeChildCellp(AstNode* scopep, const string& name) {
-        for (AstNode* declp = scopeDeclsp(scopep); declp; declp = declp->nextp()) {
-            if (AstCell* const cellp = VN_CAST(declp, Cell))
-                if (cellp->name() == name) return cellp;
-            if (AstGenBlock* const genBlockp = VN_CAST(declp, GenBlock))
-                if (genBlockp->implied())
-                    if (AstCell* const foundCellp = scopeChildCellp(genBlockp, name))
-                        return foundCellp;
+    static void addScopeItems(ScopeNames& names, AstNode* itemsp) {
+        for (AstNode* itemp = itemsp; itemp; itemp = itemp->nextp()) {
+            if (AstCell* const cellp = VN_CAST(itemp, Cell))
+                names.cells.emplace(cellp->name(), cellp);
+            if (AstGenBlock* const genBlockp = VN_CAST(itemp, GenBlock)) {
+                names.genBlocks.emplace(genBlockp->name(), genBlockp);
+                if (genBlockp->implied()) addScopeItems(names, genBlockp->itemsp());
+            }
         }
-        return nullptr;
+    }
+    const ScopeNames& scopeNames(AstNode* scopep) {
+        const auto it = m_scopeNames.find(scopep);
+        if (it != m_scopeNames.end()) return it->second;
+        ScopeNames& names = m_scopeNames[scopep];
+        for (AstNode* declp = scopeDeclsp(scopep); declp; declp = declp->nextp())
+            if (AstVar* const varp = VN_CAST(declp, Var)) names.vars.emplace(varp->name(), varp);
+        addScopeItems(names, scopeDeclsp(scopep));
+        return names;
+    }
+    AstCell* scopeChildCellp(AstNode* scopep, const string& name) {
+        const ScopeNames& names = scopeNames(scopep);
+        const auto it = names.cells.find(name);
+        return it == names.cells.end() ? nullptr : it->second;
     }
     // Element cell of an instance array, e.g. "arr[1]". Elaboration fully expands
     // instance arrays, so by the time this pass runs the element is an ordinary
     // cell carrying the encoded name and there is no AstRange left to walk. An
     // index outside the declared range simply finds no cell.
-    static AstCell* arrayedInstCellp(AstNode* scopep, const string& name, uint32_t index) {
+    AstCell* arrayedInstCellp(AstNode* scopep, const string& name, uint32_t index) {
         return scopeChildCellp(scopep, name + "__BRA__"
                                            + AstNode::encodeNumber(static_cast<int64_t>(index))
                                            + "__KET__");
     }
     // Only interface arrays are addressable; see the module-array rejection below.
-    static AstCell* arrayedIfaceCellp(AstNode* scopep, const string& name, uint32_t index) {
+    AstCell* arrayedIfaceCellp(AstNode* scopep, const string& name, uint32_t index) {
         AstCell* const cellp = arrayedInstCellp(scopep, name, index);
         return (cellp && VN_IS(cellp->modp(), Iface)) ? cellp : nullptr;
     }
-    static AstVar* scopeChildVarp(AstNode* scopep, const string& name) {
-        for (AstNode* declp = scopeDeclsp(scopep); declp; declp = declp->nextp())
-            if (AstVar* const varp = VN_CAST(declp, Var))
-                if (varp->name() == name) return varp;
-        return nullptr;
+    AstVar* scopeChildVarp(AstNode* scopep, const string& name) {
+        const ScopeNames& names = scopeNames(scopep);
+        const auto it = names.vars.find(name);
+        return it == names.vars.end() ? nullptr : it->second;
     }
-    static AstGenBlock* childGenBlockp(AstNode* nodep, const string& name) {
-        for (AstNode* itemp = nodep; itemp; itemp = itemp->nextp()) {
-            if (AstGenBlock* const genBlockp = VN_CAST(itemp, GenBlock)) {
-                if (genBlockp->name() == name) return genBlockp;
-                if (genBlockp->implied())
-                    if (AstGenBlock* const foundGenBlockp
-                        = childGenBlockp(genBlockp->itemsp(), name))
-                        return foundGenBlockp;
-            }
-        }
-        return nullptr;
+    AstGenBlock* childGenBlockp(AstNode* scopep, const string& name) {
+        const ScopeNames& names = scopeNames(scopep);
+        const auto it = names.genBlocks.find(name);
+        return it == names.genBlocks.end() ? nullptr : it->second;
     }
     struct PathComponent final {
         string name;
@@ -720,8 +721,7 @@ class HookInsertTargetFinder final {
             // An indexed component may be an unrolled generate-loop iteration (e.g. "lane[0]")
             // Therefore descend into generate block and pin the var there
             if (AstGenBlock* const genBlockp = childGenBlockp(
-                    scopeDeclsp(curScopep),
-                    part.hasIndex ? genBlockName(part.name, part.index) : part.name)) {
+                    curScopep, part.hasIndex ? genBlockName(part.name, part.index) : part.name)) {
                 curScopep = genBlockp;
                 genScope += (genScope.empty() ? "" : ".") + targetParts[i];
                 m_curHier += "." + targetParts[i];
@@ -831,12 +831,11 @@ class HookInsertTargetFinder final {
             const AstStructDType* const structp = VN_CAST(dtypep, StructDType);
             if (entry.hasMemberStep() || (structp && !structp->packed())
                 || VN_IS(dtypep, UnpackArrayDType)) {
-                sigVarp->fileline()->v3warn(
-                    E_UNSUPPORTED, "Unsupported: DPI-hook insertion of target '"
-                                       << m_target << "." << entry.varTarget
-                                       << "': aggregate or member-addressed interface signal\n"
-                                       << sigVarp->fileline()->warnMore()
-                                       << "... Suggest hook a packed leaf");
+                sigVarp->v3warn(E_UNSUPPORTED,
+                                "Unsupported: DPI-hook insertion of target '"
+                                    << m_target << "." << entry.varTarget
+                                    << "': aggregate or member-addressed interface signal\n"
+                                    << sigVarp->warnMore() << "... Suggest hook a packed leaf");
                 m_error = true;
                 return;
             }
@@ -857,11 +856,10 @@ class HookInsertTargetFinder final {
                 for (auto& entry : m_targetp->entries) {
                     if (!entry.origVarp || refp->varp() != entry.origVarp) continue;
                     if (refp->access().isRW()) {
-                        refp->fileline()->v3warn(
-                            E_UNSUPPORTED,
-                            "Unsupported: DPI-hook insertion of target '"
-                                << m_target << "." << entry.varTarget
-                                << "': a read-write reference to an interface signal");
+                        refp->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: DPI-hook insertion of target '"
+                                         << m_target << "." << entry.varTarget
+                                         << "': a read-write reference to an interface signal");
                         m_error = true;
                     } else if (refp->access().isWriteOnly()) {
                         entry.writeRefps.push_back(refp);
@@ -880,15 +878,14 @@ class HookInsertTargetFinder final {
     }
     void collectTargetsInModule(AstModule* origModp) {
         m_targetModp = origModp;
+        std::unordered_map<string, std::vector<size_t>> entryIdxsByName;
+        for (size_t ei = 0; ei < m_targetp->entries.size(); ++ei)
+            entryIdxsByName[m_targetp->entries[ei].varTarget].push_back(ei);
         std::vector<AstVar*> targetVarps;
         for (AstNode* declp = scopeDeclsp(m_targetScopep); declp; declp = declp->nextp()) {
             AstVar* const varp = VN_CAST(declp, Var);
             if (!varp || varp->isFuncLocal()) continue;
-            for (const auto& entry : m_targetp->entries)
-                if (varp->name() == entry.varTarget) {
-                    targetVarps.push_back(varp);
-                    break;
-                }
+            if (entryIdxsByName.count(varp->name())) targetVarps.push_back(varp);
         }
         std::set<string> foundNames;
         for (const AstVar* const varp : targetVarps) foundNames.insert(varp->name());
@@ -900,9 +897,8 @@ class HookInsertTargetFinder final {
             m_error = true;
         }
         for (AstVar* const varp : targetVarps)
-            for (size_t ei = 0; ei < m_targetp->entries.size(); ++ei)
-                if (varp->name() == m_targetp->entries[ei].varTarget)
-                    processTargetVar(varp, m_targetp->entries[ei], ei);
+            for (const size_t ei : entryIdxsByName[varp->name()])
+                processTargetVar(varp, m_targetp->entries[ei], ei);
         origModp->foreach([&](AstNode* declp) {
             AstNodeAssign* const assignp = VN_CAST(declp, NodeAssign);
             if (!assignp) return;
@@ -946,7 +942,8 @@ class HookInsertTargetFinder final {
         for (const auto& entry : m_targetp->entries)
             if (entry.varTarget == aggregateVarp->name()) scopeSuffix = entry.genScopeSuffix();
         AstVar* const mirrorVarp = new AstVar{
-            fl, VVarType::VAR, aggregateVarp->name() + scopeSuffix + "__DPImirror", mirrorDTypep};
+            fl, VVarType::VAR, "__Vdpihook_mirror__" + aggregateVarp->name() + scopeSuffix,
+            mirrorDTypep};
         mirrorVarp->lifetime(VLifetime::STATIC_IMPLICIT);
         mirrorVarp->trace(false);
         m_targetModp->addStmtsp(mirrorVarp);
@@ -974,7 +971,7 @@ class HookInsertTargetFinder final {
         for (auto& entry : m_targetp->entries) {
             if (entry.varTarget == aggregateVarp->name()) {
                 entry.origVarp = mirrorVarp;
-                entry.hookedName = "dpiHooked_" + mirrorVarp->name();
+                entry.hookedName = "__Vdpihook_hooked__" + aggregateVarp->name() + scopeSuffix;
                 entry.hookedDTypep = nullptr;
                 entry.found = true;
                 entry.isAggregateMirror = true;
@@ -988,14 +985,13 @@ class HookInsertTargetFinder final {
         AstNodeDType* const dtypep = aggregateVarp->dtypep()->skipRefp();
         const int nLeaves = aggregateLeafCount(dtypep);
         if (nLeaves > DPIHOOK_MAX_AGGREGATE_LEAVES) {
-            aggregateVarp->fileline()->v3warn(
-                E_UNSUPPORTED, "Unsupported: Target variable '"
-                                   << aggregateVarp->name() << "' in '" << m_curHier
-                                   << "' flattens to " << nLeaves
-                                   << " leaves, too large to hook as a whole (limit "
-                                   << DPIHOOK_MAX_AGGREGATE_LEAVES << ")\n"
-                                   << aggregateVarp->fileline()->warnMore()
-                                   << "... Suggest hook individual elements");
+            aggregateVarp->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: Target variable '"
+                    << aggregateVarp->name() << "' in '" << m_curHier << "' flattens to "
+                    << nLeaves << " leaves, too large to hook as a whole (limit "
+                    << DPIHOOK_MAX_AGGREGATE_LEAVES << ")\n"
+                    << aggregateVarp->warnMore() << "... Suggest hook individual elements");
             return;
         }
         std::vector<AstNodeExpr*> leafps;
@@ -1009,7 +1005,7 @@ class HookInsertTargetFinder final {
     bool checkHookableType(AstVar* targetVarp, const string& what, AstNodeDType* dtypep) {
         const AstBasicDType* const basicp = dtypep->basicp();
         if (!basicp || isDynamicContainer(dtypep->skipRefp())) {
-            targetVarp->fileline()->v3warn(
+            targetVarp->v3warn(
                 E_UNSUPPORTED,
                 "Unsupported: Target variable '"
                     << what << "' in '" << m_curHier
@@ -1018,14 +1014,13 @@ class HookInsertTargetFinder final {
             return false;
         }
         if (!basicp->isLiteralType()) {
-            targetVarp->fileline()->v3warn(E_UNSUPPORTED, "Unsupported: Target variable '"
-                                                              << what << "' in '" << m_curHier
-                                                              << "' of type "
-                                                              << dtypep->prettyDTypeNameQ());
+            targetVarp->v3warn(E_UNSUPPORTED, "Unsupported: Target variable '"
+                                                  << what << "' in '" << m_curHier << "' of type "
+                                                  << dtypep->prettyDTypeNameQ());
             return false;
         }
         if (basicp->isDouble()) {
-            targetVarp->fileline()->v3warn(
+            targetVarp->v3warn(
                 E_UNSUPPORTED,
                 "Unsupported: Target variable '"
                     << what << "' in '" << m_curHier
@@ -1039,7 +1034,7 @@ class HookInsertTargetFinder final {
         const ClockUseVisitor clockUse{m_netlistp, targetVarp,
                                        accessChainSteps(targetVarp, entry.accessPath)};
         if (clockUse.isClock()) {
-            targetVarp->fileline()->v3warn(
+            targetVarp->v3warn(
                 E_UNSUPPORTED,
                 "Unsupported: Target variable '"
                     << what << "' in '" << m_curHier
@@ -1049,7 +1044,7 @@ class HookInsertTargetFinder final {
         }
         if (clockUse.isEventControl()) {
             // The block would keep waiting on the unhooked value
-            targetVarp->fileline()->v3warn(
+            targetVarp->v3warn(
                 E_UNSUPPORTED,
                 "Unsupported: Target variable '"
                     << what << "' in '" << m_curHier
@@ -1065,30 +1060,27 @@ class HookInsertTargetFinder final {
             if (step.isIndex) {
                 AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType);
                 if (!adtypep) {
-                    varp->fileline()->v3error(
-                        "DPI-hook target '"
-                        << varp->name() << "' in '" << m_curHier << "': index [" << step.index
-                        << "] applied to " << dtypep->prettyDTypeNameQ()
-                        << "; element access is supported on unpacked arrays only");
+                    varp->v3error("DPI-hook target '"
+                                  << varp->name() << "' in '" << m_curHier << "': index ["
+                                  << step.index << "] applied to " << dtypep->prettyDTypeNameQ()
+                                  << "; element access is supported on unpacked arrays only");
                     return nullptr;
                 }
                 if (!isElemIndexInRange(adtypep, step.index)) {
-                    varp->fileline()->v3error("DPI-hook target '"
-                                              << varp->name() << "' in '" << m_curHier
-                                              << "': element index " << step.index
-                                              << " out of range (" << adtypep->elementsConst()
-                                              << " elements)");
+                    varp->v3error("DPI-hook target '"
+                                  << varp->name() << "' in '" << m_curHier << "': element index "
+                                  << step.index << " out of range (" << adtypep->elementsConst()
+                                  << " elements)");
                     return nullptr;
                 }
                 dtypep = adtypep->subDTypep()->skipRefp();
             } else {
                 AstStructDType* const structp = VN_CAST(dtypep, StructDType);
                 if (!structp) {
-                    varp->fileline()->v3error("DPI-hook target '"
-                                              << varp->name() << "' in '" << m_curHier
-                                              << "': member '." << step.member << "' of "
-                                              << dtypep->prettyDTypeNameQ()
-                                              << "; member access is supported on structs only");
+                    varp->v3error("DPI-hook target '"
+                                  << varp->name() << "' in '" << m_curHier << "': member '."
+                                  << step.member << "' of " << dtypep->prettyDTypeNameQ()
+                                  << "; member access is supported on structs only");
                     return nullptr;
                 }
                 AstNodeDType* memberDTypep = nullptr;
@@ -1096,9 +1088,9 @@ class HookInsertTargetFinder final {
                      memberp = VN_CAST(memberp->nextp(), MemberDType))
                     if (memberp->name() == step.member) memberDTypep = memberp->subDTypep();
                 if (!memberDTypep) {
-                    varp->fileline()->v3error("DPI-hook target '"
-                                              << varp->name() << "' in '" << m_curHier
-                                              << "': no member named '" << step.member << "'");
+                    varp->v3error("DPI-hook target '" << varp->name() << "' in '" << m_curHier
+                                                      << "': no member named '" << step.member
+                                                      << "'");
                     return nullptr;
                 }
                 dtypep = memberDTypep->skipRefp();
@@ -1112,18 +1104,18 @@ class HookInsertTargetFinder final {
             AstNodeDType* const leafDTypep = resolveLeafDTypep(targetVarp, entry.accessPath);
             if (!leafDTypep) return;  // error already emitted
             if (!isAggregateLeafDType(leafDTypep)) {
-                targetVarp->fileline()->v3warn(
-                    E_UNSUPPORTED, "Unsupported: DPI-hook target '"
+                targetVarp->v3warn(E_UNSUPPORTED,
+                                   "Unsupported: DPI-hook target '"
                                        << targetVarp->name() << "' in '" << m_curHier
                                        << "': the addressed member is an unpacked aggregate\n"
-                                       << targetVarp->fileline()->warnMore()
+                                       << targetVarp->warnMore()
                                        << "... Suggest hook a scalar or packed leaf");
                 return;
             }
             if (!checkHookableType(targetVarp, what, leafDTypep)) return;
             if (isReadInSensitivity(targetVarp, entry)) return;
-            const string leafName = "dpiHooked_" + targetVarp->name() + entry.accessPathSuffix()
-                                    + entry.genScopeSuffix();
+            const string leafName = "__Vdpihook_hooked__" + targetVarp->name()
+                                    + entry.accessPathSuffix() + entry.genScopeSuffix();
             setVarAt(entryIdx, targetVarp, leafName, leafDTypep);
             m_foundVar = true;
             return;
@@ -1146,26 +1138,26 @@ class HookInsertTargetFinder final {
         }
         AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType);
         if (entry.hasElemIndex() && !adtypep) {
-            targetVarp->fileline()->v3error(
-                "DPI-hook target '"
-                << targetVarp->name() << "' in '" << m_curHier << "': index [" << entry.elemIndex()
-                << "] applied to " << targetVarp->dtypep()->skipRefp()->prettyDTypeNameQ()
-                << "; element access is supported on unpacked arrays only\n"
-                << targetVarp->fileline()->warnMore() << "... Suggest hook the whole signal");
+            targetVarp->v3error("DPI-hook target '"
+                                << targetVarp->name() << "' in '" << m_curHier << "': index ["
+                                << entry.elemIndex() << "] applied to "
+                                << targetVarp->dtypep()->skipRefp()->prettyDTypeNameQ()
+                                << "; element access is supported on unpacked arrays only\n"
+                                << targetVarp->warnMore() << "... Suggest hook the whole signal");
             return;
         }
         if (entry.hasElemIndex() && adtypep && !isElemIndexInRange(adtypep, entry.elemIndex())) {
-            targetVarp->fileline()->v3error(
-                "Element index " << entry.elemIndex() << " is out of range for target variable '"
-                                 << targetVarp->name() << "' in '" << m_curHier << "' ("
-                                 << adtypep->elementsConst() << " elements)");
+            targetVarp->v3error("Element index "
+                                << entry.elemIndex() << " is out of range for target variable '"
+                                << targetVarp->name() << "' in '" << m_curHier << "' ("
+                                << adtypep->elementsConst() << " elements)");
             return;
         }
         AstNodeDType* const valueDTypep = entry.hasElemIndex() ? adtypep->subDTypep() : dtypep;
         if (!checkHookableType(targetVarp, what, valueDTypep)) return;
         if (isReadInSensitivity(targetVarp, entry)) return;
-        const string hookedName = "dpiHooked_" + targetVarp->name() + entry.accessPathSuffix()
-                                  + entry.genScopeSuffix();
+        const string hookedName = "__Vdpihook_hooked__" + targetVarp->name()
+                                  + entry.accessPathSuffix() + entry.genScopeSuffix();
         setVarAt(entryIdx, targetVarp, hookedName,
                  entry.hasElemIndex() && adtypep ? adtypep->subDTypep() : nullptr);
         m_foundVar = true;
@@ -1205,27 +1197,9 @@ class HookPathRouter final {
     std::unordered_map<AstNodeModule*, AstVar*>& m_loopVarCache;  // Shared path-filter loop idxs
     std::unordered_map<AstNodeModule*, std::set<string>>&
         m_caseChildCells;  // Instances (flat names) with a path-filter case item
+    HookLookups& m_lookups;  // Ports, triggers and pins the pass added so far
 
     // METHODS
-    AstLoop* finalizeLoopp(AstLoop* loopp, AstVar* dpiTriggerVarp) {
-        AstVarRef* const triggerReadRefp
-            = new AstVarRef{loopp->fileline(), dpiTriggerVarp, VAccess::READ};
-        AstVarRef* const triggerWriteRefp
-            = new AstVarRef{loopp->fileline(), dpiTriggerVarp, VAccess::WRITE};
-
-        AstLogNot* const logNotp = new AstLogNot{loopp->fileline(), triggerReadRefp};
-        AstAssign* const assignp = new AstAssign{loopp->fileline(), triggerWriteRefp, logNotp};
-        AstBegin* const initialBeginp = new AstBegin{loopp->fileline(), "", assignp, false};
-        // The trigger re-evaluates time-based faults every `step` time units
-        const uint32_t step = static_cast<uint32_t>(v3Global.opt.dpiHookTriggerStep());
-        AstConst* const timeStepConstp
-            = new AstConst{loopp->fileline(), AstConst::WidthedValue{}, 64, step};
-        AstDelay* const delayp = new AstDelay{loopp->fileline(), timeStepConstp, false};
-        delayp->timeunit(m_netlistp->timeunit());
-        initialBeginp->addStmtsp(delayp);
-        loopp->addStmtsp(initialBeginp);
-        return loopp;
-    }
     AstVar* insertCaseIdInputVarp(AstNodeModule* modp) {
         AstTypeTable* const typeTablep = VN_CAST(m_netlistp->miscsp(), TypeTable);
         AstBasicDType* const elemDTypep
@@ -1235,14 +1209,13 @@ class HookPathRouter final {
         AstUnpackArrayDType* const arrDTypep = new AstUnpackArrayDType{
             modp->fileline(), elemDTypep, new AstRange{modp->fileline(), dpiHookSlots() - 1, 0}};
         typeTablep->addTypesp(arrDTypep);
-        const bool isIface = VN_IS(modp, Iface);
         AstVar* const caseIdInputVarp
-            = new AstVar{modp->fileline(), isIface ? VVarType::VAR : VVarType::PORT,
-                         "DPIHOOK_CASE_ID", arrDTypep};
+            = new AstVar{modp->fileline(), VVarType::PORT, "__Vdpihook_id", arrDTypep};
         caseIdInputVarp->lifetime(VLifetime::STATIC_IMPLICIT);
-        if (!isIface) caseIdInputVarp->direction(VDirection::INPUT);
+        caseIdInputVarp->direction(VDirection::INPUT);
         caseIdInputVarp->trace(false);
         modp->addStmtsp(caseIdInputVarp);
+        m_lookups.caseIdVarps.emplace(modp, caseIdInputVarp);
         return caseIdInputVarp;
     }
     AstVar* insertHookPathVarp(AstNodeModule* modp, int idx) {
@@ -1251,6 +1224,7 @@ class HookPathRouter final {
         const bool isOrigMod = m_insertTarget.hookLogicContainerp() == modp;
         AstVar* const hookPathVarp = newHookPathVarp(modp, idx, isInitMod, isOrigMod);
         modp->addStmtsp(hookPathVarp);
+        m_lookups.hookPathVarps.emplace(modp, hookPathVarp);
         return hookPathVarp;
     }
     AstVar* newHookPathVarp(AstNodeModule* modp, int idx, bool isInitMod = false,
@@ -1263,11 +1237,9 @@ class HookPathRouter final {
             m_dtypeCache.stringDTypep->generic(true);
             typeTablep->addTypesp(m_dtypeCache.stringDTypep);
         }
-        const bool isIface = VN_IS(modp, Iface);
-        AstVar* const hookPathVarp
-            = new AstVar{modp->fileline(), isIface ? VVarType::VAR : VVarType::PORT,
-                         "DPIHOOK_PATH", m_dtypeCache.stringDTypep};
-        if (!isIface) hookPathVarp->direction(VDirection::INPUT);
+        AstVar* const hookPathVarp = new AstVar{modp->fileline(), VVarType::PORT,
+                                                "__Vdpihook_path", m_dtypeCache.stringDTypep};
+        hookPathVarp->direction(VDirection::INPUT);
         hookPathVarp->lifetime(VLifetime::STATIC_IMPLICIT);
         hookPathVarp->trace(false);
         if (isOrigMod) {
@@ -1301,34 +1273,7 @@ class HookPathRouter final {
         hookPathVarp->dtypep(pathsDTypep);
         return hookPathVarp;
     }
-    AstVar* findExistingInputVarp(AstNodeModule* modp, const string& name) {
-        const bool isIface = VN_IS(modp, Iface);
-        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            AstVar* const varp = VN_CAST(stmtp, Var);
-            if (!varp) continue;
-            if (varp->name() == name && (varp->isInput() || isIface)) return varp;
-        }
-        return nullptr;
-    }
-    bool hasDpiTrigger() {
-        AstNodeModule* const origModp = m_insertTarget.hookLogicContainerp();
-        for (AstNode* stmtp = origModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            AstVar* const varp = VN_CAST(stmtp, Var);
-            if (!varp) continue;
-            if (varp->name() == "DPI_TRIGGER") {
-                m_insertTarget.dpiTriggerVarp = varp;
-                return true;
-            }
-        }
-        return false;
-    }
     bool hasPathFilter(AstNodeModule* modp) { return m_caseCache.count(modp) != 0; }
-    bool hasInputPin(AstCell* cellp, const string& pinName) {
-        for (const AstNode* pinp = cellp->pinsp(); pinp; pinp = pinp->nextp()) {
-            if (pinp->name() == pinName) return true;
-        }
-        return false;
-    }
     void insertCaseItems(AstNodeModule* modp, AstCase* casep, AstVar* hookPathVarp,
                          AstVar* loopVarp, int idx, InstPathMap& instPathVarps) {
         AstTypeTable* const typeTablep = VN_CAST(m_netlistp->miscsp(), TypeTable);
@@ -1353,7 +1298,7 @@ class HookPathRouter final {
             pathsDTypep->isCompound(true);
             pathsDTypep->refDTypep(partsDTypep);
             AstVar* const instPathVarp = new AstVar{modp->fileline(), VVarType::VAR,
-                                                    "DPIPATH_" + cellFlatNm, pathsDTypep};
+                                                    "__Vdpihook_path__" + cellFlatNm, pathsDTypep};
             instPathVarp->lifetime(VLifetime::STATIC_IMPLICIT);
             typeTablep->addTypesp(partsDTypep);
             typeTablep->addTypesp(pathsDTypep);
@@ -1424,17 +1369,18 @@ class HookPathRouter final {
             casep->addItemsp(caseItemp);
         }
     }
-    void insertCaseIdPin(AstCell* cellp, int idx, const std::vector<AstVar*>& caseIdInputVarps) {
+    void insertCtrlPin(AstCell* cellp, int idx, const std::vector<AstVar*>& ctrlVarps) {
         int pinNum = 0;
         for (AstNode* existingPinp = cellp->pinsp(); existingPinp;
              existingPinp = existingPinp->nextp())
             pinNum++;
-        AstVarRef* const caseIdRefp
-            = new AstVarRef{cellp->fileline(), caseIdInputVarps[idx], VAccess::READ};
-        AstPin* const pinp = new AstPin{cellp->fileline(), pinNum, "DPIHOOK_CASE_ID", caseIdRefp};
-        pinp->modVarp(caseIdInputVarps[idx + 1]);
+        AstVar* const portVarp = ctrlVarps[idx + 1];
+        AstVarRef* const refp = new AstVarRef{cellp->fileline(), ctrlVarps[idx], VAccess::READ};
+        AstPin* const pinp = new AstPin{cellp->fileline(), pinNum, portVarp->name(), refp};
+        pinp->modVarp(portVarp);
         pinp->svDotName(true);
         cellp->addPinsp(pinp);
+        m_lookups.cellPins.emplace(cellp, portVarp->name());
     }
     void insertPathFilter(AstNodeModule* modp, AstVar* hookPathVarp, int idx,
                           InstPathMap& instPathVarps) {
@@ -1452,11 +1398,11 @@ class HookPathRouter final {
         cfg.intDTypep = m_dtypeCache.intDTypep;
         cfg.stringDTypep = m_dtypeCache.stringDTypep;
         cfg.hookPathVarp = hookPathVarp;
-        cfg.targetVarName = "DPITARGETPATH";
+        cfg.targetVarName = "__Vdpihook_path_part";
         cfg.targetVarLifetime = VLifetime::STATIC_IMPLICIT;
         cfg.targetVarHasUserInit = false;
         cfg.declTargetInLoopBody = false;  // declared in the always body
-        cfg.alwaysName = "DPIHOOK_PATH_FILTER";
+        cfg.alwaysName = "__Vdpihook_path_filter";
         cfg.caseCachep = &m_caseCache;
         cfg.loopVarCachep = &m_loopVarCache;
         const PathFilterResult res = buildPathFilter(cfg);
@@ -1480,85 +1426,41 @@ class HookPathRouter final {
             AstVarRef* const instPathRefp
                 = new AstVarRef{cellp->fileline(), instPathVarp, VAccess::READ};
             AstPin* const pinp
-                = new AstPin{cellp->fileline(), pinNum, "DPIHOOK_PATH", instPathRefp};
+                = new AstPin{cellp->fileline(), pinNum, "__Vdpihook_path", instPathRefp};
             pinp->modVarp(hookPathVarps[idx + 1]);
             pinp->svDotName(true);
             cellp->addPinsp(pinp);
+            m_lookups.cellPins.emplace(cellp, "__Vdpihook_path");
         }
-    }
-    // Whether the parent already drives `ifaceVarp` through this instance
-    bool hasIfaceCtrlAssign(AstNode* scopep, const AstVar* ifaceVarp, const string& cellName) {
-        bool found = false;
-        scopep->foreach([&](AstNode* nodep) {
-            const AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef);
-            if (xrefp && xrefp->varp() == ifaceVarp && xrefp->dotted() == cellName
-                && xrefp->access().isWriteOrRW())
-                found = true;
-        });
-        return found;
-    }
-    void insertIfaceCtrlAssign(AstNodeModule* parentModp, AstCell* cellp, const string& instName,
-                               AstVar* ifaceVarp, AstVar* srcVarp) {
-        if (!ifaceVarp || !srcVarp) return;
-        AstGenBlock* const genBlockp = cellGenBlockp(cellp);
-        const string dotted = genBlockp ? flatNameTail(instName) : instName;
-        AstNode* const scopep = genBlockp ? static_cast<AstNode*>(genBlockp) : parentModp;
-        if (hasIfaceCtrlAssign(scopep, ifaceVarp, dotted)) return;
-        FileLine* const fl = cellp->fileline();
-        AstVarXRef* const lhsp = new AstVarXRef{fl, ifaceVarp, dotted, VAccess::WRITE};
-        AstVarRef* const rhsp = new AstVarRef{fl, srcVarp, VAccess::READ};
-        AstAssignW* const assignp = new AstAssignW{fl, lhsp, rhsp};
-        AstAlways* const alwaysp = new AstAlways{fl, VAlwaysKwd::CONT_ASSIGN, nullptr, assignp};
-        if (genBlockp) {
-            genBlockp->addItemsp(alwaysp);
-        } else {
-            parentModp->addStmtsp(alwaysp);
-        }
-    }
-    void insertCtrlLogicToIfaceCell(AstCell* cellp, int idx,
-                                    const std::vector<AstVar*>& caseIdInputVarps,
-                                    const InstPathMap& instPathVarps) {
-        // The parent is a module, or an interface holding a nested interface
-        AstNodeModule* const parentModp = cellOwnerModp(cellp);
-        AstIface* const ifacep = VN_AS(cellp->modp(), Iface);
-        // An interface array is already expanded into one cell per element here
-        const string instName = cellFlatName(cellp);
-        insertIfaceCtrlAssign(parentModp, cellp, instName,
-                              findExistingInputVarp(ifacep, "DPIHOOK_CASE_ID"),
-                              caseIdInputVarps[idx]);
-        const auto pathIt = instPathVarps.find(InstPathKey{parentModp, instName});
-        insertIfaceCtrlAssign(parentModp, cellp, instName,
-                              findExistingInputVarp(ifacep, "DPIHOOK_PATH"),
-                              pathIt == instPathVarps.end() ? nullptr : pathIt->second);
     }
     void insertCtrlLogicToCells(const std::vector<AstVar*>& caseIdInputVarps,
                                 const std::vector<AstVar*>& hookPathVarps,
+                                const std::vector<AstVar*>& triggerVarps,
                                 const InstPathMap& instPathVarps) {
         AstCell* prevCellp = nullptr;
         int idx = 0;
         for (AstCell* cellp : m_insertTarget.cellps) {
             if (prevCellp && cellp->modp() != prevCellp->modp()) idx++;
-            if (VN_IS(cellp->modp(), Iface)) {
-                insertCtrlLogicToIfaceCell(cellp, idx, caseIdInputVarps, instPathVarps);
-            } else {
-                if (!hasInputPin(cellp, "DPIHOOK_CASE_ID"))
-                    insertCaseIdPin(cellp, idx, caseIdInputVarps);
-                if (!hasInputPin(cellp, "DPIHOOK_PATH"))
-                    insertHookPathPin(cellp, idx, hookPathVarps, instPathVarps);
-            }
+            if (!m_lookups.cellPins.count({cellp, "__Vdpihook_id"}))
+                insertCtrlPin(cellp, idx, caseIdInputVarps);
+            if (!m_lookups.cellPins.count({cellp, "__Vdpihook_trigger"}))
+                insertCtrlPin(cellp, idx, triggerVarps);
+            if (!m_lookups.cellPins.count({cellp, "__Vdpihook_path"}))
+                insertHookPathPin(cellp, idx, hookPathVarps, instPathVarps);
             prevCellp = cellp;
         }
     }
     void insertCtrlLogicToModules(std::vector<AstVar*>& caseIdInputVarps,
                                   std::vector<AstVar*>& hookPathVarps,
-                                  InstPathMap& instPathVarps) {
+                                  std::vector<AstVar*>& triggerVarps, InstPathMap& instPathVarps) {
         AstNodeModule* const origModp = m_insertTarget.hookLogicContainerp();
         size_t idx = 0;
         for (AstNodeModule* modp : m_insertTarget.modps) {
-            AstVar* caseIdInputVarp = findExistingInputVarp(modp, "DPIHOOK_CASE_ID");
+            AstVar* caseIdInputVarp = HookLookups::varp(m_lookups.caseIdVarps, modp);
             if (!caseIdInputVarp) caseIdInputVarp = insertCaseIdInputVarp(modp);
             caseIdInputVarps.push_back(caseIdInputVarp);
-            AstVar* hookPathVarp = findExistingInputVarp(modp, "DPIHOOK_PATH");
+            triggerVarps.push_back(triggerVarp(modp));
+            AstVar* hookPathVarp = HookLookups::varp(m_lookups.hookPathVarps, modp);
             if (!hookPathVarp) hookPathVarp = insertHookPathVarp(modp, idx);
             hookPathVarps.push_back(hookPathVarp);
             if (!hasPathFilter(modp)) {
@@ -1572,52 +1474,54 @@ class HookPathRouter final {
             m_dtypeCache.partSelDTypep = nullptr;
             idx++;
         }
-        AstVar* origCaseIdInputVarp = findExistingInputVarp(origModp, "DPIHOOK_CASE_ID");
+        AstVar* origCaseIdInputVarp = HookLookups::varp(m_lookups.caseIdVarps, origModp);
         if (!origCaseIdInputVarp) origCaseIdInputVarp = insertCaseIdInputVarp(origModp);
         caseIdInputVarps.push_back(origCaseIdInputVarp);
-        AstVar* origHookPathVarp = findExistingInputVarp(origModp, "DPIHOOK_PATH");
+        triggerVarps.push_back(triggerVarp(origModp));
+        AstVar* origHookPathVarp = HookLookups::varp(m_lookups.hookPathVarps, origModp);
         if (!origHookPathVarp) origHookPathVarp = insertHookPathVarp(origModp, idx);
         hookPathVarps.push_back(origHookPathVarp);
     }
-    void insertDpiTrigger() {
-        AstNodeModule* const origModp = m_insertTarget.hookLogicContainerp();
+    AstVar* triggerVarp(AstNodeModule* modp) {
+        if (AstVar* const varp = HookLookups::varp(m_lookups.triggerVarps, modp)) return varp;
         AstTypeTable* const typeTablep = VN_CAST(m_netlistp->miscsp(), TypeTable);
-        AstBasicDType* const dpiTriggerDTypep
-            = new AstBasicDType{origModp->fileline(), VBasicDTypeKwd::BIT, VSigning::NOSIGN};
-        dpiTriggerDTypep->generic(true);
-        typeTablep->addTypesp(dpiTriggerDTypep);
-        AstVar* const dpiTriggerVarp
-            = new AstVar{origModp->fileline(), VVarType::VAR, "DPI_TRIGGER", dpiTriggerDTypep};
-        dpiTriggerVarp->lifetime(VLifetime::STATIC_IMPLICIT);
-        dpiTriggerVarp->trace(false);
-        m_insertTarget.dpiTriggerVarp = dpiTriggerVarp;
-        origModp->addStmtsp(dpiTriggerVarp);
-        AstLoop* const loopp = finalizeLoopp(new AstLoop{origModp->fileline()}, dpiTriggerVarp);
-        AstBegin* const beginp = new AstBegin{origModp->fileline(), "", loopp, false};
-        AstInitial* const initialp = new AstInitial{origModp->fileline(), beginp};
-        origModp->addStmtsp(initialp);
+        AstBasicDType* const dtypep
+            = new AstBasicDType{modp->fileline(), VBasicDTypeKwd::BIT, VSigning::NOSIGN};
+        dtypep->generic(true);
+        typeTablep->addTypesp(dtypep);
+        AstVar* const varp
+            = new AstVar{modp->fileline(), VVarType::PORT, "__Vdpihook_trigger", dtypep};
+        varp->direction(VDirection::INPUT);
+        varp->lifetime(VLifetime::STATIC_IMPLICIT);
+        varp->trace(false);
+        modp->addStmtsp(varp);
+        m_lookups.triggerVarps.emplace(modp, varp);
+        return varp;
     }
 
 public:
     HookPathRouter(AstNetlist* netlistp, HookInsertTarget& insertTarget, DTypeCache& dtypeCache,
                    std::unordered_map<AstNodeModule*, AstCase*>& caseCache,
                    std::unordered_map<AstNodeModule*, AstVar*>& loopVarCache,
-                   std::unordered_map<AstNodeModule*, std::set<string>>& caseChildCells)
+                   std::unordered_map<AstNodeModule*, std::set<string>>& caseChildCells,
+                   HookLookups& lookups)
         : m_netlistp{netlistp}
         , m_dtypeCache{dtypeCache}
         , m_insertTarget{insertTarget}
         , m_caseCache{caseCache}
         , m_loopVarCache{loopVarCache}
-        , m_caseChildCells{caseChildCells} {}
+        , m_caseChildCells{caseChildCells}
+        , m_lookups{lookups} {}
 
     void insert() {
         std::vector<AstVar*> caseIdInputVarps;
         std::vector<AstVar*> hookPathVarps;
+        std::vector<AstVar*> triggerVarps;
         InstPathMap instPathVarps;
 
-        insertCtrlLogicToModules(caseIdInputVarps, hookPathVarps, instPathVarps);
-        insertCtrlLogicToCells(caseIdInputVarps, hookPathVarps, instPathVarps);
-        if (!hasDpiTrigger()) insertDpiTrigger();
+        insertCtrlLogicToModules(caseIdInputVarps, hookPathVarps, triggerVarps, instPathVarps);
+        insertCtrlLogicToCells(caseIdInputVarps, hookPathVarps, triggerVarps, instPathVarps);
+        m_insertTarget.dpiTriggerVarp = triggerVarps.back();
     }
 };
 
@@ -1628,11 +1532,12 @@ class DpiOverrideBuilder final {
     AstFunc* m_funcp = nullptr;  // DPI import function of the callback (targets up to 64 bits)
     AstTask* m_taskp = nullptr;  // DPI import task of the callback (targets wider than 64 bits)
     AstTypeTable* m_typeTablep;  // Provided by constructor
-    AstVar* m_condVarp = nullptr;  // Set while the target is bound (`_selCond`)
+    AstVar* m_condVarp = nullptr;  // Set while the target is bound (`__Vdpihook_sel_cond__*`)
     AstVar* m_caseIdVarp
         = nullptr;  // Per-target case-id, read by the DPI callback (see insertCaseIdVar)
     AstVar* m_dpiTriggerVarp;  // Provided by constructor
-    AstVar* m_selResVarp = nullptr;  // Hook result every reader of the target sees (`_selRes`)
+    AstVar* m_selResVarp
+        = nullptr;  // Hook result every reader of the target sees (`__Vdpihook_sel_res__*`)
     AstVar* m_preVarp = nullptr;  // Intermediate the drivers write to
     AstArraySel* m_viewSelp = nullptr;  // The element view's own read; never redirected
     AstNodeExpr* m_viewExprp = nullptr;  // The member/index leaf view's own read; never redirected
@@ -1640,9 +1545,10 @@ class DpiOverrideBuilder final {
     HookInsertEntry& m_targetEntry;  // Provided by constructor
     std::unordered_map<AstNodeModule*, AstCase*>& m_caseCache;  // Provided by constructor
     std::unordered_map<AstNodeModule*, AstVar*>&
-        m_targetLoopVarCache;  // Loop index var of each module's DPIHOOK_TARGET_FILTER
+        m_targetLoopVarCache;  // Loop index var of each module's __Vdpihook_target_filter
     std::map<std::pair<const AstNodeModule*, string>, AstNodeFTask*>&
         m_callbackCache;  // Callback imports created so far, by container and name
+    HookLookups& m_lookups;  // Ports, triggers and pins the pass added so far
 
     // METHODS
     AstAlways* buildHandlerp(AstVar* hookedVarp, AstVar* targetVarp) {
@@ -1694,7 +1600,7 @@ class DpiOverrideBuilder final {
             m_typeTablep->addTypesp(m_idDTypep);
         }
         AstVar* const idArgVarp
-            = new AstVar{ftaskp->fileline(), VVarType::PORT, "insID", m_idDTypep};
+            = new AstVar{ftaskp->fileline(), VVarType::PORT, "__Vdpihook_id", m_idDTypep};
         idArgVarp->direction(VDirection::INPUT);
         idArgVarp->lifetime(VLifetime::AUTOMATIC_IMPLICIT);
         idArgVarp->funcLocal(true);
@@ -1733,8 +1639,9 @@ class DpiOverrideBuilder final {
         if (targetVarp->basicp()->isLiteralType()) {
             if (targetVarp->width() > DPIHOOK_MAX_FUNC_WIDTH) {
                 AstTask* const taskp = new AstTask{m_targetModp->fileline(), callback};
-                AstVar* const resultVarp = new AstVar{m_targetModp->fileline(), VVarType::PORT,
-                                                      "result", dpiValueDTypep(targetVarp)};
+                AstVar* const resultVarp
+                    = new AstVar{m_targetModp->fileline(), VVarType::PORT, "__Vdpihook_result",
+                                 dpiValueDTypep(targetVarp)};
                 resultVarp->direction(VDirection::OUTPUT);
                 resultVarp->lifetime(VLifetime::AUTOMATIC_IMPLICIT);
                 resultVarp->funcLocal(true);
@@ -1757,24 +1664,14 @@ class DpiOverrideBuilder final {
         return nullptr;
     }
     AstVar* findHookPathVarp() {
-        const bool isIface = VN_IS(m_targetModp, Iface);
-        for (AstNode* stmtp = m_targetModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            AstVar* const varp = VN_CAST(stmtp, Var);
-            if (varp && (varp->isInput() || isIface) && varp->name() == "DPIHOOK_PATH")
-                return varp;
-        }
-        // Path router always adds DPIHOOK_PATH to target container before override builder runs
+        if (AstVar* const varp = HookLookups::varp(m_lookups.hookPathVarps, m_targetModp))
+            return varp;
+        // Path router always adds __Vdpihook_path to target container before override builder runs
         m_targetModp->v3fatalSrc("DPI-hook path input missing in target container");
         return nullptr;
     }
     AstVar* findCaseIdInputVarp(AstNodeModule* modp) {
-        const bool isIface = VN_IS(modp, Iface);
-        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            AstVar* const varp = VN_CAST(stmtp, Var);
-            if (!varp) continue;
-            if ((varp->isInput() || isIface) && varp->name() == "DPIHOOK_CASE_ID") return varp;
-        }
-        return nullptr;
+        return HookLookups::varp(m_lookups.caseIdVarps, modp);
     }
     AstCase* findTargetFilterp() const {
         const auto it = m_caseCache.find(m_targetModp);
@@ -1843,7 +1740,7 @@ class DpiOverrideBuilder final {
                 writeRefps.push_back(refp);
         });
         m_preVarp = new AstVar{m_targetModp->fileline(), VVarType::VAR,
-                               targetVarp->name() + "_preHook", targetVarp->dtypep()};
+                               "__Vdpihook_pre_hook__" + targetVarp->name(), targetVarp->dtypep()};
         m_preVarp->lifetime(VLifetime::STATIC_IMPLICIT);
         m_preVarp->trace(false);
         m_targetModp->addStmtsp(m_preVarp);
@@ -1865,7 +1762,7 @@ class DpiOverrideBuilder final {
     void routeIfaceDrivers(AstVar* targetVarp) {
         if (!VN_IS(m_targetModp, Iface) || m_targetEntry.writeRefps.empty()) return;
         m_preVarp = new AstVar{m_targetModp->fileline(), VVarType::VAR,
-                               targetVarp->name() + "_preHook", targetVarp->dtypep()};
+                               "__Vdpihook_pre_hook__" + targetVarp->name(), targetVarp->dtypep()};
         m_preVarp->lifetime(VLifetime::STATIC_IMPLICIT);
         m_preVarp->trace(false);
         m_targetModp->addStmtsp(m_preVarp);
@@ -1882,7 +1779,7 @@ class DpiOverrideBuilder final {
         if (!adtypep) return;
         const uint32_t idx = elemPos(adtypep, m_targetEntry.elemIndex());
         FileLine* const fl = m_targetModp->fileline();
-        m_preVarp = new AstVar{fl, VVarType::VAR, hookBaseName(targetVarp) + "_elem",
+        m_preVarp = new AstVar{fl, VVarType::VAR, "__Vdpihook_elem__" + hookBaseName(targetVarp),
                                m_targetEntry.hookedVarp->dtypep()};
         m_preVarp->lifetime(VLifetime::STATIC_IMPLICIT);
         m_preVarp->trace(false);
@@ -2020,7 +1917,7 @@ class DpiOverrideBuilder final {
     void routeMemberTarget(AstVar* targetVarp) {
         if (!m_targetEntry.hasMemberStep()) return;
         FileLine* const fl = m_targetModp->fileline();
-        m_preVarp = new AstVar{fl, VVarType::VAR, hookBaseName(targetVarp) + "_leaf",
+        m_preVarp = new AstVar{fl, VVarType::VAR, "__Vdpihook_leaf__" + hookBaseName(targetVarp),
                                m_targetEntry.hookedVarp->dtypep()};
         m_preVarp->lifetime(VLifetime::STATIC_IMPLICIT);
         m_preVarp->trace(false);
@@ -2052,8 +1949,9 @@ class DpiOverrideBuilder final {
     }
     AstVar* buildAggregateViewp(AstVar* aggregateVarp, AstVar* targetVarp) {
         FileLine* const fl = aggregateVarp->fileline();
-        AstVar* const viewVarp = new AstVar{fl, VVarType::VAR, hookBaseName(targetVarp) + "_view",
-                                            aggregateVarp->dtypep()};
+        AstVar* const viewVarp
+            = new AstVar{fl, VVarType::VAR, "__Vdpihook_view__" + hookBaseName(targetVarp),
+                         aggregateVarp->dtypep()};
         viewVarp->lifetime(VLifetime::STATIC_IMPLICIT);
         viewVarp->trace(false);
         m_targetModp->addStmtsp(viewVarp);
@@ -2268,8 +2166,9 @@ class DpiOverrideBuilder final {
         VL_DO_DANGLING(outerp->deleteTree(), outerp);
     }
     void insertSelResVar(AstVar* hookedVarp, AstVar* targetVarp) {
-        m_selResVarp = new AstVar{m_targetModp->fileline(), VVarType::VAR,
-                                  hookBaseName(targetVarp) + "_selRes", hookedVarp->dtypep()};
+        m_selResVarp
+            = new AstVar{m_targetModp->fileline(), VVarType::VAR,
+                         "__Vdpihook_sel_res__" + hookBaseName(targetVarp), hookedVarp->dtypep()};
         m_selResVarp->lifetime(VLifetime::STATIC_IMPLICIT);
         m_selResVarp->trace(false);
         if (m_targetEntry.isAggregateMirror) {
@@ -2309,7 +2208,8 @@ class DpiOverrideBuilder final {
     }
     void insertCondVar(AstVar* targetVarp) {
         m_condVarp = new AstVar{m_targetModp->fileline(), VVarType::VAR,
-                                hookBaseName(targetVarp) + "_selCond", VFlagLogicPacked{}, 1};
+                                "__Vdpihook_sel_cond__" + hookBaseName(targetVarp),
+                                VFlagLogicPacked{}, 1};
         m_condVarp->lifetime(VLifetime::STATIC_IMPLICIT);
         m_condVarp->trace(false);
         m_targetModp->addStmtsp(m_condVarp);
@@ -2320,7 +2220,7 @@ class DpiOverrideBuilder final {
         idDTypep->generic(true);
         m_typeTablep->addTypesp(idDTypep);
         m_caseIdVarp = new AstVar{m_targetModp->fileline(), VVarType::VAR,
-                                  hookBaseName(targetVarp) + "_caseId", idDTypep};
+                                  "__Vdpihook_case_id__" + hookBaseName(targetVarp), idDTypep};
         m_caseIdVarp->lifetime(VLifetime::STATIC_IMPLICIT);
         m_caseIdVarp->trace(false);
         m_targetModp->addStmtsp(m_caseIdVarp);
@@ -2346,15 +2246,14 @@ class DpiOverrideBuilder final {
                 return false;
             }
         } else {
-            for (AstNode* stmtp = m_targetModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (VN_IS(stmtp, NodeFTask) && stmtp->name() == m_targetEntry.callback) {
-                    stmtp->v3error(
-                        "DPI-hook callback '"
-                        << m_targetEntry.callback << "' of target '" << m_targetEntry.origTarget
-                        << "' has the name of this function or task\n"
-                        << stmtp->warnMore() << "... Suggest use another callback name");
-                    return false;
-                }
+            if (AstNodeFTask* const userFTaskp
+                = m_lookups.ftaskp(m_targetModp, m_targetEntry.callback)) {
+                userFTaskp->v3error(
+                    "DPI-hook callback '"
+                    << m_targetEntry.callback << "' of target '" << m_targetEntry.origTarget
+                    << "' has the name of this function or task\n"
+                    << userFTaskp->warnMore() << "... Suggest use another callback name");
+                return false;
             }
             ftaskp = newDpiImportp();
             ftaskp->dpiImport(true);
@@ -2399,11 +2298,11 @@ class DpiOverrideBuilder final {
         cfg.intDTypep = loopVarDTypep;
         cfg.stringDTypep = stringDTypep;
         cfg.hookPathVarp = hookPathVarp;
-        cfg.targetVarName = "DPITARGET";
+        cfg.targetVarName = "__Vdpihook_target_part";
         cfg.targetVarLifetime = VLifetime::AUTOMATIC_IMPLICIT;
         cfg.targetVarHasUserInit = true;
         cfg.declTargetInLoopBody = true;  // declared in the loop body
-        cfg.alwaysName = "DPIHOOK_TARGET_FILTER";
+        cfg.alwaysName = "__Vdpihook_target_filter";
         cfg.caseCachep = &m_caseCache;
         cfg.loopVarCachep = &m_targetLoopVarCache;
         const PathFilterResult res = buildPathFilter(cfg);
@@ -2416,14 +2315,16 @@ public:
         AstNodeModule* targetModp, AstTypeTable* typeTablep, AstVar* dpiTriggerVarp,
         HookInsertEntry& targetEntry, std::unordered_map<AstNodeModule*, AstCase*>& caseCache,
         std::unordered_map<AstNodeModule*, AstVar*>& targetLoopVarCache,
-        std::map<std::pair<const AstNodeModule*, string>, AstNodeFTask*>& callbackCache)
+        std::map<std::pair<const AstNodeModule*, string>, AstNodeFTask*>& callbackCache,
+        HookLookups& lookups)
         : m_targetModp{targetModp}
         , m_typeTablep{typeTablep}
         , m_dpiTriggerVarp{dpiTriggerVarp}
         , m_targetEntry{targetEntry}
         , m_caseCache{caseCache}
         , m_targetLoopVarCache{targetLoopVarCache}
-        , m_callbackCache{callbackCache} {}
+        , m_callbackCache{callbackCache}
+        , m_lookups{lookups} {}
     void insert() {
         VL_RESTORER(m_selResVarp);
         m_targetEntry.hookedVarp = newHookedVarp();
@@ -2460,19 +2361,17 @@ class DpiHookInserter final {
     // MEMBERS
     AstNetlist* m_netlistp;  // Netlist under transformation
     std::map<string, HookInsertTarget>& m_insertCfg;  // Resolved target configs
+    std::map<std::tuple<const AstNodeModule*, const AstVar*, string>, const HookInsertEntry*>
+        m_doneEntries;  // Built entries, by container, variable and access path
 
     // METHODS
+    static std::tuple<const AstNodeModule*, const AstVar*, string>
+    doneKey(const AstNodeModule* modp, const HookInsertEntry& entry) {
+        return std::make_tuple(modp, entry.origVarp, entry.accessPathText());
+    }
     const HookInsertEntry* existingEntryp(AstNodeModule* modp, const HookInsertEntry& candidate) {
-        for (const auto& itr : m_insertCfg) {
-            const HookInsertTarget& target = itr.second;
-            if (target.hookLogicContainerp() != modp) continue;
-            for (const auto& entry : target.entries) {
-                if (entry.done && entry.origVarp == candidate.origVarp
-                    && entry.accessPath == candidate.accessPath)
-                    return &entry;
-            }
-        }
-        return nullptr;
+        const auto it = m_doneEntries.find(doneKey(modp, candidate));
+        return it == m_doneEntries.end() ? nullptr : it->second;
     }
 
 public:
@@ -2487,6 +2386,7 @@ public:
         std::unordered_map<AstNodeModule*, AstVar*> targetLoopVarCache;
         std::map<std::pair<const AstNodeModule*, string>, AstNodeFTask*> callbackCache;
         std::unordered_map<AstNodeModule*, std::set<string>> caseChildCells;
+        HookLookups lookups;
         std::vector<std::pair<string, HookInsertTarget*>> sortedCfg;
         for (auto& itr : m_insertCfg) sortedCfg.emplace_back(itr.first, &itr.second);
 
@@ -2499,8 +2399,8 @@ public:
         for (const auto& itr : sortedCfg) {
             HookInsertTarget* const target = itr.second;
             if (target->error) continue;
-            HookPathRouter pathRouter{m_netlistp,         *target,       dtypeCache, caseCache,
-                                      targetLoopVarCache, caseChildCells};
+            HookPathRouter pathRouter{m_netlistp,         *target,        dtypeCache, caseCache,
+                                      targetLoopVarCache, caseChildCells, lookups};
             pathRouter.insert();
             // Insert hook logic for each entry
             for (auto& entry : target->entries) {
@@ -2515,8 +2415,12 @@ public:
                                                        entry,
                                                        caseCache,
                                                        targetLoopVarCache,
-                                                       callbackCache};
+                                                       callbackCache,
+                                                       lookups};
                     overrideBuilder.insert();
+                    if (entry.done)
+                        m_doneEntries.emplace(doneKey(target->hookLogicContainerp(), entry),
+                                              &entry);
                 } else if (priorp->callback != entry.callback) {
                     origVarp->v3error("DPI-hook target '" << entry.origTarget
                                                           << "' is already hooked with callback '"
@@ -2526,7 +2430,7 @@ public:
         }
         if (V3Error::errorCount()) return;
         insertDefaultCases(caseCache);
-        insertBindCheck(m_netlistp);
+        insertBindCheck(m_netlistp, lookups);
     }
 };
 

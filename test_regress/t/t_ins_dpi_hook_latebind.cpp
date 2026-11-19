@@ -35,17 +35,18 @@ int main(int argc, char** argv) {
         ++evals;
     }
 
-    // The hook sampled DPIHOOK_PATH at time zero, so the binding is too late and binds nothing.
+    // The hook sampled __Vdpihook_path at time zero, so the binding is too late and binds nothing.
     // The model has no way to act on it, but final() reports the mistake.
-    topp->DPIHOOK_CASE_ID[0] = 0;
-    topp->DPIHOOK_PATH[0][0] = "a";
-    topp->DPIHOOK_PATH[0][1] = "u";
-    topp->DPIHOOK_PATH[0][2] = "sig";
+    topp->__Vdpihook_id[0] = 0;
+    topp->__Vdpihook_path[0][0] = "a";
+    topp->__Vdpihook_path[0][1] = "u";
+    topp->__Vdpihook_path[0][2] = "sig";
 
     while (!contextp->gotFinish()) {
+        topp->__Vdpihook_trigger = !topp->__Vdpihook_trigger;
         topp->eval();
         if (!topp->eventsPending()) break;
-        contextp->time(topp->nextTimeSlot());
+        contextp->timeInc(1);
     }
     if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");

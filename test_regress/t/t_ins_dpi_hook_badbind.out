@@ -1,5 +1,5 @@
-[0] %Warning: t_ins_dpi_hook_badbind.v:8: top_module.top_module.DPIHOOK_PATH_FILTER: DPI-hook: bound path part 's9' matches nothing in 'top_module'; this target stays inactive
-[0] %Warning: t_ins_dpi_hook_badbind.v:29: top_module.top_module.s2.DPIHOOK_TARGET_FILTER: DPI-hook: bound path part 'vv' matches nothing in 'sub'; this target stays inactive
+[0] %Warning: t_ins_dpi_hook_badbind.v:8: top_module.top_module.__Vdpihook_path_filter: DPI-hook: bound path part 's9' matches nothing in 'top_module'; this target stays inactive
+[0] %Warning: t_ins_dpi_hook_badbind.v:29: top_module.top_module.s2.__Vdpihook_target_filter: DPI-hook: bound path part 'vv' matches nothing in 'sub'; this target stays inactive
 [0] s1=00 s2=00
 [1] s1=00 s2=00
 [2] s1=00 s2=00

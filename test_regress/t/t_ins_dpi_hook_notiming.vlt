@@ -1,0 +1,13 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+// A register, an interface signal, a nested one, and one in a generate block
+insert_dpihook -callback "cb" -var "top_module.mreg"
+insert_dpihook -callback "cb" -var "top_module.di.data"
+insert_dpihook -callback "cb" -var "top_module.oi.inner.data"
+insert_dpihook -callback "cb" -var "top_module.lane[1].gi.data"

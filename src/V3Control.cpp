@@ -935,13 +935,6 @@ public:
     }
     // Add the hook-insertion config data to the map to create the initial map (Used in verilog.y)
     void addHookInsertCfg(FileLine* fl, const string& callback, const string& target) {
-        // The periodic evaluation trigger of a hook is a delay, so hooks need --timing.
-        // Report it once, at the first directive
-        if (m_hookInsertCfg.empty() && !v3Global.opt.timing().isSetTrue()) {
-            fl->v3error("insert_dpihook requires --timing\n"
-                        << fl->warnMore()
-                        << "... The periodic evaluation trigger of a DPI hook is a delay");
-        }
         if (m_hookInsertCfg.empty() && v3Global.opt.hierarchical()) {
             fl->v3warn(E_UNSUPPORTED, "Unsupported: insert_dpihook with --hierarchical");
         }

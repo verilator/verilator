@@ -27,15 +27,16 @@ int main(int argc, char** argv) {
     };
     size_t slot = 0;
     for (const auto& [id, path] : hook_paths) {
-        topp->DPIHOOK_CASE_ID[slot] = id;
-        for (size_t j = 0; j < path.size(); ++j) topp->DPIHOOK_PATH[slot][j] = path[j];
+        topp->__Vdpihook_id[slot] = id;
+        for (size_t j = 0; j < path.size(); ++j) topp->__Vdpihook_path[slot][j] = path[j];
         ++slot;
     }
 
     while (!contextp->gotFinish()) {
+        topp->__Vdpihook_trigger = !topp->__Vdpihook_trigger;
         topp->eval();
         if (!topp->eventsPending()) break;
-        contextp->time(topp->nextTimeSlot());
+        contextp->timeInc(1);
     }
     if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");

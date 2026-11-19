@@ -1,26 +1,34 @@
 %Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_clock.v:19:10: Unsupported: Target variable 'cs' in 'top_module' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list)
+                                                        : ... note: In instance 'top_module'
    19 |   clkd_t cs;
       |          ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_clock.v:20:9: Unsupported: Target variable 'ck2[0]' in 'top_module' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list)
+                                                       : ... note: In instance 'top_module'
    20 |   logic ck2[2];
       |         ^~~
 %Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_clock.v:59:17: Unsupported: Target variable 'clk' in 'top_module.a1' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list)
+                                                        : ... note: In instance 'top_module.a1'
    59 |     input logic clk,
       |                 ^~~
 %Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_clock.v:65:15: Unsupported: Target variable 'sum' in 'top_module.a1' is read in an event control without an edge (e.g. 'always @(sum or ...)')
+                                                        : ... note: In instance 'top_module.a1'
    65 |   logic [7:0] sum;
       |               ^~~
 %Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_clock.v:79:9: Unsupported: Target variable 'c' in 'top_module.ci' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list)
+                                                       : ... note: In instance 'top_module.iu'
    79 |   logic c;
       |         ^
 %Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_clock.v:19:10: Unsupported: Target variable 'cs.c' in 'top_module' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list)
+                                                        : ... note: In instance 'top_module'
    19 |   clkd_t cs;
       |          ^~
 %Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_clock.v:24:5: Unsupported: Target variable 'pk.c' in 'top_module' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list)
+                                                       : ... note: In instance 'top_module'
    24 |   } pk;
       |     ^~
 %Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_clock.v:74:9: Unsupported: Target variable 'tick' in 'top_module.tk' is used as a clock or asynchronous reset (it appears in an edge-sensitive sensitivity list)
+                                                       : ... note: In instance 'top_module.tk'
    74 |   logic tick = 1'b0;
       |         ^~~~
 %Error: Exiting due to

@@ -7,6 +7,7 @@
    16 | insert_dpihook -callback "cb" -var "top_module.g[0].gs.b"
       | ^~~~~~~~~~~~~~
 %Error-UNSUPPORTED: t/t_ins_dpi_hook_bad_path.v:58:15: Unsupported: DPI-hook target 's' in 'top_module': the addressed member is an unpacked aggregate
+                                                     : ... note: In instance 'top_module'
                                                      : ... Suggest hook a scalar or packed leaf
    58 |   box_t       s;
       |               ^

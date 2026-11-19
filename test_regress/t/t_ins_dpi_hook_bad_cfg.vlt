@@ -6,9 +6,6 @@
 
 `verilator_config
 
-// A hook needs --timing for its periodic trigger, and this test runs without it
-insert_dpihook -callback "cb" -var "top_module.a2.out"
-
 // Malformed targets, rejected while the configuration is read
 insert_dpihook -callback "cb" -var "outa"
 insert_dpihook -callback "cb" -var "top_module.s.mem[2"

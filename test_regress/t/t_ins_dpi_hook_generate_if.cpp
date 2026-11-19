@@ -40,14 +40,15 @@ int main(int argc, char** argv) {
         = {{"g_en.cnt"}, {"cnt"}, {"genblk5.u", "r"}, {"genblk6.nb.w"}};
     const std::vector<int> ids = {1, 1, 1, 2};
     for (size_t i = 0; i < paths.size(); ++i) {
-        topp->DPIHOOK_CASE_ID[i] = ids[i];
-        for (size_t j = 0; j < paths[i].size(); ++j) topp->DPIHOOK_PATH[i][j] = paths[i][j];
+        topp->__Vdpihook_id[i] = ids[i];
+        for (size_t j = 0; j < paths[i].size(); ++j) topp->__Vdpihook_path[i][j] = paths[i][j];
     }
 
     while (!contextp->gotFinish()) {
+        topp->__Vdpihook_trigger = !topp->__Vdpihook_trigger;
         topp->eval();
         if (!topp->eventsPending()) break;
-        contextp->time(topp->nextTimeSlot());
+        contextp->timeInc(1);
     }
     topp->final();
     return 0;

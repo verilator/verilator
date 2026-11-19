@@ -56,14 +56,15 @@ int main(int argc, char** argv) {
     const std::vector<std::vector<std::string>> paths
         = {{"s0", "v"}, {"s0", "v2"}, {"s0", "v48"}, {"s0", "v64"}};
     for (size_t i = 0; i < paths.size(); ++i) {
-        topp->DPIHOOK_CASE_ID[i] = static_cast<int>(i % 2) + 1;
-        for (size_t j = 0; j < paths[i].size(); ++j) topp->DPIHOOK_PATH[i][j] = paths[i][j];
+        topp->__Vdpihook_id[i] = static_cast<int>(i % 2) + 1;
+        for (size_t j = 0; j < paths[i].size(); ++j) topp->__Vdpihook_path[i][j] = paths[i][j];
     }
 
     while (!contextp->gotFinish()) {
+        topp->__Vdpihook_trigger = !topp->__Vdpihook_trigger;
         topp->eval();
         if (!topp->eventsPending()) break;
-        contextp->time(topp->nextTimeSlot());
+        contextp->timeInc(1);
     }
     if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");

@@ -28,15 +28,16 @@ int main(int argc, char** argv) {
 
     const char* const ports[] = {"q_reg", "q_self", "q_arst", "q_task"};
     for (int i = 0; i < 4; ++i) {
-        topp->DPIHOOK_CASE_ID[i] = i + 1;
-        topp->DPIHOOK_PATH[i][0] = "u";
-        topp->DPIHOOK_PATH[i][1] = ports[i];
+        topp->__Vdpihook_id[i] = i + 1;
+        topp->__Vdpihook_path[i][0] = "u";
+        topp->__Vdpihook_path[i][1] = ports[i];
     }
 
     while (!contextp->gotFinish()) {
+        topp->__Vdpihook_trigger = !topp->__Vdpihook_trigger;
         topp->eval();
         if (!topp->eventsPending()) break;
-        contextp->time(topp->nextTimeSlot());
+        contextp->timeInc(1);
     }
     if (!contextp->gotFinish()) {
         vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
