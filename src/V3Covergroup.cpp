@@ -363,14 +363,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // 'option.<member>' or 'type_option.<member>', per optionVarp
     AstStructSel* newOptionSel(FileLine* fl, AstVar* optionVarp, const std::string& member,
                                VAccess access) {
-        const AstMemberDType* const memberp
+        AstMemberDType* const memberp
             = VN_AS(m_memberMap.findMember(optionVarp->dtypep()->skipRefp(), member), MemberDType);
         UASSERT_OBJ(memberp, optionVarp, "Coverage option structure missing '" << member << "'");
         AstNodeExpr* const fromp = optionVarp->lifetime().isStatic()
                                        ? new AstVarRef{fl, optionVarp, access}
                                        : memberRef(fl, optionVarp, access);
-        AstStructSel* const selp = new AstStructSel{fl, fromp, member};
-        selp->dtypep(memberp->subDTypep()->skipRefToEnump());
+        AstStructSel* const selp = new AstStructSel{fl, fromp, memberp};
         selp->didWidth(true);
         return selp;
     }

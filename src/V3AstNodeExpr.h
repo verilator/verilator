@@ -2798,27 +2798,31 @@ class AstStructSel final : public AstNodeExpr {
     // Parents: math|stmt
     // Children: varref, math
     // @astgen op1 := fromp : AstNodeExpr
-    string m_name;  // Name of the member
+    // @astgen ptr := m_memberp : AstMemberDType  // The member selected
 public:
-    AstStructSel(FileLine* fl, AstNodeExpr* fromp, const string& name)
+    AstStructSel(FileLine* fl, AstNodeExpr* fromp, AstMemberDType* memberp)
         : ASTGEN_SUPER_StructSel(fl)
-        , m_name{name} {
+        , m_memberp{memberp} {
         this->fromp(fromp);
-        dtypep(nullptr);  // V3Width will resolve
+        dtypep(memberp->subDTypep()->skipRefToEnump());
     }
     ASTGEN_MEMBERS_AstStructSel;
-    string name() const override VL_MT_STABLE { return m_name; }
-    void name(const string& name) override { m_name = name; }
+    const char* broken() const override {
+        BROKEN_RTN(m_memberp->parentp() != fromp()->dtypep()->skipRefp());
+        return nullptr;
+    }
+    string name() const override VL_MT_STABLE { return m_memberp->name(); }
+    AstMemberDType* memberp() const { return m_memberp; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override {
         // Not a union
-        return VN_IS(fromp()->dtypep()->skipRefp(), StructDType);
+        return VN_IS(m_memberp->parentp(), StructDType);
     }
     bool isPure() override { return fromp()->isPure(); }
     bool sameNode(const AstNode* samep) const override {
         const AstStructSel* const sp = VN_DBG_AS(samep, StructSel);
-        return m_name == sp->m_name;
+        return m_memberp == sp->m_memberp;
     }
     int instrCount() const override { return widthInstrs(); }
 };
@@ -5269,8 +5273,8 @@ public:
     }
     ASTGEN_MEMBERS_AstConsStruct;
     const char* broken() const override;
-    // The value of the member called 'name'
-    AstNodeExpr* memberValuep(const string& name) const;
+    // The value of the member
+    AstNodeExpr* memberValuep(const AstMemberDType* memberp) const;
 };
 class AstConsWildcard final : public AstNodeCons {
     // Construct a wildcard associative array value, '{key: value, default: value}

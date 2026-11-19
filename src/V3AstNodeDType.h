@@ -327,6 +327,8 @@ protected:
 
 public:
     ASTGEN_MEMBERS_AstNodeUOrStructDType;
+    const char* broken() const override;
+    inline int nMembers() const;
     int uniqueNum() const { return m_uniqueNum; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1175,24 +1177,30 @@ class AstMemberDType final : public AstNodeDType {
     // @astgen op3 := valuep : Optional[AstNode]
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
+    // @astgen ptr := m_parentp : AstNodeUOrStructDType  // The struct/union this is a member of
     string m_name;  // Name of variable
+    const int m_index;  // Ordinal of this member in its struct/union
     string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     int m_lsb = -1;  // Within this level's packed struct, the LSB of the first bit of the member
     bool m_constrainedRand = false;  // Member has a constraint expression
     VRandAttr m_rand;  // Randomizability of this member (rand, randc, etc)
 public:
-    AstMemberDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp,
-                   AstNode* valuep)
+    AstMemberDType(FileLine* fl, AstNodeUOrStructDType* parentp, int index, const string& name,
+                   VFlagChildDType, AstNodeDType* dtp, AstNode* valuep)
         : ASTGEN_SUPER_MemberDType(fl)
-        , m_name{name} {
+        , m_name{name}
+        , m_index{index}
+        , m_parentp{parentp} {
         childDTypep(dtp);  // Only for parser
         this->valuep(valuep);
         dtypep(nullptr);  // V3Width will resolve
-        refDTypep(nullptr);
     }
-    AstMemberDType(FileLine* fl, const string& name, AstNodeDType* dtp)
+    AstMemberDType(FileLine* fl, AstNodeUOrStructDType* parentp, int index, const string& name,
+                   AstNodeDType* dtp)
         : ASTGEN_SUPER_MemberDType(fl)
-        , m_name{name} {
+        , m_name{name}
+        , m_index{index}
+        , m_parentp{parentp} {
         UASSERT(dtp, "AstMember created with no dtype");
         refDTypep(dtp);
         dtypep(this);
@@ -1208,6 +1216,8 @@ public:
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeUOrStructDType* getChildStructp();
+    AstNodeUOrStructDType* parentp() const { return m_parentp; }
+    int index() const { return m_index; }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }

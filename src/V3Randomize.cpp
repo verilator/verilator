@@ -1670,9 +1670,7 @@ class RandomizeVisitor final : public VNVisitor {
                     // IEEE 1800-2023 18.4: an unpacked struct member is only
                     // randomized if its own declaration carries rand/randc.
                     AstStructSel* structSelp
-                        = new AstStructSel{fl, exprp->cloneTree(false), smemberp->name()};
-                    structSelp->dtypep(smemberp->childDTypep());
-                    if (!structSelp->dtypep()) structSelp->dtypep(smemberp->subDTypep());
+                        = new AstStructSel{fl, exprp->cloneTree(false), smemberp};
                     randp = newRandStmtsp(fl, structSelp, nullptr, outputVarp);
                 }
                 stmtsp = AstNode::addNextNull(stmtsp, randp);
@@ -1709,10 +1707,8 @@ class RandomizeVisitor final : public VNVisitor {
             return createArrayForeachLoop(fl, wildDtp, exprp, outputVarp);
         } else {
             AstNodeExpr* valp;
-            if (AstEnumDType* enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
-                                                        : exprp->dtypep()->subDTypep(),
-                                                EnumDType)) {
-                enumDtp = enumDtp->originalOrThisDTypep();
+            AstNodeDType* const dtypep = memberp ? memberp->subDTypep() : exprp->dtypep();
+            if (AstEnumDType* const enumDtp = VN_CAST(dtypep->skipRefToEnump(true), EnumDType)) {
                 AstVarRef* const tabRefp = enumValueTabRefp(enumDtp);
                 AstNodeExpr* const randp
                     = newRandValue(fl, randcVarp, exprp->findBasicDType(VBasicDTypeKwd::UINT32));
