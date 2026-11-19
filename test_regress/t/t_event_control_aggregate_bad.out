@@ -10,4 +10,9 @@
                                                     : ... Suggest use element selects, or always_comb
    32 |   always @(st) ++st_wakes;
       |            ^~
+%Warning-NONSTD: t/t_event_control_aggregate.v:48:12: Non-standard event control on aggregate type 'union t.un_t' (IEEE 1800-2023 9.4.2)
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest use element selects, or always_comb
+   48 |   always @(un) ++un_wakes;
+      |            ^~
 %Error: Exiting due to

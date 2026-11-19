@@ -36,6 +36,26 @@ module t;
     #1 `checkd(st_wakes, 1);
     st.a = 6;
     #1 `checkd(st_wakes, 2);
+  end
+
+  // Test: a change to any member wakes an event control on an unpacked union
+  typedef union {
+    int a;
+    logic [15:0] b;
+  } un_t;
+  un_t un;
+  int un_wakes = 0;
+  always @(un) ++un_wakes;
+
+  initial begin
+    #1 un.a = 5;
+    #1 `checkd(un_wakes, 1);
+    un.b = 16'h1234;
+    #1 `checkd(un_wakes, 2);
+  end
+
+  initial begin
+    #10;
     $write("*-* All Finished *-*\n");
     $finish;
   end
