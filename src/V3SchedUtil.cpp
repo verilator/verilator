@@ -222,6 +222,36 @@ void splitCheck(AstCFunc* const ofuncp) {
     if (subFuncp) splitCheckFinishSubFunc(ofuncp, subFuncp, argVscps);
 }
 
+std::unordered_set<const AstVarScope*>
+computeImplicitSensitivities(const AstNodeProcedure* procp) {
+    // Dangerous assumption:
+    // A variable read after the process assigned it earlier (in tree order, with a read-write
+    // reference counting as an assignment) is not an implicit sensitivity, considering it
+    // something like:
+    //      foo = 1
+    //      foo = foo + 1
+    // Note this will break though:
+    //      if (sometimes) foo = 1
+    //      foo = foo + 1
+    // TODO: Do this properly with liveness analysis (i.e.: if live, it's an implicit sensitivity)
+    std::unordered_set<const AstVarScope*> implicitSensitivities;
+    std::unordered_set<const AstVarScope*> assigned;
+    procp->foreach([&](const AstVarRef* refp) {
+        const AstVarScope* const vscp = refp->varScopep();
+        if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()) {
+            assigned.emplace(vscp);
+        }
+        if (refp->access().isReadOrRW() && !assigned.count(vscp)) {
+            implicitSensitivities.emplace(vscp);
+        }
+    });
+    // Reads through forced values the process computes itself do not trigger it either
+    VarScopeSet forceReadEdgeIgnores;
+    collectForceReadEdgeIgnores(procp, forceReadEdgeIgnores);
+    for (const AstVarScope* const vscp : forceReadEdgeIgnores) implicitSensitivities.erase(vscp);
+    return implicitSensitivities;
+}
+
 }  // namespace util
 
 }  // namespace V3Sched

@@ -604,6 +604,9 @@ class TaskVisitor final : public VNVisitor {
                 outPinp = orderp->fromp();
             }
             postRhsp = new AstCvtQueueToUnpack{pinp->fileline(), postRhsp, outPinp->dtypep()};
+        } else if (AstCvtQueueToUnpack* const cvtp = VN_CAST(outPinp, CvtQueueToUnpack)) {
+            outPinp = cvtp->fromp();
+            postRhsp = new AstCvtUnpackToQueue{pinp->fileline(), postRhsp, outPinp->dtypep()};
         }
         // Put output assignment AFTER function call
         AstNodeExpr* const outPinClonep

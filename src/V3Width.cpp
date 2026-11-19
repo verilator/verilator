@@ -7816,9 +7816,14 @@ class WidthVisitor final : public VNVisitor {
                 // A streaming target legally unpacks an aggregate (IEEE 1800-2023 11.4.14)
                 if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType()
                     && (!lhsRefp || !rhsRefp) && !VN_IS(nodep->lhsp(), NodeStream)) {
-                    nodep->v3error("Illegal assignment between unpacked aggregate and "
-                                   "integral type (IEEE 1800-2023 7.6)"
-                                   << warnDTypes(nodep, lhsDtp, rhsDtp));
+                    const bool needsIndex = rhsRefp && VN_IS(rhsDtp, UnpackArrayDType);
+                    const string hint = needsIndex ? "\n" + V3Error::warnMore()
+                                                         + "... Array needs an array index"
+                                                   : string{};
+                    nodep->v3error(
+                        "Illegal assignment between unpacked aggregate and integral type "
+                        "(IEEE 1800-2023 7.6)"
+                        << hint << warnDTypes(nodep, lhsDtp, rhsDtp));
                 }
             }
 
@@ -8748,8 +8753,7 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
         nodep->doingWidth(true);
-        // Temporaries made for the body are property-local variables, promoted per instance by
-        // V3AssertPre/V3AssertNfa
+        // Temporaries made for the body are property-local variables, promoted per instance
         VL_RESTORER(m_propertyp);
         m_propertyp = nodep;
         userIterateAndNext(nodep->declsp(), nullptr);
@@ -8761,7 +8765,6 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSequence* nodep) override {
         // IEEE 1800-2023 16.7 (sequence declarations), 16.8 (sequence instances)
         // Width-check the sequence body so expressions are typed for later inlining.
-        // Referenced sequences in assertion context will be inlined by V3AssertPre.
         if (nodep->didWidth()) return;
         // An untyped formal may be assigned when its actual is a local variable
         // (IEEE 1800-2023 16.8.1, 16.10)
@@ -9023,16 +9026,18 @@ class WidthVisitor final : public VNVisitor {
                                   << portp->prettyNameQ()
                                   << " requires a compatible interface type, parameters, and "
                                      "modport.");
-                } else if (portp->isWritable() && pinp->width() != portp->width()) {
-                    pinp->v3widthWarn(portp->width(), pinp->width(),
-                                      "Function output argument "
-                                          << portp->prettyNameQ() << " requires " << portp->width()
-                                          << " bits, but connection's " << pinp->prettyTypeNameQ()
-                                          << " generates " << pinp->width() << " bits.");
-                    VNRelinker relinkHandle;
-                    pinp->unlinkFrBack(&relinkHandle);
-                    AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
-                    relinkHandle.relink(newp);
+                } else if (portp->isWritable()) {
+                    // Packed output arguments need an lvalue resize for the copy back. Unpacked
+                    // arguments use array assignment conversions instead.
+                    const int portWidth = portDTypep->elemDTypep()->width();
+                    const int pinWidth = pinDTypep->elemDTypep()->width();
+                    if (portWidth != pinWidth
+                        && !(portDTypep->isNonPackedArray() && pinDTypep->isNonPackedArray())) {
+                        VNRelinker relinkHandle;
+                        pinp->unlinkFrBack(&relinkHandle);
+                        AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
+                        relinkHandle.relink(newp);
+                    }
                 }
                 if (portp->direction() != VDirection::REF
                     && ((VN_IS(portDTypep, BasicDType) && pinDTypep->isNonPackedArray())
@@ -10526,9 +10531,13 @@ class WidthVisitor final : public VNVisitor {
         const bool isRhsAggregate = rhsDtp->isAggregateType();
         if (!isLhsAggregate && !isRhsAggregate) return;
         if (isLhsAggregate ^ isRhsAggregate) {
+            const bool needsIndex = isRhsAggregate && VN_IS(rhsDtp, UnpackArrayDType);
+            const string hint = needsIndex
+                                    ? "\n" + V3Error::warnMore() + "... Array needs an array index"
+                                    : string{};
             nodep->v3error(
                 "Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)"
-                << warnDTypes(nodep, lhsDtp, rhsDtp, lhsName, rhsName));
+                << hint << warnDTypes(nodep, lhsDtp, rhsDtp, lhsName, rhsName));
             return;
         } else if (VN_IS(lhsDtp, QueueDType) && VN_IS(rhsDtp, EmptyQueueDType)) {
             return;
@@ -10973,6 +10982,7 @@ class WidthVisitor final : public VNVisitor {
                 && !unpackedArraySizesMatch(expDtp, underDtp)) {
                 parentp->v3error("Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)"
                                  << warnDTypes(parentp, expDtp, underDtp));
+                warnOn = false;  // Suppress cascading warnings for the incompatible assignment
             }
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();

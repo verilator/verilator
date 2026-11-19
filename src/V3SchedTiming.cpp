@@ -55,7 +55,7 @@ TimingKit::externalTriggerIndices(const TriggerKit& trigKit) const {
 
 AstCCall* TimingKit::createResume(AstVarScope* trigVscp) {
     if (!m_resumeFuncp) {
-        if (m_lbs.empty()) return nullptr;
+        if (m_procList.empty()) return nullptr;
         // Create global resume function
         AstNetlist* const netlistp = v3Global.rootp();
         AstScope* const scopeTopp = netlistp->topScopep()->scopep();
@@ -66,9 +66,8 @@ AstCCall* TimingKit::createResume(AstVarScope* trigVscp) {
         m_resumeFuncp->declPrivate(true);
         scopeTopp->addBlocksp(m_resumeFuncp);
 
-        for (const auto& entry : m_lbs) {
-            AstActive* const activep = entry.m_activep;
-            activep->foreach([this](AstCMethodHard* const exprp) {
+        for (const Process& process : m_procList) {
+            process.m_procp->foreach([this](AstCMethodHard* const exprp) {
                 if (exprp->method() != VCMethod::SCHED_RESUME) return;
                 AstNodeExpr* const fromp = exprp->fromp();
                 if (VN_AS(fromp->dtypep(), BasicDType)->keyword()
@@ -84,20 +83,19 @@ AstCCall* TimingKit::createResume(AstVarScope* trigVscp) {
             });
         }
 
-        // Put all the timing actives in the resume function
+        // Put all the timing resume processes in the resume function
         AstIf* dlyShedIfp = nullptr;
-        for (const auto& entry : m_lbs) {
-            AstActive* const activep = entry.m_activep;
+        for (const Process& process : m_procList) {
             // Resume time delays last. For no particular reason other than
             // that's what we used to do prior to proper #0 support.
-            AstStmtExpr* const resumeStmtp = VN_AS(activep->procsp()->stmtsp(), StmtExpr);
+            AstStmtExpr* const resumeStmtp = VN_AS(process.m_procp->stmtsp(), StmtExpr);
             AstVarRef* const schedrefp
                 = VN_AS(VN_AS(resumeStmtp->exprp(), CMethodHard)->fromp(), VarRef);
 
             AstNodeStmt* const actionp = resumeStmtp->unlinkFrBack();
             if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
                 FileLine* const flp = trigVscp->fileline();
-                const std::set<uint32_t>& triggers = entry.m_triggers;
+                const std::set<uint32_t>& triggers = m_procList.triggers(process.m_senTreep);
                 AstTriggered* const condp
                     = new AstTriggered{flp, trigVscp, {triggers.begin(), triggers.end()}};
                 dlyShedIfp = new AstIf{flp, condp};
@@ -108,8 +106,8 @@ AstCCall* TimingKit::createResume(AstVarScope* trigVscp) {
         }
         if (dlyShedIfp) m_resumeFuncp->addStmtsp(dlyShedIfp);
 
-        // These are now spent, oispose of now empty AstActive instances
-        m_lbs.deleteActives();
+        // These are now spent, dispose of the now empty processes
+        m_procList.deleteProcesses();
     }
     AstCCall* const callp = new AstCCall{m_resumeFuncp->fileline(), m_resumeFuncp};
     callp->dtypeSetVoid();
@@ -117,9 +115,8 @@ AstCCall* TimingKit::createResume(AstVarScope* trigVscp) {
 }
 
 AstVarScope* TimingKit::getDelayScheduler(AstNetlist* const /*netlistp*/) {
-    for (const auto& entry : m_lbs) {
-        AstActive* const ap = entry.m_activep;
-        AstStmtExpr* const resumeStmtp = VN_AS(ap->procsp()->stmtsp(), StmtExpr);
+    for (const Process& process : m_procList) {
+        AstStmtExpr* const resumeStmtp = VN_AS(process.m_procp->stmtsp(), StmtExpr);
         AstVarRef* const schedrefp
             = VN_AS(VN_AS(resumeStmtp->exprp(), CMethodHard)->fromp(), VarRef);
         AstVarScope* const vscp = schedrefp->varScopep();
@@ -134,10 +131,9 @@ AstVarScope* TimingKit::getDelayScheduler(AstNetlist* const /*netlistp*/) {
 
 AstCCall* TimingKit::createReady(AstVarScope* trigVscp) {
     if (!m_readyFuncp) {
-        for (const auto& entry : m_lbs) {
-            AstActive* const activep = entry.m_activep;
+        for (const Process& process : m_procList) {
             auto* const resumep
-                = VN_AS(VN_AS(activep->procsp()->stmtsp(), StmtExpr)->exprp(), CMethodHard);
+                = VN_AS(VN_AS(process.m_procp->stmtsp(), StmtExpr)->exprp(), CMethodHard);
             UASSERT_OBJ(!resumep->nextp(), resumep, "Should be the only statement here");
             AstVarScope* const schedulerp = VN_AS(resumep->fromp(), VarRef)->varScopep();
             UASSERT_OBJ(schedulerp->dtypep()->basicp()->isDelayScheduler()
@@ -157,10 +153,10 @@ AstCCall* TimingKit::createReady(AstVarScope* trigVscp) {
                 scopeTopp->addBlocksp(m_readyFuncp);
             }
 
-            FileLine* const flp = activep->sentreep()->fileline();
+            FileLine* const flp = process.m_senTreep->fileline();
 
             // Create an 'AstIf' sensitive to the suspending triggers
-            const std::set<uint32_t>& triggers = entry.m_triggers;
+            const std::set<uint32_t>& triggers = m_procList.triggers(process.m_senTreep);
             AstTriggered* const condp
                 = new AstTriggered{flp, trigVscp, {triggers.begin(), triggers.end()}};
             AstIf* const ifp = new AstIf{flp, condp};
