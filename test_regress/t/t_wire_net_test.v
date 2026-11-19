@@ -69,6 +69,28 @@ clk
   assign c_triand = {1'b1, y};
   wire [4:0] c_trior_exp = {1'b0, x} | 5'b10010;
   wire [4:0] c_triand_exp = {1'b1, y} & 5'b01101;
+  wor logic [3:0] p_wor;
+  assign p_wor[0] = x[0];
+  assign p_wor[0] = y[0];
+  assign p_wor[1] = 1'b0;
+  trior logic [3:0] p_trior;
+  assign p_trior[0] = x[0];
+  assign p_trior[0] = y[0];
+  assign p_trior[1] = 1'b0;
+  wand logic [3:0] p_wand;
+  assign p_wand[0] = x[0];
+  assign p_wand[0] = y[0];
+  assign p_wand[1] = 1'b0;
+  wire p_wor_exp = x[0] | y[0];
+  wire p_trior_exp = x[0] | y[0];
+  wire p_wand_exp = x[0] & y[0];
+  // Only compiled to hit branch coverage
+  wire [1:0] a [1:0];
+  assign a[0] = x[1:0];
+  assign a[1][0] = x[0];
+  wire [3:0] m;
+  assign m = x;
+  assign m = y;
   always @ (posedge clk) begin
     cyc <= cyc + 1;
     x = {$random}[3:0];
@@ -85,6 +107,12 @@ clk
     `checkb(c_wand, 5'b10100);
     `checkb(c_trior, c_trior_exp);
     `checkb(c_triand, c_triand_exp);
+    `checkb(p_wor[0], p_wor_exp);
+    `checkb(p_wor[1], 1'b0);
+    `checkb(p_trior[0], p_trior_exp);
+    `checkb(p_trior[1], 1'b0);
+    `checkb(p_wand[0], p_wand_exp);
+    `checkb(p_wand[1], 1'b0);
     if (cyc == 20) begin
       $write("*-* All Finished *-*\n");
       $finish;
