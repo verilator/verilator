@@ -145,10 +145,18 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(nodep->prettyName());
         puts("(");
+        emitPortList(nodep);
+        puts(");\n");
+    }
+    void emitDpiExport(AstNodeFTask* nodep) {
+        puts("export \"DPI-C\" " + nodep->verilogKwd() + " ");
+        putqs(nodep, nodep->prettyName() + ";\n");
+    }
+    void emitPortList(AstNodeFTask* nodep) {
         bool first = true;
         for (AstNode* const itemp : nodep->declspList()) {
-            AstVar* const portp = VN_AS(itemp, Var);
-            UASSERT_OBJ(portp->isIO(), portp, "Non-port in a DPI import prototype");
+            const AstVar* const portp = VN_CAST(itemp, Var);
+            if (!portp || !portp->isIO()) continue;
             if (portp->isFuncReturn()) continue;
             if (!first) puts(", ");
             first = false;
@@ -168,11 +176,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
                 emitInitValue(portp->valuep(), portp->subDTypep());
             }
         }
-        puts(");\n");
-    }
-    void emitDpiExport(AstNodeFTask* nodep) {
-        puts("export \"DPI-C\" " + nodep->verilogKwd() + " ");
-        putqs(nodep, nodep->prettyName() + ";\n");
     }
     // VISITORS
     void visit(AstNetlist* nodep) override { iterateAndNextConstNull(nodep->modulesp()); }
@@ -201,13 +204,45 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             return;
         }
         if (nodep->dpiExport()) emitDpiExport(nodep);
-        putfs(nodep, nodep->verilogKwd());
+        string qual;
+        if (nodep->isHideLocal()) {
+            qual += "local ";
+        } else if (nodep->isHideProtected()) {
+            qual += "protected ";
+        }
+        if (nodep->isStatic()) qual += "static ";
+        if (nodep->pureVirtual()) {
+            qual = "pure virtual " + qual;  // A pure virtual is a declaration, never 'extern'
+        } else {
+            if (nodep->isVirtual()) qual += "virtual ";
+            if (nodep->isExternProto()) qual = "extern " + qual;
+        }
+
+        putfs(nodep, qual + nodep->verilogKwd());
         puts(" ");
+        if (VN_IS(nodep, Func) && !nodep->isConstructor()) {
+            if (AstVar* const fvarp = nodep->fvarp()) {
+                emitDType(fvarp->subDTypep());
+            } else {
+                puts("void");
+            }
+            puts(" ");
+        }
         puts(nodep->prettyName());
-        puts(";\n");
+        puts("(");
+        emitPortList(nodep);
+        puts(");\n");
+
+        // A declaration has no body and no 'end...'
+        if (nodep->prototype() || nodep->isExternProto() || nodep->pureVirtual()) return;
+
         // Only putfs the first time for each visitor; later for same node is putqs
         for (AstNode* const declp : nodep->declspList()) {
-            if (declp != nodep->fvarp()) iterateConst(declp);
+            if (declp == nodep->fvarp()) continue;
+            // The ports were emitted above; emitting them here redeclares them
+            const AstVar* const varp = VN_CAST(declp, Var);
+            if (varp && varp->isIO()) continue;
+            iterateConst(declp);
         }
         iterateAndNextConstNull(nodep->stmtsp());
         putqs(nodep, "end" + nodep->verilogKwd() + "\n");
@@ -1701,6 +1736,28 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         if (named) puts("." + nodep->prettyName() + "(");
         iterateConst(nodep->exprp());
         if (named) puts(")");
+    }
+    void visit(AstConstraint* nodep) override {
+        if (nodep->isKwdPure()) puts("pure ");
+        if (nodep->isStatic()) puts("static ");
+        puts("constraint ");
+        if (!nodep->isKwdPure()) {
+            const VBaseOverride ovr = nodep->baseOverride();
+            if (ovr.isInitial()) {
+                puts(":initial ");
+            } else if (ovr.isExtends()) {
+                puts(":extends ");
+            }
+            if (ovr.isFinal()) puts(":final ");
+        }
+        puts(nodep->prettyName());
+        if (!nodep->itemsp()) {
+            puts(";\n");
+            return;
+        }
+        puts(" {\n");
+        iterateAndNextConstNull(nodep->itemsp());
+        puts("}\n");
     }
 
 public:
