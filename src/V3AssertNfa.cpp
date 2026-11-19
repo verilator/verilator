@@ -2524,14 +2524,13 @@ class SvaNfaLowering final {
                     c.flp, new AstVarRef{c.flp, vtxp->datap()->doneLVarp, VAccess::READ}, matchLp};
                 AstNodeExpr* const doneROrp = new AstLogOr{
                     c.flp, new AstVarRef{c.flp, vtxp->datap()->doneRVarp, VAccess::READ}, matchRp};
-                AstNodeExpr* const bothp = new AstLogAnd{c.flp, doneLOrp, doneROrp};
-                AstNodeExpr* const oneNowp = new AstLogOr{c.flp, matchLp->cloneTreePure(false),
-                                                          matchRp->cloneTreePure(false)};
                 if (vtxp->datap()->stateSigp) {
                     VL_DO_DANGLING(vtxp->datap()->stateSigp->deleteTree(),
                                    vtxp->datap()->stateSigp);
                 }
-                vtxp->datap()->stateSigp = new AstLogAnd{c.flp, bothp, oneNowp};
+                // Both operands matched since the attempt started. The done latches are cleared
+                // once this holds, so they are never both set and one operand matches now.
+                vtxp->datap()->stateSigp = new AstLogAnd{c.flp, doneLOrp, doneROrp};
                 if (vtxp->datap()->stateCountSigp) {
                     VL_DO_DANGLING(vtxp->datap()->stateCountSigp->deleteTree(),
                                    vtxp->datap()->stateCountSigp);
