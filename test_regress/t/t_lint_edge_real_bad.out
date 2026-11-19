@@ -1,10 +1,14 @@
-%Error: t/t_lint_edge_real_bad.v:19:21: Edge event control not legal on real type (IEEE 1800-2023 6.12.1)
+%Error: t/t_lint_edge_real_bad.v:20:21: Edge event control not legal on real type (IEEE 1800-2023 6.12.1)
                                       : ... note: In instance 't'
-   19 |   always @ (posedge rbad) $stop;
+   20 |   always @ (posedge rbad) $stop;
       |                     ^~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_lint_edge_real_bad.v:20:21: Edge event control not legal on non-integral type (IEEE 1800-2023 9.4.2)
+%Error: t/t_lint_edge_real_bad.v:21:21: Edge event control not legal on non-integral type (IEEE 1800-2023 9.4.2)
                                       : ... note: In instance 't'
-   20 |   always @ (posedge ebad) $stop;
+   21 |   always @ (posedge ebad) $stop;
+      |                     ^~~~
+%Error: t/t_lint_edge_real_bad.v:22:21: Edge event control not legal on non-integral type (IEEE 1800-2023 9.4.2)
+                                      : ... note: In instance 't'
+   22 |   always @ (posedge abad) $stop;
       |                     ^~~~
 %Error: Exiting due to

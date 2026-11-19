@@ -56,7 +56,7 @@ module t;
     return int'(v[i]);
   endfunction
 
-  always @val
+  always @(val[0], val[1], val[2])
     $write(
         "[%0t] val[0]=%0d val[1]=%0d val[2]=%0d net[0]=%0d net[1]=%0d\n",
         $time,

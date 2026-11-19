@@ -1,0 +1,13 @@
+%Warning-NONSTD: t/t_event_control_aggregate.v:16:12: Non-standard event control on aggregate type 'logic[6:0]$[3:1]' (IEEE 1800-2023 9.4.2)
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest use element selects, or always_comb
+   16 |   always @(arr) ++arr_wakes;
+      |            ^~~
+                 ... For warning description see https://verilator.org/warn/NONSTD?v=latest
+                 ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
+%Warning-NONSTD: t/t_event_control_aggregate.v:32:12: Non-standard event control on aggregate type 'struct t.st_t' (IEEE 1800-2023 9.4.2)
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest use element selects, or always_comb
+   32 |   always @(st) ++st_wakes;
+      |            ^~
+%Error: Exiting due to

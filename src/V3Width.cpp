@@ -9234,15 +9234,25 @@ class WidthVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
             userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
+            const AstNodeDType* const sensDtp = nodep->sensp()->dtypep()->skipRefp();
             if (nodep->edgeType().anEdge()) {
-                AstNodeDType* const sensDtp = nodep->sensp()->dtypep()->skipRefp();
                 if (sensDtp->isDouble()) {
                     nodep->sensp()->v3error(
                         "Edge event control not legal on real type (IEEE 1800-2023 6.12.1)");
-                } else if (sensDtp->basicp() && !sensDtp->basicp()->keyword().isIntNumeric()) {
+                } else if (sensDtp->isAggregateType()
+                           || (sensDtp->basicp()
+                               && !sensDtp->basicp()->keyword().isIntNumeric())) {
                     nodep->sensp()->v3error("Edge event control not legal on non-integral type "
                                             "(IEEE 1800-2023 9.4.2)");
                 }
+            } else if (sensDtp->isAggregateType() && !sensDtp->isDynamicallySized()) {
+                // Dynamically sized types are reported unsupported when scheduled
+                nodep->sensp()->v3warn(NONSTD, "Non-standard event control on aggregate type "
+                                                   << sensDtp->prettyDTypeNameQ()
+                                                   << " (IEEE 1800-2023 9.4.2)\n"
+                                                   << nodep->sensp()->warnMore()
+                                                   << "... Suggest use element selects, or "
+                                                      "always_comb");
             }
         }
     }
