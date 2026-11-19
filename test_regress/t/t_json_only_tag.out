@@ -77,10 +77,10 @@
     {"type":"BASICDTYPE","name":"logic","addr":"(UB)","loc":"d,20:11,20:17","dtypep":"(UB)","keyword":"logic","range":"3:0","generic":true},
     {"type":"STRUCTDTYPE","name":"m.my_struct","addr":"(L)","loc":"d,20:11,20:17","dtypep":"(L)","packed":true,"isFourstate":true,"typedefName":"m.my_struct","refDTypep":"(UB)",
      "membersp": [
-      {"type":"MEMBERDTYPE","name":"clk","addr":"(VB)","loc":"d,21:11,21:14","dtypep":"(QB)","lsb":"3","name":"clk","tag":"this is clk","refDTypep":"(QB)"},
-      {"type":"MEMBERDTYPE","name":"k","addr":"(WB)","loc":"d,22:11,22:12","dtypep":"(RB)","lsb":"2","name":"k","refDTypep":"(RB)"},
-      {"type":"MEMBERDTYPE","name":"enable","addr":"(XB)","loc":"d,23:11,23:17","dtypep":"(SB)","lsb":"1","name":"enable","tag":"enable","refDTypep":"(SB)"},
-      {"type":"MEMBERDTYPE","name":"data","addr":"(YB)","loc":"d,24:11,24:15","dtypep":"(TB)","name":"data","tag":"data","refDTypep":"(TB)"}
+      {"type":"MEMBERDTYPE","name":"clk","addr":"(VB)","loc":"d,21:11,21:14","dtypep":"(QB)","lsb":"3","name":"clk","tag":"this is clk","refDTypep":"(QB)","parentp":"(L)"},
+      {"type":"MEMBERDTYPE","name":"k","addr":"(WB)","loc":"d,22:11,22:12","dtypep":"(RB)","lsb":"2","index":1,"name":"k","refDTypep":"(RB)","parentp":"(L)"},
+      {"type":"MEMBERDTYPE","name":"enable","addr":"(XB)","loc":"d,23:11,23:17","dtypep":"(SB)","lsb":"1","index":2,"name":"enable","tag":"enable","refDTypep":"(SB)","parentp":"(L)"},
+      {"type":"MEMBERDTYPE","name":"data","addr":"(YB)","loc":"d,24:11,24:15","dtypep":"(TB)","index":3,"name":"data","tag":"data","refDTypep":"(TB)","parentp":"(L)"}
     ]},
     {"type":"IFACEREFDTYPE","addr":"(P)","loc":"d,29:7,29:11","dtypep":"(P)","cellName":"itop","ifaceName":"ifc","cellp":"(M)"},
     {"type":"BASICDTYPE","name":"bit","addr":"(ZB)","loc":"d,31:25,31:26","dtypep":"(ZB)","keyword":"bit","range":"31:0","generic":true},

@@ -3440,7 +3440,7 @@ class ConstVisitor final : public VNVisitor {
         iterateChildren(nodep);
 
         if (const AstConsStruct* const consp = VN_CAST(nodep->fromp(), ConsStruct)) {
-            AstNodeExpr* const valuep = consp->memberValuep(nodep->name());
+            AstNodeExpr* const valuep = consp->memberValuep(nodep->memberp());
             if (const AstConst* const constp = VN_CAST(valuep, Const)) {
                 VL_DO_DANGLING(replaceNum(nodep, constp->num()), nodep);
             } else {
@@ -4845,10 +4845,9 @@ void V3Const::collectFixedAggregateTerms(VNDeleter& deleter, AstNodeExpr* const 
                 termps, packReal, warnImpure);
         }
     } else if (sdtypep && !sdtypep->packed()) {
-        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
+        for (AstMemberDType* const itemp : sdtypep->memberspList()) {
             AstStructSel* const selp
-                = new AstStructSel{flp, fromp->cloneTree(false, warnImpure), itemp->name()};
-            selp->dtypeFrom(itemp->dtypep());
+                = new AstStructSel{flp, fromp->cloneTree(false, warnImpure), itemp};
             selp->didWidth(true);
             collectFixedAggregateTerms(deleter, selp, termps, packReal, warnImpure);
         }
