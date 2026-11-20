@@ -17,9 +17,31 @@ class derived extends base #(2);
     return randomize() with {x == 42;};
   endfunction
 endclass
+class other;
+  localparam int OW = 16;
+  rand bit [15:0] v;
+endclass
 class item;
   localparam int W = 32;
   rand int x, y;
+  typedef enum {A, B, C} e_t;
+  typedef int int_t;
+  rand e_t e;
+  function int apply_typedef();
+    return randomize() with {x == int_t'(5);};
+  endfunction
+  function int apply_enum();
+    return randomize() with {e == B;};
+  endfunction
+  function int apply_restricted(int x, int y);
+    return randomize() with (x) {x == y;};
+  endfunction
+  function int apply_restricted_param();
+    return randomize() with (x, W) {x == W'(45);};
+  endfunction
+  function int apply_other(other o);
+    return o.randomize() with {v == OW'(7);};
+  endfunction
   function int apply_value(int x);
     return this.randomize() with {x == local::x;};
   endfunction
@@ -35,8 +57,10 @@ class item;
 endclass
 module t;
   initial begin
+
     automatic item it = new;
     automatic derived d = new;
+    automatic other o = new;
     int a;
     int ok;
     it.x = -1;
@@ -59,6 +83,21 @@ module t;
     ok = std::randomize(a) with {a == 3;};
     `checkd(ok, 1);
     `checkd(a, 3);
+    ok = it.apply_typedef();
+    `checkd(ok, 1);
+    `checkd(it.x, 5);
+    ok = it.apply_enum();
+    `checkd(ok, 1);
+    `checkd(it.e, item::B);
+    ok = it.apply_restricted(1, 9);
+    `checkd(ok, 1);
+    `checkd(it.x, 9);
+    ok = it.apply_restricted_param();
+    `checkd(ok, 1);
+    `checkd(it.x, 45);
+    ok = it.apply_other(o);
+    `checkd(ok, 1);
+    `checkd(o.v, 7);
     $display("*-* All Finished *-*");
     $finish;
   end

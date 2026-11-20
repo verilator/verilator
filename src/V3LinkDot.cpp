@@ -3764,6 +3764,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
     bool randTargetUnresolved() const {
         return m_statep->forPrimary() && m_currentWithp && m_randMethodCallp && !m_randSymp;
     }
+    // Is 'nodep', found in a class, read through an object (member variable or method)?
+    static bool isObjectMember(const AstNode* nodep) {
+        if (const AstVar* const varp = VN_CAST(nodep, Var)) return !varp->isParam();
+        return VN_IS(nodep, NodeFTask);
+    }
     // Is 'funcp' of 'classp' virtual, directly or by overriding a virtual method of a base
     // class (IEEE 1800-2023 8.20)
     bool isVirtualMethod(const AstNodeFTask* funcp, const AstClass* classp) const {
@@ -4759,16 +4764,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (m_randSymp
                 && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 foundp = m_randSymp->findIdFlat(nodep->name());
-                const AstVar* const paramp = foundp ? VN_CAST(foundp->nodep(), Var) : nullptr;
-                if (paramp && paramp->isParam() && m_currentWithp && first) {
-                    // Class parameter: not read through the object, so look it up from the class
+                if (foundp && m_currentWithp && m_currentWithp->restricted()) {
+                    m_restrictedNamesUsed.insert(nodep->name());
+                }
+                if (foundp && m_currentWithp && first && !isObjectMember(foundp->nodep())) {
+                    // Parameter, type or enum item of the target class: not read through the
+                    // object, so look it up as usual, but starting in that class
                     lookupSymp = m_randSymp;
                     foundp = nullptr;
                 }
                 if (foundp) {
-                    if (m_currentWithp && m_currentWithp->restricted()) {
-                        m_restrictedNamesUsed.insert(nodep->name());
-                    }
                     if (!start) m_ds.m_dotPos = DP_MEMBER;
                     if (!m_currentWithp) {
                         UASSERT_OBJ(m_randMethodCallp, nodep, "Expected to be under randomize()");
