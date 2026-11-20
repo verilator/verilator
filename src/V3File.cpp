@@ -691,7 +691,8 @@ bool V3OutFormatter::tokenEnd(const char* cp) {
 }
 
 bool V3OutFormatter::tokenNotStart(const char* cp) {
-    return (tokenMatch(cp, "export") || tokenMatch(cp, "import"));
+    return (tokenMatch(cp, "export") || tokenMatch(cp, "import") || tokenMatch(cp, "extern")
+            || tokenMatch(cp, "pure"));
 }
 
 int V3OutFormatter::endLevels(const char* strg) {

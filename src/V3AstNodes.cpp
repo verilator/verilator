@@ -3662,6 +3662,9 @@ void AstPin::dump(std::ostream& str) const {
     if (modVarp()) {
         str << " -> ";
         modVarp()->dump(str);
+    } else if (modPTypep()) {
+        str << " -> ";
+        modPTypep()->dump(str);
     } else {
         str << " ->UNLINKED";
     }

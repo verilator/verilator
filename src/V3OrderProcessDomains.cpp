@@ -101,11 +101,13 @@ class V3OrderProcessDomains final {
         processDomains();
         if (dumpGraphLevel()) m_graph.dumpDotFilePrefixed(m_tag + "_orderg_domain");
 
-        // Delete logic that is never triggered
+        // Delete logic that is never triggered. Its ProcessList deletes the empty process.
         for (OrderLogicVertex* const lVtxp : m_untriggeredps) {
             UASSERT_OBJ(lVtxp->domainp()->triggers().empty(), lVtxp,
                         "Deleted logic should not be triggered");
-            lVtxp->nodep()->unlinkFrBack()->deleteTree();
+            AstNodeStmt* const stmtsp = lVtxp->nodep()->stmtsp();
+            UASSERT_OBJ(stmtsp, lVtxp->nodep(), "Empty process should have been deleted earlier");
+            VL_DO_DANGLING(stmtsp->unlinkFrBackWithNext()->deleteTree(), stmtsp);
             lVtxp->unlinkDelete(&m_graph);
         }
     }

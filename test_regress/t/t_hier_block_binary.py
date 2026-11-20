@@ -18,10 +18,12 @@ test.clean_objs()
 
 test.compile(verilator_flags2=[
     't/t_hier_block.cpp', '--stats', '--hierarchical', '--Wno-TIMESCALEMOD', '--CFLAGS',
-    '"-pipe -DCPP_MACRO=cplusplus"', '--binary'
+    '"-pipe -DCPP_MACRO=cplusplus"', '--binary', '--coverage-line'
 ])
 
-test.execute()
+# Coverage is written after final, so the blocks' counters must still be valid
+test.execute(all_run_flags=["+verilator+coverage+file+" + test.obj_dir + "/coverage.dat"])
+test.file_grep(test.obj_dir + "/coverage.dat", r"Vsub1/sub1.sv.*' [1-9]\d*$")
 
 test.file_grep(test.obj_dir + "/Vsub0/sub0.sv", r'^\s+\/\/\s+timeprecision\s+(\d+)ps;', 1)
 test.file_grep(test.obj_dir + "/Vsub0/sub0.sv", r'^module\s+(\S+)\s+', "sub0")

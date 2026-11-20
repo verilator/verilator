@@ -1,0 +1,23 @@
+%Error: t/t_array_needs_index_bad.v:14:16: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
+                                         : ... note: In instance 't'
+        ... Array needs an array index
+                                         : ... Left-hand data type: 'logic[7:0]'
+                                         : ... Right-hand data type: 'logic[7:0]$[0:3]'
+   14 |     out_vector = vector_array;
+      |                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_array_needs_index_bad.v:15:13: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
+                                         : ... note: In instance 't'
+        ... Array needs an array index
+                                         : ... Left-hand data type: 'logic'
+                                         : ... Right-hand data type: 'logic$[0:3]'
+   15 |     out_bit = bit_array;
+      |             ^
+%Error: t/t_array_needs_index_bad.v:16:21: Illegal assignment between unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+                                         : ... note: In instance 't'
+        ... Array needs an array index
+                                         : ... Left-hand data type: 'logic[7:0]'
+                                         : ... Right-hand data type: 'logic[7:0]$[0:3]'
+   16 |     vector_array[0] = vector_array;
+      |                     ^
+%Error: Exiting due to

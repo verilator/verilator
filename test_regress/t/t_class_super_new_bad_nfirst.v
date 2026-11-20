@@ -17,6 +17,9 @@ class Cls extends Base;
     imemberc = 10;
     super.new(imemberc);  // BAD not first
   endfunction
+  function void f();
+    super.new(1);  // BAD not in constructor
+  endfunction
 endclass
 
 module t;

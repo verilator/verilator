@@ -660,6 +660,13 @@ size_t V3ParseImp::tokenPipeScanParens(size_t depth) {
     return depth;
 }
 
+bool V3ParseImp::tokenPipeScanEmptyConstraintSet(const size_t depth) {
+    // Return if the '{' at depth is followed by '}', so it is an empty constraint_set rather
+    // than an empty queue starting the next expression, as in 'if (a) {} -b < 2;'.
+    UASSERT(tokenPeekp(depth)->token == '{', "Start with '{'");
+    return tokenPeekp(depth + 1)->token == '}';
+}
+
 size_t V3ParseImp::tokenPipeScanEqNew(size_t depth) {
     // Search around IEEE class_new to see if is expression
     // Return location of following token, or input if not found
@@ -744,9 +751,13 @@ void V3ParseImp::tokenPipeline() {
         || token == ':'  //
         || token == '='  //
         || token == yCONST__LEX  //
+        || token == yELSE  //
+        || token == yFOREACH  //
         || token == yGLOBAL__LEX  //
+        || token == yIF  //
         || token == yLOCAL__LEX  //
         || token == yNEW__LEX  //
+        || token == yP_MINUSGT  //
         || token == ySTATIC__LEX  //
         || token == yTAGGED__LEX  //
         || token == yTYPE__LEX  //
@@ -777,6 +788,25 @@ void V3ParseImp::tokenPipeline() {
                 token = yCONST__REF;
             } else {
                 token = yCONST__ETC;
+            }
+        } else if (token == yELSE || token == yP_MINUSGT) {
+            if (nexttok == '{') {
+                VL_RESTORER(yylval);  // Remember value, as about to read ahead
+                if (tokenPipeScanEmptyConstraintSet(0)) {
+                    m_tokensAhead.at(0).token = yP_CURLY__EMPTY;
+                } else {
+                    m_tokensAhead.at(0).token = '{';
+                }
+            }
+        } else if (token == yFOREACH || token == yIF) {
+            VL_RESTORER(yylval);  // Remember value, as about to read ahead
+            const size_t depth = tokenPipeScanParens(0);
+            if (tokenPeekp(depth)->token == '{') {
+                if (tokenPipeScanEmptyConstraintSet(depth)) {
+                    m_tokensAhead.at(depth).token = yP_CURLY__EMPTY;
+                } else {
+                    m_tokensAhead.at(depth).token = '{';
+                }
             }
         } else if (token == yGLOBAL__LEX) {
             if (nexttok == yCLOCKING) {

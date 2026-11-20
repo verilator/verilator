@@ -5,4 +5,7 @@
    17 |     imemberc = 10;
       |              ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_super_new_bad_nfirst.v:21:11: 'super.new' only allowed in a class constructor (IEEE 1800-2023 8.15)
+   21 |     super.new(1);   
+      |           ^~~
 %Error: Exiting due to
