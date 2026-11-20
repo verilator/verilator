@@ -377,7 +377,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
         std::vector<AstFuncRef*> funcRefps;
         cloneConstrp->foreach([&](AstNodeExpr* exprp) {
             if (AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
-                if (!varRefp->varp()->isClassMember()) return;
+                if (!varRefp->varp()->isClassMember() || varRefp->varp()->lifetime().isStatic())
+                    return;
                 AstNodeExpr* const chainp = buildMemberRefChain(rootVarRefp, newPath);
                 AstMemberRef* const finalRefp
                     = new AstMemberRef{varRefp->fileline(), chainp, varRefp->varp()};

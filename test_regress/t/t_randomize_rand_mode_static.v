@@ -8,6 +8,24 @@
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define check_range(gotv,minv,maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
+`define check_rand(cl, field) \
+begin \
+   automatic longint prev_result; \
+   automatic int ok; \
+   automatic int randomize_result; \
+   randomize_result = cl.randomize(); \
+   `checkd(randomize_result, 1) \
+   prev_result = longint'(field); \
+   repeat(9) begin \
+      longint result; \
+      randomize_result = cl.randomize(); \
+      `checkd(randomize_result, 1) \
+      result = longint'(field); \
+      if (result != prev_result) ok = 1; \
+      prev_result = result; \
+   end \
+   `checkd(ok, 1) \
+end
 // verilog_format: on
 
 // Tests rand_mode() support for `static rand` class members per IEEE 1800-2023
@@ -84,6 +102,10 @@ class DerivedS extends BaseS;
   constraint c2 {der_s > 0;}
 endclass
 
+class Owner;
+  rand Simple s = new;
+endclass
+
 module t;
   Simple s1, s2;
   Derived d1, d2;
@@ -92,6 +114,7 @@ module t;
   DerivedS ds1, ds2;
   DerivedTwo dt1;
   StaticNoConstraint snc1;
+  Owner o1, o2;
   int saved_sx, saved_dy, rok;
   bit [3:0] saved_base_sx, saved_base_s, saved_der_s, saved_base2_b;
 
@@ -289,6 +312,53 @@ module t;
       `checkd(rok, 1);
       `check_range(snc1.snc_d, 6, 12);
     end
+
+    // ---- Test: static rand_mode is shared through nested class handles.
+    o1 = new;
+    o2 = new;
+    `checkd(o1.s.sx.rand_mode(), 1);
+    `checkd(o2.s.sx.rand_mode(), 1);
+    Simple::sx = 0;
+    rok = o1.randomize();
+    `checkd(rok, 1);
+    `check_range(Simple::sx, 1, 11);
+    `check_range(o1.s.dy, 101, 199);
+
+    `check_rand(o1, o1.s.sx);
+    `check_rand(o1, o1.s.dy);
+
+    o1.s.sx.rand_mode(0);
+    `checkd(o2.s.sx.rand_mode(), 0);
+    `checkd(s1.sx.rand_mode(), 0);
+    o1.s.dy.rand_mode(0);
+    `checkd(o2.s.dy.rand_mode(), 1);
+    saved_sx = Simple::sx;
+    saved_dy = o1.s.dy;
+    repeat (20) begin
+      rok = o1.randomize();
+      `checkd(rok, 1);
+      `checkd(o1.s.dy, saved_dy);
+      o2.s.dy = 0;
+      rok = o2.randomize();
+      `checkd(rok, 1);
+      `checkd(Simple::sx, saved_sx);
+      `check_range(o2.s.dy, 101, 199);
+    end
+
+    `check_rand(o2, o2.s.dy);
+    `checkd(Simple::sx, saved_sx);
+
+    o2.s.sx.rand_mode(1);
+    `checkd(o1.s.sx.rand_mode(), 1);
+    `checkd(s1.sx.rand_mode(), 1);
+    Simple::sx = 0;
+    rok = o1.randomize();
+    `checkd(rok, 1);
+    `check_range(Simple::sx, 1, 11);
+    `checkd(o1.s.dy, saved_dy);
+
+    `check_rand(o1, o1.s.sx);
+    `checkd(o1.s.dy, saved_dy);
 
     $write("*-* All Finished *-*\n");
     $finish;
