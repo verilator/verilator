@@ -40,6 +40,9 @@ endclass
 
 class Cls;
   rand int w[*];
+  rand bit [30:0] w31[*];
+  rand bit [62:0] w63[*];
+  rand bit [94:0] w95[*];
   rand wa_t tw;
   rand int u[2] [*];
   rand Item item;
@@ -61,6 +64,10 @@ module t;
     automatic int ok;
 
     c.w[3] = 0;
+    c.w31[3] = 0;
+    c.w63[3] = 0;
+    c.w95[3] = 0;
+    c.w95[96'h8000_0000_0000_0000_0000_0001] = 0;
     c.tw[3] = 0;
     c.u[1][5] = 0;
     c.item.w[3] = 0;
@@ -68,6 +75,10 @@ module t;
     c.s.w[3] = 0;
 
     `check_rand(c, c.w[3], c.w.num() == 1);
+    `check_rand(c, c.w31[3][30:15], c.w31.num() == 1);
+    `check_rand(c, c.w63[3][62:31], c.w63.num() == 1);
+    `check_rand(c, c.w95[3][94:63], c.w95.num() == 2);
+    `check_rand(c, c.w95[96'h8000_0000_0000_0000_0000_0001][94:63], c.w95.num() == 2);
     `check_rand(c, c.tw[3], c.tw.num() == 1);
     `check_rand(c, c.u[1][5], c.u[0].num() == 0 && c.u[1].num() == 1);
     `check_rand(c, c.item.w[3], c.item.w.num() == 1);

@@ -28,6 +28,10 @@ module t (
     o["out"] = 7;
   endtask
 
+  task automatic set_out_wide(output bit [94:0] o[*]);
+    o["out"] = {32'h7, 63'h1};
+  endtask
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     begin
@@ -109,6 +113,28 @@ module t (
       set_out(wa);
       `checkh(wa["out"], 7);
       `checkh(wa.num(), 1);
+    end
+    begin
+      bit [30:0] w31a [*];
+      bit [30:0] w31b [*];
+      bit [62:0] w63a [*];
+      bit [62:0] w63b [*];
+      bit [94:0] w95a [*];
+      bit [94:0] w95b [*];
+
+      w31b["k"] = 31'h4000_0001;
+      w31a = w31b;
+      `checkh(w31a["k"], 31'h4000_0001);
+      w63b["k"] = 63'h4000_0000_0000_0001;
+      w63a = w63b;
+      `checkh(w63a["k"], 63'h4000_0000_0000_0001);
+      w95b[96'h8000_0000_0000_0000_0000_0001] = 95'h4000_0000_0000_0000_0000_0001;
+      w95a = w95b;
+      `checkh(w95a[96'h8000_0000_0000_0000_0000_0001], 95'h4000_0000_0000_0000_0000_0001);
+      `checkh(w95a.num(), 1);
+      set_out_wide(w95a);
+      `checkh(w95a["out"], {32'h7, 63'h1});
+      `checkh(w95a.num(), 1);
     end
 
     $write("*-* All Finished *-*\n");
