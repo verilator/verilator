@@ -233,6 +233,24 @@ module t (
   assert property (@(posedge clk) rej_b [->2] |-> sync_reject_on (cyc == 8) rej_c)
   else rej_conseq_fail++;
 
+  // A goto may match on the first tick of its window, including straight after a delay
+  wire dly_a = cyc == 3;
+  wire dly_b0 = cyc == 3;
+  wire dly_b1 = cyc == 4;
+  wire dly_b2 = cyc == 5;
+  int dly0_fail = 0, dly1_fail = 0, dly2_fail = 0, dly_ante_fail = 0, dly_late_fail = 0;
+
+  assert property (@(posedge clk) not (dly_a ##0 dly_b0 [->1]))
+  else dly0_fail++;
+  assert property (@(posedge clk) not (dly_a ##1 dly_b1 [->1]))
+  else dly1_fail++;
+  assert property (@(posedge clk) not (dly_a ##2 dly_b2 [->1]))
+  else dly2_fail++;
+  assert property (@(posedge clk) dly_a ##1 dly_b1 [->1] |-> 1'b0)
+  else dly_ante_fail++;
+  assert property (@(posedge clk) not (dly_a ##1 dly_b2 [->1]))
+  else dly_late_fail++;
+
   always @(negedge clk) begin
     if (cyc == 12) begin
       `checkd(imp_pass, 10);
@@ -274,6 +292,11 @@ module t (
       `checkd(rej_late_false_fail, 9);
       `checkd(rej_nested_fail, 7);
       `checkd(rej_conseq_fail, 5);
+      `checkd(dly0_fail, 1);
+      `checkd(dly1_fail, 1);
+      `checkd(dly2_fail, 1);
+      `checkd(dly_ante_fail, 1);
+      `checkd(dly_late_fail, 1);
       $write("*-* All Finished *-*\n");
       $finish;
     end
