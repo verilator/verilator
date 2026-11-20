@@ -7,20 +7,24 @@
                                                          : ... note: In instance 't'
    21 |   always @(negedge clk or cyc_copy) assert property (cyc[0] |=> cyc[1]);
       |                                     ^~~~~~
-%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:24:37: Unsupported: procedural concurrent assertion whose first cycle enters a ranged cycle delay or a sequence 'and'
+%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:22:37: Unsupported: procedural concurrent assertion in a procedure with several events, not all 'posedge' or 'negedge'
                                                          : ... note: In instance 't'
-   24 |   always @(negedge clk) if (cyc[0]) assert property (cyc[1] ##[0:2] cyc[2]);
+   22 |   always @(cyc_copy or negedge clk) assert property (cyc[0] |=> cyc[1]);
       |                                     ^~~~~~
-%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:27:37: Unsupported: procedural concurrent assertion whose first cycle enters a ranged cycle delay or a sequence 'and'
+%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:25:37: Unsupported: procedural concurrent assertion whose first cycle enters a ranged cycle delay or a sequence 'and'
                                                          : ... note: In instance 't'
-   27 |   always @(negedge clk) if (cyc[0]) assert property (cyc[1] and (cyc[2] ##1 cyc[3]));
+   25 |   always @(negedge clk) if (cyc[0]) assert property (cyc[1] ##[0:2] cyc[2]);
       |                                     ^~~~~~
-%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:33:9: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
-                                                        : ... note: In instance 't'
-   33 |         assume property (@(posedge clk) cyc == 9);
-      |         ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:28:37: Unsupported: procedural concurrent assertion whose first cycle enters a ranged cycle delay or a sequence 'and'
+                                                         : ... note: In instance 't'
+   28 |   always @(negedge clk) if (cyc[0]) assert property (cyc[1] and (cyc[2] ##1 cyc[3]));
+      |                                     ^~~~~~
 %Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:34:9: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
                                                         : ... note: In instance 't'
-   34 |         assume property (@(negedge clk) cyc == 9);
+   34 |         assume property (@(posedge clk) cyc == 9);
+      |         ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:35:9: Unsupported: Procedural concurrent assertion with clocking event inside always (IEEE 1800-2023 16.14.6)
+                                                        : ... note: In instance 't'
+   35 |         assume property (@(negedge clk) cyc == 9);
       |         ^~~~~~
 %Error: Exiting due to

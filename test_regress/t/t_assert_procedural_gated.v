@@ -202,6 +202,48 @@ module t (
       else ++fail_events_iff;
   end
 
+  // An edge of a multi-bit event is an edge of its least significant bit
+  wire [6:0] evt7 = {cyc[5:0], evt};
+  int pass_events7 = 0;
+  int fail_events7 = 0;
+  always @(posedge clk or negedge evt7) begin
+    if (!evt7[0] || cyc % 10 == 6)
+      assert property (##1 (cyc % 10 == 4 || cyc % 10 == 7)) ++pass_events7;
+      else ++fail_events7;
+  end
+
+  // Reached once at time zero, an initial procedure's attempt starts at the first tick
+  int pass_init = 0;
+  int fail_init = 0;
+  initial
+    assert property (@(posedge clk) cyc == 0 ##1 cyc == 1) ++pass_init;
+    else ++fail_init;
+
+  // A named assertion is in the scope of its nested named blocks
+  int fail_nested = 0;
+  string scope_nested = "";
+  always @(negedge clk) begin : outer
+    begin : inner
+      if (cyc % 10 == 5)
+        check: assert property (##1 cyc % 10 == 7)
+        else begin
+          ++fail_nested;
+          scope_nested = $sformatf("%m");
+        end
+    end
+  end
+
+  // An unnamed implication outside any block, with no pass action
+  int fail_imp_bare = 0;
+  string scope_imp_bare = "";
+  always @(negedge clk)
+    if (cyc % 10 == 5)
+      assert property (cyc % 10 == 5 |=> cyc % 10 == 7)
+      else begin
+        ++fail_imp_bare;
+        scope_imp_bare = $sformatf("%m");
+      end
+
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
     $write("[%0t] cyc==%0d crc=%x rst_l=%b req=%b gnt=%b gated=%0d ref=%0d\n", $time, cyc, crc,
@@ -256,6 +298,14 @@ module t (
       `checkd(fail_events, 0);
       `checkd(pass_events_iff, 15);
       `checkd(fail_events_iff, 0);
+      `checkd(pass_events7, 20);
+      `checkd(fail_events7, 0);
+      `checkd(pass_init, 1);
+      `checkd(fail_init, 0);
+      `checkd(fail_nested, 10);
+      `checks(scope_nested, "top.t.outer.inner.check");
+      `checkd(fail_imp_bare, 10);
+      `checks(scope_imp_bare, "top.t");
       $write("*-* All Finished *-*\n");
       $finish;
     end

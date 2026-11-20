@@ -3800,8 +3800,7 @@ class AssertNfaVisitor final : public VNVisitor {
         // disable iff, no assertion control
         const bool isSeqEvent = coverp && coverp->isSeqEvent();
         const bool countMatches = countsMatches(assertp);
-        // A sequence event control is not in a procedure, whatever its position
-        const bool inProcedure = m_procedurep && !isSeqEvent;
+        const bool inProcedure = m_procedurep;
         // A clock inferred from the procedure supersedes default clocking
         // (IEEE 1800-2023 16.16); it is not written into the property so that a
         // property V3AssertPre lowers instead still infers it.
