@@ -3212,6 +3212,8 @@ class AssertNfaVisitor final : public VNVisitor {
             = newPassOnIf(flp, nonvacuousMatchp, passsp, assertp->userType(), assertp->directive(),
                           /*vacuous=*/false);
         splitsp = AstNode::addNextNull<AstNodeStmt>(splitsp, nonvacuousp);
+        // Another attempt failing at the same tick does not stop these passes
+        assertp->prependFailsp(splitsp->cloneTree(true));
         assertp->addPasssp(splitsp);
     }
 

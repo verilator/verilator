@@ -191,7 +191,7 @@ module t (
 
   always @(negedge clk) begin
     if (cyc == 12) begin
-      `checkd(imp_pass, 10);
+      `checkd(imp_pass, 11);
       `checkd(imp_fail, 1);
       `checkd(chain_pass, 2);
       `checkd(chain_fail, 11);

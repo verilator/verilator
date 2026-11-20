@@ -96,6 +96,15 @@ module t (
       else ++fail_off_tick_range;
   end
 
+  // An off-tick vacuous pass at the tick another attempt fails
+  int pass_off_tick_imp = 0;
+  int fail_off_tick_imp = 0;
+  always @(posedge clk) begin
+    if (cyc % 10 == 2 || cyc % 10 == 3)
+      assert property (@(negedge clk) cyc % 10 == 3 |=> cyc % 10 == 5) ++pass_off_tick_imp;
+      else ++fail_off_tick_imp;
+  end
+
   // A first step entering a multi-cycle delay
   int pass_delay = 0;
   int fail_delay = 0;
@@ -224,6 +233,8 @@ module t (
       `checkd(fail_off_tick_pos, 10);
       `checkd(pass_off_tick_range, 20);
       `checkd(fail_off_tick_range, 10);
+      `checkd(pass_off_tick_imp, 10);
+      `checkd(fail_off_tick_imp, 10);
       `checkd(pass_delay, 20);
       `checkd(fail_delay, 10);
       `checkd(pass_delay_imp, 20);
