@@ -256,20 +256,6 @@ public:
     T_Element* backp() { return static_cast<T_Element*>(m_lastp); }
     const T_Element* backp() const { return static_cast<T_Element*>(m_lastp); }
 
-    // Checks the element's local links and neighbours accepted by 'neighbourOk'. This verifies
-    // local linkage only, not full membership in this list.
-    template <typename T_Pred>
-    bool isLinked(const T_Element* const elementp, T_Pred&& neighbourOk) const {
-        const V3ListLinks<T_Base>& links = toLinks(elementp);
-        return (links.m_prevp ? toLinks(links.m_prevp).m_nextp == elementp
-                                    && neighbourOk(*static_cast<const T_Element*>(links.m_prevp))
-                              : m_headp == elementp)
-               && (links.m_nextp
-                       ? toLinks(links.m_nextp).m_prevp == elementp
-                             && neighbourOk(*static_cast<const T_Element*>(links.m_nextp))
-                       : m_lastp == elementp);
-    }
-
     // Standard iterators. The iterator is only invalidated if the element it points to is
     // unlinked. Other list operations do not invalidate the itartor. If you want to be able to
     // unlink the currently iterated element, use 'unlinkable()' below.

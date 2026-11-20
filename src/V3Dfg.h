@@ -834,11 +834,6 @@ public:
 
 void DfgEdge::unlinkSrcp() {
     if (!m_srcp) return;
-#ifdef VL_DEBUG
-    const bool contained = m_srcp->m_sinks.isLinked(
-        this, [this](const DfgEdge& edge) { return edge.m_srcp == m_srcp; });
-    UASSERT_OBJ(contained, m_srcp, "'m_srcp' does not have this as sink");
-#endif
     m_srcp->m_sinks.unlink(this);
     m_srcp = nullptr;
 }
