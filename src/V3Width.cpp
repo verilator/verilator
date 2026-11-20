@@ -5709,7 +5709,8 @@ class WidthVisitor final : public VNVisitor {
         }
         if (AstNodeVarRef* const varrefp = VN_CAST(childp, NodeVarRef)) {
             varrefp->access(access);
-        } else if (const AstMemberRef* const ichildp = VN_CAST(childp, MemberRef)) {
+        } else if (AstMemberRef* const ichildp = VN_CAST(childp, MemberRef)) {
+            ichildp->access(access);
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
         } else if (const AstStructSel* const ichildp = VN_CAST(childp, StructSel)) {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
