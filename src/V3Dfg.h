@@ -602,19 +602,16 @@ namespace V3Dfg {
 // Returns true if variable can be represented in the graph
 inline bool isSupported(const AstVarScope* vscp) {
     const AstNodeModule* const modp = vscp->scopep()->modp();
-    if (VN_IS(modp, Module) || VN_IS(modp, Package)) {
-        // Regular modules and packages supported
-    } else if (const AstIface* const ifacep = VN_CAST(modp, Iface)) {
-        // Interfaces supported if there are no virtual interfaces for
-        // them, otherwise they cannot be resovled statically.
-        if (ifacep->hasVirtualRef()) return false;
-    } else {
-        return false;  // Anything else (class, etc) not supported
-    }
+    // Classes etc. not supported
+    if (!VN_IS(modp, Module) && !VN_IS(modp, Iface) && !VN_IS(modp, Package)) return false;
     if (DfgVertexVar::hasRWRefs(vscp)) return false;  // Referenced via READWRITE references
     // Check the AstVar
     AstVar* const varp = vscp->varp();
     if (varp->isIfaceRef()) return false;  // Cannot handle interface references
+    // Written through a virtual interface (AstVar::user1 bit1, set by DataflowOptimize).
+    // DFG would convert its other writers to cont assignments, which V3Delayed treats as
+    // exclusive, resulting in potentially missed BLKANDNBLKs.
+    if (varp->user1() & 0x02) return false;
     if (varp->delayp()) return false;  // Cannot handle delayed variables
     if (varp->isSc()) return false;  // SystemC variables are special and rare, we can ignore
     return DfgDataType::fromAst(varp->dtypep());
