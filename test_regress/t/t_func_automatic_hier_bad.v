@@ -10,7 +10,7 @@ module automatic t;
     static int as;
     av = ai;
     as = ai;
-    $display("%0d", at.av);  // No diagnostic is expected for a reference inside its declaring task.
+    $display("%0d", at.av);  // Illegal (IEEE 1800-2023 13.3.1), but not detected in its own task.
   endtask
 
   function automatic int af(input int fi);
