@@ -1,0 +1,6 @@
+%Error: t/t_constraint_empty_set_bad.v:11:12: syntax error, unexpected {, expecting case or casex or casez or if
+   11 |     if (a) {}
+      |            ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Cannot continue
+        ... This fatal error may be caused by the earlier error(s); resolve those first.

@@ -15,4 +15,7 @@ Randomization failed.
 
 === Test: Conflicting constraints (x > 100 && x < 50) ===
 Expected failure: conflicting constraints detected
+
+=== Test: std::randomize conflict (y > 10 && y < 5) after a valid call ===
+Expected failure: conflicting constraints detected
 *-* All Finished *-*

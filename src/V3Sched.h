@@ -358,6 +358,7 @@ public:
     size_t senItem2TrigIdx(const AstSenItem* senItemp) const {
         return m_senItem2TrigIdx.at(*senItemp);
     }
+    uint32_t nSenses() const { return m_nSenseWords * WORD_SIZE; }
     const std::vector<const AstSenItem*>& trigIdx2SenItem() const { return m_trigIdx2SenItem; }
     AstCFunc* compBasep() const { return m_compVecp; }
     const std::string& name() const { return m_name; }
