@@ -33,6 +33,8 @@
 // handled in a single pass. The 'iter' list ensures the algorithm runs
 // to fixed point if no pattern looks deeper across the graph than the
 // neighborhood considered on the next iteration.
+// Ignored variable sinks are sinkless and unobserved; their edges do not count for retention.
+// Candidate lists contain ignored variables without a default driver and wake one at a time.
 //
 //*************************************************************************
 
@@ -47,6 +49,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <unordered_map>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -196,6 +199,12 @@ class V3DfgPeephole final : public DfgVisitor {
         size_t m_generation = 0;  // Generation number of this vertex - for uniqueness check
         size_t m_id = 0;  // Unique vertex ID (0 means unassigned) - for sorting
         bool m_isCachedVertex = false;  // This vertex is the vertex cached for its operation
+        bool m_isIgnoredVar = false;  // Cached sinkless, unobserved variable predicate
+        size_t m_nonIgnoredSinks = 0;  // Sink edges not ignored by variable removal
+        DfgVertexVar* m_candidateHeadp = nullptr;  // Removable variable sinks of this vertex
+        DfgVertexVar* m_candidateLeftp = nullptr;  // Previous candidate, or self at the head
+        DfgVertexVar* m_candidateRightp = nullptr;  // Next candidate under the same driver
+        DfgVertexVar* m_prevCounterpartp = nullptr;  // Variable observed by this DfgPrev
     };
 
     // STATE
@@ -299,11 +308,170 @@ class V3DfgPeephole final : public DfgVisitor {
         vInfo.m_iterListIndex = 0;
     }
 
+    // Ignored variable sinks do not contribute to the driver's keep decision.
+    static bool isIgnoredVar(const DfgVertex* const vtxp) {
+        const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
+        return varp && !varp->hasSinks() && !varp->isObserved();
+    }
+
+    // Wake one candidate; deletion wakes its successor without traversing the fanout.
+    void wakeHead(DfgVertex* const srcp) {
+        const VertexInfo& info = m_vInfo[srcp];
+        // Wakes require the index-zero sentinel installed by initialization.
+        if (!m_workList.empty() && info.m_nonIgnoredSinks <= 1 && info.m_candidateHeadp) {
+            addToWorkList(info.m_candidateHeadp);
+        }
+    }
+
+    // Register an attached input edge and its eligible destination, if any.
+    void registerEdge(DfgVertex* const srcp, DfgVertex* const dstp) {
+        VertexInfo& srcInfo = m_vInfo[srcp];
+        VertexInfo& dstInfo = m_vInfo[dstp];
+        if (!dstInfo.m_isIgnoredVar) ++srcInfo.m_nonIgnoredSinks;
+        if (DfgVertexVar* const varp = dstp->cast<DfgVertexVar>()) {
+            if (dstInfo.m_isIgnoredVar && !varp->defaultp()) {
+                UASSERT_OBJ(varp->srcp() == srcp, varp, "Candidate belongs to another driver");
+                UASSERT_OBJ(!dstInfo.m_candidateLeftp, varp, "Candidate already linked");
+                dstInfo.m_candidateLeftp = varp;
+                dstInfo.m_candidateRightp = srcInfo.m_candidateHeadp;
+                if (srcInfo.m_candidateHeadp) {
+                    m_vInfo[srcInfo.m_candidateHeadp].m_candidateLeftp = varp;
+                }
+                srcInfo.m_candidateHeadp = varp;
+            }
+        }
+        wakeHead(srcp);
+    }
+
+    // Unregister an edge before detachment, including its candidate-list membership.
+    void unregisterEdge(DfgVertex* const srcp, DfgVertex* const dstp) {
+        VertexInfo& srcInfo = m_vInfo[srcp];
+        VertexInfo& dstInfo = m_vInfo[dstp];
+        if (!dstInfo.m_isIgnoredVar) {
+            UASSERT_OBJ(srcInfo.m_nonIgnoredSinks, srcp, "Missing counted sink edge");
+            --srcInfo.m_nonIgnoredSinks;
+        }
+        if (dstInfo.m_candidateLeftp) {
+            DfgVertexVar* const varp = dstp->as<DfgVertexVar>();
+            UASSERT_OBJ(varp->srcp() == srcp, varp, "Candidate belongs to another driver");
+            if (dstInfo.m_candidateLeftp != varp) {
+                m_vInfo[dstInfo.m_candidateLeftp].m_candidateRightp = dstInfo.m_candidateRightp;
+            } else {
+                UASSERT_OBJ(srcInfo.m_candidateHeadp == varp, varp, "Missing candidate head");
+                srcInfo.m_candidateHeadp = dstInfo.m_candidateRightp;
+            }
+            if (dstInfo.m_candidateRightp) {
+                m_vInfo[dstInfo.m_candidateRightp].m_candidateLeftp
+                    = dstInfo.m_candidateLeftp == varp ? dstInfo.m_candidateRightp
+                                                       : dstInfo.m_candidateLeftp;
+            }
+            dstInfo.m_candidateLeftp = nullptr;
+            dstInfo.m_candidateRightp = nullptr;
+        }
+        wakeHead(srcp);
+    }
+
+    // Reclassify a variable on its at-most-two input edges after its predicate changes.
+    void syncPredicate(DfgVertex* const vtxp) {
+        DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
+        if (!varp) return;
+        VertexInfo& info = m_vInfo[varp];
+        const bool ignored = isIgnoredVar(varp);
+        if (info.m_isIgnoredVar == ignored) return;
+        varp->foreachSource([&](DfgVertex& src) {
+            unregisterEdge(&src, varp);
+            return false;
+        });
+        info.m_isIgnoredVar = ignored;
+        varp->foreachSource([&](DfgVertex& src) {
+            registerEdge(&src, varp);
+            return false;
+        });
+        if (ignored && !varp->defaultp()) addToWorkList(varp);
+    }
+
+    // Initialize counts once and pair implicit Prev observations before optimization.
+    void initializeRemovalState() {
+        m_dfg.forEachVertex(
+            [&](const DfgVertex& vtx) { m_vInfo[vtx].m_isIgnoredVar = isIgnoredVar(&vtx); });
+        std::unordered_map<const AstVarScope*, DfgVertexVar*> vars;
+        vars.reserve(m_dfg.size());
+        for (DfgVertexVar& var : m_dfg.varVertices()) {
+            UASSERT_OBJ(vars.emplace(var.vscp(), &var).second, &var, "Duplicate variable scope");
+        }
+        for (DfgVertex& vtx : m_dfg.opVertices()) {
+            if (const DfgPrev* const prevp = vtx.cast<DfgPrev>()) {
+                const auto it = vars.find(prevp->vscp());
+                // A Prev and its original variable stay in the same weak component.
+                UASSERT_OBJ(it != vars.end(), prevp, "Missing Prev counterpart");
+                m_vInfo[vtx].m_prevCounterpartp = it->second;
+            }
+        }
+        m_dfg.forEachVertex([&](DfgVertex& vtx) {
+            vtx.foreachSource([&](DfgVertex& src) {
+                registerEdge(&src, &vtx);
+                return false;
+            });
+        });
+    }
+
+    // Recompute counts and candidate membership independently of the incremental state.
+    void checkRemovalState() const {
+        struct CheckInfo final {
+            size_t count = 0;  // Independently recomputed non-ignored sink count
+            bool listed = false;  // Encountered in a candidate list
+        };
+        std::unordered_map<const DfgVertex*, CheckInfo> expected;
+        expected.reserve(m_dfg.size());
+        m_dfg.forEachVertex([&](const DfgVertex& vtx) { expected.emplace(&vtx, CheckInfo{}); });
+        m_dfg.forEachVertex([&](const DfgVertex& vtx) {
+            vtx.foreachSink([&](const DfgVertex& sink) {
+                if (!isIgnoredVar(&sink)) ++expected.at(&vtx).count;
+                return false;
+            });
+        });
+        m_dfg.forEachVertex([&](const DfgVertex& vtx) {
+            const VertexInfo& info = m_vInfo.at(vtx);
+            UASSERT_OBJ(info.m_nonIgnoredSinks == expected.at(&vtx).count, &vtx,
+                        "Variable-removal sink count mismatch");
+            const DfgVertexVar* lastCandidatep = nullptr;
+            for (const DfgVertexVar* varp = info.m_candidateHeadp; varp;
+                 varp = m_vInfo.at(varp).m_candidateRightp) {
+                const auto it = expected.find(varp);
+                UASSERT_OBJ(it != expected.end(), &vtx, "Deleted candidate in list");
+                UASSERT_OBJ(!it->second.listed, &vtx, "Duplicate or cyclic candidate");
+                it->second.listed = true;
+                UASSERT_OBJ(isIgnoredVar(varp) && !varp->defaultp() && varp->srcp() == &vtx, varp,
+                            "Ineligible candidate or incorrect driver");
+                UASSERT_OBJ(m_vInfo.at(varp).m_candidateLeftp
+                                == (lastCandidatep ? lastCandidatep : varp),
+                            varp, "Broken candidate links");
+                lastCandidatep = varp;
+            }
+        });
+        m_dfg.forEachVertex([&](const DfgVertex& vtx) {
+            const VertexInfo& info = m_vInfo.at(vtx);
+            const bool ignored = isIgnoredVar(&vtx);
+            const DfgVertexVar* const varp = vtx.cast<DfgVertexVar>();
+            const bool candidate = varp && ignored && !varp->defaultp() && varp->srcp();
+            UASSERT_OBJ(info.m_isIgnoredVar == ignored, &vtx, "Stale ignored-variable predicate");
+            UASSERT_OBJ((info.m_candidateLeftp != nullptr) == candidate
+                            && expected.at(&vtx).listed == candidate,
+                        &vtx, "Candidate membership mismatch");
+            UASSERT_OBJ(candidate || (!info.m_candidateLeftp && !info.m_candidateRightp), &vtx,
+                        "Unlinked candidate retains list pointers");
+        });
+    }
+
     void deleteVertex(DfgVertex* vtxp) {
         UASSERT_OBJ(!m_vInfo[vtxp].m_workListIndex, vtxp, "Deleted Vertex is in work list");
         UASSERT_OBJ(!vtxp->hasSinks(), vtxp, "Should not delete used vertex");
         const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
         UASSERT_OBJ(!varp || !varp->hasPrev(), vtxp, "Deleting variable consumed via DfgPrev");
+        VertexInfo& info = m_vInfo[vtxp];
+        UASSERT_OBJ(!info.m_candidateHeadp, vtxp, "Deleting driver with candidate sinks");
+        DfgVertexVar* const counterpartp = info.m_prevCounterpartp;
+        info.m_prevCounterpartp = nullptr;
 
         // Invalidate cache entry
         invalidateVertex(vtxp);
@@ -316,11 +484,9 @@ class V3DfgPeephole final : public DfgVisitor {
         std::vector<DfgVertex*> srcps;
         srcps.reserve(vtxp->nInputs());
         vtxp->foreachSource([&](DfgVertex& src) {
+            unregisterEdge(&src, vtxp);
             // If it's a variable, add to work list to see if it became redundant
-            if (src.is<DfgVertexVar>()) {
-                addToWorkList(&src);
-                return false;
-            }
+            if (src.is<DfgVertexVar>()) addToWorkList(&src);
             // Gather unique sources
             VertexInfo& vInfo = m_vInfo[src];
             if (vInfo.m_generation != m_currentGeneration) srcps.push_back(&src);
@@ -338,14 +504,19 @@ class V3DfgPeephole final : public DfgVisitor {
             VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
         }
 
+        for (DfgVertex* const srcp : srcps) syncPredicate(srcp);
+        if (counterpartp) syncPredicate(counterpartp);
+
         // Partition sources into used/unused after removing the vertex
         const auto mid
             = std::stable_partition(srcps.begin(), srcps.end(), [](DfgVertex* srcp) {  //
-                  return srcp->hasSinks();
+                  return srcp->is<DfgVertexVar>() || srcp->hasSinks();
               });
 
-        // Add used sources to the iter list - their sinks have changed
-        for (auto it = srcps.begin(); it != mid; ++it) addToIterList(*it);
+        // Add used operation sources to the iter list; variables are already on the work list.
+        for (auto it = srcps.begin(); it != mid; ++it) {
+            if (!(*it)->is<DfgVertexVar>()) addToIterList(*it);
+        }
 
         // Recursively delete unused sources
         for (auto it = mid; it != srcps.end(); ++it) {
@@ -381,12 +552,15 @@ class V3DfgPeephole final : public DfgVisitor {
         // Remove sinks of the original vertex from the cache - their inputs are changing
         m_movedSinks.clear();
         m_vtxp->foreachSink([&](DfgVertex& dst) {
+            unregisterEdge(m_vtxp, &dst);
             invalidateVertex(&dst);
             m_movedSinks.push_back(&dst);
             return false;
         });
         // Replace vertex with the replacement
         m_vtxp->replaceWith(resp);
+        for (DfgVertex* const dstp : m_movedSinks) registerEdge(resp, dstp);
+        syncPredicate(resp);
         // The replacement itself might be an existing vertex that was cached, so it might
         // have other unrelated sinks. Re-cache the sinks that moved to the replacement,
         // but avoid re-caching the existing ones.
@@ -406,11 +580,17 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     // Create a 32-bit DfgConst vertex
-    DfgConst* makeI32(FileLine* flp, uint32_t val) { return new DfgConst{m_dfg, flp, 32, val}; }
+    DfgConst* makeI32(FileLine* flp, uint32_t val) {
+        DfgConst* const resp = new DfgConst{m_dfg, flp, 32, val};
+        m_vInfo[resp];  // Every graph vertex needs state, including unused constants.
+        return resp;
+    }
 
     // Create a DfgConst vertex with the given width and value zero
     DfgConst* makeZero(FileLine* flp, uint32_t width) {
-        return new DfgConst{m_dfg, flp, width, 0};
+        DfgConst* const resp = new DfgConst{m_dfg, flp, width, 0};
+        m_vInfo[resp];  // Every graph vertex needs state, including unused constants.
+        return resp;
     }
     DfgConst* makeZero(FileLine* flp, const DfgDataType& dtype) {
         return makeZero(flp, dtype.size());
@@ -433,7 +613,14 @@ class V3DfgPeephole final : public DfgVisitor {
         if (VL_UNLIKELY(v3Global.opt.debugCheck())) vtxp->typeCheck(m_dfg);
         // Assign vertex ID
         VertexInfo& vInfo = m_vInfo[vtxp];
-        if (!vInfo.m_id) vInfo.m_id = ++m_lastId;
+        if (!vInfo.m_id) {
+            vInfo.m_id = ++m_lastId;
+            vtxp->foreachSource([&](DfgVertex& src) {
+                registerEdge(&src, vtxp);
+                syncPredicate(&src);
+                return false;
+            });
+        }
         // Add to work list
         addToWorkList(vtxp);
         // Return new node
@@ -2122,7 +2309,11 @@ class V3DfgPeephole final : public DfgVisitor {
                 if (AstConsArray* const iap = VN_CAST(astVarp->valuep(), ConsArray)) {
                     if (AstConst* const valp = VN_CAST(iap->valuep(idxp->toSizeT()), Const)) {
                         APPLYING(FOLD_ARRAYSEL_TABLE) {
-                            replace(new DfgConst{m_dfg, valp->fileline(), valp->num()});
+                            DfgConst* const resp
+                                = new DfgConst{m_dfg, valp->fileline(), valp->num()};
+                            m_vInfo[resp];  // A documented debug-bisect stop can leave
+                                            // this vertex unregistered before validation.
+                            replace(resp);
                             return;
                         }
                     }
@@ -2394,12 +2585,15 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgSplicePacked* const sp = new DfgSplicePacked{m_dfg, flp, vtxp->dtype()};
                     m_vInfo[sp].m_id = ++m_lastId;
                     sp->addDriver(catp, lsb, flp);
+                    registerEdge(catp, sp);
                     DfgVertexVar* const varp
                         = m_dfg.makeNewVar(flp, "PeepholeNarrow", vtxp->dtype(), m_tmpScopep);
                     varp->tmpForp(varp->vscp());
                     m_vInfo[varp].m_id = ++m_lastId;
                     varp->vscp()->varp()->isInternal(true);
+                    m_vInfo[varp].m_isIgnoredVar = isIgnoredVar(varp);
                     varp->srcp(sp);
+                    registerEdge(sp, varp);
                     replace(varp);
                     return;
                 }
@@ -3389,18 +3583,7 @@ class V3DfgPeephole final : public DfgVisitor {
         }
 
         // Otherwise remove if there is only one sink that is not a removable variable
-        bool foundOne = false;
-        const bool keep = vtxp->srcp()->foreachSink([&](DfgVertex& sink) -> bool {
-            // Ignore non-observable variable sinks. These can be eliminated.
-            if (const DfgVertexVar* const varp = sink.cast<DfgVertexVar>()) {
-                if (!varp->hasSinks() && !varp->isObserved()) return false;
-            }
-            // Keep if found more than one sink
-            if (foundOne) return true;
-            // Mark first sink found
-            foundOne = true;
-            return false;
-        });
+        const bool keep = m_vInfo[vtxp->srcp()].m_nonIgnoredSinks > 1;
         if (!keep) {
             APPLYING(REMOVE_VAR) {
                 deleteVertex(vtxp);
@@ -3415,6 +3598,7 @@ class V3DfgPeephole final : public DfgVisitor {
 
         // Assign vertex IDs
         m_dfg.forEachVertex([&](DfgVertex& vtx) { m_vInfo[vtx].m_id = ++m_lastId; });
+        initializeRemovalState();
 
         // Add all operation vertices to the cache
         for (DfgVertex& vtx : m_dfg.opVertices()) cacheVertex(&vtx);
@@ -3474,6 +3658,9 @@ class V3DfgPeephole final : public DfgVisitor {
                 // Visit vertex, might get deleted in the process
                 iterate(m_vtxp);
             }
+
+            // Debug-only full recomputation each round; cost O(rounds * (vertices + edges)).
+            if (v3Global.opt.debugCheck()) checkRemovalState();
 
             // If nothing was added to the iter list, we can stop
             if (m_iterList.size() == 1) break;
