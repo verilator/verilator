@@ -1753,6 +1753,9 @@ public:
     // METHODS
     // The index in use, or nullptr if none
     static const VDTypeNameScopes* currentp() { return s_currentp; }
+    // The generate block or design unit declaring 'nodep', or nullptr if none, as at the top, as
+    // indexed by the index in use, if any, else as searched for up the tree
+    static AstNode* declaringScopep(const AstNode* nodep);
     // Whether 'nodep' is indexed, and if so 'outerpr', the generate block or design unit
     // declaring it, or nullptr if none
     bool outerp(const AstNode* nodep, AstNode*& outerpr) const;
