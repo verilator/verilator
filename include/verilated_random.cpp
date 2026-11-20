@@ -167,18 +167,16 @@ public:
 
     // Kill and reap a solver that is still running, so no child is left behind
     void terminate() {
+        if (!m_pidExited && m_pid) {
 #ifdef _VL_SOLVER_PIPE_UNIX
-        if (!m_pidExited) {
             ::kill(m_pid, SIGKILL);
             waitpid(m_pid, &m_pidStatus, 0);
-        }
 #elif defined(_VL_SOLVER_PIPE_WIN)
-        if (!m_pidExited && m_pid) {
             TerminateProcess(m_pid, EXIT_FAILURE);
             WaitForSingleObject(m_pid, INFINITE);
             CloseHandle(m_pid);
-        }
 #endif
+        }
         m_pidExited = true;
         m_pid = 0;  // Reaped pid, or null HANDLE
         closeFds();
