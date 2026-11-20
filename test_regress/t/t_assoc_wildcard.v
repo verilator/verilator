@@ -24,6 +24,10 @@ module t (
     KEY_E = 24'h525252  // "RRR"
   } key_e;
 
+  task automatic set_out(output int o[*]);
+    o["out"] = 7;
+  endtask
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     begin
@@ -88,6 +92,23 @@ module t (
       p = '{};
       i = p.size();
       `checkh(i, 0);
+    end
+    begin
+      int wa [*];
+      int wb [*];
+      int na [*] [3];
+      int nb [*] [3];
+
+      wb["k"] = 5;
+      wa = wb;
+      `checkh(wa["k"], 5);
+      `checkh(wa.num(), 1);
+      nb["k"][2] = 6;
+      na = nb;
+      `checkh(na["k"][2], 6);
+      set_out(wa);
+      `checkh(wa["out"], 7);
+      `checkh(wa.num(), 1);
     end
 
     $write("*-* All Finished *-*\n");

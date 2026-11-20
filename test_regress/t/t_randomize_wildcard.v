@@ -26,6 +26,13 @@ begin \
 end
 // verilog_format: on
 
+typedef int wa_t [*];
+
+typedef struct {
+  rand int a;
+  rand int w[*];
+} ws_t;
+
 class Item;
   rand int x;
   rand int w[*];
@@ -33,10 +40,17 @@ endclass
 
 class Cls;
   rand int w[*];
-  rand int u[2][*];
+  rand wa_t tw;
+  rand int u[2] [*];
+  rand Item item;
+  rand Item witems[*];
   rand Item items[1];
+  rand ws_t s;
   constraint c {foreach (items[i]) items[i].x == 1;}
+  constraint c_s {s.a == 5;}
   function new();
+    item = new;
+    witems[7] = new;
     items[0] = new;
   endfunction
 endclass
@@ -47,11 +61,18 @@ module t;
     automatic int ok;
 
     c.w[3] = 0;
+    c.tw[3] = 0;
     c.u[1][5] = 0;
+    c.item.w[3] = 0;
     c.items[0].w[3] = 0;
+    c.s.w[3] = 0;
 
     `check_rand(c, c.w[3], c.w.num() == 1);
+    `check_rand(c, c.tw[3], c.tw.num() == 1);
     `check_rand(c, c.u[1][5], c.u[0].num() == 0 && c.u[1].num() == 1);
+    `check_rand(c, c.item.w[3], c.item.w.num() == 1);
+    `check_rand(c, c.witems[7].x, c.witems.num() == 1);
+    `check_rand(c, c.s.w[3], c.s.a == 5 && c.s.w.num() == 1);
     ok = c.randomize();
     `checkd(ok, 1);
     `checkd(c.items[0].x, 1);
