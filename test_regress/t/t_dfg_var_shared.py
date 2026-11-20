@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-# Removing unused copies in one_sink and cycle preserves their outputs;
-# the two_sinks copies remain.
 test.compile(verilator_flags2=["--binary", "--stats"])
 test.file_grep(test.stats, r'Optimizations, DFG, Peephole, remove var\s+(\d+)', 10)
 test.execute()

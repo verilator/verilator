@@ -10,55 +10,69 @@
 // verilog_format: on
 
 module t;
-  logic [6:0] a = 7'h01;
-  logic [6:0] b = 7'h5d;
+  int done = 0;  // Number of cases that have finished
 
+  logic [6:0] cycle_a = 7'h01;
   wire [6:0] cycle_q;
   cyclic_leaf cycle (
-      a,
+      cycle_a,
       cycle_q
   );
-  task check_cycle;
-    `checkh(cycle_q, a);
-  endtask
+  initial begin
+    for (int i = 0; i < 256; ++i) begin
+      #1;
+      `checkh(cycle_q, cycle_a);
+      cycle_a = cycle_a + 7'h01;
+    end
+    ++done;
+  end
 
+  logic [6:0] shared_a = 7'h01;
+  logic [6:0] shared_b = 7'h5d;
   wire [48:0] shared_q;
   shared_leaf one_sink (
-      a,
-      b,
+      shared_a,
+      shared_b,
       shared_q
   );
-  task check_shared;
-    for (int j = 0; j < 7; ++j) `checkh(shared_q[j*7+:7], (a & b) & 7'h0f);
-  endtask
+  initial begin
+    for (int i = 0; i < 256; ++i) begin
+      #1;
+      for (int j = 0; j < 7; ++j) `checkh(shared_q[j*7+:7], (shared_a & shared_b) & 7'h0f);
+      shared_a = shared_a + 7'h01;
+      shared_b = shared_b + 7'h13;
+    end
+    ++done;
+  end
 
+  logic [6:0] retained_a = 7'h01;
+  logic [6:0] retained_b = 7'h5d;
   wire [48:0] retained_q;
   wire [48:0] retained_r;
   wire [6:0] observed_q;
   retained_leaf two_sinks (
-      a,
-      b,
+      retained_a,
+      retained_b,
       retained_q,
       retained_r,
       observed_q
   );
-  task check_retained;
-    for (int j = 0; j < 7; ++j) begin
-      `checkh(retained_q[j*7+:7], (a ^ b) & 7'h0f);
-      `checkh(retained_r[j*7+:7], (a ^ b) ^ 7'h55);
-    end
-    `checkh(observed_q, a ^ b);
-  endtask
-
   initial begin
     for (int i = 0; i < 256; ++i) begin
       #1;
-      check_cycle();
-      check_shared();
-      check_retained();
-      a = a + 7'h01;
-      b = b + 7'h13;
+      for (int j = 0; j < 7; ++j) begin
+        `checkh(retained_q[j*7+:7], (retained_a ^ retained_b) & 7'h0f);
+        `checkh(retained_r[j*7+:7], (retained_a ^ retained_b) ^ 7'h55);
+      end
+      `checkh(observed_q, retained_a ^ retained_b);
+      retained_a = retained_a + 7'h01;
+      retained_b = retained_b + 7'h13;
     end
+    ++done;
+  end
+
+  initial begin
+    wait (done == 3);
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -27,6 +27,7 @@ def verilation(n, nobs):
     flags = ["--stats", "--debug", "--debugi 0", "--no-debug-check", f"-GN={n}", f"-GNOBS={nobs}"]
     test.compile(verilator_flags2=flags, make_main=False, verilator_make_gmake=False)
     test.file_cache_clear()
+    # The copies must all share one driver.
     test.file_grep(test.stats, r'Optimizations, DFG, CSE 1st, expressions eliminated\s+(\d+)',
                    2 * n if nobs else 2 * n - 2)
     test.file_grep(test.stats, r'Optimizations, DFG, Peephole, remove var\s+(\d+)',

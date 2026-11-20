@@ -3404,14 +3404,16 @@ class V3DfgPeephole final : public DfgVisitor {
                 }
             }
             ++nOther;
-            // Stop if the first two sinks decide to keep, so such visits stay constant time
+            // Stop if the first two sinks are counted, so such visits are constant time; otherwise
+            // collect the whole batch so no member stays queued to rescan the driver
             return onlyOther && nOther > 1;
         });
-        // Kept siblings leave the work list too (driver changes revisit them). Siblings have no
-        // sinks and the driver goes with the last one, so deleting one cannot delete another.
+        // Take all removable variable sinks off the work list; if a sink of the driver is later
+        // removed or replaced, the driver goes on the iter list and they are revisited.
         for (DfgVertexVar* const varp : m_siblings) {
             removeFromWorkList(varp);
             if (nOther > 1) continue;
+            // Collected variables have no sinks, so deleting one cannot delete another
             APPLYING(REMOVE_VAR) { deleteVertex(varp); }
         }
     }
