@@ -101,9 +101,10 @@ void V3AssertCommon::collectDefaultDisable(AstNetlist* nodep) {
 
 string V3AssertCommon::assertCtlGetCall(const char* query, VAssertType type,
                                         VAssertDirectiveType directiveType) {
-    // Template arguments let the runtime build the type/directive mask at C++ compile time
-    return "vlSymsp->_vm_contextp__->assertCtlGet<"s + std::to_string(type) + ", "s
-           + std::to_string(directiveType) + ">(VerilatedAssertCtlQuery::"s + query + ")"s;
+    // Template arguments let the runtime build the type/directive mask at C++ compile time.
+    // Parenthesized, so the template comma cannot split an argument of an emitted macro.
+    return "(vlSymsp->_vm_contextp__->assertCtlGet<"s + std::to_string(type) + ", "s
+           + std::to_string(directiveType) + ">(VerilatedAssertCtlQuery::"s + query + "))"s;
 }
 
 bool V3AssertCommon::checkSvaValueLimit(AstNode* nodep, const AstConst* constp, const char* what) {
@@ -920,7 +921,9 @@ class AssertVisitor final : public VNVisitor {
         }
         if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 
-        { AssertDeFutureVisitor{nodep->propp(), m_modp, m_modPastNum++}; }
+        // Only a concurrent assertion has a property or sequence expression, so visit(AstFuture)
+        // rejects future value functions in immediate assertions and $cast (IEEE 1800-2023 16.9.4)
+        if (!nodep->immediate()) AssertDeFutureVisitor{nodep->propp(), m_modp, m_modPastNum++};
 
         iterateAndNextNull(nodep->sentreep());
         if (AstAssert* const assertp = VN_CAST(nodep, Assert)) {

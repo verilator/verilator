@@ -1,0 +1,30 @@
+%Error-UNSUPPORTED: t/t_stream_string_array_unsup.v:25:10: Unsupported: Streaming concatenation '>>' of 'logic[7:0]$[0:1]$[$]' assigned to a string.
+                                                         : ... note: In instance 't'
+   25 |     s = {>>{uq}};
+      |          ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_stream_string_array_unsup.v:26:10: Unsupported: Streaming concatenation '>>' of 'struct t.us_t$[]' assigned to a string.
+                                                         : ... note: In instance 't'
+   26 |     s = {>>{usd}};
+      |          ^~
+%Error-UNSUPPORTED: t/t_stream_string_array_unsup.v:27:10: Unsupported: Streaming concatenation '<<' of 'logic[7:0]$[0:1]$[$]' assigned to a string.
+                                                         : ... note: In instance 't'
+   27 |     s = {<<8{pq}};
+      |          ^~
+%Error-UNSUPPORTED: t/t_stream_string_array_unsup.v:28:10: Unsupported: Streaming concatenation '<<' of 'string$[$]' assigned to a string.
+                                                         : ... note: In instance 't'
+   28 |     s = {<<8{sq}};
+      |          ^~
+%Error-UNSUPPORTED: t/t_stream_string_array_unsup.v:29:10: Unsupported: Streaming concatenation '<<' of 'string$[]' assigned to a string.
+                                                         : ... note: In instance 't'
+   29 |     s = {<<{sd}};
+      |          ^~
+%Error-UNSUPPORTED: t/t_stream_string_array_unsup.v:30:10: Unsupported: Streaming concatenation '<<' of 'string$[$]' assigned to a string.
+                                                         : ... note: In instance 't'
+   30 |     s = {<<16{sqt}};
+      |          ^~
+%Error-UNSUPPORTED: t/t_stream_string_array_unsup.v:31:10: Unsupported: Stream operation on a variable of a type 'string$[0:1]'
+                                                         : ... note: In instance 't'
+   31 |     s = {>>{sa}};
+      |          ^~
+%Error: Exiting due to

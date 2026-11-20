@@ -266,13 +266,7 @@ class AstToDfgVisitor final : public VNVisitorConst {
     // Containers to descend through to find logic constructs
     void visit(AstNetlist* nodep) override { iterateAndNextConstNull(nodep->modulesp()); }
     void visit(AstModule* nodep) override { iterateAndNextConstNull(nodep->stmtsp()); }
-    void visit(AstIface* nodep) override {
-        if (!nodep->hasVirtualRef()) {
-            iterateAndNextConstNull(nodep->stmtsp());
-        } else {
-            markReferenced(nodep);
-        }
-    }
+    void visit(AstIface* nodep) override { iterateAndNextConstNull(nodep->stmtsp()); }
     void visit(AstTopScope* nodep) override { iterateConst(nodep->scopep()); }
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);

@@ -81,36 +81,29 @@ private:
         return VN_IS(dtypep, ClassRefDType) || (ifaceDtypep && ifaceDtypep->isVirtual());
     }
 
-    // Check if expression contains a member access through a reference that could be null
-    // (e.g., accessing an event through a class reference that may not be initialized)
-    static bool hasNullableMemberAccess(const AstNode* const exprp) {
-        return exprp && exprp->exists([](const AstNode* const nodep) {
-            const AstMemberRef* const memberRefp = VN_CAST(nodep, MemberRef);
-            return memberRefp && isNullableRef(memberRefp->fromp());
+    // Bases of member accesses through nullable references, in traversal order.
+    // makeNullGuard walks this backwards so an outer base is checked before a nested one.
+    static std::vector<const AstNodeExpr*> nullableBases(const AstNodeExpr* exprp) {
+        std::vector<const AstNodeExpr*> bases;
+        exprp->foreach([&](const AstMemberRef* memberRefp) {
+            if (isNullableRef(memberRefp->fromp())) bases.push_back(memberRefp->fromp());
         });
+        return bases;
     }
 
-    // Get the base reference expression from a member selection chain
-    // Returns the outermost reference that needs to be null-checked
-    // Note: Returns a pointer into the original tree - caller must clone if needed
-    static const AstNodeExpr* getBaseNullableRef(const AstNodeExpr* exprp) {
-        while (exprp) {
-            if (const AstMemberRef* const memberRefp = VN_CAST(exprp, MemberRef)) {
-                const AstNodeExpr* const fromp = memberRefp->fromp();
-                if (isNullableRef(fromp)) {
-                    // Check if the base itself has a member access through a nullable reference
-                    if (hasNullableMemberAccess(fromp)) {
-                        exprp = fromp;
-                        continue;
-                    }
-                    return fromp;
-                }
-                exprp = fromp;
-            } else {
-                return nullptr;
-            }
+    static AstNodeExpr* makeNullGuard(FileLine* flp,
+                                      const std::vector<const AstNodeExpr*>& bases) {
+        AstNodeExpr* guardp = nullptr;
+        // Walk backwards so an outer base is checked before the nested base that
+        // dereferences it.
+        for (auto it = bases.rbegin(); it != bases.rend(); ++it) {
+            AstNodeExpr* const nullp = new AstConst{flp, AstConst::Null{}};
+            // const_cast safe: cloneTree doesn't modify the source
+            AstNodeExpr* const checkp
+                = new AstNeq{flp, const_cast<AstNodeExpr*>(*it)->cloneTree(false), nullp};
+            guardp = guardp ? new AstLogAnd{flp, guardp, checkp} : checkp;
         }
-        return nullptr;
+        return guardp;
     }
 
     // METHODS
@@ -135,28 +128,24 @@ private:
         return vscp;
     }
 
-    // Helper to wrap a statement with a null check: if (baseRef != null) stmt
-    AstNodeStmt* wrapStmtWithNullCheck(FileLine* flp, AstNodeStmt* stmtp,
-                                       const AstNodeExpr* baseRefp) {
-        if (!baseRefp) return stmtp;
-        AstNodeExpr* const nullp = new AstConst{flp, AstConst::Null{}};
-        // const_cast safe: cloneTree doesn't modify the source
-        AstNodeExpr* const checkp
-            = new AstNeq{flp, const_cast<AstNodeExpr*>(baseRefp)->cloneTree(false), nullp};
-        return new AstIf{flp, checkp, stmtp};
+    // Helper to wrap a statement with null checks:
+    // if (base1 != null && base2 != null) stmt
+    AstNodeStmt* wrapStmtWithNullChecks(FileLine* flp, AstNodeStmt* stmtp,
+                                        const std::vector<const AstNodeExpr*>& bases) {
+        AstNodeExpr* const guardp = makeNullGuard(flp, bases);
+        return guardp ? new AstIf{flp, guardp, stmtp} : stmtp;
     }
 
-    // Helper to wrap a trigger expression with a null check if needed
-    // Returns the expression wrapped in: (baseRef != null) ? expr : 0
-    AstNodeExpr* wrapExprWithNullCheck(FileLine* flp, AstNodeExpr* exprp,
-                                       const AstNodeExpr* baseRefp) {
-        if (!baseRefp) return exprp;
-        AstNodeExpr* const nullp = new AstConst{flp, AstConst::Null{}};
-        // const_cast safe: cloneTree doesn't modify the source
-        AstNodeExpr* const checkp
-            = new AstNeq{flp, const_cast<AstNodeExpr*>(baseRefp)->cloneTree(false), nullp};
+    // Helper to wrap a trigger expression with null checks:
+    // (base1 != null && base2 != null) ? expr : 0
+    AstNodeExpr* wrapExprWithNullChecks(FileLine* flp, AstNodeExpr* exprp,
+                                        const std::vector<const AstNodeExpr*>& bases) {
+        AstNodeExpr* const guardp = makeNullGuard(flp, bases);
+        if (!guardp) return exprp;
         AstNodeExpr* const falsep = new AstConst{flp, AstConst::BitFalse{}};
-        AstNodeExpr* const condp = new AstCond{flp, checkp, exprp, falsep};
+        // Don't use AstNullCheck here: it reports a null pointer error, while a
+        // trigger with a null base must not fire.
+        AstNodeExpr* const condp = new AstCond{flp, guardp, exprp, falsep};
         condp->dtypeSetBit();
         return condp;
     }
@@ -171,17 +160,16 @@ private:
         if (result.second) result.first->second = crateTemp(exprp);
         AstVarScope* const currp = result.first->second;
 
-        // Check if we need null guards for a member access through a nullable reference
-        const AstNodeExpr* const baseRefp
-            = hasNullableMemberAccess(exprp) ? getBaseNullableRef(exprp) : nullptr;
+        // Collect null guards for member accesses through nullable references
+        const std::vector<const AstNodeExpr*> bases = nullableBases(exprp);
 
         // Add pre update if it does not exist yet in this round
         if (m_hasPreUpdate.emplace(*currp).second) {
-            m_results.m_preUpdates.push_back(
-                wrapStmtWithNullCheck(flp,
-                                      new AstAssign{flp, new AstVarRef{flp, currp, VAccess::WRITE},
-                                                    exprp->cloneTree(false)},
-                                      baseRefp));
+            m_results.m_preUpdates.push_back(wrapStmtWithNullChecks(
+                flp,
+                new AstAssign{flp, new AstVarRef{flp, currp, VAccess::WRITE},
+                              exprp->cloneTree(false)},
+                bases));
         }
         return new AstVarRef{flp, currp, VAccess::READ};
     }
@@ -190,9 +178,8 @@ private:
         FileLine* const flp = exprp->fileline();
         const auto rdCurr = [this, exprp]() { return getCurr(exprp); };
 
-        // Check if we need null guards for a member access through a nullable reference
-        const AstNodeExpr* const baseRefp
-            = hasNullableMemberAccess(exprp) ? getBaseNullableRef(exprp) : nullptr;
+        // Collect null guards for member accesses through nullable references
+        const std::vector<const AstNodeExpr*> bases = nullableBases(exprp);
 
         AstNode* scopeExprp = exprp;
         if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) scopeExprp = refp->varScopep();
@@ -204,7 +191,7 @@ private:
             // Add the initializer init (guarded if through a nullable reference)
             AstAssign* const initp = new AstAssign{flp, new AstVarRef{flp, prevp, VAccess::WRITE},
                                                    exprp->cloneTree(false)};
-            m_results.m_inits.push_back(wrapStmtWithNullCheck(flp, initp, baseRefp));
+            m_results.m_inits.push_back(wrapStmtWithNullChecks(flp, initp, bases));
         }
 
         AstVarScope* const prevp = pair.first->second;
@@ -228,10 +215,10 @@ private:
                     = new AstCMethodHard{flp, wrPrev(), VCMethod::UNPACKED_ASSIGN, rdCurr()};
                 cmhp->dtypeSetVoid();
                 m_results.m_postUpdates.push_back(
-                    wrapStmtWithNullCheck(flp, cmhp->makeStmt(), baseRefp));
+                    wrapStmtWithNullChecks(flp, cmhp->makeStmt(), bases));
             } else {
                 m_results.m_postUpdates.push_back(
-                    wrapStmtWithNullCheck(flp, new AstAssign{flp, wrPrev(), rdCurr()}, baseRefp));
+                    wrapStmtWithNullChecks(flp, new AstAssign{flp, wrPrev(), rdCurr()}, bases));
             }
         }
 
@@ -242,11 +229,9 @@ private:
         FileLine* const flp = senItemp->fileline();
         AstNodeExpr* const senp = senItemp->sensp();
 
-        // Check if the sensitivity expression involves accessing through a class reference
-        // that may be null (e.g., DynScope handles created in fork blocks, or class member
-        // virtual interfaces). If so, we need to guard against null pointer dereference.
-        const AstNodeExpr* const baseRefp
-            = hasNullableMemberAccess(senp) ? getBaseNullableRef(senp) : nullptr;
+        // Collect null guards for member accesses through class or dynamic-scope handles
+        // that may be null (for example, before the creating process has started).
+        const std::vector<const AstNodeExpr*> bases = nullableBases(senp);
 
         const auto currp = [this, senp]() { return getCurr(senp); };
         const auto prevp
@@ -267,21 +252,21 @@ private:
                 AstCMethodHard* const resultp
                     = new AstCMethodHard{flp, prevp(), VCMethod::UNPACKED_NEQ, currp()};
                 resultp->dtypeSetBit();
-                return {wrapExprWithNullCheck(flp, resultp, baseRefp), fireAtInit};
+                return {wrapExprWithNullChecks(flp, resultp, bases), fireAtInit};
             }
-            return {wrapExprWithNullCheck(flp, new AstNeq{flp, currp(), prevp()}, baseRefp),
+            return {wrapExprWithNullChecks(flp, new AstNeq{flp, currp(), prevp()}, bases),
                     fireAtInit};
         }
         case VEdgeType::ET_BOTHEDGE:  //
-            return {wrapExprWithNullCheck(flp, lsb(new AstXor{flp, currp(), prevp()}), baseRefp),
+            return {wrapExprWithNullChecks(flp, lsb(new AstXor{flp, currp(), prevp()}), bases),
                     false};
         case VEdgeType::ET_POSEDGE:  //
-            return {wrapExprWithNullCheck(
-                        flp, lsb(new AstAnd{flp, currp(), new AstNot{flp, prevp()}}), baseRefp),
+            return {wrapExprWithNullChecks(
+                        flp, lsb(new AstAnd{flp, currp(), new AstNot{flp, prevp()}}), bases),
                     false};
         case VEdgeType::ET_NEGEDGE:  //
-            return {wrapExprWithNullCheck(
-                        flp, lsb(new AstAnd{flp, new AstNot{flp, currp()}, prevp()}), baseRefp),
+            return {wrapExprWithNullChecks(
+                        flp, lsb(new AstAnd{flp, new AstNot{flp, currp()}, prevp()}), bases),
                     false};
         case VEdgeType::ET_EVENT: {
             UASSERT_OBJ(v3Global.hasEvents(), senItemp, "Inconsistent");
@@ -311,8 +296,7 @@ private:
             AstCMethodHard* const clearp
                 = new AstCMethodHard{flp, clearFromp, VCMethod::EVENT_CLEAR_FIRED};
             clearp->dtypeSetVoid();
-            AstNodeStmt* const clearStmtp
-                = wrapStmtWithNullCheck(flp, clearp->makeStmt(), baseRefp);
+            AstNodeStmt* const clearStmtp = wrapStmtWithNullChecks(flp, clearp->makeStmt(), bases);
             m_results.m_postUpdates.push_back(clearStmtp);
             m_results.m_destructivePostUpdates.push_back(clearStmtp);
 
@@ -320,7 +304,7 @@ private:
             AstCMethodHard* const callp
                 = new AstCMethodHard{flp, currp(), VCMethod::EVENT_IS_FIRED};
             callp->dtypeSetBit();
-            AstNodeExpr* const firedp = wrapExprWithNullCheck(flp, callp, baseRefp);
+            AstNodeExpr* const firedp = wrapExprWithNullChecks(flp, callp, bases);
             // Do not trigger user named-event processes after $finish.
             AstNodeExpr* const notFinishp
                 = new AstCExpr{flp,
