@@ -1099,6 +1099,11 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "super"
             && VN_IS(nodep->rhsp(), New)) {
+            if (!m_ftaskp || m_ftaskp->name() != "new") {
+                nodep->rhsp()->v3error(
+                    "'super.new' only allowed in a class constructor (IEEE 1800-2023 8.15)");
+                return;
+            }
             // Look for other statements until hit function start
             AstNode* scanp = nodep;
             // Skip over the New's statement
