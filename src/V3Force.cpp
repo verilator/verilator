@@ -343,6 +343,11 @@ public:
                                      bool requireConstRangeSelect) {
         ForceRangeInfo info;
         info.m_arrayInfo = getArraySelInfo(lhsp);
+        // Only a read may select an element with a non-constant index
+        for (const AstArraySel* const selp : info.m_arrayInfo.m_sels) {
+            UASSERT_OBJ(VN_IS(selp->bitp(), Const), selp,
+                        "Unsupported: force on non-constant array select");
+        }
         // An array select below a struct variable is instead part of an opaque path
         info.m_hasArraySel
             = !info.m_arrayInfo.m_sels.empty() && isUnpackedArrayDType(varp->dtypep());
@@ -371,8 +376,6 @@ public:
             std::vector<int> indices;
             indices.reserve(info.m_arrayInfo.m_sels.size());
             for (AstArraySel* const selp : info.m_arrayInfo.m_sels) {
-                UASSERT_OBJ(VN_IS(selp->bitp(), Const), selp,
-                            "Unsupported: force on non-constant array select");
                 indices.push_back(VN_AS(selp->bitp(), Const)->toSInt());
             }
             info.m_rangeLsb = flattenIndex(indices, arraySelDimSizes(info.m_arrayInfo));
@@ -387,10 +390,6 @@ public:
             // source path onto a synthetic index in VlForceVec and use that index consistently
             // for force, release, and readback.
             VarForceInfo& varInfo = getOrCreateVarInfo(getOneVarRef(lhsp)->varScopep());
-            for (const AstArraySel* const selp : info.m_arrayInfo.m_sels) {
-                UASSERT_OBJ(VN_IS(selp->bitp(), Const), selp,
-                            "Unsupported: force on non-constant array select");
-            }
             const int index = varInfo.getOrCreateForcePathIndex(lhsp);
             info.m_rangeLsb = index;
             info.m_rangeMsb = index;
