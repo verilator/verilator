@@ -256,7 +256,8 @@ public:
     T_Element* backp() { return static_cast<T_Element*>(m_lastp); }
     const T_Element* backp() const { return static_cast<T_Element*>(m_lastp); }
 
-    // Checks local linkage at the element's position, with neighbours accepted by 'neighbourOk'.
+    // Checks the element's local links and neighbours accepted by 'neighbourOk'. This verifies
+    // local linkage only, not full membership in this list.
     template <typename T_Pred>
     bool isLinked(const T_Element* const elementp, T_Pred&& neighbourOk) const {
         const V3ListLinks<T_Base>& links = toLinks(elementp);
