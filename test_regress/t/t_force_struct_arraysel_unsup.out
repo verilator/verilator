@@ -1,8 +1,14 @@
-%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:18:19: Unsupported: Non-constant array index reading a struct with a forced array element
-   18 |   assign q = s.arr[i].value;
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:33:19: Unsupported: Non-constant array index reading a struct with a forced array element
+   33 |   assign q = s.arr[i].value;
       |                   ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:19:21: Unsupported: Non-constant array index reading a struct with a forced array element
-   19 |   assign qo = so.arr[i].value;
-      |                     ^
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:35:19: Unsupported: Non-constant array index reading a struct with a forced array element
+   35 |   assign q2 = s.m2[i][j];
+      |                   ^
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:37:23: Unsupported: Non-constant array index reading a struct with a forced array element
+   37 |   assign qu = su.u.b.y[i];
+      |                       ^
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:39:24: Unsupported: Non-constant array index reading a struct with a forced array element
+   39 |   assign qe = su.e[1].x[i];
+      |                        ^
 %Error: Exiting due to

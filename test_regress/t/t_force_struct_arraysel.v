@@ -42,6 +42,8 @@ module t;
   } dyn_t;
   st_t s;
   st_t s2;  // Only s2.flag is forced
+  st_t so;  // Only so.mem is forced
+  st_t sr;  // sr.mem is only released
   top_t n;
   dyn_t d;
   logic [7:0] q;
@@ -114,6 +116,22 @@ module t;
     #1;
     `checkh(n.m.l[1].g, 4'h1);
     `checkh(n.id, 9);
+    // Non-constant index read of an array beside the one with a forced element
+    so.arr[1].value = 8'h4d;
+    so.mem[0] = 8'h05;
+    force so.mem[1] = 8'h31;
+    #1;
+    `checkh(so.arr[i].value, 8'h4d);
+    `checkh(so.mem[0], 8'h05);
+    `checkh(so.mem[1], 8'h31);
+    // Non-constant index read of an array with an element only released
+    sr.mem[1] = 8'h06;
+    sr.flag = 1'b0;
+    force sr.flag = 1'b1;
+    release sr.mem[1];
+    #1;
+    `checkh(sr.mem[i], 8'h06);
+    `checkh(sr.flag, 1'b1);
     // Reads through queues, associative and dynamic arrays, which cannot be forced
     d.q.push_back('{8'h11, 8'h22});
     d.aa[5][1] = 8'h33;

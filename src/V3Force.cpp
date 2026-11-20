@@ -85,7 +85,7 @@ public:
         std::unordered_map<AstAssignForce*, ForceInfo> m_forces;
         std::unordered_map<string, int> m_forcePathToIndex;
         int m_nextForcePathIndex = 1;  // Start at 1 so 0 can be the base path (whole signal)
-        bool m_hasArrayPath = false;  // A forced path has an array select
+        std::vector<string> m_forcedArrayPaths;  // Keys of forced paths with an array select
 
     private:
         // Return false if a selector cannot be on a forced path.  Only a read may have one,
@@ -132,6 +132,22 @@ public:
             if (!buildForcePathKeyRecurse(nodep, key)) return -1;
             const auto it = m_forcePathToIndex.find(key);
             return it != m_forcePathToIndex.end() ? it->second : -1;
+        }
+
+        void addForcedArrayPath(AstNodeExpr* nodep) {
+            m_forcedArrayPaths.push_back(forcePathKey(nodep));
+        }
+
+        // True if a forced path is an element of the array or below one, or the array is
+        // below a forced path, so a non-constant index into it may select a forced value
+        bool isForcedArray(AstNodeExpr* arrayp) const {
+            string key;
+            if (!buildForcePathKeyRecurse(arrayp, key)) return false;
+            for (const string& forced : m_forcedArrayPaths) {
+                if (VString::startsWith(forced, key + "|A")) return true;
+                if (VString::startsWith(key + "|", forced + "|")) return true;
+            }
+            return false;
         }
     };
 
@@ -376,7 +392,6 @@ public:
                             "Unsupported: force on non-constant array select");
             }
             const int index = varInfo.getOrCreateForcePathIndex(lhsp);
-            if (!info.m_arrayInfo.m_sels.empty()) varInfo.m_hasArrayPath = true;
             info.m_rangeLsb = index;
             info.m_rangeMsb = index;
         }
@@ -637,6 +652,19 @@ public:
         } else if (const auto* const memberp = VN_CAST(exprp, StructSel)) {
             collectArraySelInfo(memberp->fromp(), info);
         }
+    }
+
+    // True if the path selects a member of a union
+    static bool isUnionPath(AstNodeExpr* exprp) {
+        if (const AstSel* const selp = VN_CAST(exprp, Sel)) return isUnionPath(selp->fromp());
+        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+            return isUnionPath(selp->fromp());
+        }
+        if (const AstStructSel* const selp = VN_CAST(exprp, StructSel)) {
+            return VN_IS(selp->fromp()->dtypep()->skipRefp(), UnionDType)
+                   || isUnionPath(selp->fromp());
+        }
+        return false;
     }
 
     static ArraySelInfo getArraySelInfo(AstNodeExpr* exprp) {
@@ -1007,6 +1035,10 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
         // Resolve force bookkeeping range/padding for the LHS shape.
         ForceState::ForceRangeInfo rangeInfo
             = m_state.getForceRangeInfo(nodep->lhsp(), forcedVarp, true);
+        // Only a force restricts reads, a release alone leaves no forced value to read
+        if (!rangeInfo.m_hasArraySel && !rangeInfo.m_arrayInfo.m_sels.empty()) {
+            m_state.getOrCreateVarInfo(lhsVarRefp->varScopep()).addForcedArrayPath(nodep->lhsp());
+        }
 
         // Keep narrow rhs, VlForceVec blends unpacked-array bit-select forces at read time
         AstNodeExpr* const rhsExprp = nodep->rhsp()->cloneTreePure(false);
@@ -1617,6 +1649,21 @@ class ForceReplaceVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
+
+    // Reading a forced array element of a struct needs its index to be constant
+    static void warnNonConstArraySel(const ForceState::VarForceInfo& varInfo, AstNodeExpr* exprp) {
+        if (varInfo.m_forcedArrayPaths.empty()) return;
+        // Members of a union are overlaid, so any forced array element may be the one read
+        const bool viaUnion = ForceState::isUnionPath(exprp);
+        for (const AstArraySel* const selp : ForceState::getArraySelInfo(exprp).m_sels) {
+            if (VN_IS(selp->bitp(), Const)) continue;
+            if (!viaUnion && !varInfo.isForcedArray(selp->fromp())) continue;
+            selp->v3warn(E_UNSUPPORTED, "Unsupported: Non-constant array index reading a "
+                                        "struct with a forced array element");
+            return;  // Once per read
+        }
+    }
+
     void visit(AstNode* nodep) override {
         if (ForceState::isOutermostOpaquePathSelector(nodep)) {
             // Handle the whole opaque path at its outermost node so we can assign one stable
@@ -1641,14 +1688,8 @@ class ForceReplaceVisitor final : public VNVisitor {
                             VL_DO_DANGLING(pushDeletep(nodep), nodep);
                             return;
                         }
-                        if (varInfop->m_hasArrayPath && baseRefp->access().isReadOnly()) {
-                            for (const AstArraySel* const selp :
-                                 ForceState::getArraySelInfo(exprp).m_sels) {
-                                if (VN_IS(selp->bitp(), Const)) continue;
-                                selp->v3warn(E_UNSUPPORTED,
-                                             "Unsupported: Non-constant array index reading a "
-                                             "struct with a forced array element");
-                            }
+                        if (baseRefp->access().isReadOnly()) {
+                            warnNonConstArraySel(*varInfop, exprp);
                         }
                     }
                 }
