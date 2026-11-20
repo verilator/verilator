@@ -3823,8 +3823,8 @@ class AssertNfaVisitor final : public VNVisitor {
             if (autoRefp) {
                 autoRefp->v3warn(E_UNSUPPORTED, "Unsupported: automatic variable "
                                                     << autoRefp->prettyNameQ()
-                                                    << " in a procedural concurrent assertion"
-                                                       " (IEEE 1800-2023 16.14.6.1)");
+                                                    << " in a multi-cycle procedural concurrent"
+                                                       " assertion");
                 replaceBodyOnBuildError(assertp->fileline(), propp, /*errorEmitted=*/true);
                 return;
             }

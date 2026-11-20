@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:17:54: Unsupported: automatic variable 'i' in a procedural concurrent assertion (IEEE 1800-2023 16.14.6.1)
+%Error-UNSUPPORTED: t/t_assert_procedural_clk_bad.v:17:54: Unsupported: automatic variable 'i' in a multi-cycle procedural concurrent assertion
                                                          : ... note: In instance 't'
    17 |     for (int i = 0; i < 2; ++i) assert property (cyc[i] |=> cyc[i]);
       |                                                      ^
