@@ -1726,7 +1726,7 @@ public:
 // prefixes of the names of the types each scope declares, once final.  So naming the types of a
 // scope costs no search up the tree for it, as AstNode::aboveLoopp() is linear in the number of
 // previous statements.  For passes that name many types but neither add, move, nor delete such
-// declarations, V3Width and V3WidthCommit; others, as V3Param, search the tree.
+// declarations, V3Width and V3WidthCommit; others search the tree, V3Param with a SearchCache.
 class VDTypeNameScopes final {
     // STATE
     // Each class, typedef, generate block, and design unit to the generate block or design unit
@@ -1745,6 +1745,15 @@ class VDTypeNameScopes final {
     VL_UNMOVABLE(VDTypeNameScopes);
 
 public:
+    // Maps each declaration an earlier declaringScopep() search passed to its declaring scope,
+    // so later searches stop there and each statement list is searched about once. Keyed by
+    // node, so valid only while no declaration searched for or passed, nor any scope it maps
+    // to, is deleted or moved to another scope, as a freed node's address may be reused.
+    class SearchCache final {
+        friend class VDTypeNameScopes;
+        std::unordered_map<const AstNode*, AstNode*> m_outerps;  // As in VDTypeNameScopes
+    };
+
     // CONSTRUCTORS
     // Index the netlist, in use until destroyed
     explicit VDTypeNameScopes(AstNetlist* nodep);
@@ -1754,8 +1763,9 @@ public:
     // The index in use, or nullptr if none
     static const VDTypeNameScopes* currentp() { return s_currentp; }
     // The generate block or design unit declaring 'nodep', or nullptr if none, as at the top, as
-    // indexed by the index in use, if any, else as searched for up the tree
-    static AstNode* declaringScopep(const AstNode* nodep);
+    // indexed by the index in use, if any, else as searched for up the tree, using 'cachep', if
+    // given
+    static AstNode* declaringScopep(const AstNode* nodep, SearchCache* cachep = nullptr);
     // Whether 'nodep' is indexed, and if so 'outerpr', the generate block or design unit
     // declaring it, or nullptr if none
     bool outerp(const AstNode* nodep, AstNode*& outerpr) const;

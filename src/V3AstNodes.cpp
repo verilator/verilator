@@ -423,12 +423,32 @@ VDTypeNameScopes::VDTypeNameScopes(AstNetlist* nodep)
     s_currentp = this;
 }
 VDTypeNameScopes::~VDTypeNameScopes() { s_currentp = m_prevp; }
-AstNode* VDTypeNameScopes::declaringScopep(const AstNode* nodep) {
+AstNode* VDTypeNameScopes::declaringScopep(const AstNode* nodep, SearchCache* cachep) {
     AstNode* scopep = nullptr;
     if (s_currentp && s_currentp->outerp(nodep, scopep)) return scopep;
-    for (scopep = nodep->aboveLoopp(); scopep; scopep = scopep->aboveLoopp()) {
-        if (VN_IS(scopep, NodeModule) || VN_IS(scopep, GenBlock)) break;
+    // As AstNode::aboveLoopp(), searching back over the earlier statements in each list, but
+    // stopping at a declaration a cached search passed
+    std::vector<const AstNode*> passedps;
+    while (true) {
+        if (cachep) {
+            const auto it = cachep->m_outerps.find(nodep);
+            if (it != cachep->m_outerps.end()) {
+                scopep = it->second;
+                break;
+            }
+            if (VN_IS(nodep, NodeModule) || VN_IS(nodep, GenBlock) || VN_IS(nodep, Typedef)) {
+                passedps.push_back(nodep);
+            }
+        }
+        AstNode* const backp = nodep->backp();
+        if (!backp) break;  // At the top
+        if (backp->nextp() != nodep && (VN_IS(backp, NodeModule) || VN_IS(backp, GenBlock))) {
+            scopep = backp;
+            break;
+        }
+        nodep = backp;
     }
+    for (const AstNode* const passedp : passedps) cachep->m_outerps.emplace(passedp, scopep);
     return scopep;
 }
 void VDTypeNameScopes::index(AstNode* nodesp, AstNode* scopep) {
