@@ -1157,6 +1157,9 @@ class RandomizeVisitor final : public VNVisitor {
     AstConstraint* m_constraintp = nullptr;  // Current constraint
     // Per-handle-type pre/post virtual wrapper presence
     std::map<AstClass*, std::pair<bool, bool>> m_prePostWrap;
+    // Classes extending each class, directly or not, filled on first use
+    std::map<const AstClass*, std::vector<AstClass*>> m_subclasses;
+    bool m_subclassesFilled = false;  // m_subclasses is filled
     ActiveSet m_activeClasses;  // Classes currently building randomize()
     RandModeVars m_modeVars;  // Static rand_mode/constraint_mode state vars per class
     const std::unique_ptr<V3SolverLowering> m_solverp;  // Constraint solver lowering
@@ -2107,34 +2110,42 @@ class RandomizeVisitor final : public VNVisitor {
             }
         });
     }
-    // IEEE 1800-2023 18.6.3: "If randomize() fails, the constraints are infeasible, and the
-    // random variables retain their previous values." Return statements copying each random
-    // variable of the object that fromp refers to (nullptr: 'this') into a new temporary of
-    // funcp, also through its rand class members and the class handles in its rand arrays,
-    // and add the statements copying them back to restoresp. Under a loop over such an array
-    // (inLoop), each temporary is a queue, filled and emptied in the same order. A class on
-    // visitingr is being saved already, and is reached again through a cycle of rand class
-    // members, so the objects past the cycle keep any change __VBasicRand makes. So do the
-    // members of a derived class that a handle of its base class refers to.
+    const std::vector<AstClass*>& subclasses(const AstClass* const classp) {
+        if (!m_subclassesFilled) {
+            m_subclassesFilled = true;
+            v3Global.rootp()->foreach([&](AstClass* const subp) {
+                for (const AstClassExtends* ep = subp->extendsp(); ep;
+                     ep = ep->classp()->extendsp()) {
+                    m_subclasses[ep->classp()].push_back(subp);
+                }
+            });
+        }
+        return m_subclasses[classp];
+    }
+    AstVar* newSaveTempp(AstFunc* const funcp, const string& prefix, AstNodeDType* const dtypep) {
+        AstVar* const tempp = new AstVar{funcp->fileline(), VVarType::BLOCKTEMP,
+                                         m_uniqueNames.get(prefix), dtypep};
+        tempp->funcLocal(true);
+        tempp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        funcp->addDeclsp(tempp);
+        return tempp;
+    }
+    // Return statements saving into temporaries of funcp the random variables reachable from
+    // fromp (nullptr: 'this'), and add their restores to restoresp (IEEE 1800-2023 18.6.3)
     AstNodeStmt* newSaveRandVarsp(AstFunc* const funcp, AstClass* const classp,
                                   AstNodeExpr* const fromp, const bool inLoop,
-                                  AstNodeStmt*& restoresp, std::set<const AstClass*>& visitingr) {
+                                  AstNodeStmt*& restoresp, std::set<const AstClass*>& visitingr,
+                                  const AstClass* const onlyDeclClassp = nullptr) {
+        // Objects past a cycle of rand class members are not saved
         if (!visitingr.insert(classp).second) return nullptr;
         FileLine* const fl = funcp->fileline();
-        const auto newTempp = [&](const string& prefix, AstNodeDType* const dtypep) {
-            AstVar* const tempp
-                = new AstVar{fl, VVarType::BLOCKTEMP, m_uniqueNames.get(prefix), dtypep};
-            tempp->funcLocal(true);
-            tempp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            funcp->addDeclsp(tempp);
-            return tempp;
-        };
         const auto newIfNotNullp = [&](AstNodeExpr* const objp, AstNodeStmt* const stmtsp) {
             return new AstIf{fl, new AstNeq{fl, objp, new AstConst{fl, AstConst::Null{}}}, stmtsp};
         };
         AstNodeStmt* savesp = nullptr;
         classp->foreachMember([&](AstClass* const declClassp, AstVar* const varp) {
             if (!varp->rand().isRandomizable()) return;
+            if (onlyDeclClassp && declClassp != onlyDeclClassp) return;
             const auto newRefp = [&](const VAccess access) -> AstNodeExpr* {
                 if (!fromp) return new AstVarRef{fl, declClassp, varp, access};
                 AstMemberRef* const selp = new AstMemberRef{fl, fromp->cloneTree(false), varp};
@@ -2146,8 +2157,11 @@ class RandomizeVisitor final : public VNVisitor {
                 // __VBasicRand also changes the object that a rand class member refers to
                 AstNodeExpr* const objp = newRefp(VAccess::READ);
                 AstNodeStmt* objRestoresp = nullptr;
-                AstNodeStmt* const objSavesp = newSaveRandVarsp(funcp, classRefp->classp(), objp,
-                                                                inLoop, objRestoresp, visitingr);
+                AstNodeStmt* objSavesp = newSaveRandVarsp(funcp, classRefp->classp(), objp, inLoop,
+                                                          objRestoresp, visitingr);
+                objSavesp = AstNode::addNextNull(
+                    objSavesp, newSaveSubclassRandVarsp(funcp, classRefp->classp(), objp, inLoop,
+                                                        objRestoresp, visitingr));
                 if (objSavesp) {
                     savesp = AstNode::addNextNull(
                         savesp, newIfNotNullp(objp->cloneTree(false), objSavesp));
@@ -2160,7 +2174,7 @@ class RandomizeVisitor final : public VNVisitor {
             if (inLoop) {
                 AstQueueDType* const queueDTypep = new AstQueueDType{fl, varp->dtypep(), nullptr};
                 v3Global.rootp()->typeTablep()->addTypesp(queueDTypep);
-                AstVar* const queuep = newTempp("__Vprev", queueDTypep);
+                AstVar* const queuep = newSaveTempp(funcp, "__Vprev", queueDTypep);
                 AstCMethodHard* const pushp
                     = new AstCMethodHard{fl, new AstVarRef{fl, queuep, VAccess::WRITE},
                                          VCMethod::ARRAY_PUSH_BACK, newRefp(VAccess::READ)};
@@ -2179,7 +2193,7 @@ class RandomizeVisitor final : public VNVisitor {
                     restoresp, new AstAssign{fl, newRefp(VAccess::WRITE), frontp});
                 restoresp = AstNode::addNextNull(restoresp, popp->makeStmt());
             } else {
-                AstVar* const prevVarp = newTempp("__Vprev", varp->dtypep());
+                AstVar* const prevVarp = newSaveTempp(funcp, "__Vprev", varp->dtypep());
                 savesp = AstNode::addNextNull(
                     savesp, new AstAssign{fl, new AstVarRef{fl, prevVarp, VAccess::WRITE},
                                           newRefp(VAccess::READ)});
@@ -2194,11 +2208,14 @@ class RandomizeVisitor final : public VNVisitor {
             const AstClassRefDType* const elemClassRefp
                 = VN_CAST(elemDTypep->skipRefp(), ClassRefDType);
             if (!elemClassRefp) return;
-            AstVar* const elemVarp = newTempp("__Velem", elemDTypep);
+            AstVar* const elemVarp = newSaveTempp(funcp, "__Velem", elemDTypep);
             AstVarRef* const elemRefp = new AstVarRef{fl, elemVarp, VAccess::READ};
             AstNodeStmt* elemRestoresp = nullptr;
-            AstNodeStmt* const elemSavesp = newSaveRandVarsp(
-                funcp, elemClassRefp->classp(), elemRefp, true, elemRestoresp, visitingr);
+            AstNodeStmt* elemSavesp = newSaveRandVarsp(funcp, elemClassRefp->classp(), elemRefp,
+                                                       true, elemRestoresp, visitingr);
+            elemSavesp = AstNode::addNextNull(
+                elemSavesp, newSaveSubclassRandVarsp(funcp, elemClassRefp->classp(), elemRefp,
+                                                     true, elemRestoresp, visitingr));
             VL_DO_DANGLING(elemRefp->deleteTree(), elemRefp);
             if (!elemSavesp) {
                 VL_DO_DANGLING(pushDeletep(elemVarp->unlinkFrBack()), elemVarp);
@@ -2220,15 +2237,57 @@ class RandomizeVisitor final : public VNVisitor {
         visitingr.erase(classp);
         return savesp;
     }
+    // As newSaveRandVarsp, for the random variables that a subclass of classp declares, when
+    // objp refers to an object of that subclass
+    AstNodeStmt* newSaveSubclassRandVarsp(AstFunc* const funcp, AstClass* const classp,
+                                          AstNodeExpr* const objp, const bool inLoop,
+                                          AstNodeStmt*& restoresp,
+                                          std::set<const AstClass*>& visitingr) {
+        FileLine* const fl = funcp->fileline();
+        AstNodeStmt* savesp = nullptr;
+        for (AstClass* const subp : subclasses(classp)) {
+            AstClassRefDType* const refDTypep = new AstClassRefDType{fl, subp, nullptr};
+            v3Global.rootp()->typeTablep()->addTypesp(refDTypep);
+            AstVar* const castVarp = newSaveTempp(funcp, "__Vsubclass", refDTypep);
+            AstVarRef* const castRefp = new AstVarRef{fl, castVarp, VAccess::READ};
+            AstNodeStmt* subRestoresp = nullptr;
+            AstNodeStmt* const subSavesp
+                = newSaveRandVarsp(funcp, subp, castRefp, inLoop, subRestoresp, visitingr, subp);
+            VL_DO_DANGLING(castRefp->deleteTree(), castRefp);
+            if (!subSavesp) {
+                VL_DO_DANGLING(pushDeletep(castVarp->unlinkFrBack()), castVarp);
+                continue;
+            }
+            const auto newIfCastp = [&](AstNodeStmt* const stmtsp) {
+                AstCastDynamic* const castp = new AstCastDynamic{
+                    fl, objp->cloneTree(false), new AstVarRef{fl, castVarp, VAccess::WRITE}};
+                return new AstIf{
+                    fl, new AstNeq{fl, castp, new AstConst{fl, AstConst::WidthedValue{}, 32, 0}},
+                    stmtsp};
+            };
+            savesp = AstNode::addNextNull(savesp, newIfCastp(subSavesp));
+            restoresp = AstNode::addNextNull(restoresp, newIfCastp(subRestoresp));
+        }
+        return savesp;
+    }
     // Add to funcp the statements saving the random variables of 'this', of class classp,
     // and return the statements restoring them if randomize() fails
     AstNodeStmt* addSaveRandVars(AstFunc* const funcp, AstClass* const classp) {
         AstNodeStmt* restoresp = nullptr;
         std::set<const AstClass*> visiting;
-        if (AstNodeStmt* const savesp
-            = newSaveRandVarsp(funcp, classp, nullptr, false, restoresp, visiting)) {
-            funcp->addStmtsp(savesp);
+        AstNodeStmt* savesp = newSaveRandVarsp(funcp, classp, nullptr, false, restoresp, visiting);
+        if (!subclasses(classp).empty()) {
+            // 'this' can refer to an object of a subclass
+            AstClassRefDType* const refDTypep
+                = new AstClassRefDType{funcp->fileline(), classp, nullptr};
+            v3Global.rootp()->typeTablep()->addTypesp(refDTypep);
+            AstThisRef* const thisp = new AstThisRef{funcp->fileline(), refDTypep};
+            savesp = AstNode::addNextNull(
+                savesp,
+                newSaveSubclassRandVarsp(funcp, classp, thisp, false, restoresp, visiting));
+            VL_DO_DANGLING(thisp->deleteTree(), thisp);
         }
+        if (savesp) funcp->addStmtsp(savesp);
         return restoresp;
     }
     // Add to funcp an if that runs restoresp when randomize() failed

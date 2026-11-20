@@ -114,7 +114,7 @@ endclass
 
 class CycB;
   rand bit [14:0] z;
-  rand CycA a;  // Left null
+  rand CycA a;
   rand CycA arr[1];  // Left null
 endclass
 
@@ -145,6 +145,28 @@ class ArrayOwner;
     byKey[-3] = inner;
     elems[0] = new;
   endfunction
+endclass
+
+class Shape;
+  rand bit [6:0] w;
+endclass
+
+class Box extends Shape;
+  rand bit [6:0] h;
+endclass
+
+class Crate extends Box;
+  rand bit [6:0] d;
+endclass
+
+class Mark extends Shape;
+  bit [6:0] m;
+endclass
+
+class ShapeOwner;
+  rand bit [6:0] c;
+  rand Shape s;
+  rand Shape ss[4];
 endclass
 
 module t;
@@ -296,6 +318,8 @@ module t;
       int randomize_result;
       ca = new;
       ca.b = new;
+      // Known limitation: an object past the cycle, here ca.b.a, is not restored
+      ca.b.a = new;
       ca.c = 41;
       ca.b.z = 42;
       randomize_result = ca.randomize() with {
@@ -339,6 +363,64 @@ module t;
       `checkd(ao.elems[0].e, 57);
       `checkd(ao.elems[0].vals[1], 58);
       `checkd(ao.elems[0].items[1].p, 59);
+    end
+
+    // Base class handles to objects of derived classes: a rand class member, the elements of
+    // a rand array, and the object that randomize() is called on
+    begin
+      ShapeOwner so;
+      Box bx;
+      Box by;
+      Crate cr;
+      Mark mk;
+      Shape sp;
+      Shape sh;
+      int randomize_result;
+      so = new;
+      bx = new;
+      by = new;
+      cr = new;
+      mk = new;
+      sp = new;
+      so.s = bx;
+      so.ss[0] = by;
+      so.ss[1] = cr;
+      so.ss[2] = mk;
+      so.ss[3] = sp;
+      so.c = 61;
+      bx.w = 62;
+      bx.h = 63;
+      by.w = 64;
+      by.h = 65;
+      cr.w = 66;
+      cr.h = 67;
+      cr.d = 68;
+      mk.w = 69;
+      sp.w = 70;
+      randomize_result = so.randomize() with {
+        c > 100;
+        c < 50;
+      };
+      `checkd(randomize_result, 0);
+      `checkd(so.c, 61);
+      `checkd(bx.w, 62);
+      `checkd(bx.h, 63);
+      `checkd(by.w, 64);
+      `checkd(by.h, 65);
+      `checkd(cr.w, 66);
+      `checkd(cr.h, 67);
+      `checkd(cr.d, 68);
+      `checkd(mk.w, 69);
+      `checkd(sp.w, 70);
+      sh = cr;
+      randomize_result = sh.randomize() with {
+        w > 100;
+        w < 50;
+      };
+      `checkd(randomize_result, 0);
+      `checkd(cr.w, 66);
+      `checkd(cr.h, 67);
+      `checkd(cr.d, 68);
     end
 
     $write("*-* All Finished *-*\n");
