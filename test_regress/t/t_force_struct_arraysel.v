@@ -27,9 +27,23 @@ module t;
     mid_t m;
     int id;
   } top_t;
+  typedef struct {
+    logic [7:0] v;
+    logic [7:0] arr[2];
+  } elem_t;
+  typedef struct {
+    logic [7:0] q[$][2];
+    logic [7:0] aa[int][2];
+    logic [7:0] wa[*];
+    logic [7:0] dyn[];
+    elem_t qe[$];
+    elem_t ae[string];
+    logic flag;
+  } dyn_t;
   st_t s;
   st_t s2;  // Only s2.flag is forced
   top_t n;
+  dyn_t d;
   logic [7:0] q;
   logic [7:0] m;
   int i;
@@ -100,6 +114,31 @@ module t;
     #1;
     `checkh(n.m.l[1].g, 4'h1);
     `checkh(n.id, 9);
+    // Reads through queues, associative and dynamic arrays, which cannot be forced
+    d.q.push_back('{8'h11, 8'h22});
+    d.aa[5][1] = 8'h33;
+    d.wa[7] = 8'h44;
+    d.dyn = new[3];
+    d.dyn[2] = 8'h55;
+    d.qe.push_back('{8'h66, '{8'h77, 8'h88}});
+    d.ae["k"].v = 8'h99;
+    d.ae["k"].arr[1] = 8'haa;
+    d.flag = 1'b0;
+    force d.flag = 1'b1;
+    #1;
+    `checkh(d.q[0][1], 8'h22);
+    `checkh(d.q[0][i], 8'h22);
+    `checkh(d.q.size(), 1);
+    `checkh(d.aa[5][1], 8'h33);
+    `checkh(d.aa[5][i], 8'h33);
+    `checkh(d.wa[7], 8'h44);
+    `checkh(d.dyn[2], 8'h55);
+    `checkh(d.dyn[i+1], 8'h55);
+    `checkh(d.qe[0].v, 8'h66);
+    `checkh(d.qe[0].arr[i], 8'h88);
+    `checkh(d.ae["k"].v, 8'h99);
+    `checkh(d.ae["k"].arr[i], 8'haa);
+    `checkh(d.flag, 1'b1);
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -88,33 +88,34 @@ public:
         bool m_hasArrayPath = false;  // A forced path has an array select
 
     private:
-        static void buildForcePathKeyRecurse(AstNodeExpr* nodep, string& out) {
-            if (VN_IS(nodep, VarRef)) return;
+        // Return false if a selector cannot be on a forced path.  Only a read may have one,
+        // such as of a queue or an associative array, and nothing below it can be forced.
+        static bool buildForcePathKeyRecurse(AstNodeExpr* nodep, string& out) {
+            if (VN_IS(nodep, VarRef)) return true;
             if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
-                buildForcePathKeyRecurse(selp->fromp(), out);
+                if (!buildForcePathKeyRecurse(selp->fromp(), out)) return false;
                 out += "|S" + cvtToStr(selp->lsbConst()) + ":" + cvtToStr(selp->widthConst());
-                return;
+                return true;
             }
             if (AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
-                AstNodeExpr* const fromp = selp->fromp();
-                buildForcePathKeyRecurse(fromp, out);
+                if (!buildForcePathKeyRecurse(selp->fromp(), out)) return false;
                 out += "|T" + selp->name();
-                return;
+                return true;
             }
             if (const AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
-                buildForcePathKeyRecurse(selp->fromp(), out);
+                if (!buildForcePathKeyRecurse(selp->fromp(), out)) return false;
                 // Only a read may have a non-constant index, which matches no forced path
                 const AstConst* const constp = VN_CAST(selp->bitp(), Const);
                 out += "|A" + (constp ? cvtToStr(constp->toSInt()) : "?");
-                return;
+                return true;
             }
-            nodep->v3fatalSrc("Unsupported: opaque force path selector "
-                              << nodep->prettyTypeNameQ());
+            return false;
         }
 
         static string forcePathKey(AstNodeExpr* nodep) {
             string out;
-            buildForcePathKeyRecurse(nodep, out);
+            UASSERT_OBJ(buildForcePathKeyRecurse(nodep, out), nodep,
+                        "Unsupported: opaque force path selector");
             return out;
         }
 
@@ -127,7 +128,9 @@ public:
         }
 
         int findForcePathIndex(AstNodeExpr* nodep) const {
-            const auto it = m_forcePathToIndex.find(forcePathKey(nodep));
+            string key;
+            if (!buildForcePathKeyRecurse(nodep, key)) return -1;
+            const auto it = m_forcePathToIndex.find(key);
             return it != m_forcePathToIndex.end() ? it->second : -1;
         }
     };
