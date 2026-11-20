@@ -6,6 +6,11 @@
 
 // See also t_class_param.v
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: got=%0d exp=%0d\n", `__FILE__, `__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 class Parcls #(
     type T
 );
@@ -118,11 +123,6 @@ class GetStaticXVal #(
     return T::val;
   endfunction
 endclass
-
-// verilog_format: off
-`define stop $stop
-`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: got=%0d exp=%0d\n", `__FILE__, `__LINE__, (gotv), (expv)); `stop; end while(0);
-// verilog_format: on
 
 typedef bit [6:0] bit7_t;
 typedef bit [14:0] bit15_t;

@@ -1002,63 +1002,70 @@ class ParamProcessor final {
     }
 
     class PinRelinkVisitor final : public VNVisitor {
-        AstNodeModule* const m_rootp;  // module being cloned
-        AstNodeModule* m_parentp = nullptr;  // Owner of the parameter, the AstPin references
+        const AstNodeModule* const m_rootp;  // module being cloned
 
-        void visit(AstPin* pinp) override {
-            // If pin references definition under the one being cloned, but is not the root of
-            // cloning, it should be relinked.
-            UASSERT_OBJ(m_parentp, pinp, "Parent shouldn't be null here");
-            if (m_parentp != m_rootp && m_parentp->clonep()) pinp->cloneRelinkGen();
-
-            iterateChildren(pinp);
-        }
-
-        void visit(AstCell* cellp) override {
-            // Skip. Don't relink Pins of the AstCell as:
-            // 1. It's not possible to define module inside another module-like node,  so the
+        void visit(AstCell* nodep) override {
+            UINFO(10, "PinRelinkVisitor::visit " << nodep);
+            // Don't relink Pins of the AstCell as:
+            // 1. It's not possible to define module inside another module-like node, so the
             //   situation this Visitor is fixing cannot occur
             // 2. Recursive modules are handled elsewhere.
+            //
+            // Although, those pins may internally have pins that need relinking,
+            // so we `iterateChildren`
+            iterateChildren(nodep);
+        }
+
+        void relinkPins(const AstNode* const parentp, VNList<AstPin> list, bool relinkRoot = false) {
+            if (parentp && (relinkRoot || parentp != m_rootp) && parentp->clonep()) {
+                for (AstPin* const pinp : list) {
+                    UINFO(10, "[PinRelinkVisitor] Relinking: " << pinp);
+                    pinp->cloneRelinkGen();
+                }
+            }
         }
 
         void visit(AstClassRefDType* refp) override {
-            VL_RESTORER(m_parentp);
-            m_parentp = refp->classp();
+            UINFO(10, "PinRelinkVisitor::visit " << refp << " parent=" << refp->classp());
+            relinkPins(refp->classp(), refp->paramspList());
             iterateChildren(refp);
         }
 
         void visit(AstIfaceRefDType* refp) override {
-            VL_RESTORER(m_parentp);
-            m_parentp = refp->ifacep();
-            iterateChildren(refp);
-        }
-
-        void visit(AstRefDType* refp) override {
-            VL_RESTORER(m_parentp);
-            m_parentp = refp->classOrPackagep();
+            UINFO(10, "PinRelinkVisitor::visit " << refp << " parent=" << refp->ifacep());
+            relinkPins(refp->ifacep(), refp->paramspList(), true);
             iterateChildren(refp);
         }
 
         void visit(AstClassOrPackageRef* refp) override {
-            VL_RESTORER(m_parentp);
-            m_parentp = VN_CAST(refp->classOrPackageNodep(), NodeModule);
-            if (m_parentp) iterateChildren(refp);
+            UINFO(10,
+                  "PinRelinkVisitor::visit " << refp << " parent=" << refp->classOrPackageNodep());
+            relinkPins(refp->classOrPackageNodep(), refp->paramspList());
+            iterateChildren(refp);
+        }
+
+        void visit(AstRefDType* refp) override {
+            UINFO(10, "PinRelinkVisitor::visit " << refp);
+            relinkPins(refp->classOrPackagep(), refp->paramspList());
+            iterateChildren(refp);
         }
 
         void visit(AstConfigUse* nodep) override {
-            UASSERT_OBJ(nodep->paramsp(), nodep,
+            UINFO(10, "PinRelinkVisitor::visit " << nodep);
+            UASSERT_OBJ(!nodep->paramsp(), nodep,
                         "Parametrized ConfigUse should be rejected by parser");
         }
 
         void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
-    public:
         explicit PinRelinkVisitor(AstNodeModule* modp)
             : m_rootp{modp} {
+            UINFO(10, "PinRelinkVisitor::apply root=" << modp);
             iterate(modp);
         }
 
-        ~PinRelinkVisitor() override = default;
+    public:
+        static void apply(AstNodeModule* modp) { PinRelinkVisitor{modp}; }
     };
 
     // Return true on success, false on error
@@ -1077,7 +1084,7 @@ class ParamProcessor final {
         // module nodes, relink parameter pins whose formals were cloned with that module node
         // while clonep() is still valid, so nested parameterized classes link to original
         // module node's parameter formals.
-        { PinRelinkVisitor{newModp}; }
+        PinRelinkVisitor::apply(newModp);
 
         // Mark the source module as a parameterized template now that a specialized
         // clone exists.  This suppresses width/type errors on the unresolved template
@@ -4208,6 +4215,18 @@ public:
                     UINFO(9, "cleared link " << namep << " on " << nodep);
                 }
             });
+        });
+
+        netlistp->foreach([&](AstRefDType* refp) {
+            const AstClassOrPackageRef* const scopep
+                = VN_CAST(refp->classOrPackageOpp(), ClassOrPackageRef);
+            const AstNodeModule* const classp = scopep ? scopep->classOrPackageSkipp() : nullptr;
+            if (classp && classp->hasParameterList() && refp->paramsp()) {
+                refp->v3warn(E_UNSUPPORTED, "Unsupported: Deferred qualified type reference "
+                                            "during parameter specialization : "
+                                                << refp->prettyNameQ());
+                VL_DO_DANGLING(pushDeletep(refp->unlinkFrBack()), refp);
+            }
         });
     }
     ~ParamTop() = default;
