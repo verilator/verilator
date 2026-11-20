@@ -132,7 +132,7 @@ if os.path.exists(latch):
     os.unlink(latch)
 test.execute(logfile=logfile,
              run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
-             'TAMPER=err_extra TAMPER_AT=673 TAMPER_ONCE="' + latch + '" ')
+             'TAMPER=err_cell TAMPER_AT=1 TAMPER_ONCE="' + latch + '" ')
 test.file_grep(logfile, r'NPASS=(\d+)', 12)
 test.file_grep(logfile, r'Solver did not answer with a status')
 test.file_grep_not(logfile, r'Solver died')

@@ -12,8 +12,9 @@
 # Input arguments from environment variables:
 # TAMPER: bad_base | bad_digits | bad_index | bad_value | bare_hash | binary
 #         | core_junk | crlf | csa_unsupported | die_at | die_status_at | diversity_model
-#         | dup_model | err_assume | err_core | err_extra | err_marker | err_multiline
-#         | err_mute | err_once | err_phase | err_reply | err_trunc | err_unbal | err_unbal_cont
+#         | dup_model | err_assume | err_cell | err_core | err_extra | err_marker
+#         | err_multiline | err_mute | err_once | err_phase | err_reply | err_trunc | err_unbal
+#         | err_unbal_cont
 #         | garbage_assume | garbage_at | garbage_model | garbage_status
 #         | high_digit | indent | low_digit | model_trunc | multiline | mute_at
 #         | no_digits | none | octal | oor_assume | phase_model | phase_trunc
@@ -33,6 +34,10 @@
 #   diversity_model  - replace the Nth array model reply with one holding an unusable value
 #   dup_model        - replace the Nth model reply with one answering a variable twice
 #   err_assume       - replace the first unsat-assumptions reply with (error ...)
+#   err_cell         - as err_extra, at the Nth status of the unigen2 sampler's first cell
+#                      enumeration, counted from the first push scope opened after the
+#                      estimate's last scope, the first one to find a solution and run out;
+#                      it never acts when the estimate ends on a large space with no such scope
 #   err_core         - replace the first unsat-core reply with (error ...)
 #   err_extra        - send an (error ...) line ahead of the Nth status, as for a rejected
 #                      earlier command; echo the runtime's marker quoted, as SMT-LIB 2.6 does
@@ -85,6 +90,7 @@ import subprocess
 import sys
 import threading
 import time
+import types
 
 mode = os.environ.get("TAMPER", "none")
 at = int(os.environ.get("TAMPER_AT", "3"))
@@ -98,6 +104,8 @@ STATUS_MODES = ("die_status_at", "err_extra", "err_marker", "err_multiline", "er
 REPLY_MODES = ("err_reply", )
 # Modes acting on an array model reply, which arrives as (select ...) terms
 SELECT_MODES = ("bad_index", "diversity_model")
+# Modes acting on a status found from the push scopes of the commands
+CELL_MODES = ("err_cell", )
 # Modes acting on the status the solver sends after answering unsat
 RECHECK_MODES = ("unsat_recheck", )
 # phase_model acts on the final phased model; the others on any phase value reply
@@ -109,7 +117,7 @@ CORE_MODES = ("core_junk", "err_core")
 # Modes rewriting every line, so they never consume the index
 STREAM_MODES = ("crlf", "csa_unsupported", "indent", "multiline", "success")
 # Modes that change commands on their way to the solver
-INPUT_MODES = ("csa_unsupported", )
+INPUT_MODES = ("csa_unsupported", "err_cell")
 # Echoed in place of a command, to mark where in the replies its answer belongs
 TAMPER_MARK = "vl_tamper"
 
@@ -128,12 +136,26 @@ proc = subprocess.Popen(real_solver(),
                         stdout=subprocess.PIPE,
                         text=True)
 
+# err_cell: count is the push, pop and reset commands sent so far, pushed is
+# whether the last of them was a push, and cell_after the scope the estimate
+# ended in, once known
+scopes = types.SimpleNamespace(count=0, pushed=False, cell_after=None)
+
 
 def feed():
-    """Pass the runtime's commands on, replacing check-sat-assuming with a marker echo"""
+    """Pass the runtime's commands on, counting push, pop and reset for err_cell
+    and replacing check-sat-assuming with a marker echo for csa_unsupported"""
     for cmd in sys.stdin:
-        if cmd.lstrip().startswith("(check-sat-assuming"):
+        text = cmd.lstrip()
+        if mode == "csa_unsupported" and text.startswith("(check-sat-assuming"):
             cmd = '(echo "' + TAMPER_MARK + '")\n'
+        # The runtime reads each status before it sends the next push, pop or reset,
+        # so a status is read while the count is still that of its check-sat
+        if text.startswith(("(push", "(pop", "(reset)")):
+            scopes.count += 1
+            scopes.pushed = text.startswith("(push")
+        if text.startswith("(reset)"):
+            scopes.cell_after = None
         proc.stdin.write(cmd)
         proc.stdin.flush()
     proc.stdin.close()
@@ -210,6 +232,7 @@ replies = 0
 seen_unsat = False
 done = bool(once) and os.path.exists(once)
 marker_next = False  # err_marker: the next status follows an error holding the marker
+sat_scope = None  # err_cell: the scope of the last sat
 depth = 0  # Paren depth of the reply being forwarded, so wrapped ones stay intact
 inside = False  # Inside an SMT string literal, where parens do not nest
 
@@ -219,7 +242,7 @@ for line in proc.stdout:
         emit("unsupported")
         continue
     # z3 prints an echoed string bare; SMT-LIB 2.6 section 4.2.9 keeps its quotes
-    if mode == "err_extra" and line == "vl_resync":
+    if mode in ("err_cell", "err_extra") and line == "vl_resync":
         line = '"vl_resync"'
     at_reply_start = depth == 0
     depth, inside = scan_depth(line, depth, inside)
@@ -231,6 +254,13 @@ for line in proc.stdout:
         counted = at_reply_start and line.startswith("(")
     elif mode in SELECT_MODES:
         counted = at_reply_start and line.startswith("(((select")
+    elif mode in CELL_MODES:
+        counted = (is_status and scopes.pushed and scopes.cell_after is not None
+                   and scopes.count > scopes.cell_after)
+        if is_status and scopes.pushed and scopes.cell_after is None:
+            if line == "unsat" and sat_scope == scopes.count:
+                scopes.cell_after = scopes.count
+            sat_scope = scopes.count if line == "sat" else None
     elif mode in RECHECK_MODES:
         counted = is_status and seen_unsat
     elif mode in PHASE_MODES:
@@ -309,7 +339,7 @@ for line in proc.stdout:
         emit('(error "injected core error")')
         swallow(line)
         continue
-    if mode == "err_extra":
+    if mode in ("err_cell", "err_extra"):
         emit('(error "injected earlier command rejected")')
         forward(line, at_reply_start)
         continue
