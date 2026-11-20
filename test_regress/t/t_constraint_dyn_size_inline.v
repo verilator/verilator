@@ -29,6 +29,13 @@ class MultiArray;
   }
 endclass
 
+typedef bit [6:0] queue_t[$];
+
+class QueueSample;
+  rand queue_t data;
+  constraint extent { data.size() == 2; }
+endclass
+
 module t;
   initial begin
     automatic Packet pkt = new;
@@ -63,6 +70,14 @@ module t;
       `checkh(ok, 1)
       `checkh(ma.m_arr_a.size(), ma.m_len_a)
       `checkh(ma.m_arr_b.size(), ma.m_len_b)
+    end
+
+    for (int iteration = 0; iteration < 5; ++iteration) begin
+      automatic QueueSample obj = new;
+      ok = obj.randomize() with { data[0] == 7'(iteration + 17); };
+      `checkh(ok, 1)
+      `checkh(obj.data.size(), 2)
+      `checkh(obj.data[0], 7'(iteration + 17))
     end
 
     $write("*-* All Finished *-*\n");
