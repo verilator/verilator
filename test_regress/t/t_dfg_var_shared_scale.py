@@ -11,8 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-# Keep shared copies and the partial-driver chain through coalescing to measure removal.
-# N copies, N chain variables and s/chain_s/opposite/zero give 2*N + 4 removals.
+if test.have_dev_gcov:
+    test.skip("Too slow with code coverage")
+if test.have_dev_asan or test.tsan:
+    test.skip("Too slow with sanitizers")
+
 SIZE_RATIO = 4
 SIZE_SMALL = 100
 SIZE_LARGE = SIZE_SMALL * SIZE_RATIO
@@ -20,18 +23,22 @@ MIN_RATIO = 3
 MAX_RATIO = 6
 
 
-def verilation(n):
-    test.compile(verilator_flags2=[
-        "--stats", "--debug", "--debugi 0", "--no-debug-check", "-fno-coalesce", f"-GN={n}"
-    ],
-                 make_main=False,
-                 verilator_make_gmake=False)
-    if n == SIZE_SMALL:
-        test.file_grep(test.stats, r'Optimizations, DFG, Peephole, remove var\s+(\d+)', 2 * n + 4)
+def verilation(n, nobs):
+    flags = ["--stats", "--debug", "--debugi 0", "--no-debug-check", f"-GN={n}", f"-GNOBS={nobs}"]
+    test.compile(verilator_flags2=flags, make_main=False, verilator_make_gmake=False)
+    test.file_cache_clear()
+    test.file_grep(test.stats, r'Optimizations, DFG, CSE 1st, expressions eliminated\s+(\d+)',
+                   2 * n if nobs else 2 * n - 2)
+    test.file_grep(test.stats, r'Optimizations, DFG, Peephole, remove var\s+(\d+)',
+                   0 if nobs else n)
     return test.op_count_read(test.stats)
 
 
-test.op_count_ok(verilation(SIZE_SMALL), verilation(SIZE_LARGE), MIN_RATIO, MAX_RATIO,
+# Copies of an expression that has two other uses are kept
+test.op_count_ok(verilation(SIZE_SMALL, 2), verilation(SIZE_LARGE, 2), MIN_RATIO, MAX_RATIO,
+                 r'dfg-peephole$')
+# Copies of an expression that has no other use are removed
+test.op_count_ok(verilation(SIZE_SMALL, 0), verilation(SIZE_LARGE, 0), MIN_RATIO, MAX_RATIO,
                  r'dfg-peephole$')
 
 test.passes()

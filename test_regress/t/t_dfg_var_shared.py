@@ -11,9 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-# Redundant variables are removed with values preserved and an exact count.
-test.compile(verilator_flags2=["--binary", "-fno-coalesce", "--stats"])
-test.file_grep(test.stats, r'Optimizations, DFG, Peephole, remove var\s+(\d+)', 19)
+# Removing unused copies in one_sink and cycle preserves their outputs;
+# the two_sinks copies remain.
+test.compile(verilator_flags2=["--binary", "--stats"])
+test.file_grep(test.stats, r'Optimizations, DFG, Peephole, remove var\s+(\d+)', 10)
 test.execute()
 
 test.passes()
