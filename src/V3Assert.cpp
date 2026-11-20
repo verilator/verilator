@@ -158,9 +158,10 @@ void V3AssertCommon::lowerSequenceEvents(AstNetlist* nodep) {
 
 string V3AssertCommon::assertCtlGetCall(const char* query, VAssertType type,
                                         VAssertDirectiveType directiveType) {
-    // Template arguments let the runtime build the type/directive mask at C++ compile time
-    return "vlSymsp->_vm_contextp__->assertCtlGet<"s + std::to_string(type) + ", "s
-           + std::to_string(directiveType) + ">(VerilatedAssertCtlQuery::"s + query + ")"s;
+    // Template arguments let the runtime build the type/directive mask at C++ compile time.
+    // Parenthesized, so the template comma cannot split an argument of an emitted macro.
+    return "(vlSymsp->_vm_contextp__->assertCtlGet<"s + std::to_string(type) + ", "s
+           + std::to_string(directiveType) + ">(VerilatedAssertCtlQuery::"s + query + "))"s;
 }
 
 bool V3AssertCommon::checkSvaValueLimit(AstNode* nodep, const AstConst* constp, const char* what) {
