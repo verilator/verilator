@@ -1,0 +1,429 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+// IEEE 1800-2023 18.6.3: "If randomize() fails, the constraints are infeasible, and the
+// random variables retain their previous values."
+
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define check_range(gotv,minv,maxv) do if ((gotv) < (minv) || (gotv) > (maxv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d-%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
+// verilog_format: on
+
+class Inner;
+  rand bit [14:0] p;
+  rand bit [14:0] q;
+endclass
+
+class Plain;
+  rand bit [6:0] c;
+  rand bit [14:0] u;  // In no constraint
+  constraint bad {
+    c > 100;
+    c < 50;
+  }
+endclass
+
+class Satisfiable;
+  rand bit [6:0] c;
+  rand bit [14:0] u;  // In no constraint
+  constraint good {c < 50;}
+endclass
+
+class Nested;
+  rand bit [6:0] c;
+  rand Inner inner;
+  constraint bad {
+    c > 100;
+    c < 50;
+  }
+  function new();
+    inner = new;
+  endfunction
+endclass
+
+class Global;
+  rand bit [6:0] c;
+  rand Inner inner;
+  rand Inner items[2];
+  constraint g {
+    inner.p == 15'(c);
+    c > 100;
+    c < 50;
+  }
+  function new();
+    inner = new;
+    foreach (items[i]) items[i] = new;
+  endfunction
+endclass
+
+class Base;
+  rand bit [6:0] b;
+endclass
+
+class WithNested extends Base;
+  rand bit [14:0] u;
+  rand Inner inner;
+  function new();
+    inner = new;
+  endfunction
+endclass
+
+// Also randomized on its own, so Owner's randomize() calls Solo's randomize()
+class Solo;
+  rand bit [14:0] s;
+  constraint s_range {s > 10;}
+endclass
+
+class Owner;
+  rand bit [6:0] c;
+  rand Solo solo;
+  constraint bad {
+    c > 100;
+    c < 50;
+  }
+  function new();
+    solo = new;
+  endfunction
+endclass
+
+class NoRand;
+  bit [6:0] x;
+endclass
+
+class NullHandle;
+  rand bit [6:0] c;
+  rand Inner inner;  // Left null
+  rand NoRand norand;
+  rand NoRand norands[2];
+  function new();
+    norand = new;
+    foreach (norands[i]) norands[i] = new;
+  endfunction
+endclass
+
+typedef class CycB;
+
+class CycA;
+  rand bit [6:0] c;
+  rand CycB b;
+endclass
+
+class CycB;
+  rand bit [14:0] z;
+  rand CycA a;
+  rand CycA arr[1];  // Left null
+endclass
+
+class ArrayElem;
+  rand bit [6:0] e;
+  rand bit [6:0] vals[2];
+  rand Inner items[2];
+  function new();
+    foreach (items[i]) items[i] = new;
+  endfunction
+endclass
+
+class ArrayOwner;
+  rand bit [6:0] c;
+  rand Inner items[2];
+  rand Inner dyn[];
+  rand Inner que[$];
+  rand Inner byKey[int];
+  rand ArrayElem elems[1];
+  function new();
+    Inner inner;
+    foreach (items[i]) items[i] = new;
+    dyn = new[2];
+    dyn[1] = new;  // dyn[0] is left null
+    inner = new;
+    que.push_back(inner);
+    inner = new;
+    byKey[-3] = inner;
+    elems[0] = new;
+  endfunction
+endclass
+
+class Shape;
+  rand bit [6:0] w;
+endclass
+
+class Box extends Shape;
+  rand bit [6:0] h;
+endclass
+
+class Crate extends Box;
+  rand bit [6:0] d;
+endclass
+
+class Mark extends Shape;
+  bit [6:0] m;
+endclass
+
+class ShapeOwner;
+  rand bit [6:0] c;
+  rand Shape s;
+  rand Shape ss[4];
+endclass
+
+module t;
+  initial begin
+    // randomize(): the solver fails, so the member it does not own is not filled
+    begin
+      Plain pl;
+      int randomize_result;
+      pl = new;
+      pl.c = 11;
+      pl.u = 12;
+      randomize_result = pl.randomize();
+      `checkd(randomize_result, 0);
+      `checkd(pl.c, 11);
+      `checkd(pl.u, 12);
+    end
+
+    // randomize() with: the member the solver does not own keeps its value; a call
+    // that succeeds keeps the solver's values
+    begin
+      Satisfiable sa;
+      int randomize_result;
+      sa = new;
+      sa.c = 11;
+      sa.u = 12;
+      randomize_result = sa.randomize() with {c > 60;};
+      `checkd(randomize_result, 0);
+      `checkd(sa.c, 11);
+      `checkd(sa.u, 12);
+      randomize_result = sa.randomize() with {c > 40;};
+      `checkd(randomize_result, 1);
+      `check_range(sa.c, 41, 49);
+    end
+
+    // A rand class member keeps its values
+    begin
+      Nested ne;
+      int randomize_result;
+      ne = new;
+      ne.c = 13;
+      ne.inner.p = 14;
+      ne.inner.q = 15;
+      randomize_result = ne.randomize();
+      `checkd(randomize_result, 0);
+      `checkd(ne.c, 13);
+      `checkd(ne.inner.p, 14);
+      `checkd(ne.inner.q, 15);
+    end
+
+    // A global constraint: the constrained and unconstrained members of the sub-object, and
+    // the objects in a rand array of class handles
+    begin
+      Global gl;
+      int randomize_result;
+      gl = new;
+      gl.c = 15;
+      gl.inner.p = 16;
+      gl.inner.q = 17;
+      gl.items[1].q = 18;
+      randomize_result = gl.randomize();
+      `checkd(randomize_result, 0);
+      `checkd(gl.c, 15);
+      `checkd(gl.inner.p, 16);
+      `checkd(gl.inner.q, 17);
+      `checkd(gl.items[1].q, 18);
+    end
+
+    // randomize() with on members without class constraints: an inherited member, an own
+    // member, and the members of a rand class member
+    begin
+      WithNested wn;
+      int randomize_result;
+      wn = new;
+      wn.b = 1;
+      wn.u = 2;
+      wn.inner.p = 3;
+      wn.inner.q = 4;
+      randomize_result = wn.randomize() with {
+        u > 10;
+        u < 5;
+      };
+      `checkd(randomize_result, 0);
+      randomize_result = wn.randomize() with {
+        inner.p > 10;
+        inner.p < 5;
+      };
+      `checkd(randomize_result, 0);
+      `checkd(wn.b, 1);
+      `checkd(wn.u, 2);
+      `checkd(wn.inner.p, 3);
+      `checkd(wn.inner.q, 4);
+      randomize_result = wn.randomize() with {inner.p == 7;};
+      `checkd(randomize_result, 1);
+      `checkd(wn.inner.p, 7);
+    end
+
+    // A rand class member that is randomized on its own, by its randomize()
+    begin
+      Solo so;
+      Owner ow;
+      int randomize_result;
+      so = new;
+      randomize_result = so.randomize();
+      `checkd(randomize_result, 1);
+      ow = new;
+      ow.c = 21;
+      ow.solo.s = 22;
+      randomize_result = ow.randomize();
+      `checkd(randomize_result, 0);
+      randomize_result = ow.randomize() with {c < 40;};
+      `checkd(randomize_result, 0);
+      `checkd(ow.c, 21);
+      `checkd(ow.solo.s, 22);
+    end
+
+    // A null rand class member, and a rand class member and a rand array of class handles
+    // whose class has no rand members
+    begin
+      NullHandle nh;
+      int randomize_result;
+      nh = new;
+      nh.c = 31;
+      nh.norand.x = 32;
+      nh.norands[1].x = 33;
+      randomize_result = nh.randomize() with {
+        c > 100;
+        c < 50;
+      };
+      `checkd(randomize_result, 0);
+      `checkd(nh.c, 31);
+      `checkd(nh.norand.x, 32);
+      `checkd(nh.norands[1].x, 33);
+    end
+
+    // A class without rand members
+    begin
+      NoRand nr;
+      int randomize_result;
+      nr = new;
+      nr.x = 3;
+      randomize_result = nr.randomize() with {x == 5;};
+      `checkd(randomize_result, 0);
+      `checkd(nr.x, 3);
+    end
+
+    // Rand class members whose classes refer to each other, also through a rand array
+    begin
+      CycA ca;
+      int randomize_result;
+      ca = new;
+      ca.b = new;
+      // Known limitation: an object past the cycle, here ca.b.a, is not restored
+      ca.b.a = new;
+      ca.c = 41;
+      ca.b.z = 42;
+      randomize_result = ca.randomize() with {
+        c > 100;
+        c < 50;
+      };
+      `checkd(randomize_result, 0);
+      `checkd(ca.c, 41);
+      `checkd(ca.b.z, 42);
+    end
+
+    // Rand arrays of class handles keep their handles, and the objects keep their values
+    begin
+      ArrayOwner ao;
+      Inner first;
+      int randomize_result;
+      ao = new;
+      ao.c = 51;
+      ao.items[0].p = 52;
+      ao.items[1].q = 53;
+      ao.dyn[1].p = 54;
+      ao.que[0].p = 55;
+      ao.byKey[-3].q = 56;
+      ao.elems[0].e = 57;
+      ao.elems[0].vals[1] = 58;
+      ao.elems[0].items[1].p = 59;
+      first = ao.items[0];
+      randomize_result = ao.randomize() with {
+        c > 100;
+        c < 50;
+      };
+      `checkd(randomize_result, 0);
+      `checkd(ao.c, 51);
+      `checkd(ao.items[0] == first, 1);
+      `checkd(ao.items[0].p, 52);
+      `checkd(ao.items[1].q, 53);
+      `checkd(ao.dyn[0] == null, 1);
+      `checkd(ao.dyn[1].p, 54);
+      `checkd(ao.que[0].p, 55);
+      `checkd(ao.byKey[-3].q, 56);
+      `checkd(ao.elems[0].e, 57);
+      `checkd(ao.elems[0].vals[1], 58);
+      `checkd(ao.elems[0].items[1].p, 59);
+    end
+
+    // Base class handles to objects of derived classes: a rand class member, the elements of
+    // a rand array, and the object that randomize() is called on
+    begin
+      ShapeOwner so;
+      Box bx;
+      Box by;
+      Crate cr;
+      Mark mk;
+      Shape sp;
+      Shape sh;
+      int randomize_result;
+      so = new;
+      bx = new;
+      by = new;
+      cr = new;
+      mk = new;
+      sp = new;
+      so.s = bx;
+      so.ss[0] = by;
+      so.ss[1] = cr;
+      so.ss[2] = mk;
+      so.ss[3] = sp;
+      so.c = 61;
+      bx.w = 62;
+      bx.h = 63;
+      by.w = 64;
+      by.h = 65;
+      cr.w = 66;
+      cr.h = 67;
+      cr.d = 68;
+      mk.w = 69;
+      sp.w = 70;
+      randomize_result = so.randomize() with {
+        c > 100;
+        c < 50;
+      };
+      `checkd(randomize_result, 0);
+      `checkd(so.c, 61);
+      `checkd(bx.w, 62);
+      `checkd(bx.h, 63);
+      `checkd(by.w, 64);
+      `checkd(by.h, 65);
+      `checkd(cr.w, 66);
+      `checkd(cr.h, 67);
+      `checkd(cr.d, 68);
+      `checkd(mk.w, 69);
+      `checkd(sp.w, 70);
+      sh = cr;
+      randomize_result = sh.randomize() with {
+        w > 100;
+        w < 50;
+      };
+      `checkd(randomize_result, 0);
+      `checkd(cr.w, 66);
+      `checkd(cr.h, 67);
+      `checkd(cr.d, 68);
+    end
+
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
+endmodule
