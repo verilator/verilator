@@ -1687,7 +1687,9 @@ List Of Warnings
    other simulators, by the ascending range ``[0:size-1]``. Likewise, a
    keyed assignment pattern without the leading apostrophe, such as
    ``{default: 0}`` as accepted by other simulators, is replaced by
-   ``'{default: 0}``.
+   ``'{default: 0}``. An event control on an unpacked array, structure, or
+   union, such as ``@(arr)``, is replaced by event controls on its elements,
+   or by ``always_comb``.
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.

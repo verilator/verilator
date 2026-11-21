@@ -1,10 +1,30 @@
-%Error: t/t_lint_edge_real_bad.v:19:21: Edge event control not legal on real type (IEEE 1800-2023 6.12.1)
+%Error: t/t_lint_edge_real_bad.v:24:21: Edge event control not legal on real type (IEEE 1800-2023 6.12.1)
                                       : ... note: In instance 't'
-   19 |   always @ (posedge rbad) $stop;
+   24 |   always @ (posedge rbad) $stop;
       |                     ^~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_lint_edge_real_bad.v:20:21: Edge event control not legal on non-integral type (IEEE 1800-2023 9.4.2)
+%Error: t/t_lint_edge_real_bad.v:25:21: Edge event control not legal on non-integral type (IEEE 1800-2023 9.4.2)
                                       : ... note: In instance 't'
-   20 |   always @ (posedge ebad) $stop;
+   25 |   always @ (posedge ebad) $stop;
+      |                     ^~~~
+%Error: t/t_lint_edge_real_bad.v:26:21: Edge event control not legal on non-integral type (IEEE 1800-2023 9.4.2)
+                                      : ... note: In instance 't'
+   26 |   always @ (posedge abad) $stop;
+      |                     ^~~~
+%Error: t/t_lint_edge_real_bad.v:27:21: Edge event control not legal on non-integral type (IEEE 1800-2023 9.4.2)
+                                      : ... note: In instance 't'
+   27 |   always @ (posedge dbad) $stop;
+      |                     ^~~~
+%Error: t/t_lint_edge_real_bad.v:28:21: Edge event control not legal on non-integral type (IEEE 1800-2023 9.4.2)
+                                      : ... note: In instance 't'
+   28 |   always @ (posedge qbad) $stop;
+      |                     ^~~~
+%Error: t/t_lint_edge_real_bad.v:29:21: Edge event control not legal on non-integral type (IEEE 1800-2023 9.4.2)
+                                      : ... note: In instance 't'
+   29 |   always @ (posedge aabad) $stop;
+      |                     ^~~~~
+%Error: t/t_lint_edge_real_bad.v:30:21: Edge event control not legal on non-integral type (IEEE 1800-2023 9.4.2)
+                                      : ... note: In instance 't'
+   30 |   always @ (posedge sbad) $stop;
       |                     ^~~~
 %Error: Exiting due to
