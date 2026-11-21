@@ -19,19 +19,17 @@ RATIO_MIN = 3
 RATIO_MAX = 6  # Linear scaling gives 4x, quadratic gives 16x
 
 
-def verilation(size, flags, **kwargs):
-    test.compile(verilator_flags2=flags +
-                 ["--stats", "--debug", "--debugi 0", "--no-debug-check", "-GSize=" + str(size)],
-                 **kwargs)
+def verilation(size):
+    test.compile(verilator_flags2=[
+        "--timing", "--stats", "--debug", "--debugi 0", "--no-debug-check", "-GSize=" + str(size)
+    ],
+                 make_main=False,
+                 verilator_make_gmake=False)
     return test.op_count_read(test.stats)
 
 
-small = verilation(SIZE_SMALL, ["--binary"])
-test.execute()
-# Only verilate the large size, so not built
-large = verilation(SIZE_LARGE, ["--timing"], make_main=False, verilator_make_gmake=False)
-# Compare the stages both have, as the build of the small size is a stage of its own
-small = {key: value for key, value in small.items() if key in large}
+small = verilation(SIZE_SMALL)
+large = verilation(SIZE_LARGE)
 
 test.op_count_ok(small, large, RATIO_MIN, RATIO_MAX, r'.*')
 
