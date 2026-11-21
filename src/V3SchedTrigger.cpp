@@ -880,7 +880,8 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
     }
 
     // Returns a CCall to a before-trigger function for a given SenTree, awaited via scheduler
-    // 'schedp'. Constructs such a function if it doesn't exist yet
+    // 'schedp'. If it doesn't exist yet, constructs such a function and indexes 'schedp' in
+    // 'm_trigIdxToScheds' by the triggers of the SenTree
     AstCCall* getBeforeTriggerStmt(AstSenTree* const senTreep, AstNodeExpr* const schedp) {
         FileLine* const flp = senTreep->fileline();
         if (!senTreep->user1p()) {
@@ -903,6 +904,10 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
             // Scope is created in the constructor after iterate finishes
 
             m_beforeTrigs.push_back({senTreep, schedp, funcp});
+            // Index schedulers by trigger, so each function looks up only the triggers it uses
+            for (const AstSenItem* const senItemp : senTreep->sensespList()) {
+                m_trigIdxToScheds[m_trigKit.senItem2TrigIdx(senItemp)].push_back(schedp);
+            }
         }
         AstCCall* const callp = new AstCCall{flp, VN_AS(senTreep->user1p(), CFunc)};
         callp->dtypeSetVoid();
@@ -944,13 +949,6 @@ public:
         iterate(netlistp);
 
         fillSenExprToSenItem();
-        // Index schedulers by trigger, so each function looks up only the triggers it uses
-        for (const BeforeTrig& beforeTrig : m_beforeTrigs) {
-            for (const AstSenItem* const senItemp : beforeTrig.m_senTreep->sensespList()) {
-                m_trigIdxToScheds[m_trigKit.senItem2TrigIdx(senItemp)].push_back(
-                    beforeTrig.m_schedp);
-            }
-        }
 
         // Trigger expressions of each word a function computes, ordered by word index. Only words
         // that hold a used trigger are computed, so the cost does not grow with trigger indices.
