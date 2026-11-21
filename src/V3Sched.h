@@ -337,9 +337,10 @@ public:
         }
         uint32_t size() const { return m_descriptions.size(); }
     };
-    // Generates list of assignments that fills
+    // Generates list of assignments that fills the words of 'targetp' from 'firstWord' on
     static AstAssign* createSenTrigVecAssignment(AstVarScope* const targetp,
-                                                 std::vector<AstNodeExpr*>& trigps);
+                                                 std::vector<AstNodeExpr*>& trigps,
+                                                 const size_t firstWord = 0);
 
     // Create a TriggerKit for the given AstSenTree vector
     static TriggerKit create(AstNetlist* netlistp,  //
