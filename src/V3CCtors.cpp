@@ -133,6 +133,8 @@ private:
 
 class CCtorsVisitor final : public VNVisitor {
     // NODE STATE
+    //  AstClass::user1    -> bool: object of that class is instantiated
+    const VNUser1InUse user1InUse;
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -153,6 +155,58 @@ class CCtorsVisitor final : public VNVisitor {
         FileLine* const flp = varp->fileline();
         return new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE},
                              new AstCReset{flp, varp, true}};
+    }
+    // Marks class and all of its parent classes as instantiated
+    static void markInstantiated(AstClass* const classp) {
+        if (classp->user1SetOnce()) return;
+        for (const AstClassExtends* const extp : classp->extendspList()) {
+            markInstantiated(extp->classp());
+        }
+    }
+    static void makeClone(AstClass* classp) {
+        if (classp->isVirtual()) return;
+        using EmbeddedCovergroupVar = std::pair<const AstClass*, const AstVar*>;
+        std::vector<EmbeddedCovergroupVar> embeddedCovergroupVars;
+        const auto hasEnclosingBackPointer = [](const AstClass* covergroupp) {
+            return covergroupp->exists([](const AstVar* const varp) {
+                const AstClassRefDType* const refp
+                    = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
+                return refp && refp->rawPointer();
+            });
+        };
+        classp->foreachMember([&](AstClass* const memberClassp, AstVar* const varp) {
+            const AstClassRefDType* const refp
+                = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
+            if (refp && refp->classp()->isCovergroup()
+                && hasEnclosingBackPointer(refp->classp())) {
+                embeddedCovergroupVars.emplace_back(memberClassp, varp);
+            }
+        });
+        AstCFunc* const funcp = new AstCFunc{classp->fileline(), "clone", nullptr, "VlClass*"};
+        funcp->isConst(true);
+        funcp->isStatic(false);
+        funcp->protect(false);
+        funcp->slow(false);
+        const string className = EmitCUtil::prefixNameProtect(classp);
+        funcp->addStmtsp(new AstCStmt{classp->fileline(), className + "* const clonep = new "
+                                                              + className + "(*this);"});
+        if (classp->hasRandVarsUpdate()) {
+            const AstCFunc* updatep = nullptr;
+            for (AstNode* itemp = classp->membersp(); itemp; itemp = itemp->nextp()) {
+                const AstCFunc* const cfuncp = VN_CAST(itemp, CFunc);
+                if (cfuncp && cfuncp->name() == "__VnoInFunc___VupdateRandVars") updatep = cfuncp;
+            }
+            UASSERT_OBJ(updatep, classp, "Missing updateRandVars method");
+            funcp->addStmtsp(
+                new AstCStmt{classp->fileline(), "clonep->" + updatep->nameProtect() + "();"});
+        }
+        for (const EmbeddedCovergroupVar& item : embeddedCovergroupVars) {
+            funcp->addStmtsp(new AstCStmt{
+                classp->fileline(), "clonep->" + EmitCUtil::prefixNameProtect(item.first)
+                                        + "::" + item.second->nameProtect() + " = VlNull{};"});
+        }
+        funcp->addStmtsp(new AstCStmt{classp->fileline(), "return clonep;"});
+        classp->addMembersp(funcp);
     }
 
     // VISITORS
@@ -182,7 +236,10 @@ class CCtorsVisitor final : public VNVisitor {
                 }
             }
         }
-        if (AstClass* const classp = VN_CAST(nodep, Class)) {
+
+        // We do not need the destructor if a class object is never instantiated
+        AstClass* const classp = VN_CAST(nodep, Class);
+        if (classp && classp->user1()) {
             AstCFunc* const funcp = new AstCFunc{classp->fileline(), "~", nullptr, ""};
             funcp->isDestructor(true);
             funcp->isStatic(false);
@@ -191,10 +248,16 @@ class CCtorsVisitor final : public VNVisitor {
             funcp->slow(false);
             insertSc(funcp, classp, VSystemCSectionType::DTOR);
             classp->addMembersp(funcp);
+            makeClone(classp);
         }
     }
 
     void visit(AstCFunc* nodep) override {
+        // We do not need the constructor if a class object is never instantiated
+        if (VN_IS(m_modp, Class) && nodep->isConstructor() && !m_modp->user1()) {
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
         VL_RESTORER(m_varResetp);
         VL_RESTORER(m_cfuncp);
         m_varResetp = nullptr;
@@ -225,6 +288,8 @@ class CCtorsVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
+        // Members of never-instantiated classes are never reset
+        if (VN_IS(m_modp, Class) && !m_modp->user1()) return;
         if (nodep->needsCReset()) {
             AstAssign* const crstp = newResetp(nodep);
             if (m_varResetp) {
@@ -241,7 +306,15 @@ class CCtorsVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit CCtorsVisitor(AstNode* nodep) { iterate(nodep); }
+    explicit CCtorsVisitor(AstNode* nodep) {
+        // Mark each used class as instantiated, to not generate unnecessary ctors and dtors
+        nodep->foreach([](const AstCNew* cnewp) {
+            const AstClassRefDType* const refp
+                = VN_CAST(cnewp->dtypep()->skipRefp(), ClassRefDType);
+            if (refp) markInstantiated(refp->classp());
+        });
+        iterate(nodep);
+    }
     ~CCtorsVisitor() override {
         // Remove CStmts to ctor_var_resets that are no longer needed
         for (auto& itr : m_ctorCalls) {
