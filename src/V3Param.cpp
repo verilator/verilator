@@ -148,7 +148,7 @@ public:
             m_modParams.insert({hierOpt.second.origName(), {}});
         }
         for (AstNodeModule* const modp : nodep->modulespList()) {
-            if (hierOpts.find(modp->prettyName()) != hierOpts.end()) {
+            if (hierOpts.find(modp->name()) != hierOpts.end()) {
                 m_hierBlockMod.emplace(modp->name(), modp);
             }
             // Recursive hierarchical module may change its name, so we have to match its origName.

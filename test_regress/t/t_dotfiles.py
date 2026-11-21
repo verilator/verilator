@@ -14,11 +14,12 @@ test.scenarios('vltmt')
 # Use a top file which we are sure to be parallelizable
 test.top_filename = "t/t_gen_alw.v"
 
-test.compile(v_flags2=["--dumpi-graph 6"], threads=2)
+test.compile(v_flags2=["--dumpi-graph 6", "--dumpi-V3CfgBuilder 8"], threads=2)
 
 for dotname in [
         "linkcells", "task_call", "gate_graph", "gate_final", "acyc_simp", "orderg_pre",
-        "orderg_acyc", "orderg_order", "orderg_domain", "orderg_done", "pack", "schedule"
+        "orderg_acyc", "orderg_order", "orderg_domain", "orderg_done", "pack", "schedule",
+        "cfg-builder"
 ]:
     # Some files with identical prefix are generated multiple times during
     # Verilation. Ensure that at least one of each dotname-prefixed file is generated.

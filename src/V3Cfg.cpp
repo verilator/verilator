@@ -48,7 +48,8 @@ std::string CfgBlock::name() const {
         }
     }
     std::string text = VString::replaceSubstr(
-        VString::replaceSubstr(ss.str(), "\n", "\\l        "), "\"", "\\\"");
+        VString::replaceSubstr(VString::quoteBackslash(ss.str()), "\n", "\\l        "), "\"",
+        "\\\"");
     if (isEnter()) text = "**ENTER**\n" + text;
     if (isExit()) text = text + "\n**EXIT**";
     return text;
