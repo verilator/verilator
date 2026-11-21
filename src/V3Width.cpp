@@ -5221,10 +5221,8 @@ class WidthVisitor final : public VNVisitor {
                 // Should be able to treat it as a normal-ish nodesel - maybe.
                 // The lhsp() will be strange until this stage; create the number here?
             } else {
-                AstStructSel* const newp = new AstStructSel{
-                    nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name()};
-                // Must skip over the member to find the union; as the member may disappear later
-                newp->dtypep(memberp->subDTypep()->skipRefToEnump());
+                AstStructSel* const newp
+                    = new AstStructSel{nodep->fileline(), nodep->fromp()->unlinkFrBack(), memberp};
                 newp->didWidth(true);  // Don't replace dtype with basic type
                 UINFO(9, "   MEMBERREF -> " << newp);
                 UINFO(9, "           dt-> " << newp->dtypep());
@@ -6703,8 +6701,8 @@ class WidthVisitor final : public VNVisitor {
         // which member each AstPatternItem corresponds to before we can
         // determine the dtypep for that PatternItem's value, and then
         // width the initial value appropriately.
-        using PatMap = std::map<const AstMemberDType*, AstPatternItem*>;
-        PatMap patmap;  // Store member: value
+        // The value of each member, by member index
+        std::vector<AstPatternItem*> memberPatps(vdtypep->nMembers());
         DTypeMap dtypemap;  // Store data_type: default_value
         {
             const AstMemberDType* memp = vdtypep->membersp();
@@ -6722,11 +6720,12 @@ class WidthVisitor final : public VNVisitor {
                                                       << textp->text() << "' not found as member");
                                 break;
                             } else {
-                                const std::pair<PatMap::iterator, bool> ret
-                                    = patmap.emplace(memp, patp);
-                                if (!ret.second) {
+                                AstPatternItem*& memberPatpr = memberPatps[memp->index()];
+                                if (memberPatpr) {
                                     patp->v3error("Assignment pattern contains duplicate entry: "
                                                   << VN_AS(patp->keyp(), Text)->text());
+                                } else {
+                                    memberPatpr = patp;
                                 }
                                 memp = VN_AS(memp->nextp(), MemberDType);
                             }
@@ -6744,10 +6743,12 @@ class WidthVisitor final : public VNVisitor {
                         }
                     } else if (memp) {
                         // constant expr
-                        const std::pair<PatMap::iterator, bool> ret = patmap.emplace(memp, patp);
-                        if (!ret.second) {
+                        AstPatternItem*& memberPatpr = memberPatps[memp->index()];
+                        if (memberPatpr) {
                             patp->v3error("Assignment pattern contains duplicate entry: "
                                           << VN_AS(patp->keyp(), Text)->text());
+                        } else {
+                            memberPatpr = patp;
                         }
                         memp = VN_AS(memp->nextp(), MemberDType);
                     } else {
@@ -6763,8 +6764,8 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* newp = nullptr;
         if (vdtypep->packed()) {
             for (AstMemberDType* const memp : vdtypep->memberspList()) {
-                const auto it = patmap.find(memp);
-                if (it == patmap.end()) {  // default or default_type assignment
+                AstPatternItem* const memberPatp = memberPatps[memp->index()];
+                if (!memberPatp) {  // default or default_type assignment
                     if (AstStructDType* const memp_nested_vdtypep
                         = VN_CAST(memp->virtRefDTypep(), StructDType)) {
                         newp = nestedvalueConcat_patternStruct(memp_nested_vdtypep, defaultp, newp,
@@ -6776,21 +6777,18 @@ class WidthVisitor final : public VNVisitor {
                         if (patp) VL_DO_DANGLING(pushDeletep(patp), patp);
                     }
                 } else {  // member assignment
-                    newp = valueConcat_patternStruct(it->second, newp, memp, nodep);
+                    newp = valueConcat_patternStruct(memberPatp, newp, memp, nodep);
                 }
             }
         } else {  // Unpacked
             AstConsStruct* const consp = new AstConsStruct{nodep->fileline(), vdtypep};
             for (AstMemberDType* const memp : vdtypep->memberspList()) {
-                const auto it = patmap.find(memp);
-                AstPatternItem* patp = nullptr;
-                if (it == patmap.end()) {  // Default or default_type assignment
+                AstPatternItem* patp = memberPatps[memp->index()];
+                if (!patp) {  // Default or default_type assignment
                     patp = defaultPatp_patternStruct(nodep, memp, defaultp, dtypemap);
                     pushDeletep(patp);  // patp used below
                     patp = defaultPatp_forDType(patp, memp->virtRefDTypep(), dtypemap);
                     pushDeletep(patp);  // patp used below
-                } else {
-                    patp = it->second;  // Member assignment
                 }
                 AstNodeExpr* const valuep = patternMemberValueIterate(patp, memp);
                 consp->addItemsp(new AstConsStructItem{patp->fileline(), memp, valuep});
