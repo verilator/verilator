@@ -371,7 +371,7 @@ public:
         TYPENAME,                       // V3Width processes
         //
         VAR_FORCEABLE,                  // V3LinkParse moves to AstVar::isForceable
-        VAR_FSM_ARC_INCLUDE_COND,       // V3LinkParse moves to AstVar::attrFsmArcInclCond
+        VAR_FSM_ARC_INCLUDE_COND,       // V3LinkParse moves to AstVar::attrFsmState
         VAR_FSM_ARC_INCLUDE_COND_AUTO,  // Flavors of above option - setting expand mode per FSM
         VAR_FSM_ARC_INCLUDE_COND_AUTO_EXPAND,
         VAR_FSM_ARC_INCLUDE_COND_FULL,

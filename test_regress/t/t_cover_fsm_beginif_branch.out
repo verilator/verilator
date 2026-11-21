@@ -544,6 +544,14 @@
 %000000       default: state_d = state_q;
             endcase
 %000006     if (other_q == S0) other_d = S1;
+        // [FSM coverage]
+%000003        // [fsm_arc t.case_priority_u.other_q::S0->S1]
+%000000        // [fsm_arc t.case_priority_u.other_q::S1->S0]
+%000003        // [fsm_arc t.case_priority_u.other_q::S1->S2]
+%000003        // [fsm_arc t.case_priority_u.other_q::S2->S0]
+%000004        // [fsm_state t.case_priority_u.other_q::S0]
+%000003        // [fsm_state t.case_priority_u.other_q::S1]
+%000003        // [fsm_state t.case_priority_u.other_q::S2]
 %000003     else if (other_q == S1) other_d = S2;
 %000003     else if (other_q == S2) other_d = S0;
           end

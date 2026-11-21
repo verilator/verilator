@@ -26,8 +26,7 @@ test.run(cmd=[
          verilator_run=True)
 
 test.files_identical(test.obj_dir + "/annotated/" + test.name + ".v", test.golden_filename)
-test.file_grep_not(test.obj_dir + "/coverage.dat", r"t\.nextstate_sel_off_u\.state_q.*fsm_")
-test.file_grep_not(test.obj_dir + "/coverage.dat", r"t\.caseassigns_off_u\.state_q.*fsm_")
-test.file_grep_not(test.obj_dir + "/coverage.dat", r"t\.seqmix_off_u\.state_q.*fsm_")
+test.file_grep_not(test.obj_dir + "/coverage.dat", r"t\.nextstate_sel_off_u\.state_q::")
+test.file_grep_not(test.obj_dir + "/coverage.dat", r"t\.caseassigns_off_u\.state_q::")
 
 test.passes()

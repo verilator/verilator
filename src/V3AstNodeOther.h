@@ -2426,7 +2426,6 @@ class AstVar final : public AstNode {
     bool m_attrSFormat : 1;  // User sformat attribute
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
     bool m_attrFsmState : 1;  // declared with fsm_state metacomment
-    bool m_attrFsmArcInclCond : 1;  // declared with fsm_arc_include_cond metacomment
     VFsmExpandType::en m_attrFsmStateExpand : 2;  // FSM expansion type for FSM coverage
     bool m_constPoolEntry : 1;  // Constant pool variable
     bool m_covergroupRefMember : 1;  // Persistent covergroup ref/const ref argument
@@ -2495,7 +2494,6 @@ class AstVar final : public AstNode {
         m_attrSFormat = false;
         m_attrSplitVar = false;
         m_attrFsmState = false;
-        m_attrFsmArcInclCond = false;
         m_attrFsmStateExpand = VFsmExpandType::DEFAULT;
         m_constPoolEntry = false;
         m_covergroupRefMember = false;
@@ -2654,7 +2652,6 @@ public:
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
     void attrSplitVar(bool flag) { m_attrSplitVar = flag; }
     void attrFsmState(bool flag) { m_attrFsmState = flag; }
-    void attrFsmArcInclCond(bool flag) { m_attrFsmArcInclCond = flag; }
     void attrFsmStateExpand(const VFsmExpandType flag) {
         UASSERT_OBJ(flag < 4, this, "Expand mode value should be in range [0;3]");
         m_attrFsmStateExpand = flag;
@@ -2847,7 +2844,6 @@ public:
     bool attrSFormat() const { return m_attrSFormat; }
     bool attrSplitVar() const { return m_attrSplitVar; }
     bool attrFsmState() const { return m_attrFsmState; }
-    bool attrFsmArcInclCond() const { return m_attrFsmArcInclCond; }
     VFsmExpandType attrFsmStateExpand() const { return m_attrFsmStateExpand; }
     AstIface* sensIfacep() const { return m_sensIfacep; }
     VRandAttr rand() const { return m_rand; }

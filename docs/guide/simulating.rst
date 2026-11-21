@@ -234,49 +234,89 @@ covered.
 FSM Coverage
 ------------
 
-With :vlopt:`--coverage` or :vlopt:`--coverage-fsm`, Verilator can
-instrument a conservative subset of FSMs and report both state coverage
-(`fsm_state`) and transition coverage (`fsm_arc`).
+With :vlopt:`--coverage` or :vlopt:`--coverage-fsm`, Verilator instruments
+finite state machines and reports both state coverage (`fsm_state`) and
+transition coverage (`fsm_arc`).
 
 This feature is currently experimental and might change in subsequent
-releases. In particular, the native FSM coverage extraction heuristics,
-:vlopt:`--coverage-fsm`, and the Verilator-specific FSM metacomments below
-should be treated as subject to change while the interface settles.
+releases. In particular, :vlopt:`--coverage-fsm` and the Verilator-specific
+FSM metacomments below should be treated as subject to change while the
+interface settles.
 
-FSM extraction is intentionally narrow. The current implementation targets
-clocked state machines that can be recovered directly from the RTL. It
-recognizes scalar enum, parameter, localparam, and selected literal state
-encodings in these common forms:
+A state machine is a register that one clocked process writes, whose next
+value depends on its current value, and whose next value is always a
+constant or its current value. Verilator finds these registers by
+evaluating the logic, so it handles the common coding styles:
 
-- Single-process FSMs, whose state dispatch is written as ``case (state)``
-  or as a top-level ``if`` / ``else if`` chain comparing the same state
-  variable against known state values
-- Two-process and three-block FSMs, where a clocked state register is
-  paired with a combinational next-state block using the same supported
-  ``case`` or top-level ``if`` / ``else if`` dispatch forms
+- One clocked process, or a clocked process with a separate combinational
+  next-state block or continuous assignment, in the same module or in an
+  instance below it.
+- ``case``, ``casez``, ``if``/``else if`` or ``?:`` on the state.
+- A default next state that a later assignment overrides.
+- Enables.
+- Compound or active-low resets.
 
-Scalar state encodings may be wider than 32 bits. This allows sparse state
-encodings, such as high-Hamming-distance enum or localparam values, to be
-preserved in the detected FSM model. Verilator uses the declared enum item
-name, parameter name, or localparam name as the reported state label where
-possible.
+The states are the constants that the logic assigns to the register,
+compares it with in its next-state logic, or uses as ``case`` labels on it.
+Each state is named after its enum item, parameter or localparam where
+there is one; an unsized parameter that is only assigned to the register,
+never compared with it, may be named by its value instead. When two
+parameters have the same value, one of them names the state. An enum value
+that the logic never uses is not a state, and neither is a value outside
+the enum.
 
-Simple input guards are supported when they appear inside a recognized
-state branch, or as a top-level conjunction containing exactly one state
-comparison, such as ``(state_q == IDLE) && ready``. Directly traceable
-pre-decoded state aliases, such as ``assign idle_state = (state_q ==
-IDLE)``, may also be used in these guarded predicates.
+A transition goes from a state to each constant that the logic can assign
+the register in that state, under any input condition. Verilator leaves out
+a transition whose conditions cannot all hold, for example a parameter
+condition that is false, or both ``en`` and ``!en``. A condition sees the
+logic of its own module and the copies that connect ports, not logic in
+other instances, so a decode computed in another instance, or a port that
+the parent ties to a constant, is a free input. Leaving the register
+unchanged is not a transition.
 
-Verilator does not claim broad support for arbitrary predicate
-decomposition, one-hot inference, helper-function next-state recovery,
-deeply nested control recovery, or cross-module state alias tracing.
+Of the conditions at the top level of the clocked process that load a
+constant, the reset is the first in source order that does not read the
+register or depend on the state, as in ``if (rst) state <= IDLE``. Under
+the reset, every other state has a transition into that constant. An
+ordinary input that loads a constant this way is also taken as a reset. So
+a later ``if (abort) state <= IDLE`` is not the reset, and neither is an
+``if (rst)`` written after ``if (start) state <= BUSY``.
+
+The current implementation has these limits, which may change:
+
+- A register is not reported if two clocked processes write it, or if the
+  process that writes it has an expression rather than a signal as its
+  event control.
+- A register is not reported if evaluating its next-state logic in one
+  state takes too many steps.
+- A value returned by a function, or assigned inside a task or loop or
+  through a concatenation or a part select, is not followed.
+- A next state written as constant and data bits joined, such as ``{1'b1,
+  x}``, is not followed.
+- With only FSM coverage on, Verilator first simplifies a one-bit choice
+  such as ``c ? 1'b0 : 1'b1`` to logic, so a one-bit register may be missed
+  or lose transitions.
+- Copies and decodes of the state, and chains of temporaries, are followed
+  only a few levels deep.
+- Conditions are related only through the subexpressions they share.
+- A ``case inside`` with a range or another non-constant item is not
+  modeled, so a register it assigns is not reported unless declared as
+  below.
+
+A one-bit register is left to toggle coverage unless it is declared with an
+enum type or :option:`/*verilator&32;fsm_state*/`. A register whose next
+value is not always a constant, such as a counter or a value copied from an
+input, is not a state machine. If such a register is declared with an enum
+type or ``fsm_state``, and its logic gives it at least two constant states,
+it is reported with the transitions to those constants, and its other
+values are ignored. ``fsm_state`` also reports a register whose next state
+does not depend on its current state.
 
 The following metacomments may be attached to the state variable to steer
 the extracted coverage model:
 
-- :option:`/*verilator&32;fsm_state*/`
-- :option:`/*verilator&32;fsm_reset_arc*/`
-- :option:`/*verilator&32;fsm_arc_include_cond*/`
+- :option:`/*verilator&32;fsm_state*/`, and its ``_auto``, ``_auto_expand``
+  and ``_full`` forms
 
 State registers may also be wrapped by a transparent instance, for example
 a project flop wrapper or primitive. Such wrappers must be described
@@ -313,8 +353,7 @@ than printing them alongside non-reset arcs. Use
 the printed summary and annotated output.
 
 Annotated output produced by :command:`verilator_coverage --annotate` will
-label FSM points with `fsm_state` and `fsm_arc`, and synthetic fallback
-transitions with `SYNTHETIC DEFAULT ARC`.
+label FSM points with `fsm_state` and `fsm_arc`.
 
 .. _line coverage:
 

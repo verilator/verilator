@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage negative extraction test
+# DESCRIPTION: Verilator: FSM coverage of if-chain, alias, and compound-reset shapes
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -13,17 +13,11 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-# This test is intentionally "half supported": one case item is a simple
-# direct state assignment, while the others use shapes the extractor should
-# ignore (multiple meaningful statements or assignment to a non-state lhs).
-# That lets us hit the conservative negative branches in directStateAssign()
-# and singleMeaningfulStmt() without changing user-visible behavior.
 test.compile(verilator_flags2=['--cc --coverage-fsm'])
 
 test.execute()
 
-# Use annotated-source output so the golden locks down which candidate arcs
-# survive extraction and which unsupported shapes are intentionally skipped.
+# Annotated-source output, so the golden shows the states and arcs of each shape
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
     "--annotate",

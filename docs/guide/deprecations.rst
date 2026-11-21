@@ -27,3 +27,10 @@ Pragma :option:`/*verilator&32;fsm_reset_arc*/`
    Verilator currently supports :option:`/*verilator&32;fsm_reset_arc*/`
    which aliases :option:`/*verilator&32;fsm_state*/`. This alias may be
    removed no sooner than February 2027.
+
+Pragma :option:`/*verilator&32;fsm_arc_include_cond*/`
+   Verilator currently supports
+   :option:`/*verilator&32;fsm_arc_include_cond*/` and its ``_auto``,
+   ``_auto_expand`` and ``_full`` forms, which alias the matching
+   :option:`/*verilator&32;fsm_state*/` forms. These aliases may be removed
+   no sooner than May 2027.

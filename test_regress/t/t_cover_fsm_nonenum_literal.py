@@ -32,9 +32,14 @@ assert any("COVEROTHERDECL" in text and " fv=t.param_state" in text and " ft=BUS
 assert any("COVEROTHERDECL" in text and " fv=t.param_state" in text and " ft=DONE" in text
            for text in tree_texts)
 
-assert any("COVEROTHERDECL" in text and " fv=t.unbased_state" in text and " ft=1'h0" in text
+# A one-bit register is left to toggle coverage
+assert not any("COVEROTHERDECL" in text and " fv=t.unbased_state" in text for text in tree_texts)
+
+assert any("COVEROTHERDECL" in text and " fv=t.unbased_wide_state" in text and " ft=2'h0" in text
            for text in tree_texts)
-assert any("COVEROTHERDECL" in text and " fv=t.unbased_state" in text and " ft=1'h1" in text
+assert any("COVEROTHERDECL" in text and " fv=t.unbased_wide_state" in text and " ft=2'h1" in text
+           for text in tree_texts)
+assert any("COVEROTHERDECL" in text and " fv=t.unbased_wide_state" in text and " ft=2'h3" in text
            for text in tree_texts)
 
 assert any("COVEROTHERDECL" in text and " fv=t.body_symbol_state" in text and " ft=BODY_ID" in text

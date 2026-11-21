@@ -183,6 +183,7 @@
 %000000        // [fsm_arc t.if_chain_case_default_u.state_q::S1->S0]
 %000002        // [fsm_arc t.if_chain_case_default_u.state_q::S1->S2]
 %000001        // [fsm_arc t.if_chain_case_default_u.state_q::S2->S0]
+%000000        // [fsm_arc t.if_chain_case_default_u.state_q::S2->S1]
 %000002        // [fsm_state t.if_chain_case_default_u.state_q::S0]
 %000002        // [fsm_state t.if_chain_case_default_u.state_q::S1]
 %000002        // [fsm_state t.if_chain_case_default_u.state_q::S2]

@@ -27,6 +27,7 @@
  000010     state_d = state_q;
 ~000010     case (state_q)
         // [FSM coverage]
+%000001        // [fsm_arc t.basic_u.state_q::S_DONE->S_ERR]
 %000000        // [fsm_arc t.basic_u.state_q::S_DONE->S_IDLE]
 %000000        // [fsm_arc t.basic_u.state_q::S_ERR->S_IDLE]
 %000001        // [fsm_arc t.basic_u.state_q::S_IDLE->S_RUN]
@@ -147,6 +148,8 @@
 ~000010     case (state_q)
         // [FSM coverage]
 %000001        // [fsm_arc t.mealy_u.state_q::S_DONE->S_IDLE]
+%000001        // [fsm_arc t.mealy_u.state_q::S_IDLE->S_SEND]
+%000001        // [fsm_arc t.mealy_u.state_q::S_SEND->S_DONE]
 %000000        // [fsm_arc t.mealy_u.state_q::S_SEND->S_IDLE]
 %000001        // [fsm_state t.mealy_u.state_q::S_DONE]
 %000002        // [fsm_state t.mealy_u.state_q::S_IDLE]
@@ -422,7 +425,7 @@
           end
         endmodule
         
-        module fsm_seqmix_off (
+        module fsm_seqmix (
 %000009     input logic clk,
 %000001     input logic rst
         );
@@ -437,7 +440,12 @@
         
  000010   always_comb begin
  000010     state_d = state_q;
- 000010     case (state_q)
+~000010     case (state_q)
+        // [FSM coverage]
+%000004        // [fsm_arc t.seqmix_u.state_q::S0->S1]
+%000003        // [fsm_arc t.seqmix_u.state_q::S1->S0]
+%000004        // [fsm_state t.seqmix_u.state_q::S0]
+%000004        // [fsm_state t.seqmix_u.state_q::S1]
 %000006       S0: state_d = S1;
 %000004       default: state_d = S0;
             endcase
@@ -492,7 +500,7 @@
           end
         endmodule
         
-        module fsm_if_chain_guard_noelse_off (
+        module fsm_if_chain_guard_noelse (
 %000009     input logic clk,
 %000001     input logic rst,
 %000001     input logic sel
@@ -506,10 +514,18 @@
 %000001   state_t state_q;
 %000001   state_t state_d;
         
-          // A nested guard without else is not a supported chain branch
+          // A guard without else nested in a chain branch: the state holds when it is false
  000010   always_comb begin
  000010     state_d = state_q;
 %000008     if (state_q == S0) begin
+        // [FSM coverage]
+%000001        // [fsm_arc t.if_chain_guard_noelse_u.state_q::S0->S1]
+%000000        // [fsm_arc t.if_chain_guard_noelse_u.state_q::S1->S0]
+%000001        // [fsm_arc t.if_chain_guard_noelse_u.state_q::S1->S2]
+%000001        // [fsm_arc t.if_chain_guard_noelse_u.state_q::S2->S0]
+%000002        // [fsm_state t.if_chain_guard_noelse_u.state_q::S0]
+%000001        // [fsm_state t.if_chain_guard_noelse_u.state_q::S1]
+%000001        // [fsm_state t.if_chain_guard_noelse_u.state_q::S2]
 %000007       if (sel) state_d = S1;
             end
 %000001     else if (state_q == S1) state_d = S2;
@@ -587,14 +603,15 @@
 %000001   state_t state_q;
 %000002   state_t state_d;
         
-          // S1 assigns on every path, which without coverage folds to a nested '?:',
-          // so it is skipped in all forms.  S2 assigns nothing, so it has no transition.
+          // S1 has a guarded chain with a final else; S2's guard assigns nothing, so S2 has no
+          // transition of its own
  000010   always_comb begin
  000010     state_d = state_q;
 ~000010     case (state_q)
         // [FSM coverage]
 %000001        // [fsm_arc t.case_guarded_chain_u.state_q::S0->S1]
 %000000        // [fsm_arc t.case_guarded_chain_u.state_q::S1->S0]
+%000001        // [fsm_arc t.case_guarded_chain_u.state_q::S1->S2]
 %000000        // [fsm_arc t.case_guarded_chain_u.state_q::S2->S0]
 %000001        // [fsm_state t.case_guarded_chain_u.state_q::S0]
 %000001        // [fsm_state t.case_guarded_chain_u.state_q::S1]
@@ -666,7 +683,7 @@
               .rst(rst),
               .sel(cyc[1])
           );
-          fsm_if_chain_guard_noelse_off if_chain_guard_noelse_off_u (
+          fsm_if_chain_guard_noelse if_chain_guard_noelse_u (
               .clk(clk),
               .rst(rst),
               .sel(sel)
@@ -686,7 +703,7 @@
               .rst(rst),
               .go(start)
           );
-          fsm_seqmix_off seqmix_off_u (
+          fsm_seqmix seqmix_u (
               .clk(clk),
               .rst(rst)
           );

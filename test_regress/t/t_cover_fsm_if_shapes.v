@@ -1,10 +1,10 @@
-// DESCRIPTION: Verilator: FSM coverage negative extraction test
+// DESCRIPTION: Verilator: FSM coverage of if-chain, alias, and compound-reset shapes
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module fsm_if_mixed_vars_bad (
+module fsm_if_mixed_vars (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -26,7 +26,7 @@ module fsm_if_mixed_vars_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_one_branch_bad (
+module fsm_if_one_branch (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -45,7 +45,7 @@ module fsm_if_one_branch_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_duplicate_bad (
+module fsm_if_duplicate (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -65,7 +65,7 @@ module fsm_if_duplicate_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_two_comparisons_bad (
+module fsm_if_two_comparisons (
     input logic clk,
     input logic start
 );
@@ -87,7 +87,7 @@ module fsm_if_two_comparisons_bad (
   always_ff @(posedge clk) state_q <= start ? state_d : state_q;
 endmodule
 
-module fsm_if_or_bad (
+module fsm_if_or (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -108,7 +108,7 @@ module fsm_if_or_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_alias_guard_bad (
+module fsm_if_alias_guard (
     input logic clk,
     input logic start
 );
@@ -132,7 +132,7 @@ module fsm_if_alias_guard_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_ambiguous_alias_bad (
+module fsm_if_ambiguous_alias (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -157,7 +157,7 @@ module fsm_if_ambiguous_alias_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_missing_default_bad (
+module fsm_if_missing_default (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -178,7 +178,7 @@ module fsm_if_missing_default_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_no_assign_bad (
+module fsm_if_no_assign (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -200,7 +200,7 @@ module fsm_if_no_assign_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_nonvar_compare_bad (
+module fsm_if_nonvar_compare (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -220,7 +220,7 @@ module fsm_if_nonvar_compare_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_var_rhs_compare_bad (
+module fsm_if_var_rhs_compare (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -240,7 +240,7 @@ module fsm_if_var_rhs_compare_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_var_target_bad (
+module fsm_if_var_target (
     input logic clk,
     input logic [1:0] dyn
 );
@@ -262,7 +262,7 @@ module fsm_if_var_target_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_alias_other_state_bad (
+module fsm_if_alias_other_state (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -286,7 +286,7 @@ module fsm_if_alias_other_state_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_bit_or_bad (
+module fsm_if_bit_or (
     input logic clk,
     input logic start
 );
@@ -308,7 +308,7 @@ module fsm_if_bit_or_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_reduction_bad (
+module fsm_if_reduction (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -332,7 +332,7 @@ module fsm_if_reduction_bad (
 
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
-module fsm_if_else_chain_decode_bad (
+module fsm_if_else_chain_decode (
     input logic clk,
     input logic [1:0] dyn
 );
@@ -355,7 +355,7 @@ module fsm_if_else_chain_decode_bad (
   always_ff @(posedge clk) state_q <= state_t'(dyn);
 endmodule
 
-module fsm_if_else_chain_var_target_bad (
+module fsm_if_else_chain_var_target (
     input logic clk,
     input logic [1:0] dyn
 );
@@ -377,7 +377,7 @@ module fsm_if_else_chain_var_target_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_else_chain_mixed_vars_bad (
+module fsm_if_else_chain_mixed_vars (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -399,7 +399,7 @@ module fsm_if_else_chain_mixed_vars_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_else_chain_duplicate_bad (
+module fsm_if_else_chain_duplicate (
     input logic clk,
     input logic start
 );
@@ -421,7 +421,7 @@ module fsm_if_else_chain_duplicate_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_else_chain_one_branch_bad (
+module fsm_if_else_chain_one_branch (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -440,7 +440,7 @@ module fsm_if_else_chain_one_branch_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_if_else_chain_or_bad (
+module fsm_if_else_chain_or (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -460,7 +460,7 @@ module fsm_if_else_chain_or_bad (
 
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
-module fsm_if_else_chain_tail_decode_bad (
+module fsm_if_else_chain_tail_decode (
     input logic clk,
     input logic rst,
     input logic go
@@ -494,7 +494,7 @@ module fsm_if_else_chain_tail_decode_bad (
   end
 endmodule
 
-module fsm_if_else_chain_user_var_bad (
+module fsm_if_else_chain_user_var (
     input logic clk,
     input logic rst
 );
@@ -528,7 +528,7 @@ module fsm_if_else_chain_user_var_bad (
   end
 endmodule
 
-module fsm_direct_active_low_dynamic_reset_bad (
+module fsm_direct_active_low_dynamic_reset (
     input logic clk,
     input logic rst_n,
     input logic [1:0] dyn_reset
@@ -548,7 +548,7 @@ module fsm_direct_active_low_dynamic_reset_bad (
     state_q <= rst_n ? state_d : state_t'(dyn_reset);
   end
 endmodule
-module fsm_positive_compound_reset_bad (
+module fsm_positive_compound_reset (
     input logic clk,
     input logic rst_n,
     input logic flush,
@@ -561,7 +561,7 @@ module fsm_positive_compound_reset_bad (
     S1 = 2'd1,
     S2 = 2'd2
   } state_t;
-  // An active-low reset in the else branch is only recognized on a plain signal
+  // A compound active-low reset in the else branch
   state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
   always_comb begin
@@ -576,7 +576,7 @@ module fsm_positive_compound_reset_bad (
     if (rst_n && !flush) state_q <= state_d;
     else state_q <= S0;
   end
-  // The same with two statements per branch, so it isn't folded into '?:'
+  // The same with two statements per branch
   state_t if_q  /*verilator fsm_state*/;
   state_t if_d;
   logic [1:0] count;
@@ -598,7 +598,7 @@ module fsm_positive_compound_reset_bad (
       count <= '0;
     end
   end
-  // A '?:' on a bit select is not a plain signal either
+  // A '?:' on a bit select as the reset
   state_t sel_q  /*verilator fsm_state*/;
   state_t sel_d;
   always_comb begin
@@ -612,8 +612,7 @@ module fsm_positive_compound_reset_bad (
   always_ff @(posedge clk) begin
     sel_q <= ctrl[1] ? sel_d : S0;
   end
-  // An else branch that doesn't start with a constant assignment isn't an active-low
-  // reset around the case
+  // An else branch that assigns another register before the reset value
   state_t oneblock_q  /*verilator fsm_state*/;
   logic aux;
   always_ff @(posedge clk) begin
@@ -629,7 +628,7 @@ module fsm_positive_compound_reset_bad (
     end
   end
 endmodule
-module fsm_reg_enable_no_else_bad (
+module fsm_reg_enable_no_else (
     input logic clk,
     input logic start
 );
@@ -644,12 +643,12 @@ module fsm_reg_enable_no_else_bad (
     if (state_q == S0) state_d = S1;
     else state_d = S0;
   end
-  // An enable with no else is not a reset guard
+  // An enable with no else, and no reset
   always_ff @(posedge clk) begin
     if (start) state_q <= state_d;
   end
 endmodule
-module fsm_case_guarded_bad (
+module fsm_case_guarded (
     input logic clk,
     input logic [1:0] dyn
 );
@@ -663,8 +662,7 @@ module fsm_case_guarded_bad (
   state_t state_d;
   logic side;
 
-  // Only S0 is supported: a guarded arm with another statement, or with a
-  // non-constant target, is skipped
+  // A guarded item with another statement, and one with a non-constant target
   always_comb begin
     state_d = state_q;
     side = 1'b0;
@@ -683,7 +681,7 @@ module fsm_case_guarded_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_case_guarded_nohold_bad (
+module fsm_case_guarded_nohold (
     input logic clk,
     input logic start
 );
@@ -697,7 +695,7 @@ module fsm_case_guarded_nohold_bad (
   state_t state_d;
 
   // The default is not 'state_d = state_q', so a guarded item that leaves
-  // state_d unassigned does not hold; S1 is skipped
+  // state_d unassigned goes to S0 rather than holding
   always_comb begin
     state_d = S0;
     case (state_q)
@@ -710,7 +708,7 @@ module fsm_case_guarded_nohold_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
-module fsm_case_guarded_overwrite_bad (
+module fsm_case_guarded_overwrite (
     input logic clk,
     input logic start
 );
@@ -723,7 +721,7 @@ module fsm_case_guarded_overwrite_bad (
   state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
-  // The canonical default is overwritten before the case, so S1 is skipped
+  // The hold default is overwritten before the case
   always_comb begin
     state_d = state_q;
     state_d = S0;
@@ -754,63 +752,63 @@ module t (
   logic [2:0] dyn_case = 3'd7;
   state_t state  /*verilator fsm_state*/;
 
-  fsm_if_mixed_vars_bad mixed_vars_u (.clk(clk));
-  fsm_if_one_branch_bad one_branch_u (.clk(clk));
-  fsm_if_duplicate_bad duplicate_u (.clk(clk));
-  fsm_if_two_comparisons_bad two_comparisons_u (
+  fsm_if_mixed_vars mixed_vars_u (.clk(clk));
+  fsm_if_one_branch one_branch_u (.clk(clk));
+  fsm_if_duplicate duplicate_u (.clk(clk));
+  fsm_if_two_comparisons two_comparisons_u (
       .clk(clk),
       .start(start)
   );
-  fsm_if_or_bad or_u (.clk(clk));
-  fsm_if_alias_guard_bad alias_guard_u (
+  fsm_if_or or_u (.clk(clk));
+  fsm_if_alias_guard alias_guard_u (
       .clk(clk),
       .start(start)
   );
-  fsm_if_ambiguous_alias_bad ambiguous_alias_u (.clk(clk));
-  fsm_if_missing_default_bad missing_default_u (.clk(clk));
-  fsm_if_no_assign_bad no_assign_u (.clk(clk));
-  fsm_if_nonvar_compare_bad nonvar_compare_u (.clk(clk));
-  fsm_if_var_rhs_compare_bad var_rhs_compare_u (.clk(clk));
-  fsm_if_var_target_bad var_target_u (
+  fsm_if_ambiguous_alias ambiguous_alias_u (.clk(clk));
+  fsm_if_missing_default missing_default_u (.clk(clk));
+  fsm_if_no_assign no_assign_u (.clk(clk));
+  fsm_if_nonvar_compare nonvar_compare_u (.clk(clk));
+  fsm_if_var_rhs_compare var_rhs_compare_u (.clk(clk));
+  fsm_if_var_target var_target_u (
       .clk(clk),
       .dyn(dyn_case[1:0])
   );
-  fsm_if_alias_other_state_bad alias_other_state_u (.clk(clk));
-  fsm_if_bit_or_bad bit_or_u (
+  fsm_if_alias_other_state alias_other_state_u (.clk(clk));
+  fsm_if_bit_or bit_or_u (
       .clk(clk),
       .start(start)
   );
-  fsm_if_reduction_bad reduction_u (.clk(clk));
-  fsm_if_else_chain_decode_bad else_chain_decode_u (
+  fsm_if_reduction reduction_u (.clk(clk));
+  fsm_if_else_chain_decode else_chain_decode_u (
       .clk(clk),
       .dyn(dyn_case[1:0])
   );
-  fsm_if_else_chain_var_target_bad else_chain_var_target_u (
+  fsm_if_else_chain_var_target else_chain_var_target_u (
       .clk(clk),
       .dyn(dyn_case[1:0])
   );
-  fsm_if_else_chain_mixed_vars_bad else_chain_mixed_vars_u (.clk(clk));
-  fsm_if_else_chain_duplicate_bad else_chain_duplicate_u (
+  fsm_if_else_chain_mixed_vars else_chain_mixed_vars_u (.clk(clk));
+  fsm_if_else_chain_duplicate else_chain_duplicate_u (
       .clk(clk),
       .start(start)
   );
-  fsm_if_else_chain_one_branch_bad else_chain_one_branch_u (.clk(clk));
-  fsm_if_else_chain_or_bad else_chain_or_u (.clk(clk));
-  fsm_if_else_chain_tail_decode_bad else_chain_tail_decode_u (
+  fsm_if_else_chain_one_branch else_chain_one_branch_u (.clk(clk));
+  fsm_if_else_chain_or else_chain_or_u (.clk(clk));
+  fsm_if_else_chain_tail_decode else_chain_tail_decode_u (
       .clk(clk),
       .rst(cyc == 0),
       .go(start)
   );
-  fsm_if_else_chain_user_var_bad else_chain_user_var_u (
+  fsm_if_else_chain_user_var else_chain_user_var_u (
       .clk(clk),
       .rst(cyc == 0)
   );
-  fsm_direct_active_low_dynamic_reset_bad active_low_dynamic_reset_u (
+  fsm_direct_active_low_dynamic_reset active_low_dynamic_reset_u (
       .clk(clk),
       .rst_n(cyc != 0),
       .dyn_reset(dyn_case[1:0])
   );
-  fsm_positive_compound_reset_bad positive_compound_reset_u (
+  fsm_positive_compound_reset positive_compound_reset_u (
       .clk(clk),
       .rst_n(cyc != 0),
       .flush(start),
@@ -818,19 +816,19 @@ module t (
       .go(start),
       .seed(cyc[0])
   );
-  fsm_reg_enable_no_else_bad reg_enable_no_else_u (
+  fsm_reg_enable_no_else reg_enable_no_else_u (
       .clk(clk),
       .start(start)
   );
-  fsm_case_guarded_bad case_guarded_u (
+  fsm_case_guarded case_guarded_u (
       .clk(clk),
       .dyn(dyn_case[1:0])
   );
-  fsm_case_guarded_nohold_bad case_guarded_nohold_u (
+  fsm_case_guarded_nohold case_guarded_nohold_u (
       .clk(clk),
       .start(start)
   );
-  fsm_case_guarded_overwrite_bad case_guarded_overwrite_u (
+  fsm_case_guarded_overwrite case_guarded_overwrite_u (
       .clk(clk),
       .start(start)
   );
@@ -845,11 +843,8 @@ module t (
     end
   end
 
-  // The grouped S0/dyn_case arm keeps the supported S0 baseline while the
-  // non-constant case item is skipped. The S1 and default arms are
-  // deliberately unsupported extractor shapes: one has two meaningful
-  // statements, the other writes a different lhs first. Coverage should ignore
-  // those arcs rather than guessing.
+  // The S0 item also matches a non-constant label, the S1 item has two
+  // statements, and the default writes another register first
   always_ff @(posedge clk) begin
     if (cyc == 0) begin
       state <= S0;

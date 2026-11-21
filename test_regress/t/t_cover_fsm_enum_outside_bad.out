@@ -1,0 +1,19 @@
+%Warning-COVERIGN: t/t_cover_fsm_enum_outside_bad.v:22:20: Ignoring unsupported: FSM coverage on enum state variable 'state': assigned value 3 is not present in the declared enum
+                                                         : ... note: In instance 't'
+   22 |     if (rst) state <= e_t'(3);
+      |                    ^~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_cover_fsm_enum_outside_bad.v:23:26: Ignoring unsupported: FSM coverage on enum state variable 'state': assigned value 3 is not present in the declared enum
+                                                         : ... note: In instance 't'
+   23 |     else if (drop) state <= e_t'(3);
+      |                          ^~
+%Warning-COVERIGN: t/t_cover_fsm_enum_outside_bad.v:27:19: Ignoring unsupported: FSM coverage on enum state variable 'state': assigned value 3 is not present in the declared enum
+                                                         : ... note: In instance 't'
+   27 |         E1: state <= e_t'(3);
+      |                   ^~
+%Warning-COVERIGN: t/t_cover_fsm_enum_outside_bad.v:41:18: Ignoring unsupported: FSM coverage on enum state variable 'wide': assigned value 40'h8000000000 is not present in the declared enum
+                                                         : ... note: In instance 't'
+   41 |         W1: wide <= w_t'(40'h80_0000_0000);
+      |                  ^~
+%Error: Exiting due to
