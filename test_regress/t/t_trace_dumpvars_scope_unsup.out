@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_trace_dumpvars_scope_unsup.v:11:19: Unsupported: $dumpvars scope that is not a hierarchical name
+   11 |     $dumpvars(1, a[i]);   
+      |                   ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_trace_dumpvars_scope_unsup.v:12:20: Unsupported: $dumpvars scope that is not a hierarchical name
+   12 |     $dumpvars(1, i + 1);   
+      |                    ^
+%Error-UNSUPPORTED: t/t_trace_dumpvars_scope_unsup.v:13:22: Unsupported: $dumpvars scope that is not a hierarchical name
+   13 |     $dumpvars(1, a[i].x);   
+      |                      ^
+%Error-UNSUPPORTED: t/t_trace_dumpvars_scope_unsup.v:14:22: Unsupported: $dumpvars scope that is not a hierarchical name
+   14 |     $dumpvars(1, a[i][0]);   
+      |                      ^
+%Error: Exiting due to

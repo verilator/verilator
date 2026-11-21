@@ -935,6 +935,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         iterateChildrenConst(nodep);
     }
     void visit(AstScopeName* nodep) override {
+        // A $dumpvars caller does not need a DPI scope.
+        if (VN_IS(nodep->backp(), DumpCtl)) return;
         if (nodep->selfRelative()) return;  // Its absolute copy is under the scope
         if (nodep->forFormat()) m_origTopNames = true;  // %m prints the original names
         if (m_modp && m_modp->verilatorLib()) return;  // As for AstScope
@@ -1015,6 +1017,7 @@ void EmitCSyms::emitSymHdr() {
     ofp()->putsIntTopInclude();
     puts("#include \"verilated.h\"\n");
     if (v3Global.needTraceDumper()) {
+        puts("#include <initializer_list>\n");
         // $dump* writes the trace format the model is built with
         const std::string fileSuffix = optSystemC() ? "_sc" : "_c";
         const std::string classSuffix = optSystemC() ? "Sc" : "C";
@@ -1071,6 +1074,8 @@ void EmitCSyms::emitSymHdr() {
         // __Vm_dumperp is local, otherwise we wouldn't know what design's eval()
         // should call a global dumpperp
         puts("bool __Vm_dumping = false;  // Dumping is active\n");
+        puts("bool __Vm_dumpOpened = false;  // Dump file opened, $dumpvars selection is fixed\n");
+        puts("std::string __Vm_dumpfile;  // $dumpfile when dumping started\n");
         puts("VerilatedMutex __Vm_dumperMutex;  // Protect __Vm_dumperp\n");
         puts("__VDumper* __Vm_dumperp VL_GUARDED_BY(__Vm_dumperMutex) = nullptr;"
              "  // Trace class for $dump*\n");
@@ -1172,6 +1177,9 @@ void EmitCSyms::emitSymHdr() {
 
     if (v3Global.needTraceDumper()) {
         if (!optSystemC()) puts("void _traceDump();\n");
+        puts("void _traceDumpNew() VL_REQUIRES(__Vm_dumperMutex);\n");
+        puts("void _traceDumpVars(int level, std::initializer_list<const char*> names, "
+             "const char* caller);\n");
         puts("void _traceDumpOpen();\n");
         puts("void _traceDumpClose();\n");
     }
@@ -1754,24 +1762,50 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
             puts("\nvoid " + symClassName() + "::_traceDump() {\n");
             puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
             // Caller checked for __Vm_dumperp non-nullptr
+            // Open at the end of the time step, so all its $dumpvars select signals
+            puts("if (VL_UNLIKELY(!__Vm_dumpOpened)) {\n");
+            puts("__Vm_dumpOpened = true;\n");
+            puts("__Vm_dumperp->open(__Vm_dumpfile.c_str());\n");
+            puts("}\n");
             puts("__Vm_dumperp->dump(VL_TIME_Q());\n");
             puts("}\n");
         }
 
-        puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
-        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
+        puts("\nvoid " + symClassName() + "::_traceDumpNew() {\n");
         puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
         puts("__Vm_dumperp = new __VDumper();\n");
         puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
-        puts("const std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
-        puts("__Vm_dumperp->open(dumpfile.c_str());\n");
-        puts("__Vm_dumping = true;\n");
         puts("}\n");
+        puts("}\n");
+
+        puts("\nvoid " + symClassName()
+             + "::_traceDumpVars(int level, std::initializer_list<const char*> names, "
+               "const char* caller) {\n");
+        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
+        puts("if (__Vm_dumpOpened) return;\n");
+        puts("_traceDumpNew();\n");
+        puts("for (const char* namep : names) {\n");
+        puts("__Vm_dumperp->dumpvarsRelative(level, namep, caller, this->name());\n");
+        puts("}\n");
+        puts("}\n");
+
+        puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
+        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
+        puts("_traceDumpNew();\n");
+        puts("if (!__Vm_dumping) __Vm_dumpfile = _vm_contextp__->dumpfileCheck();\n");
+        puts("__Vm_dumping = true;\n");
+        if (optSystemC()) {
+            puts("if (!__Vm_dumpOpened) {\n");
+            puts("__Vm_dumpOpened = true;\n");
+            puts("__Vm_dumperp->open(__Vm_dumpfile.c_str());\n");
+            puts("}\n");
+        }
         puts("}\n");
 
         puts("\nvoid " + symClassName() + "::_traceDumpClose() {\n");
         puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
         puts("__Vm_dumping = false;\n");
+        puts("__Vm_dumpOpened = false;\n");
         puts("VL_DO_CLEAR(delete __Vm_dumperp, __Vm_dumperp = nullptr);\n");
         puts("}\n");
     }
