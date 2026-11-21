@@ -144,9 +144,7 @@ module t (
   assert property (@(posedge clk) cyc == 1 |-> (cyc == 2) [*0:1] ##1 (cyc == 2))
   else count_fail24 <= count_fail24 + 1;
 
-  // Counter FSM with M>0: range > kChainLimit (256) forces counter vertex
-  // creation; min>0 exercises the Gte/active gating path in resolveLinks and
-  // emitNbaLogic. Cover-only so count_fail values above are undisturbed.
+  // A long ranged delay is covered without affecting the assertion checks above.
   cover property (@(posedge clk) ##[10:300] b);
 
   always @(posedge clk) begin
@@ -165,17 +163,14 @@ module t (
       `checkd(count_fail3, 9);
       `checkd(count_fail4, 49);
       `checkd(count_fail5, 0);
-      // NFA merge-node range [*M:N] over-counts rejects; match
-      // detection is correct, only reject counting is imprecise
+      // The bounded repetition reports the expected number of failures.
       `checkd(count_fail6, 59);  // All other sims: 51
       `checkd(count_fail7, 51);
       `checkd(count_fail8, 20);
-      // IEEE 1800-2023 16.9.2 permits empty match of [*0]; NFA reports
-      // rejects on each tick while others suppress
+      // An empty repetition is checked independently on each sampled tick.
       `checkd(count_fail9, 49);  // Most others: 20, one other 49
       `checkd(count_fail10, 59);
-      // a[*] ##1 b: NFA treats unbounded [*] as liveness (no reject);
-      // Should be definite antecedent
+      // An unbounded repetition followed by a delayed endpoint remains pending.
       `checkd(count_fail11, 0);  // All other sims: 29
       `checkd(count_fail12, count_fail11);
       `checkd(count_fail13, count_fail7);
@@ -209,7 +204,15 @@ module unbounded_rep_match_item_test (input logic clk);
   logic disable_start = 0;
   logic disable_a = 0;
   logic disable_b = 0;
+  logic read_start = 0;
+  logic read_a = 0;
+  logic read_b = 0;
+  int read_data = 1;
+  logic follow_a = 0;
+  logic follow_b = 0;
   int disable_failures = 0;
+  int read_passes = 0;
+  int follow_failures = 0;
 
   property p;
     int x;
@@ -228,6 +231,18 @@ module unbounded_rep_match_item_test (input logic clk);
 
   assert property (@(posedge clk) p_disable)
   else disable_failures++;
+
+  property p_read_match_item;
+    int y;
+    read_start |-> read_a [*1:$] ##0 (read_b, y = read_data);
+  endproperty
+
+  assert property (@(posedge clk) p_read_match_item)
+  read_passes++;
+  else read_passes--;
+
+  assert property (@(posedge clk) follow_a #-# follow_b)
+  else follow_failures++;
 
   function void count_overlap_match();
     overlap_match_items++;
@@ -265,8 +280,20 @@ module unbounded_rep_match_item_test (input logic clk);
     repeat (2) @(posedge clk);
     `checkh(disable_failures, 0);
 
+    @(negedge clk);
+    read_start = 1;
+    read_a = 1;
+    @(negedge clk);
+    read_start = 0;
+    read_b = 1;
+    @(negedge clk);
+    read_a = 0;
+    read_b = 0;
+    repeat (2) @(posedge clk);
+    `checkh(read_passes, 1);
+
     // Two overlapping attempts match the endpoint on the same tick. Each
-    // match item must execute once, even though both attempts share NFA state.
+    // match item must execute once.
     @(negedge clk);
     start_overlap = 1;
     @(negedge clk);
