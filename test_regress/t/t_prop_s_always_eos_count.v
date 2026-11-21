@@ -73,6 +73,23 @@ module t (
   assert property (@(posedge clk) s_always[1: 3] 1'b1)
   else $error("EOS_ERROR");
 
+  // Each s_eventually attempt still pending at $finish fails once.
+  assert property (@(posedge clk) cyc >= 7 |-> s_eventually (cyc == 100))
+  else $display("EOS_SEV");
+
+  assert property (@(posedge clk) disable iff (disable_now) s_eventually 1'b0)
+  else $display("EOS_SEV_DISABLE_BAD");
+
+  assert property (@(posedge clk) not s_eventually 1'b0)
+  else $display("EOS_SEV_NOT_BAD");
+
+  // Under `not`, a pending strong obligation is not an EOS failure
+  assert property (@(posedge clk) not s_always[1: 3] 1'b0)
+  else $display("EOS_NOT_ALWAYS_BAD");
+
+  assert property (@(posedge clk) not (cyc < 100 |-> 1'b1 s_until (cyc == 100)))
+  else $display("EOS_NOT_SUNTIL_BAD");
+
   // The default action carries the same per-attempt multiplicity.
   assert property (@(posedge clk) s_always[1: 3] 1'b1);
 

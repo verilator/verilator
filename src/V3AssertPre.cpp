@@ -917,119 +917,16 @@ private:
         nodep->replaceWith(exprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    static AstAssocArrayDType* getProcessAssocArrayType(FileLine* const flp) {
-        // Type of __VassertsActive___x[std::process]
-        AstNodeDType* valp
-            = v3Global.rootp()->typeTablep()->findBasicDType(flp, VBasicDTypeKwd::BIT);
-        AstClassRefDType* keyp
-            = new AstClassRefDType{flp, v3Global.rootp()->stdPackageProcessp(), nullptr};
-        keyp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
-        v3Global.rootp()->typeTablep()->addTypesp(keyp);
-        AstAssocArrayDType* const typep = new AstAssocArrayDType{flp, valp, keyp};
-        typep->dtypep(typep);
-        v3Global.rootp()->typeTablep()->addTypesp(typep);
-        return typep;
-    }
-    static AstStmtExpr* getProcessAssocArrayDelete(AstVarRef* const refp) {
-        // Constructs refp.delete(std::process::self()) statement
-        FileLine* const flp = refp->fileline();
-        AstCMethodHard* const deletep = new AstCMethodHard{
-            flp, refp, VCMethod::ASSOC_ERASE, v3Global.rootp()->stdPackageProcessSelfp(flp)};
-        deletep->dtypep(refp->findVoidDType());
-        return new AstStmtExpr{flp, deletep};
-    }
-    static AstNodeExpr* getProcessAssocArraySize(AstVarRef* const refp) {
-        // Constructs refp.size() statement
-        AstCMethodHard* const sizep
-            = new AstCMethodHard{refp->fileline(), refp, VCMethod::ASSOC_SIZE};
-        sizep->dtypep(refp->findBasicDType(VBasicDTypeKwd::UINT32));
-        return sizep;
-    }
     void visit(AstSEventually* nodep) override {
-        UASSERT(v3Global.rootp()->stdPackagep(), "Should be imported");
-
+        // V3AssertNfa declined the property for an operator only this pass lowers; newSenTree
+        // reports a missing clock
         AstSenTree* const sentreep = newSenTree(nodep);
-        if (!sentreep->sensesp()) {
-            VL_DO_DANGLING(pushDeletep(sentreep), sentreep);
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            return;
+        if (sentreep->sensesp()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: s_eventually in a property with an"
+                                         " unsupported sequence operator");
         }
-
-        FileLine* const flp = nodep->fileline();
-
-        // Track active assertions
-        AstVar* const activep = new AstVar{flp, VVarType::MODULETEMP, m_activeNames.get(""),
-                                           getProcessAssocArrayType(flp)};
-        activep->lifetime(VLifetime::STATIC_EXPLICIT);
-        m_modp->addStmtsp(activep);
-
-        // Assertion condition check
-        AstLoop* const loopp = new AstLoop{flp};
-        AstSampled* const condp
-            = new AstSampled{flp, nodep->exprp()->unlinkFrBack(), nullptr, true};
-        loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLogNot{flp, condp}});
-        loopp->addStmtsp(new AstEventControl{flp, sentreep, nullptr});
-
-        // Add assertion to the active set
-        AstAssocSel* const selp = new AstAssocSel{flp, new AstVarRef{flp, activep, VAccess::WRITE},
-                                                  v3Global.rootp()->stdPackageProcessSelfp(flp)};
-        AstAssign* const incrementp = new AstAssign{flp, selp, new AstConst{flp, 1}};
-        AstPExprClause* const clausep = new AstPExprClause{flp};
-        AstStmtExpr* const deletep
-            = getProcessAssocArrayDelete(new AstVarRef{flp, activep, VAccess::WRITE});
-
-        // Main assertion block
-        AstBegin* const bodyp = new AstBegin{flp, m_blockNames.get(""), nullptr, true};
-        bodyp->addStmtsp(incrementp);
-        bodyp->addStmtsp(loopp);
-        bodyp->addStmtsp(clausep);
-        bodyp->addStmtsp(deletep);
-
-        // Validate assertion condition for each active assert
-        AstVar* const activeCountp = new AstVar{flp, VVarType::BLOCKTEMP, "__VassertCount",
-                                                nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
-        activeCountp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-
-        AstAssign* const initActiveCountp
-            = new AstAssign{flp, new AstVarRef{flp, activeCountp, VAccess::WRITE},
-                            getProcessAssocArraySize(new AstVarRef{flp, activep, VAccess::READ})};
-        AstLoop* const finalLoopp = new AstLoop{flp};
-        AstIf* const finalBodypCondp
-            = new AstIf{flp, condp->cloneTreePure(false), new AstPExprClause{flp},
-                        new AstPExprClause{flp, false}};
-        finalLoopp->addStmtsp(
-            new AstLoopTest{flp, finalLoopp,
-                            new AstNeq{flp, new AstVarRef{flp, activeCountp, VAccess::READ},
-                                       new AstConst{flp, 0}}});
-        finalLoopp->addStmtsp(finalBodypCondp);
-        finalLoopp->addStmtsp(
-            new AstAssign{flp, new AstVarRef{flp, activeCountp, VAccess::WRITE},
-                          new AstSub{flp, new AstVarRef{flp, activeCountp, VAccess::READ},
-                                     new AstConst{flp, 1}}});
-
-        // Final assertion block
-        AstBegin* const finalp = new AstBegin{flp, m_blockNames.get(""), nullptr, true};
-        finalp->addDeclsp(activeCountp);
-        finalp->addStmtsp(initActiveCountp);
-        finalp->addStmtsp(finalLoopp);
-
-        VL_RESTORER(m_pexprp);
-        m_pexprp = new AstPExpr{flp, bodyp, finalp, nodep->dtypep()};
-        VL_RESTORER(m_hasCycleDelay);
-        m_hasCycleDelay = false;
-        iterate(bodyp);
-        iterate(finalp);
-
-        if (m_hasCycleDelay) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: cycle delay in s_eventually");
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            VL_DO_DANGLING(m_pexprp->deleteTree(), m_pexprp);
-            return;
-        }
-
-        nodep->replaceWith(m_pexprp);
+        VL_DO_DANGLING(pushDeletep(sentreep), sentreep);
+        nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstStable* nodep) override {
