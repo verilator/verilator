@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_gen_samename_defparam_unsup.v:21:18: Unsupported: defparam of instance that another generate alternative declares as other than an instance: g.u
+   21 |   defparam g.u.V = 5;
+      |                  ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

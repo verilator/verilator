@@ -1,31 +1,56 @@
-%Error: t/t_gen_samename_xref_bad.v:52:32: Can't find definition of 'u_b'
+%Error: t/t_gen_samename_xref_bad.v:77:32: Can't find definition of 'u_b'
                                          : ... note: In instance 't'
-   52 |     $display("%0d", u_r1.g.u_b.mem);
+   77 |     $display("%0d", u_r1.g.u_b.mem);
       |                                ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_gen_samename_xref_bad.v:53:28: Can't find definition of 'last_only' in dotted signal: 'u_r1.g.last_only'
+%Error: t/t_gen_samename_xref_bad.v:78:28: Can't find definition of 'last_only' in dotted signal: 'u_r1.g.last_only'
                                          : ... note: In instance 't'
-   53 |     $display("%0d", u_r1.g.last_only);
+   78 |     $display("%0d", u_r1.g.last_only);
       |                            ^~~~~~~~~
         ... Known scopes under 'last_only': <no instances found>
-%Error: t/t_gen_samename_xref_bad.v:54:32: Can't find definition of 'u_a' in dotted task/function: 'u_r0.g.u_a.get'
+%Error: t/t_gen_samename_xref_bad.v:79:32: Can't find definition of 'u_a' in dotted task/function: 'u_r0.g.u_a.get'
                                          : ... note: In instance 't'
-   54 |     $display("%0d", u_r0.g.u_a.get());
+   79 |     $display("%0d", u_r0.g.u_a.get());
       |                                ^~~
-        ... Known scopes under 'get': u_b
-%Error: t/t_gen_samename_xref_bad.v:55:34: Can't find definition of 'inner' in dotted task/function: 'u_r0.g.inner.get'
+        ... Known scopes under 'get': u_b, u_core
+%Error: t/t_gen_samename_xref_bad.v:80:34: Can't find definition of 'inner' in dotted task/function: 'u_r0.g.inner.get'
                                          : ... note: In instance 't'
-   55 |     $display("%0d", u_r0.g.inner.get());
+   80 |     $display("%0d", u_r0.g.inner.get());
       |                                  ^~~
-        ... Known scopes under 'get': u_b
-%Error: t/t_gen_samename_xref_bad.v:56:27: Can't find definition of 'g' in dotted task/function: 'u_s.g.get'
+        ... Known scopes under 'get': u_b, u_core
+%Error: t/t_gen_samename_xref_bad.v:81:27: Can't find definition of 'g' in dotted task/function: 'u_s.g.get'
                                          : ... note: In instance 't'
-   56 |     $display("%0d", u_s.g.get());
+   81 |     $display("%0d", u_s.g.get());
       |                           ^~~
         ... Known scopes under 'get': <no instances found>
-%Error: t/t_gen_samename_xref_bad.v:57:33: Can't find definition of 'g' in dotted task/function: 'u_s.g.inner.get'
+%Error: t/t_gen_samename_xref_bad.v:82:33: Can't find definition of 'g' in dotted task/function: 'u_s.g.inner.get'
                                          : ... note: In instance 't'
-   57 |     $display("%0d", u_s.g.inner.get());
+   82 |     $display("%0d", u_s.g.inner.get());
       |                                 ^~~
         ... Known scopes under 'get': <no instances found>
+%Error: t/t_gen_samename_xref_bad.v:83:35: Can't find definition of 'only_b' in dotted signal: 'u_r1.g.u_core.only_b'
+                                         : ... note: In instance 't'
+   83 |     $display("%0d", u_r1.g.u_core.only_b);
+      |                                   ^~~~~~
+        ... Known scopes under 'only_b': u_a, u_core
+%Error: t/t_gen_samename_xref_bad.v:84:35: Can't find definition of 'fb' in dotted task/function: 'u_r1.g.u_core.fb'
+                                         : ... note: In instance 't'
+   84 |     $display("%0d", u_r1.g.u_core.fb());
+      |                                   ^~
+        ... Known scopes under 'fb': u_a, u_core
+%Error: t/t_gen_samename_xref_bad.v:85:30: Can't find definition of 'h2' in dotted signal: 'u_r1.g.h.h2'
+                                         : ... note: In instance 't'
+   85 |     $display("%0d", u_r1.g.h.h2);
+      |                              ^~
+        ... Known scopes under 'h2': u_a, u_core
+%Error: t/t_gen_samename_xref_bad.v:86:30: Can't find definition of 'h1' in dotted signal: 'u_r0.g.h.h1'
+                                         : ... note: In instance 't'
+   86 |     $display("%0d", u_r0.g.h.h1);
+      |                              ^~
+        ... Known scopes under 'h1': u_b, u_core
+%Error: t/t_gen_samename_xref_bad.v:87:30: Can't find definition of 'h3' in dotted signal: 'u_r0.g.h.h3'
+                                         : ... note: In instance 't'
+   87 |     $display("%0d", u_r0.g.h.h3);
+      |                              ^~
+        ... Known scopes under 'h3': u_b, u_core
 %Error: Exiting due to

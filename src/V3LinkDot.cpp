@@ -211,6 +211,7 @@ private:
         m_implicitNameSet;  // For [module][signalname] if we can implicitly create it
     std::array<ScopeAliasMap, SAMN__MAX> m_scopeAliasMap;  // Map of <lhs,rhs> aliases
     std::vector<VSymEnt*> m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
+    std::vector<VSymEnt*> m_shadowingSyms;  // Generate blocks that replaced a same-named one
     IfaceModSyms m_ifaceModSyms;  // List of AstIface+Symbols to be processed
     const VLinkDotStep m_step;  // Operational step
 
@@ -496,8 +497,38 @@ public:
         VSymEnt* const replacedp = abovep->reinsert(name, symp);
         if (replacedp && VN_IS(nodep, GenBlock) && VN_IS(replacedp->nodep(), GenBlock)) {
             symp->shadowedp(replacedp);
+            m_shadowingSyms.push_back(symp);
         }
         return symp;
+    }
+    void linkShadowed() {
+        for (VSymEnt* const headp : m_shadowingSyms) linkAlternatives(ownChain(headp));
+    }
+    static std::vector<VSymEnt*> ownChain(VSymEnt* symp) {
+        // Entry and the same-named generate blocks it replaced within the same table
+        std::vector<VSymEnt*> chain;
+        for (VSymEnt* curp = symp; curp && curp->parentp() == symp->parentp();
+             curp = curp->shadowedp()) {
+            chain.push_back(curp);
+        }
+        return chain;
+    }
+    static void linkAlternatives(const std::vector<VSymEnt*>& altps) {
+        // Chain same-named entries of generate alternatives, newest first, and recursively
+        // their same-named children, so a dotted path through any alternative resolves
+        for (size_t i = 0; i + 1 < altps.size(); ++i) altps[i]->shadowedp(altps[i + 1]);
+        std::map<string, std::vector<VSymEnt*>> childps;
+        for (VSymEnt* const altp : altps) {
+            for (const auto& it : *altp) {
+                if (it.second->parentp() != altp) continue;  // Imported or aliased
+                for (VSymEnt* const childp : ownChain(it.second)) {
+                    childps[it.first].push_back(childp);
+                }
+            }
+        }
+        for (const auto& it : childps) {
+            if (it.second.size() > 1) linkAlternatives(it.second);
+        }
     }
     VSymEnt* insertSym(VSymEnt* abovep, const string& name, AstNode* nodep,
                        AstNodeModule* classOrPackagep) {
@@ -875,7 +906,8 @@ public:
                     // top__DOT__slave_inst__DOT__bus
                     UINFO(8, "     middle-path: trying prefixed lookup for '" << ident << "'\n");
                     string baddot;
-                    findSymp = findSymPrefixed(lookupSymp, ident, baddot, /*fallback=*/true);
+                    findSymp = findSymPrefixed(lookupSymp, ident, baddot, /*fallback=*/true,
+                                               /*dotted=*/true);
                     UINFO(8, "     middle-path: prefixed lookup result: "
                                  << (findSymp ? "found" : "not found") << "\n");
                     if (findSymp) {
@@ -987,7 +1019,7 @@ public:
     }
 
     VSymEnt* findSymPrefixed(VSymEnt* lookupSymp, const string& dotname, string& baddot,
-                             bool fallback, bool dotted = true) {
+                             bool fallback, bool dotted) {
         // Find symbol in given point in hierarchy, allowing prefix (post-Inline)
         // For simplicity lookupSymp may be passed nullptr result from findDotted
         // If dotted, lookupSymp was named by the reference, so its shadowed blocks also apply
@@ -2581,6 +2613,16 @@ class LinkDotParamVisitor final : public VNVisitor {
             pinImplicitExprRecurse(nodep->exprp());
         }
     }
+    static bool namedBySamePath(const VSymEnt* foundp, const VSymEnt* altp, size_t depth) {
+        // Whether altp is reached by the same depth-component path as foundp, as opposed to
+        // being a same-named entry of an alternative the path did not pass through
+        for (; altp != foundp; --depth) {
+            if (!depth) return false;
+            foundp = foundp->parentp();
+            altp = altp->parentp();
+        }
+        return true;
+    }
     void visit(AstDefParam* nodep) override {  // ParamVisitor::
         iterateChildren(nodep);
         AstParseRef* const targetp = VN_CAST(nodep->targetp(), ParseRef);
@@ -2604,9 +2646,28 @@ class LinkDotParamVisitor final : public VNVisitor {
         VSymEnt* const scopeSymp = m_statep->getNodeSym(nodep);
         VSymEnt* const foundp
             = m_statep->findDotted(nodep->fileline(), scopeSymp, path, baddot, okSymp, true);
-        AstCell* const cellp = foundp ? VN_AS(foundp->nodep(), Cell) : nullptr;
+        // Same-named instances of other generate alternatives, as V3Param keeps at most one
+        std::vector<VSymEnt*> altps;
+        const size_t depth = std::count(path.begin(), path.end(), '.') + 1;
+        for (VSymEnt* altp = foundp; altp; altp = altp->shadowedp()) {
+            if (namedBySamePath(foundp, altp, depth)) altps.push_back(altp);
+        }
+        AstCell* cellp = nullptr;
+        bool nonCellAlt = false;
+        for (VSymEnt* const altp : altps) {
+            AstCell* const altCellp = VN_CAST(altp->nodep(), Cell);
+            if (!altCellp) {
+                nonCellAlt = true;
+            } else if (!cellp) {
+                cellp = altCellp;
+            }
+        }
         if (!cellp) {
             nodep->v3error("In defparam, instance " << path << " never declared");
+        } else if (nonCellAlt) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: defparam of instance that another generate "
+                                         "alternative declares as other than an instance: "
+                                             << path);
         } else {
             // Path from the defparam's scope, if the instance is under it
             string belowPath;
@@ -2617,15 +2678,22 @@ class LinkDotParamVisitor final : public VNVisitor {
             // If under it, V3Param passes the value down from each instance of this module, so
             // it uses the parameters of the module declaring it (IEEE 1800-2023 23.10.1)
             AstNodeExpr* const exprp = symp ? nullptr : nodep->rhsp()->unlinkFrBack();
-            UINFO(9, "Defparam cell " << path << "." << name << " attach-to " << cellp
-                                      << "  <= " << exprp);
-            // Don't need to check the name of the defparam exists.  V3Param does.
-            AstPin* const pinp = new AstPin{nodep->fileline(),
-                                            -1,  // Pin# not relevant
-                                            name, exprp};
-            pinp->param(true);
-            pinp->paramPath(path);
-            cellp->addParamsp(pinp);
+            for (VSymEnt* const altp : altps) {
+                AstCell* const altCellp = VN_AS(altp->nodep(), Cell);
+                AstNodeExpr* const altExprp
+                    = (exprp && altCellp != cellp) ? exprp->cloneTree(false) : exprp;
+                UINFO(9, "Defparam cell " << path << "." << name << " attach-to " << altCellp
+                                          << "  <= " << altExprp);
+                // Don't need to check the name of the defparam exists.  V3Param does.
+                AstPin* const pinp = new AstPin{nodep->fileline(),
+                                                -1,  // Pin# not relevant
+                                                name, altExprp};
+                pinp->param(true);
+                pinp->paramPath(path);
+                altCellp->addParamsp(pinp);
+                // For the value, see ResolveVisitor::visit(AstPin)
+                if (altExprp) pinp->user1p(scopeSymp);
+            }
             if (!exprp) {
                 pushDeletep(nodep->pathp()->unlinkFrBack());
                 targetp->replaceWith(
@@ -2633,7 +2701,6 @@ class LinkDotParamVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(targetp), targetp);
                 return;
             }
-            pinp->user1p(scopeSymp);  // For the value, see ResolveVisitor::visit(AstPin)
         }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
@@ -3536,7 +3603,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
         // Look up virtual port name in modport symbol table
         string baddot;
-        VSymEnt* const virtPortp = m_statep->findSymPrefixed(modportSymp, portName, baddot, true);
+        VSymEnt* const virtPortp
+            = m_statep->findSymPrefixed(modportSymp, portName, baddot, true, true);
         if (!virtPortp) return nullptr;
 
         // Symbol may point to VarScope or Var
@@ -3545,7 +3613,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Symbol points to Var - look up VarScope by name in interface cell
         if (const AstVar* const realVarp = VN_CAST(virtPortp->nodep(), Var)) {
             VSymEnt* const realFoundp
-                = m_statep->findSymPrefixed(ifaceCellSymp, realVarp->name(), baddot, true);
+                = m_statep->findSymPrefixed(ifaceCellSymp, realVarp->name(), baddot, true, true);
             return realFoundp ? VN_CAST(realFoundp->nodep(), VarScope) : nullptr;
         }
         return nullptr;
@@ -5514,7 +5582,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                     baddot = nodep->name();
                 } else {
-                    foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
+                    foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true, true);
                 }
                 if (m_inSens && foundp) {
                     if (AstClocking* const clockingp = sensClockingp(foundp->nodep())) {
@@ -5538,7 +5606,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             } else {
                 VSymEnt* const foundp
-                    = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
+                    = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true, true);
                 AstVarScope* vscp = foundp ? VN_CAST(foundp->nodep(), VarScope) : nullptr;
                 // Handle modport expression virtual ports
                 if (!vscp) vscp = findVirtualPortVarScope(dotSymp, nodep->name());
@@ -5596,7 +5664,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 = findDottedRefSymp(nodep, m_curSymp, nodep->dotted(), baddot, okSymp);
             if (!dotSymp) return;
             VSymEnt* const foundp
-                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
+                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true, true);
             AstEnumItem* const itemp = foundp ? VN_CAST(foundp->nodep(), EnumItem) : nullptr;
             if (!itemp) {
                 nodep->v3error("Enum item " << nodep->prettyNameQ() << " not found in "
@@ -7064,6 +7132,7 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
 
     { LinkDotFindIfaceVisitor{rootp, &state}; }
     dumpSubstep("prelinkdot-findiface");
+    state.linkShadowed();
 
     if (step == LDS_SCOPED) {
         // Well after the initial link when we're ready to operate on the flat design,

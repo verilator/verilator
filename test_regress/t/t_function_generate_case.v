@@ -75,6 +75,26 @@ module leaf #(
   endfunction
 endmodule
 
+module core_a #(
+    parameter int D = 0,
+    parameter int E = 0
+);
+  int only_a = 7;
+  int s = 1;
+  int dv = D;
+  int ev = E;
+endmodule
+
+module core_b #(
+    parameter int D = 0,
+    parameter int E = 0
+);
+  int only_b = 8;
+  byte s = 2;
+  int dv = D;
+  int ev = E;
+endmodule
+
 module mid #(
     parameter int R = 1
 ) (
@@ -87,6 +107,13 @@ module mid #(
   if (R == 1) begin : g
     leaf #(.V(1)) u_a (.cyc);
     leaf #(.V(5)) u_arr[2] (.cyc);
+    core_a u_core ();
+    if (R == 1) begin : h
+      int h1 = 31;
+    end
+    else begin : h
+      int h2 = 32;
+    end
     int first_only;
     assign first_only = cyc * 3;
     function automatic int bump(input int i);
@@ -95,13 +122,24 @@ module mid #(
   end
   else if (R == 2) begin : g
     leaf #(.V(6)) u_m (.cyc);
+    core_b u_core ();
   end
   else begin : g
     leaf #(.V(2)) u_b (.cyc);
+    core_b u_core ();
+    if (R == 0) begin : h
+      int h0 = 33;
+    end
+    else begin : h
+      int h3 = 34;
+    end
     // Calls the module's function, not the earlier alternative's
     int bumped;
     assign bumped = bump(cyc);
   end
+
+  // Applies to whichever alternative is elaborated
+  defparam g.u_core.D = 50 + R;
 
   case (R)
     1: begin : c
@@ -165,6 +203,9 @@ module t;
   mid #(.R(2)) u_r2 (.cyc);
   mid #(.R(R0)) u_r0 (.cyc);
 
+  defparam u_r1.g.u_core.E = 99;
+  defparam u_r0.g.u_core.E = 97;
+
   if (R1 == 1) begin : g_chk1
     function automatic int get();
       return u_r1.g.u_a.mem;
@@ -198,6 +239,18 @@ module t;
       `checkd(u_r1.g.u_arr[1].get(), 2 * cyc + 10);
       `checkd(u_r1.g.bump(cyc), cyc * 4);
       `checkd(u_r2.g.u_m.mem, cyc + 6);
+      `checkd(u_r1.g.u_core.only_a, 7);
+      `checkd(u_r2.g.u_core.only_b, 8);
+      `checkd($bits(u_r1.g.u_core.s), 32);
+      `checkd($bits(u_r2.g.u_core.s), 8);
+      `checkd(u_r1.g.u_core.dv, 51);
+      `checkd(u_r2.g.u_core.dv, 52);
+      `checkd(u_r0.g.u_core.dv, 50);
+      `checkd(u_r1.g.u_core.ev, 99);
+      `checkd(u_r2.g.u_core.ev, 0);
+      `checkd(u_r0.g.u_core.ev, 97);
+      `checkd(u_r1.g.h.h1, 31);
+      `checkd(u_r0.g.h.h0, 33);
       `checkd(u_r0.g.u_b.mem, cyc + 2);
       `checkd(u_r0.g.bumped, cyc + 11);
       `checkd(u_r1.c.u_c1.mem, cyc + 3);
