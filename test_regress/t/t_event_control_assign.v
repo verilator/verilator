@@ -1,9 +1,13 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2023 Antmicro Ltd
+// SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 int evt_recv_cnt;
 int new_evt_recv_cnt;
@@ -12,6 +16,12 @@ module t;
 
   class Foo;
     event evt1;
+
+    task check_dynamic_array();
+      event events[];
+      events = new[2];
+      `checkd(events[0] == events[1], 0);
+    endtask
 
     task automatic send_evt();
       fork
@@ -45,6 +55,7 @@ module t;
   initial begin
     Foo foo1;
     foo1 = new;
+    foo1.check_dynamic_array();
 
     evt_recv_cnt = 0;
     new_evt_recv_cnt = 0;
