@@ -74,6 +74,9 @@ module t;
 
       release matrix[-1][2];
       release wide_array[3];
+      // The released elements read back at once, alone as well as in a copy of the array
+      `checkh(matrix[-1][2], 7'h65);
+      `checkh(wide_array[3][35:29], 7'h5a);
       check_arrays();
 
       matrix[0][1] = 7'(cycle + 40);
