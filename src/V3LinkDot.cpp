@@ -493,7 +493,10 @@ public:
         nodep->user1p(symp);
         if (name != "") checkDuplicate(abovep, nodep, name);
         // Duplicates are possible, as until resolve generates might have 2 same cells under an if
-        abovep->reinsert(name, symp);
+        VSymEnt* const replacedp = abovep->reinsert(name, symp);
+        if (replacedp && VN_IS(nodep, GenBlock) && VN_IS(replacedp->nodep(), GenBlock)) {
+            symp->shadowedp(replacedp);
+        }
         return symp;
     }
     VSymEnt* insertSym(VSymEnt* abovep, const string& name, AstNode* nodep,
@@ -763,7 +766,7 @@ private:
     }
 
     VSymEnt* findWithAltFlat(VSymEnt* symp, const string& name, const string& altname) {
-        VSymEnt* findp = symp->findIdFlat(name);
+        VSymEnt* findp = symp->findIdFlatOrShadowed(name);
         if (findp) return findp;
         if (altname != "") {
             UINFO(8, "     alt flat");
@@ -984,9 +987,10 @@ public:
     }
 
     VSymEnt* findSymPrefixed(VSymEnt* lookupSymp, const string& dotname, string& baddot,
-                             bool fallback) {
+                             bool fallback, bool dotted = true) {
         // Find symbol in given point in hierarchy, allowing prefix (post-Inline)
         // For simplicity lookupSymp may be passed nullptr result from findDotted
+        // If dotted, lookupSymp was named by the reference, so its shadowed blocks also apply
         if (!lookupSymp) return nullptr;
         UINFO(8, "    findSymPrefixed "
                      << dotname << " under se" << cvtToHex(lookupSymp)
@@ -996,10 +1000,10 @@ public:
         string prefix = lookupSymp->symPrefix();
         VSymEnt* foundp = nullptr;
         while (!foundp) {
-            if (fallback) {
-                foundp = lookupSymp->findIdFallback(prefix + dotname);  // Might be nullptr
-            } else {
-                foundp = lookupSymp->findIdFlat(prefix + dotname);  // Might be nullptr
+            foundp = dotted ? lookupSymp->findIdFlatOrShadowed(prefix + dotname)
+                            : lookupSymp->findIdFlat(prefix + dotname);  // Might be nullptr
+            if (!foundp && fallback && lookupSymp->fallbackp()) {
+                foundp = lookupSymp->fallbackp()->findIdFallback(prefix + dotname);
             }
             if (prefix.empty()) break;
             const string nextPrefix = removeLastInlineScope(prefix);
@@ -3401,6 +3405,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         bool m_unresolvedClass;  // Unresolved class reference, needs help from V3Param
         bool m_unresolvedGenericIface;  // Unresolved generic interface, needs help from V3Param
         bool m_genBlk;  // Contains gen block reference
+        bool m_genIfBlk;  // Contains generate if/case block reference, V3Param may prune
         AstNode* m_unlinkedScopep;  // Unresolved scope, needs corresponding VarXRef
         AstDisable* m_disablep;  // Disable statement under which the reference is
         bool m_dotErr;  // Error found in dotted resolution, ignore upwards
@@ -3418,6 +3423,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_unresolvedClass = unresolvedClass;
             m_unresolvedGenericIface = false;
             m_genBlk = false;
+            m_genIfBlk = false;
             m_unlinkedScopep = nullptr;
             m_disablep = nullptr;
         }
@@ -3436,6 +3442,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (m_unresolvedClass) sstr << "  [unrClass]";
             if (m_unresolvedGenericIface) sstr << "  [unrGIface]";
             if (m_genBlk) sstr << "  [genBlk]";
+            if (m_genIfBlk) sstr << "  [genIfBlk]";
             sstr << "  txt=" << m_dotText;
             return sstr.str();
         }
@@ -4793,7 +4800,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (first) {
                 foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
             } else {
-                foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
+                foundp = m_ds.m_dotSymp->findIdFlatOrShadowed(nodep->name());
             }
             // In a generate block, an implicit net is local to the block, even if an enclosing
             // scope declares the name later (IEEE 1800-2023 6.10)
@@ -4868,8 +4875,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         // last component, `targetp()` field will be overwritten by next components
                         m_ds.m_disablep->targetp(foundp->nodep());
                     }
-                    if (VN_IS(foundp->nodep(), GenBlock)) {
+                    if (const AstGenBlock* const blkp = VN_CAST(foundp->nodep(), GenBlock)) {
                         m_ds.m_genBlk = true;
+                        // A generate-case block's parent is the GenCaseItem, not the GenCase
+                        if (VN_IS(blkp->backp(), GenIf) || VN_IS(blkp->backp(), GenCaseItem)) {
+                            m_ds.m_genIfBlk = true;
+                        }
                         if (m_ds.m_disablep) {
                             m_ds.m_disablep->v3warn(
                                 E_UNSUPPORTED,
@@ -5762,18 +5773,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_dotPos = DP_MEMBER;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
             nodep->dotted(m_ds.m_dotText);  // Maybe ""
-            // Only flag FTaskRefs under generate-if/case blocks that may be
+            // Only flag FTaskRefs through generate-if/case blocks that may be
             // pruned.  GenFor and plain begin-blocks won't be pruned by V3Param.
-            // A generate-case block's parent is the GenCaseItem, not the GenCase.
             // VarXRef uses the broader m_genBlk flag (set for all GenBlocks)
             // because genfor unrolling also removes variables.
-            if (m_ds.m_genBlk && m_ds.m_dotSymp) {
-                const AstNode* const blkp = m_ds.m_dotSymp->nodep();
-                if (VN_IS(blkp, GenBlock)
-                    && (VN_IS(blkp->backp(), GenIf) || VN_IS(blkp->backp(), GenCaseItem))) {
-                    nodep->containsGenBlock(true);
-                }
-            }
+            if (m_ds.m_genIfBlk) nodep->containsGenBlock(true);
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is method call.
             // {scope}.{var}.HERE {method} ( ARGS )
@@ -5866,7 +5870,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 return;
             }
             VSymEnt* const foundp
-                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
+                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first, !first);
             AstNodeFTask* const taskp = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;
             AstNodeModule* const taskModulep = foundp ? foundp->classOrPackagep() : nullptr;
             // Ignore deferring linking of functions inside params of classes extending
@@ -5881,7 +5885,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // it's extended class symbols.
                     return;
                 }
-                if (AstClass* const targetClassp = VN_CAST(dotSymp->nodep(), Class)) {
+                if (AstClass* const targetClassp
+                    = dotSymp ? VN_CAST(dotSymp->nodep(), Class) : nullptr) {
                     if (m_extendsParam.count(targetClassp)) {
                         // Target class has parameterized extends not yet resolved.
                         // Its inherited symbols (e.g. static functions from the base class)
