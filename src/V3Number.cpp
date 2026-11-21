@@ -656,7 +656,7 @@ string V3Number::displayedEnumName(const AstEnumItem* itemp) {
 string V3Number::displayedEnumName(const AstEnumDType* dtypep) const VL_MT_STABLE {
     V3Number value{this, dtypep->width()};
     value.opAssign(*this);
-    for (const AstEnumItem* const itemp : dtypep->itemspList()) {
+    for (const AstEnumItem* const itemp : dtypep->originalOrThisDTypep()->itemspList()) {
         const AstConst* const constp = VN_AS(itemp->valuep(), Const);
         if (!constp->num().isAnyXZ() && value.isCaseEq(constp->num()))
             return displayedEnumName(itemp);
