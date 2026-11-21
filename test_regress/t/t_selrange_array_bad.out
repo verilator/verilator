@@ -1,0 +1,19 @@
+%Warning-SELRANGE: t/t_selrange_array_bad.v:27:17: Selection index out of range: 4:4 outside 3:0
+                                                 : ... note: In instance 't'
+   27 |   assign o5 = i1[4];   
+      |                 ^
+                   ... For warning description see https://verilator.org/warn/SELRANGE?v=latest
+                   ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
+%Warning-SELRANGE: t/t_selrange_array_bad.v:28:17: Selection index out of range: 4:4 outside 3:0
+                                                 : ... note: In instance 't'
+   28 |   assign o6 = i3[4];   
+      |                 ^
+%Warning-SELRANGE: t/t_selrange_array_bad.v:29:17: Selection index out of range: 23:16 outside 15:0
+                                                 : ... note: In instance 't'
+   29 |   assign o7 = i1[5:4];   
+      |                 ^
+%Warning-SELRANGE: t/t_selrange_array_bad.v:31:17: Selection index out of range: 4:4 outside 3:0
+                                                 : ... note: In instance 't'
+   31 |   always_comb w1[4] = a;   
+      |                 ^
+%Error: Exiting due to
