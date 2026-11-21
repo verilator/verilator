@@ -13,6 +13,7 @@ test.scenarios('vlt')
 
 test.lint(verilator_flags2=['--stats'])
 
-test.file_grep(test.stats, r'Assertions, NFA delay ring edge visits\s+(\d+)', 15)
+test.file_grep(test.stats, r'Assertions, NFA delay ring edge visits\s+(\d+)', 21)
+test.file_grep(test.stats, r'Assertions, NFA link edge visits\s+(\d+)', 41)
 
 test.passes()

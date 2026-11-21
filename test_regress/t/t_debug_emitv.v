@@ -718,6 +718,7 @@ module t (/*AUTOARG*/
     vder = new;
     if (vder.randomize() != 1) $stop;
   end
+  escapes escapes();
 endmodule
 
 module param_mod #(
@@ -759,6 +760,105 @@ module seq_event(input logic clk);
 endmodule
 
 bind t Iface bound_iface (.clk(clk));
+
+// In the compilation-unit package, unlike the variable \$unit in module escapes
+typedef enum {UNIT_A, UNIT_B} unit_e;
+
+// Same name as module escapes, both keep it when emitted
+package escapes;
+  typedef enum {ESC_A, ESC_B} esc_e;
+endpackage
+
+// Escaped names in each kind of declaration and reference
+package \esc.pkg ;
+  localparam int \esc.lp = 1;
+endpackage
+
+interface \esc.ifc ;
+  logic \sig.i ;
+  modport \mp.m (input \sig.i );
+endinterface
+
+module \esc.sub (
+    \esc.ifc .\mp.m \port.p
+);
+  logic \sub.sig ;
+  assign \sub.sig = \port.p .\sig.i ;
+  task \t.s ;
+  endtask
+endmodule
+
+class \Cls.c #(
+    type \T.t = int,
+    int \P.p = 1
+);
+  \T.t \m.m ;
+  task \t.k (int \a.a );
+    \m.m = \T.t '(\a.a + \P.p );
+  endtask
+endclass
+
+module escapes;
+  // System function name of a DPI import, called as written
+  import "DPI-C" esc_dpi = function int \$esc_dpi (int \i.n );
+  export "DPI-C" esc_exp = function \f.e ;
+  typedef enum {\E.a , \E.b } \esc.e ;
+  typedef struct {logic \m.x ;} \st.s ;
+  logic \escaped.sig ;
+  logic \input ;
+  logic dollar$sig;
+  logic \$unit ;
+  logic \par) ;
+  // A C++ keyword that is not a SystemVerilog keyword
+  logic bool;
+  escapes::esc_e esc_enum = escapes::ESC_B;
+  unit_e esc_unit_enum = $unit::UNIT_B;
+  \esc.e esc_e_var = \E.b ;
+  \st.s esc_st;
+  \Cls.c #(.\T.t (byte), .\P.p (2)) esc_cls;
+  byte esc_mem;
+  int esc_q[$];
+  int esc_dpi_out;
+  \esc.ifc \i.f ();
+  \esc.sub \u.s (.\port.p (\i.f ));
+  function int \f.e ();
+    \f.e = 1;
+  endfunction
+  assign \escaped.sig = \input ;
+  assign dollar$sig = \input ;
+  assign \$unit = \input ;
+  assign \par) = \input ;
+  if (1) begin
+    logic unnamed_gen;
+  end
+  if (1) begin : \gen.g
+    logic gen_sig;
+  end
+  initial esc_dpi_out = $esc_dpi(1);
+  initial begin : \blk.b}
+    esc_e_var = \E.a ;
+    esc_cls = new;
+    esc_cls.\t.k (.\a.a (\f.e ()));
+    esc_mem = esc_cls.\m.m ;
+    \u.s .\t.s ();
+    esc_q = esc_q.find(\it.x ) with (\it.x > 0);
+    fork : \frk.f
+      esc_st.\m.x = \u.s .\sub.sig ;
+    join
+  end
+  covergroup \cg.g ;
+    \cp.c : coverpoint esc_dpi_out {
+      bins \b.b = {1};
+    }
+    \cp.d : coverpoint esc_dpi_out {
+      bins \d.b = {0};
+    }
+    \cx.x : cross \cp.c , \cp.d {
+      bins \cb.b = binsof (\cp.c .\b.b );
+    }
+  endgroup
+  \cg.g \cg.i = new;
+endmodule
 
 package p;
   logic pkgvar;

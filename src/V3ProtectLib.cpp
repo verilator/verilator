@@ -19,6 +19,7 @@
 #include "V3ProtectLib.h"
 
 #include "V3Control.h"
+#include "V3File.h"
 #include "V3Hasher.h"
 #include "V3InstrCount.h"
 #include "V3String.h"
@@ -114,7 +115,12 @@ class ProtectVisitor final : public VNVisitor {
         txtp->add("\n`ifdef VERILATOR\n");
         txtp->add("`verilator_config\n");
 
-        txtp->add("verilator_lib -module \"" + m_libName + "\"\n");
+        // V3Control finds the module by its pretty name, see the module declaration below
+        txtp->add("verilator_lib -module \""
+                  + (v3Global.opt.hierChild()
+                         ? V3OutFormatter::quoteNameControls(AstNode::prettyName(m_libName))
+                         : m_libName)
+                  + "\"\n");
 
         txtp->add("profile_data -hier-dpi \"" + m_libName + "_protectlib_combo_update\" -cost 64'd"
                   + std::to_string(v3Global.currentHierBlockCost()) + "\n");
@@ -179,7 +185,10 @@ class ProtectVisitor final : public VNVisitor {
         // Wrapper ranges preserve the original RTL, including intentional ascending ranges.
         txtp->add("/*verilator lint_save*/\n");
         txtp->add("/*verilator lint_off ASCRANGE*/\n");
-        m_modPortsp = new AstTextBlock{fl, "module " + m_libName + " (\n", ", ", ");\n\n"};
+        // A hierarchical child's library is its encoded module name, a user's is kept as given
+        const string libIdent
+            = v3Global.opt.hierChild() ? AstNode::verilogIdent(m_libName) : m_libName;
+        m_modPortsp = new AstTextBlock{fl, "module " + libIdent + " (\n", ", ", ");\n\n"};
         txtp->add(m_modPortsp);
 
         // Timescale
@@ -482,7 +491,7 @@ class ProtectVisitor final : public VNVisitor {
     // The wrapper's module ports are connected by name, so they must use the user's
     // names rather than the hashed form of long names used internally
     static string svPortName(const AstVar* varp) {
-        return AstNode::prettyName(VName::dehash(varp->name()));
+        return AstNode::verilogIdent(VName::dehash(varp->name()));
     }
 
     static AstVar* newSvPortVar(AstVar* varp) {
@@ -533,8 +542,8 @@ class ProtectVisitor final : public VNVisitor {
             UASSERT_OBJ(ports.inp && ports.outp && ports.enp, m_vfilep,
                         "Incomplete lowered library inout");
             const string in = svPortName(ports.inp);
-            const string out = ports.outp->prettyName();
-            const string en = ports.enp->prettyName();
+            const string out = ports.outp->verilogIdent();
+            const string en = ports.enp->verilogIdent();
             std::vector<std::pair<int, int>> dimensions;
             const AstNodeDType* dtypep = ports.inp->dtypep()->skipRefp();
             while (const AstNodeArrayDType* const arrayp = VN_CAST(dtypep, NodeArrayDType)) {
@@ -581,9 +590,11 @@ class ProtectVisitor final : public VNVisitor {
     }
 
     void handleOutput(AstVar* const varp) {
-        const std::string pname = varp->prettyName();
         // Restored inout drivers are local signals and retain their internal names.
-        const std::string portName = restoreInout(varp) ? pname : svPortName(varp);
+        const std::string portName = restoreInout(varp) ? varp->verilogIdent() : svPortName(varp);
+        const std::string comboName = AstNode::verilogIdent(varp->name() + "_combo__V");
+        const std::string seqName = AstNode::verilogIdent(varp->name() + "_seq__V");
+        const std::string tmpName = AstNode::verilogIdent(varp->name() + "_tmp__V");
         if (restoreInout(varp)) {
             AstVar* const localp = varp->cloneTree(false);
             localp->direction(VDirection::NONE);
@@ -592,10 +603,10 @@ class ProtectVisitor final : public VNVisitor {
             m_modPortsp->add(newSvPortVar(varp));
         }
         m_comboPortsp->add(varp->cloneTree(false));
-        m_comboParamsp->add(pname + "_combo__V");
+        m_comboParamsp->add(comboName);
         if (m_hasClk) {
             m_seqPortsp->add(varp->cloneTree(false));
-            m_seqParamsp->add(pname + "_tmp__V");
+            m_seqParamsp->add(tmpName);
         }
 
         addLocalVariable(m_comboDeclsp, varp, "_combo__V");
@@ -604,10 +615,10 @@ class ProtectVisitor final : public VNVisitor {
             addLocalVariable(m_seqDeclsp, varp, "_seq__V");
             addLocalVariable(m_tmpDeclsp, varp, "_tmp__V");
 
-            m_nbAssignsp->add(pname + "_seq__V <= " + pname + "_tmp__V;\n");
-            m_seqAssignsp->add(portName + " = " + pname + "_seq__V;\n");
+            m_nbAssignsp->add(seqName + " <= " + tmpName + ";\n");
+            m_seqAssignsp->add(portName + " = " + seqName + ";\n");
         }
-        m_comboAssignsp->add(portName + " = " + pname + "_combo__V;\n");
+        m_comboAssignsp->add(portName + " = " + comboName + ";\n");
         m_cComboParamsp->add(varp->dpiArgType(true, false));
         m_cComboOutsp->add(V3Task::assignInternalToDpi(varp, true, "", "", "handlep__V->") + "\n");
         if (m_hasClk) {

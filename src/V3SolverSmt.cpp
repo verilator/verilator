@@ -4501,15 +4501,7 @@ public:
                 varRefp->classOrPackagep(arrClassp);
                 methodp->addPinsp(varRefp);
 
-                uint32_t dimension = 0;
-                if (VN_IS(arrVarp->dtypep(), UnpackArrayDType)
-                    || VN_IS(arrVarp->dtypep(), DynArrayDType)
-                    || VN_IS(arrVarp->dtypep(), QueueDType)
-                    || VN_IS(arrVarp->dtypep(), AssocArrayDType)) {
-                    const std::pair<uint32_t, uint32_t> dims
-                        = arrVarp->dtypep()->dimensions(/*includeBasic=*/true);
-                    dimension = dims.second;
-                }
+                const uint32_t dimension = arrVarp->dtypep()->dimensions(false).second;
 
                 const size_t width = SmtUtil::arrayElementDTypep(arrVarp->dtypep())->width();
                 methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, width});

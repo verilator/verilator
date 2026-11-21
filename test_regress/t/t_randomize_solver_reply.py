@@ -30,8 +30,11 @@ runs = [
     ('dup_model', 1, 15),  # the same variable answered twice
     ('err_assume', 1, 16),  # error in place of the unsat assumptions
     ('err_core', 1, 16),  # error in place of the unsat core
+    ('err_extra', 4, 15),  # error replying to a soft constraint, ahead of the relaxation status
+    ('err_marker', 4, 15),  # a later error whose text holds a marker-like line; one call fails
     ('err_multiline', 2, 15),  # solver rejects a command with an error spanning two lines
     ('err_once', 2, 15),  # solver rejects a command instead of answering
+    ('err_once', 9, 16),  # a rejected phase diversity round still lets the call pass
     ('err_phase', 1, 15),  # error in place of an intermediate phase value reply
     ('err_reply', 1, 15),  # error in place of an S-expression reply
     ('err_trunc', 2, 0),  # unterminated error, then the pipe closes
@@ -51,9 +54,11 @@ runs = [
     ('oor_assume', 1, 16),  # unsat assumptions naming only an out-of-range literal
     ('phase_model', 1, 15),  # error in place of the final phased model
     ('phase_trunc', 1, 12),  # unterminated phase value reply, then the pipe closes
+    ('phase_trunc', 2, 12),  # the same in a phase diversity round, after which the call fails
     ('short_model', 1, 15),  # a model missing a requested variable is not a model
     ('success', 1, 16),  # print-success echo ahead of every reply
     ('unknown_once', 2, 15),  # unknown answers one check-sat
+    ('unknown_once', 9, 16),  # unknown answers a phase diversity round; the call still passes
     ('unknown_twice', 2, 15),  # a second unknown must not warn again
     ('unknown_var', 1, 15),  # a variable that was never requested
     ('unsupported_once', 2, 15),  # command not supported, so no status ever comes
@@ -97,5 +102,12 @@ for mode, at, nrounds in pin_runs:
                           'TAMPER=' + mode + ' TAMPER_AT=' + str(at)) if mode else '')
     test.file_grep(logfile, r'NPASS=(\d+)', 4)
     test.file_grep_count(solver_log, r'^  \(check-sat-assuming', nrounds)
+
+# 20 randomize calls of a wide class, alone, with a solver that does not support
+# check-sat-assuming
+test.execute(logfile=test.obj_dir + '/sim_wide_csa.log',
+             all_run_flags=['+MODE=wide'],
+             run_env='VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+             'TAMPER=csa_unsupported ')
 
 test.passes()
