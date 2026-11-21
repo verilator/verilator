@@ -18,6 +18,10 @@
 // Each module:
 //      For each wide OP, assign a temporary variable.
 //      For each deep expression, assign expression to temporary.
+//      Before recursive width/const walks, break a deep spine into temps
+//      using an explicit heap stack. Those walks are one C frame per node,
+//      and the default 8MB stack cannot hold a chain of around ten thousand
+//      binary operators. The later CFunc pass still only sees shallow trees.
 // Each CFunc:
 //      Any statements that need "this" are marked non-static
 //
@@ -145,6 +149,115 @@ public:
 
 //######################################################################
 // Depth class functions
+
+//######################################################################
+// Break deep expression spines before recursive visitors.
+
+// A chain longer than this fits in the default 8MB stack. A flat 6000-input
+// OR elaborates; 12000 segfaults in WidthVisitor's final walk.
+static constexpr int DEPTH_BREAK_LIMIT = 1024;
+static uint32_t s_deepTempCount = 0;
+
+static void pushExprChildren(std::vector<std::pair<AstNode*, int>>& stack, AstNode* nodep,
+                              int depth) {
+    AstNode* const ops[4] = {nodep->op4p(), nodep->op3p(), nodep->op2p(), nodep->op1p()};
+    for (AstNode* const opp : ops) {
+        std::vector<AstNode*> sibs;
+        for (AstNode* sibp = opp; sibp; sibp = sibp->nextp()) sibs.push_back(sibp);
+        for (auto it = sibs.rbegin(); it != sibs.rend(); ++it) {
+            stack.emplace_back(*it, depth + 1);
+        }
+    }
+}
+
+static AstNodeExpr* findDeepExpr(AstNodeExpr* rootp) {
+    std::vector<std::pair<AstNode*, int>> stack;
+    stack.emplace_back(rootp, 1);
+    while (!stack.empty()) {
+        AstNode* const nodep = stack.back().first;
+        const int depth = stack.back().second;
+        stack.pop_back();
+        if (depth >= DEPTH_BREAK_LIMIT && nodep != rootp) {
+            AstNodeExpr* const exprp = VN_CAST(nodep, NodeExpr);
+            if (exprp && exprp->dtypep() && !VN_IS(exprp, Const) && !VN_IS(exprp, NodeVarRef)) {
+                return exprp;
+            }
+        }
+        if (nodep) pushExprChildren(stack, nodep, depth);
+    }
+    return nullptr;
+}
+
+static AstNodeAssign* cutDeepExpr(AstNodeExpr* exprp, AstNodeAssign* insertBeforep,
+                                  AstNodeModule* modp, bool markWidthed) {
+    FileLine* const flp = exprp->fileline();
+    AstNodeDType* const dtypep = exprp->dtypep();
+    UASSERT_OBJ(dtypep, exprp, "Deep expression has no dtype to name a temporary");
+    const std::string name = "__Vdeepbrk" + cvtToStr(++s_deepTempCount);
+    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
+    varp->noSubst(true);
+    modp->addStmtsp(varp);
+
+    AstVarRef* const readp = new AstVarRef{flp, varp, VAccess::READ};
+    AstVarRef* const writep = new AstVarRef{flp, varp, VAccess::WRITE};
+    exprp->replaceWith(readp);
+    AstNodeAssign* assignp;
+    if (VN_IS(insertBeforep, AssignW)) {
+        assignp = new AstAssignW{flp, writep, exprp};
+    } else {
+        assignp = new AstAssign{flp, writep, exprp};
+    }
+    insertBeforep->addHereThisAsNext(assignp);
+    if (markWidthed) {
+        varp->didWidth(true);
+        readp->dtypeFrom(varp);
+        writep->dtypeFrom(varp);
+        readp->didWidth(true);
+        writep->didWidth(true);
+        assignp->dtypeFrom(varp);
+        assignp->didWidth(true);
+    }
+    return assignp;
+}
+
+std::vector<AstNodeAssign*> V3Depth::breakDeepAssign(AstNodeAssign* assignp, AstNodeModule* modp,
+                                                     bool markWidthed) {
+    std::vector<AstNodeAssign*> created;
+    std::vector<AstNodeAssign*> work;
+    work.push_back(assignp);
+    for (size_t i = 0; i < work.size(); ++i) {
+        while (AstNodeExpr* const deepp = findDeepExpr(work[i]->rhsp())) {
+            AstNodeAssign* const newp = cutDeepExpr(deepp, work[i], modp, markWidthed);
+            created.push_back(newp);
+            work.push_back(newp);
+        }
+    }
+    return created;
+}
+
+void V3Depth::breakDeepExprs(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ":");
+    std::vector<std::pair<AstNode*, AstNodeModule*>> stack;
+    stack.emplace_back(nodep, nullptr);
+    while (!stack.empty()) {
+        AstNode* const headp = stack.back().first;
+        AstNodeModule* const modp = stack.back().second;
+        stack.pop_back();
+        for (AstNode* np = headp; np; np = np->nextp()) {
+            if (AstNodeModule* const newModp = VN_CAST(np, NodeModule)) {
+                stack.emplace_back(newModp->stmtsp(), newModp);
+                continue;
+            }
+            if (AstNodeAssign* const assignp = VN_CAST(np, NodeAssign)) {
+                if (modp && assignp->rhsp()) (void)breakDeepAssign(assignp, modp, true);
+            }
+            AstNode* const kids[4] = {np->op4p(), np->op3p(), np->op2p(), np->op1p()};
+            for (AstNode* const kidp : kids) {
+                if (kidp && !VN_IS(kidp, NodeExpr)) stack.emplace_back(kidp, modp);
+            }
+        }
+    }
+}
 
 void V3Depth::depthAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
