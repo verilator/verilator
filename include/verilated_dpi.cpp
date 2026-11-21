@@ -29,6 +29,11 @@
 
 #include "verilatedos.h"
 
+// VL_API_EXPORT, when defined, also marks the svdpi functions
+#if defined(VL_API_EXPORT) && !defined(DPI_DLLESPEC)
+#define DPI_DLLESPEC VL_API_EXPORT
+#endif
+
 // On MSVC++ we want svdpi.h to declare the DPI functions as exports, not imports.  This must
 // happen before verilated_dpi.h is included, as that includes svdpi.h itself and svdpi.h's
 // include guard makes a second inclusion a no-op, so keep this include first.
@@ -40,17 +45,14 @@
 
 // svdpi.h applies that attribute to its typedefs as well, where it means nothing and is
 // diagnosed; the header is IEEE-1800 text that must not be modified, so filter it out
-#if defined(__GNUC__) && (defined(__MINGW32__) || defined(__CYGWIN__))
-#define DPI_ATTR_DIAG 1
-#endif
-#ifdef DPI_ATTR_DIAG
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wattributes"
 #endif
 
 #include "vltstd/svdpi.h"
 
-#ifdef DPI_ATTR_DIAG
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
 

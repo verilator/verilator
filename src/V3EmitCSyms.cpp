@@ -171,6 +171,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void emitScopeHier(TextStmts& stmts, bool destroy);
     void emitSymImp(const AstNetlist* netlistp);
     void emitDpiHdr();
+    void emitDpiLinkageMacro(const std::string& name, const std::string& windowsValue);
     void emitDpiStruct(const AstNodeDType* dtypep, std::set<std::string>& namesr);
     void emitDpiImp();
 
@@ -1835,7 +1836,12 @@ void EmitCSyms::emitDpiHdr() {
 
         const std::string sourceLoc = VIdProtect::ifNoProtect(" at " + nodep->fileline()->ascii());
         if (nodep->dpiExportDispatcher()) {
-            if (!firstExp++) puts("\n// DPI EXPORTS\n");
+            if (!firstExp++) {
+                puts("\n// DPI EXPORTS\n");
+                puts("// Define VL_API_EXPORT or VL_API_IMPORT to override these defaults\n");
+                emitDpiLinkageMacro("VL_API_EXPORT", "__declspec(dllexport)");
+                emitDpiLinkageMacro("VL_API_IMPORT", "__declspec(dllimport)");
+            }
             putsDecoration(nodep, "// DPI export" + sourceLoc + "\n");
         } else {
             if (!firstImp++) puts("\n// DPI IMPORTS\n");
@@ -1844,7 +1850,8 @@ void EmitCSyms::emitDpiHdr() {
         if (nodep->dpiCDeclOverride()) {
             putns(nodep, "extern " + nodep->dpiCDecl() + ";\n");
         } else {
-            putns(nodep, "extern " + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
+            const std::string attr = nodep->dpiExportDispatcher() ? "VL_API_IMPORT " : "";
+            putns(nodep, "extern " + attr + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
                              + cFuncArgs(nodep, false) + ");\n");
         }
     }
@@ -1857,6 +1864,17 @@ void EmitCSyms::emitDpiHdr() {
     ofp()->putsEndGuard();
 
     closeOutputFile();
+}
+
+void EmitCSyms::emitDpiLinkageMacro(const std::string& name, const std::string& windowsValue) {
+    // Same defaults as svdpi.h gives DPI_DLLESPEC and DPI_DLLISPEC
+    puts("#ifndef " + name + "\n");
+    puts("#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__CYGWIN__)\n");
+    puts("#define " + name + " " + windowsValue + "\n");
+    puts("#else\n");
+    puts("#define " + name + "\n");
+    puts("#endif\n");
+    puts("#endif\n");
 }
 
 void EmitCSyms::emitDpiStruct(const AstNodeDType* dtypep, std::set<std::string>& namesr) {
@@ -1897,6 +1915,10 @@ void EmitCSyms::emitDpiImp() {
     puts("//       and #ifdefs already inserted here will sort everything out.\n");
     puts("\n");
 
+    puts("// In the model, declare the DPI export functions as exports, not imports\n");
+    puts("#undef VL_API_IMPORT\n");
+    puts("#define VL_API_IMPORT VL_API_EXPORT\n");
+    puts("\n");
     puts("#include \"" + topClassName() + "__Dpi.h\"\n");
     puts("#include \"" + topClassName() + ".h\"\n");
     puts("\n");
@@ -1910,7 +1932,8 @@ void EmitCSyms::emitDpiImp() {
         // Prevent multi-definition if used by multiple models
         puts("#ifndef VL_DPIDECL_" + name + "_\n");
         puts("#define VL_DPIDECL_" + name + "_\n");
-        putns(nodep, nodep->rtnTypeVoid() + " " + name + "(" + cFuncArgs(nodep) + ") {\n");
+        putns(nodep, "VL_API_EXPORT " + nodep->rtnTypeVoid() + " " + name + "(" + cFuncArgs(nodep)
+                         + ") {\n");
         puts("// DPI export" + sourceLoc + "\n");
         putns(nodep, "return " + topClassName() + "::" + name + "(");
         std::string comma;
