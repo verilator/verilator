@@ -7,6 +7,7 @@
 // verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
@@ -41,6 +42,208 @@ module t (
   assert property (@(negedge clk) disable iff (!rst_l) ((&req) |-> gnt))
   else count_ref <= count_ref + 1;
 
+  // Multi-cycle: an attempt starts only where the procedure reaches the assertion
+  int pass_seq = 0;
+  int fail_seq = 0;
+  int pass_imp = 0;
+  int fail_named = 0;
+  string scope_named = "";
+  always @(negedge clk) begin
+    if (cyc % 10 == 2) begin
+      assert property (##1 cyc % 10 == 3 ##1 cyc % 10 == 4) ++pass_seq;
+      else ++fail_seq;
+    end
+    // Each reach that does not match the antecedent is a vacuous pass
+    if (cyc % 10 == 2 || cyc % 10 == 3)
+      assert property (cyc % 10 == 2 |=> cyc % 10 == 3 ##1 cyc % 10 == 4) ++pass_imp;
+    begin : named
+      if (cyc % 10 == 5)
+        assert property (##1 cyc % 10 == 7)
+        else begin
+          ++fail_named;
+          scope_named = $sformatf("%m");
+        end
+    end
+  end
+
+  // A reach off the assertion's clock starts an attempt at its next tick
+  int pass_off_tick = 0;
+  int fail_off_tick = 0;
+  int pass_off_tick2 = 0;
+  int fail_off_tick2 = 0;
+  always @(posedge clk) begin
+    if (cyc % 10 == 2) begin
+      assert property (@(negedge clk) ##1 cyc % 10 == 4) ++pass_off_tick;
+      else ++fail_off_tick;
+    end
+    if (cyc % 10 == 5 || cyc % 10 == 7)
+      assert property (@(negedge clk) ##1 cyc % 10 == 7) ++pass_off_tick2;
+      else ++fail_off_tick2;
+  end
+
+  // Off-tick reach on the other clock edge, including a first step entering a ranged delay
+  int pass_off_tick_pos = 0;
+  int fail_off_tick_pos = 0;
+  int pass_off_tick_range = 0;
+  int fail_off_tick_range = 0;
+  always @(negedge clk) begin
+    if (cyc % 10 == 2 || cyc % 10 == 5)
+      assert property (@(posedge clk) ##1 cyc % 10 == 3) ++pass_off_tick_pos;
+      else ++fail_off_tick_pos;
+    if (cyc % 10 == 2 || cyc % 10 == 5 || cyc % 10 == 8)
+      assert property (@(posedge clk) cyc % 10 >= 2 ##[0:2] cyc % 10 % 4 == 0)
+        ++pass_off_tick_range;
+      else ++fail_off_tick_range;
+  end
+
+  // An off-tick vacuous pass at the tick another attempt fails
+  int pass_off_tick_imp = 0;
+  int fail_off_tick_imp = 0;
+  always @(posedge clk) begin
+    if (cyc % 10 == 2 || cyc % 10 == 3)
+      assert property (@(negedge clk) cyc % 10 == 3 |=> cyc % 10 == 5) ++pass_off_tick_imp;
+      else ++fail_off_tick_imp;
+  end
+
+  // A first step entering a multi-cycle delay
+  int pass_delay = 0;
+  int fail_delay = 0;
+  int pass_delay_imp = 0;
+  always @(negedge clk) begin
+    if (cyc % 10 >= 2 && cyc % 10 <= 4)
+      assert property (cyc % 10 != 4 ##2 (cyc % 10 == 4 || cyc % 10 == 5)) ++pass_delay;
+      else ++fail_delay;
+    if (cyc % 10 == 2 || cyc % 10 == 3)
+      assert property (cyc % 10 == 2 |-> ##3 cyc % 10 == 5) ++pass_delay_imp;
+  end
+
+  // Attempts failing at the same tick each run the fail action
+  int pass_together = 0;
+  int fail_together = 0;
+  always @(negedge clk) begin
+    if (cyc % 10 == 1 || cyc % 10 == 3 || cyc % 10 == 4)
+      assert property (cyc % 10 != 5 throughout ##3 1) ++pass_together;
+      else ++fail_together;
+  end
+
+  // A multi-cycle antecedent not matched at the first step is a vacuous pass
+  int pass_seq_ante = 0;
+  int fail_seq_ante = 0;
+  always @(negedge clk) begin
+    if (cyc % 10 == 2 || cyc % 10 == 5 || cyc % 10 == 8)
+      assert property (cyc % 10 < 6 ##1 cyc % 10 != 4 |-> cyc % 10 == 6) ++pass_seq_ante;
+      else ++fail_seq_ante;
+  end
+
+  // Strong obligations that complete before the end of simulation
+  int pass_strong = 0;
+  int fail_strong = 0;
+  int pass_strong_named = 0;
+  int fail_strong_named = 0;
+  string scope_strong_named = "";
+  always @(negedge clk) begin
+    if (cyc % 10 == 2 || cyc % 10 == 6)
+      assert property (s_always [1:2] cyc % 10 != 4) ++pass_strong;
+      else ++fail_strong;
+    begin : strong_named
+      if (cyc % 10 == 5)
+        assert property (s_always [1:2] cyc % 10 >= 6) begin
+          ++pass_strong_named;
+          scope_strong_named = $sformatf("%m");
+        end
+        else ++fail_strong_named;
+    end
+  end
+
+  // An unnamed assertion in a generate block is in the block's scope
+  int fail_gen = 0;
+  string scope_gen = "";
+  if (1) begin : gen
+    always @(negedge clk)
+      if (cyc % 10 == 5)
+        assert property (##1 cyc % 10 == 7)
+        else begin
+          ++fail_gen;
+          scope_gen = $sformatf("%m");
+        end
+  end
+
+  int count_cover = 0;
+  always @(negedge clk) begin
+    if (cyc % 10 == 2 || cyc % 10 == 3) cover property (##2 cyc % 10 == 5) ++count_cover;
+  end
+
+  // A disable between ticks ends a pending attempt with no action
+  int pass_disable = 0;
+  int fail_disable = 0;
+  always @(negedge clk) begin
+    if (cyc % 10 == 2 || cyc % 10 == 5)
+      assert property (disable iff (cyc % 10 == 3) ##1 cyc % 10 != 9 ##1 cyc % 10 != 4)
+        ++pass_disable;
+      else ++fail_disable;
+  end
+
+  // Woken by the clock, an attempt starts at once; by the other event, at the next tick
+  wire evt = !(!clk && cyc % 10 == 3);
+  int pass_events = 0;
+  int fail_events = 0;
+  always @(posedge clk or negedge evt) begin
+    if (!evt || cyc % 10 == 6)
+      assert property (##1 (cyc % 10 == 4 || cyc % 10 == 7)) ++pass_events;
+      else ++fail_events;
+  end
+
+  // An event qualified by iff wakes the procedure only while its condition holds
+  int pass_events_iff = 0;
+  int fail_events_iff = 0;
+  always @(posedge clk or negedge evt iff cyc % 20 == 3) begin
+    if (!evt || cyc % 10 == 6)
+      assert property (##1 (cyc % 10 == 4 || cyc % 10 == 7)) ++pass_events_iff;
+      else ++fail_events_iff;
+  end
+
+  // An edge of a multi-bit event is an edge of its least significant bit
+  wire [6:0] evt7 = {cyc[5:0], evt};
+  int pass_events7 = 0;
+  int fail_events7 = 0;
+  always @(posedge clk or negedge evt7) begin
+    if (!evt7[0] || cyc % 10 == 6)
+      assert property (##1 (cyc % 10 == 4 || cyc % 10 == 7)) ++pass_events7;
+      else ++fail_events7;
+  end
+
+  // Reached once at time zero, an initial procedure's attempt starts at the first tick
+  int pass_init = 0;
+  int fail_init = 0;
+  initial
+    assert property (@(posedge clk) cyc == 0 ##1 cyc == 1) ++pass_init;
+    else ++fail_init;
+
+  // A named assertion is in the scope of its nested named blocks
+  int fail_nested = 0;
+  string scope_nested = "";
+  always @(negedge clk) begin : outer
+    begin : inner
+      if (cyc % 10 == 5)
+        check: assert property (##1 cyc % 10 == 7)
+        else begin
+          ++fail_nested;
+          scope_nested = $sformatf("%m");
+        end
+    end
+  end
+
+  // An unnamed implication outside any block, with no pass action
+  int fail_imp_bare = 0;
+  string scope_imp_bare = "";
+  always @(negedge clk)
+    if (cyc % 10 == 5)
+      assert property (cyc % 10 == 5 |=> cyc % 10 == 7)
+      else begin
+        ++fail_imp_bare;
+        scope_imp_bare = $sformatf("%m");
+      end
+
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
     $write("[%0t] cyc==%0d crc=%x rst_l=%b req=%b gnt=%b gated=%0d ref=%0d\n", $time, cyc, crc,
@@ -59,6 +262,50 @@ module t (
       `checkh(crc, 64'hc77bb9b3784ea091);
       `checkd(count_gated, 5);  // Other sims same, one other: 4
       `checkd(count_ref, 12);  // Other sims same, one other: 10
+      `checkd(pass_seq, 10);
+      `checkd(fail_seq, 0);
+      `checkd(pass_imp, 20);
+      `checkd(fail_named, 10);
+      `checks(scope_named, "top.t.named");
+      `checkd(pass_off_tick, 10);
+      `checkd(fail_off_tick, 0);
+      `checkd(pass_off_tick2, 10);
+      `checkd(fail_off_tick2, 10);
+      `checkd(pass_off_tick_pos, 10);
+      `checkd(fail_off_tick_pos, 10);
+      `checkd(pass_off_tick_range, 20);
+      `checkd(fail_off_tick_range, 10);
+      `checkd(pass_off_tick_imp, 10);
+      `checkd(fail_off_tick_imp, 10);
+      `checkd(pass_delay, 20);
+      `checkd(fail_delay, 10);
+      `checkd(pass_delay_imp, 20);
+      `checkd(pass_together, 10);
+      `checkd(fail_together, 20);
+      `checkd(pass_seq_ante, 20);
+      `checkd(fail_seq_ante, 10);
+      `checkd(pass_strong, 10);
+      `checkd(fail_strong, 10);
+      `checkd(pass_strong_named, 10);
+      `checkd(fail_strong_named, 0);
+      `checks(scope_strong_named, "top.t.strong_named");
+      `checkd(fail_gen, 10);
+      `checks(scope_gen, "top.t.gen");
+      `checkd(count_cover, 10);
+      `checkd(pass_disable, 10);
+      `checkd(fail_disable, 0);
+      `checkd(pass_events, 20);
+      `checkd(fail_events, 0);
+      `checkd(pass_events_iff, 15);
+      `checkd(fail_events_iff, 0);
+      `checkd(pass_events7, 20);
+      `checkd(fail_events7, 0);
+      `checkd(pass_init, 1);
+      `checkd(fail_init, 0);
+      `checkd(fail_nested, 10);
+      `checks(scope_nested, "top.t.outer.inner.check");
+      `checkd(fail_imp_bare, 10);
+      `checks(scope_imp_bare, "top.t");
       $write("*-* All Finished *-*\n");
       $finish;
     end

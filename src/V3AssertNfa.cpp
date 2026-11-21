@@ -18,6 +18,8 @@
 //  - Convert multi-cycle SVA sequences/properties into NFA graphs.
 //  - Attach inherited assertion clocks before moving sampled-value functions.
 //  - Emit module-level state registers driven by AstAlways blocks.
+//  - For a procedural assertion, keep the checking logic module-level, and have the
+//    procedure start attempts through running totals (see ProcLink).
 //  - Replace converted assertions with combinational match/reject checks
 //    so V3AssertPre sees no multi-cycle SExpr (unsupported ones fall through).
 //
@@ -36,6 +38,7 @@
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
+#include <algorithm>
 #include <unordered_set>
 #include <vector>
 
@@ -51,6 +54,8 @@ class SvaStateVertex;
 // Per-vertex algorithm data, stored via V3GraphVertex::userp() during lowering
 struct SvaVertexData final {
     AstVar* stateVarp = nullptr;  // NBA state register for this vertex
+    AstVar* injTotalVarp = nullptr;  // Attempts a procedure placed here (ProcLink)
+    AstVar* injSeenVarp = nullptr;  // injTotalVarp at the latest tick
     AstVar* delayRingVarp = nullptr;  // Packed occupancy bits or per-slot match counts
     AstVar* delayRingHeadVarp
         = nullptr;  // Cached outgoing slot; isolates readers from in-place writes
@@ -1814,6 +1819,53 @@ static bool countsMatches(const AstNodeCoverOrAssert* assertp) {
 //######################################################################
 // NFA Lowering (converts NFA graph to synthesizable AstAlways blocks)
 
+static AstVar* newStaticVarp(AstNodeModule* const modp, FileLine* const flp,
+                             const std::string& name, AstNodeDType* const dtypep) {
+    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
+    varp->lifetime(VLifetime::STATIC_EXPLICIT);
+    modp->addStmtsp(varp);
+    return varp;
+}
+
+// How a procedure starts attempts of a concurrent assertion whose checking logic is
+// module-level (IEEE 1800-2023 16.14.6). A reach between ticks adds to a pending total, so
+// an attempt starts at the next tick; a reach at a tick evaluates the attempt's first step
+// in the procedure and adds the state it leaves to per-vertex injection totals. Totals
+// only grow, and the checking logic takes what was added since its previous tick, so each
+// variable has a single writer and nothing a later tick needs is ever cleared.
+struct ProcLink final {
+    struct Injection final {
+        AstVar* totalp;  // Attempts the procedure has placed in the vertex
+        AstNodeExpr* firstp;  // OWNED; what a first step adds to totalp
+    };
+    AstNodeProcedure* procedurep = nullptr;  // Procedure holding the directive
+    std::string scopeName;  // Directive's named-block scope below procedurep
+    AstVar* pendp = nullptr;  // Reaches whose attempts start at a later tick
+    AstVar* pendSeenp = nullptr;  // pendp at the checking logic's latest tick
+    // Vertices a first step can occupy; empty when no reach is at a tick
+    std::unordered_set<const V3GraphVertex*> firstStepVertices;
+    std::vector<Injection> injections;  // Set by SvaNfaLowering::lower
+    // Register reads and their values in a first step; set by SvaNfaLowering::lower
+    std::unordered_map<const AstVar*, uint32_t> firstStepValues;
+
+    // A copy of exprp as a reach's first step evaluates it
+    AstNodeExpr* firstStepOf(AstNodeExpr* exprp) const {
+        AstNodeExpr* const clonep = exprp->cloneTreePure(false);
+        std::vector<AstVarRef*> refps;
+        clonep->foreach([&](AstVarRef* refp) {
+            if (firstStepValues.count(refp->varp())) refps.push_back(refp);
+        });
+        for (AstVarRef* const refp : refps) {
+            AstConst* const constp = newTypedConstp(refp->fileline(), refp->dtypep(),
+                                                    firstStepValues.at(refp->varp()));
+            UASSERT_OBJ(refp != clonep, exprp, "First-step expression is a bare register");
+            refp->replaceWith(constp);
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        }
+        return clonep;
+    }
+};
+
 class SvaNfaLowering final {
     AstNodeModule* const m_modp;  // Module to add state vars and always blocks to
     AstNodeDType* const m_u32DTypep;  // Shared unsigned counter dtype
@@ -1833,7 +1885,15 @@ class SvaNfaLowering final {
         VAssertDirectiveType directiveType;  // Directive type for control tasks
         AstVar* killVarp;  // Last observed kill generation
         SvaGraph& graph;  // NFA graph
+        ProcLink* linkp;  // Procedural starts, or nullptr
     };
+
+    // regFlp is for a register a rising disable also clears
+    void newInjectionVars(SvaVertexData* const datap, FileLine* const flp, FileLine* const regFlp,
+                          const std::string& name) {
+        datap->injTotalVarp = newStaticVarp(m_modp, flp, name + "_inj", m_u32DTypep);
+        datap->injSeenVarp = newStaticVarp(m_modp, regFlp, name + "_injSeen", m_u32DTypep);
+    }
 
     // Build a match-now expression: stateSig[i] && $sampled(condp)
     static AstNodeExpr* buildMatchNow(FileLine* flp, AstNodeExpr* stateExprp, AstNodeExpr* condp) {
@@ -1947,11 +2007,32 @@ class SvaNfaLowering final {
         return new AstCond{flp, outgoingValidp, delayRingHeadCount(flp, vtxp),
                            newTypedConstp(flp, liveCountVarp->dtypep(), 0)};
     }
+    // Attempts a procedure placed in the vertex since the latest tick
+    static AstNodeExpr* injectedCountp(FileLine* const flp, const SvaStateVertex* const vtxp) {
+        return new AstSub{flp, new AstVarRef{flp, vtxp->datap()->injTotalVarp, VAccess::READ},
+                          new AstVarRef{flp, vtxp->datap()->injSeenVarp, VAccess::READ}};
+    }
+    static AstNodeExpr* delayRingLiveCountp(FileLine* const flp,
+                                            const SvaStateVertex* const vtxp) {
+        AstNodeExpr* const liveCountp
+            = new AstVarRef{flp, vtxp->datap()->delayRingLiveCountVarp, VAccess::READ};
+        if (!vtxp->datap()->injTotalVarp) return liveCountp;
+        return new AstAdd{flp, liveCountp, injectedCountp(flp, vtxp)};
+    }
     static AstNodeExpr* delayRingHasLiveThreadsp(FileLine* const flp,
-                                                 AstVar* const liveCountVarp) {
+                                                 const SvaStateVertex* const vtxp) {
         // active = live_count != 0;
-        return new AstNeq{flp, new AstVarRef{flp, liveCountVarp, VAccess::READ},
-                          newTypedConstp(flp, liveCountVarp->dtypep(), 0)};
+        return new AstNeq{flp, delayRingLiveCountp(flp, vtxp),
+                          newTypedConstp(flp, vtxp->datap()->delayRingLiveCountVarp->dtypep(), 0)};
+    }
+
+    // State register, or a procedure placed attempts there since the latest tick
+    AstNodeExpr* stateReadp(FileLine* const flp, const SvaStateVertex* const vtxp) const {
+        AstNodeExpr* const statep = new AstVarRef{flp, vtxp->datap()->stateVarp, VAccess::READ};
+        if (!vtxp->datap()->injTotalVarp) return statep;
+        return new AstLogOr{
+            flp, statep,
+            new AstNeq{flp, injectedCountp(flp, vtxp), newTypedConstp(flp, m_u32DTypep, 0)}};
     }
 
     // Phase 3 output signals
@@ -1989,6 +2070,21 @@ class SvaNfaLowering final {
             new AstSenTree{c.flp, new AstSenItem{c.flp, VEdgeType::ET_POSEDGE,
                                                  c.disableExprp->cloneTreePure(false)}},
             clearp));
+    }
+
+    // Have the procedure add enteredp, as its first step evaluates it, to what vtxp holds;
+    // the clocked update takes what was added since its previous tick (ProcLink)
+    static void addInjection(LowerCtx& c, const SvaStateVertex* const vtxp,
+                             AstNodeExpr* const enteredp, AstNodeStmt* const bodyp,
+                             AstNodeStmt* const clearp) {
+        c.linkp->injections.push_back(
+            {vtxp->datap()->injTotalVarp, c.linkp->firstStepOf(enteredp)});
+        VL_DO_DANGLING(enteredp->deleteTree(), enteredp);
+        AstAssignDly* const seenp = new AstAssignDly{
+            c.flp, new AstVarRef{c.flp, vtxp->datap()->injSeenVarp, VAccess::WRITE},
+            new AstVarRef{c.flp, vtxp->datap()->injTotalVarp, VAccess::READ}};
+        if (clearp) clearp->addNext(seenp->cloneTree(false));
+        bodyp->addNext(seenp);
     }
 
     // Boolean edge contribution to a state register or packed ring: src && cond && !disable
@@ -2033,6 +2129,12 @@ class SvaNfaLowering final {
                     new AstAssignDly{
                         c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::WRITE},
                         new AstConst{c.flp, AstConst::BitFalse{}}});
+            }
+            if (vtxp->datap()->injTotalVarp) {
+                addInjection(
+                    c, vtxp,
+                    new AstExtend{c.flp, nextStatep->cloneTreePure(false), m_u32DTypep->width()},
+                    bodyp, clearp);
             }
         }
         if (bodyp) addStateAlways(c, bodyp, clearp);
@@ -2102,7 +2204,15 @@ class SvaNfaLowering final {
             AstNodeExpr* const afterOutgoingp
                 = new AstSub{c.flp, new AstVarRef{c.flp, liveCountVarp, VAccess::READ}, outgoingp};
             AstNodeExpr* const oldAfterOutgoingp = afterOutgoingp->cloneTreePure(false);
-            AstAdd* const nextLiveCountp = new AstAdd{c.flp, afterOutgoingp, incomingCountp};
+            AstVar* const injTotalVarp = vtxp->datap()->injTotalVarp;
+            UASSERT_OBJ(!injTotalVarp || (storesCounts && !vtxp->m_delayRingAdvanceCondp), vtxp,
+                        "Procedural injection needs a counting ring advancing every tick");
+            AstNodeExpr* const enteredCountp
+                = injTotalVarp ? incomingCountp->cloneTreePure(false) : nullptr;
+            AstAdd* const nextLiveCountp = new AstAdd{
+                c.flp, afterOutgoingp,
+                injTotalVarp ? new AstAdd{c.flp, incomingCountp, injectedCountp(c.flp, vtxp)}
+                             : incomingCountp};
             if (storesCounts) {
                 AstNodeExpr* const liveOverflowp
                     = new AstLt{c.flp, nextLiveCountp->cloneTreePure(false), oldAfterOutgoingp};
@@ -2111,6 +2221,20 @@ class SvaNfaLowering final {
                 updateBodyp->addNext(writeIncomingp);
             } else {
                 VL_DO_DANGLING(oldAfterOutgoingp->deleteTree(), oldAfterOutgoingp);
+            }
+            if (injTotalVarp) {
+                // Attempts the procedure placed at the previous tick join the slot it wrote
+                AstNodeExpr* const prevIdxp
+                    = new AstCond{c.flp,
+                                  new AstEq{c.flp, new AstVarRef{c.flp, idxp, VAccess::READ},
+                                            newTypedConstp(c.flp, idxp->dtypep(), 0)},
+                                  newTypedConstp(c.flp, idxp->dtypep(), size - 1),
+                                  new AstSub{c.flp, new AstVarRef{c.flp, idxp, VAccess::READ},
+                                             newTypedConstp(c.flp, idxp->dtypep(), 1)}};
+                updateBodyp->addNext(new AstAssign{
+                    c.flp, delayRingSlot(c.flp, vtxp, prevIdxp, VAccess::WRITE),
+                    new AstAdd{c.flp, delayRingSlot(c.flp, vtxp, prevIdxp->cloneTreePure(false)),
+                               injectedCountp(c.flp, vtxp)}});
             }
             // Cache the outgoing slot for the next index after the write. Reading after
             // writing also handles one-slot rings and two-slot range rings without alias cases.
@@ -2168,9 +2292,15 @@ class SvaNfaLowering final {
             clearCountp->addNext(new AstAssignDly{c.flp,
                                                   new AstVarRef{c.flp, idxp, VAccess::WRITE},
                                                   newTypedConstp(c.flp, idxp->dtypep(), 0)});
+            AstNodeStmt* const asyncClearp = asyncDisable ? clearCountp->cloneTree(true) : nullptr;
+            AstNodeExpr* const enteredp
+                = injTotalVarp ? new AstCond{c.flp, clearCondp->cloneTreePure(false),
+                                             newTypedConstp(c.flp, m_u32DTypep, 0), enteredCountp}
+                               : nullptr;
             updateBodyp = new AstIf{c.flp, clearCondp, clearCountp, updateBodyp};
+            if (enteredp) addInjection(c, vtxp, enteredp, updateBodyp, asyncClearp);
 
-            addStateAlways(c, updateBodyp, asyncDisable ? clearCountp->cloneTree(true) : nullptr);
+            addStateAlways(c, updateBodyp, asyncClearp);
         }
     }
 
@@ -2233,6 +2363,12 @@ class SvaNfaLowering final {
         AstAssignDly* const ackp
             = new AstAssignDly{c.flp, new AstVarRef{c.flp, c.killVarp, VAccess::WRITE},
                                assertKillGet(c.flp, c.assertType, c.directiveType)};
+        // Pending starts are taken every tick, like the kill acknowledgement
+        if (c.linkp) {
+            ackp->addNext(
+                new AstAssignDly{c.flp, new AstVarRef{c.flp, c.linkp->pendSeenp, VAccess::WRITE},
+                                 new AstVarRef{c.flp, c.linkp->pendp, VAccess::READ}});
+        }
         m_modp->addStmtsp(
             newAssertAlways(c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), ackp));
     }
@@ -2292,13 +2428,12 @@ class SvaNfaLowering final {
                     "No terminal edge to match vertex");
     }
 
-    AstNodeExpr* newThroughoutThreadFailCountp(LowerCtx& c, AstVar* const delayRingLiveCountVarp,
+    AstNodeExpr* newThroughoutThreadFailCountp(LowerCtx& c, const SvaStateVertex* const vtxp,
                                                AstNodeExpr* const stateExprp,
                                                AstNodeExpr* const enablep) {
         AstNodeExpr* const activeThreadCountp
-            = delayRingLiveCountVarp
-                  ? static_cast<AstNodeExpr*>(
-                        new AstVarRef{c.flp, delayRingLiveCountVarp, VAccess::READ})
+            = vtxp->datap()->delayRingLiveCountVarp
+                  ? delayRingLiveCountp(c.flp, vtxp)
                   : new AstExtend{c.flp, stateExprp->cloneTreePure(false), m_u32DTypep->width()};
         return addCountp(c.flp, nullptr, activeThreadCountp, enablep);
     }
@@ -2312,10 +2447,9 @@ class SvaNfaLowering final {
             if (vtxp->m_isAndCombiner) continue;
             AstNodeExpr* stateExprp = nullptr;
             if (vtxp->datap()->stateVarp) {
-                stateExprp = new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::READ};
+                stateExprp = stateReadp(c.flp, vtxp);
             } else if (vtxp->datap()->delayRingVarp && vtxp->m_isFixedDelayRing) {
-                stateExprp
-                    = delayRingHasLiveThreadsp(c.flp, vtxp->datap()->delayRingLiveCountVarp);
+                stateExprp = delayRingHasLiveThreadsp(c.flp, vtxp);
             } else {
                 UASSERT_OBJ(vtxp->datap()->stateSigp, vtxp,
                             "Throughout-conds vertex missing state representation");
@@ -2349,9 +2483,8 @@ class SvaNfaLowering final {
                 }
             }
             if (needThreadFailCount) {
-                AstNodeExpr* const contributionp
-                    = newThroughoutThreadFailCountp(c, vtxp->datap()->delayRingLiveCountVarp,
-                                                    stateExprp, rejectCondp->cloneTreePure(false));
+                AstNodeExpr* const contributionp = newThroughoutThreadFailCountp(
+                    c, vtxp, stateExprp, rejectCondp->cloneTreePure(false));
                 sigs.threadFailCountp = addCountp(c.flp, sigs.threadFailCountp, contributionp);
                 if (vtxp->m_abortRejectp && vtxp->m_delayRingAdvanceCondp) {
                     // An advancing ring thread also occupies its same-tick match vertex in the
@@ -2359,8 +2492,8 @@ class SvaNfaLowering final {
                     AstNodeExpr* const abortAndAdvancep = new AstLogAnd{
                         c.flp, sampled(vtxp->m_abortRejectp->cloneTreePure(false)),
                         sampled(vtxp->m_delayRingAdvanceCondp->cloneTreePure(false))};
-                    AstNodeExpr* const matchContributionp = newThroughoutThreadFailCountp(
-                        c, vtxp->datap()->delayRingLiveCountVarp, stateExprp, abortAndAdvancep);
+                    AstNodeExpr* const matchContributionp
+                        = newThroughoutThreadFailCountp(c, vtxp, stateExprp, abortAndAdvancep);
                     sigs.threadFailCountp
                         = addCountp(c.flp, sigs.threadFailCountp, matchContributionp);
                 }
@@ -2554,19 +2687,20 @@ class SvaNfaLowering final {
     }
 
     // Phase 1: Resolve combinational Links in dependency order.
-    void resolveLinks(LowerCtx& c, AstNodeExpr* triggerExprp, const bool countMatches) {
+    void resolveLinks(LowerCtx& c, AstNodeExpr* triggerExprp, AstNodeExpr* startCountp,
+                      const bool countMatches) {
         // datap() was freshly allocated in lower() -- all state signals start null.
-        c.graph.m_startVertexp->datap()->stateSigp = triggerExprp->cloneTreePure(false);
+        c.graph.m_startVertexp->datap()->stateSigp = triggerExprp;
         c.graph.m_startVertexp->datap()->stateCountSigp
-            = new AstExtend{c.flp, triggerExprp->cloneTreePure(false), m_u32DTypep->width()};
+            = startCountp
+                  ? startCountp
+                  : new AstExtend{c.flp, triggerExprp->cloneTreePure(false), m_u32DTypep->width()};
         for (V3GraphVertex& vtxr : c.graph.m_graph.vertices()) {
             SvaStateVertex* const vtxp = static_cast<SvaStateVertex*>(&vtxr);
             if (vtxp->datap()->stateVarp) {
-                vtxp->datap()->stateSigp
-                    = new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::READ};
-                vtxp->datap()->stateCountSigp = new AstExtend{
-                    c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::READ},
-                    m_u32DTypep->width()};
+                vtxp->datap()->stateSigp = stateReadp(c.flp, vtxp);
+                vtxp->datap()->stateCountSigp
+                    = new AstExtend{c.flp, stateReadp(c.flp, vtxp), m_u32DTypep->width()};
             } else if (vtxp->datap()->delayRingVarp) {
                 if (vtxp->m_isFixedDelayRing) {
                     // state_count = wrapped ? head : 0; state = state_count != 0;
@@ -2575,8 +2709,7 @@ class SvaNfaLowering final {
                                                           newTypedConstp(c.flp, m_u32DTypep, 0)};
                     vtxp->datap()->stateCountSigp = countp;
                 } else {
-                    vtxp->datap()->stateSigp
-                        = delayRingHasLiveThreadsp(c.flp, vtxp->datap()->delayRingLiveCountVarp);
+                    vtxp->datap()->stateSigp = delayRingHasLiveThreadsp(c.flp, vtxp);
                     vtxp->datap()->stateCountSigp = new AstVarRef{
                         c.flp, vtxp->datap()->delayRingLiveCountVarp, VAccess::READ};
                 }
@@ -2697,7 +2830,7 @@ public:
     SignalSet lower(AstNodeCoverOrAssert* const assertp, SvaGraph& graph,
                     AstSenTree* const senTreep, AstNodeExpr* const matchCondp,
                     AstNodeExpr* const disableExprp, const bool needThreadFailCount,
-                    const bool needThroughoutThreadFailCount) {
+                    const bool needThroughoutThreadFailCount, ProcLink* const linkp) {
         FileLine* const flp = assertp->fileline();
         AstCover* const coverp = VN_CAST(assertp, Cover);
         const bool isSeqEvent = coverp && coverp->isSeqEvent();
@@ -2790,9 +2923,15 @@ public:
                 vtx[i]->datap()->doneRVarp = rp;
                 continue;
             }
+            bool injected = false;
+            for (const V3GraphEdge& edger : vtx[i]->inEdges()) {
+                injected |= linkp && static_cast<const SvaTransEdge&>(edger).m_consumesCycle
+                            && linkp->firstStepVertices.count(edger.fromp());
+            }
             if (vtx[i]->m_delayRingSize) {
                 const std::string base = baseName + "__d" + std::to_string(i);
-                const bool storesCounts = countMatches && ringNeedsMultiplicity[i];
+                // Attempts the procedure places join a slot later, so it holds counts
+                const bool storesCounts = (countMatches && ringNeedsMultiplicity[i]) || injected;
                 AstNodeDType* ringDTypep = nullptr;
                 if (storesCounts) {
                     // int unsigned ring [size];
@@ -2834,6 +2973,7 @@ public:
                 wrappedp->lifetime(VLifetime::STATIC_EXPLICIT);
                 m_modp->addStmtsp(wrappedp);
                 vtx[i]->datap()->delayRingWrappedVarp = wrappedp;
+                if (injected) newInjectionVars(vtx[i]->datap(), flp, regFlp, base);
                 continue;
             }
             if (!vtx[i]->datap()->needsReg) continue;
@@ -2844,18 +2984,42 @@ public:
             varp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(varp);
             vtx[i]->datap()->stateVarp = varp;
+            if (injected) newInjectionVars(vtx[i]->datap(), flp, regFlp, varName);
+        }
+        if (linkp) {
+            for (const SvaVertexData& data : vertexData) {
+                for (const AstVar* const varp :
+                     {data.stateVarp, data.injTotalVarp, data.injSeenVarp, data.delayRingHeadVarp,
+                      data.delayRingIdxVarp, data.delayRingLiveCountVarp,
+                      data.delayRingWrappedVarp, data.doneLVarp, data.doneRVarp}) {
+                    if (varp) linkp->firstStepValues.emplace(varp, 0);
+                }
+            }
+            linkp->firstStepValues.emplace(linkp->pendp, 1);
+            linkp->firstStepValues.emplace(linkp->pendSeenp, 0);
         }
 
         // Build lowering context for phase sub-functions.
-        LowerCtx c{flp,        senTreep,      disableExprp, matchCondp,
-                   assertType, directiveType, killVarp,     graph};
+        LowerCtx c{flp,           senTreep, disableExprp, matchCondp, assertType,
+                   directiveType, killVarp, graph,        linkp};
 
         // Phase 1: Resolve combinational Links.
-        AstNodeExpr* const triggerExprp
+        AstNodeExpr* triggerExprp
             = isSeqEvent ? new AstConst{flp, AstConst::BitTrue{}}
                          : assertOnCond(flp, assertp->userType(), assertp->directive());
-        resolveLinks(c, triggerExprp, countMatches);
-        VL_DO_DANGLING(triggerExprp->deleteTree(), triggerExprp);
+        AstNodeExpr* startCountp = nullptr;
+        if (linkp) {
+            // Only the procedure starts attempts, one per reach
+            AstNodeExpr* const pendingp
+                = new AstSub{flp, new AstVarRef{flp, linkp->pendp, VAccess::READ},
+                             new AstVarRef{flp, linkp->pendSeenp, VAccess::READ}};
+            startCountp
+                = new AstCond{flp, triggerExprp->cloneTreePure(false),
+                              pendingp->cloneTreePure(false), newTypedConstp(flp, m_u32DTypep, 0)};
+            triggerExprp = new AstLogAnd{
+                flp, triggerExprp, new AstNeq{flp, pendingp, newTypedConstp(flp, m_u32DTypep, 0)}};
+        }
+        resolveLinks(c, triggerExprp, startCountp, countMatches);
 
         // Phase 2/2b/2c: Emit NBA register updates and in-place delay-ring writes.
         emitStateRegisterNba(c);
@@ -2878,10 +3042,9 @@ public:
             if (!vtx[i]->m_strongPending) continue;
             AstNodeExpr* pendingExprp = nullptr;
             if (vtx[i]->datap()->stateVarp) {
-                pendingExprp = new AstVarRef{flp, vtx[i]->datap()->stateVarp, VAccess::READ};
+                pendingExprp = stateReadp(flp, vtx[i]);
             } else if (vtx[i]->m_strongAlwaysRing) {
-                pendingExprp
-                    = delayRingHasLiveThreadsp(flp, vtx[i]->datap()->delayRingLiveCountVarp);
+                pendingExprp = delayRingHasLiveThreadsp(flp, vtx[i]);
             } else {
                 continue;
             }
@@ -2907,7 +3070,16 @@ public:
                 firep = dispp;
                 if (v3Global.opt.stopFail()) firep->addNext(new AstStop{flp, false});
             }
-            m_modp->addStmtsp(new AstFinal{flp, new AstIf{flp, condp, firep}});
+            AstNodeStmt* finalBodyp = new AstIf{flp, condp, firep};
+            if (!linkp) {
+                m_modp->addStmtsp(new AstFinal{flp, finalBodyp});
+            } else {
+                // Beside the procedure, so %m names the directive's scope
+                if (!linkp->scopeName.empty()) {
+                    finalBodyp = new AstBegin{flp, linkp->scopeName, finalBodyp, true};
+                }
+                linkp->procedurep->addNextHere(new AstFinal{flp, finalBodyp});
+            }
         }
 
         // Clear userp on every vertex before vertexData is destroyed.
@@ -2928,6 +3100,13 @@ class AssertNfaVisitor final : public VNVisitor {
     AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff
     SvaNfaLowering* m_loweringp = nullptr;  // NFA-to-hardware lowering engine
     AstSenTree* m_sampledValueClockp = nullptr;  // Inherited clock during scoped attachment
+    AstNodeProcedure* m_procedurep = nullptr;  // Enclosing procedure
+    // Its event control, if nothing else in it waits; found before reaches are lowered
+    const AstSenTree* m_procSenTreep = nullptr;
+    AstSenItem* m_procClockp = nullptr;  // Clock inferred from it, or nullptr
+    V3UniqueNames m_pendNames{"__VnfaPend"};  // Procedural pending-start total names
+    V3UniqueNames m_tickTimeNames{"__VnfaTickTime"};  // Shared clock tick time names
+    std::vector<AstAlways*> m_tickTimeAlways;  // Processes updating tick times in m_modp
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
     V3UniqueNames m_failCountNames{"__VnfaRemainingFailCount"};  // Fail replay counter names
 
@@ -3022,16 +3201,15 @@ class AssertNfaVisitor final : public VNVisitor {
         return !hasMultiCycleExpr(parts.triggerExprp);
     }
 
-    static void splitImplicationPassActions(AstAssert* assertp, const PropertyParts& parts,
+    // vacuousp, if any, is when the pass action runs as a vacuous pass
+    static void splitImplicationPassActions(AstAssert* assertp, AstNodeExpr* vacuousp,
                                             AstNodeExpr* nonvacuousMatchp) {
         FileLine* const flp = assertp->fileline();
 
         AstNodeStmt* const passsp = assertp->passsp()->unlinkFrBackWithNext();
         AstNodeStmt* splitsp = nullptr;
 
-        if (!parts.isFollowedBy) {
-            AstNodeExpr* const vacuousp
-                = new AstLogNot{flp, sampled(parts.triggerExprp->cloneTreePure(false))};
+        if (vacuousp) {
             AstNodeStmt* const vacuousBodyp = passsp->cloneTree(false);
             splitsp = newPassOnIf(flp, vacuousp, vacuousBodyp, assertp->userType(),
                                   assertp->directive(), /*vacuous=*/true);
@@ -3041,6 +3219,8 @@ class AssertNfaVisitor final : public VNVisitor {
             = newPassOnIf(flp, nonvacuousMatchp, passsp, assertp->userType(), assertp->directive(),
                           /*vacuous=*/false);
         splitsp = AstNode::addNextNull<AstNodeStmt>(splitsp, nonvacuousp);
+        // Another attempt failing at the same tick does not stop these passes
+        assertp->prependFailsp(splitsp->cloneTree(true));
         assertp->addPasssp(splitsp);
     }
 
@@ -3106,8 +3286,7 @@ class AssertNfaVisitor final : public VNVisitor {
 
     // Install pass-action gating and replay simultaneous per-thread failures.
     void attachActionHandlers(AstAssert* const assertp, AstNodeExpr* matchExprp,
-                              AstSenTree* const threadFailReplaySenTreep,
-                              AstNodeExpr* const threadFailCountp) {
+                              AstSenTree* const senTreep, AstNodeExpr* const threadFailCountp) {
         // Gate pass handler on match to prevent vacuous-pass firings.
         if (matchExprp) {
             // needMatch implies passsp() was non-null when evaluated above;
@@ -3125,8 +3304,6 @@ class AssertNfaVisitor final : public VNVisitor {
         }
 
         if (threadFailCountp) {
-            UASSERT_OBJ(threadFailReplaySenTreep, assertp,
-                        "Thread fail count missing sensitivity tree");
             AstNodeStmt* const failsp = assertp->failsp();
             FileLine* const flp = assertp->fileline();
             // IEEE 1800-2023 16.12 requires one action-block evaluation per failed
@@ -3152,8 +3329,13 @@ class AssertNfaVisitor final : public VNVisitor {
                 new AstAssign{flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE},
                               decrementedFailCountp});
             replayStmtsp->addNext(replayLoopp);
-            m_modp->addStmtsp(
-                newAssertAlways(flp, VAlwaysKwd::ALWAYS, threadFailReplaySenTreep, replayStmtsp));
+            // With no senTreep, the directive runs in a process; replay after it there
+            if (senTreep) {
+                m_modp->addStmtsp(newAssertAlways(flp, VAlwaysKwd::ALWAYS,
+                                                  senTreep->cloneTree(false), replayStmtsp));
+            } else {
+                assertp->addNextHere(replayStmtsp);
+            }
         }
     }
 
@@ -3164,11 +3346,24 @@ class AssertNfaVisitor final : public VNVisitor {
                && canSplitImplicationPassActions(parts);
     }
 
-    // Takes ownership of outputp, and of matchp, matchCountp and threadFailCountp if non-null
+    // Lowered NFA outputs for one directive; finishDirective takes ownership
+    struct DirectiveSignals final {
+        AstNodeExpr* outputp;
+        AstNodeExpr* matchp;  // Or nullptr
+        AstNodeExpr* matchCountp;  // Or nullptr
+        AstNodeExpr* threadFailCountp;  // Or nullptr
+        // Or nullptr; when the pass action is a vacuous pass, if the directive's
+        // own vacuity test does not apply
+        AstNodeExpr* vacuousp = nullptr;
+    };
+
+    // Install a lowered NFA's signals into a directive: the checking directive, or the
+    // first step of a procedural reach. senTreep is null when the directive runs in a
+    // process; startp, if any, gates attempts started by the directive's own tick.
     void finishDirective(AstNodeCoverOrAssert* assertp, const PropertyParts& parts,
-                         AstSenTree* senTreep, AstNodeExpr* outputp, AstNodeExpr* matchp,
-                         AstNodeExpr* matchCountp, AstNodeExpr* threadFailCountp) {
-        AstNodeExpr* outputExprp = outputp;
+                         AstSenTree* senTreep, AstNodeExpr* startp, const DirectiveSignals& sigs) {
+        AstNodeExpr* outputExprp = sigs.outputp;
+        AstNodeExpr* const matchCountp = sigs.matchCountp;
         FileLine* const flp = assertp->fileline();
         AstPropSpec* const propp = VN_AS(assertp->propp(), PropSpec);
         AstAssert* const assertAssertp = VN_CAST(assertp, Assert);
@@ -3180,17 +3375,266 @@ class AssertNfaVisitor final : public VNVisitor {
                                      newTypedConstp(flp, matchCountp->dtypep(), 0)};
         }
 
-        if (splitsImplicationPasssp(assertp, parts)) {
-            splitImplicationPassActions(assertAssertp, parts, matchp);
+        if (sigs.vacuousp || splitsImplicationPasssp(assertp, parts)) {
+            AstNodeExpr* vacuousp = sigs.vacuousp;
+            if (!vacuousp && !parts.isFollowedBy) {
+                vacuousp = new AstLogNot{flp, sampled(parts.triggerExprp->cloneTreePure(false))};
+                if (startp) {
+                    vacuousp = new AstLogAnd{flp, startp, vacuousp};
+                    startp = nullptr;
+                }
+            }
+            splitImplicationPassActions(assertAssertp, vacuousp, sigs.matchp);
         } else {
-            attachActionHandlers(assertAssertp, matchp,
-                                 threadFailCountp ? senTreep->cloneTree(false) : nullptr,
-                                 threadFailCountp);
+            attachActionHandlers(assertAssertp, sigs.matchp, senTreep, sigs.threadFailCountp);
         }
+        if (startp) pushDeletep(startp);
 
         AstNode* const innerPropp = propp->propp();
         innerPropp->replaceWith(outputExprp);
         VL_DO_DANGLING(pushDeletep(innerPropp), innerPropp);
+    }
+
+    // PROCEDURAL ASSERTIONS (IEEE 1800-2023 16.14.6)
+
+    static AstNode* parentOf(const AstNode* nodep) {
+        while (nodep->backp()->nextp() == nodep) nodep = nodep->backp();
+        return nodep->backp();
+    }
+
+    // Whether the body has a timing control; a cycle delay in an assertion is not one
+    static bool hasTimingControl(const AstNode* bodyp) {
+        int timingControls = 0;
+        bodyp->foreachAndNext([&](const AstNode* np) {
+            if (np->isTimingControl()) ++timingControls;
+        });
+        bodyp->foreachAndNext([&](const AstNodeCoverOrAssert* assertp) {
+            assertp->foreach([&](const AstNode* np) {
+                if (np->isTimingControl()) --timingControls;
+            });
+        });
+        return timingControls;
+    }
+
+    // The clock inferred from an always procedure without other timing control: of its
+    // event expressions, the only edge whose terms its body uses only in assertions
+    static AstSenItem* inferredClock(const AstAlways* alwaysp) {
+        AstSenItem* clockp = nullptr;
+        for (AstSenItem* itemp = alwaysp->sentreep()->sensesp(); itemp;
+             itemp = VN_CAST(itemp->nextp(), SenItem)) {
+            if (!itemp->edgeType().anEdge()) continue;
+            std::unordered_set<const AstVar*> terms;
+            itemp->sensp()->foreach([&](const AstVarRef* refp) { terms.emplace(refp->varp()); });
+            int uses = 0;
+            alwaysp->stmtsp()->foreachAndNext([&](const AstVarRef* refp) {
+                if (terms.count(refp->varp())) ++uses;
+            });
+            alwaysp->stmtsp()->foreachAndNext([&](const AstNodeCoverOrAssert* assertp) {
+                assertp->foreach([&](const AstVarRef* refp) {
+                    if (terms.count(refp->varp())) --uses;
+                });
+            });
+            if (uses) continue;
+            if (clockp) return nullptr;
+            clockp = itemp;
+        }
+        return clockp;
+    }
+
+    // Level an event expression leaves its signal at, and its iff condition; nullptr if it
+    // has none
+    static AstNodeExpr* newEventLevelp(const AstSenItem* itemp) {
+        const VEdgeType edge = itemp->edgeType();
+        if (edge != VEdgeType::ET_POSEDGE && edge != VEdgeType::ET_NEGEDGE) return nullptr;
+        FileLine* const flp = itemp->fileline();
+        AstNodeExpr* levelp = itemp->sensp()->cloneTreePure(false);
+        if (levelp->width() != 1) levelp = new AstSel{flp, levelp, 0, 1};
+        if (edge == VEdgeType::ET_NEGEDGE) levelp = new AstLogNot{flp, levelp};
+        if (itemp->condp())
+            levelp = new AstLogAnd{flp, levelp, itemp->condp()->cloneTreePure(false)};
+        return levelp;
+    }
+
+    // Latest tick time of a clock plus one, so zero before the first; shared by the
+    // module's procedural assertions on that clock. A reach sees it once the tick's
+    // processes have run.
+    AstVar* tickTimeVarp(AstSenTree* senTreep) {
+        const auto it = std::find_if(
+            m_tickTimeAlways.begin(), m_tickTimeAlways.end(),
+            [&](const AstAlways* alwaysp) { return alwaysp->sentreep()->sameTree(senTreep); });
+        if (it != m_tickTimeAlways.end()) {
+            return VN_AS(VN_AS((*it)->stmtsp(), AssignDly)->lhsp(), VarRef)->varp();
+        }
+        FileLine* const flp = senTreep->fileline();
+        AstTime* const timep = new AstTime{flp, v3Global.rootp()->timeprecision()};
+        AstVar* const varp = newStaticVarp(m_modp, flp, m_tickTimeNames.get(""), timep->dtypep());
+        AstAlways* const alwaysp = newAssertAlways(
+            flp, VAlwaysKwd::ALWAYS, senTreep->cloneTree(false),
+            new AstAssignDly{flp, new AstVarRef{flp, varp, VAccess::WRITE},
+                             new AstAdd{flp, timep, newTypedConstp(flp, varp->dtypep(), 1)}});
+        m_modp->addStmtsp(alwaysp);
+        m_tickTimeAlways.push_back(alwaysp);
+        return varp;
+    }
+
+    // The event of the procedure that is the clock, if nothing else in it waits
+    const AstSenItem* procClockEventp(const AstSenItem* clockp) const {
+        if (!m_procSenTreep) return nullptr;
+        for (const AstSenItem* itemp = m_procSenTreep->sensesp(); itemp;
+             itemp = VN_CAST(itemp->nextp(), SenItem)) {
+            if (itemp->sameTree(clockp)) return itemp;
+        }
+        return nullptr;
+    }
+
+    // Condition under which the procedure reaches an assertion at a tick of its clock.
+    // A procedure woken by that clock's event alone always does; among several events,
+    // the levels after their edges tell that the clock's woke it, and unsupported is set
+    // when they cannot. Any other reach is at a tick if the tick's processes have run.
+    AstNodeExpr* reachAtTickCondp(const AstSenItem* eventp, AstSenTree* senTreep,
+                                  bool& unsupported) {
+        FileLine* const flp = senTreep->fileline();
+        if (!eventp) {
+            AstVar* const tickTimep = tickTimeVarp(senTreep);
+            return new AstEq{flp, new AstVarRef{flp, tickTimep, VAccess::READ},
+                             new AstAdd{flp, new AstTime{flp, v3Global.rootp()->timeprecision()},
+                                        newTypedConstp(flp, tickTimep->dtypep(), 1)}};
+        }
+        const AstSenItem* const sensesp = m_procSenTreep->sensesp();
+        if (!sensesp->nextp()) return new AstConst{flp, AstConst::BitTrue{}};
+        AstNodeExpr* condp = nullptr;
+        for (const AstSenItem* itemp = sensesp; itemp; itemp = VN_CAST(itemp->nextp(), SenItem)) {
+            AstNodeExpr* levelp = newEventLevelp(itemp);
+            if (!levelp) {
+                unsupported = true;
+                if (condp) VL_DO_DANGLING(condp->deleteTree(), condp);
+                return nullptr;
+            }
+            if (itemp != eventp) levelp = new AstLogNot{flp, levelp};
+            condp = condp ? new AstLogAnd{flp, condp, levelp} : levelp;
+        }
+        return condp;
+    }
+
+    // Vertices a first step can occupy: those reached from the start without a tick.
+    // Sets unsupported if the first step enters a ranged delay or a sequence 'and', which
+    // take no injection.
+    static std::unordered_set<const V3GraphVertex*> firstStepVertices(const SvaGraph& graph,
+                                                                      bool& unsupported) {
+        std::unordered_set<const V3GraphVertex*> vertices{graph.m_startVertexp};
+        std::vector<const SvaStateVertex*> work{graph.m_startVertexp};
+        while (!work.empty()) {
+            const SvaStateVertex* const vtxp = work.back();
+            work.pop_back();
+            for (const V3GraphEdge& edger : vtxp->outEdges()) {
+                const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
+                const SvaStateVertex* const top = tedger.toVtxp();
+                if (top->m_delayRingSize && !tedger.m_consumesCycle) unsupported = true;
+                if (!tedger.m_consumesCycle && vertices.emplace(top).second) work.push_back(top);
+            }
+        }
+        for (const V3GraphVertex& vtxr : graph.m_graph.vertices()) {
+            const SvaStateVertex* const vtxp = static_cast<const SvaStateVertex*>(&vtxr);
+            if (vtxp->m_isAndCombiner
+                && (vertices.count(vtxp->m_andLhsTermp) || vertices.count(vtxp->m_andRhsTermp))) {
+                unsupported = true;
+            }
+        }
+        return vertices;
+    }
+
+    // Name of the assertion site's scope below its procedure, as V3Begin joins named
+    // blocks; also names an unnamed directive by its block, as V3Assert would have
+    std::string procScopeName(AstNodeCoverOrAssert* assertp) const {
+        std::string scopeName;
+        const AstNode* namingBlockp = nullptr;
+        const AstNode* np = parentOf(assertp);
+        for (; np != m_procedurep; np = parentOf(np)) {
+            if (!VN_IS(np, Begin)) continue;
+            if (!namingBlockp) namingBlockp = np;
+            if (np->name().empty()) continue;
+            scopeName = scopeName.empty() ? np->name() : np->name() + "__DOT__" + scopeName;
+        }
+        for (; !namingBlockp && !VN_IS(np, NodeModule); np = parentOf(np)) {
+            if (VN_IS(np, GenBlock)) namingBlockp = np;
+        }
+        if (namingBlockp && assertp->name().empty()) assertp->name(namingBlockp->name());
+        return scopeName;
+    }
+
+    AstVar* newProcVarp(FileLine* flp, const std::string& name) {
+        return newStaticVarp(m_modp, flp, name, m_modp->findBasicDType(VBasicDTypeKwd::UINT32));
+    }
+
+    // total <= (acc += addp), so several reaches before a tick add up
+    AstNodeStmt* newAddToTotalp(FileLine* flp, AstVar* totalp, AstNodeExpr* addp) {
+        AstVar* const accp = newProcVarp(flp, totalp->name() + "Acc");
+        AstNodeStmt* const stmtsp
+            = new AstAssign{flp, new AstVarRef{flp, accp, VAccess::WRITE},
+                            new AstAdd{flp, new AstVarRef{flp, accp, VAccess::READ}, addp}};
+        stmtsp->addNext(new AstAssignDly{flp, new AstVarRef{flp, totalp, VAccess::WRITE},
+                                         new AstVarRef{flp, accp, VAccess::READ}});
+        return stmtsp;
+    }
+
+    // Split a procedural directive into its checking directive, in a process of its own
+    // beside the procedure, and the statements that start its attempts where the
+    // procedure reaches it: the first step at a tick, else a pending start
+    void placeProcedural(AstNodeCoverOrAssert* assertp, ProcLink& link, AstNodeExpr* atTickp,
+                         AstSenItem* sensesp, AstSenTree* senTreep, const PropertyParts& parts,
+                         const DirectiveSignals& sigs) {
+        FileLine* const flp = assertp->fileline();
+        AstNodeStmt* reachp
+            = newAddToTotalp(flp, link.pendp, newTypedConstp(flp, link.pendp->dtypep(), 1));
+        if (atTickp) {
+            AstNodeCoverOrAssert* const firstp = assertp->cloneTree(false);
+            AstPropSpec* const firstPropp = VN_AS(firstp->propp(), PropSpec);
+            if (!firstPropp->sensesp()) firstPropp->sensesp(sensesp->cloneTree(false));
+            firstp->senFromAlways(true);
+            AstBegin* const firstBlockp = new AstBegin{flp, "", firstp, true};
+            const auto firstStepOf
+                = [&](AstNodeExpr* exprp) { return exprp ? link.firstStepOf(exprp) : nullptr; };
+            DirectiveSignals firstSigs{firstStepOf(sigs.outputp), firstStepOf(sigs.matchp),
+                                       firstStepOf(sigs.matchCountp),
+                                       firstStepOf(sigs.threadFailCountp)};
+            if (parts.hasImplication && !splitsImplicationPasssp(assertp, parts) && sigs.matchp) {
+                // Vacuous when the first step neither matches nor leaves a thread
+                firstSigs.vacuousp = new AstLogNot{flp, firstSigs.matchp->cloneTreePure(false)};
+                for (const ProcLink::Injection& injection : link.injections) {
+                    firstSigs.vacuousp = new AstLogAnd{
+                        flp, firstSigs.vacuousp,
+                        new AstEq{flp, injection.firstp->cloneTreePure(false),
+                                  newTypedConstp(flp, injection.firstp->dtypep(), 0)}};
+                }
+            }
+            finishDirective(firstp, parts, nullptr, nullptr, firstSigs);
+            for (const ProcLink::Injection& injection : link.injections) {
+                firstBlockp->addStmtsp(newAddToTotalp(flp, injection.totalp, injection.firstp));
+            }
+            if (VN_IS(atTickp, Const)) {
+                VL_DO_DANGLING(reachp->deleteTree(), reachp);
+                VL_DO_DANGLING(atTickp->deleteTree(), atTickp);
+                reachp = firstBlockp;
+            } else {
+                reachp = new AstIf{flp, atTickp, firstBlockp, reachp};
+            }
+        }
+        assertp->replaceWith(reachp);
+
+        AstPropSpec* const propp = VN_AS(assertp->propp(), PropSpec);
+        if (!propp->sensesp()) propp->sensesp(sensesp->cloneTree(false));
+        assertp->senFromAlways(true);
+        AstNodeStmt* const checkp = link.scopeName.empty()
+                                        ? static_cast<AstNodeStmt*>(assertp)
+                                        : new AstBegin{flp, link.scopeName, assertp, true};
+        m_procedurep->addNextHere(
+            newAssertAlways(flp, VAlwaysKwd::ALWAYS, senTreep->cloneTree(false), checkp));
+        AstNodeExpr* const startp
+            = new AstNeq{flp,
+                         new AstSub{flp, new AstVarRef{flp, link.pendp, VAccess::READ},
+                                    new AstVarRef{flp, link.pendSeenp, VAccess::READ}},
+                         newTypedConstp(flp, link.pendp->dtypep(), 0)};
+        finishDirective(assertp, parts, nullptr, startp, sigs);
     }
 
     // Replace one VarRef to a captured local var with $past(rhs, K)
@@ -3363,16 +3807,37 @@ class AssertNfaVisitor final : public VNVisitor {
         // disable iff, no assertion control
         const bool isSeqEvent = coverp && coverp->isSeqEvent();
         const bool countMatches = countsMatches(assertp);
+        const bool inProcedure = m_procedurep;
+        // A clock inferred from the procedure supersedes default clocking
+        // (IEEE 1800-2023 16.16); it is not written into the property so that a
+        // property V3AssertPre lowers instead still infers it.
+        AstSenItem* const inferredp = !propp->sensesp() && inProcedure ? m_procClockp : nullptr;
         // Inherit module defaults (IEEE 14.12, 16.15) when assertion has none.
-        if (!propp->sensesp() && m_defaultClockingp) {
+        if (!propp->sensesp() && !inferredp && m_defaultClockingp) {
             propp->sensesp(m_defaultClockingp->sentreep()->sensesp()->cloneTree(true));
         }
         if (!propp->disablep() && m_defaultDisablep && !isSeqEvent) {
             propp->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
         }
-        if (!propp->sensesp()) return;
-        AstSenTree* senTreep
-            = new AstSenTree{propp->fileline(), propp->sensesp()->cloneTree(true)};
+        AstSenItem* const sensesp = propp->sensesp() ? propp->sensesp() : inferredp;
+        if (!sensesp) return;
+        if (inProcedure) {
+            // Checking logic outside the procedure cannot read its automatic variables;
+            // that needs storage per attempt
+            const AstVarRef* autoRefp = nullptr;
+            assertp->foreach([&](const AstVarRef* refp) {
+                if (!autoRefp && refp->varp()->lifetime().isAutomatic()) autoRefp = refp;
+            });
+            if (autoRefp) {
+                autoRefp->v3warn(E_UNSUPPORTED, "Unsupported: automatic variable "
+                                                    << autoRefp->prettyNameQ()
+                                                    << " in a multi-cycle procedural concurrent"
+                                                       " assertion");
+                replaceBodyOnBuildError(assertp->fileline(), propp, /*errorEmitted=*/true);
+                return;
+            }
+        }
+        AstSenTree* senTreep = new AstSenTree{propp->fileline(), sensesp->cloneTree(true)};
         AstNodeExpr* const disableExprp = propp->disablep();
 
         // NFA lowering clones repeated operands and may hoist them into an
@@ -3424,20 +3889,61 @@ class AssertNfaVisitor final : public VNVisitor {
 
         AstAssert* const assertAssertp = VN_CAST(assertp, Assert);
         const bool splitImplicationPasssp = splitsImplicationPasssp(assertp, parts);
+        // A procedural directive's checking logic starts no attempts of its own, so only a
+        // match passes there
         const bool needMatch = assertAssertp && assertAssertp->passsp()
-                               && (!parts.hasImplication || splitImplicationPasssp);
+                               && (!parts.hasImplication || splitImplicationPasssp || inProcedure);
 
         const bool needsThreadFailReplay
             = assertAssertp && assertAssertp->failsp() && !parts.hasImplication;
-        const auto signals
-            = m_loweringp->lower(assertp, graph, senTreep, result.finalCondp, disableExprp,
-                                 needsThreadFailReplay, needsThreadFailReplay && !negated);
+        ProcLink link;
+        AstNodeExpr* atTickp = nullptr;
+        if (inProcedure) {
+            const AstSenItem* const eventp = procClockEventp(sensesp);
+            bool unsupportedFirstStep = false;
+            link.firstStepVertices = firstStepVertices(graph, unsupportedFirstStep);
+            bool unsupportedEvents = false;
+            if (!unsupportedFirstStep) {
+                atTickp = reachAtTickCondp(eventp, senTreep, unsupportedEvents);
+            } else if (!eventp) {
+                // Instead, a reach after the processes of a tick starts at the next tick
+                link.firstStepVertices.clear();
+                unsupportedFirstStep = false;
+            }
+            if (unsupportedEvents || unsupportedFirstStep) {
+                if (unsupportedEvents) {
+                    assertp->v3warn(E_UNSUPPORTED,
+                                    "Unsupported: procedural concurrent assertion in a procedure"
+                                    " with several events, not all 'posedge' or 'negedge'");
+                } else {
+                    assertp->v3warn(E_UNSUPPORTED,
+                                    "Unsupported: procedural concurrent assertion whose first"
+                                    " cycle enters a ranged cycle delay or a sequence 'and'");
+                }
+                replaceBodyOnBuildError(flp, propp, /*errorEmitted=*/true);
+                SvaNfaBuilder::freeUnlinkedCondp(result.finalCondp);
+                VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
+                return;
+            }
+            link.procedurep = m_procedurep;
+            link.scopeName = procScopeName(assertp);
+            link.pendp = newProcVarp(flp, m_pendNames.get(""));
+            link.pendSeenp = newProcVarp(flp, link.pendp->name() + "Seen");
+        }
+        const auto signals = m_loweringp->lower(
+            assertp, graph, senTreep, result.finalCondp, disableExprp, needsThreadFailReplay,
+            needsThreadFailReplay && !negated, inProcedure ? &link : nullptr);
         AstNodeExpr* matchExprp = nullptr;
         AstNodeExpr* const outputExprp = m_loweringp->assembleResult(
             assertp, negated, result.finalCondp, signals, needMatch ? &matchExprp : nullptr);
         if (result.finalCondp && !result.finalCondp->backp()) pushDeletep(result.finalCondp);
-        finishDirective(assertp, parts, senTreep, outputExprp, matchExprp, signals.matchCountp,
-                        signals.threadFailCountp);
+        const DirectiveSignals sigs{outputExprp, matchExprp, signals.matchCountp,
+                                    signals.threadFailCountp};
+        if (inProcedure) {
+            placeProcedural(assertp, link, atTickp, sensesp, senTreep, parts, sigs);
+        } else {
+            finishDirective(assertp, parts, senTreep, nullptr, sigs);
+        }
         VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
 
         UINFO(4, "NFA converted assertion at " << flp << endl);
@@ -3451,6 +3957,7 @@ class AssertNfaVisitor final : public VNVisitor {
         VL_RESTORER(m_loweringp);
         VL_RESTORER(m_defaultClockingp);
         VL_RESTORER(m_defaultDisablep);
+        VL_RESTORER_CLEAR(m_tickTimeAlways);
         m_modp = nodep;
         // A class nested in a module is in the scope of the module's default clocking
         if (!VN_IS(nodep, Class)) m_defaultClockingp = nullptr;
@@ -3461,6 +3968,31 @@ class AssertNfaVisitor final : public VNVisitor {
     }
     void visit(AstClocking* nodep) override {
         if (nodep->isDefault() && !m_defaultClockingp) m_defaultClockingp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeProcedure* nodep) override {
+        const AstAlways* const alwaysp = VN_CAST(nodep, Always);
+        // Holds a module-level directive
+        if (alwaysp && alwaysp->keyword() == VAlwaysKwd::ASSERT_COVER) {
+            iterateChildren(nodep);
+            return;
+        }
+        VL_RESTORER(m_procedurep);
+        VL_RESTORER(m_procSenTreep);
+        VL_RESTORER(m_procClockp);
+        m_procedurep = nodep;
+        const bool waitsOnlyAtTop = alwaysp && alwaysp->sentreep() && alwaysp->stmtsp()
+                                    && !hasTimingControl(alwaysp->stmtsp());
+        m_procSenTreep = waitsOnlyAtTop ? alwaysp->sentreep() : nullptr;
+        m_procClockp = waitsOnlyAtTop ? inferredClock(alwaysp) : nullptr;
+        // Where IEEE 1800-2023 16.14.6 infers no clock and no default clocking applies,
+        // take a sole edge, as V3AssertPre does
+        AstSenItem* const solep
+            = alwaysp && alwaysp->sentreep() ? alwaysp->sentreep()->sensesp() : nullptr;
+        if (!m_procClockp && !m_defaultClockingp && solep && !solep->nextp()
+            && solep->edgeType().anEdge()) {
+            m_procClockp = solep;
+        }
         iterateChildren(nodep);
     }
     void visit(AstGenBlock* nodep) override {
