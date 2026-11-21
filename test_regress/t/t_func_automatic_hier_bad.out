@@ -1,0 +1,42 @@
+%Error: t/t_func_automatic_hier_bad.v:30:17: Automatic variable 'av' cannot be referenced hierarchically (IEEE 1800-2023 6.21, 13.3.1, 13.4.2).
+                                           : ... note: In instance 't'
+   30 |   assign w = at.av;
+      |                 ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_func_automatic_hier_bad.v:33:8: Automatic variable 'av' cannot be referenced hierarchically (IEEE 1800-2023 6.21, 13.3.1, 13.4.2).
+                                          : ... note: In instance 't'
+   33 |     at.av = 1;
+      |        ^~
+%Error: t/t_func_automatic_hier_bad.v:34:24: Automatic variable 'av' cannot be referenced hierarchically (IEEE 1800-2023 6.21, 13.3.1, 13.4.2).
+                                           : ... note: In instance 't'
+   34 |     $display("%0d", at.av);
+      |                        ^~
+%Error: t/t_func_automatic_hier_bad.v:35:24: Automatic variable 'ai' cannot be referenced hierarchically (IEEE 1800-2023 6.21, 13.3.1, 13.4.2).
+                                           : ... note: In instance 't'
+   35 |     $display("%0d", at.ai);
+      |                        ^~
+%Error: t/t_func_automatic_hier_bad.v:37:24: Automatic variable 'fv' cannot be referenced hierarchically (IEEE 1800-2023 6.21, 13.3.1, 13.4.2).
+                                           : ... note: In instance 't'
+   37 |     $display("%0d", af.fv);
+      |                        ^~
+%Error: t/t_func_automatic_hier_bad.v:38:24: Automatic variable 'fi' cannot be referenced hierarchically (IEEE 1800-2023 6.21, 13.3.1, 13.4.2).
+                                           : ... note: In instance 't'
+   38 |     $display("%0d", af.fi);
+      |                        ^~
+%Error: t/t_func_automatic_hier_bad.v:39:24: Automatic variable 'af' cannot be referenced hierarchically (IEEE 1800-2023 6.21, 13.3.1, 13.4.2).
+                                           : ... note: In instance 't'
+   39 |     $display("%0d", af.af);
+      |                        ^~
+%Error: t/t_func_automatic_hier_bad.v:40:24: Automatic variable 'sav' cannot be referenced hierarchically (IEEE 1800-2023 6.21, 13.3.1, 13.4.2).
+                                           : ... note: In instance 't'
+   40 |     $display("%0d", st.sav);
+      |                        ^~~
+%Error: t/t_func_automatic_hier_bad.v:43:24: Automatic variable 'dv' cannot be referenced hierarchically (IEEE 1800-2023 6.21, 13.3.1, 13.4.2).
+                                           : ... note: In instance 't'
+   43 |     $display("%0d", dt.dv);
+      |                        ^~
+%Error: t/t_func_automatic_hier_bad.v:44:24: Automatic variable 'fv' cannot be referenced hierarchically (IEEE 1800-2023 6.21, 13.3.1, 13.4.2).
+                                           : ... note: In instance 't'
+   44 |     $display("%0d", df.fv);
+      |                        ^~
+%Error: Exiting due to
