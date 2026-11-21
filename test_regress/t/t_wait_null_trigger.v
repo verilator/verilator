@@ -15,12 +15,20 @@
 module t;
   class Cls;
     int x = 0;
+
+    function bit ready();
+      return x == 1;
+    endfunction
+
+    function Cls self();
+      return this;
+    endfunction
   endclass
 
   int checks = 0;
 
   task automatic finish_if_done();
-    if (checks == 5) begin
+    if (checks == 7) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end
@@ -40,6 +48,27 @@ module t;
   initial begin
     c = new;
     c.x = 1;
+  end
+
+  // A method call through a null handle must not fault.
+  Cls e;
+
+  initial begin
+    wait (e.ready());
+    checks++;
+    finish_if_done();
+  end
+
+  // A method returning a class can form another nullable base.
+  initial begin
+    wait (e.self().x == 1);
+    checks++;
+    finish_if_done();
+  end
+
+  initial begin
+    #1 e = new;
+    #1 e.x = 1;
   end
 
   // Two independent null handles in one wait.
