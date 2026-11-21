@@ -776,8 +776,8 @@ inline WDataOutP VL_EXTENDS_WW(int obits, int lbits, WDataOutP owp,
 // REDUCTION OPERATORS
 
 // EMIT_RULE: VL_REDAND:  oclean=clean; lclean==clean; obits=1;
-#define VL_REDAND_II(lbits, lhs) ((lhs) == VL_MASK_I(lbits))
-#define VL_REDAND_IQ(lbits, lhs) ((lhs) == VL_MASK_Q(lbits))
+#define VL_REDAND_II(lbits, lhs) static_cast<IData>((lhs) == VL_MASK_I(lbits))
+#define VL_REDAND_IQ(lbits, lhs) static_cast<IData>((lhs) == VL_MASK_Q(lbits))
 inline IData VL_REDAND_IW(int lbits, WDataInP const lwp) VL_PURE {
     const int words = VL_WORDS_I(lbits);
     EData combine = lwp[0];
@@ -788,8 +788,8 @@ inline IData VL_REDAND_IW(int lbits, WDataInP const lwp) VL_PURE {
 }
 
 // EMIT_RULE: VL_REDOR:  oclean=clean; lclean==clean; obits=1;
-#define VL_REDOR_I(lhs) ((lhs) != 0)
-#define VL_REDOR_Q(lhs) ((lhs) != 0)
+#define VL_REDOR_I(lhs) static_cast<IData>((lhs) != 0)
+#define VL_REDOR_Q(lhs) static_cast<IData>((lhs) != 0)
 inline IData VL_REDOR_W(int words, WDataInP const lwp) VL_PURE {
     EData equal = 0;
     for (int i = 0; i < words; ++i) equal |= lwp[i];
@@ -1051,12 +1051,12 @@ inline WDataOutP VL_NOT_W(int words, WDataOutP owp, WDataInP const lwp) VL_MT_SA
 // EMIT_RULE: VL_GT:  oclean=clean; lclean==clean; rclean==clean; obits=1; lbits==rbits;
 // EMIT_RULE: VL_GTE: oclean=clean; lclean==clean; rclean==clean; obits=1; lbits==rbits;
 // EMIT_RULE: VL_LTE: oclean=clean; lclean==clean; rclean==clean; obits=1; lbits==rbits;
-#define VL_NEQ_W(words, lwp, rwp) (!VL_EQ_W(words, lwp, rwp))
-#define VL_NEQ_R(words, q, rwp) (!VL_EQ_R(words, q, rwp))
-#define VL_LT_W(words, lwp, rwp) (_vl_cmp_w(words, lwp, rwp) < 0)
-#define VL_LTE_W(words, lwp, rwp) (_vl_cmp_w(words, lwp, rwp) <= 0)
-#define VL_GT_W(words, lwp, rwp) (_vl_cmp_w(words, lwp, rwp) > 0)
-#define VL_GTE_W(words, lwp, rwp) (_vl_cmp_w(words, lwp, rwp) >= 0)
+#define VL_NEQ_W(words, lwp, rwp) static_cast<IData>(!VL_EQ_W(words, lwp, rwp))
+#define VL_NEQ_R(words, q, rwp) static_cast<IData>(!VL_EQ_R(words, q, rwp))
+#define VL_LT_W(words, lwp, rwp) static_cast<IData>(_vl_cmp_w(words, lwp, rwp) < 0)
+#define VL_LTE_W(words, lwp, rwp) static_cast<IData>(_vl_cmp_w(words, lwp, rwp) <= 0)
+#define VL_GT_W(words, lwp, rwp) static_cast<IData>(_vl_cmp_w(words, lwp, rwp) > 0)
+#define VL_GTE_W(words, lwp, rwp) static_cast<IData>(_vl_cmp_w(words, lwp, rwp) >= 0)
 
 // Output clean, <lhs> AND <rhs> MUST BE CLEAN
 inline IData VL_EQ_W(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE {
@@ -1134,10 +1134,10 @@ inline int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE 
     return 0;  // ==
 }
 
-#define VL_LTS_IWW(lbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) < 0)
-#define VL_LTES_IWW(lbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) <= 0)
-#define VL_GTS_IWW(lbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) > 0)
-#define VL_GTES_IWW(lbits, lwp, rwp) (_vl_cmps_w(lbits, lwp, rwp) >= 0)
+#define VL_LTS_IWW(lbits, lwp, rwp) static_cast<IData>(_vl_cmps_w(lbits, lwp, rwp) < 0)
+#define VL_LTES_IWW(lbits, lwp, rwp) static_cast<IData>(_vl_cmps_w(lbits, lwp, rwp) <= 0)
+#define VL_GTS_IWW(lbits, lwp, rwp) static_cast<IData>(_vl_cmps_w(lbits, lwp, rwp) > 0)
+#define VL_GTES_IWW(lbits, lwp, rwp) static_cast<IData>(_vl_cmps_w(lbits, lwp, rwp) >= 0)
 
 inline IData VL_GTS_III(int lbits, IData lhs, IData rhs) VL_PURE {
     // For lbits==32, this becomes just a single instruction, otherwise ~5.
@@ -1620,7 +1620,7 @@ inline void _vl_insert_WQ(WDataOutP iowp, QData ld, int hbit, int lbit, int rbit
 
 // EMIT_RULE: VL_REPLICATE:  oclean=clean>width32, dirty<=width32; lclean=clean; rclean==clean;
 // RHS MUST BE CLEAN CONSTANT.
-#define VL_REPLICATE_IOI(lbits, ld, rep) (-(ld))  // Iff lbits==1
+#define VL_REPLICATE_IOI(lbits, ld, rep) (-(static_cast<IData>(ld)))  // Iff lbits==1
 #define VL_REPLICATE_QOI(lbits, ld, rep) (-(static_cast<QData>(ld)))  // Iff lbits==1
 
 inline IData VL_REPLICATE_III(int lbits, IData ld, IData rep) VL_PURE {
