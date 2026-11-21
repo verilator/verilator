@@ -2917,7 +2917,7 @@ bool AstNodeDType::isLiteralType() const VL_MT_STABLE {
 }
 bool AstNodeDType::isNonPackedArray() const {
     return VN_IS(this, UnpackArrayDType) || VN_IS(this, DynArrayDType) || VN_IS(this, QueueDType)
-           || VN_IS(this, AssocArrayDType);
+           || VN_IS(this, AssocArrayDType) || VN_IS(this, WildcardArrayDType);
 }
 bool AstNodeDType::isStreamableFixedAggregate() const {
     const AstNodeDType* const dtypep = skipRefp();
