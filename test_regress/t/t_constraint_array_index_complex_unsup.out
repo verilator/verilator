@@ -1,0 +1,23 @@
+%Error-UNSUPPORTED: t/t_constraint_array_index_complex_unsup.v:14:31: Unsupported: Complex index expression into non-rand array
+   14 |   constraint c { r == -4; pool[r>>>1] == 8'h77; }
+      |                               ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_constraint_array_index_complex_unsup.v:20:31: Unsupported: Complex index expression into non-rand array
+   20 |   constraint c { r == -4; pool[r>>1] == 8'h77; }
+      |                               ^
+%Error-UNSUPPORTED: t/t_constraint_array_index_complex_unsup.v:28:31: Unsupported: Complex index expression into non-rand array
+   28 |   constraint c { r8 == 8; pool[((&(r8+32'h1))+5)] == 8'h77; }
+      |                               ^
+%Error-UNSUPPORTED: t/t_constraint_array_index_complex_unsup.v:35:31: Unsupported: Complex index expression into non-rand array
+   35 |   constraint c { r8 == 8; pool[(10-(&(r8+32'h1)))] == 8'h77; }
+      |                               ^
+%Error-UNSUPPORTED: t/t_constraint_array_index_complex_unsup.v:43:39: Unsupported: Complex index expression into non-rand array
+   43 |   constraint c { f == 1; r8 == 8; pool[(f?0:(&(r8+32'h1)))] == 8'h77; }
+      |                                       ^
+%Error-UNSUPPORTED: t/t_constraint_array_index_complex_unsup.v:50:31: Unsupported: Complex index expression into non-rand array
+   50 |   constraint c { r == -4; pool[(10-(r>>1))] == 8'h77; }
+      |                               ^
+%Error-UNSUPPORTED: t/t_constraint_array_index_complex_unsup.v:58:39: Unsupported: Complex index expression into non-rand array
+   58 |   constraint c { f == 1; r == -4; pool[(f?0:(r>>1))] == 8'h77; }
+      |                                       ^
+%Error: Exiting due to
