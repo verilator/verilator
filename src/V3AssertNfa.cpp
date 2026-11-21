@@ -1870,7 +1870,8 @@ public:
             SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
             sinkVtxp->m_isRejectSink = true;
             m_graph.addLink(antResult.termVertexp, sinkVtxp, antMatchp->cloneTreePure(false))
-                ->m_rejectOnFail = true;
+                ->m_rejectOnFail
+                = true;
         }
         m_graph.addLink(antResult.termVertexp, trigVtxp, antMatchp);
         resetScope();
