@@ -367,18 +367,6 @@ static string dtypeNameClass(const AstClass* classp) {
     return dtypeNameIdent(classp->origName());
 }
 
-// The generate block or design unit declaring 'nodep', or nullptr if none, as at the top, as
-// indexed by the VDTypeNameScopes in use, if any, else as searched for up the tree
-static AstNode* dtypeNameOuterp(const AstNode* nodep) {
-    AstNode* outerp = nullptr;
-    const VDTypeNameScopes* const scopesp = VDTypeNameScopes::currentp();
-    if (scopesp && scopesp->outerp(nodep, outerp)) return outerp;
-    for (outerp = nodep->aboveLoopp(); outerp; outerp = outerp->aboveLoopp()) {
-        if (VN_IS(outerp, NodeModule) || VN_IS(outerp, GenBlock)) break;
-    }
-    return outerp;
-}
-
 // Prefix of the names of the types generate block or design unit 'scopep' declares, so with the
 // values of the parameters of the scopes, e.g. '$unit::', 'ifc#(8).', '$unit::Cls#(8)::', or
 // 'top.gen[0].', or "" if none, as at the top.  Kept by the VDTypeNameScopes in use, if any, once
@@ -390,7 +378,7 @@ static string dtypeNamePrefix(const AstNode* scopep, bool& finalr) {
         return *prefixp;
     }
     bool final = true;
-    const string outer = dtypeNamePrefix(dtypeNameOuterp(scopep), final);
+    const string outer = dtypeNamePrefix(VDTypeNameScopes::declaringScopep(scopep), final);
     string prefix;
     if (const AstGenBlock* const blockp = VN_CAST(scopep, GenBlock)) {
         prefix = blockp->dtypeNameInnerScope(outer);
@@ -407,7 +395,7 @@ static string dtypeNamePrefix(const AstNode* scopep, bool& finalr) {
 // Prefix of the name of a type for the scopes declaring it, see dtypeNamePrefix()
 static string dtypeNameScopeOf(const AstNode* nodep) {
     bool final = true;
-    return dtypeNamePrefix(dtypeNameOuterp(nodep), final);
+    return dtypeNamePrefix(VDTypeNameScopes::declaringScopep(nodep), final);
 }
 
 // Name in full of a structure, union, or enumeration, as given by the typedef declaring it, if
@@ -435,6 +423,34 @@ VDTypeNameScopes::VDTypeNameScopes(AstNetlist* nodep)
     s_currentp = this;
 }
 VDTypeNameScopes::~VDTypeNameScopes() { s_currentp = m_prevp; }
+AstNode* VDTypeNameScopes::declaringScopep(const AstNode* nodep, SearchCache* cachep) {
+    AstNode* scopep = nullptr;
+    if (s_currentp && s_currentp->outerp(nodep, scopep)) return scopep;
+    // As AstNode::aboveLoopp(), searching back over the earlier statements in each list, but
+    // stopping at a declaration a cached search passed
+    std::vector<const AstNode*> passedps;
+    while (true) {
+        if (cachep) {
+            const auto it = cachep->m_outerps.find(nodep);
+            if (it != cachep->m_outerps.end()) {
+                scopep = it->second;
+                break;
+            }
+            if (VN_IS(nodep, NodeModule) || VN_IS(nodep, GenBlock) || VN_IS(nodep, Typedef)) {
+                passedps.push_back(nodep);
+            }
+        }
+        AstNode* const backp = nodep->backp();
+        if (!backp) break;  // At the top
+        if (backp->nextp() != nodep && (VN_IS(backp, NodeModule) || VN_IS(backp, GenBlock))) {
+            scopep = backp;
+            break;
+        }
+        nodep = backp;
+    }
+    for (const AstNode* const passedp : passedps) cachep->m_outerps.emplace(passedp, scopep);
+    return scopep;
+}
 void VDTypeNameScopes::index(AstNode* nodesp, AstNode* scopep) {
     for (AstNode* const nodep : VNList<AstNode>{nodesp}) {
         // Only statements declare types
