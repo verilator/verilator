@@ -157,6 +157,64 @@ module sub #(
     Cfg h = PkgReg::Registry#(Cfg)::create();
     return h.who();
   endfunction
+  // Generate constructs expanded after other classes are named
+  localparam int ID = NAME == "s1" ? 1 : 2;
+  if (ID == 1) begin : gi
+    class Cfg;
+      virtual function string who();
+        return "gi then";
+      endfunction
+    endclass
+    function automatic string who();
+      Cfg h = PkgReg::Registry#(Cfg)::create();
+      return h.who();
+    endfunction
+  end else begin : gi
+    class Cfg;
+      virtual function string who();
+        return "gi else";
+      endfunction
+    endclass
+    function automatic string who();
+      Cfg h = PkgReg::Registry#(Cfg)::create();
+      return h.who();
+    endfunction
+  end
+  case (ID)
+    1: begin : gc
+      class Cfg;
+        virtual function string who();
+          return "gc 1";
+        endfunction
+      endclass
+      function automatic string who();
+        Cfg h = PkgReg::Registry#(Cfg)::create();
+        return h.who();
+      endfunction
+    end
+    default: begin : gc
+      class Cfg;
+        virtual function string who();
+          return "gc default";
+        endfunction
+      endclass
+      function automatic string who();
+        Cfg h = PkgReg::Registry#(Cfg)::create();
+        return h.who();
+      endfunction
+    end
+  endcase
+  for (genvar i = 0; i < 1; ++i) begin : gf
+    class Cfg;
+      virtual function string who();
+        return {NAME, " gf"};
+      endfunction
+    endclass
+    function automatic string who();
+      Cfg h = PkgReg::Registry#(Cfg)::create();
+      return h.who();
+    endfunction
+  end
 endmodule
 
 module t;
@@ -252,6 +310,12 @@ module t;
     // Same-named classes in instances of a module, and in generate blocks
     `checks(s1.who(), "s1");
     `checks(s2.who(), "s2");
+    `checks(s1.gi.who(), "gi then");
+    `checks(s2.gi.who(), "gi else");
+    `checks(s1.gc.who(), "gc 1");
+    `checks(s2.gc.who(), "gc default");
+    `checks(s1.gf[0].who(), "s1 gf");
+    `checks(s2.gf[0].who(), "s2 gf");
     `checks(g[0].who(), "g[0]");
     `checks(g[1].who(), "g[1]");
 

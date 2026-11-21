@@ -423,12 +423,15 @@ VDTypeNameScopes::VDTypeNameScopes(AstNetlist* nodep)
     s_currentp = this;
 }
 VDTypeNameScopes::~VDTypeNameScopes() { s_currentp = m_prevp; }
+// Whether 'nodep' is a declaration a SearchCache keeps
+static bool dtypeNameCachedDecl(const AstNode* nodep) {
+    return VN_IS(nodep, NodeModule) || VN_IS(nodep, GenBlock) || VN_IS(nodep, Typedef);
+}
 AstNode* VDTypeNameScopes::declaringScopep(const AstNode* nodep, SearchCache* cachep) {
     AstNode* scopep = nullptr;
     if (s_currentp && s_currentp->outerp(nodep, scopep)) return scopep;
     // As AstNode::aboveLoopp(), searching back over the earlier statements in each list, but
     // stopping at a declaration a cached search passed
-    std::vector<const AstNode*> passedps;
     while (true) {
         if (cachep) {
             const auto it = cachep->m_outerps.find(nodep);
@@ -436,9 +439,7 @@ AstNode* VDTypeNameScopes::declaringScopep(const AstNode* nodep, SearchCache* ca
                 scopep = it->second;
                 break;
             }
-            if (VN_IS(nodep, NodeModule) || VN_IS(nodep, GenBlock) || VN_IS(nodep, Typedef)) {
-                passedps.push_back(nodep);
-            }
+            if (dtypeNameCachedDecl(nodep)) cachep->m_passedps.push_back(nodep);
         }
         AstNode* const backp = nodep->backp();
         if (!backp) break;  // At the top
@@ -448,8 +449,19 @@ AstNode* VDTypeNameScopes::declaringScopep(const AstNode* nodep, SearchCache* ca
         }
         nodep = backp;
     }
-    for (const AstNode* const passedp : passedps) cachep->m_outerps.emplace(passedp, scopep);
+    if (cachep) {
+        for (const AstNode* const passedp : cachep->m_passedps) {
+            cachep->m_outerps.emplace(passedp, scopep);
+        }
+        cachep->m_passedps.clear();
+    }
     return scopep;
+}
+void VDTypeNameScopes::SearchCache::forget(const AstNode* nodep) {
+    if (m_outerps.empty()) return;
+    nodep->foreach([this](const AstNode* subp) {
+        if (dtypeNameCachedDecl(subp)) m_outerps.erase(subp);
+    });
 }
 void VDTypeNameScopes::index(AstNode* nodesp, AstNode* scopep) {
     for (AstNode* const nodep : VNList<AstNode>{nodesp}) {

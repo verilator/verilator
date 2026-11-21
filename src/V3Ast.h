@@ -1747,11 +1747,17 @@ class VDTypeNameScopes final {
 public:
     // Maps each declaration an earlier declaringScopep() search passed to its declaring scope,
     // so later searches stop there and each statement list is searched about once. Keyed by
-    // node, so valid only while no declaration searched for or passed, nor any scope it maps
-    // to, is deleted or moved to another scope, as a freed node's address may be reused.
+    // node, so a declaration must be forgotten before it is deleted, as a later node may reuse
+    // its address, and before it is moved to another scope. A scope is deleted or moved only
+    // together with the declarations that map to it.
     class SearchCache final {
         friend class VDTypeNameScopes;
         std::unordered_map<const AstNode*, AstNode*> m_outerps;  // As in VDTypeNameScopes
+        std::vector<const AstNode*> m_passedps;  // Passed by the search in progress
+
+    public:
+        // Forget the declarations at and below 'nodep'
+        void forget(const AstNode* nodep);
     };
 
     // CONSTRUCTORS
