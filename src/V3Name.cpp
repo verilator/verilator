@@ -139,12 +139,6 @@ class NameVisitor final : public VNVisitorConst {
             iterateChildrenConst(nodep);
         }
     }
-    void visit(AstStructSel* nodep) override {
-        if (!nodep->user1()) {
-            rename(nodep, true);
-            iterateChildrenConst(nodep);
-        }
-    }
     void visit(AstScope* nodep) override {
         if (!nodep->user1SetOnce()) {
             if (nodep->aboveScopep()) iterateConst(nodep->aboveScopep());

@@ -422,7 +422,9 @@ module t (
   `signal(BECOMES_FULL, becomes_full);
 
   // verilator lint_off LATCH
+  // verilator lint_off UNOPTFLAT
   logic [3:0] latch_a;
+  // verilator lint_on UNOPTFLAT
   logic [3:0] latch_b;
   always_comb begin  // nosynth
     if (rand_b[0]) begin

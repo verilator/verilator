@@ -30,6 +30,7 @@
 #include <vector>
 
 class SenExprBuilder;
+class V3StaticPrefix;
 
 //============================================================================
 
@@ -82,7 +83,8 @@ inline void collectForceReadEdgeIgnores(const AstNodeProcedure* nodep, VarScopeS
 }
 
 // Compute the implicit sensitivities of the given combinational process
-std::unordered_set<const AstVarScope*> computeImplicitSensitivities(const AstNodeProcedure* procp);
+std::unordered_set<const AstVarScope*> computeImplicitSensitivities(AstNodeProcedure* procp,
+                                                                    V3StaticPrefix& staticPrefix);
 }  // namespace util
 
 //============================================================================

@@ -1065,10 +1065,9 @@ class TaskVisitor final : public VNVisitor {
                                          arrayp->subDTypep(), toDpi));
             }
         } else if (dtypep->containsUnpackedStruct()) {
-            for (const AstMemberDType* const itemp : VN_AS(dtypep, StructDType)->memberspList()) {
+            for (AstMemberDType* const itemp : VN_AS(dtypep, StructDType)->memberspList()) {
                 AstStructSel* const selp
-                    = new AstStructSel{flp, internalp->cloneTree(false), itemp->name()};
-                selp->dtypeFrom(itemp->dtypep());
+                    = new AstStructSel{flp, internalp->cloneTree(false), itemp};
                 stmtsp = AstNode::addNext(stmtsp,
                                           createDpiCvt(selp, suffixed("." + itemp->prettyName()),
                                                        itemp->subDTypep(), toDpi));

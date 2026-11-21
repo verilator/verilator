@@ -189,6 +189,7 @@ set(HEADERS
     V3SolverSmt.h
     V3Split.h
     V3StackCount.h
+    V3StaticPrefix.h
     V3Stats.h
     V3StdFuture.h
     V3String.h
