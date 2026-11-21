@@ -50,7 +50,10 @@ module t (
   int count_fail23 = 0;
   int count_fail24 = 0;
 
-  // Test: a[*3] |-> b
+  unbounded_rep_reject_test unboundedRepRejectTest (clk);
+  unbounded_rep_match_item_test unboundedRepMatchItemTest (clk);
+
+  // Test 1: a[*3] |-> b
   assert property (@(posedge clk) a [* 3] |-> b)
   else count_fail1 <= count_fail1 + 1;
 
@@ -141,9 +144,7 @@ module t (
   assert property (@(posedge clk) cyc == 1 |-> (cyc == 2) [*0:1] ##1 (cyc == 2))
   else count_fail24 <= count_fail24 + 1;
 
-  // Counter FSM with M>0: range > kChainLimit (256) forces counter vertex
-  // creation; min>0 exercises the Gte/active gating path in resolveLinks and
-  // emitNbaLogic. Cover-only so count_fail values above are undisturbed.
+  // A long ranged delay is covered without affecting the assertion checks above.
   cover property (@(posedge clk) ##[10:300] b);
 
   always @(posedge clk) begin
@@ -162,17 +163,14 @@ module t (
       `checkd(count_fail3, 9);
       `checkd(count_fail4, 49);
       `checkd(count_fail5, 0);
-      // NFA merge-node range [*M:N] over-counts rejects; match
-      // detection is correct, only reject counting is imprecise
+      // The bounded repetition reports the expected number of failures.
       `checkd(count_fail6, 59);  // All other sims: 51
       `checkd(count_fail7, 51);
       `checkd(count_fail8, 20);
-      // IEEE 1800-2023 16.9.2 permits empty match of [*0]; NFA reports
-      // rejects on each tick while others suppress
+      // An empty repetition is checked independently on each sampled tick.
       `checkd(count_fail9, 49);  // Most others: 20, one other 49
       `checkd(count_fail10, 59);
-      // a[*] ##1 b: NFA treats unbounded [*] as liveness (no reject);
-      // Should be definite antecedent
+      // An unbounded repetition followed by a delayed endpoint remains pending.
       `checkd(count_fail11, 0);  // All other sims: 29
       `checkd(count_fail12, count_fail11);
       `checkd(count_fail13, count_fail7);
@@ -186,5 +184,250 @@ module t (
       $write("*-* All Finished *-*\n");
       $finish;
     end
+  end
+endmodule
+
+// A sequence match item after an unbounded repetition is legal and must not
+// be mistaken for a side effect in the endpoint's boolean expression.
+module unbounded_rep_match_item_test (input logic clk);
+  logic start = 0;
+  logic a = 0;
+  logic b = 0;
+  logic start_overlap = 0;
+  logic a_overlap = 1;
+  logic b_overlap = 0;
+  int passes = 0;
+  int failures = 0;
+  int overlap_match_items = 0;
+  int overlap_failures = 0;
+  logic disable_match = 0;
+  logic disable_start = 0;
+  logic disable_a = 0;
+  logic disable_b = 0;
+  logic read_start = 0;
+  logic read_a = 0;
+  logic read_b = 0;
+  int read_data = 1;
+  logic follow_a = 0;
+  logic follow_b = 0;
+  int disable_failures = 0;
+  int read_passes = 0;
+  int follow_failures = 0;
+
+  property p;
+    int x;
+    start |-> a [*1:$] ##0 (b, x = 1);
+  endproperty
+
+  assert property (@(posedge clk) p)
+  passes++;
+  else failures++;
+
+  property p_disable;
+    int y;
+    disable iff (disable_match)
+      disable_start |-> disable_a [*1:$] ##0 (disable_b, y = 1);
+  endproperty
+
+  assert property (@(posedge clk) p_disable)
+  else disable_failures++;
+
+  property p_read_match_item;
+    int y;
+    read_start |-> read_a [*1:$] ##0 (read_b, y = read_data);
+  endproperty
+
+  assert property (@(posedge clk) p_read_match_item)
+  read_passes++;
+  else read_passes--;
+
+  assert property (@(posedge clk) follow_a #-# follow_b)
+  else follow_failures++;
+
+  function void count_overlap_match();
+    overlap_match_items++;
+  endfunction
+
+  assert property (@(posedge clk)
+    start_overlap |-> a_overlap [*1:$] ##0 (b_overlap, count_overlap_match()))
+  else overlap_failures++;
+
+  initial begin
+    @(negedge clk);
+    start = 1;
+    a = 1;
+    @(negedge clk);
+    start = 0;
+    b = 1;
+    @(negedge clk);
+    a = 0;
+    b = 0;
+    repeat (2) @(posedge clk);
+    `checkh(passes, 1);
+    `checkh(failures, 0);
+
+    @(negedge clk);
+    disable_start = 1;
+    disable_a = 1;
+    @(negedge clk);
+    disable_start = 0;
+    disable_b = 1;
+    disable_match = 1;
+    @(negedge clk);
+    disable_match = 0;
+    disable_a = 0;
+    disable_b = 0;
+    repeat (2) @(posedge clk);
+    `checkh(disable_failures, 0);
+
+    @(negedge clk);
+    read_start = 1;
+    read_a = 1;
+    @(negedge clk);
+    read_start = 0;
+    read_b = 1;
+    @(negedge clk);
+    read_a = 0;
+    read_b = 0;
+    repeat (2) @(posedge clk);
+    `checkh(read_passes, 1);
+
+    // Two overlapping attempts match the endpoint on the same tick. Each
+    // match item must execute once.
+    @(negedge clk);
+    start_overlap = 1;
+    @(negedge clk);
+    b_overlap = 1;
+    @(negedge clk);
+    start_overlap = 0;
+    b_overlap = 0;
+    repeat (2) @(posedge clk);
+    `checkh(overlap_match_items, 2);
+    `checkh(overlap_failures, 0);
+  end
+endmodule
+
+// Directed checks for failed unbounded repetitions and a later ranged-delay
+// candidate. Kept with the consecutive-repetition tests.
+module unbounded_rep_reject_test (input logic clk);
+  logic psel = 0;
+  logic paddr = 0;
+  logic pready = 0;
+  logic psel_no_endpoint = 0;
+  logic paddr_no_endpoint = 0;
+  logic pready_no_endpoint = 0;
+  logic range_start = 0;
+  logic range_x = 0;
+  logic range_a = 0;
+  logic range_b = 0;
+  logic disable_reset = 0;
+  logic disable_start = 0;
+  logic disable_a = 1;
+  logic disable_b = 0;
+  logic replay_a = 1;
+  int failures = 0;
+  int no_endpoint_failures = 0;
+  int range_passes = 0;
+  int range_failures = 0;
+  int disable_failures = 0;
+  int replay_failures = 0;
+  time replay_failure_times [0:3];
+  int cycle = 0;
+  int start_cycle = 0;
+  int failure_cycle = 0;
+  int no_endpoint_failure_cycle = 0;
+
+  always @(posedge clk) cycle <= cycle + 1;
+
+  assert property (@(posedge clk)
+    $rose(psel) |->
+    ($rose(psel) ##1 ((!$changed(paddr))[*1:$] ##0 (pready == 1))))
+  else begin
+    failures++;
+    failure_cycle = cycle;
+  end
+
+  assert property (@(posedge clk)
+    $rose(psel_no_endpoint) |->
+    ($rose(psel_no_endpoint) ##1 ((!$changed(paddr_no_endpoint))[*1:$]
+                                  ##0 (pready_no_endpoint == 1))))
+  else begin
+    no_endpoint_failures++;
+    no_endpoint_failure_cycle = cycle;
+  end
+
+  assert property (@(posedge clk)
+    range_start |-> ##[0:2] (range_x ##0 range_a[*1:$] ##0 range_b))
+  range_passes++;
+  else range_failures++;
+
+  assert property (@(posedge clk) disable iff (disable_reset)
+    disable_start |-> disable_a[*1:$] ##0 disable_b)
+  else disable_failures++;
+
+  // Several live repetitions can fail on the same sample; replay each failure action.
+  assert property (@(posedge clk) replay_a[*1:$] ##0 1'b0)
+  else begin
+    if (replay_failures < 4) replay_failure_times[replay_failures] = $time;
+    replay_failures++;
+  end
+
+  initial begin
+    repeat (2) @(negedge clk);
+    range_start = 1;
+    range_x = 1;
+    range_a = 1;
+    @(negedge clk);
+    range_start = 0;
+    range_x = 0;
+    range_a = 0;
+    @(negedge clk);
+    range_x = 1;
+    range_a = 1;
+    range_b = 1;
+    @(negedge clk);
+    `checkh(range_passes, 1);
+    `checkh(range_failures, 0);
+  end
+
+  initial begin
+    $assertvacuousoff(0);
+    repeat (2) @(negedge clk);
+    psel = 1;
+    psel_no_endpoint = 1;
+    start_cycle = cycle;
+    @(negedge clk);
+    paddr = 1;
+    paddr_no_endpoint = 1;
+    pready = 1;
+    repeat (3) @(posedge clk);
+    `checkh(failures, 1);
+    `checkh(failure_cycle, start_cycle + 1);
+    `checkh(no_endpoint_failures, 1);
+    `checkh(no_endpoint_failure_cycle, start_cycle + 1);
+  end
+
+  initial begin
+    repeat (2) @(negedge clk);
+    disable_start = 1;
+    @(negedge clk);
+    disable_start = 0;
+    disable_reset = 1;
+    @(negedge clk);
+    disable_reset = 0;
+    repeat (2) @(posedge clk);
+    `checkh(disable_failures, 0);
+  end
+
+  initial begin
+    repeat (2) @(posedge clk);
+    @(negedge clk);
+    replay_a = 0;
+    repeat (2) @(posedge clk);
+    @(negedge clk);
+    `checkh(replay_failures, 4);
+    `checkh(replay_failure_times[0] == replay_failure_times[1], 1);
+    `checkh(replay_failure_times[1] == replay_failure_times[2], 1);
+    `checkh(replay_failure_times[3] > replay_failure_times[2], 1);
   end
 endmodule
