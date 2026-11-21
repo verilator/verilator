@@ -81,12 +81,18 @@ private:
         return VN_IS(dtypep, ClassRefDType) || (ifaceDtypep && ifaceDtypep->isVirtual());
     }
 
-    // Bases of member accesses through nullable references, in traversal order.
-    // makeNullGuard walks this backwards so an outer base is checked before a nested one.
+    // Bases of member accesses and method calls through nullable references, in traversal
+    // order. makeNullGuard walks this backwards so an outer base is checked before a nested one.
     static std::vector<const AstNodeExpr*> nullableBases(const AstNodeExpr* exprp) {
         std::vector<const AstNodeExpr*> bases;
-        exprp->foreach([&](const AstMemberRef* memberRefp) {
-            if (isNullableRef(memberRefp->fromp())) bases.push_back(memberRefp->fromp());
+        exprp->foreach([&](const AstNode* nodep) {
+            const AstNodeExpr* fromp = nullptr;
+            if (const AstMemberRef* const memberRefp = VN_CAST(nodep, MemberRef)) {
+                fromp = memberRefp->fromp();
+            } else if (const AstCMethodCall* const cMethodCallp = VN_CAST(nodep, CMethodCall)) {
+                fromp = cMethodCallp->fromp();
+            }
+            if (fromp && isNullableRef(fromp)) bases.push_back(fromp);
         });
         return bases;
     }
@@ -345,6 +351,12 @@ public:
             }
         }
         return {resultp, firedAtInitialization};
+    }
+
+    // Guard an expression against nullable bases, for consumers that evaluate it
+    // outside the trigger update statements.
+    AstNodeExpr* guardExpr(AstNodeExpr* exprp) {
+        return wrapExprWithNullChecks(exprp->fileline(), exprp, nullableBases(exprp));
     }
 
     Results getResultsAndClearUpdates() {
