@@ -1013,12 +1013,6 @@ class ParamProcessor final {
         } else {
             newModp = srcModp->cloneTree(false);
         }
-        // AstPin normally retains links to external module formals across cloning. For a cloned
-        // interface, relink pins whose formals were cloned with the interface while clonep() is
-        // still valid, so nested parameterized classes use the cloned interface parameters.
-        if (AstIface* const newIfacep = VN_CAST(newModp, Iface)) {
-            newIfacep->foreach([](AstPin* pinp) { pinp->cloneRelinkGen(); });
-        }
 
         // Mark the source module as a parameterized template now that a specialized
         // clone exists.  This suppresses width/type errors on the unresolved template
@@ -2277,7 +2271,21 @@ class ParamProcessor final {
         nodep->ifacep(VN_AS(newModp, Iface));
         return newModp;
     }
+    // Link the parameter pins of a class reference to the formals of the class it references.
+    // Cloning keeps AstPin links, so after cloning a module, interface, or class, a reference to
+    // a class nested in it links to the cloned class, but its pins to the template's formals.
+    void relinkClassRefPins(AstPin* paramsp, const AstNodeModule* classp) {
+        for (AstPin* const pinp : VNList<AstPin>{paramsp}) {
+            if (const AstVar* const varp = pinp->modVarp()) {
+                pinp->modVarp(VN_AS(m_memberMap.findMember(classp, varp->name()), Var));
+            } else if (const AstParamTypeDType* const typep = pinp->modPTypep()) {
+                pinp->modPTypep(
+                    VN_AS(m_memberMap.findMember(classp, typep->name()), ParamTypeDType));
+            }
+        }
+    }
     AstNodeModule* classRefDeparam(AstClassOrPackageRef* nodep, AstNodeModule* srcModp) {
+        relinkClassRefPins(nodep->paramsp(), srcModp);
         resolveDefaultParams(nodep);
         AstNodeModule* const newModp
             = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false);
@@ -2295,6 +2303,7 @@ class ParamProcessor final {
         return newModp;
     }
     AstNodeModule* classRefDeparam(AstClassRefDType* nodep, AstNodeModule* srcModp) {
+        relinkClassRefPins(nodep->paramsp(), srcModp);
         resolveDefaultParams(nodep);
         AstNodeModule* const newModp
             = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false);
