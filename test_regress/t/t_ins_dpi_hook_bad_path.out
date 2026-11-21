@@ -1,0 +1,54 @@
+%Error: t/t_ins_dpi_hook_bad_path.v:31:8: DPI-hook insertion of target 'top.w.l' could not find initial 'module' in 'topModule.instance.__'
+   31 | module top_module;
+      |        ^~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_ins_dpi_hook_bad_path.v:60:15: DPI-hook target 'v' in 'top_module': index [3] applied to 'logic[7:0]'; element access is supported on unpacked arrays only. Hook the whole signal instead
+   60 |   logic [7:0] v;
+      |               ^
+%Error: t/t_ins_dpi_hook_bad_path.v:65:15: Element index 2 is out of range for target variable 'mr' in 'top_module' (4 elements)
+   65 |   logic [7:0] mr[4:7];
+      |               ^~
+%Error: t/t_ins_dpi_hook_bad_path.v:65:15: Element index 9 is out of range for target variable 'mr' in 'top_module' (4 elements)
+   65 |   logic [7:0] mr[4:7];
+      |               ^~
+%Error: t/t_ins_dpi_hook_bad_path.v:13:11: DPI-hook insertion of target 'top_module.bi.p': a member path into an interface signal is not supported (target the whole signal instead)
+   13 | interface simple_if;
+      |           ^~~~~~~~~
+%Error: t/t_ins_dpi_hook_bad_path.v:63:11: DPI-hook insertion of target 'top_module.g[0].gs': a member path into a variable of a generate block is not supported
+   63 |     box_t gs;
+      |           ^~
+%Error: t/t_ins_dpi_hook_bad_path.v:59:15: DPI-hook target 'na' in 'top_module': element index 5 out of range (2 elements)
+   59 |   nib_t       na[2];
+      |               ^~
+%Error: t/t_ins_dpi_hook_bad_path.v:58:15: DPI-hook target 's' in 'top_module': no member named 'nope'
+   58 |   box_t       s;
+      |               ^
+%Error: t/t_ins_dpi_hook_bad_path.v:58:15: DPI-hook target 's' in 'top_module': index [1] applied to 'logic[7:0]'; element access is supported on unpacked arrays only
+   58 |   box_t       s;
+      |               ^
+%Error: t/t_ins_dpi_hook_bad_path.v:58:15: DPI-hook target 's' in 'top_module': the addressed member is an unpacked aggregate, which is not supported; target a scalar or packed leaf
+   58 |   box_t       s;
+      |               ^
+%Error: t/t_ins_dpi_hook_bad_path.v:37:8: DPI-hook insertion of target 'top_module.u[0]': arrayed module instances are not supported
+   37 |   leaf u[2](.i(iv), .o(ov));
+      |        ^
+%Error: t/t_ins_dpi_hook_bad_path.v:31:8: DPI-hook insertion of target 'top_module.u[x]' could not find initial 'instance' in 'topModule.instance.__'
+   31 | module top_module;
+      |        ^~~~~~~~~~
+%Error: t/t_ins_dpi_hook_bad_path.v:88:11: DPI-hook insertion of target 'top_module.ud' resolves to a non-module container, which is not supported
+   88 | primitive udp_xor(output q, input a, input b);
+      |           ^~~~~~~
+%Error: t/t_ins_dpi_hook_bad_path.v:88:11: DPI-hook insertion of target 'top_module.ud.a' resolves to a non-module container, which is not supported
+   88 | primitive udp_xor(output q, input a, input b);
+      |           ^~~~~~~
+%Error: t/t_ins_dpi_hook_bad_path.v:60:15: DPI-hook target 'v' in 'top_module': member '.x' of 'logic[7:0]'; member access is supported on structs only
+   60 |   logic [7:0] v;
+      |               ^
+%Error: t/t_ins_dpi_hook_bad_path.v:17:8: DPI-hook insertion of target 'top_module.w.l' could not find 'var' in '__.instance.var'
+   17 | module leaf(input logic [7:0] i, output logic [7:0] o);
+      |        ^~~~
+%Error: t/t_ins_dpi_hook_bad_path.v:23:8: DPI-hook insertion of target 'top_module.w.nope' could not find 'instance' in '__.instance.__'
+   23 | module wrap(input logic [7:0] i, output logic [7:0] o);
+      |        ^~~~
+%Error: Incomplete hook-insertion configuration for target 'top_module.w.l.nosuch'; see the error above
+%Error: Exiting due to

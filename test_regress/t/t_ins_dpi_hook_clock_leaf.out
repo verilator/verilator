@@ -1,0 +1,9 @@
+$[0| clks[1]: 0 p.b: 00 s2.in.x: 00 s3.arr[1].x: 00 pcnt: 0]
+$[1| clks[1]: 0 p.b: 20 s2.in.x: 30 s3.arr[1].x: 40 pcnt: 1]
+$[2| clks[1]: 1 p.b: 21 s2.in.x: 31 s3.arr[1].x: 41 pcnt: 2]
+$[3| clks[1]: 1 p.b: 7f s2.in.x: 32 s3.arr[1].x: 42 pcnt: 3]
+$[4| clks[1]: 1 p.b: 7f s2.in.x: aa s3.arr[1].x: 43 pcnt: 4]
+$[5| clks[1]: 0 p.b: 24 s2.in.x: aa s3.arr[1].x: bb pcnt: 5]
+$[6| clks[1]: 1 p.b: 25 s2.in.x: 35 s3.arr[1].x: bb pcnt: 6]
+$[7| clks[1]: 0 p.b: 26 s2.in.x: 36 s3.arr[1].x: 46 pcnt: 7]
+*-* All Finished *-*

@@ -449,6 +449,7 @@ detailed descriptions of these arguments.
     --diagnostics-sarif         Enable SARIF diagnostics output
     --diagnostics-sarif-output <filename>  Set SARIF diagnostics output file
     --dpi-hdr-only              Only produce the DPI header file
+    --dpihook-trigger-step <steps>  Set DPI-hook evaluation trigger period
     --dump-<srcfile>            Enable dumping everything in source file
     --dump-ast-patterns         Enable dumping Ast pattern statistics
     --dump-defines              Show preprocessor defines with -E

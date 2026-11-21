@@ -248,6 +248,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_HIER_PARAMS            "hier_params"
 %token<fl>              yVLT_HIER_WORKERS           "hier_workers"
 %token<fl>              yVLT_INLINE                 "inline"
+%token<fl>              yVLT_INSERT_DPIHOOK         "insert_dpihook"
 %token<fl>              yVLT_ISOLATE_ASSIGNMENTS    "isolate_assignments"
 %token<fl>              yVLT_LINT_OFF               "lint_off"
 %token<fl>              yVLT_LINT_ON                "lint_on"
@@ -272,6 +273,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_VERILATOR_LIB          "verilator_lib"
 
 %token<fl>              yVLT_D_BLOCK    "--block"
+%token<fl>              yVLT_D_CALLBACK "--callback"
 %token<fl>              yVLT_D_CONTENTS "--contents"
 %token<fl>              yVLT_D_COST     "--cost"
 %token<fl>              yVLT_D_CLOCK    "--clock"
@@ -8663,6 +8665,9 @@ vltItem:
                         { /* Historical, now has no effect */ }
         |       vltInlineFront vltDModuleE vltDFTaskE
                         { V3Control::addInline($<fl>1, *$2, *$3, $1); }
+        |       yVLT_INSERT_DPIHOOK yVLT_D_CALLBACK yaSTRING yVLT_D_VAR yaSTRING
+                        { v3Global.setNeedDpiHooks();
+                          V3Control::addHookInsertCfg($<fl>1, *$3, *$5); }
         |       yVLT_COVERAGE_BLOCK_OFF vltDFile
                         { V3Control::addCoverageBlockOff(*$2, 0); }
         |       yVLT_COVERAGE_BLOCK_OFF vltDFile yVLT_D_LINES yaINTNUM

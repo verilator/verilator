@@ -832,6 +832,7 @@ class V3ControlResolver final {
     uint8_t m_mode = NONE;  // Kind of profile_data records is currently active
     std::unordered_map<string, V3ControlResolverHierWorkerEntry> m_hierWorkers;
     FileLine* m_profileFileLine = nullptr;  // Location profile_data was read from
+    std::map<string, std::vector<HookInsertCfgEntry>> m_hookInsertCfg;
 
     V3ControlResolver() = default;
     ~V3ControlResolver() = default;
@@ -903,6 +904,53 @@ public:
         UINFO(9, "Evaluating cost: " << cost);
         return cost;
     }
+    // Split a target path at its last dot into the instance prefix and the
+    // variable name ("top.u.sig" -> {"top.u", "sig"})
+    std::pair<string, string> splitPrefixAndVar(FileLine* fl, const string& target) {
+        const auto pos = target.rfind('.');
+        if (pos == string::npos) {
+            fl->v3error("DPI-hook insertion of target variable '"
+                        << target << "' must be qualified with at least the top module");
+            return {target, ""};
+        }
+        const string prefix = target.substr(0, pos);
+        const string varTarget = target.substr(pos + 1);
+        return {prefix, varTarget};
+    }
+    string splitElemIndex(FileLine* fl, const string& varTarget, AccessPath& accessPath) {
+        const auto open = varTarget.find('[');
+        if (open == string::npos) return varTarget;
+        if (varTarget.back() != ']') {
+            fl->v3error("Invalid element select in DPI-hook target: '"
+                        << varTarget << "'. Expected format 'name[i]'.");
+            return varTarget;
+        }
+        const string index = varTarget.substr(open + 1, varTarget.size() - open - 2);
+        if (!isDpiHookConfigNumber(index)) {
+            fl->v3error("Element index must be a non-negative integer: '" << varTarget << "'.");
+            return varTarget.substr(0, open);
+        }
+        accessPath.push_back(StepIntoTarget{true, static_cast<uint32_t>(std::stoul(index)), ""});
+        return varTarget.substr(0, open);
+    }
+    // Add the hook-insertion config data to the map to create the initial map (Used in verilog.y)
+    void addHookInsertCfg(FileLine* fl, const string& callback, const string& target) {
+        // The periodic evaluation trigger of a hook is a delay, so hooks need --timing.
+        // Report it once, at the first directive
+        if (m_hookInsertCfg.empty() && !v3Global.opt.timing().isSetTrue()) {
+            fl->v3error("insert_dpihook requires --timing\n"
+                        << fl->warnMore()
+                        << "... The periodic evaluation trigger of a DPI hook is a delay");
+        }
+        const auto result = splitPrefixAndVar(fl, target);
+        const auto prefix = result.first;
+        AccessPath accessPath;
+        const auto varTarget = splitElemIndex(fl, result.second, accessPath);
+        m_hookInsertCfg[prefix].push_back(HookInsertCfgEntry{callback, varTarget, accessPath});
+    }
+    std::map<string, std::vector<HookInsertCfgEntry>>& getHookInsertCfg() {
+        return m_hookInsertCfg;
+    }
 };
 
 //######################################################################
@@ -943,6 +991,10 @@ void V3Control::addFsmRegisterWrapper(FileLine* fl, const string& module, const 
 
     const FsmRegisterWrapper desc{module, d, q, clock, reset, resetValue};
     V3ControlResolver::s().modules().at(module).setFsmRegisterWrapper(fl, desc);
+}
+
+void V3Control::addHookInsertCfg(FileLine* fl, const string& callback, const string& target) {
+    V3ControlResolver::s().addHookInsertCfg(fl, callback, target);
 }
 
 void V3Control::addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max) {
@@ -1193,6 +1245,9 @@ FileLine* V3Control::getHierWorkersFileLine(const string& model) {
 const V3Control::FsmRegisterWrapper* V3Control::getFsmRegisterWrapper(const string& module) {
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(module);
     return modp ? modp->fsmRegisterWrapperp() : nullptr;
+}
+std::map<string, std::vector<HookInsertCfgEntry>>& V3Control::getHookInsertCfg() {
+    return V3ControlResolver::s().getHookInsertCfg();
 }
 uint64_t V3Control::getProfileData(const string& hierDpi) {
     return V3ControlResolver::s().getProfileData(hierDpi);

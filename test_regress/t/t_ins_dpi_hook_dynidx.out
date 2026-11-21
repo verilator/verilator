@@ -1,0 +1,10 @@
+[0] rd1[3]=30 rd2[0]=00 rd5=50 rd6=60 xmr[0]=00 rdw=00
+[1] rd1[4]=40 rd2[1]=10 rd5=50 rd6=60 xmr[7]=70 rdw=0c
+[2] rd1[5]=0a rd2[2]=a0 rd5=0a rd6=5c xmr[6]=5c rdw=c9
+[3] rd1[6]=5c rd2[3]=a1 rd5=0a rd6=5c xmr[5]=0a rdw=4c
+[4] rd1[7]=70 rd2[0]=00 rd5=a3 rd6=60 xmr[4]=a2 rdw=5d
+[5] rd1[0]=00 rd2[1]=10 rd5=a3 rd6=a4 xmr[3]=a1 rdw=5c
+[6] rd1[1]=10 rd2[2]=a0 rd5=a3 rd6=a4 xmr[2]=a0 rdw=5b
+[7] rd1[2]=a0 rd2[3]=a1 rd5=a3 rd6=a4 xmr[1]=10 rdw=5a
+[8] rd1[3]=a1 rd2[0]=a6 rd5=a3 rd6=a4 xmr[0]=a6 rdw=59
+*-* All Finished *-*

@@ -1,0 +1,9 @@
+[0] mem1=00 mem2=00 sb=00 sa=0 px=00 py=00
+[1] mem1=00 mem2=00 sb=80 sa=0 px=10 py=20
+[2] mem1=7d mem2=96 sb=24 sa=1 px=d2 py=1d
+[3] mem1=7d mem2=d4 sb=27 sa=2 px=d1 py=1e
+[4] mem1=41 mem2=42 sb=83 sa=3 px=13 py=23
+[5] mem1=41 mem2=42 sb=84 sa=4 px=14 py=24
+[6] mem1=45 mem2=42 sb=85 sa=5 px=15 py=25
+[7] mem1=45 mem2=46 sb=86 sa=6 px=16 py=26
+*-* All Finished *-*

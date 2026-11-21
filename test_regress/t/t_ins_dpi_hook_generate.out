@@ -1,0 +1,33 @@
+$[0| l0: 00 l1: 00]
+[0] alone=00 pair=00 right=00
+$[0| 00:00 01:00 10:00 11:00]
+[0] direct=aa viaAssign=aa
+$[1| l0: 00 l1: 01]
+[1] alone=00 pair=01 right=3c
+$[1| 00:00 01:01 10:10 11:11]
+[1] direct=aa viaAssign=aa
+$[2| l0: ee l1: 02]
+[2] alone=ee pair=ec right=d3
+$[2| 00:01 01:ee 10:11 11:12]
+[2] direct=aa viaAssign=aa
+$[3| l0: ee l1: 03]
+[3] alone=ee pair=ed right=d0
+$[3| 00:02 01:ee 10:12 11:13]
+[3] direct=aa viaAssign=aa
+$[4| l0: 03 l1: 04]
+[4] alone=03 pair=07 right=3c
+$[4| 00:03 01:04 10:13 11:14]
+[4] direct=aa viaAssign=aa
+$[5| l0: 04 l1: 05]
+[5] alone=04 pair=01 right=3c
+$[5| 00:04 01:05 10:14 11:15]
+[5] direct=aa viaAssign=aa
+$[6| l0: 05 l1: 06]
+[6] alone=05 pair=03 right=3c
+$[6| 00:05 01:06 10:15 11:16]
+[6] direct=aa viaAssign=aa
+$[7| l0: 06 l1: 07]
+[7] alone=06 pair=01 right=3c
+$[7| 00:06 01:07 10:16 11:17]
+[7] direct=aa viaAssign=aa
+*-* All Finished *-*

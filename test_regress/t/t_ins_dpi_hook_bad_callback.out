@@ -1,0 +1,15 @@
+%Error: t/t_ins_dpi_hook_bad_callback.v:11:17: DPI-hook callback 'cbw' is reused for a target of width 128, but was already used for width 8
+                                             : ... Suggest use a distinct callback name per signal width
+   11 |   logic [127:0] wide = 0;
+      |                 ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_ins_dpi_hook_bad_callback.v:15:34: DPI-hook callback 'cb' of target 'top_module.v' has the name of this function or task
+                                             : ... note: In instance 'top_module'
+                                             : ... Suggest use another callback name
+   15 |   function automatic logic [7:0] cb(input logic [7:0] x);
+      |                                  ^~
+%Error: t/t_ins_dpi_hook_bad_callback.v:13:15: DPI-hook target 'top_module.o' is already hooked with callback 'cb1'
+                                             : ... note: In instance 'top_module'
+   13 |   logic [7:0] o = 0;
+      |               ^
+%Error: Exiting due to

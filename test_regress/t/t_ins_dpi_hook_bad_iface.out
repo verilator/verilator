@@ -1,0 +1,15 @@
+%Error: t/t_ins_dpi_hook_bad_iface.v:13:11: DPI-hook insertion of target 'top_module.bi1': signal 'nosuch' not found in interface 'simple_if'
+   13 | interface simple_if;
+      |           ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_ins_dpi_hook_bad_iface.v:15:10: DPI-hook insertion of target 'top_module.bi2.us': aggregate or member-addressed interface signals are not supported; target a packed leaf signal
+   15 |   pair_t us;
+      |          ^~
+%Error: t/t_ins_dpi_hook_bad_iface.v:16:8: Target variable 'rv' in 'top_module.bi3' is a floating-point type, which has no gate-level representation and cannot be hooked
+   16 |   real rv;
+      |        ^~
+%Error: t/t_ins_dpi_hook_bad_iface.v:29:42: DPI-hook insertion of target 'top_module.bi4.seed': a read-write reference to an interface signal is not supported
+   29 |   always @(posedge clk) r <= $random(bi4.seed);
+      |                                          ^~~~
+%Error: Incomplete hook-insertion configuration for target 'top_module.bi1'; see the error above
+%Error: Exiting due to

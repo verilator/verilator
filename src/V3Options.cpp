@@ -1461,6 +1461,14 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_diagnosticsSarif = true;
     });
     DECL_OPTION("-dpi-hdr-only", OnOff, &m_dpiHdrOnly);
+    DECL_OPTION("-dpihook-trigger-step", CbVal, [this, fl](const char* valp) {
+        const int step = std::atoi(valp);
+        if (step < 1) {
+            fl->v3error("--dpihook-trigger-step must be >= 1 (got " << valp << ")");
+        } else {
+            m_dpiHookTriggerStep = step;
+        }
+    });
     DECL_OPTION("-dump-", CbPartialMatch, [this](const char* optp) {
         m_dumpLevel[optp] = 3;
     }).notForRerun();

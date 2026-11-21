@@ -1,0 +1,9 @@
+[0] mem2=00 sum=00 s=000 sa=0 xs=000 p=0000 p2=0000 w=00 00
+[1] mem2=00 sum=40 s=080 sa=0 xs=080 p=1020 p2=1020 w=30 00
+[2] mem2=1b sum=5b s=124 sa=1 xs=124 p=d21d p2=d21d w=a6 23
+[3] mem2=1b sum=9d s=227 sa=2 xs=227 p=d11e p2=d11e w=a4 23
+[4] mem2=41 sum=06 s=383 sa=3 xs=383 p=1323 p2=1323 w=32 33
+[5] mem2=41 sum=0a s=484 sa=4 xs=484 p=1424 p2=1424 w=34 33
+[6] mem2=45 sum=0e s=585 sa=5 xs=585 p=1525 p2=1525 w=34 35
+[7] mem2=45 sum=12 s=686 sa=6 xs=686 p=1626 p2=1626 w=36 35
+*-* All Finished *-*
