@@ -3062,17 +3062,7 @@ class AssertNfaVisitor final : public VNVisitor {
                 replaceBodyOnBuildError(specp->fileline(), specp, true);
                 return true;
             }
-            for (const AstSenItem* sp = clockedp->sensesp(); sp;
-                 sp = VN_CAST(sp->nextp(), SenItem)) {
-                if (!sp->edgeType().anEdge()) {
-                    clockedp->v3warn(E_UNSUPPORTED,
-                                     "Unsupported: non-edge clocking event on a sequence; "
-                                     "use an edge such as @(posedge clk)");
-                    replaceBodyOnBuildError(specp->fileline(), specp, true);
-                    return true;
-                }
-            }
-            specp->sensesp(clockedp->sensesp()->unlinkFrBackWithNext());
+            specp->addSensesp(clockedp->sensesp()->unlinkFrBackWithNext());
             AstNodeExpr* const bodyp = clockedp->exprp()->unlinkFrBack();
             clockedp->replaceWith(bodyp);
             VL_DO_DANGLING(pushDeletep(clockedp), clockedp);
@@ -3365,7 +3355,7 @@ class AssertNfaVisitor final : public VNVisitor {
         const bool countMatches = countsMatches(assertp);
         // Inherit module defaults (IEEE 14.12, 16.15) when assertion has none.
         if (!propp->sensesp() && m_defaultClockingp) {
-            propp->sensesp(m_defaultClockingp->sentreep()->sensesp()->cloneTree(true));
+            propp->addSensesp(m_defaultClockingp->sentreep()->sensesp()->cloneTree(true));
         }
         if (!propp->disablep() && m_defaultDisablep && !isSeqEvent) {
             propp->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
