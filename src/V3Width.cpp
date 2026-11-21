@@ -1455,6 +1455,8 @@ class WidthVisitor final : public VNVisitor {
                     UINFO(1, "    Related node: " << nodep);
                 }
             }
+            if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), PackArrayDType))
+                V3Const::constifyEdit(nodep->lsbp());
             if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() > frommsb) {
                 // See also warning in V3Const
                 // We need to check here, because the widthCheckSized may silently
@@ -1467,11 +1469,13 @@ class WidthVisitor final : public VNVisitor {
                 if (m_doGenerate) {
                     UINFO(5, "Selection index out of range inside generate");
                 } else if (!inParameterizedTemplate) {
+                    const int indexDiv = nodep->widthConst() == elw ? elw : 1;
                     if (nodep->declRange().ranged()) {
                         nodep->v3warn(SELRANGE, "Selection index out of range: "
-                                                    << nodep->msbConst() << ":"
-                                                    << nodep->lsbConst() << " outside " << frommsb
-                                                    << ":" << fromlsb);
+                                                    << (nodep->msbConst() / indexDiv) << ":"
+                                                    << (nodep->lsbConst() / indexDiv)
+                                                    << " outside " << (frommsb / indexDiv) << ":"
+                                                    << (fromlsb / indexDiv));
                     } else {
                         nodep->v3warn(SELRANGE,
                                       "Selection "
