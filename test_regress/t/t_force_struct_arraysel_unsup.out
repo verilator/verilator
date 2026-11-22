@@ -2,7 +2,7 @@
    27 |     qr = get(s.arr[i].value);
       |                   ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:82:24: Unsupported: Signals used via read-write reference cannot be forced
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:82:24: Unsupported: reading a forced path through a read-write reference: 't.sx'
    82 |     qx = get(sx.arr[3].value);
       |                        ^~~~~
 %Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:24:19: Unsupported: non-constant array index reading a struct with a forced array element: 't.s'

@@ -1776,9 +1776,10 @@ class ForceReplaceVisitor final : public VNVisitor {
                         const int forcePathIndex = varInfop->findForcePathIndex(exprp);
                         if (forcePathIndex >= 0) {
                             if (baseRefp->access().isRW()) {
-                                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Signals used via "
-                                                             "read-write reference cannot be "
-                                                             "forced");
+                                nodep->v3warn(E_UNSUPPORTED,
+                                              "Unsupported: reading a forced path through a "
+                                              "read-write reference: "
+                                                  << varInfop->m_varp->prettyNameQ());
                                 return;
                             }
                             if (!baseRefp->access().isReadOnly()) return;
