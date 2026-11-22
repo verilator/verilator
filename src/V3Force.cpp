@@ -85,7 +85,9 @@ public:
         std::unordered_map<AstAssignForce*, ForceInfo> m_forces;
         std::unordered_map<string, int> m_forcePathToIndex;
         int m_nextForcePathIndex = 1;  // Start at 1 so 0 can be the base path (whole signal)
-        std::vector<string> m_forcedArrayPaths;  // Keys of forced paths with an array select
+        // Keys of the forced paths with an array select
+        std::unordered_set<string> m_forcedArrayPaths;
+        std::unordered_set<string> m_aboveForcedArrays;  // Keys of the paths those are below
         // Target in a force statement and index of each forced path.  Sorted, so a path
         // precedes the paths below it
         std::map<string, std::pair<AstNodeExpr*, int>> m_forcedPaths;
@@ -156,7 +158,18 @@ public:
         }
 
         void addForcedArrayPath(AstNodeExpr* nodep) {
-            m_forcedArrayPaths.push_back(forcePathKey(nodep));
+            string key = forcePathKey(nodep);
+            if (!m_forcedArrayPaths.emplace(key).second) return;
+            // Each path above it, up to the variable, which has the empty key
+            do {
+                key.erase(key.rfind('|'));
+            } while (m_aboveForcedArrays.emplace(key).second && !key.empty());
+        }
+
+        // True if a forced path with an array select is below the path
+        bool isAboveForcedArray(AstNodeExpr* nodep) const {
+            string key;
+            return buildForcePathKeyRecurse(nodep, key) && m_aboveForcedArrays.count(key);
         }
 
         // True if a forced path is an element of the array or below one, or the array is
@@ -164,19 +177,9 @@ public:
         bool isForcedArray(AstNodeExpr* arrayp) const {
             string key;
             if (!buildForcePathKeyRecurse(arrayp, key)) return false;
-            for (const string& forced : m_forcedArrayPaths) {
-                if (VString::startsWith(forced, key + "|A")) return true;
-                if (VString::startsWith(key + "|", forced + "|")) return true;
-            }
-            return false;
-        }
-
-        // True if a forced path with an array select is in the union
-        bool isForcedArrayUnion(AstNodeExpr* unionp) const {
-            string key;
-            if (!buildForcePathKeyRecurse(unionp, key)) return false;
-            for (const string& forced : m_forcedArrayPaths) {
-                if (VString::startsWith(forced, key + "|")) return true;
+            if (m_aboveForcedArrays.count(key)) return true;
+            for (; !key.empty(); key.erase(key.rfind('|'))) {
+                if (m_forcedArrayPaths.count(key)) return true;
             }
             return false;
         }
@@ -1720,7 +1723,7 @@ class ForceReplaceVisitor final : public VNVisitor {
         if (varInfo.m_forcedArrayPaths.empty()) return;
         // Members of a union are overlaid, so any forced array element in it may be the one read
         AstNodeExpr* const unionp = ForceState::firstUnionp(exprp);
-        const bool viaUnion = unionp && varInfo.isForcedArrayUnion(unionp);
+        const bool viaUnion = unionp && varInfo.isAboveForcedArray(unionp);
         for (const AstArraySel* const selp : ForceState::getArraySelInfo(exprp).m_sels) {
             if (VN_IS(selp->bitp(), Const)) continue;
             if (!viaUnion && !varInfo.isForcedArray(selp->fromp())) continue;
