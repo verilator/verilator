@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # pylint: disable=C0103,C0114,C0115,C0116
-# DESCRIPTION: Verilator: CI script for the jobs of 'claude-review.yml'
+# DESCRIPTION: Verilator: CI script for 'reusable-claude.yml' and 'claude-review.yml'
 #
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 ###############################################################################
 # The parts of Claude's review of a pull request that talk to GitHub:
-#   fetch: for the 'review' job, add the pull request contents in '.pr', for
-#          Claude to read, and print the commit at its head
-#   post:  for the 'post' job, post Claude's review
+#   fetch: for 'reusable-claude.yml', add the pull request contents in '.pr',
+#          for Claude to read, and print the commit at its head
+#   post:  for the 'post' job of 'claude-review.yml', post Claude's review
 # GitHub is reached with 'gh', which takes the token from GH_TOKEN.
 ###############################################################################
 
