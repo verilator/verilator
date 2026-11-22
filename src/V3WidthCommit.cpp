@@ -545,6 +545,14 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
     }
+    void visit(AstDeassign* nodep) override {
+        VL_RESTORER(m_contNbap);
+        VL_RESTORER(m_procCont);
+        m_contNbap = "deassign statement";
+        m_procCont = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
     void visit(AstFireEvent* nodep) override {
         VL_RESTORER(m_contNbap);
         VL_RESTORER(m_inNba);

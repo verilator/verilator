@@ -60,6 +60,8 @@ module t;
     // verilator lint_off IEEEMAYDEPRECATE
     assign vif.sig = 7'h55;  // Unsupported
     assign vif.arr[2] = 7'h55;  // Unsupported
+    deassign vif.sig;  // Unsupported
+    deassign vif.arr[2];  // Unsupported
     // verilator lint_on IEEEMAYDEPRECATE
   end
 

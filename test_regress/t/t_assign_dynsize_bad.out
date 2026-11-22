@@ -299,4 +299,20 @@
                                        : ... note: In instance 't'
   249 |     assign fpr = fq[$];   
       |                  ^~
+%Error: t/t_assign_dynsize_bad.v:256:14: Dynamically-sized variable not allowed in deassign statement (IEEE 1800-2023 6.21): 'fq'
+                                       : ... note: In instance 't'
+  256 |     deassign fq[1];   
+      |              ^~
+%Error: t/t_assign_dynsize_bad.v:257:17: Dynamically-sized variable not allowed in deassign statement (IEEE 1800-2023 6.21): 'a'
+                                       : ... note: In instance 't'
+  257 |     deassign fs.a[3];   
+      |                 ^
+%Error: t/t_assign_dynsize_bad.v:258:17: Class non-static variable not allowed in deassign statement (IEEE 1800-2023 6.21): 'p'
+                                       : ... note: In instance 't'
+  258 |     deassign fc.p;   
+      |                 ^
+%Error: t/t_assign_dynsize_bad.v:264:14: Automatic lifetime variable not allowed in deassign statement (IEEE 1800-2023 6.21): 'fda'
+                                       : ... note: In instance 't'
+  264 |     deassign fda;   
+      |              ^~~
 %Error: Exiting due to

@@ -55,4 +55,12 @@
                                                : ... note: In instance 't'
    62 |     assign vif.arr[2] = 7'h55;   
       |                ^~~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:63:18: Unsupported: deassign statement through a virtual interface: 'sig'
+                                               : ... note: In instance 't'
+   63 |     deassign vif.sig;   
+      |                  ^~~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:64:18: Unsupported: deassign statement through a virtual interface: 'arr'
+                                               : ... note: In instance 't'
+   64 |     deassign vif.arr[2];   
+      |                  ^~~
 %Error: Exiting due to

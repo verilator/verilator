@@ -249,6 +249,21 @@ module t (
     assign fpr = fq[$];  // Error
     // verilator lint_on IEEEMAYDEPRECATE
   end
+
+  // Deassign statements
+  initial begin
+    // verilator lint_off IEEEMAYDEPRECATE
+    deassign fq[1];  // Error
+    deassign fs.a[3];  // Error
+    deassign fc.p;  // Error
+    // verilator lint_on IEEEMAYDEPRECATE
+  end
+  initial begin
+    automatic logic [6:0] fda;
+    // verilator lint_off IEEEMAYDEPRECATE
+    deassign fda;  // Error
+    // verilator lint_on IEEEMAYDEPRECATE
+  end
 endmodule
 
 interface FIfc;
