@@ -1,0 +1,58 @@
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:37:15: Unsupported: force statement through a virtual interface: 'sig'
+                                               : ... note: In instance 't'
+   37 |     force vif.sig = 7'h55;   
+      |               ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:38:15: Unsupported: force statement through a virtual interface: 'sig'
+                                               : ... note: In instance 't'
+   38 |     force vif.sig[3:1] = 3'h5;   
+      |               ^~~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:39:15: Unsupported: force statement through a virtual interface: 'arr'
+                                               : ... note: In instance 't'
+   39 |     force vif.arr[2] = 7'h55;   
+      |               ^~~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:40:15: Unsupported: force statement through a virtual interface: 'arr'
+                                               : ... note: In instance 't'
+   40 |     force vif.arr = ifc.arr;   
+      |               ^~~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:41:15: Unsupported: force statement through a virtual interface: 'st'
+                                               : ... note: In instance 't'
+   41 |     force vif.st.x = 7'h55;   
+      |               ^~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:42:15: Unsupported: force statement through a virtual interface: 'st'
+                                               : ... note: In instance 't'
+   42 |     force vif.st.sa[3] = 7'h55;   
+      |               ^~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:43:19: Unsupported: force statement through a virtual interface: 'sig'
+                                               : ... note: In instance 't'
+   43 |     force {v, vif.sig} = 14'h1234;   
+      |                   ^~~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:44:17: Unsupported: release statement through a virtual interface: 'sig'
+                                               : ... note: In instance 't'
+   44 |     release vif.sig;   
+      |                 ^~~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:45:17: Unsupported: release statement through a virtual interface: 'arr'
+                                               : ... note: In instance 't'
+   45 |     release vif.arr[2];   
+      |                 ^~~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:53:14: Unsupported: force statement through a virtual interface: 'sig'
+                                               : ... note: In instance 't'
+   53 |     force vt.sig = 7'h55;   
+      |              ^~~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:54:15: Unsupported: force statement through a virtual interface: 'sig'
+                                               : ... note: In instance 't'
+   54 |     force vmp.sig = 7'h55;   
+      |               ^~~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:55:19: Unsupported: force statement through a virtual interface: 'sig'
+                                               : ... note: In instance 't'
+   55 |     force vifs[1].sig = 7'h55;   
+      |                   ^~~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:61:16: Unsupported: procedural continuous assignment through a virtual interface: 'sig'
+                                               : ... note: In instance 't'
+   61 |     assign vif.sig = 7'h55;   
+      |                ^~~
+%Error-UNSUPPORTED: t/t_force_vif_unsup.v:62:16: Unsupported: procedural continuous assignment through a virtual interface: 'arr'
+                                               : ... note: In instance 't'
+   62 |     assign vif.arr[2] = 7'h55;   
+      |                ^~~
+%Error: Exiting due to
