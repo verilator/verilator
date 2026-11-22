@@ -158,7 +158,7 @@ class VerilatedVpioReasonCb final : public VerilatedVpio {
     // A handle to a timed or non-timed callback created with vpi_register_cb
     // User can call vpi_remove_cb or vpi_release_handle on it
     const uint64_t m_id;  // Unique id/sequence number to find schedule's event
-    const QData m_time;  // Scheduled time, or 0 = not timed
+    const QData m_time;  // Time key of the schedule's event, or 0 = not timed
     const PLI_INT32 m_reason;  // VPI callback reason code
 
 public:
@@ -2582,7 +2582,7 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
     case cbNextSimTime: {  // One-shot; time always next; supported via vlt_main.cpp
         const QData time = VL_TIME_Q();
         const uint64_t id = VerilatedVpiImp::nextCallbackId();
-        VerilatedVpioReasonCb* const vop = new VerilatedVpioReasonCb{id, 0, reason};
+        VerilatedVpioReasonCb* const vop = new VerilatedVpioReasonCb{id, time, reason};
         VerilatedVpiImp::cbNextAdd(id, cb_data_p, time);
         return vop->castVpiHandle();
     }

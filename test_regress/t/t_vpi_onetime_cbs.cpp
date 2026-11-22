@@ -80,6 +80,14 @@ vpiHandle test_vpi_register_cb(p_cb_data cb_datap) {
 // forward declaration
 static PLI_INT32 TheCallback(s_cb_data* data);
 
+static int RemovedCallbackCount = 0;
+
+static PLI_INT32 RemovedCallback(s_cb_data* data) {
+    (void)data;  // Unused
+    ++RemovedCallbackCount;
+    return 0;
+}
+
 static PLI_INT32 AtEndOfSimTimeCallback(s_cb_data* data) {
     s_vpi_time t;
 
@@ -104,6 +112,12 @@ static PLI_INT32 AtEndOfSimTimeCallback(s_cb_data* data) {
     cb_data.cb_rtn = TheCallback;
     vpiHandle Handle = test_vpi_register_cb(&cb_data);
     CHECK_RESULT_NZ(Handle);
+
+    // A cbNextSimTime callback removed in the time step it was registered must not be called
+    cb_data.cb_rtn = RemovedCallback;
+    vpiHandle RemovedHandle = test_vpi_register_cb(&cb_data);
+    CHECK_RESULT_NZ(RemovedHandle);
+    CHECK_RESULT(vpi_remove_cb(RemovedHandle), 1);
 
     return 0;
 }
@@ -231,6 +245,7 @@ static int EndOfSimulationCallback(p_cb_data cb_data) {
     CHECK_RESULT(CallbackStats[cbReadOnlySynch].count, 3);
     CHECK_RESULT(CallbackStats[cbAtEndOfSimTime].count, 9);
     CHECK_RESULT(CallbackStats[cbEndOfSimulation].count, 1);
+    CHECK_RESULT(RemovedCallbackCount, 0);
 
     if (!errors) printf("*-* All Finished *-*\n");
 
