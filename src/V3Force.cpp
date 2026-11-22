@@ -88,8 +88,9 @@ public:
         std::vector<string> m_forcedArrayPaths;  // Keys of forced paths with an array select
 
     private:
-        // Return false if a selector cannot be on a forced path.  Only a read may have one,
-        // such as of a queue or an associative array, and nothing below it can be forced.
+        // Return false if a selector cannot be on a forced path, with its type in 'out'.  Only a
+        // read may have one, such as of a queue or an associative array, and nothing below it
+        // can be forced.
         static bool buildForcePathKeyRecurse(AstNodeExpr* nodep, string& out) {
             if (VN_IS(nodep, VarRef)) return true;
             if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
@@ -109,13 +110,14 @@ public:
                 out += "|A" + (constp ? cvtToStr(constp->toSInt()) : "?");
                 return true;
             }
+            out = nodep->prettyTypeNameQ();
             return false;
         }
 
         static string forcePathKey(AstNodeExpr* nodep) {
             string out;
             UASSERT_OBJ(buildForcePathKeyRecurse(nodep, out), nodep,
-                        "Unsupported: opaque force path selector");
+                        "Unsupported: opaque force path selector " << out);
             return out;
         }
 

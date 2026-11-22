@@ -57,7 +57,7 @@ class WidthCommitVisitor final : public VNVisitor {
     // STATE
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeModule* m_modp = nullptr;  // Current module
-    const char* m_contNbap = nullptr;  // In continuous- or non-blocking assignment, or trigger
+    const char* m_contNbap = nullptr;  // In continuous/NBA assignment, trigger, force or release
     bool m_inNba = false;  // In a non-blocking assignment or event trigger
     bool m_contReads = false;  // Check read continuous automatic variables
     bool m_dynsizedelem = false;  // Under an element of a dynamically sized variable, not itself
@@ -511,6 +511,15 @@ private:
         }
         editDType(nodep);
     }
+    void visit(AstAssignForce* nodep) override {
+        iterateAndNextNull(nodep->rhsp());
+        {
+            VL_RESTORER(m_contNbap);
+            m_contNbap = "force statement";
+            iterateAndNextNull(nodep->lhsp());
+        }
+        editDType(nodep);
+    }
     void visit(AstAssignW* nodep) override {
         iterateAndNextNull(nodep->timingControlp());
         iterateAndNextNull(nodep->rhsp());
@@ -521,6 +530,12 @@ private:
             m_contReads = false;
             iterateAndNextNull(nodep->lhsp());
         }
+        editDType(nodep);
+    }
+    void visit(AstRelease* nodep) override {
+        VL_RESTORER(m_contNbap);
+        m_contNbap = "release statement";
+        iterateChildren(nodep);
         editDType(nodep);
     }
     void visit(AstFireEvent* nodep) override {

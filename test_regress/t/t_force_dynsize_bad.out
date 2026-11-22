@@ -1,0 +1,74 @@
+%Error: t/t_force_dynsize_bad.v:40:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'q'
+                                     : ... note: In instance 't'
+   40 |     force q[1] = 7'h55;   
+      |           ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_force_dynsize_bad.v:41:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'd'
+                                     : ... note: In instance 't'
+   41 |     force d[1] = 7'h55;   
+      |           ^
+%Error: t/t_force_dynsize_bad.v:42:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'a'
+                                     : ... note: In instance 't'
+   42 |     force a[3] = 7'h55;   
+      |           ^
+%Error: t/t_force_dynsize_bad.v:43:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'w'
+                                     : ... note: In instance 't'
+   43 |     force w[3] = 7'h55;   
+      |           ^
+%Error: t/t_force_dynsize_bad.v:44:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'q'
+                                     : ... note: In instance 't'
+   44 |     force q[1][5:3] = 3'h5;   
+      |           ^
+%Error: t/t_force_dynsize_bad.v:46:13: Dynamically-sized variable not allowed in release statement (IEEE 1800-2023 6.21): 'q'
+                                     : ... note: In instance 't'
+   46 |     release q[1];   
+      |             ^
+%Error: t/t_force_dynsize_bad.v:53:13: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'q'
+                                     : ... note: In instance 't'
+   53 |     force s.q[1] = 7'h55;   
+      |             ^
+%Error: t/t_force_dynsize_bad.v:54:13: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'd'
+                                     : ... note: In instance 't'
+   54 |     force s.d[1] = 7'h55;   
+      |             ^
+%Error: t/t_force_dynsize_bad.v:55:13: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'a'
+                                     : ... note: In instance 't'
+   55 |     force s.a[3] = 7'h55;   
+      |             ^
+%Error: t/t_force_dynsize_bad.v:56:13: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'w'
+                                     : ... note: In instance 't'
+   56 |     force s.w[3] = 7'h55;   
+      |             ^
+%Error: t/t_force_dynsize_bad.v:57:13: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'ar'
+                                     : ... note: In instance 't'
+   57 |     force s.ar[3][2] = 7'h55;   
+      |             ^~
+%Error: t/t_force_dynsize_bad.v:58:15: Dynamically-sized variable not allowed in release statement (IEEE 1800-2023 6.21): 'a'
+                                     : ... note: In instance 't'
+   58 |     release s.a[3];   
+      |               ^
+%Error: t/t_force_dynsize_bad.v:63:21: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'w'
+                                     : ... note: In instance 't'
+   63 |   initial force ifc.w[3][2] = 7'h55;   
+      |                     ^
+%Error: t/t_force_dynsize_bad.v:70:13: Class non-static variable not allowed in force statement (IEEE 1800-2023 6.21): 'p'
+                                     : ... note: In instance 't'
+   70 |     force c.p = 7'h55;   
+      |             ^
+%Error: t/t_force_dynsize_bad.v:71:13: Class non-static variable not allowed in force statement (IEEE 1800-2023 6.21): 'pa'
+                                     : ... note: In instance 't'
+   71 |     force c.pa[2] = 7'h55;   
+      |             ^~
+%Error: t/t_force_dynsize_bad.v:72:21: Class non-static variable not allowed in force statement (IEEE 1800-2023 6.21): 'pa'
+                                     : ... note: In instance 't'
+   72 |     if (en) force c.pa = f2;   
+      |                     ^~
+%Error: t/t_force_dynsize_bad.v:73:15: Class non-static variable not allowed in release statement (IEEE 1800-2023 6.21): 'p'
+                                     : ... note: In instance 't'
+   73 |     release c.p;   
+      |               ^
+%Error: t/t_force_dynsize_bad.v:79:11: Automatic lifetime variable not allowed in force statement (IEEE 1800-2023 6.21): 'av'
+                                     : ... note: In instance 't'
+   79 |     force av = 7'h55;   
+      |           ^~
+%Error: Exiting due to
