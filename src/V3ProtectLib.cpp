@@ -367,7 +367,7 @@ class ProtectVisitor final : public VNVisitor {
         addComment(txtp, fl, "Container class to house verilated object and sequence number");
         txtp->add("class " + m_topName + "_container: public " + m_topName + " {\n");
         txtp->add("public:\n");
-        txtp->add("long long m_seqnum;\n");
+        txtp->add("long long m_seqnum = 0;\n");
         txtp->add(m_topName + "_container(const char* scopep__V):\n");
         txtp->add(m_topName + "(Verilated::threadContextp(), scopep__V, false) {}\n");
         txtp->add("};\n\n");
