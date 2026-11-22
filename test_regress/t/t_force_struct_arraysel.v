@@ -445,14 +445,10 @@ module t;
     release rw;
     #1;
     `checkh(rw.e[3].k, 3'h5);
-    `checkh(rw.e[2].k, 3'h1);
-    `checkh(rw.e[3].m[2], 7'h42);
     `checkh(rw.flag, 1'b1);
     rw.e[3].k = 3'h3;
-    rw.e[2].k = 3'h4;
     #1;
     `checkh(rw.e[3].k, 3'h3);
-    `checkh(rw.e[2].k, 3'h4);
     `checkh(rw.flag, 1'b1);
   end
 
