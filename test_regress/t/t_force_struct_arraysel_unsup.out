@@ -1,20 +1,20 @@
-%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:27:19: Unsupported: Non-constant array index reading a struct with a forced array element: 't.s'
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:27:19: Unsupported: non-constant array index reading a struct with a forced array element: 't.s'
    27 |     qr = get(s.arr[i].value);
       |                   ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:24:19: Unsupported: Non-constant array index reading a struct with a forced array element: 't.s'
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:24:19: Unsupported: non-constant array index reading a struct with a forced array element: 't.s'
    24 |   assign q = s.arr[i].value;
       |                   ^
-%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:34:20: Unsupported: Non-constant array index reading a struct with a forced array element: 't.sm'
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:34:20: Unsupported: non-constant array index reading a struct with a forced array element: 't.sm'
    34 |   assign q2 = sm.m2[i][j];
       |                    ^
-%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:51:23: Unsupported: Non-constant array index reading a struct with a forced array element: 't.su'
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:51:23: Unsupported: non-constant array index reading a struct with a forced array element: 't.su'
    51 |   assign qu = su.u.b.y[i];
       |                       ^
-%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:58:24: Unsupported: Non-constant array index reading a struct with a forced array element: 't.se'
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:58:24: Unsupported: non-constant array index reading a struct with a forced array element: 't.se'
    58 |   assign qe = se.e[2].x[i];
       |                        ^
-%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:65:19: Unsupported: Non-constant array index reading a struct with a forced array element: 't.sw'
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:65:19: Unsupported: non-constant array index reading a struct with a forced array element: 't.sw'
    65 |   assign qw = sw.m[i];
       |                   ^
 %Error: Exiting due to
