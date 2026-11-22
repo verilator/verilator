@@ -168,6 +168,20 @@ public:
             } while (m_aboveForcedArrays.emplace(key).second && !key.empty());
         }
 
+        // True if the path has an array select and a forced path is above it, as such a read
+        // is not supported
+        bool isBelowForcedPath(AstNodeExpr* nodep) const {
+            string key;
+            if (!buildForcePathKeyRecurse(nodep, key) || key.find("|A") == string::npos) {
+                return false;
+            }
+            while (!key.empty()) {
+                key.erase(key.rfind('|'));
+                if (m_forcedPaths.count(key)) return true;
+            }
+            return false;
+        }
+
         // True if a forced path with an array select is below the path
         bool isAboveForcedArray(AstNodeExpr* nodep) const {
             string key;
@@ -1727,9 +1741,10 @@ class ForceReplaceVisitor final : public VNVisitor {
         }
     }
 
-    // Reading a forced array element of a struct needs its index to be constant
-    static void warnNonConstArraySel(const ForceState::VarForceInfo& varInfo, AstNodeExpr* exprp) {
-        if (varInfo.m_forcedArrayPaths.empty()) return;
+    // Reading a forced array element of a struct needs its index to be constant.  Return true
+    // if warned
+    static bool warnNonConstArraySel(const ForceState::VarForceInfo& varInfo, AstNodeExpr* exprp) {
+        if (varInfo.m_forcedArrayPaths.empty()) return false;
         // Members of a union are overlaid, so any forced array element in it may be the one read
         AstNodeExpr* const unionp = ForceState::firstUnionp(exprp);
         const bool viaUnion = unionp && varInfo.isAboveForcedArray(unionp);
@@ -1739,8 +1754,9 @@ class ForceReplaceVisitor final : public VNVisitor {
             selp->v3warn(E_UNSUPPORTED, "Unsupported: non-constant array index reading a "
                                         "struct with a forced array element: "
                                             << varInfo.m_varp->prettyNameQ());
-            return;  // Once per read
+            return true;  // Once per read
         }
+        return false;
     }
 
     void visit(AstNode* nodep) override {
@@ -1759,6 +1775,12 @@ class ForceReplaceVisitor final : public VNVisitor {
                     if (!m_state.isNotReplaceable(baseRefp) && varInfop) {
                         const int forcePathIndex = varInfop->findForcePathIndex(exprp);
                         if (forcePathIndex >= 0) {
+                            if (baseRefp->access().isRW()) {
+                                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Signals used via "
+                                                             "read-write reference cannot be "
+                                                             "forced");
+                                return;
+                            }
                             if (!baseRefp->access().isReadOnly()) return;
                             AstNodeExpr* const readExprp = m_state.createForceReadIndexExpression(
                                 *varInfop, exprp,
@@ -1768,7 +1790,14 @@ class ForceReplaceVisitor final : public VNVisitor {
                             return;
                         }
                         if (baseRefp->access().isReadOrRW()) {
-                            warnNonConstArraySel(*varInfop, exprp);
+                            if (!warnNonConstArraySel(*varInfop, exprp)
+                                && varInfop->isBelowForcedPath(exprp)) {
+                                nodep->v3warn(E_UNSUPPORTED,
+                                              "Unsupported: reading an array element below a "
+                                              "forced path of: "
+                                                  << varInfop->m_varp->prettyNameQ());
+                                return;
+                            }
                         }
                     }
                 }

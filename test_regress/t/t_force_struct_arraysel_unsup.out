@@ -2,6 +2,9 @@
    27 |     qr = get(s.arr[i].value);
       |                   ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:82:24: Unsupported: Signals used via read-write reference cannot be forced
+   82 |     qx = get(sx.arr[3].value);
+      |                        ^~~~~
 %Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:24:19: Unsupported: non-constant array index reading a struct with a forced array element: 't.s'
    24 |   assign q = s.arr[i].value;
       |                   ^
@@ -17,4 +20,10 @@
 %Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:65:19: Unsupported: non-constant array index reading a struct with a forced array element: 't.sw'
    65 |   assign qw = sw.m[i];
       |                   ^
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:76:25: Unsupported: reading an array element below a forced path of: 't.sc'
+   76 |   assign qc = sc.arr[3].value;
+      |                         ^~~~~
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:77:25: Unsupported: reading an array element below a forced path of: 't.sf'
+   77 |   assign qf = sf.arr[2].value;
+      |                         ^~~~~
 %Error: Exiting due to

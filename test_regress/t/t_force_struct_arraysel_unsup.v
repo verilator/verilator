@@ -64,4 +64,21 @@ module t;
   logic [6:0] qw;
   assign qw = sw.m[i];
   initial force sw.m = '{7'h53, 7'h52, 7'h51};
+
+  // Constant indices below a forced element or a whole forced struct, and a forced
+  // element read through a read-write reference
+  st_t sc;
+  st_t sf;
+  st_t sx;
+  logic [6:0] qc;
+  logic [6:0] qf;
+  logic [6:0] qx;
+  assign qc = sc.arr[3].value;
+  assign qf = sf.arr[2].value;
+  initial begin
+    force sc.arr[3] = sc.arr[2];
+    force sf = sc;
+    force sx.arr[3].value = 7'h61;
+    qx = get(sx.arr[3].value);
+  end
 endmodule
