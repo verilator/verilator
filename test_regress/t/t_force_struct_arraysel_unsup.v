@@ -38,11 +38,18 @@ module t;
   // Below su.e[1]
   assign qe = su.e[1].x[i];
 
+  // Through a read-write reference
+  logic [7:0] qr;
+  function automatic logic [7:0] get(ref logic [7:0] value);
+    return value;
+  endfunction
+
   initial begin
     force s.arr[1].value = 8'ha5;
     force s.m2[1][0] = 8'h30;
     force su.u.a.x[1] = 8'h31;
     force su.e[1] = su.e[0];
+    qr = get(s.arr[i].value);
     $finish;
   end
 endmodule

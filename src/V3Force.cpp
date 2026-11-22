@@ -1754,7 +1754,7 @@ class ForceReplaceVisitor final : public VNVisitor {
                             VL_DO_DANGLING(pushDeletep(nodep), nodep);
                             return;
                         }
-                        if (baseRefp->access().isReadOnly()) {
+                        if (baseRefp->access().isReadOrRW()) {
                             warnNonConstArraySel(*varInfop, exprp);
                         }
                     }

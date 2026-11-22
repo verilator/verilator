@@ -11,4 +11,7 @@
 %Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:39:24: Unsupported: Non-constant array index reading a struct with a forced array element
    39 |   assign qe = su.e[1].x[i];
       |                        ^
+%Error-UNSUPPORTED: t/t_force_struct_arraysel_unsup.v:52:19: Unsupported: Non-constant array index reading a struct with a forced array element
+   52 |     qr = get(s.arr[i].value);
+      |                   ^
 %Error: Exiting due to
