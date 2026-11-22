@@ -1728,7 +1728,8 @@ class ForceReplaceVisitor final : public VNVisitor {
             if (VN_IS(selp->bitp(), Const)) continue;
             if (!viaUnion && !varInfo.isForcedArray(selp->fromp())) continue;
             selp->v3warn(E_UNSUPPORTED, "Unsupported: Non-constant array index reading a "
-                                        "struct with a forced array element");
+                                        "struct with a forced array element: "
+                                            << varInfo.m_varp->prettyNameQ());
             return;  // Once per read
         }
     }
