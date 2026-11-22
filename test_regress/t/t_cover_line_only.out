@@ -522,18 +522,164 @@
           assign pstruct.a = cyc == 1 ? 16'd2 : 16'd3;
           assign pstruct.b = 16'd0;
         
+          // An enum register, so the case below keeps its enum type
+          typedef enum logic [2:0] {
+            E_A,
+            E_B,
+            E_C,
+            E_D,
+            E_E
+          } e_t;
+          e_t ev;
+ 000010   always @(posedge clk) ev <= e_t'(cyc[2:0]);
++000010  point: type=line comment=block hier=top.t.cond1
+        
  000010   always @(posedge clk) begin
 +000010  point: type=line comment=block hier=top.t.cond1
 %000009     if (cyc == 2) $display("%08x", pstruct);
 -000001  point: type=line comment=if hier=top.t.cond1
 -000009  point: type=line comment=else hier=top.t.cond1
-            // An else-if chain (line points only) and an if/else (branch points too) on one line
+            // An else-if chain and an if/else on one line
 %000009     if (cyc == 3) l = 1; else if (cyc == 4) l = 0; else l = 1; if (cyc == 5) l = 0; else l = 1;
 -000001  point: type=line comment=if hier=top.t.cond1
 -000008  point: type=line comment=else hier=top.t.cond1
 -000001  point: type=line comment=elsif hier=top.t.cond1
 -000001  point: type=line comment=if hier=top.t.cond1
 -000009  point: type=line comment=else hier=top.t.cond1
+            // An else-if chain with an if/else nested in an arm
+%000001     if (cyc == 3) l = 1;
+-000001  point: type=line comment=elsif hier=top.t.cond1
+%000005     else if (cyc[0]) begin
+-000004  point: type=line comment=if hier=top.t.cond1
+-000005  point: type=line comment=else hier=top.t.cond1
+%000003       if (cyc == 5) l = 0;
+-000001  point: type=line comment=if hier=top.t.cond1
+-000003  point: type=line comment=else hier=top.t.cond1
+%000003       else l = 1;
+-000003  point: type=line comment=else hier=top.t.cond1
+            end
+%000005     else l = 0;
+-000005  point: type=line comment=else hier=top.t.cond1
+            // $stop turns coverage off in its leg, which drops the branch points of its whole chain
+%000001     if (cyc == 3) l = 1;
+-000001  point: type=line comment=elsif hier=top.t.cond1
+%000009     else if (cyc != 100) l = 0;
+-000009  point: type=line comment=if hier=top.t.cond1
+            else $stop;
+            if (cyc == 100) $stop;
+%000009     else if (cyc == 3) l = 1;
+-000001  point: type=line comment=if hier=top.t.cond1
+-000009  point: type=line comment=else hier=top.t.cond1
+%000009     else l = 0;
+-000009  point: type=line comment=else hier=top.t.cond1
+            // A case without a default gets a point for no item matching, unless its items match
+            // every value or a pragma says one matches
+            // verilator lint_off CASEINCOMPLETE
+ 000010     case (cyc[2:0])
++000010  point: type=line comment=block hier=top.t.cond1
+%000001       3'd3: l = 1;
+-000001  point: type=line comment=case hier=top.t.cond1
+%000001       3'd4: l = 0;
+-000001  point: type=line comment=case hier=top.t.cond1
+            endcase
+            // verilator lint_on CASEINCOMPLETE
+ 000010     case (cyc[0])
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       1'b0: l = 1;
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       1'b1: l = 0;
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+ 000010     casez (cyc[1:0])
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       2'b1?: l = 1;
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       2'b0?: l = 0;
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+ 000010     unique case (1'b1)
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       cyc[0]: l = 1;
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       !cyc[0]: l = 0;
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+ 000010     case (1'b1)  /* verilator full_case */
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       cyc[0]: l = 1;
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       !cyc[0]: l = 0;
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+ 000010     priority case (1'b1)
++000010  point: type=line comment=block hier=top.t.cond1
+%000005       cyc[0]: l = 1;
+-000005  point: type=line comment=case hier=top.t.cond1
+%000005       !cyc[0]: l = 0;
+-000005  point: type=line comment=case hier=top.t.cond1
+            endcase
+            // Items that aren't constants can't be proven to match every value
+ 000010     case (cyc[0])
++000010  point: type=line comment=block hier=top.t.cond1
+%000004       cyc[1]: l = 1;
+-000004  point: type=line comment=case hier=top.t.cond1
+            endcase
+            // unique0 allows no item to match, and items naming every value of an enum don't cover
+            // its unnamed values
+ 000010     unique0 case (ev)
++000010  point: type=line comment=block hier=top.t.cond1
+%000002       E_A: l = 1;
+-000002  point: type=line comment=case hier=top.t.cond1
+%000002       E_B: l = 0;
+-000002  point: type=line comment=case hier=top.t.cond1
+%000001       E_C: l = 1;
+-000001  point: type=line comment=case hier=top.t.cond1
+%000001       E_D: l = 0;
+-000001  point: type=line comment=case hier=top.t.cond1
+%000001       E_E: l = 1;
+-000001  point: type=line comment=case hier=top.t.cond1
+            endcase
+          end
+        
+          // A $error in an assertion's action block turns coverage off only inside the assertion
+          logic n;
+ 000010   always @(posedge clk) begin
++000010  point: type=line comment=block hier=top.t.cond1
+ 000010     assert (cyc < 100) else $error("cyc too large");
++000010  point: type=line comment=block hier=top.t.cond1
+%000005     if (cyc[0]) begin
+-000005  point: type=line comment=if hier=top.t.cond1
+-000005  point: type=line comment=else hier=top.t.cond1
+%000005       assert (cyc < 100) else $error("cyc too large");
+-000005  point: type=line comment=if hier=top.t.cond1
+%000005       n = 1;
+-000005  point: type=line comment=if hier=top.t.cond1
+            end
+%000005     else n = 0;
+-000005  point: type=line comment=else hier=top.t.cond1
+          end
+        
+          // Likewise for $stop and $fatal, including in a case item followed by statements
+          logic n2;
+ 000010   always @(posedge clk) begin
++000010  point: type=line comment=block hier=top.t.cond1
+ 000010     case (cyc[1:0])
++000010  point: type=line comment=block hier=top.t.cond1
+%000002       2'd0: begin
+-000002  point: type=line comment=case hier=top.t.cond1
+%000002         assert (cyc < 100) else $stop;
+-000002  point: type=line comment=case hier=top.t.cond1
+%000002         n2 = 0;
+-000002  point: type=line comment=case hier=top.t.cond1
+              end
+%000008       default: begin
+-000008  point: type=line comment=case hier=top.t.cond1
+%000008         assert (cyc < 100) else $fatal(1, "cyc too large");
+-000008  point: type=line comment=case hier=top.t.cond1
+%000008         n2 = 1;
+-000008  point: type=line comment=case hier=top.t.cond1
+              end
+            endcase
           end
         endmodule
         

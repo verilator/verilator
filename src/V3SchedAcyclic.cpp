@@ -59,23 +59,21 @@ namespace {
 
 class SchedAcyclicLogicVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(SchedAcyclicLogicVertex, V3GraphVertex)
-    AstNodeProcedure* const m_procp;  // The process this vertex represents
-    AstScope* const m_scopep;  // The enclosing AstScope of the logic node
+    const Process& m_process;  // The process this vertex represents
 
 public:
-    SchedAcyclicLogicVertex(V3Graph* graphp, AstNodeProcedure* procp, AstScope* scopep)
+    SchedAcyclicLogicVertex(V3Graph* graphp, const Process& process)
         : V3GraphVertex{graphp}
-        , m_procp{procp}
-        , m_scopep{scopep} {}
+        , m_process{process} {}
     V3GraphVertex* clone(V3Graph* graphp) const override {
-        return new SchedAcyclicLogicVertex{graphp, procp(), scopep()};
+        return new SchedAcyclicLogicVertex{graphp, m_process};
     }
 
-    AstNodeProcedure* procp() const { return m_procp; }
-    AstScope* scopep() const { return m_scopep; }
+    const Process& process() const { return m_process; }
+    AstNodeProcedure* procp() const { return m_process.m_procp; }
 
     // LCOV_EXCL_START // Debug code
-    string name() const override VL_MT_STABLE { return m_procp->fileline()->ascii(); };
+    string name() const override VL_MT_STABLE { return procp()->fileline()->ascii(); };
     string dotShape() const override { return "rectangle2"; }
     // LCOV_EXCL_STOP
 };
@@ -124,7 +122,7 @@ class Graph final : public V3Graph {
 //##############################################################################
 // Algorithm implementation
 
-std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
+std::unique_ptr<Graph> buildGraph(const ProcessList& procList) {
     std::unique_ptr<Graph> graphp{new Graph};
 
     // AstVarScope::user1() -> VarVertx
@@ -138,39 +136,30 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
         new V3GraphEdge{graphp.get(), fromp, top, weight, cuttable};
     };
 
-    for (const auto& entry : lbs) {
-        AstScope* const scopep = entry.m_scopep;
-        AstActive* const activep = entry.m_activep;
-        UASSERT_OBJ(activep->hasCombo(), activep, "Not combinational logic");
-        for (AstNodeProcedure* const nodep : activep->procspList()) {
-            // Can safely ignore Postponed as we generate them all
-            if (VN_IS(nodep, AlwaysPostponed)) continue;
+    for (const Process& process : procList) {
+        AstNodeProcedure* const nodep = process.m_procp;
+        UASSERT_OBJ(process.m_senTreep->hasCombo(), nodep, "Not combinational logic");
+        // Can safely ignore Postponed as we generate them all
+        if (VN_IS(nodep, AlwaysPostponed)) continue;
 
-            SchedAcyclicLogicVertex* const lvtxp
-                = new SchedAcyclicLogicVertex{graphp.get(), nodep, scopep};
-            const VNUser2InUse user2InUse;
-            const VNUser3InUse user3InUse;
+        SchedAcyclicLogicVertex* const lvtxp = new SchedAcyclicLogicVertex{graphp.get(), process};
+        const VNUser2InUse user2InUse;
+        const VNUser3InUse user3InUse;
 
-            V3Sched::util::VarScopeSet forceReadEdgeIgnores;
-            V3Sched::util::collectForceReadEdgeIgnores(nodep, forceReadEdgeIgnores);
-
-            nodep->foreach([&](AstVarRef* refp) {
-                AstVarScope* const vscp = refp->varScopep();
-                SchedAcyclicVarVertex* const vvtxp = getVarVertex(vscp);
-                // We want to cut the narrowest signals
-                const int weight = vscp->width() / 8 + 1;
-                // If written, add logic -> var edge
-                if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()
-                    && !vscp->user2SetOnce())
-                    addEdge(lvtxp, vvtxp, weight, true);
-                // If read, add var -> logic edge
-                // Note: Use same heuristic as ordering does to ignore written variables
-                // TODO: Use live variable analysis.
-                if (refp->access().isReadOrRW() && !vscp->user3SetOnce() && !vscp->user2()
-                    && !forceReadEdgeIgnores.count(vscp))
-                    addEdge(vvtxp, lvtxp, weight, true);
-            });
-        }
+        nodep->foreach([&](AstVarRef* refp) {
+            AstVarScope* const vscp = refp->varScopep();
+            SchedAcyclicVarVertex* const vvtxp = getVarVertex(vscp);
+            // We want to cut the narrowest signals
+            const int weight = vscp->width() / 8 + 1;
+            // If written, add logic -> var edge
+            if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()
+                && !vscp->user2SetOnce())
+                addEdge(lvtxp, vvtxp, weight, true);
+            // If read, add var -> logic edge
+            if (refp->access().isReadOrRW() && !vscp->user3SetOnce()
+                && process.m_implicitSen.count(vscp))
+                addEdge(vvtxp, lvtxp, weight, true);
+        });
     }
 
     return graphp;
@@ -445,59 +434,67 @@ void dumpSccs(V3Graph* graphp) {
     }
 }
 
-LogicByScope fixCuts(AstNetlist* netlistp,
-                     const std::vector<SchedAcyclicVarVertex*>& cutVertices) {
+ProcessList fixCuts(AstNetlist* netlistp, ProcessList& combinationalLogic,
+                    const std::vector<SchedAcyclicVarVertex*>& cutVertices) {
+    const VNUser1InUse user1InUse;  // AstNodeProcedure::user1() -> bool: in 'lvtxps'
+
     // For all logic that reads a cut vertex, build a map from logic -> list of cut AstVarScope
     // they read. Also build a vector of the involved logic for deterministic results.
     std::unordered_map<SchedAcyclicLogicVertex*, std::vector<AstVarScope*>> lvtx2Cuts;
     std::vector<SchedAcyclicLogicVertex*> lvtxps;
-    {
-        const VNUser1InUse user1InUse;  // bool: already added to 'lvtxps'
-        for (SchedAcyclicVarVertex* const vvtxp : cutVertices) {
-            for (V3GraphEdge& edge : vvtxp->outEdges()) {
-                SchedAcyclicLogicVertex* const lvtxp
-                    = static_cast<SchedAcyclicLogicVertex*>(edge.top());
-                if (!lvtxp->procp()->user1SetOnce()) lvtxps.push_back(lvtxp);
-                lvtx2Cuts[lvtxp].push_back(vvtxp->vscp());
-            }
+    for (SchedAcyclicVarVertex* const vvtxp : cutVertices) {
+        for (V3GraphEdge& edge : vvtxp->outEdges()) {
+            SchedAcyclicLogicVertex* const lvtxp
+                = static_cast<SchedAcyclicLogicVertex*>(edge.top());
+            if (!lvtxp->procp()->user1SetOnce()) lvtxps.push_back(lvtxp);
+            lvtx2Cuts[lvtxp].push_back(vvtxp->vscp());
         }
     }
 
     // Make the logic reading cut vertices use a hybrid sensitivity (combinational, but with some
     // explicit additional triggers on the cut variables)
-    LogicByScope result;
+    ProcessList result;
     SenTreeFinder finder{netlistp};
     for (SchedAcyclicLogicVertex* const lvtxp : lvtxps) {
-        AstNodeProcedure* const procp = lvtxp->procp();
-        procp->unlinkFrBack();
-        FileLine* const flp = procp->fileline();
-        // Build the hybrid sensitivity list
+        Process process = lvtxp->process();
+        FileLine* const flp = process.m_procp->fileline();
+        // Build the hybrid sensitivity list. Its explicit sensitivities are no longer implicit.
         AstSenItem* senItemsp = nullptr;
         for (AstVarScope* const vscp : lvtx2Cuts[lvtxp]) {
             AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::READ};
             AstSenItem* const nextp = new AstSenItem{flp, VEdgeType::ET_HYBRID, refp};
             senItemsp = AstNode::addNext(senItemsp, nextp);
+            process.m_implicitSen.erase(vscp);
         }
         AstSenTree* const senTreep = new AstSenTree{flp, senItemsp};
         // Add logic to result with new sensitivity
-        result.add(lvtxp->scopep(), finder.getSenTree(senTreep), procp);
+        process.m_senTreep = finder.getSenTree(senTreep);
+        result.add(std::move(process));
         // SenTreeFinder::getSenTree clones, so clean up
         VL_DO_DANGLING(senTreep->deleteTree(), senTreep);
     }
+
+    // Keep the rest of the combinational logic
+    ProcessList remaining;
+    for (Process& process : combinationalLogic) {
+        if (!process.m_procp->user1()) remaining.add(std::move(process));
+    }
+    combinationalLogic = std::move(remaining);
+
     return result;
 }
 
 }  // namespace
 
-LogicByScope breakCycles(AstNetlist* netlistp, const LogicByScope& combinationalLogic) {
+void breakCycles(AstNetlist* netlistp, LogicClasses& logicClasses) {
     // Build the dataflow (dependency) graph
-    const std::unique_ptr<Graph> graphp = buildGraph(combinationalLogic);
+    const std::unique_ptr<Graph> graphp = buildGraph(logicClasses.m_comb);
 
     // Remove nodes that don't form part of a cycle
     removeNonCyclic(graphp.get());
 
     // Nothing to do if no cycles, yay!
-    if (graphp->empty()) return LogicByScope{};
+    if (graphp->empty()) return;
 
     // Dump for debug
     if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("sched-comb-cycles");
@@ -521,7 +518,7 @@ LogicByScope breakCycles(AstNetlist* netlistp, const LogicByScope& combinational
     if (dumpLevel() >= 6) dumpSccs(graphp.get());
 
     // Fix cuts by converting dependent logic to use hybrid sensitivities
-    return fixCuts(netlistp, cutVertices);
+    logicClasses.m_hybrid = fixCuts(netlistp, logicClasses.m_comb, cutVertices);
 }
 
 }  // namespace V3Sched

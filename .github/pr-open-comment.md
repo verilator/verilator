@@ -10,4 +10,4 @@ This automated message describes what is needed before your PR can be considered
 - If the PR is a draft, please mark it ready when suitable for merge consideration.
 - If have more than one round of pushes, please work on a personal branch with your own GitHub Actions runs, and only push to this PR when tests/coverage are resolved, to avoid unnecessary action runs and email that affect the entire community.
 
-When all of these are addressed, or you have questions, please comment to (re-)request a review.  Due to the volume of PRs, we might only provide feedback or merge after you make a request comment.
+When all of these are addressed, or you have questions, please comment to (re-)"Request a human review or merge".  Due to the volume of PRs, we might only provide feedback or merge after you make a request comment, and please wait 72 hours before pinging on status.

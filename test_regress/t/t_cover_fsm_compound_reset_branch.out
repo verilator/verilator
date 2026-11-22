@@ -57,11 +57,11 @@
 %000002        // [fsm_state t.state2::DONE]
 %000003        // [fsm_state t.state2::IDLE]
 %000002        // [fsm_state t.state2::RUN]
-              IDLE:
-              if (go) state2_next = RUN;
-              else state2_next = IDLE;
-              RUN: state2_next = DONE;
-              default: state2_next = IDLE;
+%000008       IDLE:
+%000006       if (go) state2_next = RUN;
+%000006       else state2_next = IDLE;
+%000002       RUN: state2_next = DONE;
+%000002       default: state2_next = IDLE;
             endcase
           end
         
@@ -75,14 +75,14 @@
 %000001        // [fsm_state t.state::DONE]
 %000003        // [fsm_state t.state::IDLE]
 %000002        // [fsm_state t.state::RUN]
-              IDLE:
-              if (go) state_next = RUN;
-              else state_next = IDLE;
-              RUN:
-              if (last) state_next = DONE;
-              else state_next = RUN;
-              DONE: state_next = IDLE;
-              default: state_next = IDLE;
+%000006       IDLE:
+%000004       if (go) state_next = RUN;
+%000004       else state_next = IDLE;
+%000005       RUN:
+%000004       if (last) state_next = DONE;
+%000004       else state_next = RUN;
+%000001       DONE: state_next = IDLE;
+%000000       default: state_next = IDLE;
             endcase
           end
         

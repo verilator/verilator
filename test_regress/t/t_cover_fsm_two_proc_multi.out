@@ -69,7 +69,7 @@
 %000003        // [fsm_arc t.negated_guard_u.state_q::S1->S0]
 %000004        // [fsm_state t.negated_guard_u.state_q::S0]
 %000004        // [fsm_state t.negated_guard_u.state_q::S1]
-%000009       S0: if (!hold) state_d = S1;
+%000006       S0: if (!hold) state_d = S1;
 %000004       S1: state_d = S0;
             endcase
           end
@@ -309,7 +309,7 @@
 %000004        // [fsm_state t.ternary_u.state_q::S0]
 %000000        // [fsm_state t.ternary_u.state_q::S1] *** UNCOVERED ***
 %000004        // [fsm_state t.ternary_u.state_q::S2]
-%000009       S0: state_d = sel ? S1 : S2;
+%000006       S0: state_d = sel ? S1 : S2;
 %000004       default: state_d = S0;
             endcase
           end
@@ -382,7 +382,7 @@
 %000004        // [fsm_state t.plain_always_list_u.state_q::S0]
 %000001        // [fsm_state t.plain_always_list_u.state_q::S1]
 %000002        // [fsm_state t.plain_always_list_u.state_q::S2]
-%000006       S0: state_d = go ? S1 : S2;
+%000004       S0: state_d = go ? S1 : S2;
 %000003       default: state_d = S0;
             endcase
           end
@@ -557,7 +557,7 @@
 %000002       S1:
 %000001       if (b) state_d = S2;
 %000001       else if (a) state_d = S0;
-%000007       S2: if (!a) state_d = S3;
+%000001       S2: if (!a) state_d = S3;
 %000001       S3: begin
 %000001         if (a) begin
 %000001           if (b) state_d = S0;

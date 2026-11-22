@@ -92,58 +92,6 @@ public:
     explicit DefaultDisablePropagateVisitor(AstNetlist* nodep) { iterate(nodep); }
 };
 
-// Lower a sequence used as an event control ('@seq', IEEE 1800-2023 9.4.2.4) into a
-// synthesized event fired by an internal 'cover sequence' on each end-of-match
-class SeqEventLowerVisitor final : public VNVisitor {
-    // STATE
-    AstNodeModule* m_modp = nullptr;  // Current module
-    V3UniqueNames m_names{"__VseqEvent"};  // Synthesized event names
-
-    // VISITORS
-    void visit(AstNodeModule* nodep) override {
-        VL_RESTORER(m_modp);
-        m_modp = nodep;
-        iterateChildren(nodep);
-    }
-    void visit(AstSenItem* nodep) override {
-        AstSchemaRef* const schemaRefp = VN_CAST(nodep->sensp(), SchemaRef);
-        if (schemaRefp && VN_IS(schemaRefp->schemap(), Sequence)) {
-            FileLine* const flp = nodep->fileline();
-            AstVar* const eventp = new AstVar{flp, VVarType::MODULETEMP, m_names.get(nodep),
-                                              m_modp->findBasicDType(VBasicDTypeKwd::EVENT)};
-            eventp->lifetime(VLifetime::STATIC_EXPLICIT);
-            m_modp->addStmtsp(eventp);
-            v3Global.setHasEvents();
-            schemaRefp->unlinkFrBack();
-            nodep->sensp(new AstVarRef{flp, eventp, VAccess::READ});
-            const bool automaticActual = schemaRefp->exists([](const AstNodeVarRef* refp) {
-                return refp->varp() && refp->varp()->lifetime().isAutomatic();
-            });
-            if (automaticActual) {
-                nodep->v3error("Arguments to a sequence used as an event control must be"
-                               " static (IEEE 1800-2023 9.4.2.4)");
-                VN_AS(schemaRefp->schemap(), Sequence)->isReferenced(false);
-                VL_DO_DANGLING(pushDeletep(schemaRefp), schemaRefp);
-                return;
-            }
-            AstFireEvent* const firep
-                = new AstFireEvent{flp, new AstVarRef{flp, eventp, VAccess::WRITE}, false};
-            AstCover* const coverp
-                = new AstCover{flp, new AstPropSpec{flp, nullptr, nullptr, schemaRefp}, firep,
-                               VAssertType::CONCURRENT};
-            coverp->isCoverSeq(true);
-            coverp->isSeqEvent(true);
-            m_modp->addStmtsp(new AstAlways{flp, VAlwaysKwd::ASSERT_COVER, nullptr, coverp});
-            return;
-        }
-        iterateChildren(nodep);
-    }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    explicit SeqEventLowerVisitor(AstNetlist* nodep) { iterate(nodep); }
-};
-
 }  // namespace
 
 void V3AssertCommon::collectDefaultDisable(AstNetlist* nodep) {
@@ -151,16 +99,12 @@ void V3AssertCommon::collectDefaultDisable(AstNetlist* nodep) {
     { DefaultDisablePropagateVisitor{nodep}; }
 }
 
-void V3AssertCommon::lowerSequenceEvents(AstNetlist* nodep) {
-    { SeqEventLowerVisitor{nodep}; }
-    V3Global::dumpCheckGlobalTree("assertseqevent", 0, dumpTreeEitherLevel() >= 3);
-}
-
 string V3AssertCommon::assertCtlGetCall(const char* query, VAssertType type,
                                         VAssertDirectiveType directiveType) {
-    // Template arguments let the runtime build the type/directive mask at C++ compile time
-    return "vlSymsp->_vm_contextp__->assertCtlGet<"s + std::to_string(type) + ", "s
-           + std::to_string(directiveType) + ">(VerilatedAssertCtlQuery::"s + query + ")"s;
+    // Template arguments let the runtime build the type/directive mask at C++ compile time.
+    // Parenthesized, so the template comma cannot split an argument of an emitted macro.
+    return "(vlSymsp->_vm_contextp__->assertCtlGet<"s + std::to_string(type) + ", "s
+           + std::to_string(directiveType) + ">(VerilatedAssertCtlQuery::"s + query + "))"s;
 }
 
 bool V3AssertCommon::checkSvaValueLimit(AstNode* nodep, const AstConst* constp, const char* what) {
@@ -231,18 +175,6 @@ bool V3AssertCommon::refsSvaFormal(const AstNode* nodep) {
         const AstNode* const declp = varp->aboveLoopp();
         return VN_IS(declp, NodeSchema);
     });
-}
-
-void V3AssertCommon::checkSvaInstanceDelays(AstNode* nodep, AstNode* instp) {
-    // A delay still referencing a formal argument of an enclosing sequence or property is
-    // checked when that is instanced. Collect first, as checking edits the delays.
-    std::vector<AstDelay*> delayps;
-    nodep->foreach([&](AstDelay* delayp) {
-        if (!delayp->isCycleDelay() || refsSvaFormal(delayp->lhsp())) return;
-        if (delayp->rhsp() && refsSvaFormal(delayp->rhsp())) return;
-        delayps.push_back(delayp);
-    });
-    for (AstDelay* const delayp : delayps) checkSvaCycleDelay(delayp, instp);
 }
 
 //######################################################################
@@ -989,7 +921,9 @@ class AssertVisitor final : public VNVisitor {
         }
         if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 
-        { AssertDeFutureVisitor{nodep->propp(), m_modp, m_modPastNum++}; }
+        // Only a concurrent assertion has a property or sequence expression, so visit(AstFuture)
+        // rejects future value functions in immediate assertions and $cast (IEEE 1800-2023 16.9.4)
+        if (!nodep->immediate()) AssertDeFutureVisitor{nodep->propp(), m_modp, m_modPastNum++};
 
         iterateAndNextNull(nodep->sentreep());
         if (AstAssert* const assertp = VN_CAST(nodep, Assert)) {
@@ -1053,7 +987,7 @@ class AssertVisitor final : public VNVisitor {
                 AstCoverInc* const covincp = VN_AS(coverp->coverincsp(), CoverInc);
                 UASSERT_OBJ(covincp, coverp, "Missing AstCoverInc under assertion");
                 covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
-                if (message != "") covincp->declp()->comment(message);
+                if (message != "") covincp->declp()->comment(AstNode::prettyName(message));
                 // IEEE 1800-2023 16.4.2: Deferred coverage is flushed like a pending report
                 AstNodeStmt* creditsp = covincp;
                 if (obsDeferred) {
@@ -1140,6 +1074,9 @@ class AssertVisitor final : public VNVisitor {
         if (disablep) bodysp = new AstIf{flp, new AstLogNot{flp, disablep}, bodysp};
         // Add assertOn check last, for better combining
         if (!seqEvent) bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->userType());
+        bodysp->foreach([](AstNodeVarRef* nodep) {
+            nodep->fileline()->modifyWarnOff(V3ErrorCode::SYNCASYNCNET, true);
+        });
 
         if (passsp && !passsp->backp()) VL_DO_DANGLING(pushDeletep(passsp), passsp);
         if (failsp && !failsp->backp()) VL_DO_DANGLING(pushDeletep(failsp), failsp);

@@ -120,6 +120,7 @@ class TaskStateVisitor final : public VNVisitor {
     VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
     FuncToClassMap m_funcToClassMap;  // Map for ctor func -> class
     AstNodeFTask* m_ctorp = nullptr;  // Class constructor
+    AstStmtExpr* m_superNewp = nullptr;  // super.new statement in the class constructor
     AstClass* m_classp = nullptr;  // Current class
     V3Graph m_callGraph;  // Task call graph
     TaskBaseVertex* m_curVxp;  // Current vertex we're adding to
@@ -334,10 +335,12 @@ private:
         // Move initial statements into the constructor
         VL_RESTORER_CLEAR(m_initialps);
         VL_RESTORER(m_ctorp);
+        VL_RESTORER(m_superNewp);
         VL_RESTORER(m_classp);
         m_ctorp = nullptr;
+        m_superNewp = nullptr;
         m_classp = nodep;
-        {  // Find m_initialps, m_ctor
+        {  // Find m_initialps, m_ctorp, m_superNewp
             iterateChildren(nodep);
         }
         UASSERT_OBJ(m_ctorp, nodep, "class constructor missing");  // LinkDot always makes it
@@ -351,7 +354,22 @@ private:
             VL_DO_DANGLING(pushDeletep(initialp->unlinkFrBack()), initialp);
         }
         m_initialps.clear();
-        m_ctorp->prependStmtsp(insertp);
+        // IEEE 1800-2023 8.7: initialize properties after super.new
+        AstNodeStmt* initp = nullptr;
+        if (!nodep->isInterfaceClass() && !m_ctorp->taskPublic()) {
+            const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);";
+            initp = new AstCStmt{m_ctorp->fileline(), stmt, VCStmtType::CTOR_VAR_RESET_CALL};
+        }
+        initp = AstNode::addNextNull(initp, insertp);
+        if (m_superNewp) {
+            if (initp) m_superNewp->addNextHere(initp);
+        } else {
+            m_ctorp->prependStmtsp(initp);
+        }
+    }
+    void visit(AstStmtExpr* nodep) override {
+        if (VN_IS(nodep->exprp(), New)) m_superNewp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstInitialAutomatic* nodep) override {
         m_initialps.push_back(nodep);
@@ -604,6 +622,9 @@ class TaskVisitor final : public VNVisitor {
                 outPinp = orderp->fromp();
             }
             postRhsp = new AstCvtQueueToUnpack{pinp->fileline(), postRhsp, outPinp->dtypep()};
+        } else if (AstCvtQueueToUnpack* const cvtp = VN_CAST(outPinp, CvtQueueToUnpack)) {
+            outPinp = cvtp->fromp();
+            postRhsp = new AstCvtUnpackToQueue{pinp->fileline(), postRhsp, outPinp->dtypep()};
         }
         // Put output assignment AFTER function call
         AstNodeExpr* const outPinClonep
@@ -1727,20 +1748,6 @@ class TaskVisitor final : public VNVisitor {
               && ((!nodep->dpiImport() && !nodep->taskPublic()) || v3Global.opt.profExec());
         if (needSyms) cfuncp->argTypes(EmitCUtil::symClassVar());
 
-        if (!nodep->dpiImport() && !nodep->taskPublic()) {
-            // Need symbol table
-            if (cfuncp->isConstructor()) {
-                bool isInterfaceClass = false;
-                if (const AstClass* const classp = VN_CAST(m_modp, Class)) {
-                    isInterfaceClass = classp->isInterfaceClass();
-                }
-                if (!isInterfaceClass) {
-                    const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);";
-                    cfuncp->addStmtsp(
-                        new AstCStmt{nodep->fileline(), stmt, VCStmtType::CTOR_VAR_RESET_CALL});
-                }
-            }
-        }
         if (nodep->dpiContext()) {
             // First three args go to dpiContext call
             createInputVar(cfuncp, "__Vscopep", VBasicDTypeKwd::SCOPEPTR);

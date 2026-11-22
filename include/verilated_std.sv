@@ -32,6 +32,8 @@
 // verilator lint_off DECLFILENAME
 // verilator lint_off TIMESCALEMOD
 // verilator lint_off UNUSEDSIGNAL
+// Library code, not the user's design
+// verilator coverage_off
 package std;
   // IEEE 1800-specified standard "mailbox"
   class mailbox #(

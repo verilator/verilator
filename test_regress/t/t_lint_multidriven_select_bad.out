@@ -1,0 +1,51 @@
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_select_bad.v:20:10: Variable also written to in always_comb (IEEE 1800-2023 9.2.2.2): 'q'
+                                                             : ... note: In instance 't'
+                      t/t_lint_multidriven_select_bad.v:20:10: 
+   20 |   assign q[1:0] = b[1:0];   
+      |          ^
+                      t/t_lint_multidriven_select_bad.v:19:15: ... Location of always_comb write
+   19 |   always_comb q[1:0] = a[1:0];   
+      |               ^
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_select_bad.v:23:10: Variable also written to in always_ff (IEEE 1800-2023 9.2.2.4): 'qff'
+                                                             : ... note: In instance 't'
+                      t/t_lint_multidriven_select_bad.v:23:10: 
+   23 |   assign qff[1:0] = b[1:0];   
+      |          ^~~
+                      t/t_lint_multidriven_select_bad.v:22:28: ... Location of always_ff write
+   22 |   always_ff @(posedge clk) qff[1:0] <= a[1:0];   
+      |                            ^~~
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_select_bad.v:26:10: Variable also written to in always_comb (IEEE 1800-2023 9.2.2.2): 's'
+                                                             : ... note: In instance 't'
+                      t/t_lint_multidriven_select_bad.v:26:10: 
+   26 |   assign s[0] = b[0];   
+      |          ^
+                      t/t_lint_multidriven_select_bad.v:25:15: ... Location of always_comb write
+   25 |   always_comb s[0] = a[0];   
+      |               ^
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_select_bad.v:13:24: Bits [1:0] of signal 'q' have multiple combinational drivers. This can cause performance degradation.
+                      t/t_lint_multidriven_select_bad.v:19:22: ... Location of offending driver
+   19 |   always_comb q[1:0] = a[1:0];   
+      |                      ^
+                      t/t_lint_multidriven_select_bad.v:20:17: ... Location of offending driver
+   20 |   assign q[1:0] = b[1:0];   
+      |                 ^
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_select_bad.v:15:24: Bit [0] of signal 's' have multiple combinational drivers. This can cause performance degradation.
+                      t/t_lint_multidriven_select_bad.v:25:20: ... Location of offending driver
+   25 |   always_comb s[0] = a[0];   
+      |                    ^
+                      t/t_lint_multidriven_select_bad.v:26:15: ... Location of offending driver
+   26 |   assign s[0] = b[0];   
+      |               ^
+%Error-BLKANDNBLK: t/t_lint_multidriven_select_bad.v:14:24: Unsupported: Blocking and non-blocking assignments to potentially overlapping bits of same packed variable: 'qff'
+   14 |     output logic [1:0] qff,
+      |                        ^~~
+                   t/t_lint_multidriven_select_bad.v:23:19: ... Location of blocking assignment (bits [1:0])
+   23 |   assign qff[1:0] = b[1:0];   
+      |                   ^
+                   t/t_lint_multidriven_select_bad.v:22:28: ... Location of nonblocking assignment (bits [1:0])
+   22 |   always_ff @(posedge clk) qff[1:0] <= a[1:0];   
+      |                            ^~~
+                   ... For error description see https://verilator.org/warn/BLKANDNBLK?v=latest
+%Error: Exiting due to

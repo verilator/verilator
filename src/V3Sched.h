@@ -48,7 +48,7 @@ inline bool isForceReadMethod(VCMethod method) {
            || method == VCMethod::FORCE_READ_SEL;
 }
 
-inline void collectForceReadEdgeIgnores(AstNode* nodep, VarScopeSet& out) {
+inline void collectForceReadEdgeIgnores(const AstNodeProcedure* nodep, VarScopeSet& out) {
     VarScopeSet writtenForceVecs;
     VarScopeSet writtenVars;
 
@@ -80,133 +80,125 @@ inline void collectForceReadEdgeIgnores(AstNode* nodep, VarScopeSet& out) {
         });
     });
 }
+
+// Compute the implicit sensitivities of the given combinational process
+std::unordered_set<const AstVarScope*> computeImplicitSensitivities(const AstNodeProcedure* procp);
 }  // namespace util
 
 //============================================================================
-// Throughout scheduling, we need to keep hold of AstActive nodes, together
-// with the AstScope that they are under. LogicByScope is simply a list of
-// such pairs, with some additional convenience methods.
+// A process being scheduled, with the AstScope it is under, and its sensitivities
 
-class LogicByScope final {
+struct Process final {
+    AstScope* m_scopep;  // The scope the process is under
+    AstSenTree* m_senTreep;  // The sensitivities of the process
+    AstNodeProcedure* m_procp;  // The process
+    // Variables m_procp is implicitly sensitive to
+    std::unordered_set<const AstVarScope*> m_implicitSen;
+};
+
+//============================================================================
+// Throughout scheduling, we need to keep hold of processes, together with the
+// trigger indices of their sensitivities. ProcessList is simply a list of such
+// processes, with some additional convenience methods. It owns the processes,
+// which are not linked into the tree.
+
+class ProcessList final {
+    // STATE
+    std::vector<Process> m_processes;  // The processes held
+    // Trigger indices each AstSenTree of the processes is sensitive to
+    std::unordered_map<const AstSenTree*, std::set<uint32_t>> m_triggers;
+
 public:
     // TYPES
-    // An AstActive and the AstScope it is under
-    struct Entry final {
-        AstScope* m_scopep;  // The scope the AstActive is under
-        AstActive* m_activep;  // The AstActive holding the logic
-        std::set<uint32_t> m_triggers;  // Trigger indices m_activep is sensitive to
-    };
-    using iterator = std::vector<Entry>::iterator;
-    using const_iterator = std::vector<Entry>::const_iterator;
+    using iterator = std::vector<Process>::iterator;
+    using const_iterator = std::vector<Process>::const_iterator;
 
-private:
-    // STATE
-    std::vector<Entry> m_entries;  // The AstActives held, with their scopes
+    // CONSTRUCTORS
+    ProcessList() = default;
+    VL_UNCOPYABLE(ProcessList);
+    ProcessList(ProcessList&&) = default;
+    ProcessList& operator=(ProcessList&&) = default;
 
-public:
     // METHODS
 
     // Iteration and access
-    iterator begin() { return m_entries.begin(); }
-    iterator end() { return m_entries.end(); }
-    const_iterator begin() const { return m_entries.begin(); }
-    const_iterator end() const { return m_entries.end(); }
-    bool empty() const { return m_entries.empty(); }
-    size_t size() const { return m_entries.size(); }
-    const Entry& operator[](size_t i) const { return m_entries[i]; }
-
-    // Add an AstActive under the given scope
-    void add(AstScope* scopep, AstActive* activep) { m_entries.push_back({scopep, activep, {}}); }
+    iterator begin() { return m_processes.begin(); }
+    iterator end() { return m_processes.end(); }
+    const_iterator begin() const { return m_processes.begin(); }
+    const_iterator end() const { return m_processes.end(); }
+    bool empty() const { return m_processes.empty(); }
 
     // Add a process
-    void add(AstScope* scopep, AstSenTree* senTreep, AstNodeProcedure* procp) {
-        UASSERT_OBJ(!procp->backp(), procp, "Already linked");
-        if (m_entries.empty() || m_entries.back().m_scopep != scopep
-            || m_entries.back().m_activep->sentreep() != senTreep) {
-            add(scopep, new AstActive{procp->fileline(), "", senTreep});
-        }
-        m_entries.back().m_activep->addProcsp(procp);
-    };
+    void add(Process process) {
+        UASSERT_OBJ(!process.m_procp->backp(), process.m_procp, "Already linked");
+        m_processes.push_back(std::move(process));
+    }
 
-    // Create copy, with the AstActives cloned
-    LogicByScope clone() const {
-        LogicByScope result;
-        for (const Entry& entry : m_entries) {
-            result.add(entry.m_scopep, entry.m_activep->cloneTree(false));
+    // The trigger indices the given AstSenTree is sensitive to
+    const std::set<uint32_t>& triggers(const AstSenTree* senTreep) const {
+        const auto it = m_triggers.find(senTreep);
+        UASSERT_OBJ(it != m_triggers.end(), senTreep, "Triggers not set");
+        return it->second;
+    }
+    // Set the trigger indices the given AstSenTree is sensitive to
+    void triggers(const AstSenTree* senTreep, std::set<uint32_t> triggers) {
+        m_triggers[senTreep] = std::move(triggers);
+    }
+
+    // Create copy, with the processes cloned
+    ProcessList clone() const {
+        ProcessList result;
+        for (const Process& process : m_processes) {
+            result.add({process.m_scopep, process.m_senTreep, process.m_procp->cloneTree(false),
+                        process.m_implicitSen});
         }
         return result;
     }
 
-    // Delete actives (they should all be empty)
-    void deleteActives() {
-        for (const Entry& entry : m_entries) {
-            AstActive* const activep = entry.m_activep;
-            if (v3Global.opt.debugCheck()) {
-                for (AstNodeProcedure* const procp : activep->procspList()) {
-                    UASSERT_OBJ(!procp->stmtsp(), activep, "Leftover logic");
-                }
-            }
-            if (activep->backp()) activep->unlinkFrBack();
-            VL_DO_DANGLING(activep->deleteTree(), activep);
+    // Delete processes (they should all be empty)
+    void deleteProcesses() {
+        for (const Process& process : m_processes) {
+            AstNodeProcedure* const procp = process.m_procp;
+            UASSERT_OBJ(!procp->stmtsp(), procp, "Leftover logic");
+            VL_DO_DANGLING(procp->deleteTree(), procp);
         }
-        m_entries.clear();
-    };
-
-    void foreachProcess(const std::function<void(AstNodeProcedure*)>& f) const {
-        for (const Entry& entry : m_entries) {
-            const AstActive* const activep = entry.m_activep;
-            for (AstNodeProcedure* const procp : activep->procspList()) f(procp);
-        }
+        m_processes.clear();
+        m_triggers.clear();
     }
 };
 
 // Logic in the design is classified based on what can trigger its execution.
 // For details see the internals documentation.
 struct LogicClasses final {
-    LogicByScope m_static;  // Static variable initializers
-    LogicByScope m_initial;  // initial blocks
-    LogicByScope m_final;  // final blocks
-    LogicByScope m_comb;  // Combinational logic (logic with implicit sensitivities)
-    LogicByScope m_clocked;  // Clocked (or sequential) logic (logic with explicit sensitivities)
-    LogicByScope m_hybrid;  // Hybrid logic (combinational logic with some explicit sensitivities)
-    LogicByScope m_postponed;  // Postponed logic ($strobe)
-    LogicByScope m_observed;  // Observed logic (contains AstAlwaysObserved)
-    LogicByScope m_reactive;  // Reactive logic (contains AstAlwaysReactive)
-
-    LogicClasses() = default;
-    VL_UNCOPYABLE(LogicClasses);
-    LogicClasses(LogicClasses&&) = default;
-    LogicClasses& operator=(LogicClasses&&) = default;
+    ProcessList m_static;  // Static variable initializers
+    ProcessList m_initial;  // initial blocks
+    ProcessList m_final;  // final blocks
+    ProcessList m_comb;  // Combinational logic (logic with implicit sensitivities)
+    ProcessList m_clocked;  // Clocked (or sequential) logic (logic with explicit sensitivities)
+    ProcessList m_hybrid;  // Hybrid logic (combinational logic with some explicit sensitivities)
+    ProcessList m_postponed;  // Postponed logic ($strobe)
+    ProcessList m_observed;  // Observed logic (contains AstAlwaysObserved)
+    ProcessList m_reactive;  // Reactive logic (contains AstAlwaysReactive)
 };
 
 // Combinational (including hybrid) logic, and clocked logic in partitioned to compute all clock
 // signals in the 'act' region. For details see the internals documentation.
 struct LogicRegions final {
-    LogicByScope m_pre;  // AstAlwaysPre logic in 'act' region
-    LogicByScope m_act;  // 'act' region logic
-    LogicByScope m_nba;  // 'nba' region logic
-    LogicByScope m_obs;  // AstAlwaysObserved logic in 'obs' region
-    LogicByScope m_react;  // AstAlwaysReactive logic in 're' region
-
-    LogicRegions() = default;
-    VL_UNCOPYABLE(LogicRegions);
-    LogicRegions(LogicRegions&&) = default;
-    LogicRegions& operator=(LogicRegions&&) = default;
+    ProcessList m_pre;  // AstAlwaysPre logic in 'act' region
+    ProcessList m_act;  // 'act' region logic
+    ProcessList m_nba;  // 'nba' region logic
+    ProcessList m_obs;  // AstAlwaysObserved logic in 'obs' region
+    ProcessList m_react;  // AstAlwaysReactive logic in 're' region
 };
 
 // Combinational (including hybrid) logic is replicated into the various scheduling regions.
 // For details see the internals documentation.
 struct LogicReplicas final {
-    LogicByScope m_ico;  // Logic replicated into the 'ico' (Input Combinational) region
-    LogicByScope m_act;  // Logic replicated into the 'act' region
-    LogicByScope m_nba;  // Logic replicated into the 'nba' region
-    LogicByScope m_obs;  // Logic replicated into the 'obs' region
-    LogicByScope m_react;  // Logic replicated into the 're' region
-
-    LogicReplicas() = default;
-    VL_UNCOPYABLE(LogicReplicas);
-    LogicReplicas(LogicReplicas&&) = default;
-    LogicReplicas& operator=(LogicReplicas&&) = default;
+    ProcessList m_ico;  // Logic replicated into the 'ico' (Input Combinational) region
+    ProcessList m_act;  // Logic replicated into the 'act' region
+    ProcessList m_nba;  // Logic replicated into the 'nba' region
+    ProcessList m_obs;  // Logic replicated into the 'obs' region
+    ProcessList m_react;  // Logic replicated into the 're' region
 };
 
 // A TriggerKit holds all the components related to a scheduling region triggers
@@ -366,6 +358,7 @@ public:
     size_t senItem2TrigIdx(const AstSenItem* senItemp) const {
         return m_senItem2TrigIdx.at(*senItemp);
     }
+    uint32_t nSenses() const { return m_nSenseWords * WORD_SIZE; }
     const std::vector<const AstSenItem*>& trigIdx2SenItem() const { return m_trigIdx2SenItem; }
     AstCFunc* compBasep() const { return m_compVecp; }
     const std::string& name() const { return m_name; }
@@ -411,7 +404,7 @@ class TimingKit final {
     std::map<const AstVarScope*, std::set<AstSenTree*>> m_externalDomains;
 
 public:
-    LogicByScope m_lbs;  // Actives that resume timing schedulers
+    ProcessList m_procList;  // Processes that resume timing schedulers
     AstNodeStmt* m_postUpdatesp = nullptr;  // Post updates for the trigger eval function
 
     // Trigger indices of the external domains of each variable
@@ -425,10 +418,10 @@ public:
     AstCCall* createReady(AstVarScope* trigVscp) VL_MT_DISABLED;
 
     TimingKit() = default;
-    TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdatesp,
+    TimingKit(ProcessList&& procList, AstNodeStmt* postUpdatesp,
               std::map<const AstVarScope*, std::set<AstSenTree*>>&& externalDomains)
         : m_externalDomains{externalDomains}
-        , m_lbs{lbs}
+        , m_procList{std::move(procList)}
         , m_postUpdatesp{postUpdatesp} {}
     VL_UNCOPYABLE(TimingKit);
     TimingKit(TimingKit&&) = default;
@@ -526,10 +519,8 @@ void transformForks(AstNetlist* const netlistp) VL_MT_DISABLED;
 void schedule(AstNetlist*) VL_MT_DISABLED;
 
 // Sub-steps
-LogicByScope breakCycles(AstNetlist* netlistp,
-                         const LogicByScope& combinationalLogic) VL_MT_DISABLED;
-LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLogic,
-                       LogicByScope& hybridLogic) VL_MT_DISABLED;
+void breakCycles(AstNetlist* netlistp, LogicClasses& logicClasses) VL_MT_DISABLED;
+LogicRegions partition(LogicClasses& logicClasses) VL_MT_DISABLED;
 LogicReplicas replicateLogic(LogicRegions&) VL_MT_DISABLED;
 
 // Utility functions used by various steps in scheduling

@@ -91,7 +91,6 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
         VARDTYPE_NDECL(nullptr); \
         GRAMMARP->m_pinNum = (pinNumStart); \
         GRAMMARP->m_varLifetime = VLifetime::NONE; \
-        GRAMMARP->m_varDeclTyped = false; \
     }
 #define VARDECL(type) \
     { GRAMMARP->m_varDecl = VVarType::type; }
@@ -109,8 +108,12 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
         GRAMMARP->setDType(dtypep); \
         GRAMMARP->m_varDeclTyped = true; \
     }
+// Set the data type without making a typed declaration, e.g. a range-only port
 #define VARDTYPE_NDECL(dtypep) \
-    { GRAMMARP->setDType(dtypep); }  // Port that is range or signed only (not a decl)
+    { \
+        GRAMMARP->setDType(dtypep); \
+        GRAMMARP->m_varDeclTyped = false; \
+    }
 
 #define VARDONEA(fl, name, array, attrs) GRAMMARP->createVariable((fl), (name), (array), (attrs))
 #define VARDONEP(portp, array, attrs) \
@@ -323,7 +326,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              '['
 %token<fl>              ']'
 %token<fl>              '^'
-%token<fl>              '{'
+%token<fl>              '{'  // See also yP_CURLY__EMPTY
 %token<fl>              '|'
 %token<fl>              '}'
 %token<fl>              '~'
@@ -632,6 +635,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_COSH         "$cosh"
 %token<fl>              yD_COUNTBITS    "$countbits"
 %token<fl>              yD_COUNTONES    "$countones"
+%token<fl>              yD_COVERAGE_CONTROL "$coverage_control"
 %token<fl>              yD_DIMENSIONS   "$dimensions"
 %token<fl>              yD_DISPLAY      "$display"
 %token<fl>              yD_DISPLAYB     "$displayb"
@@ -842,6 +846,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 
 %token<fl>              yP_COLON__BEGIN ":-then-begin"
 %token<fl>              yP_COLON__FORK  ":-then-fork"
+%token<fl>              yP_CURLY__EMPTY "{"             // Used when constraint_set is '{' '}'
 %token<fl>              yP_EQ__NEW      "=-then-new"
 %token<fl>              yP_PAR__IGNORE  "(-ignored"     // Used when sequence_expr:expr:( is ignored
 %token<fl>              yP_PAR__STRENGTH "(-for-strength"
@@ -4505,6 +4510,10 @@ system_f_or_t_expr_call<nodeExprp>:  // IEEE: part of system_tf_call (can be tas
                         { $$ = new AstCountBits{$1, $3, $5, $7, $9};
                           BBUNSUP($11, "Unsupported: $countbits with more than 3 control fields"); }
         |       yD_COUNTONES '(' expr ')'               { $$ = new AstCountOnes{$1, $3}; }
+        |       yD_COVERAGE_CONTROL '(' expr ',' expr ',' expr ',' expr ')'  {
+                          const AstParseRef* const rootp = VN_CAST($9, ParseRef);
+                          $$ = new AstCoverageControl{$1, $3, $5, $7, rootp && rootp->name() == "$root"};
+                          DEL($9); }
         |       yD_DIMENSIONS '(' exprOrDataType ')'    { $$ = new AstAttrOf{$1, VAttrType::DIM_DIMENSIONS, $3}; }
         |       yD_DIST_CHI_SQUARE '(' expr ',' expr ')'        { $$ = new AstDistChiSquare{$1, $3, $5}; }
         |       yD_DIST_ERLANG '(' expr ',' expr ',' expr ')'   { $$ = new AstDistErlang{$1, $3, $5, $7}; }
@@ -6704,9 +6713,6 @@ sequence_declaration<sequencep>:  // ==IEEE: sequence_declaration
                           $$->addDeclsp($2);
                           $$->exprp($4);
                           GRAMMARP->endLabel($<fl>6, $$, $6);
-                          // Sequence declarations are allowed; they are inlined by V3AssertPre.
-                          // Sequences in unsupported contexts are reported by assertPreAll
-                          // after inlining.
                         }
         |       sequence_declarationFront sequence_port_listE ';' assertion_variable_declarationList
         /*cont*/    sequence_declarationBodyExpr yENDSEQUENCE endLabelE
@@ -6800,7 +6806,7 @@ property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
                         { $$ = PARSEP->makePropertyCase($1, $3, nullptr); }
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr  %prec prIF
                         { $$ = new AstImplication{$1, $3, $5, true}; }
-        |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr
+        |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr  %prec prIF
                         { AstNodeExpr* const elseCondp = new AstLogNot{$1, $3->cloneTreePure(false)};
                           $$ = new AstSAnd{$1, new AstImplication{$1, $3, $5, true},
                                            new AstImplication{$1, elseCondp, $7, true},
@@ -8331,6 +8337,8 @@ constraint_expression<nodeConstraintItemp>:  // ==IEEE: constraint_expression
         //                      // item V3Randomize already knows how to
         //                      // lower (with disable-soft hoisted by the
         //                      // ConstraintExprVisitor pre-pass).
+        |       expr yP_MINUSGT yP_CURLY__EMPTY '}'
+                        { $$ = new AstConstraintIf{$2, $1, nullptr, nullptr}; }
         |       expr yP_MINUSGT '{' constraint_expressionList '}'
                         { $$ = new AstConstraintIf{$2, $1, $4, nullptr}; }
         |       expr yP_MINUSGT yIF '(' expr ')' constraint_set %prec prLOWER_THAN_ELSE
@@ -8375,6 +8383,7 @@ constraint_expression<nodeConstraintItemp>:  // ==IEEE: constraint_expression
 
 constraint_set<nodeConstraintItemp>:  // ==IEEE: constraint_set
                 constraint_expression                   { $$ = $1; }
+        |       yP_CURLY__EMPTY '}'                     { $$ = nullptr; }
         |       '{' constraint_expressionList '}'       { $$ = $2; }
         //
         |       '{' error '}'                           { $$ = nullptr; }  // LCOV_EXCL_LINE

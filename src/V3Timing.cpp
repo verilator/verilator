@@ -1448,12 +1448,14 @@ class TimingControlVisitor final : public VNVisitor {
         } else if (needDynamicTrigger(condp)) {
             // No point in making a sentree, just use the expression as sensitivity
             // Put the event control in an if so we only wait if the condition isn't met already
+            AstNodeExpr* const senCondp = condp->cloneTree(false);
+            UASSERT_OBJ(m_senExprBuilderp, nodep, "No SenExprBuilder for this scope");
+            AstNodeExpr* const initialCondp = m_senExprBuilderp->guardExpr(condp);
             auto* const ifp = new AstIf{
-                flp, new AstLogNot{flp, condp},
-                new AstEventControl{flp,
-                                    new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_TRUE,
-                                                                       condp->cloneTree(false)}},
-                                    flushp}};
+                flp, new AstLogNot{flp, initialCondp},
+                new AstEventControl{
+                    flp, new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_TRUE, senCondp}},
+                    flushp}};
             if (stmtsp) AstNode::addNext<AstNode, AstNode>(ifp, stmtsp);
             nodep->replaceWith(ifp);
         } else {

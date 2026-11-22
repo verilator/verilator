@@ -602,8 +602,9 @@ class V3ControlFile final {
 
     struct {
         int filenameno = -1;  // Last filename
-        int lineno = -1;  // Last linenumber
+        int lineno = -1;  // Line number the state was last computed for
         int nextChange = -1;  // Line number of next change
+        int warnStateIdx = -1;  // FileLine::warnStateIdx() after last computation
     } m_lastIgnore;  // Last ignore line run
 
     // Match a given line and attribute to the map, line 0 is any
@@ -664,16 +665,13 @@ public:
     }
     void applyIgnores(FileLine* filelinep) {
         // HOT routine, called each parsed token line of this filename
-        if (filelinep->filenameno() == m_lastIgnore.filenameno
-            && filelinep->lineno() == m_lastIgnore.lineno)
+        // For speed, skip if this FileLine has the last computed state, at a line it holds for;
+        // other callers' FileLines may be at an earlier line or hold a different state.
+        if (VL_LIKELY(filelinep->filenameno() == m_lastIgnore.filenameno
+                      && filelinep->warnStateIdx() == m_lastIgnore.warnStateIdx
+                      && filelinep->lineno() >= m_lastIgnore.lineno
+                      && filelinep->lineno() < m_lastIgnore.nextChange))
             return;  // Short circuit, no change, no debug
-        // For speed, compute line number of next potential change, and skip if before then
-        if (filelinep->filenameno() == m_lastIgnore.filenameno
-            && filelinep->lineno() < m_lastIgnore.nextChange) {
-            m_lastIgnore.lineno = filelinep->lineno();
-            UINFO(9, "   ApplyIgnores for " << filelinep->ascii() << " (no change predicted)");
-            return;
-        }
         UINFO(9, "   ApplyIgnores for " << filelinep->ascii());
         m_lastIgnore.filenameno = filelinep->filenameno();
         m_lastIgnore.lineno = filelinep->lineno();
@@ -695,6 +693,7 @@ public:
         }
 
         filelinep->warnSetCtrlBitSet(bitset);
+        m_lastIgnore.warnStateIdx = filelinep->warnStateIdx();
         m_lastIgnore.nextChange = std::max(m_lastIgnore.nextChange, filelinep->lineno() + 1);
         UINFO(9, "    AppliedIgnores " << filelinep << " next@ln " << std::dec
                                        << m_lastIgnore.nextChange

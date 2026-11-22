@@ -60,15 +60,25 @@ ______________________________________________________________________
   times in the same `.py`, unless there is lots of setup needed.
 - Use `.out` golden files with `expect_filename` instead of inline `expect`
   regex strings -- goldens are diffable and maintainable.
+- Avoid grep of generated C++ or solver logs; prefer to check behavior from
+  the Verilog so the test is not sensitive to internal changes.
 - Use `test.glob_one()`/`test.glob_some()` and `test.timeout()` instead of raw
   `glob.glob()` and manual `time.time()` measurements.
+- Use `test.name` or another appropriate `test.` variable (e.g
+  `test.obj_dir`, `test.pli_filename`) instead of hardcoding the test name in the .py.
 - Coverage tests run `verilator_coverage` and verify individual bins and points,
   not just aggregate percentages.
+- Tests of optimization (`t_opt_*`) should have stats that are grep-checked in the .py.
 - Assert optimization stats with exact expected counts:
   `test.file_grep(test.stats, r'Optimizations, ...\s+(\d+)', N)`.
 - Add a `_protect_ids` variant when a feature emits user identifiers or filenames.
 - Use conservative thread counts (2 or fewer) in multithreaded tests.
-- Avoid `-Wno-` warning disables, instead disable using `verilator lint_off`/`verilator lint_on` around the appropriate lines in the `.v`.
+- Do not use `-O0`; disable only the needed optimization with `-fno-<opt>`.
+- Avoid `-Wno-` warning disables unless saves making multiple .v files,
+  instead disable using `verilator lint_off`/`verilator lint_on` around the
+  appropriate lines in the `.v`.
+- Match neighboring drivers: a blank line after the license header in every new
+  file, a blank line before each `test.run` and `test.passes`, and `test.name`.
 
 ## Golden .out files
 
@@ -147,3 +157,6 @@ ______________________________________________________________________
   effect, before later overwrites, using indices that change post-NBA.
 - Do not number tests e.g. `Test 1: ` just use `Test: `, to make it easier
   to resolve conflicts and later add tests in the middle.
+- Comments in tests describe expected behavior, never how the implementation works.
+- For array features cover fixed, dynamic (`[]`), queue (`[$]`), and associative
+  (`[int]`) forms.

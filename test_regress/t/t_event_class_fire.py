@@ -13,7 +13,6 @@ test.scenarios('simulator')
 
 test.compile(verilator_flags2=['--binary'])
 
-# Issue #8303 makes this fail
-test.execute(fails=True)
+test.execute()
 
 test.passes()

@@ -1,4 +1,4 @@
-%Error: t/t_udp_bad_first_input.v:8:9: First UDP port must be the output port
+%Error: t/t_udp_bad_first_input.v:8:9: First UDP port must be the output port (IEEE 1800-2023 29.3.1)
                                      : ... note: In instance 'top'
     8 |   input a, b, c;
       |         ^

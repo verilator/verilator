@@ -10,7 +10,7 @@ $timescale
 $end
  $scope module top $end
   $var wire 1 ! clk $end
-  $scope module pkg $end
+  $scope package pkg $end
    $var parameter 17 " SUB_ONES [16:0] $end
    $var parameter 17 # SUB_ZEROS [16:0] $end
   $upscope $end

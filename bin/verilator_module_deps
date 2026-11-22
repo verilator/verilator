@@ -51,6 +51,22 @@ def safe_stem(stem: str, abs_source: str) -> str:
     return safe
 
 
+def write_if_changed(path: str, content: str) -> None:
+    old_content = None
+    try:
+        with open(path, 'r', encoding='utf8') as fh:
+            old_content = fh.read()
+    except OSError:
+        pass
+    if content == old_content:
+        return
+    directory = os.path.dirname(path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+    with open(path, 'w', encoding='utf8') as fh:
+        fh.write(content)
+
+
 def parse_flags(flags: str) -> list[str]:
     return [flag for flag in shlex.split(flags) if flag not in ('-MMD', '-MP')]
 
@@ -571,13 +587,7 @@ def scan(args: argparse.Namespace) -> None:
     else:
         content = generate_clang(modules)
 
-    old_content = None
-    if os.path.exists(args.output):
-        with open(args.output, 'r', encoding='utf8') as fh:
-            old_content = fh.read()
-    if content != old_content:
-        with open(args.output, 'w', encoding='utf8') as fh:
-            fh.write(content)
+    write_if_changed(args.output, content)
 
 
 def main() -> None:

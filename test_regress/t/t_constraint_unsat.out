@@ -25,4 +25,9 @@ Randomization failed.
 %Warning-UNSATCONSTR: t/t_constraint_unsat.v:26: Unsatisfied constraint: 'constraint c1 { x > 100; }'
 %Warning-UNSATCONSTR: t/t_constraint_unsat.v:27: Unsatisfied constraint: 'constraint c2 { x < 50; }'
 Expected failure: conflicting constraints detected
+
+=== Test: std::randomize conflict (y > 10 && y < 5) after a valid call ===
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:80: Unsatisfied constraint: 'if (std::randomize(y) with { y > 10; y < 5; } == 0) begin'
+%Warning-UNSATCONSTR: t/t_constraint_unsat.v:80: Unsatisfied constraint: 'if (std::randomize(y) with { y > 10; y < 5; } == 0) begin'
+Expected failure: conflicting constraints detected
 *-* All Finished *-*

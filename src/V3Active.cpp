@@ -383,7 +383,7 @@ public:
 
 class ActiveDlyVisitor final : public VNVisitor {
 public:
-    enum CheckType : uint8_t { CT_COMB, CT_FINAL };
+    enum CheckType : uint8_t { CT_COMB, CT_LATCH, CT_FINAL };
 
 private:
     // MEMBERS
@@ -392,12 +392,18 @@ private:
     // METHODS
     void warnNonBlocking(AstNode* nodep, const char* what, const char* nbOp, const char* bOp) {
         const bool inFinal = m_check == CT_FINAL;
-        nodep->v3warnCode(inFinal ? V3ErrorCode::FINALDLY : V3ErrorCode::COMBDLY,
-                          "Non-blocking "
-                              << what << " '" << nbOp << "' in "
-                              << (inFinal ? "final block" : "combinational logic") << '\n'
-                              << nodep->warnMore() << "... This will be executed as a blocking "
-                              << what << " '" << bOp << "'!");
+        const bool inLatch = m_check == CT_LATCH;
+        nodep->v3warnCode(inFinal   ? V3ErrorCode::FINALDLY
+                          : inLatch ? V3ErrorCode::LATCHDLY
+                                    : V3ErrorCode::COMBDLY,
+                          "Non-blocking " << what << " '" << nbOp << "' in "
+                                          << (inFinal   ? "final block"
+                                              : inLatch ? "always_latch"
+                                                        : "combinational logic")
+                                          << '\n'
+                                          << nodep->warnMore()
+                                          << "... This will be executed as a blocking " << what
+                                          << " '" << bOp << "'!");
     }
 
     // VISITORS
@@ -495,7 +501,10 @@ class ActiveVisitor final : public VNVisitor {
         wantactivep->addProcsp(nodep);
 
         // Warn and convert any delayed assignments
-        if (!m_clockedProcess) ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMB};
+        if (!m_clockedProcess) {
+            ActiveDlyVisitor{nodep, kwd == VAlwaysKwd::ALWAYS_LATCH ? ActiveDlyVisitor::CT_LATCH
+                                                                    : ActiveDlyVisitor::CT_COMB};
+        }
 
         // Delete sensitivity list
         if (oldsentreep) VL_DO_DANGLING(oldsentreep->deleteTree(), oldsentreep);

@@ -54,7 +54,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <deque>
-#include <functional>
 #include <limits>
 #include <map>
 #include <memory>
@@ -105,13 +104,13 @@ struct VlIfaceRefTableEntry;
 template <typename, typename>
 class VerilatedTrace;
 class VerilatedTraceBaseC;
-class VerilatedTraceConfig;
 class VerilatedVar;
 class VerilatedVarNameMap;
 class VerilatedVcd;
 class VerilatedVcdC;
 class VerilatedVcdSc;
 class VlCovRegistry;
+class VlRtmd;
 
 //=========================================================================
 // Basic types
@@ -369,7 +368,9 @@ class VerilatedModel VL_NOT_FINAL {
     uint32_t m_id = ~0U;  // Unique id of the model in its context
 
 protected:
+    const VlRtmd* m_rtmdp = nullptr;  // The run time model descriptors, iff generated
     bool m_didInit = false;  // Time 0 initialization has run
+    bool m_didDump = false;  // Traced since the last evaluation
 
     explicit VerilatedModel(VerilatedContext& context);
     virtual ~VerilatedModel();
@@ -387,15 +388,15 @@ public:
     // Orders models in the order they were added to their context
     bool operator<(const VerilatedModel& other) const { return m_id < other.m_id; }
 
+    // Public, but for internal use only. Rtmd of this model, if any
+    const VlRtmd* rtmd() const { return m_rtmdp; }
+
 private:
     // The following are for use by Verilator internals only
     template <typename, typename>
     friend class VerilatedTrace;
     friend class VerilatedContext;
     friend class VerilatedEvalLoop;
-
-    // Run-time trace configuration requested by this model
-    virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
 
     // Entry points called by VerilatedEvalLoop
     virtual void evalBegin() = 0;
@@ -542,10 +543,6 @@ private:
     static constexpr uint64_t TIME_UNSET = ~0ULL;
 
 protected:
-    // TYPES
-    using traceBaseModelCb_t
-        = std::function<void(VerilatedTraceBaseC*, int, int)>;  // Type of traceBaseModel callbacks
-
     // MEMBERS
     // Slow path variables
     mutable VerilatedMutex m_mutex;  // Mutex for most s_s/s_ns members
@@ -616,11 +613,16 @@ protected:
         bool m_warnUnsatConstr = true;  // Warn on unsatisfied constraints
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
-        std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
         int m_stdoutFD;  // Duplicated stdout file descriptor
         int m_stderrFD;  // Duplicated stderr file descriptor
         int m_logFD;  // Log file descriptor
     } m_ns;
+
+    /// Callback typedef for addEndContextCb
+    using VoidPCb = void (*)(void*);
+    mutable VerilatedMutex m_endContextMutex;  // Protect m_endContextCbs
+    std::vector<std::pair<VoidPCb, void*>> m_endContextCbs
+        VL_GUARDED_BY(m_endContextMutex);  // Callbacks to run when context is destroyed
 
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
     // no need to be save-restored (serialized) the
@@ -871,6 +873,10 @@ public:
         return reinterpret_cast<const VerilatedContextImp*>(this);
     }
 
+    /// Add callback to run once when the context is destroyed, after final blocks and any
+    /// coverage write
+    void addEndContextCb(void (*cb)(void*), void* datap) VL_MT_SAFE_EXCLUDES(m_endContextMutex);
+
     // Internal: Model and thread setup
     void addModel(VerilatedModel* modelp);
     // Internal: Remove a model being destroyed
@@ -933,9 +939,6 @@ public:
     // Internal: Serialization setup
     static constexpr size_t serialized1Size() VL_PURE { return sizeof(m_s); }
     void* serialized1Ptr() VL_MT_UNSAFE { return &m_s; }
-
-    // Internal: trace registration
-    void traceBaseModelCbAdd(traceBaseModelCb_t cb) VL_MT_SAFE;
 
     // Internal: Check magic number
     static void checkMagic(const VerilatedContext* contextp);

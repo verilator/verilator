@@ -4,6 +4,10 @@
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+// verilog_format: on
+
 module t(
     input clk
   );
@@ -72,6 +76,18 @@ module Test(/*AUTOARG*/
   //
   // Change the code in the t module to apply values to the inputs and
   // merge the output values into the result vector.
+
+  class C #(type T);
+    static function C#(T) f();
+       C #(T) c = new();
+       return c;
+    endfunction
+  endclass
+
+  initial begin
+    static C#(int) c = C#(int)::f();
+    if (c == null) `stop;
+  end
 
   input clk;
   input [31:0] in;
