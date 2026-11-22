@@ -260,6 +260,51 @@ module t;
     `checkh(df.fixed[3], 7'h55);
   end
 
+  // Elements of associative array members that are forced
+  typedef struct {
+    logic [6:0] aa[int];
+    elem_t ae[string];
+    logic flag;
+  } assoc_t;
+  assoc_t sa;
+  logic [6:0] vaa[int];
+  elem_t vae[string];
+  initial begin
+    int i;
+    sa.aa[2] = 7'h12;
+    sa.aa[3] = 7'h13;
+    sa.ae["k"].arr[2] = 7'h22;
+    sa.ae["k"].arr[3] = 7'h23;
+    vaa[2] = 7'h42;
+    vaa[3] = 7'h43;
+    vae["k"].arr[2] = 7'h52;
+    vae["k"].arr[3] = 7'h53;
+    force sa.aa = vaa;
+    force sa.ae = vae;
+    for (i = 2; i <= 3; ++i) begin
+      #1;
+      `checkh(sa.aa[i], 7'h40 + 7'(i));
+      `checkh(sa.ae["k"].arr[i], 7'h50 + 7'(i));
+    end
+    `checkh(sa.aa[3], 7'h43);
+    `checkh(sa.ae["k"].arr[3], 7'h53);
+    sa.aa[3] = 7'h15;
+    sa.ae["k"].arr[3] = 7'h25;
+    #1;
+    `checkh(sa.aa[3], 7'h43);
+    `checkh(sa.ae["k"].arr[3], 7'h53);
+    release sa.aa;
+    release sa.ae;
+    #1;
+    `checkh(sa.aa[3], 7'h43);
+    `checkh(sa.ae["k"].arr[3], 7'h53);
+    sa.aa[3] = 7'h16;
+    sa.ae["k"].arr[3] = 7'h26;
+    #1;
+    `checkh(sa.aa[3], 7'h16);
+    `checkh(sa.ae["k"].arr[3], 7'h26);
+  end
+
   typedef struct {
     logic [6:0] m[3:1];
     logic [4:0] m2[1:2][5:3];

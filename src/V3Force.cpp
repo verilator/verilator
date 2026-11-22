@@ -320,8 +320,9 @@ public:
         return forceps;
     }
 
+    // Not a select of an associative array: its elements cannot be forced, the array can
     static bool isOpaquePathSelector(const AstNode* nodep) {
-        return VN_IS(nodep, Sel) || VN_IS(nodep, NodeSel) || VN_IS(nodep, StructSel);
+        return VN_IS(nodep, Sel) || VN_IS(nodep, ArraySel) || VN_IS(nodep, StructSel);
     }
 
     static bool isOutermostOpaquePathSelector(const AstNode* nodep) {
