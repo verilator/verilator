@@ -88,8 +88,8 @@ public:
         // Keys of the forced paths with an array select
         std::unordered_set<string> m_forcedArrayPaths;
         std::unordered_set<string> m_aboveForcedArrays;  // Keys of the paths those are below
-        // Target in a force statement and index of each forced path.  Sorted, so a path
-        // precedes the paths below it
+        // Copy of the target of a force statement and index of each forced path, deleted by
+        // ~ForceState.  Sorted, so a path precedes the paths below it
         std::map<string, std::pair<AstNodeExpr*, int>> m_forcedPaths;
 
     private:
@@ -135,7 +135,9 @@ public:
         }
 
         void addForcedPath(AstNodeExpr* nodep, int index) {
-            m_forcedPaths.emplace(forcePathKey(nodep), std::make_pair(nodep, index));
+            std::pair<AstNodeExpr*, int>& pathr = m_forcedPaths[forcePathKey(nodep)];
+            // A copy, as a force statement is deleted once converted
+            if (!pathr.first) pathr = {nodep->cloneTreePure(false), index};
         }
 
         // Force targets of the forced paths below the path, with their indices, each before
@@ -238,6 +240,11 @@ public:
         , m_doingAssign{doingAssign}
         , m_permanentlyProtected{permanentlyProtected}
         , m_forceRdUpdateBuilt{forceRdUpdateBuilt} {}
+    ~ForceState() {
+        for (const VarForceInfo& info : m_varInfos) {
+            for (const auto& it : info.m_forcedPaths) it.second.first->deleteTree();
+        }
+    }
     VL_UNCOPYABLE(ForceState);
 
     // STATIC METHODS
@@ -1790,11 +1797,13 @@ static void forceAllImpl(AstNetlist* nodep, ForceState::ForceHelperVarsByVar& he
                          ForceState::BuiltVarScopeSet& forceRdUpdateBuilt) {
     UINFO(2, __FUNCTION__ << ":\n");
     if (!v3Global.hasForceableSignals()) return;
-    ForceState state{false, helperVars, permanentlyProtected, forceRdUpdateBuilt};
-    { ForceDiscoveryVisitor{nodep, state}; }
-    state.finalizeRhsVars();
-    { ForceConvertVisitor{nodep, state}; }
-    { ForceReplaceVisitor{nodep, state}; }
+    {
+        ForceState state{false, helperVars, permanentlyProtected, forceRdUpdateBuilt};
+        { ForceDiscoveryVisitor{nodep, state}; }
+        state.finalizeRhsVars();
+        { ForceConvertVisitor{nodep, state}; }
+        { ForceReplaceVisitor{nodep, state}; }
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("force", 0, dumpTreeEitherLevel() >= 3);
 }
 
@@ -1829,11 +1838,13 @@ static void assignAllImpl(AstNetlist* nodep, ForceState::ForceHelperVarsByVar& h
             new AstRelease{deassignp->fileline(), deassignp->lhsp()->cloneTreePure(true)});
         VL_DO_DANGLING(deassignp->deleteTree(), deassignp);
     }
-    ForceState state{true, helperVars, permanentlyProtected, forceRdUpdateBuilt};
-    { ForceDiscoveryVisitor{nodep, state}; }
-    state.finalizeRhsVars();
-    { ForceConvertVisitor{nodep, state}; }
-    { ForceReplaceVisitor{nodep, state}; }
+    {
+        ForceState state{true, helperVars, permanentlyProtected, forceRdUpdateBuilt};
+        { ForceDiscoveryVisitor{nodep, state}; }
+        state.finalizeRhsVars();
+        { ForceConvertVisitor{nodep, state}; }
+        { ForceReplaceVisitor{nodep, state}; }
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("assign-deassign", 0, dumpTreeEitherLevel() >= 3);
 }
 
