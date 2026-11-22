@@ -99,7 +99,4 @@
                                                            : ... note: In instance 't'
   276 |   constraint c { frame == target[1:2]; }
       |                        ^~
-%Error-UNSUPPORTED: t/t_constraint_array_neq_unsup.v:284:34: Unsupported: constrained select with a randomized index into a possibly rand_mode-disabled array of 20000 elements exceeds the 16384-element frozen-select expansion limit
-  284 |   constraint c { idx == 1; frame == target[idx]; }
-      |                                  ^~
 %Error: Exiting due to

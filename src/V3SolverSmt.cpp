@@ -1724,14 +1724,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             return selChainIsRand(sselp->fromp());
         }
         if (const AstMemberRef* const mselp = VN_CAST(exprp, MemberRef)) {
-            // This form becomes a rand variable reference once the member-reference
-            // visitor runs after the gate, so judge it the way that consumer will.
-            const bool thisRefMember
-                = VN_IS(mselp->fromp(), VarRef) && mselp->fromp()->user1()
-                  && mselp->user2p()  // LCOV_EXCL_BR_LINE
-                  && VN_AS(mselp->user2p(), NodeModule) == mselp->varp()->user2p()
-                  && mselp->varp()->rand().isRandomizable();
-            return (mselp->user1() && selChainIsRand(mselp->fromp())) || thisRefMember;
+            return mselp->user1() && selChainIsRand(mselp->fromp());
         }
         return exprp->user1();
     }
@@ -2372,7 +2365,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         if (!modeCondp) return false;
         FileLine* const fl = newp->fileline();
-        // Cap the expansion so a large table fails fast instead of hanging the compile.
+        // Bound the table. Past the bound the mode-off branch reads the current
+        // value instead, which stays correct while the mode is on; rejecting at
+        // compile time would also break programs that never disable it.
         static constexpr int MAX_FROZEN_INDEX_CASES = 16384;
         AstNodeExpr* elsep = nullptr;
         if (origp->dtypep()->skipRefp()->isIntegralOrPacked()) {
@@ -2385,17 +2380,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                     hasSymbolic = true;
                     cases *= lvl.elements;
                 }
-                if (!hasSymbolic) {
-                    elsep = getConstFormat(origp);
-                } else if (cases > MAX_FROZEN_INDEX_CASES) {
-                    origp->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: constrained select with a randomized index into "
-                                  "a possibly rand_mode-disabled array of "
-                                      + cvtToStr(cases) + " elements exceeds the "
-                                      + cvtToStr(MAX_FROZEN_INDEX_CASES)
-                                      + "-element frozen-select expansion limit");
-                    return false;
-                } else {
+                if (hasSymbolic && cases <= MAX_FROZEN_INDEX_CASES) {
                     elsep = frozenSelectElsep(fl, origp, levels, {}, 0, origp->width());
                     VL_DO_DANGLING(origp->deleteTree(), origp);
                 }

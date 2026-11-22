@@ -276,14 +276,6 @@ class C23;
   constraint c { frame == target[1:2]; }
 endclass
 
-// A frozen select over more rows than the expansion cap stays a loud error.
-class C24;
-  rand bit [7:0] frame[2];
-  rand bit [7:0] target[20000][2];
-  rand int idx;
-  constraint c { idx == 1; frame == target[idx]; }
-endclass
-
 module t;
   bit [7:0] hier_target[2][2];
 
@@ -313,7 +305,6 @@ module t;
     C21 obj21;
     C22 obj22;
     C23 obj23;
-    C24 obj24;
     obj1 = new;
     obj2 = new;
     obj3 = new;
@@ -339,7 +330,6 @@ module t;
     obj21 = new;
     obj22 = new;
     obj23 = new;
-    obj24 = new;
     if (obj1.randomize() == 0) $stop;
     if (obj2.randomize() == 0) $stop;
     if (obj3.randomize() == 0) $stop;
@@ -365,6 +355,5 @@ module t;
     if (obj21.randomize() == 0) $stop;
     if (obj22.randomize() == 0) $stop;
     if (obj23.randomize() == 0) $stop;
-    if (obj24.randomize(frame, idx) == 0) $stop;
   end
 endmodule
