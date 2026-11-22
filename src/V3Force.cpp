@@ -377,7 +377,7 @@ public:
                                      bool requireConstRangeSelect) {
         ForceRangeInfo info;
         info.m_arrayInfo = getArraySelInfo(lhsp);
-        // Only a read may select an element with a non-constant index
+        // V3Width rejects a non-constant index of a force or release, not of a procedural assign
         for (const AstArraySel* const selp : info.m_arrayInfo.m_sels) {
             UASSERT_OBJ(VN_IS(selp->bitp(), Const), selp,
                         "Unsupported: force on non-constant array select");
