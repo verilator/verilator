@@ -429,6 +429,7 @@ module t;
   // Whole variable forced, then a member of an array element, the whole variable released
   rel_outer_t rw;
   rel_outer_t rwv;
+  rel_outer_t rwc;
   initial begin
     rwv.e[2].k = 3'h1;
     rwv.e[3].m[2] = 7'h42;
@@ -445,10 +446,17 @@ module t;
     release rw;
     #1;
     `checkh(rw.e[3].k, 3'h5);
+    // Read below the array through a copy, as a direct read is unsupported
+    rwc = rw;
+    `checkh(rwc.e[2].k, 3'h1);
+    `checkh(rwc.e[3].m[2], 7'h42);
     `checkh(rw.flag, 1'b1);
     rw.e[3].k = 3'h3;
+    rw.e[2].k = 3'h4;
     #1;
     `checkh(rw.e[3].k, 3'h3);
+    rwc = rw;
+    `checkh(rwc.e[2].k, 3'h4);
     `checkh(rw.flag, 1'b1);
   end
 
