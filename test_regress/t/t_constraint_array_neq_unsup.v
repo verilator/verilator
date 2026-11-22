@@ -276,20 +276,12 @@ class C23;
   constraint c { frame == target[1:2]; }
 endclass
 
-// A rand array that has rand_mode() called on it is read like a non-random one
+// A frozen select over more rows than the expansion cap stays a loud error.
 class C24;
   rand bit [7:0] frame[2];
-  rand bit [7:0] target[2][2];
+  rand bit [7:0] target[20000][2];
   rand int idx;
   constraint c { idx == 1; frame == target[idx]; }
-endclass
-
-// Same, with the rand_mode() array on the left
-class C25;
-  rand bit [7:0] frame[2];
-  rand bit [7:0] target[2][2];
-  rand int idx;
-  constraint c { idx == 1; target[idx] == frame; }
 endclass
 
 module t;
@@ -322,7 +314,6 @@ module t;
     C22 obj22;
     C23 obj23;
     C24 obj24;
-    C25 obj25;
     obj1 = new;
     obj2 = new;
     obj3 = new;
@@ -349,9 +340,6 @@ module t;
     obj22 = new;
     obj23 = new;
     obj24 = new;
-    obj24.target.rand_mode(0);
-    obj25 = new;
-    obj25.target.rand_mode(0);
     if (obj1.randomize() == 0) $stop;
     if (obj2.randomize() == 0) $stop;
     if (obj3.randomize() == 0) $stop;
@@ -377,7 +365,6 @@ module t;
     if (obj21.randomize() == 0) $stop;
     if (obj22.randomize() == 0) $stop;
     if (obj23.randomize() == 0) $stop;
-    if (obj24.randomize() == 0) $stop;
-    if (obj25.randomize() == 0) $stop;
+    if (obj24.randomize(frame, idx) == 0) $stop;
   end
 endmodule

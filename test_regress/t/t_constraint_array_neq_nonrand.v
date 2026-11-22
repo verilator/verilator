@@ -427,6 +427,167 @@ class inline_target;
   rand bit [1:0] frame[3];
 endclass
 
+// A rand-indexed row of an array excluded from randomize(args): the index
+// must stay symbolic over the frozen rows, not freeze at its pre-solve value.
+class frame_arg_excluded_randidx;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[2][2];
+  rand int idx;
+  constraint c { idx == 1; frame == target[idx]; }
+  function new();
+    target[0][0] = 8'h12; target[0][1] = 8'h34;
+    target[1][0] = 8'hab; target[1][1] = 8'hcd;
+    idx = 0;
+  endfunction
+endclass
+
+// The same row compare with target frozen by rand_mode(0) directly, from
+// either side. A rand_mode(0) call elsewhere must not stop an enabled object
+// from solving it as an ordinary rand compare.
+class frame_randmode_off_randidx;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[2][2];
+  rand int idx;
+  constraint c { idx == 1; frame == target[idx]; }
+  function new();
+    target[0][0] = 8'h12; target[0][1] = 8'h34;
+    target[1][0] = 8'hab; target[1][1] = 8'hcd;
+    idx = 0;
+  endfunction
+endclass
+
+class frame_randmode_off_randidx_lhs;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[2][2];
+  rand int idx;
+  constraint c { idx == 1; target[idx] != frame; frame[1] == target[idx][1]; }
+  function new();
+    target[0][0] = 8'h12; target[0][1] = 8'h34;
+    target[1][0] = 8'hab; target[1][1] = 8'hcd;
+    idx = 0;
+  endfunction
+endclass
+
+// Same, but frozen via rand_mode(0) through a base-class handle instead.
+class rmode_off_base;
+  rand bit dummy;
+endclass
+
+class frame_randmode_off_base extends rmode_off_base;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[2][2];
+  rand int idx;
+  constraint c { idx == 1; frame == target[idx]; }
+  function new();
+    target[0][0] = 8'h12; target[0][1] = 8'h34;
+    target[1][0] = 8'hab; target[1][1] = 8'hcd;
+    idx = 0;
+  endfunction
+endclass
+
+// Same shape, but the index itself is excluded: the frozen index value
+// selects the row.
+class frame_arg_excluded_index;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[2][2];
+  rand int idx;
+  constraint c { frame == target[idx]; }
+  function new();
+    target[0][0] = 8'h12; target[0][1] = 8'h34;
+    target[1][0] = 8'hab; target[1][1] = 8'hcd;
+    idx = 1;
+  endfunction
+endclass
+
+// An out-of-range index wraps the same way in both mode branches, so it
+// reads row 1 over a [0:1] table when the index solves to 5.
+class frame_frozen_oob_wrap;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[2][2];
+  rand int idx;
+  constraint c { idx == 5; frame == target[idx]; }
+  function new();
+    target[0][0] = 8'h12; target[0][1] = 8'h34;
+    target[1][0] = 8'hab; target[1][1] = 8'hcd;
+  endfunction
+endclass
+
+// Two symbolic indices over a frozen cube stay symbolic together.
+class frame_frozen_multi_idx;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] cube[2][2][2];
+  rand int i;
+  rand int j;
+  constraint c { i == 1; j == 0; frame == cube[i][j]; }
+  function new();
+    cube[0][0] = '{8'h00, 8'h01};
+    cube[0][1] = '{8'h02, 8'h03};
+    cube[1][0] = '{8'h10, 8'h11};
+    cube[1][1] = '{8'h12, 8'h13};
+  endfunction
+endclass
+
+// Nonzero-based frozen tables enumerate storage positions, so direction
+// and sign of the declared range must not matter.
+class frame_frozen_nzbase;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[1:2][0:1];
+  rand int idx;
+  constraint c { idx == 2; frame == target[idx]; }
+  function new();
+    target[1] = '{8'h11, 8'h22};
+    target[2] = '{8'h33, 8'h44};
+  endfunction
+endclass
+
+class frame_frozen_negbase;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[-1:0][0:1];
+  rand int idx;
+  constraint c { idx == -1; frame == target[idx]; }
+  function new();
+    target[-1] = '{8'h55, 8'h66};
+    target[0] = '{8'h77, 8'h88};
+  endfunction
+endclass
+
+class frame_frozen_desc;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[2:1][0:1];
+  rand int idx;
+  constraint c { idx == 1; frame == target[idx]; }
+  function new();
+    target[2] = '{8'h11, 8'h22};
+    target[1] = '{8'h33, 8'h44};
+  endfunction
+endclass
+
+class frame_frozen_descneg;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[0:-1][0:1];
+  rand int idx;
+  constraint c { idx == -1; frame == target[idx]; }
+  function new();
+    target[0] = '{8'h55, 8'h66};
+    target[-1] = '{8'h77, 8'h88};
+  endfunction
+endclass
+
+// A 64-bit index exercises the wide-literal path of the frozen rendering.
+/* verilator lint_off WIDTHTRUNC */
+class frame_frozen_wide_idx;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[2][2];
+  rand longint idx;
+  constraint c { idx == 1; frame == target[idx]; }
+  function new();
+    target[0][0] = 8'h12; target[0][1] = 8'h34;
+    target[1][0] = 8'hab; target[1][1] = 8'hcd;
+    idx = 0;
+  endfunction
+endclass
+/* verilator lint_on WIDTHTRUNC */
+
 module t;
   initial begin
     frame_bothrand bothrand_obj;
@@ -461,6 +622,21 @@ module t;
     inline_target inline_obj;
     rr_queues rrq_obj;
     rr_fixed_of_queues rrfq_obj;
+    frame_arg_excluded_randidx argexcl_obj;
+    frame_randmode_off_randidx rmodeidx_obj;
+    frame_randmode_off_randidx rmodeidx_on_obj;
+    frame_randmode_off_randidx rmodeidx_toggled_obj;
+    frame_randmode_off_randidx_lhs rmodeidx_lhs_obj;
+    frame_randmode_off_base rmodeoff_obj;
+    rmode_off_base rmodeoff_bobj;
+    frame_arg_excluded_index argexclidx_obj;
+    frame_frozen_oob_wrap oobwrap_obj;
+    frame_frozen_multi_idx multiidx_obj;
+    frame_frozen_nzbase fznz_obj;
+    frame_frozen_negbase fzneg_obj;
+    frame_frozen_desc fzdesc_obj;
+    frame_frozen_descneg fzdescneg_obj;
+    frame_frozen_wide_idx fzwide_obj;
     bit [7:0] prev[4][4];
     bit [7:0] prev_cube1[2][2];
     int randomize_result;
@@ -789,6 +965,101 @@ module t;
                                                        frame[2] == local_target[2]; };
       `checkd(randomize_result, 0);
     end
+
+    argexcl_obj = new;
+    randomize_result = argexcl_obj.randomize(frame, idx);
+    `checkd(randomize_result, 1);
+    `checkd(argexcl_obj.idx, 1);
+    `checkd(argexcl_obj.frame == argexcl_obj.target[argexcl_obj.idx], 1);
+
+    rmodeidx_obj = new;
+    rmodeidx_on_obj = new;
+    rmodeidx_toggled_obj = new;
+    rmodeidx_obj.target.rand_mode(0);
+    rmodeidx_toggled_obj.target.rand_mode(0);
+    rmodeidx_toggled_obj.target.rand_mode(1);
+    randomize_result = rmodeidx_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(rmodeidx_obj.idx, 1);
+    `checkd(rmodeidx_obj.target[1][0], 8'hab);
+    `checkd(rmodeidx_obj.target[1][1], 8'hcd);
+    `checkd(rmodeidx_obj.frame == rmodeidx_obj.target[rmodeidx_obj.idx], 1);
+    randomize_result = rmodeidx_on_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(rmodeidx_on_obj.idx, 1);
+    `checkd(rmodeidx_on_obj.frame == rmodeidx_on_obj.target[rmodeidx_on_obj.idx], 1);
+    randomize_result = rmodeidx_toggled_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(rmodeidx_toggled_obj.idx, 1);
+    `checkd(rmodeidx_toggled_obj.frame
+            == rmodeidx_toggled_obj.target[rmodeidx_toggled_obj.idx], 1);
+
+    rmodeidx_lhs_obj = new;
+    rmodeidx_lhs_obj.target.rand_mode(0);
+    randomize_result = rmodeidx_lhs_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(rmodeidx_lhs_obj.idx, 1);
+    `checkd(rmodeidx_lhs_obj.target[1][0], 8'hab);
+    `checkd(rmodeidx_lhs_obj.frame[1], 8'hcd);
+    `checkd(rmodeidx_lhs_obj.frame[0] != 8'hab, 1);
+
+    rmodeoff_obj = new;
+    rmodeoff_bobj = rmodeoff_obj;
+    rmodeoff_bobj.rand_mode(0);
+    rmodeoff_obj.frame.rand_mode(1);
+    rmodeoff_obj.idx.rand_mode(1);
+    `checkd(rmodeoff_obj.target.rand_mode(), 0);
+    randomize_result = rmodeoff_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(rmodeoff_obj.idx, 1);
+    `checkd(rmodeoff_obj.target[0][0], 8'h12);
+    `checkd(rmodeoff_obj.target[0][1], 8'h34);
+    `checkd(rmodeoff_obj.target[1][0], 8'hab);
+    `checkd(rmodeoff_obj.target[1][1], 8'hcd);
+    `checkd(rmodeoff_obj.frame == rmodeoff_obj.target[rmodeoff_obj.idx], 1);
+
+    argexclidx_obj = new;
+    randomize_result = argexclidx_obj.randomize(frame);
+    `checkd(randomize_result, 1);
+    `checkd(argexclidx_obj.frame == argexclidx_obj.target[1], 1);
+
+    oobwrap_obj = new;
+    randomize_result = oobwrap_obj.randomize(frame, idx);
+    `checkd(randomize_result, 1);
+    `checkd(oobwrap_obj.frame == oobwrap_obj.target[1], 1);
+
+    multiidx_obj = new;
+    randomize_result = multiidx_obj.randomize(frame, i, j);
+    `checkd(randomize_result, 1);
+    `checkd(multiidx_obj.frame == multiidx_obj.cube[1][0], 1);
+
+    fznz_obj = new;
+    randomize_result = fznz_obj.randomize(frame, idx);
+    `checkd(randomize_result, 1);
+    `checkd(fznz_obj.frame == fznz_obj.target[2], 1);
+
+    fzneg_obj = new;
+    randomize_result = fzneg_obj.randomize(frame, idx);
+    `checkd(randomize_result, 1);
+    `checkd(fzneg_obj.frame == fzneg_obj.target[-1], 1);
+
+    fzdesc_obj = new;
+    randomize_result = fzdesc_obj.randomize(frame, idx);
+    `checkd(randomize_result, 1);
+    `checkd(fzdesc_obj.frame == fzdesc_obj.target[1], 1);
+
+    fzdescneg_obj = new;
+    randomize_result = fzdescneg_obj.randomize(frame, idx);
+    `checkd(randomize_result, 1);
+    `checkd(fzdescneg_obj.frame == fzdescneg_obj.target[-1], 1);
+
+    /* verilator lint_off WIDTHTRUNC */
+    fzwide_obj = new;
+    randomize_result = fzwide_obj.randomize(frame, idx);
+    `checkd(randomize_result, 1);
+    `checkd(fzwide_obj.idx, 1);
+    `checkd(fzwide_obj.frame == fzwide_obj.target[fzwide_obj.idx], 1);
+    /* verilator lint_on WIDTHTRUNC */
 
     $write("*-* All Finished *-*\n");
     $finish;

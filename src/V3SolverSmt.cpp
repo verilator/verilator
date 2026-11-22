@@ -1905,17 +1905,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                 discardUnsupportedCompare(nodep);
                 return;
             }
-            const auto modeMayDisable = [](const AstVar* varp) {
-                return RandomizeMode{.asUQuad = varp->user1()}.modeMayDisable;
-            };
-            if (((!lhsIsRand || modeMayDisable(lhsRootVarp))
-                 && selChainHasRandIndex(nodep->lhsp()))
-                || ((!rhsIsRand || modeMayDisable(rhsRootVarp))
-                    && selChainHasRandIndex(nodep->rhsp()))) {
+            if ((!lhsIsRand && selChainHasRandIndex(nodep->lhsp()))
+                || (!rhsIsRand && selChainHasRandIndex(nodep->rhsp()))) {
                 nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: array comparison in constraint against an operand "
-                              "indexed by a random variable, from an array that is non-random "
-                              "or has rand_mode() called on it");
+                              "Unsupported: array comparison in constraint against a "
+                              "non-random operand indexed by a random variable");
                 discardUnsupportedCompare(nodep);
                 return;
             }
@@ -2141,12 +2135,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // which can be over-marked in sum/with expansion contexts). A
         // std::randomize() with-clause argument carries no rand qualifier of
         // its own but is still part of the solve.
-        bool indexIsRand = false;
-        nodep->bitp()->foreach([&](const AstNodeVarRef* vrefp) {
-            if (vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg()) {
-                indexIsRand = true;
-            }
-        });
+        const bool indexIsRand = selectIndexIsRand(nodep->bitp());
         if (m_nestedAccessp) {
             AstNodeExpr* const bitp = nodep->bitp()->cloneTreePure(false);
             AstNodeExpr* const bitFormatp
@@ -2207,6 +2196,114 @@ class ConstraintExprVisitor final : public VNVisitor {
         const AstClass* const classp = VN_CAST(varp->user2p(), Class);
         return classp && classp->user2p() == varp;
     }
+    // An index counts as symbolic when it names a declaration-rand variable,
+    // so both branches of a mode gate agree on which indices stay symbolic.
+    static bool selectIndexIsRand(AstNodeExpr* bitp) {
+        bool rand = false;
+        bitp->foreach([&](const AstNodeVarRef* vrefp) {
+            if (vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg()) {
+                rand = true;
+            }
+        });
+        return rand;
+    }
+    // One ArraySel level of a frozen select chain, outermost first.
+    struct FrozenSelectLevel {
+        AstNodeExpr* idxEmissionp = nullptr;  // Formatted index from its frame
+        int elements = 0;  // Storage positions to enumerate
+        int emitWidth = 32;  // SMT width of the formatted index
+        bool symbolic = false;
+    };
+    // Pair each ArraySel level of a pre-edit chain with the formatted index
+    // from its frame. Anything else (or a frame mismatch) declines, keeping
+    // the current C++ value.
+    static bool collectFrozenLevels(AstNodeExpr* origp, const std::vector<AstSFormatF*>& frames,
+                                    std::vector<FrozenSelectLevel>& levels) {
+        AstNodeExpr* curp = origp;
+        size_t fi = 0;
+        while (AstArraySel* const selp = VN_CAST(curp, ArraySel)) {
+            if (fi >= frames.size() || frames[fi]->name() != "(select %s %s)") return false;
+            const AstUnpackArrayDType* const arrDtp
+                = VN_CAST(selp->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+            if (!arrDtp) return false;
+            AstNodeExpr* const idxEmissionp
+                = frames[fi]->exprsp() ? VN_CAST(frames[fi]->exprsp()->nextp(), NodeExpr)
+                                       : nullptr;
+            const bool symbolic = selectIndexIsRand(selp->bitp());
+            const int emitWidth = std::max(32, selp->bitp()->width());
+            // Formatted select frames always carry the index.
+            if (symbolic && !idxEmissionp) return false;  // LCOV_EXCL_LINE
+            if (symbolic && emitWidth % 4 != 0) return false;
+            // Width processing rewrites the index to a storage position,
+            // so enumerate storage, not declared values.
+            levels.push_back({idxEmissionp, arrDtp->elementsConst(), emitWidth, symbolic});
+            curp = selp->fromp();
+            ++fi;
+        }
+        return fi == frames.size();
+    }
+    // Fixed-width SMT bitvector literal, two's complement for negatives.
+    static std::string smtHexConst(int value, int width) {
+        char buf[32];
+        const uint64_t mask = (width >= 64) ? ~0ULL : ((1ULL << width) - 1);
+        snprintf(buf, sizeof(buf), "#x%0*llx", width / 4,
+                 static_cast<unsigned long long>(static_cast<uint64_t>(value) & mask));
+        return buf;
+    }
+    // Render the mode-off value of a frozen select chain: indices that stay
+    // symbolic in the mode-on branch select over C++-read elements instead
+    // of being C++-evaluated at their stale pre-solve values.
+    AstNodeExpr* frozenSelectElsep(FileLine* fl, AstNodeExpr* origp,
+                                   const std::vector<FrozenSelectLevel>& levels,
+                                   const std::vector<std::pair<size_t, int>>& subst, size_t j,
+                                   int elemWidth) {
+        size_t k = j;
+        while (k < levels.size() && !levels[k].symbolic) ++k;
+        if (k == levels.size()) {
+            AstNodeExpr* const leafp = origp->cloneTree(false);
+            AstNodeExpr* curp = leafp;
+            size_t si = 0;
+            for (const auto& binding : subst) {
+                while (si < binding.first) {
+                    curp = VN_AS(curp, ArraySel)->fromp();
+                    ++si;
+                }
+                AstArraySel* const selp = VN_AS(curp, ArraySel);
+                VNRelinker handle;
+                AstNodeExpr* const bitp = selp->bitp()->unlinkFrBack(&handle);
+                AstConst* const constp = new AstConst{fl, AstConst::WidthedValue{}, 32,
+                                                      static_cast<uint32_t>(binding.second)};
+                constp->dtypeFrom(bitp);
+                handle.relink(constp);
+                VL_DO_DANGLING(bitp->deleteTree(), bitp);
+                curp = selp->fromp();
+                ++si;
+            }
+            AstSFormatF* const formatp = getConstFormat(leafp);
+            formatp->user1(true);
+            return formatp;
+        }
+        const FrozenSelectLevel& lvl = levels[k];
+        AstSFormatF* elsep
+            = getConstFormat(new AstConst{fl, AstConst::WidthedValue{}, elemWidth, 0});
+        elsep->user1(true);
+        for (int v = lvl.elements - 1; v >= 0; --v) {
+            std::vector<std::pair<size_t, int>> deeper = subst;
+            deeper.emplace_back(k, v);
+            AstNodeExpr* const thenp
+                = frozenSelectElsep(fl, origp, levels, deeper, k + 1, elemWidth);
+            AstNodeExpr* const condp
+                = new AstSFormatF{fl, "(= %s " + smtHexConst(v, lvl.emitWidth) + ")", false,
+                                  lvl.idxEmissionp->cloneTree(false)};
+            condp->user1(true);
+            AstSFormatF* const itep
+                = new AstSFormatF{fl, "(ite %s %s %s)", false,
+                                  AstNode::addNext(condp, AstNode::addNext(thenp, elsep))};
+            itep->user1(true);
+            elsep = itep;
+        }
+        return elsep;
+    }
     // Lift a rand_mode Cond above the (select ...) chain of a frozen array element.
     bool hoistRandModeOverSelectAndMember(AstSFormatF* newp, AstNodeExpr* origp) {
         if (m_deferRandModeHoist) return false;
@@ -2229,6 +2326,36 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         if (!modeCondp) return false;
         FileLine* const fl = newp->fileline();
+        // Cap the expansion so a large table fails fast instead of hanging the compile.
+        static constexpr int MAX_FROZEN_INDEX_CASES = 16384;
+        AstNodeExpr* elsep = nullptr;
+        if (origp->dtypep()->skipRefp()->isIntegralOrPacked()) {
+            std::vector<FrozenSelectLevel> levels;
+            if (collectFrozenLevels(origp, frames, levels)) {
+                int64_t cases = 1;
+                bool hasSymbolic = false;
+                for (const auto& lvl : levels) {
+                    if (!lvl.symbolic) continue;
+                    hasSymbolic = true;
+                    cases *= lvl.elements;
+                }
+                if (!hasSymbolic) {
+                    elsep = getConstFormat(origp);
+                } else if (cases > MAX_FROZEN_INDEX_CASES) {
+                    origp->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: constrained select with a randomized index into "
+                                  "a possibly rand_mode-disabled array of "
+                                      + cvtToStr(cases) + " elements exceeds the "
+                                      + cvtToStr(MAX_FROZEN_INDEX_CASES)
+                                      + "-element frozen-select expansion limit");
+                    return false;
+                } else {
+                    elsep = frozenSelectElsep(fl, origp, levels, {}, 0, origp->width());
+                    VL_DO_DANGLING(origp->deleteTree(), origp);
+                }
+            }
+        }
+        if (!elsep) elsep = getConstFormat(origp);
         AstNodeExpr* const modep = modeCondp->condp()->unlinkFrBack();
         AstNodeExpr* activep = modeCondp->thenp()->unlinkFrBack();
         // Rebuild the select chain text around the SMT name, innermost first
@@ -2238,7 +2365,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             activep = new AstSFormatF{fl, (*it)->name(), false,
                                       AstNode::addNext(activep, remainingArgsp)};
         }
-        AstCond* const hoistp = new AstCond{fl, modep, activep, getConstFormat(origp)};
+        AstCond* const hoistp = new AstCond{fl, modep, activep, elsep};
         hoistp->user1(true);  // Mark as formatted
         newp->replaceWith(hoistp);
         VL_DO_DANGLING(pushDeletep(newp), newp);
