@@ -1,0 +1,67 @@
+%Error-HIERPARAM: t/t_gen_samename_param_bad.v:56:14: Parameter values cannot use hierarchical values (IEEE 1800-2023 6.20.2)
+                                                    : ... note: In instance 't.u_r1'
+   56 |   sub #(.W(g.x)) s_var ();
+      |              ^
+                  ... For error description see https://verilator.org/warn/HIERPARAM?v=latest
+%Error-HIERPARAM: t/t_gen_samename_param_bad.v:57:19: Parameter values cannot use hierarchical values (IEEE 1800-2023 6.20.2)
+                                                    : ... note: In instance 't.u_r1'
+   57 |   sub #(.T(type(g.x))) s_type ();
+      |                   ^
+%Error: t/t_gen_samename_param_bad.v:59:14: Parameter values cannot call hierarchical functions (IEEE 1800-2023 6.20.2)
+                                          : ... note: In instance 't.u_r1'
+   59 |   sub #(.W(g.f())) s_func ();
+      |              ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_gen_samename_param_bad.v:65:24: Parameter-resolved constants must not use dotted references: 'A'
+                                          : ... note: In instance 't.u_r1'
+   65 |   localparam int L = g.A;
+      |                        ^
+%Error: t/t_gen_samename_param_bad.v:66:23: Parameter-resolved constants must not use dotted references: 'x'
+                                          : ... note: In instance 't.u_r1'
+   66 |   bus_if #(.W($bits(g.x))) i_bits ();
+      |                       ^
+%Error: t/t_gen_samename_param_bad.v:67:17: Parameter-resolved constants must not use dotted references: 'A'
+                                          : ... note: In instance 't.u_r1'
+   67 |   bus_if #(.W(g.A)) i_enum ();
+      |                 ^
+%Error: t/t_gen_samename_param_bad.v:68:17: Parameter values cannot call hierarchical functions (IEEE 1800-2023 6.20.2)
+                                          : ... note: In instance 't.u_r1'
+   68 |   bus_if #(.W(g.f())) i_func ();
+      |                 ^
+%Error: t/t_gen_samename_param_bad.v:55:20: Parameter-resolved constants must not use dotted references: 'x'
+                                          : ... note: In instance 't.u_r1'
+   55 |   sub #(.W($bits(g.x))) s_bits ();
+      |                    ^
+%Error: t/t_gen_samename_param_bad.v:56:14: Parameter-resolved constants must not use dotted references: 'x'
+                                          : ... note: In instance 't.u_r1'
+   56 |   sub #(.W(g.x)) s_var ();
+      |              ^
+%Error: t/t_gen_samename_param_bad.v:57:19: Parameter-resolved constants must not use dotted references: 'x'
+                                          : ... note: In instance 't.u_r1'
+   57 |   sub #(.T(type(g.x))) s_type ();
+      |                   ^
+%Error: t/t_gen_samename_param_bad.v:58:14: Parameter-resolved constants must not use dotted references: 'A'
+                                          : ... note: In instance 't.u_r1'
+   58 |   sub #(.W(g.A)) s_enum ();
+      |              ^
+%Error: t/t_gen_samename_param_bad.v:60:27: Parameter-resolved constants must not use dotted references: 'only_a'
+                                          : ... note: In instance 't.u_r1'
+   60 |   sub #(.W($bits(g.u_core.only_a))) s_core ();
+      |                           ^~~~~~
+%Error: t/t_gen_samename_param_bad.v:62:32: Parameter-resolved constants must not use dotted references: 'x'
+                                          : ... note: In instance 't.u_r1'
+   62 |   defparam s_dbits.W = $bits(g.x);
+      |                                ^
+%Error: t/t_gen_samename_param_bad.v:64:26: Parameter-resolved constants must not use dotted references: 'A'
+                                          : ... note: In instance 't.u_r1'
+   64 |   defparam s_denum.W = g.A;
+      |                          ^
+%Error: t/t_gen_samename_param_bad.v:69:15: Parameter-resolved constants must not use dotted references: 'x'
+                                          : ... note: In instance 't.u_r1'
+   69 |   C #($bits(g.x)) c_bits;
+      |               ^
+%Error: t/t_gen_samename_param_bad.v:70:32: Parameter-resolved constants must not use dotted references: 'A'
+                                          : ... note: In instance 't.u_r1'
+   70 |   initial $display("%0d", C#(g.A)::get());
+      |                                ^
+%Error: Exiting due to

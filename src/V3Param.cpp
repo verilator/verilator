@@ -3188,10 +3188,14 @@ class ParamVisitor final : public VNVisitor {
                     refp->v3warn(HIERPARAM, "Parameter values cannot use hierarchical values"
                                             " (IEEE 1800-2023 6.20.2)");
                 }
-            } else if (const AstNodeFTaskRef* const refp = VN_CAST(nodep, NodeFTaskRef)) {
+            } else if (AstNodeFTaskRef* const refp = VN_CAST(nodep, NodeFTaskRef)) {
                 if (refp->dotted() != "") {
                     refp->v3error("Parameter values cannot call hierarchical functions"
                                   " (IEEE 1800-2023 6.20.2)");
+                    // The function may be unlinked (see ParamTop), so widthing must not see it
+                    refp->replaceWith(new AstConst{refp->fileline(), AstConst::Unsized32{}, 1});
+                    VL_DO_DANGLING(pushDeletep(refp), refp);
+                    continue;
                 }
             }
             checkParamNotHierRecurse(nodep->op1p(), childUnderQuery);
@@ -3669,25 +3673,7 @@ class ParamVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstNodeFTaskRef* nodep) override {
-        if (nodep->containsGenBlock()) {
-            // Needs relink, as may remove pointed-to task/func
-            nodep->taskp(nullptr);
-            return;
-        }
-        iterateChildren(nodep);
-    }
-    void visit(AstEnumItemRef* nodep) override {
-        // Needs relink, as may remove pointed-to item
-        if (nodep->containsGenBlock()) nodep->itemp(nullptr);
-        iterateChildren(nodep);
-    }
     void visit(AstVarXRef* nodep) override {
-        if (nodep->containsGenBlock()) {
-            // Needs relink, as may remove pointed-to var
-            nodep->varp(nullptr);
-            return;
-        }
         // Parameters of an interface array are accessed through its first element
         if (nodep->varp() && nodep->varp()->isParam()) {
             const auto it = m_ifaceInstCells.find(nodep->dotted());
@@ -4058,6 +4044,17 @@ class ParamTop final : VNDeleter {
 public:
     // CONSTRUCTORS
     explicit ParamTop(AstNetlist* netlistp) {
+        // Generate if/case folding deletes the losing alternatives, so unlink every reference
+        // that may point into one before any is deleted. V3LinkDot relinks them after.
+        netlistp->foreach([](AstNodeExpr* nodep) {
+            if (AstVarXRef* const refp = VN_CAST(nodep, VarXRef)) {
+                if (refp->containsGenBlock()) refp->varp(nullptr);
+            } else if (AstNodeFTaskRef* const refp = VN_CAST(nodep, NodeFTaskRef)) {
+                if (refp->containsGenBlock()) refp->taskp(nullptr);
+            } else if (AstEnumItemRef* const refp = VN_CAST(nodep, EnumItemRef)) {
+                if (refp->containsGenBlock()) refp->itemp(nullptr);
+            }
+        });
         // Relies on modules already being in top-down-order
         ParamVisitor paramVisitor{m_state /*ref*/, netlistp};
 

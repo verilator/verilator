@@ -4393,6 +4393,12 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstEnumItemRef* nodep) override {
+        if (!nodep->itemp() && m_paramsOnly) {  // Hierarchical, so relinked after V3Param
+            checkConstantOrReplace(nodep, false,
+                                   "Parameter-resolved constants must not use dotted references: "
+                                       + nodep->prettyNameQ());
+            return;
+        }
         UASSERT_OBJ(nodep->itemp(), nodep, "Unlinked");
         if (!nodep->itemp()->didWidth()) {
             // We need to do the whole enum en masse

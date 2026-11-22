@@ -3473,6 +3473,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         bool m_unresolvedGenericIface;  // Unresolved generic interface, needs help from V3Param
         bool m_genBlk;  // Contains gen block reference
         bool m_genIfBlk;  // Contains generate if/case block reference, V3Param may prune
+        bool m_genAltBlk;  // Contains block of same-named generate alternatives
         AstNode* m_unlinkedScopep;  // Unresolved scope, needs corresponding VarXRef
         AstDisable* m_disablep;  // Disable statement under which the reference is
         bool m_dotErr;  // Error found in dotted resolution, ignore upwards
@@ -3491,6 +3492,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_unresolvedGenericIface = false;
             m_genBlk = false;
             m_genIfBlk = false;
+            m_genAltBlk = false;
             m_unlinkedScopep = nullptr;
             m_disablep = nullptr;
         }
@@ -3510,6 +3512,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (m_unresolvedGenericIface) sstr << "  [unrGIface]";
             if (m_genBlk) sstr << "  [genBlk]";
             if (m_genIfBlk) sstr << "  [genIfBlk]";
+            if (m_genAltBlk) sstr << "  [genAltBlk]";
             sstr << "  txt=" << m_dotText;
             return sstr.str();
         }
@@ -3679,6 +3682,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
         AstVar* const ifaceTopVarp = ifaceSymp ? VN_AS(ifaceSymp->nodep(), Var) : nullptr;
         UASSERT_OBJ(ifaceTopVarp, nodep, "Can't find interface var ref: " << findName);
         return ifaceTopVarp;
+    }
+    AstVarXRef* newIfaceXRef(FileLine* fl, AstVar* varp, const string& dotted) {
+        AstVarXRef* const refp = new AstVarXRef{fl, varp, dotted, VAccess::READ};
+        if (!m_pinp) {  // E.g. a virtual interface value, relinked after V3Param
+            refp->containsGenBlock(m_ds.m_genIfBlk);
+        } else if (m_ds.m_genAltBlk) {
+            // Only same-named alternatives, as V3Param would need to choose one first
+            refp->v3error("Interface port connection cannot use a hierarchical reference"
+                          " through a generate block (IEEE 1800-2023 25.3)");
+        }
+        return refp;
     }
     AstRSProd* findProd(AstNode* nodep, VSymEnt* parentEntp, const string& name) {
         const VSymEnt* const foundp = parentEntp->findIdFallback(name);
@@ -4949,6 +4963,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         if (VN_IS(blkp->backp(), GenIf) || VN_IS(blkp->backp(), GenCaseItem)) {
                             m_ds.m_genIfBlk = true;
                         }
+                        if (foundp->shadowedp()) m_ds.m_genAltBlk = true;
                         if (m_ds.m_disablep) {
                             m_ds.m_disablep->v3warn(
                                 E_UNSUPPORTED,
@@ -4974,8 +4989,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         UINFO(9, indent() << " cell -> iface varref " << foundp->nodep());
                         AstNodeExpr* newp;
                         if (m_ds.m_dotText != "") {
-                            newp = new AstVarXRef{nodep->fileline(), ifaceRefVarp, m_ds.m_dotText,
-                                                  VAccess::READ};
+                            newp = newIfaceXRef(nodep->fileline(), ifaceRefVarp, m_ds.m_dotText);
                             if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep) {
                                 newp = new AstUnlinkedRef{nodep->fileline(), newp, newp->name(),
                                                           m_ds.m_unlinkedScopep->unlinkFrBack()};
@@ -5161,8 +5175,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (cellScope.empty()) {
                         newp = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
                     } else {
-                        newp = new AstVarXRef{nodep->fileline(), ifaceRefVarp, cellScope,
-                                              VAccess::READ};
+                        newp = newIfaceXRef(nodep->fileline(), ifaceRefVarp, cellScope);
                     }
 
                     AstCellArrayRef* const cellarrayrefp

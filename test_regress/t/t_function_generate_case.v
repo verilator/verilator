@@ -95,6 +95,25 @@ module core_b #(
   int ev = E;
 endmodule
 
+interface bus_if #(
+    parameter int W = 1
+) (
+    input int cyc
+);
+  logic [W-1:0] d;
+  assign d = W'(cyc);
+  modport mp(input d);
+endinterface
+
+class Holder #(
+    parameter int W = 1
+);
+  virtual bus_if #(.W(W)) vif;
+  function new(virtual bus_if #(.W(W)) vif);
+    this.vif = vif;
+  endfunction
+endclass
+
 module mid #(
     parameter int R = 1
 ) (
@@ -108,6 +127,7 @@ module mid #(
     leaf #(.V(1)) u_a (.cyc);
     leaf #(.V(5)) u_arr[2] (.cyc);
     core_a u_core ();
+    bus_if #(.W(7)) bus (.cyc);
     if (R == 1) begin : h
       int h1 = 31;
     end
@@ -123,10 +143,12 @@ module mid #(
   else if (R == 2) begin : g
     leaf #(.V(6)) u_m (.cyc);
     core_b u_core ();
+    bus_if #(.W(15)) bus (.cyc);
   end
   else begin : g
     leaf #(.V(2)) u_b (.cyc);
     core_b u_core ();
+    bus_if #(.W(9)) bus (.cyc);
     if (R == 0) begin : h
       int h0 = 33;
     end
@@ -140,6 +162,16 @@ module mid #(
 
   // Applies to whichever alternative is elaborated
   defparam g.u_core.D = 50 + R;
+
+  localparam int BUS_W = R == 1 ? 7 : R == 2 ? 15 : 9;
+  virtual bus_if #(.W(BUS_W)) vif;
+  virtual bus_if #(.W(BUS_W)).mp vmp;
+  Holder #(BUS_W) holder;
+  initial begin
+    vif = g.bus;
+    vmp = g.bus.mp;
+    holder = new(g.bus);
+  end
 
   case (R)
     1: begin : c
@@ -261,6 +293,12 @@ module t;
       `checkd(u_r0.g_loc.get(), 2 * cyc + 6);
       `checkd(g_chk1.get(), cyc + 1);
       `checkd(g_chk0.get(), cyc + 2);
+      `checkd($bits(u_r1.vif.d), 7);
+      `checkd(int'(u_r1.vif.d), cyc % (1 << 7));
+      `checkd($bits(u_r2.vmp.d), 15);
+      `checkd(int'(u_r2.vmp.d), cyc % (1 << 15));
+      `checkd($bits(u_r0.holder.vif.d), 9);
+      `checkd(int'(u_r0.holder.vif.d), cyc % (1 << 9));
     end
     $write("*-* All Finished *-*\n");
     $finish;
