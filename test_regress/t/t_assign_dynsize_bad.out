@@ -291,4 +291,12 @@
                                        : ... note: In instance 't'
   241 |     force fav = 7'h55;   
       |           ^~~
+%Error: t/t_assign_dynsize_bad.v:248:12: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'fq'
+                                       : ... note: In instance 't'
+  248 |     assign fq[$] = 7'h55;   
+      |            ^~
+%Error: t/t_assign_dynsize_bad.v:249:18: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'fq'
+                                       : ... note: In instance 't'
+  249 |     assign fpr = fq[$];   
+      |                  ^~
 %Error: Exiting due to

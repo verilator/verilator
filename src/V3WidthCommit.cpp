@@ -61,7 +61,6 @@ class WidthCommitVisitor final : public VNVisitor {
     bool m_inNba = false;  // In a non-blocking assignment or event trigger
     bool m_contReads = false;  // Check read continuous automatic variables
     bool m_procCont = false;  // In a force, release or procedural continuous assignment
-    bool m_forceRelease = false;  // In a force or release statement
     bool m_dynsizedelem = false;  // Under an element of a dynamically sized variable, not itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     bool m_taskRefWarn = true;  // Allow task reference warnings
@@ -520,10 +519,8 @@ private:
         {
             VL_RESTORER(m_contNbap);
             VL_RESTORER(m_procCont);
-            VL_RESTORER(m_forceRelease);
             m_contNbap = "force statement";
             m_procCont = true;
-            m_forceRelease = true;
             iterateAndNextNull(nodep->lhsp());
         }
         editDType(nodep);
@@ -543,10 +540,8 @@ private:
     void visit(AstRelease* nodep) override {
         VL_RESTORER(m_contNbap);
         VL_RESTORER(m_procCont);
-        VL_RESTORER(m_forceRelease);
         m_contNbap = "release statement";
         m_procCont = true;
-        m_forceRelease = true;
         iterateChildren(nodep);
         editDType(nodep);
     }
@@ -621,7 +616,7 @@ private:
         VL_RESTORER(m_dynsizedelem);
         if (nodep->method() == VCMethod::ARRAY_AT || nodep->method() == VCMethod::ARRAY_AT_WRITE
             || nodep->method() == VCMethod::DYN_AT_WRITE_APPEND
-            || (m_forceRelease && nodep->method().isDynElementAccess()))
+            || (m_procCont && nodep->method().isDynElementAccess()))
             m_dynsizedelem = true;
         iterateChildren(nodep);
         editDType(nodep);

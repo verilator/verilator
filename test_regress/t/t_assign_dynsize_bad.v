@@ -240,6 +240,15 @@ module t (
     automatic logic [6:0] fav;
     force fav = 7'h55;  // Error
   end
+
+  // Also back-indexed queue elements in procedural continuous assignments
+  logic [6:0] fpr;
+  initial begin
+    // verilator lint_off IEEEMAYDEPRECATE
+    assign fq[$] = 7'h55;  // Error
+    assign fpr = fq[$];  // Error
+    // verilator lint_on IEEEMAYDEPRECATE
+  end
 endmodule
 
 interface FIfc;
