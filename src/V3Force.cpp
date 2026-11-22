@@ -170,6 +170,16 @@ public:
             }
             return false;
         }
+
+        // True if a forced path with an array select is in the union
+        bool isForcedArrayUnion(AstNodeExpr* unionp) const {
+            string key;
+            if (!buildForcePathKeyRecurse(unionp, key)) return false;
+            for (const string& forced : m_forcedArrayPaths) {
+                if (VString::startsWith(forced, key + "|")) return true;
+            }
+            return false;
+        }
     };
 
     struct ForceHelperVars final {
@@ -678,17 +688,17 @@ public:
         }
     }
 
-    // True if the path selects a member of a union
-    static bool isUnionPath(AstNodeExpr* exprp) {
-        if (const AstSel* const selp = VN_CAST(exprp, Sel)) return isUnionPath(selp->fromp());
+    // The first union from the variable that the path selects a member of, or nullptr
+    static AstNodeExpr* firstUnionp(AstNodeExpr* exprp) {
+        if (const AstSel* const selp = VN_CAST(exprp, Sel)) return firstUnionp(selp->fromp());
         if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
-            return isUnionPath(selp->fromp());
+            return firstUnionp(selp->fromp());
         }
         if (const AstStructSel* const selp = VN_CAST(exprp, StructSel)) {
-            return VN_IS(selp->fromp()->dtypep()->skipRefp(), UnionDType)
-                   || isUnionPath(selp->fromp());
+            if (AstNodeExpr* const unionp = firstUnionp(selp->fromp())) return unionp;
+            if (VN_IS(selp->fromp()->dtypep()->skipRefp(), UnionDType)) return selp->fromp();
         }
-        return false;
+        return nullptr;
     }
 
     static ArraySelInfo getArraySelInfo(AstNodeExpr* exprp) {
@@ -1708,8 +1718,9 @@ class ForceReplaceVisitor final : public VNVisitor {
     // Reading a forced array element of a struct needs its index to be constant
     static void warnNonConstArraySel(const ForceState::VarForceInfo& varInfo, AstNodeExpr* exprp) {
         if (varInfo.m_forcedArrayPaths.empty()) return;
-        // Members of a union are overlaid, so any forced array element may be the one read
-        const bool viaUnion = ForceState::isUnionPath(exprp);
+        // Members of a union are overlaid, so any forced array element in it may be the one read
+        AstNodeExpr* const unionp = ForceState::firstUnionp(exprp);
+        const bool viaUnion = unionp && varInfo.isForcedArrayUnion(unionp);
         for (const AstArraySel* const selp : ForceState::getArraySelInfo(exprp).m_sels) {
             if (VN_IS(selp->bitp(), Const)) continue;
             if (!viaUnion && !varInfo.isForcedArray(selp->fromp())) continue;

@@ -49,10 +49,21 @@ module t;
     rel_t e[2:3];
     logic flag;
   } rel_outer_t;
+  typedef struct {logic [6:0] x[3:2];} ua_t;
+  typedef struct {logic [6:0] y[3:2];} ub_t;
+  typedef union {
+    ua_t a;
+    ub_t b;
+  } u_t;
+  typedef struct {
+    u_t u;
+    ua_t e[2:1];
+  } su_t;
   st_t s;
   st_t s2;  // Only s2.flag is forced
   st_t so;  // Only so.mem is forced
   st_t sr;  // sr.mem is only released
+  su_t su;  // Only su.e is forced, outside of the union
   top_t n;
   dyn_t d;
   rel_t r;  // Released above the forced paths
@@ -148,6 +159,15 @@ module t;
     #1;
     `checkh(sr.mem[i], 8'h06);
     `checkh(sr.flag, 1'b1);
+    // Non-constant index read through a union beside the array with a forced element
+    su.u.b.y[2] = 7'h43;
+    su.u.b.y[3] = 7'h44;
+    su.e[1].x[2] = 7'h05;
+    force su.e[1].x[2] = 7'h55;
+    #1;
+    `checkh(su.u.b.y[i+1], 7'h43);
+    `checkh(su.u.b.y[i+2], 7'h44);
+    `checkh(su.e[1].x[2], 7'h55);
     // Reads through queues, associative and dynamic arrays, which cannot be forced
     d.q.push_back('{8'h11, 8'h22});
     d.aa[5][1] = 8'h33;
