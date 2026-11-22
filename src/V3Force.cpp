@@ -172,8 +172,9 @@ public:
             return buildForcePathKeyRecurse(nodep, key) && m_aboveForcedArrays.count(key);
         }
 
-        // True if a forced path is an element of the array or below one, or the array is
-        // below a forced path, so a non-constant index into it may select a forced value
+        // True if a forced path with an array select is an element of the array or below one,
+        // or is the array or above it, so a non-constant index into it may select a forced
+        // value.  Paths forced without an array select are not considered
         bool isForcedArray(AstNodeExpr* arrayp) const {
             string key;
             if (!buildForcePathKeyRecurse(arrayp, key)) return false;

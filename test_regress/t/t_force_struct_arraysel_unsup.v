@@ -52,4 +52,11 @@ module t;
     qr = get(s.arr[i].value);
     $finish;
   end
+
+  // Whole array member forced, which forces each element
+  typedef struct {logic [6:0] m[3:1];} whole_t;
+  whole_t sw;
+  logic [6:0] qw;
+  assign qw = sw.m[i];
+  initial force sw.m = '{7'h53, 7'h52, 7'h51};
 endmodule
