@@ -2241,7 +2241,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         return rand;
     }
     // One ArraySel level of a frozen select chain, outermost first.
-    struct FrozenSelectLevel {
+    struct FrozenSelectLevel final {
         AstNodeExpr* idxEmissionp = nullptr;  // Formatted index from its frame
         int elements = 0;  // Storage positions to enumerate
         int emitWidth = 32;  // SMT width of the formatted index
@@ -2279,8 +2279,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     static std::string smtHexConst(int value, int width) {
         char buf[32];
         const uint64_t mask = (width >= 64) ? ~0ULL : ((1ULL << width) - 1);
-        snprintf(buf, sizeof(buf), "#x%0*llx", width / 4,
-                 static_cast<unsigned long long>(static_cast<uint64_t>(value) & mask));
+        (void)VL_SNPRINTF(buf, sizeof(buf), "#x%0*llx", width / 4,
+                          static_cast<unsigned long long>(static_cast<uint64_t>(value) & mask));
         return buf;
     }
     // Render the mode-off value of a frozen select chain: indices that stay
