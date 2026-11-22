@@ -5,53 +5,58 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
+  // Non-constant indices of the reads
+  int i;
+  int j;
+
+  // Array of structs with a member of an element forced, read directly and through a
+  // read-write reference
   typedef struct {
-    struct {logic [7:0] value;} arr[2];
-    logic [7:0] mem[2];
-    logic [7:0] m2[2][2];
+    struct {logic [6:0] value;} arr[3:2];
     logic flag;
   } st_t;
-  typedef struct {logic [7:0] x[2];} a_t;
-  typedef struct {logic [7:0] y[2];} b_t;
+  st_t s;
+  logic [6:0] q;
+  logic [6:0] qr;
+  function automatic logic [6:0] get(ref logic [6:0] value);
+    return value;
+  endfunction
+  assign q = s.arr[i].value;
+  initial begin
+    force s.arr[3].value = 7'h25;
+    qr = get(s.arr[i].value);
+  end
+
+  // Two non-constant indices, one error
+  typedef struct {logic [4:0] m2[1:2][5:3];} md_t;
+  md_t sm;
+  logic [4:0] q2;
+  assign q2 = sm.m2[i][j];
+  initial force sm.m2[2][3] = 5'h15;
+
+  typedef struct {logic [6:0] x[3:2];} a_t;
+  typedef struct {logic [6:0] y[3:2];} b_t;
   typedef union {
     a_t a;
     b_t b;
   } u_t;
+
+  // Array in a union member that is overlaid by the one with a forced element
   typedef struct {
     u_t u;
-    a_t e[2];
     logic flag;
   } su_t;
-  st_t s;
   su_t su;
-  int i;
-  int j;
-  logic [7:0] q;
-  logic [7:0] q2;
-  logic [7:0] qu;
-  logic [7:0] qe;
-  assign q = s.arr[i].value;
-  // One error
-  assign q2 = s.m2[i][j];
-  // Overlaid by su.u.a.x
+  logic [6:0] qu;
   assign qu = su.u.b.y[i];
-  // Below su.e[1]
-  assign qe = su.e[1].x[i];
+  initial force su.u.a.x[3] = 7'h31;
 
-  // Through a read-write reference
-  logic [7:0] qr;
-  function automatic logic [7:0] get(ref logic [7:0] value);
-    return value;
-  endfunction
-
-  initial begin
-    force s.arr[1].value = 8'ha5;
-    force s.m2[1][0] = 8'h30;
-    force su.u.a.x[1] = 8'h31;
-    force su.e[1] = su.e[0];
-    qr = get(s.arr[i].value);
-    $finish;
-  end
+  // Array below a forced element of an array of structs
+  typedef struct {a_t e[2:1];} se_t;
+  se_t se;
+  logic [6:0] qe;
+  assign qe = se.e[2].x[i];
+  initial force se.e[2] = se.e[1];
 
   // Whole array member forced, which forces each element
   typedef struct {logic [6:0] m[3:1];} whole_t;
