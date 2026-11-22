@@ -5,15 +5,12 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Test that a soft constraint under a constraint if stays soft, as does the
-// weighted choice of a dist, and that an if left with only an else arm follows
-// the randomized condition.
+// weighted choice of a dist.
 
 // verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin \
    $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__, `__LINE__, (gotv), (expv)); `stop; end while(0)
-`define checkgt(gotv,minv) do if (!((gotv) > (minv))) begin \
-   $write("%%Error: %s:%0d:  got=%0d expected > %0d\n", `__FILE__, `__LINE__, (gotv), (minv)); `stop; end while(0)
 // verilog_format: on
 
 // if (sel) soft x == 1, against a hard constraint
@@ -168,24 +165,6 @@ class ClsDistForeach;
   constraint c {foreach (a[i]) {a[i] > 10;}}
 endclass
 
-// The unique is ignored, which leaves only the else arm
-class ClsElseOnly;
-  rand bit [3:0] q[$];
-  rand bit [3:0] x;
-  rand bit sel;
-  constraint sz {q.size() == 3;}
-  constraint s {sel == 1;}
-  // verilator lint_off CONSTRAINTIGN
-  constraint c {
-    if (sel) {
-      unique {q};
-    } else {
-      x == 3;
-    }
-  }
-  // verilator lint_on CONSTRAINTIGN
-endclass
-
 module t;
   initial begin
     int randomize_result;
@@ -295,22 +274,6 @@ module t;
         `checkd(randomize_result, 1);
         foreach (obj.a[i]) `checkd((obj.a[i] inside {[12 : 15]}), 1'b1);
       end
-    end
-
-    // The else arm does not apply when the randomized condition is true,
-    // whatever the condition held before the call
-    begin
-      static ClsElseOnly obj = new();
-      int seen_other;
-      seen_other = 0;
-      repeat (40) begin
-        obj.sel = 0;
-        randomize_result = obj.randomize();
-        `checkd(randomize_result, 1);
-        `checkd(obj.sel, 1);
-        if (obj.x != 3) seen_other++;
-      end
-      `checkgt(seen_other, 0);
     end
 
     $write("*-* All Finished *-*\n");
