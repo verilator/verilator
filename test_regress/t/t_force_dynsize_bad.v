@@ -16,6 +16,7 @@ typedef struct {
   logic [6:0] a[int];
   logic [6:0] w[*];
   row_t ar[int];
+  row_t qr[$];
   row_t f;
 } dyn_t;
 
@@ -34,6 +35,7 @@ module t;
   logic [6:0] d[];
   logic [6:0] a[int];
   logic [6:0] w[*];
+  row_t qr[$];
   row_t f;
   initial begin
     force f[2] = 7'h55;  // OK
@@ -42,8 +44,12 @@ module t;
     force a[3] = 7'h55;  // Error
     force w[3] = 7'h55;  // Error
     force q[1][5:3] = 3'h5;  // Error
+    force q[$] = 7'h55;  // Error
+    force q[$-1] = 7'h55;  // Error
+    force qr[$][2] = 7'h55;  // Error
     release f[2];  // OK
     release q[1];  // Error
+    release q[$];  // Error
   end
 
   // Also of struct members
@@ -55,6 +61,7 @@ module t;
     force s.a[3] = 7'h55;  // Error
     force s.w[3] = 7'h55;  // Error
     force s.ar[3][2] = 7'h55;  // Error
+    force s.qr[$][2] = 7'h55;  // Error
     release s.a[3];  // Error
   end
 
