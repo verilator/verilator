@@ -426,6 +426,36 @@ module t;
     `checkh(ro.e[3].k, 3'h3);
   end
 
+  // Whole variable forced, then a member of an array element, the whole variable released
+  rel_outer_t rw;
+  rel_outer_t rwv;
+  initial begin
+    rwv.e[2].k = 3'h1;
+    rwv.e[3].m[2] = 7'h42;
+    rwv.e[3].k = 3'h2;
+    rwv.flag = 1'b1;
+    rw.e[2].k = 3'h7;
+    rw.e[3].m[2] = 7'h72;
+    rw.e[3].k = 3'h6;
+    rw.flag = 1'b0;
+    force rw = rwv;
+    force rw.e[3].k = 3'h5;
+    #1;
+    `checkh(rw.e[3].k, 3'h5);
+    release rw;
+    #1;
+    `checkh(rw.e[3].k, 3'h5);
+    `checkh(rw.e[2].k, 3'h1);
+    `checkh(rw.e[3].m[2], 7'h42);
+    `checkh(rw.flag, 1'b1);
+    rw.e[3].k = 3'h3;
+    rw.e[2].k = 3'h4;
+    #1;
+    `checkh(rw.e[3].k, 3'h3);
+    `checkh(rw.e[2].k, 3'h4);
+    `checkh(rw.flag, 1'b1);
+  end
+
   // Continuously driven element returns to the driven value
   rel_t rc;
   logic [6:0] drv;
