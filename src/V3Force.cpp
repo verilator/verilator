@@ -86,6 +86,9 @@ public:
         std::unordered_map<string, int> m_forcePathToIndex;
         int m_nextForcePathIndex = 1;  // Start at 1 so 0 can be the base path (whole signal)
         std::vector<string> m_forcedArrayPaths;  // Keys of forced paths with an array select
+        // Target in a force statement and index of each forced path.  Sorted, so a path
+        // precedes the paths below it
+        std::map<string, std::pair<AstNodeExpr*, int>> m_forcedPaths;
 
     private:
         // Return false if a selector cannot be on a forced path, with its type in 'out'.  Only a
@@ -127,6 +130,22 @@ public:
                 = m_forcePathToIndex.emplace(forcePathKey(nodep), m_nextForcePathIndex);
             if (pair.second) ++m_nextForcePathIndex;
             return pair.first->second;
+        }
+
+        void addForcedPath(AstNodeExpr* nodep, int index) {
+            m_forcedPaths.emplace(forcePathKey(nodep), std::make_pair(nodep, index));
+        }
+
+        // Force targets of the forced paths below the path, with their indices, each before
+        // those below it
+        std::vector<std::pair<AstNodeExpr*, int>> forcedPathsBelow(AstNodeExpr* nodep) const {
+            std::vector<std::pair<AstNodeExpr*, int>> result;
+            const string prefix = forcePathKey(nodep) + "|";
+            for (auto it = m_forcedPaths.lower_bound(prefix);
+                 it != m_forcedPaths.end() && VString::startsWith(it->first, prefix); ++it) {
+                result.push_back(it->second);
+            }
+            return result;
         }
 
         int findForcePathIndex(AstNodeExpr* nodep) const {
@@ -626,6 +645,10 @@ public:
         ForceInfo& finfo = pair.first->second;
         finfo.m_isExternal = forceStmtp->user2();
         finfo.m_skipRdRefresh = skipRdRefresh;
+        // Other than an unpacked array, a non-bitwise variable is forced by path
+        if (!isBitwiseDType(varp) && !hasArraySel) {
+            info.addForcedPath(forceStmtp->lhsp(), rangeLsb);
+        }
         if (doingAssign()) {
             std::vector<AstVar*> depVarps;
             finfo.m_rhsExprp->foreach([&](AstVarRef* const refp) {
@@ -927,6 +950,31 @@ public:
         VN_AS(exprp->getVAccessTargetRecurse(), VarRef)->access(VAccess::READ);
         return createForceReadCall(varInfo, flp, VCMethod::FORCE_READ_INDEX, exprp, originalExprp,
                                    indexExprp);
+    }
+
+    // Release the forces of the paths below the path of a variable.  With 'keep' the variable
+    // first takes their values.
+    AstNodeStmt* createReleaseBelow(const VarForceInfo& varInfo, AstNodeExpr* exprp,
+                                    bool keep) const {
+        FileLine* const flp = exprp->fileline();
+        AstNodeStmt* keepsp = nullptr;
+        AstNodeStmt* releasesp = nullptr;
+        for (const auto& below : varInfo.forcedPathsBelow(exprp)) {
+            if (keep) {
+                keepsp = AstNode::addNext(
+                    keepsp,
+                    new AstAssign{flp, below.first->cloneTreePure(false),
+                                  createForceReadIndexExpression(varInfo, below.first,
+                                                                 makeConst32(flp, below.second))});
+            }
+            AstCMethodHard* const callp = new AstCMethodHard{
+                flp, new AstVarRef{flp, varInfo.m_forceVecVscp, VAccess::WRITE},
+                VCMethod::FORCE_RELEASE, makeConst32(flp, below.second)};
+            callp->addPinsp(makeConst32(flp, below.second));
+            callp->dtypeSetVoid();
+            releasesp = AstNode::addNext(releasesp, callp->makeStmt());
+        }
+        return AstNode::addNextNull(keepsp, releasesp);
     }
 
     static AstNodeExpr* rebuildSelPath(AstNodeExpr* pathp, AstNodeExpr* baseExprp) {
@@ -1339,6 +1387,11 @@ class ForceConvertVisitor final : public VNVisitor {
             clearEnp->addNextHere(stmtListp);
             stmtListp = clearEnp;
         }
+        // Forces of the paths below are released too.  As for the released path, if not
+        // continuously driven the variable first takes their values.
+        stmtListp = AstNode::addNextNull<AstNode, AstNode>(
+            m_state.createReleaseBelow(*varInfop, lhsp, !releasedVarp->isContinuously()),
+            stmtListp);
 
         // IEEE 1800-2023 10.6.2: When released, if the variable is not continuously driven,
         // it maintains its current value until the next procedural assignment.
@@ -1350,10 +1403,11 @@ class ForceConvertVisitor final : public VNVisitor {
                  && fullBitwiseRelease)) {
             // Member/struct paths on non-bitwise types do not lower to a plain VarRef/bit range,
             // so their current forced value is recovered via the same synthetic path index.
+            // The whole variable is path 0, and is not read through the forces of other paths.
             // if (!continuously_driven) lhs = force_read_current(lhs_path);
             // forceVec.release(range);
-            const bool hasOpaquePath = !ForceState::isBitwiseDType(releasedVarp)
-                                       && !rangeInfo.m_hasArraySel && !VN_IS(lhsp, VarRef);
+            const bool hasOpaquePath
+                = !ForceState::isBitwiseDType(releasedVarp) && !rangeInfo.m_hasArraySel;
             AstNodeExpr* forceReadp = nullptr;
             if (hasOpaquePath) {
                 forceReadp = m_state.createForceReadIndexExpression(
