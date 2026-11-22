@@ -328,7 +328,7 @@ public:
         return forceps;
     }
 
-    // Not a select of an associative array: its elements cannot be forced, the array can
+    // Excludes AssocSel and WildcardSel: their elements cannot be forced, only the whole array
     static bool isOpaquePathSelector(const AstNode* nodep) {
         return VN_IS(nodep, Sel) || VN_IS(nodep, ArraySel) || VN_IS(nodep, StructSel);
     }
