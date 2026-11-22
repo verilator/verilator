@@ -2244,7 +2244,6 @@ class ConstraintExprVisitor final : public VNVisitor {
     struct FrozenSelectLevel final {
         AstNodeExpr* idxEmissionp = nullptr;  // Formatted index from its frame
         int elements = 0;  // Storage positions to enumerate
-        int emitWidth = 32;  // SMT width of the formatted index
         bool symbolic = false;
     };
     // Pair each ArraySel level of a pre-edit chain with the formatted index
@@ -2255,32 +2254,28 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeExpr* curp = origp;
         size_t fi = 0;
         while (AstArraySel* const selp = VN_CAST(curp, ArraySel)) {
-            if (fi >= frames.size() || frames[fi]->name() != "(select %s %s)") return false;
+            // Every ArraySel formats exactly one select frame, in chain order.
+            if (fi >= frames.size()  // LCOV_EXCL_BR_LINE
+                || frames[fi]->name() != "(select %s %s)")  // LCOV_EXCL_BR_LINE
+                return false;  // LCOV_EXCL_LINE
             const AstUnpackArrayDType* const arrDtp
-                = VN_CAST(selp->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
-            if (!arrDtp) return false;
-            AstNodeExpr* const idxEmissionp
-                = frames[fi]->exprsp() ? VN_CAST(frames[fi]->exprsp()->nextp(), NodeExpr)
-                                       : nullptr;
+                = VN_AS(selp->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+            AstNodeExpr* const idxEmissionp = VN_CAST(frames[fi]->exprsp()->nextp(), NodeExpr);
             const bool symbolic = selectIndexIsRand(selp->bitp());
-            const int emitWidth = std::max(32, selp->bitp()->width());
             // Formatted select frames always carry the index.
             if (symbolic && !idxEmissionp) return false;  // LCOV_EXCL_LINE
-            if (symbolic && emitWidth % 4 != 0) return false;
             // Width processing rewrites the index to a storage position,
             // so enumerate storage, not declared values.
-            levels.push_back({idxEmissionp, arrDtp->elementsConst(), emitWidth, symbolic});
+            levels.push_back({idxEmissionp, arrDtp->elementsConst(), symbolic});
             curp = selp->fromp();
             ++fi;
         }
         return fi == frames.size();
     }
-    // Fixed-width SMT bitvector literal, two's complement for negatives.
-    static std::string smtHexConst(int value, int width) {
-        char buf[32];
-        const uint64_t mask = (width >= 64) ? ~0ULL : ((1ULL << width) - 1);
-        (void)VL_SNPRINTF(buf, sizeof(buf), "#x%0*llx", width / 4,
-                          static_cast<unsigned long long>(static_cast<uint64_t>(value) & mask));
+    // SMT literal at the 32-bit array index sort (see the ArraySel visitor).
+    static std::string smtIndexConst(int value) {
+        char buf[16];
+        (void)VL_SNPRINTF(buf, sizeof(buf), "#x%08x", static_cast<uint32_t>(value));
         return buf;
     }
     // Render the mode-off value of a frozen select chain: indices that stay
@@ -2316,26 +2311,44 @@ class ConstraintExprVisitor final : public VNVisitor {
             formatp->user1(true);
             return formatp;
         }
-        const FrozenSelectLevel& lvl = levels[k];
-        AstSFormatF* elsep
+        // Positions past the last element read as zero.
+        AstSFormatF* const zerop
             = getConstFormat(new AstConst{fl, AstConst::WidthedValue{}, elemWidth, 0});
-        elsep->user1(true);
-        for (int v = lvl.elements - 1; v >= 0; --v) {
+        zerop->user1(true);
+        const int elements = levels[k].elements;
+        AstNodeExpr* const tablep
+            = frozenSelectRangep(fl, origp, levels, subst, k, 0, elements, elemWidth);
+        return frozenSelectItep(fl, tablep, zerop, levels[k], elements);
+    }
+    // (ite (bvult idx bound) thenp elsep) over one level's formatted index.
+    static AstNodeExpr* frozenSelectItep(FileLine* fl, AstNodeExpr* thenp, AstNodeExpr* elsep,
+                                         const FrozenSelectLevel& lvl, int bound) {
+        AstNodeExpr* const condp = new AstSFormatF{fl, "(bvult %s " + smtIndexConst(bound) + ")",
+                                                   false, lvl.idxEmissionp->cloneTree(false)};
+        condp->user1(true);
+        AstSFormatF* const itep = new AstSFormatF{
+            fl, "(ite %s %s %s)", false, AstNode::addNext(condp, AstNode::addNext(thenp, elsep))};
+        itep->user1(true);
+        return itep;
+    }
+    // Select among positions [lo, hi) of level k by halving the range, so the
+    // nesting depth grows with log2 of the element count: a chain one level
+    // deep per element overflows the stack in later recursive passes.
+    AstNodeExpr* frozenSelectRangep(FileLine* fl, AstNodeExpr* origp,
+                                    const std::vector<FrozenSelectLevel>& levels,
+                                    const std::vector<std::pair<size_t, int>>& subst, size_t k,
+                                    int lo, int hi, int elemWidth) {
+        if (hi - lo == 1) {
             std::vector<std::pair<size_t, int>> deeper = subst;
-            deeper.emplace_back(k, v);
-            AstNodeExpr* const thenp
-                = frozenSelectElsep(fl, origp, levels, deeper, k + 1, elemWidth);
-            AstNodeExpr* const condp
-                = new AstSFormatF{fl, "(= %s " + smtHexConst(v, lvl.emitWidth) + ")", false,
-                                  lvl.idxEmissionp->cloneTree(false)};
-            condp->user1(true);
-            AstSFormatF* const itep
-                = new AstSFormatF{fl, "(ite %s %s %s)", false,
-                                  AstNode::addNext(condp, AstNode::addNext(thenp, elsep))};
-            itep->user1(true);
-            elsep = itep;
+            deeper.emplace_back(k, lo);
+            return frozenSelectElsep(fl, origp, levels, deeper, k + 1, elemWidth);
         }
-        return elsep;
+        const int mid = lo + (hi - lo) / 2;
+        AstNodeExpr* const lowp
+            = frozenSelectRangep(fl, origp, levels, subst, k, lo, mid, elemWidth);
+        AstNodeExpr* const highp
+            = frozenSelectRangep(fl, origp, levels, subst, k, mid, hi, elemWidth);
+        return frozenSelectItep(fl, lowp, highp, levels[k], mid);
     }
     // Lift a rand_mode Cond above the (select ...) chain of a frozen array element.
     bool hoistRandModeOverSelectAndMember(AstSFormatF* newp, AstNodeExpr* origp) {
