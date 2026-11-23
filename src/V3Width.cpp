@@ -3517,9 +3517,9 @@ class WidthVisitor final : public VNVisitor {
                 = !assignable && !stringBytes
                   && (isUnpackedArrayOrUOrStruct(toDtp) || isUnpackedArrayOrUOrStruct(fromDtp));
             // No follow-on errors for an operand that reported an error
-            const bool bad = nodep->fromp()->fileline()->erroringOn()
-                             || (!stringBytes
-                                 && castError(nodep, toDtp, fromDtp, castable, bitstream));
+            const bool bad
+                = nodep->fromp()->fileline()->erroringOn()
+                  || (!stringBytes && castError(nodep, toDtp, fromDtp, castable, bitstream));
             // For now, replace it ASAP, so widthing can propagate easily
             // The cast may change signing, but we don't know the sign yet.  Make it so.
             // Note we don't sign fromp() that would make the algorithm O(n^2) if lots of casting.
