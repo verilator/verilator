@@ -22,4 +22,7 @@ test.compile(verilator_flags2=[
 ],
              verilator_make_gmake=False)
 
+# --debug-protect names are "PS" plus the original, so must be escaped too
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__idmap.xml", r'from="PS=&gt;"')
+
 test.passes()

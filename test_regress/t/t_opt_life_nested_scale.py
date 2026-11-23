@@ -7,8 +7,6 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-import re
-
 import vltest_bootstrap
 
 test.scenarios('vlt')
@@ -22,12 +20,11 @@ test.top_filename = test.obj_dir + "/t_opt_life_nested_scale.v"
 
 # Case items writing a different variable each. V3Case makes them a long if/else chain, so V3Life
 # sees deeply nested blocks. Only measures V3Life time, the model is not built.
-SIZE_SMALL = 2000
-SIZE_LARGE = SIZE_SMALL * 4
-# Linear scaling gives 4x, quadratic gives 16x
-MAX_RATIO = 8
-# Ignore the ratio when V3Life is fast enough that timer noise dominates
-MIN_SECONDS = 0.25
+SIZE_RATIO = 4
+SIZE_SMALL = 100
+SIZE_LARGE = SIZE_SMALL * SIZE_RATIO
+RATIO_MIN = 3
+RATIO_MAX = 8  # Linear scaling gives 4x, quadratic gives 16x
 
 
 def gen(filename, n):
@@ -47,28 +44,18 @@ def gen(filename, n):
         fh.write("endmodule\n")
 
 
-def life_seconds(n):
+def verilation(n):
     gen(test.top_filename, n)
     # Disable other passes that are slow on this code, to keep the test fast
     test.compile(verilator_flags2=[
-        "--stats", "--no-debug-check", "-fno-dfg", "-fno-merge-cond", "-fno-reloop", "-fno-split"
+        "--stats", "--debug", "--debugi 0", "--no-debug-check", "-fno-dfg", "-fno-merge-cond",
+        "-fno-reloop", "-fno-split"
     ],
                  make_main=False,
                  verilator_make_gmake=False)
-    with open(test.stats, 'r', encoding="utf8") as fh:
-        times = re.findall(r'Stage, Elapsed time \(sec\), \d+_life\s+(\S+)', fh.read())
-    if not times:
-        test.error("Life elapsed time not found in " + test.stats)
-    return sum(float(t) for t in times)
+    return test.op_count_read(test.stats)
 
 
-small = life_seconds(SIZE_SMALL)
-
-large = life_seconds(SIZE_LARGE)
-
-if large > MIN_SECONDS and large > small * MAX_RATIO:
-    test.error("V3Life time scaled superlinearly with nested blocks: " +
-               f"{SIZE_SMALL} items took {small:.3f}s, " +
-               f"{SIZE_LARGE} items took {large:.3f}s (over {MAX_RATIO}x)")
+test.op_count_ok(verilation(SIZE_SMALL), verilation(SIZE_LARGE), RATIO_MIN, RATIO_MAX, r'.*')
 
 test.passes()

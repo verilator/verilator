@@ -11,4 +11,12 @@
                                                 : ... note: In instance 't'
    26 |     oa = 0;
       |     ^~
+%Error-PROCASSWIRE: t/t_wire_behp1364_bad.v:27:5: Procedural assignment to wire, perhaps intended var (IEEE 1800-2023 6.5): 'wo'
+                                                : ... note: In instance 't'
+   27 |     wo = 0;
+      |     ^~
+%Error-PROCASSWIRE: t/t_wire_behp1364_bad.v:28:5: Procedural assignment to wire, perhaps intended var (IEEE 1800-2023 6.5): 'woa'
+                                                : ... note: In instance 't'
+   28 |     woa = 0;
+      |     ^~~
 %Error: Exiting due to

@@ -1,0 +1,34 @@
+%Error: t/t_wait_assign_bad.v:14:16: Assignment operator not allowed in a wait statement condition (IEEE 1800-2023 11.3.6)
+                                   : ... Suggest move the assignment out of the wait condition
+   14 |     wait ((foo = bar) == 23);
+      |                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_wait_assign_bad.v:15:16: Assignment operator not allowed in a wait statement condition (IEEE 1800-2023 11.3.6)
+                                   : ... Suggest move the assignment out of the wait condition
+   15 |     wait ((foo += bar) == 23);
+      |                ^~
+%Error: t/t_wait_assign_bad.v:16:17: Assignment operator not allowed in a wait statement condition (IEEE 1800-2023 11.3.6)
+                                   : ... Suggest move the assignment out of the wait condition
+   16 |     wait (((foo = bar) == 1) && ((foo -= 1) != 0));
+      |                 ^
+%Error: t/t_wait_assign_bad.v:16:39: Assignment operator not allowed in a wait statement condition (IEEE 1800-2023 11.3.6)
+                                   : ... Suggest move the assignment out of the wait condition
+   16 |     wait (((foo = bar) == 1) && ((foo -= 1) != 0));
+      |                                       ^~
+%Error: t/t_wait_assign_bad.v:18:14: Pre/post increment/decrement operator not allowed in a wait statement condition (IEEE 1800-2023 11.3.6)
+                                   : ... Suggest move the increment or decrement out of the wait condition
+   18 |     wait (foo++ == 23);
+      |              ^~
+%Error: t/t_wait_assign_bad.v:19:14: Pre/post increment/decrement operator not allowed in a wait statement condition (IEEE 1800-2023 11.3.6)
+                                   : ... Suggest move the increment or decrement out of the wait condition
+   19 |     wait (foo-- == 23);
+      |              ^~
+%Error: t/t_wait_assign_bad.v:20:11: Pre/post increment/decrement operator not allowed in a wait statement condition (IEEE 1800-2023 11.3.6)
+                                   : ... Suggest move the increment or decrement out of the wait condition
+   20 |     wait (++foo == 23);
+      |           ^~
+%Error: t/t_wait_assign_bad.v:21:11: Pre/post increment/decrement operator not allowed in a wait statement condition (IEEE 1800-2023 11.3.6)
+                                   : ... Suggest move the increment or decrement out of the wait condition
+   21 |     wait (--foo);
+      |           ^~
+%Error: Exiting due to

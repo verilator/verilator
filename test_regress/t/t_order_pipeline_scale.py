@@ -7,8 +7,6 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-import re
-
 import vltest_bootstrap
 
 test.scenarios('vlt')
@@ -22,12 +20,11 @@ test.top_filename = test.obj_dir + "/t_order_pipeline_scale.v"
 
 # Pipeline stages. Each stage reads the previous one, so ordering ranks a path through all of
 # them. Only measures scheduling time, the model is not built.
-SIZE_SMALL = 1000
-SIZE_LARGE = SIZE_SMALL * 4
-# Linear scaling gives 4x, quadratic gives 16x
-MAX_RATIO = 8
-# Ignore the ratio when scheduling is fast enough that timer noise dominates
-MIN_SECONDS = 0.25
+SIZE_RATIO = 4
+SIZE_SMALL = 200
+SIZE_LARGE = SIZE_SMALL * SIZE_RATIO
+RATIO_MIN = 3
+RATIO_MAX = 6  # Linear scaling gives 4x, quadratic gives 16x
 
 
 def gen(filename, n):
@@ -44,23 +41,14 @@ def gen(filename, n):
         fh.write("endmodule\n")
 
 
-def sched_seconds(n):
+def verilation(n):
     gen(test.top_filename, n)
-    test.compile(verilator_flags2=["--stats", "--no-debug-check"],
+    test.compile(verilator_flags2=["--stats", "--debug", "--debugi 0", "--no-debug-check"],
                  make_main=False,
                  verilator_make_gmake=False)
-    with open(test.stats, 'r', encoding="utf8") as fh:
-        times = re.findall(r'Stage, Elapsed time \(sec\), \d+_sched-create-\w+\s+(\S+)', fh.read())
-    if not times:
-        test.error("Scheduling elapsed time not found in " + test.stats)
-    return sum(float(t) for t in times)
+    return test.op_count_read(test.stats)
 
 
-small = sched_seconds(SIZE_SMALL)
-large = sched_seconds(SIZE_LARGE)
-if large > MIN_SECONDS and large > small * MAX_RATIO:
-    test.error("Scheduling time scaled superlinearly with pipeline stages: " +
-               f"{SIZE_SMALL} stages took {small:.3f}s, " +
-               f"{SIZE_LARGE} stages took {large:.3f}s (over {MAX_RATIO}x)")
+test.op_count_ok(verilation(SIZE_SMALL), verilation(SIZE_LARGE), RATIO_MIN, RATIO_MAX, r'.*')
 
 test.passes()

@@ -102,6 +102,28 @@ module test ();
     items[0] = new(items[0].value + 1);
   endfunction
 
+  typedef int fixed_t[2];
+
+  function automatic void update_queue(inout int a[$]);
+    `checkd(a.size(), 2);
+    `checkd(a[0], 11);
+    `checkd(a[1], 23);
+    a = '{31, 47};
+  endfunction
+
+  function automatic void update_dynamic(inout int a[]);
+    `checkd(a.size(), 2);
+    `checkd(a[0], 11);
+    `checkd(a[1], 23);
+    a = '{31, 47};
+  endfunction
+
+  task automatic update_fixed(inout fixed_t a);
+    `checkd(a[0], 31);
+    `checkd(a[1], 47);
+    a = '{11, 23};
+  endtask
+
   initial begin
     for (int i = 0; i < NUM_ELEMS; i++) begin
       array_s[i] = "test";
@@ -233,6 +255,33 @@ module test ();
       replace_item(preload);
       `checkd(preload[0].value, value + 1);
       `checkd(previous.value, value);
+    end
+
+    begin
+      fixed_t fixed_values;
+      int values[$];
+      int dynamic_values[];
+      fixed_values = '{11, 23};
+      update_queue(fixed_values);
+      `checkd(fixed_values[0], 31);
+      `checkd(fixed_values[1], 47);
+
+      fixed_values = '{11, 23};
+      update_dynamic(fixed_values);
+      `checkd(fixed_values[0], 31);
+      `checkd(fixed_values[1], 47);
+
+      values = '{31, 47};
+      update_fixed(values);
+      `checkd(values.size(), 2);
+      `checkd(values[0], 11);
+      `checkd(values[1], 23);
+
+      dynamic_values = '{31, 47};
+      update_fixed(dynamic_values);
+      `checkd(dynamic_values.size(), 2);
+      `checkd(dynamic_values[0], 11);
+      `checkd(dynamic_values[1], 23);
     end
 
     $display("All checks passed");

@@ -202,8 +202,9 @@ protected:
         puts(", ");
         puts(cvtToStr(nodep->offset() + nodep->fileline()->firstColumn()));
         puts(", ");
-        putsQuoted((!nodep->hier().empty() ? "." : "")
-                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
+        putsQuoted(
+            (!nodep->hier().empty() ? "." : "")
+            + VIdProtect::protectWordsIf(AstNode::prettyName(nodep->hier()), nodep->protect()));
         puts(", ");
         putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
         puts(", ");
@@ -245,8 +246,9 @@ protected:
         puts(", ");
         puts(cvtToStr(nodep->fileline()->firstColumn()));
         puts(", ");
-        putsQuoted((!nodep->hier().empty() ? "." : "")
-                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
+        putsQuoted(
+            (!nodep->hier().empty() ? "." : "")
+            + VIdProtect::protectWordsIf(AstNode::prettyName(nodep->hier()), nodep->protect()));
         puts(", ");
         putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
         puts(", ");
@@ -311,21 +313,6 @@ public:
     template <typename T>
     string optionalProcArg(const T* const nodep) {
         return (nodep && constructorNeedsProcess(nodep)) ? "vlProcess, " : "";
-    }
-    const AstCNew* getSuperNewCallRecursep(AstNode* const nodep) {
-        // Get the super.new call
-        if (!nodep) return nullptr;
-        if (const AstCNew* const cnewp = VN_CAST(nodep, CNew)) return cnewp;
-        if (const AstStmtExpr* const stmtp = VN_CAST(nodep, StmtExpr)) {
-            if (const AstCNew* const cnewp = VN_CAST(stmtp->exprp(), CNew)) return cnewp;
-        }
-        if (const AstJumpBlock* const blockp = VN_CAST(nodep, JumpBlock)) {
-            if (const AstCNew* const cnewp = getSuperNewCallRecursep(blockp->stmtsp())) {
-                return cnewp;
-            }
-        }
-        if (const AstCNew* const cnewp = getSuperNewCallRecursep(nodep->nextp())) return cnewp;
-        return nullptr;
     }
 
     void emitConstantW(AstConst* nodep, AstVarRef* assigntop) {
@@ -409,7 +396,7 @@ public:
         }
     }
 
-    void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp) {
+    void putConstructorSubinit(const AstClass* classp, const AstCNew* superNewp) {
         // Direct non-virtual bases in declaration order
         for (const AstClassExtends* const extp : classp->extendspList()) {
             if (extp->classp()->isInterfaceClass()) continue;
@@ -421,11 +408,8 @@ public:
             } else {
                 puts("(vlSymsp");
             }
-            // Handle super.new() args for the concrete parent
-            if (const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp())) {
-                putCommaIterateNext(superNewCallp->argsp(), true);
-            }
-            puts(");\n");
+            putCommaIterateNext(superNewp->argsp(), true);
+            puts(")");
             // Since SystemVerilog allows only for extending from one class, for sure there won't
             // be any more constructors to be called. Even if there are some classes which are
             // "implemented", those are interface classes which do not have constructors.
@@ -526,15 +510,6 @@ public:
         if (nodep->varsp()) {
             putsDecoration(nodep, "// Locals\n");
             iterateAndNextConstNull(nodep->varsp());
-        }
-
-        // After the locals, as the super.new arguments might use them
-        if (nodep->isConstructor()) {
-            const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
-            if (classp && classp->extendsp()) {
-                putsDecoration(nodep, "// Super\n");
-                putConstructorSubinit(classp, nodep);
-            }
         }
 
         if (nodep->stmtsp()) {
@@ -922,7 +897,7 @@ public:
     }
     void visit(AstCNew* nodep) override {
         if (VN_IS(nodep->dtypep(), VoidDType)) {  // super.new case
-            putsDecoration(nodep, "/*super.new*/");
+            putConstructorSubinit(VN_AS(m_cfuncp->scopep()->modp(), Class), nodep);
             return;
         }
         // assignment case;

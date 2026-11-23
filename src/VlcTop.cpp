@@ -30,6 +30,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 //######################################################################
@@ -555,13 +556,32 @@ void VlcTop::writeInfo(const string& filename) {
             VlcSourceCount& sc = li.second;
             uint64_t daCount = 0;
             std::vector<const VlcPoint*> infoPoints;
+            // With line and branch coverage, each leg of an if/else has a line point and a
+            // branch point at the same place; list the leg once, as its branch point
+            const auto legKey = [](const VlcPoint* pointp) {
+                return pointp->hier() + ' ' + std::to_string(pointp->lineno()) + ':'
+                       + std::to_string(pointp->column()) + ' ' + pointp->comment();
+            };
+            std::unordered_set<std::string> branchLegs;
             for (const auto& point : sc.points()) {
                 daCount = std::max(daCount, point->count());
                 infoPoints.push_back(point);
+                if (point->type() == "branch") branchLegs.emplace(legKey(point));
             }
+            infoPoints.erase(std::remove_if(infoPoints.begin(), infoPoints.end(),
+                                            [&](const VlcPoint* pointp) {
+                                                return pointp->type() == "line"
+                                                       && branchLegs.count(legKey(pointp));
+                                            }),
+                             infoPoints.end());
             os << "DA:" << sc.lineno() << "," << daCount << "\n";
             if (opt.countOk(daCount)) ++linesHit;
-            if (infoPoints.size() <= 1) continue;
+            // A lone point is a branch only on its own line, e.g. an else-if arm, not on the
+            // other lines of its block
+            if (infoPoints.size() == 1
+                && (infoPoints.front()->type() != "branch"
+                    || infoPoints.front()->lineno() != sc.lineno()))
+                continue;
             branchesFound += static_cast<int>(infoPoints.size());
             int point_num = 0;
             for (const VlcPoint* pointp : infoPoints) {

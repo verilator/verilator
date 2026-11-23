@@ -432,8 +432,24 @@ void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
     if (const AstConst* const constp = VN_CAST(nodep, Const)) {
         emitConstantString(constp);
     } else if (VN_IS(nodep->dtypep(), StreamDType)) {
-        putnbs(nodep, "VL_CVT_PACK_STR_ND(");
-        iterateAndNextConstNull(nodep);
+        const AstNodeStream* const streamp = VN_AS(nodep, NodeStream);
+        const AstNodeDType* const elemDtp
+            = streamp->lhsp()->dtypep()->skipRefp()->subDTypep()->skipRefp();
+        if (elemDtp->isIntegralOrPacked()) {
+            // A queue or dynamic array of packed elements, as V3Width packs fixed-size operands
+            putnbs(nodep, "VL_CVT_PACK_STR_NR(");
+            puts(cvtToStr(elemDtp->width()));
+            puts(", ");
+            puts(VN_IS(streamp, StreamL) ? cvtToStr(VN_AS(streamp->rhsp(), Const)->toUInt())
+                                         : "0");
+            puts(", ");
+            iterateAndNextConstNull(streamp->lhsp());
+        } else {
+            UASSERT_OBJ(elemDtp->isString() && VN_IS(streamp, StreamR), nodep,
+                        "Stream assigned to a string should be unsupported in V3Width");
+            putnbs(nodep, "VL_CVT_PACK_STR_ND(");
+            iterateAndNextConstNull(nodep);
+        }
         puts(")");
     } else {
         putnbs(nodep, "VL_CVT_PACK_STR_N");

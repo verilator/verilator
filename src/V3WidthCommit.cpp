@@ -486,7 +486,19 @@ private:
         editDType(nodep);
     }
     void visit(AstAssignDly* nodep) override {
-        iterateAndNextNull(nodep->timingControlp());
+        {
+            // The event control is evaluated by the update, so reads must obey the same rules
+            VL_RESTORER(m_contNbap);
+            VL_RESTORER(m_contReads);
+            VL_RESTORER(m_inNba);
+            // A #delay is not an event control, so reads there are not restricted
+            if (!VN_IS(nodep->timingControlp(), Delay)) {
+                m_contNbap = "non-blocking timing control";
+                m_contReads = true;
+                m_inNba = true;
+            }
+            iterateAndNextNull(nodep->timingControlp());
+        }
         iterateAndNextNull(nodep->rhsp());
         {
             VL_RESTORER(m_contNbap);

@@ -87,6 +87,20 @@ public:
         return setupAllTaskp;
     }
 
+    // Solver variable name for a constrained dynamic or queue size.
+    static std::string sizeVarName(const AstVar* const varp) {
+        return "__V" + varp->name() + "_size";
+    }
+
+    // A solve-before item orders variables; it does not constrain container size.
+    static bool isSolveBeforeItem(const AstNode* nodep) {
+        while ((nodep = nodep->aboveLoopp())) {
+            if (VN_IS(nodep, ConstraintBefore)) return true;
+            if (VN_IS(nodep, ConstraintExpr)) return false;
+        }
+        return false;
+    }
+
     // Look through unpacked array dimensions to the element type
     static AstNodeDType* arrayElementDTypep(AstNodeDType* dtypep) {
         dtypep = dtypep->skipRefp();
@@ -458,7 +472,26 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
             return nullptr;
         }
-        if (VN_IS(exprp, CMethodHard)) return buildPathExpr(fl, exprp, "");
+        if (const AstCMethodHard* const methodp = VN_CAST(exprp, CMethodHard)) {
+            if (methodp->method() == VCMethod::DYN_SIZE) {
+                const AstVar* varp = nullptr;
+                if (const AstVarRef* const varrefp = VN_CAST(methodp->fromp(), VarRef)) {
+                    varp = varrefp->varp();
+                } else if (const AstMemberRef* const memberp
+                           = VN_CAST(methodp->fromp(), MemberRef)) {
+                    const std::string path = buildMemberPath(memberp);
+                    return new AstConst{fl, AstConst::String{},
+                                        path.substr(0, path.size() - memberp->name().size())
+                                            + SmtUtil::sizeVarName(memberp->varp())};
+                }
+                if (varp) {
+                    // The size may be introduced later by an inline constraint; the solver
+                    // ignores the edge when no size variable is registered.
+                    return new AstConst{fl, AstConst::String{}, SmtUtil::sizeVarName(varp)};
+                }
+            }
+            return buildPathExpr(fl, exprp, "");
+        }
         const AstNodeSel* selp = VN_CAST(exprp, ArraySel);
         if (!selp) selp = VN_CAST(exprp, AssocSel);
         if (selp) {
@@ -2441,7 +2474,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         } else if (thenp) {
             newp = new AstLogIf{fl, nodep->condp()->unlinkFrBack(), thenp};
         } else if (elsep) {
-            newp = new AstLogIf{fl, new AstNot{fl, nodep->condp()->unlinkFrBack()}, elsep};
+            AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
+            AstNodeExpr* const notp = new AstLogNot{fl, condp};
+            notp->user1(condp->user1());  // Solver-dependent exactly when the condition is.
+            newp = new AstLogIf{fl, notp, elsep};
         }
         if (newp) {
             newp->dtypeSetBit();  // Result is boolean (prevents bare-var != 0 wrapping)
@@ -2466,13 +2502,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (!nodep->bodyp()) {
             nodep->unlinkFrBack();
         } else if (m_wantSingle) {
-            AstNodeExpr* const itemp = editSingle(fl, nodep->bodyp());
-            AstVar* const textVarp = newTextVarp(nodep);
-            AstNodeStmt* const bodyp
-                = prependDistPreamble(nodep, newTermAppendp(fl, textVarp, itemp));
-            nodep->replaceWith(newTextBuildp(
-                fl, textVarp, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
-                newTextApplyp(fl, textVarp, "bvand", "#b1")));
+            if (AstNodeExpr* const itemp = editSingle(fl, nodep->bodyp())) {
+                AstVar* const textVarp = newTextVarp(nodep);
+                AstNodeStmt* const bodyp
+                    = prependDistPreamble(nodep, newTermAppendp(fl, textVarp, itemp));
+                nodep->replaceWith(newTextBuildp(
+                    fl, textVarp, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
+                    newTextApplyp(fl, textVarp, "bvand", "#b1")));
+            } else {
+                nodep->unlinkFrBack();  // The body folded to nothing, e.g. only empty sets.
+            }
         } else {
             VL_RESTORER(m_foreachBodyp);
             VL_RESTORER_COPY(m_foreachIdxVars);
@@ -2499,6 +2538,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeModule* const genModp = VN_AS(m_genp->user2p(), NodeModule);
 
         for (AstNodeExpr* const lhsp : nodep->lhsspList()) {
+            if (const AstCMethodHard* const methodp = VN_CAST(lhsp, CMethodHard)) {
+                if (methodp->method() == VCMethod::ASSOC_SIZE) continue;
+            }
             AstNodeExpr* const lhsTestp = buildSolveBeforeNameExpr(fl, lhsp);
             if (!lhsTestp) {
                 lhsp->v3fatalSrc("Unexpected expression type in solve...before lhs");
@@ -2506,6 +2548,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
             VL_DO_DANGLING(lhsTestp->deleteTree(), lhsTestp);
             for (AstNodeExpr* const rhsp : nodep->rhsspList()) {
+                if (const AstCMethodHard* const methodp = VN_CAST(rhsp, CMethodHard)) {
+                    if (methodp->method() == VCMethod::ASSOC_SIZE) continue;
+                }
                 AstNodeExpr* const rhsNamep = buildSolveBeforeNameExpr(fl, rhsp);
                 if (!rhsNamep) {
                     rhsp->v3fatalSrc("Unexpected expression type in solve...before rhs");
@@ -3518,8 +3563,8 @@ class SolverSmtLowering final : public V3SolverLowering {
         AstVar* sizeVarp = VN_CAST(arrVarp->user4p(), Var);
         wasCreated = false;
         if (!sizeVarp) {
-            sizeVarp = new AstVar{fl, VVarType::MEMBER, "__V" + arrVarp->name() + "_size",
-                                  signed32DTypep};
+            sizeVarp
+                = new AstVar{fl, VVarType::MEMBER, SmtUtil::sizeVarName(arrVarp), signed32DTypep};
             classp->addMembersp(sizeVarp);
             m_memberMap.insert(classp, sizeVarp);
             sizeVarp->user2p(classp);
@@ -4014,7 +4059,6 @@ class SolverSmtLowering final : public V3SolverLowering {
         for (AstNodeConstraintItem* const itemp : VNList<AstNodeConstraintItem>{constrItemsp}) {
             // dist can appear inside an if/else or foreach constraint.
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
-                UASSERT_OBJ(cifp->thensp(), cifp, "constraint if without a then body");
                 lowerDistConstraints(taskp, cifp->thensp(), randModeVarp, foreachp);
                 if (cifp->elsesp()) {
                     lowerDistConstraints(taskp, cifp->elsesp(), randModeVarp, foreachp);
@@ -4022,7 +4066,6 @@ class SolverSmtLowering final : public V3SolverLowering {
                 continue;
             }
             if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
-                UASSERT_OBJ(cfep->bodyp(), cfep, "constraint foreach without a body");
                 lowerDistConstraints(taskp, cfep->bodyp(), randModeVarp, cfep);
                 continue;
             }
@@ -4324,7 +4367,7 @@ public:
                                AstCMethodHard* nodep) override {
         // Replace '.size()' of a constrained array with a solver size variable
         FileLine* const fl = nodep->fileline();
-        if (nodep->fromp()->user1()
+        if (nodep->fromp()->user1() && !SmtUtil::isSolveBeforeItem(nodep)
             && (nodep->method() == VCMethod::ASSOC_SIZE
                 || nodep->method() == VCMethod::DYN_SIZE)) {
             AstClass* const classp = VN_AS(modp, Class);
@@ -4597,8 +4640,9 @@ public:
         {
             std::vector<AstCMethodHard*> sizeMethodps;
             capturedTreep->foreachAndNext([&](AstCMethodHard* methodp) {
-                if (methodp->method() == VCMethod::DYN_SIZE
-                    || methodp->method() == VCMethod::ASSOC_SIZE) {
+                if ((methodp->method() == VCMethod::DYN_SIZE
+                     || methodp->method() == VCMethod::ASSOC_SIZE)
+                    && !SmtUtil::isSolveBeforeItem(methodp)) {
                     sizeMethodps.push_back(methodp);
                 }
             });
@@ -4797,15 +4841,7 @@ public:
                 varRefp->classOrPackagep(arrClassp);
                 methodp->addPinsp(varRefp);
 
-                uint32_t dimension = 0;
-                if (VN_IS(arrVarp->dtypep(), UnpackArrayDType)
-                    || VN_IS(arrVarp->dtypep(), DynArrayDType)
-                    || VN_IS(arrVarp->dtypep(), QueueDType)
-                    || VN_IS(arrVarp->dtypep(), AssocArrayDType)) {
-                    const std::pair<uint32_t, uint32_t> dims
-                        = arrVarp->dtypep()->dimensions(/*includeBasic=*/true);
-                    dimension = dims.second;
-                }
+                const uint32_t dimension = arrVarp->dtypep()->dimensions(false).second;
 
                 const size_t width = SmtUtil::arrayElementDTypep(arrVarp->dtypep())->width();
                 methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, width});

@@ -9,7 +9,7 @@ Coverage Summary:
 
 $ verilator_coverage t/t_cover_hier.out
 Coverage Summary:
-  line      : 100.0% (4/4)
+  line      : 100.0% (8/8)
   toggle    :   0.0% (0/0)
   branch    : 100.0% (4/4)
   expr      :   0.0% (0/0)
@@ -19,7 +19,7 @@ Coverage Summary:
 
 $ verilator_coverage --report summary,hier t/t_cover_hier.out
 Coverage Summary:
-  line      : 100.0% (4/4)
+  line      : 100.0% (8/8)
   toggle    :   0.0% (0/0)
   branch    : 100.0% (4/4)
   expr      :   0.0% (0/0)
@@ -28,28 +28,28 @@ Coverage Summary:
   user      : 100.0% (2/2)
 Hierarchy Coverage Summary:
   top
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   top.t
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   top.t.u_a
-    line      : 100.0% (1/1)
+    line      : 100.0% (3/3)
     branch    : 100.0% (2/2)
     user      : 100.0% (1/1)
   top.t.u_a.same_stmt
     user      : 100.0% (1/1)
   top.t.u_b
-    line      : 100.0% (1/1)
+    line      : 100.0% (3/3)
     branch    : 100.0% (2/2)
     user      : 100.0% (1/1)
   top.t.u_b.same_stmt
     user      : 100.0% (1/1)
 Design Unit Coverage Summary:
   child
-    line      : 100.0% (2/2)
+    line      : 100.0% (6/6)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   t
@@ -57,7 +57,7 @@ Design Unit Coverage Summary:
 
 $ verilator_coverage --report hier,summary --levels 0 t/t_cover_hier.out
 Coverage Summary:
-  line      : 100.0% (4/4)
+  line      : 100.0% (8/8)
   toggle    :   0.0% (0/0)
   branch    : 100.0% (4/4)
   expr      :   0.0% (0/0)
@@ -66,12 +66,12 @@ Coverage Summary:
   user      : 100.0% (2/2)
 Hierarchy Coverage Summary:
   top
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
 Design Unit Coverage Summary:
   child
-    line      : 100.0% (2/2)
+    line      : 100.0% (6/6)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   t
@@ -79,7 +79,7 @@ Design Unit Coverage Summary:
 
 $ verilator_coverage --report hier,summary --levels -4 t/t_cover_hier.out
 Coverage Summary:
-  line      : 100.0% (4/4)
+  line      : 100.0% (8/8)
   toggle    :   0.0% (0/0)
   branch    : 100.0% (4/4)
   expr      :   0.0% (0/0)
@@ -88,28 +88,28 @@ Coverage Summary:
   user      : 100.0% (2/2)
 Hierarchy Coverage Summary:
   top
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   top.t
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   top.t.u_a
-    line      : 100.0% (1/1)
+    line      : 100.0% (3/3)
     branch    : 100.0% (2/2)
     user      : 100.0% (1/1)
   top.t.u_a.same_stmt
     user      : 100.0% (1/1)
   top.t.u_b
-    line      : 100.0% (1/1)
+    line      : 100.0% (3/3)
     branch    : 100.0% (2/2)
     user      : 100.0% (1/1)
   top.t.u_b.same_stmt
     user      : 100.0% (1/1)
 Design Unit Coverage Summary:
   child
-    line      : 100.0% (2/2)
+    line      : 100.0% (6/6)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   t
@@ -120,28 +120,28 @@ $ verilator_coverage --report summary empty.dat
 $ verilator_coverage --report hierarchy t/t_cover_hier.out
 Hierarchy Coverage Summary:
   top
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   top.t
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   top.t.u_a
-    line      : 100.0% (1/1)
+    line      : 100.0% (3/3)
     branch    : 100.0% (2/2)
     user      : 100.0% (1/1)
   top.t.u_a.same_stmt
     user      : 100.0% (1/1)
   top.t.u_b
-    line      : 100.0% (1/1)
+    line      : 100.0% (3/3)
     branch    : 100.0% (2/2)
     user      : 100.0% (1/1)
   top.t.u_b.same_stmt
     user      : 100.0% (1/1)
 Design Unit Coverage Summary:
   child
-    line      : 100.0% (2/2)
+    line      : 100.0% (6/6)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   t
@@ -150,24 +150,24 @@ Design Unit Coverage Summary:
 $ verilator_coverage --report hierarchy --levels 2 t/t_cover_hier.out
 Hierarchy Coverage Summary:
   top
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   top.t
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   top.t.u_a
-    line      : 100.0% (1/1)
+    line      : 100.0% (3/3)
     branch    : 100.0% (2/2)
     user      : 100.0% (1/1)
   top.t.u_b
-    line      : 100.0% (1/1)
+    line      : 100.0% (3/3)
     branch    : 100.0% (2/2)
     user      : 100.0% (1/1)
 Design Unit Coverage Summary:
   child
-    line      : 100.0% (2/2)
+    line      : 100.0% (6/6)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   t
@@ -176,28 +176,28 @@ Design Unit Coverage Summary:
 $ verilator_coverage --report hierarchy --levels -1 t/t_cover_hier.out
 Hierarchy Coverage Summary:
   top
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   top.t
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   top.t.u_a
-    line      : 100.0% (1/1)
+    line      : 100.0% (3/3)
     branch    : 100.0% (2/2)
     user      : 100.0% (1/1)
   top.t.u_a.same_stmt
     user      : 100.0% (1/1)
   top.t.u_b
-    line      : 100.0% (1/1)
+    line      : 100.0% (3/3)
     branch    : 100.0% (2/2)
     user      : 100.0% (1/1)
   top.t.u_b.same_stmt
     user      : 100.0% (1/1)
 Design Unit Coverage Summary:
   child
-    line      : 100.0% (2/2)
+    line      : 100.0% (6/6)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   t
@@ -206,24 +206,24 @@ Design Unit Coverage Summary:
 $ verilator_coverage --report hier --levels 2 t/t_cover_hier.out
 Hierarchy Coverage Summary:
   top
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   top.t
-    line      : 100.0% (4/4)
+    line      : 100.0% (8/8)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   top.t.u_a
-    line      : 100.0% (1/1)
+    line      : 100.0% (3/3)
     branch    : 100.0% (2/2)
     user      : 100.0% (1/1)
   top.t.u_b
-    line      : 100.0% (1/1)
+    line      : 100.0% (3/3)
     branch    : 100.0% (2/2)
     user      : 100.0% (1/1)
 Design Unit Coverage Summary:
   child
-    line      : 100.0% (2/2)
+    line      : 100.0% (6/6)
     branch    : 100.0% (4/4)
     user      : 100.0% (2/2)
   t

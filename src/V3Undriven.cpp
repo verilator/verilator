@@ -690,7 +690,18 @@ class UndrivenVisitor final : public VNVisitorConst {
     void visit(AstSel* nodep) override {
         AstNodeVarRef* const varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
         AstConst* const constp = VN_CAST(nodep->lsbp(), Const);
-        if (varrefp && constp && !constp->num().isFourState()) {
+        const bool constSel = varrefp && constp && !constp->num().isFourState();
+        // A select of the whole vector has the whole vector as its longest static
+        // prefix (IEEE 1800-2023 11.5.3), so treat it as a whole-variable access.
+        // Aggregate selects come from member accesses and stay per-bit.
+        const bool wholeSel = constSel && constp->toUInt() == 0
+                              && nodep->width() == varrefp->varp()->width()
+                              && !VN_IS(nodep->fromp()->dtypep()->skipRefp(), NodeUOrStructDType);
+        if (wholeSel) {
+            iterateConst(nodep->fromp());
+            return;
+        }
+        if (constSel) {
             for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
                 UndrivenVarEntry* const entryp = getEntryp(varrefp->varp(), usr);
                 const int lsb = constp->toUInt();
@@ -738,12 +749,17 @@ class UndrivenVisitor final : public VNVisitorConst {
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
             if (m_inProcAssign && !nodep->varp()->varType().isProcAssignable()
                 && !nodep->varp()->isDeclTyped()  //
+                // A ref port is a variable, even without a data type (IEEE 1800-2023 23.2.2.3)
+                && !(nodep->varp()->isRef() && !nodep->varp()->isNet())  //
                 && !nodep->varp()->isClassMember() && !nodep->varp()->isFuncLocal()) {
                 nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intended var"
                                                << " (IEEE 1800-2023 6.5): "
                                                << nodep->prettyNameQ());
-            } else if (m_inContAssign && !nodep->varp()->varType().isContAssignable()
-                       && !nodep->fileline()->language().systemVerilog()) {
+            } else if (m_inContAssign && !nodep->fileline()->language().systemVerilog()
+                       && (!nodep->varp()->varType().isContAssignable()
+                           // A port declared with a data type, e.g. 'output reg', is a variable
+                           || (nodep->varp()->varType().isPort()
+                               && nodep->varp()->isDeclTyped()))) {
                 nodep->v3warn(CONTASSREG,
                               "Continuous assignment to reg, perhaps intended wire"
                                   << " (IEEE 1364-2005 6.1; Verilog only, legal in SV): "
@@ -1059,8 +1075,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     void visit(AstNodeCoverDecl*) override {}
     void visit(AstCoverInc*) override {}
     void visit(AstCoverToggle*) override {}
-    void visit(AstTraceDecl* nodep) override { nodep->v3fatalSrc("Should not exist yet"); }
-    void visit(AstTraceInc* nodep) override { nodep->v3fatalSrc("Should not exist yet"); }
+    void visit(AstRtmdHier*) override {}  // Descriptors are not a sink for UNUSED warnings
 
     // iterate
     void visit(AstConst* nodep) override {}

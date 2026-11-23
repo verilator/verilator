@@ -108,6 +108,20 @@ module t (
     u_split_2 <= ~m_din;
   end
 
+  // The random call has a side effect (it advances the RNG state), so it must be
+  // evaluated once, and these must not split, or the copies would diverge (#9228)
+  int v_nosplit_1 = 0;
+  int v_nosplit_2 = 0;
+  always @(posedge clk) begin
+    if (($urandom % 2) != 0) begin
+      v_nosplit_1 <= v_nosplit_1 + 1;
+      v_nosplit_2 <= v_nosplit_2 + 1;
+    end
+  end
+  always @(posedge clk) begin
+    if (v_nosplit_1 != v_nosplit_2) $stop;
+  end
+
   // The checker block won't split.
   always @(posedge clk) begin
     if (cyc != 0) begin

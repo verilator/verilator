@@ -273,6 +273,7 @@ class SubstVisitor final : public VNVisitor {
         if (!nodep->isQuad() && newp->isQuad()) {
             newp = new AstCCast{newp->fileline(), newp, nodep};
         }
+        newp->dtypeFrom(nodep);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         ++m_nSubst;
@@ -441,6 +442,13 @@ class SubstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         // Do not substitute impure expressions
         if (!nodep->isPure()) m_ops = SUBST_MAX_OPS_NA;
+    }
+
+    void visit(AstWith* nodep) override {
+        iterateChildren(nodep);
+        // Do not substitute expressions containing a 'with' lambda,
+        // whose body is statements run per item
+        m_ops = SUBST_MAX_OPS_NA;
     }
 
     void visit(AstVar*) override {}  // Accelerate

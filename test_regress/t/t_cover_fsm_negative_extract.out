@@ -554,6 +554,87 @@
             state_q <= rst_n ? state_d : state_t'(dyn_reset);
           end
         endmodule
+        module fsm_positive_compound_reset_bad (
+            input logic clk,
+            input logic rst_n,
+            input logic flush,
+            input logic [1:0] ctrl,
+            input logic go,
+            input logic seed
+        );
+          typedef enum logic [1:0] {
+            S0 = 2'd0,
+            S1 = 2'd1,
+            S2 = 2'd2
+          } state_t;
+          // An active-low reset in the else branch is only recognized on a plain signal
+          state_t state_q  /*verilator fsm_state*/;
+          state_t state_d;
+          always_comb begin
+            state_d = state_q;
+            case (state_q)
+              S0: state_d = S1;
+              S1: state_d = S2;
+              default: state_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            if (rst_n && !flush) state_q <= state_d;
+            else state_q <= S0;
+          end
+          // The same with two statements per branch, so it isn't folded into '?:'
+          state_t if_q  /*verilator fsm_state*/;
+          state_t if_d;
+          logic [1:0] count;
+          always_comb begin
+            if_d = if_q;
+            case (if_q)
+              S0: if_d = S1;
+              S1: if_d = S2;
+              default: if_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            if (rst_n && !flush) begin
+              if_q <= if_d;
+              count <= count + 1'b1;
+            end
+            else begin
+              if_q <= S0;
+              count <= '0;
+            end
+          end
+          // A '?:' on a bit select is not a plain signal either
+          state_t sel_q  /*verilator fsm_state*/;
+          state_t sel_d;
+          always_comb begin
+            sel_d = sel_q;
+            case (sel_q)
+              S0: sel_d = S1;
+              S1: sel_d = S2;
+              default: sel_d = S0;
+            endcase
+          end
+          always_ff @(posedge clk) begin
+            sel_q <= ctrl[1] ? sel_d : S0;
+          end
+          // An else branch that doesn't start with a constant assignment isn't an active-low
+          // reset around the case
+          state_t oneblock_q  /*verilator fsm_state*/;
+          logic aux;
+          always_ff @(posedge clk) begin
+            if (go)
+              case (oneblock_q)
+                S0: oneblock_q <= S1;
+                S1: oneblock_q <= S2;
+                default: oneblock_q <= S0;
+              endcase
+            else begin
+              aux <= seed;
+              oneblock_q <= S0;
+            end
+          end
+        endmodule
         module fsm_reg_enable_no_else_bad (
             input logic clk,
             input logic start
@@ -749,6 +830,14 @@
               .clk(clk),
               .rst_n(cyc != 0),
               .dyn_reset(dyn_case[1:0])
+          );
+          fsm_positive_compound_reset_bad positive_compound_reset_u (
+              .clk(clk),
+              .rst_n(cyc != 0),
+              .flush(start),
+              .ctrl(cyc[1:0]),
+              .go(start),
+              .seed(cyc[0])
           );
           fsm_reg_enable_no_else_bad reg_enable_no_else_u (
               .clk(clk),

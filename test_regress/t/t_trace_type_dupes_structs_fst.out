@@ -10,7 +10,7 @@ $timescale
 $end
  $scope module top $end
   $var wire 1 ! clk $end
-  $scope module pkg $end
+  $scope package pkg $end
    $attrbegin pack packed members 3 $end
    $scope struct SUB_ONES $end
     $var parameter 1 " field_a $end

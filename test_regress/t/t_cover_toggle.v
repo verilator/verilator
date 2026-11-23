@@ -105,7 +105,7 @@ module t (/*AUTOARG*/
 
   reg [1:0]  memory[121:110];
 
-  wire [1023:0] largeish = {992'h0, cyc};
+  wire [1024:0] largeish = {cyc[2], 960'h0, cyc, cyc};
   // CHECK_COVER_MISSING(-1)
 
   always @ (posedge clk) begin
@@ -221,6 +221,21 @@ module off (/*AUTOARG*/
   input toggle;
   // CHECK_COVER(-1,"top.t.o1","toggle:0->1",1)
   // CHECK_COVER(-2,"top.t.o1","toggle:1->0",1)
+
+  // coverage off
+  wire off_bare = toggle;
+  // CHECK_COVER_MISSING(-1)
+  // coverage on
+  wire on_bare = toggle;
+  // CHECK_COVER(-1,"top.t.o1","on_bare:0->1",1)
+  // CHECK_COVER(-2,"top.t.o1","on_bare:1->0",1)
+  /* pragma coverage off */
+  wire off_pragma = toggle;
+  // CHECK_COVER_MISSING(-1)
+  // pragma coverage on
+  wire on_pragma = toggle;
+  // CHECK_COVER(-1,"top.t.o1","on_pragma:0->1",1)
+  // CHECK_COVER(-2,"top.t.o1","on_pragma:1->0",1)
 
 endmodule
 

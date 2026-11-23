@@ -14,12 +14,7 @@
 //
 //*************************************************************************
 // BRANCH TRANSFORMATIONS:
-//      At each IF/(IF else).
-//         Count underneath $display/$stop statements.
-//         If more on if than else, this branch is unlikely, or vice-versa.
-//      At each FTASKREF,
-//         Count calls into the function
-//      Then, if FTASK is called only once, add inline attribute
+//      See V3InstrCount, which also predicts branches while costing them.
 //
 //*************************************************************************
 
@@ -27,54 +22,15 @@
 
 #include "V3Branch.h"
 
+#include "V3InstrCount.h"
+
 VL_DEFINE_DEBUG_FUNCTIONS;
-
-//######################################################################
-// Branch state, as a visitor of each AstNode
-
-class BranchVisitor final : public VNVisitorConst {
-    // STATE - for current visit position (use VL_RESTORER)
-    int m_unlikely = 0;  // Excuses for branch likely not taken
-
-    // VISITORS
-    void visit(AstIf* nodep) override {
-        UINFO(4, " IF: " << nodep);
-        VL_RESTORER(m_unlikely);
-        // Do then
-        m_unlikely = 0;
-        iterateAndNextConstNull(nodep->thensp());
-        const int thenUnlikely = m_unlikely;
-        // Do else
-        m_unlikely = 0;
-        iterateAndNextConstNull(nodep->elsesp());
-        const int elseUnlikely = m_unlikely;
-        // Compute
-        if (elseUnlikely > thenUnlikely) {
-            nodep->branchPred(VBranchPred::BP_LIKELY);
-        } else if (elseUnlikely < thenUnlikely) {
-            nodep->branchPred(VBranchPred::BP_UNLIKELY);
-        }  // else leave unknown
-    }
-
-    void visit(AstNode* nodep) override {
-        if (nodep->isUnlikely()) {
-            UINFO(4, "  UNLIKELY: " << nodep);
-            ++m_unlikely;
-        }
-        iterateChildrenConst(nodep);
-    }
-
-public:
-    // CONSTRUCTORS
-    explicit BranchVisitor(AstNetlist* nodep) { iterateChildrenConst(nodep); }
-    ~BranchVisitor() override = default;
-};
 
 //######################################################################
 // Branch class functions
 
 void V3Branch::branchAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { BranchVisitor{nodep}; }
+    V3InstrCount::count(nodep, false);
     V3Global::dumpCheckGlobalTree("branch", 0, dumpTreeEitherLevel() >= 3);
 }

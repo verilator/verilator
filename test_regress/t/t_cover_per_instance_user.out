@@ -29,8 +29,12 @@ C 'ft/t_cover_per_instance_user.vl17n3tlinepagev_line/childoblockS
 C 'ft/t_cover_per_instance_user.vl17n3tlinepagev_line/childoblockS17-18htb.wrap_b.dut_b' 9
 C 'ft/t_cover_per_instance_user.vl19n5tbranchpagev_branch/childoifS19-20htb.dut_a' 4
 C 'ft/t_cover_per_instance_user.vl19n5tbranchpagev_branch/childoifS19-20htb.wrap_b.dut_b' 1
+C 'ft/t_cover_per_instance_user.vl19n5tlinepagev_line/childoifS19-20htb.dut_a' 4
+C 'ft/t_cover_per_instance_user.vl19n5tlinepagev_line/childoifS19-20htb.wrap_b.dut_b' 1
 C 'ft/t_cover_per_instance_user.vl19n6tbranchpagev_branch/childoelseS22-23htb.dut_a' 5
 C 'ft/t_cover_per_instance_user.vl19n6tbranchpagev_branch/childoelseS22-23htb.wrap_b.dut_b' 8
+C 'ft/t_cover_per_instance_user.vl19n6tlinepagev_line/childoelseS22-23htb.dut_a' 5
+C 'ft/t_cover_per_instance_user.vl19n6tlinepagev_line/childoelseS22-23htb.wrap_b.dut_b' 8
 C 'ft/t_cover_per_instance_user.vl29n11ttogglepagev_toggle/wrapoclk:0->1htb.wrap_b' 9
 C 'ft/t_cover_per_instance_user.vl29n11ttogglepagev_toggle/wrapoclk:1->0htb.wrap_b' 8
 C 'ft/t_cover_per_instance_user.vl30n11ttogglepagev_toggle/wrapoen:0->1htb.wrap_b' 1
@@ -51,7 +55,9 @@ C 'ft/t_cover_per_instance_user.vl54n3tlinepagev_line/tboblockS54-
 C 'ft/t_cover_per_instance_user.vl58n3tlinepagev_line/tboblockS58htb' 17
 C 'ft/t_cover_per_instance_user.vl60n3tlinepagev_line/tboblockS60htb' 9
 C 'ft/t_cover_per_instance_user.vl61n5tbranchpagev_branch/tboifS61-63htb' 1
+C 'ft/t_cover_per_instance_user.vl61n5tlinepagev_line/tboifS61-63htb' 1
 C 'ft/t_cover_per_instance_user.vl61n6tbranchpagev_branch/tboelsehtb' 8
+C 'ft/t_cover_per_instance_user.vl61n6tlinepagev_line/tboelsehtb' 8
 C 'ft/t_cover_per_instance_user.vl8n11ttogglepagev_toggle/childoclk:0->1htb.dut_a' 9
 C 'ft/t_cover_per_instance_user.vl8n11ttogglepagev_toggle/childoclk:0->1htb.wrap_b.dut_b' 9
 C 'ft/t_cover_per_instance_user.vl8n11ttogglepagev_toggle/childoclk:1->0htb.dut_a' 8

@@ -19,7 +19,8 @@ ______________________________________________________________________
 - **Key files:** `verilated.h` (core model API), `verilated_types.h` (data
   types), `verilated_random.cpp` (constrained-random runtime), `verilated_cov.*`
   (coverage), `verilated_threads.*` (MT runtime), `verilated_timing.*`
-  (`--timing` runtime), `verilated_vcd_c.*`/`verilated_fst_c.*` (tracing).
+  (`--timing` runtime), `verilated_rtmd.*` (run time model descriptors),
+  `verilated_trace*.h` and `verilated_{vcd,fst,saif}_c.*` (tracing).
 - A runtime-only fix lives entirely here and does not rebuild `verilator_bin`.
 
 ______________________________________________________________________
@@ -30,7 +31,8 @@ ______________________________________________________________________
   features are allowed only in `--timing` code paths.
 - **Public API naming and docs.** Prefix public classes and types with
   `Verilated`/`Vl` to avoid collisions with user code, and document the API with
-  `///` comments -- they feed doc generation.
+  `///` comments -- they feed doc generation. This applies only to public-called
+  API functions; in headers marked internal, and internal-only functions use `//`.
 - **No exceptions in runtime code** -- use error returns or assertions; exceptions
   add overhead on every path.
 - **Use fixed-width model types** (`CData`/`SData`/`IData`/`QData`/`VlWide`), never

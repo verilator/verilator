@@ -364,13 +364,10 @@ module with the same parameter set. A module instantiated with different
 parameter values is considered a different module and will get counted
 separately.
 
-Verilator makes a minimally-intelligent decision about what clock domain
-the signal goes to, and only looks for edges in that clock domain. This
-means that edges may be ignored if it is known that the receiving logic
-could never see the edge. This algorithm may improve in the future. The net
-result is that coverage may be lower than what would be seen by looking at
-traces, but the coverage is a more accurate representation of the quality
-of stimulus into the design.
+Toggles are counted on every change of a bit, including glitches, which are
+transient changes within a time step while logic settles. As a result,
+toggle counts may be higher than what would be seen by looking at traces,
+which show one value per time step.
 
 There may be edges counted near time zero while the model stabilizes. It's
 a good practice to zero all coverage just before releasing reset to prevent
@@ -424,8 +421,9 @@ Suppressing Coverage
 
 Using :option:`/*verilator&32;coverage_off*/` and
 :option:`/*verilator&32;coverage_on*/` around a block of code will disable
-and enable coverage respectively around that block. Or, use the
-:option:`coverage_block_off` control file option.
+and enable coverage respectively around that block, as do
+:option:`//&32;coverage&32;off` and :option:`//&32;coverage&32;on`. Or, use
+the :option:`coverage_block_off` control file option.
 
 Verilator automatically disables coverage of lines and branches with a
 $stop in them, as it is assumed that $stop branches contain an error check
