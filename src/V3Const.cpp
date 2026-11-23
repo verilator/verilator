@@ -3438,6 +3438,8 @@ class ConstVisitor final : public VNVisitor {
 
     // Not folded, so not constant
     void visit(AstAssocSel* nodep) override { visit(static_cast<AstNode*>(nodep)); }
+    void visit(AstDynArraySel* nodep) override { visit(static_cast<AstNode*>(nodep)); }
+    void visit(AstQueueSel* nodep) override { visit(static_cast<AstNode*>(nodep)); }
     void visit(AstWildcardSel* nodep) override { visit(static_cast<AstNode*>(nodep)); }
 
     void visit(AstStructSel* nodep) override {
@@ -4386,6 +4388,8 @@ class ConstVisitor final : public VNVisitor {
     TREE_SKIP_VISIT("ArraySel");
     TREE_SKIP_VISIT("AssocSel");
     TREE_SKIP_VISIT("CAwait");
+    TREE_SKIP_VISIT("DynArraySel");
+    TREE_SKIP_VISIT("QueueSel");
     TREE_SKIP_VISIT("WildcardSel");
 
     //-----

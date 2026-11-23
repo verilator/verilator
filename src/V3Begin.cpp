@@ -625,7 +625,6 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                         indexp->dtypeSetInt();
                     }
                     subfromp = new AstArraySel{fl, subfromp, indexp};
-                    subfromp->dtypep(adtypep->subDTypep());
                 }
             } else if (const AstBasicDType* const adtypep = VN_CAST(fromDtp, BasicDType)) {
                 if (adtypep->isString()) {
@@ -647,8 +646,11 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 rightp->protect(false);
                 loopp = createForeachLoop(nodep, blockp, bodyPointp, arrayMayResize, subfromp,
                                           varp, leftp, rightp, VNType::Lt);
-                subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
-                subfromp->dtypep(fromDtp->subDTypep());
+                if (VN_IS(fromDtp, DynArrayDType)) {
+                    subfromp = new AstDynArraySel{fl, subfromp, varRefp};
+                } else {
+                    subfromp = new AstQueueSel{fl, subfromp, varRefp};
+                }
             } else if (VN_IS(fromDtp, AssocArrayDType) || VN_IS(fromDtp, WildcardArrayDType)) {
                 // Make this: var KEY_TYPE index;
                 //            bit index__Vfirst;
@@ -657,8 +659,11 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 //                 do body while (index__Vfirst || 0 != array.next(index))
                 loopp = createForeachAssoc(fl, blockp, varp, subfromp, fromDtp, bodyPointp);
                 AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
-                subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
-                subfromp->dtypep(fromDtp->subDTypep());
+                if (VN_IS(fromDtp, AssocArrayDType)) {
+                    subfromp = new AstAssocSel{fl, subfromp, varRefp};
+                } else {
+                    subfromp = new AstWildcardSel{fl, subfromp, varRefp};
+                }
             }
             UASSERT_OBJ(loopp, argsp, "unable to foreach " << fromDtp);
             // New loop goes UNDER previous loop

@@ -50,6 +50,17 @@ class Packet;
   endfunction
 endclass
 
+class QueueState;
+  rand int last;
+  rand int prev;
+  int q[$] = '{1, 2, 3};
+
+  constraint c {
+    last == q[$];
+    prev == q[$ - 1];
+  }
+endclass
+
 module t;
 
   Packet p;
@@ -70,6 +81,14 @@ module t;
     v = p.randomize();
     if (v != 1) $stop;
     if (p.rf != 234) $stop;
+
+    begin
+      automatic QueueState qs = new;
+      v = qs.randomize();
+      if (v != 1) $stop;
+      if (qs.last != 3) $stop;
+      if (qs.prev != 2) $stop;
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;

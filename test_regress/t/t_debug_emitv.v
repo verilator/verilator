@@ -455,6 +455,7 @@ module t (/*AUTOARG*/
     if (CP_SCOPE_PARAM != 2) $write("");
     sel_idx <= cyc[3:0];
     queue_of_t.push_back(1);
+    if (q[$] != q[$ - 1]) $write("");  // AstQueueSel from the back
 
     $display("%g", $log10(r));
     $display("%g", $ln(r));

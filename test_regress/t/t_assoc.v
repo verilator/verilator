@@ -37,6 +37,31 @@ module t (
 
   integer i;
 
+  function automatic int bump(ref int n);
+    ++n;
+    return 0;
+  endfunction
+
+  // Element writes and reads keep their effects
+  initial begin
+    begin
+      typedef int arr_t[4];
+      arr_t aa[int];
+      aa[0][0] = 0;
+      aa[0][1:1] = '{5};
+      `checkh(aa[0][1], 5);
+    end
+    begin
+      int ia[int];
+      int n;
+      int x;
+      ia[0] = 5;
+      n = 0;
+      x = ia[bump(n)] * 0;
+      `checkh(n, 1);
+    end
+  end
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     begin
