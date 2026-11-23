@@ -707,40 +707,25 @@ class LinkParseVisitor final : public VNVisitor {
                 m_varp->attrSplitVar(true);
             }
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_FSM_ARC_INCLUDE_COND) {
-            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->attrFsmArcInclCond(true);
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_FSM_ARC_INCLUDE_COND_AUTO) {
-            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->attrFsmArcInclCond(true);
-            m_varp->attrFsmStateExpand(VFsmExpandType::AUTO);
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_FSM_ARC_INCLUDE_COND_AUTO_EXPAND) {
-            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->attrFsmArcInclCond(true);
-            m_varp->attrFsmStateExpand(VFsmExpandType::AUTO_EXPAND);
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_FSM_ARC_INCLUDE_COND_FULL) {
-            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->attrFsmArcInclCond(true);
-            m_varp->attrFsmStateExpand(VFsmExpandType::FULL);
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE) {
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE
+                   || nodep->attrType() == VAttrType::VAR_FSM_ARC_INCLUDE_COND) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrFsmState(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE_AUTO) {
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE_AUTO
+                   || nodep->attrType() == VAttrType::VAR_FSM_ARC_INCLUDE_COND_AUTO) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrFsmState(true);
             m_varp->attrFsmStateExpand(VFsmExpandType::AUTO);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE_AUTO_EXPAND) {
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE_AUTO_EXPAND
+                   || nodep->attrType() == VAttrType::VAR_FSM_ARC_INCLUDE_COND_AUTO_EXPAND) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrFsmState(true);
             m_varp->attrFsmStateExpand(VFsmExpandType::AUTO_EXPAND);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE_FULL) {
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE_FULL
+                   || nodep->attrType() == VAttrType::VAR_FSM_ARC_INCLUDE_COND_FULL) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrFsmState(true);
             m_varp->attrFsmStateExpand(VFsmExpandType::FULL);

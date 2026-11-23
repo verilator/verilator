@@ -350,7 +350,7 @@ module fsm_caseassigns_off (
   end
 endmodule
 
-module fsm_seqmix_off (
+module fsm_seqmix (
     input logic clk,
     input logic rst
 );
@@ -411,7 +411,7 @@ module fsm_if_chain_guard (
   end
 endmodule
 
-module fsm_if_chain_guard_noelse_off (
+module fsm_if_chain_guard_noelse (
     input logic clk,
     input logic rst,
     input logic sel
@@ -425,7 +425,7 @@ module fsm_if_chain_guard_noelse_off (
   state_t state_q;
   state_t state_d;
 
-  // A nested guard without else is not a supported chain branch
+  // A guard without else nested in a chain branch: the state holds when it is false
   always_comb begin
     state_d = state_q;
     if (state_q == S0) begin
@@ -495,8 +495,8 @@ module fsm_case_guarded_chain (
   state_t state_q;
   state_t state_d;
 
-  // S1 assigns on every path, which without coverage folds to a nested '?:',
-  // so it is skipped in all forms.  S2 assigns nothing, so it has no transition.
+  // S1 has a guarded chain with a final else; S2's guard assigns nothing, so S2 has no
+  // transition of its own
   always_comb begin
     state_d = state_q;
     case (state_q)
@@ -567,7 +567,7 @@ module t (
       .rst(rst),
       .sel(cyc[1])
   );
-  fsm_if_chain_guard_noelse_off if_chain_guard_noelse_off_u (
+  fsm_if_chain_guard_noelse if_chain_guard_noelse_u (
       .clk(clk),
       .rst(rst),
       .sel(sel)
@@ -587,7 +587,7 @@ module t (
       .rst(rst),
       .go(start)
   );
-  fsm_seqmix_off seqmix_off_u (
+  fsm_seqmix seqmix_u (
       .clk(clk),
       .rst(rst)
   );

@@ -1,0 +1,1599 @@
+// DESCRIPTION: Verilator: FSM coverage of the common FSM coding styles
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
+package fsm_styles_pkg;
+  typedef enum logic [1:0] {
+    S0,
+    S1,
+    S2,
+    S3
+  } st_t;
+endpackage
+
+// Two processes
+module fsm_two_proc (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, next;
+  always_comb begin
+    next = state;
+    case (state)
+      S0: if (go) next = S1;
+      S1: next = S2;
+      S2: next = S0;
+      default: next = S0;
+    endcase
+  end
+  always_ff @(posedge clk) if (rst) state <= S0; else state <= next;
+endmodule
+
+// Items that assign another variable first
+module fsm_other_assign (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, next;
+  logic busy;
+  always_comb begin
+    next = state;
+    busy = 0;
+    case (state)
+      S0: begin
+        busy = 1;
+        if (go) next = S1;
+      end
+      S1: begin
+        busy = 1;
+        next = S2;
+      end
+      default: next = S0;
+    endcase
+  end
+  always_ff @(posedge clk) if (rst) state <= S0; else state <= next;
+endmodule
+
+// A register with an enable
+module fsm_enable (
+    input logic clk,
+    input logic rst,
+    input logic en,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, next;
+  always_comb begin
+    next = state;
+    case (state)
+      S0: if (go) next = S1;
+      S1: next = S2;
+      default: next = S0;
+    endcase
+  end
+  always_ff @(posedge clk) if (rst) state <= S0; else if (en) state <= next;
+endmodule
+
+// One process with a compound reset
+module fsm_compound_reset (
+    input logic clk,
+    input logic rst,
+    input logic flush,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge clk)
+    if (rst | flush) state <= S0;
+    else
+      case (state)
+        S0: if (go) state <= S1;
+        S1: state <= S2;
+        default: state <= S0;
+      endcase
+endmodule
+
+// An if chain whose first branch is on an input
+module fsm_input_guard (
+    input logic clk,
+    input logic rst,
+    input logic start,
+    input logic done
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else if (start) state <= S1;
+    else if (state == S1 && done) state <= S2;
+    else if (state == S2) state <= S0;
+endmodule
+
+// A branch on an OR of states
+module fsm_or_states (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else if (state == S0) begin
+      if (go) state <= S1;
+    end else if (state == S1 | state == S2) state <= S3;
+    else state <= S0;
+endmodule
+
+// An else-if chain inside an item, with three targets
+module fsm_three_targets (
+    input logic clk,
+    input logic rst,
+    input logic a,
+    input logic b
+);
+  import fsm_styles_pkg::*;
+  st_t state, next;
+  always_comb begin
+    next = state;
+    case (state)
+      S0: if (a) next = S1;
+      else if (b) next = S2;
+      else next = S3;
+      default: next = S0;
+    endcase
+  end
+  always_ff @(posedge clk) if (rst) state <= S0; else state <= next;
+endmodule
+
+// A register written beside others under an enable, with an active-low reset
+module fsm_beside_others (
+    input logic clk,
+    input logic rst_n,
+    input logic en,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, next;
+  logic [7:0] pc, hold;
+  always_comb begin
+    next = state;
+    case (state)
+      S0: if (go) next = S1;
+      S1: next = S2;
+      default: next = S0;
+    endcase
+  end
+  always_ff @(posedge clk or negedge rst_n)
+    if (~rst_n) begin
+      state <= S0;
+      pc <= '0;
+    end else if (en) begin
+      pc <= pc + 8'd1;
+      state <= next;
+    end else hold <= pc;
+endmodule
+
+// Holds through ?:
+module fsm_ternary_hold (
+    input logic clk,
+    input logic rst,
+    input logic go,
+    input logic done
+);
+  import fsm_styles_pkg::*;
+  st_t state_n, state_r;
+  always_comb
+    case (state_r)
+      S0: state_n = go ? S1 : state_r;
+      S1: state_n = done ? S2 : state_r;
+      default: state_n = S0;
+    endcase
+  always_ff @(posedge clk) if (rst) state_r <= S0; else state_r <= state_n;
+endmodule
+
+// A default next state, then an override
+module fsm_default_override (
+    input logic clk,
+    input logic rst,
+    input logic abort
+);
+  import fsm_styles_pkg::*;
+  st_t state, next;
+  always_comb begin
+    next = state;
+    case (state)
+      S0: next = S1;
+      S1: begin
+        next = S2;
+        if (abort) next = S0;
+      end
+      default: next = S0;
+    endcase
+  end
+  always_ff @(posedge clk) if (rst) state <= S0; else state <= next;
+endmodule
+
+// A reset branch that assigns another variable first, and the state twice
+module fsm_reset_other_first (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  logic busy;
+  always_ff @(posedge clk)
+    if (rst) begin
+      busy <= 0;
+      state <= S1;
+      state <= S0;
+    end else
+      case (state)
+        S0: if (go) state <= S1;
+        S1: state <= S2;
+        default: state <= S0;
+      endcase
+endmodule
+
+// A case on a combinational address decode is not an FSM
+module fsm_case_on_wire (
+    input logic clk,
+    input logic [15:0] paddr,
+    input logic [7:0] wdata,
+    input logic wr
+);
+  localparam logic [15:0] REG_A = 16'h0000;
+  localparam logic [15:0] REG_B = 16'h4000;
+  logic [15:0] entry;
+  logic [7:0] a, b, rdata;
+  assign entry = {paddr[15:3], 3'b000};
+  always_ff @(posedge clk) begin
+    case (entry)
+      REG_A: rdata <= a;
+      REG_B: rdata <= b;
+      default: rdata <= '0;
+    endcase
+    if (wr) begin
+      if (entry == REG_A) a <= wdata;
+      if (entry == REG_B) b <= wdata;
+    end
+  end
+endmodule
+
+// Unsized localparam states
+module fsm_unsized_params (
+    input logic clk,
+    input logic trst,
+    input logic tms
+);
+  localparam IDLE = 0;
+  localparam SELECT = 1;
+  localparam CAPTURE = 2;
+  logic [1:0] state, nstate;
+  always_comb begin
+    nstate = state;
+    case (state)
+      IDLE: nstate = tms ? SELECT : IDLE;
+      SELECT: nstate = tms ? IDLE : CAPTURE;
+      CAPTURE: nstate = IDLE;
+      default: nstate = IDLE;
+    endcase
+  end
+  always_ff @(posedge clk or negedge trst) if (!trst) state <= IDLE; else state <= nstate;
+endmodule
+
+// A pre-decoded state alias in a condition
+module fsm_alias_cond (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  logic is_idle;
+  assign is_idle = state == S0;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else if (is_idle) begin
+      if (go) state <= S1;
+    end else if (state == S1) state <= S0;
+endmodule
+
+// Two FSMs in one clocked block
+module fsm_two_in_block (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t a, b;
+  always_ff @(posedge clk)
+    if (rst) begin
+      a <= S0;
+      b <= S0;
+    end else begin
+      case (a)
+        S0: if (go) a <= S1;
+        default: a <= S0;
+      endcase
+      case (b)
+        S0: b <= S2;
+        default: b <= S0;
+      endcase
+    end
+endmodule
+
+// Two FSMs in one combinational block
+module fsm_two_in_comb (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t a_q, a_d, b_q, b_d;
+  always_comb begin
+    a_d = a_q;
+    b_d = b_q;
+    case (a_q)
+      S0: if (go) a_d = S1;
+      default: a_d = S0;
+    endcase
+    case (b_q)
+      S0: b_d = S2;
+      default: b_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk)
+    if (rst) begin
+      a_q <= S0;
+      b_q <= S0;
+    end else begin
+      a_q <= a_d;
+      b_q <= b_d;
+    end
+endmodule
+
+// Two case statements on one register in one block: the later write wins
+module fsm_same_reg_twice (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else begin
+      case (state)
+        S0: if (go) state <= S1;
+        S1: state <= S0;
+        default: state <= S0;
+      endcase
+      case (state)
+        S1: state <= S2;
+        default: ;
+      endcase
+    end
+endmodule
+
+// Two if chains on one register in one block: the later write wins
+module fsm_ifchain_twice (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else begin
+      if (state == S0 && go) state <= S1;
+      else if (state == S1) state <= S0;
+      if (state == S1) state <= S2;
+      else if (state == S2) state <= S1;
+    end
+endmodule
+
+// The next state's default is overwritten before the case on it
+module fsm_nextstate_overwrite (
+    input logic clk,
+    input logic rst,
+    input logic start
+);
+  import fsm_styles_pkg::*;
+  st_t state_q, state_d;
+  always_comb begin
+    state_d = state_q;
+    if (start) state_d = S1;
+    case (state_d)
+      S0: state_d = S2;
+      S1: state_d = S2;
+      S2: state_d = S0;
+      default: state_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) if (rst) state_q <= S0; else state_q <= state_d;
+endmodule
+
+// Values outside the enum are not states: the reset gives no reset arc, the assignment
+// no arc, and the case item nothing
+module fsm_enum_unknown_value (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  typedef enum logic [1:0] {
+    E0 = 2'd0,
+    E1 = 2'd1,
+    E2 = 2'd2
+  } e_t;
+  e_t state;
+  /* verilator lint_off COVERIGN */
+  always_ff @(posedge clk)
+    if (rst) state <= e_t'(3);
+    else
+      case (state)
+        E0: if (go) state <= E1;
+        E1: state <= e_t'(3);
+        e_t'(3): state <= E0;
+        default: state <= E0;
+      endcase
+  /* verilator lint_on COVERIGN */
+endmodule
+
+// A non-enum register given a non-constant value: not an FSM
+module fsm_nonenum_var_target (
+    input logic clk,
+    input logic rst,
+    input logic [1:0] paddr_lo
+);
+  logic [1:0] state;
+  always_ff @(posedge clk)
+    if (rst) state <= 2'd0;
+    else
+      case (state)
+        2'd0: state <= 2'd1;
+        2'd1: state <= paddr_lo;
+        default: state <= 2'd0;
+      endcase
+endmodule
+
+// A plain always with a sensitivity list as the next-state block
+module fsm_plain_always (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, next;
+  always @(state or go) begin
+    next = state;
+    case (state)
+      S0: if (go) next = S1;
+      S1: next = S2;
+      default: next = S0;
+    endcase
+  end
+  always_ff @(posedge clk) if (rst) state <= S0; else state <= next;
+endmodule
+
+// A non-enum register given an X: not an FSM, as the test harness's --x-assign unique makes
+// the X a random value
+module fsm_nonenum_x_target (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  logic [1:0] state;
+  always_ff @(posedge clk)
+    if (rst) state <= 2'd0;
+    else
+      case (state)
+        2'd0: if (go) state <= 2'd1;
+        2'd1: state <= 2'bx1;
+        default: state <= 2'd0;
+      endcase
+endmodule
+
+// A next-state temporary written with blocking assignments in a clocked block is a
+// register, so neither it nor the state it feeds is an FSM
+module fsm_clocked_temporary (
+    input logic clk,
+    input logic rst,
+    input logic start
+);
+  import fsm_styles_pkg::*;
+  st_t state_q  /*verilator fsm_state*/;
+  st_t state_d;
+  always @(posedge clk) begin
+    state_d = S1;
+    case (state_d)
+      S0: state_d = start ? S1 : S2;
+      default: state_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
+// A case on the state that never assigns the next state
+module fsm_case_without_assign (
+    input logic clk,
+    input logic rst,
+    input logic start
+);
+  import fsm_styles_pkg::*;
+  logic other;
+  st_t state_q  /*verilator fsm_state*/;
+  st_t state_d;
+  always @(posedge clk) begin
+    state_d = state_q;
+    case (state_q)
+      S0: other = start;
+      default: other = 1'b0;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
+// A case inside on the state; an item with a range is not modeled, so the second register
+// is not found
+module fsm_case_inside (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, state_r;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else
+      case (state) inside
+        S0: if (go) state <= S1;
+        S1, S2: state <= S3;
+        default: state <= S0;
+      endcase
+  always_ff @(posedge clk)
+    if (rst) state_r <= S0;
+    else
+      case (state_r) inside
+        S0: state_r <= S1;
+        S1, [S2 : S3]: state_r <= S0;
+        default: state_r <= S0;
+      endcase
+endmodule
+
+// A casez, and a casex, on the state concatenated with an input, and a casez on the state
+// with a zero above it, where a label with an X matches nothing, so S3 has no arc into it
+module fsm_casez_concat (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, state_x, state_p;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else
+      casez ({state, go})
+        3'b00?: state <= S1;
+        3'b011: state <= S2;
+        3'b1??: state <= S0;
+        default: ;
+      endcase
+  /* verilator lint_off CASEX */
+  always_ff @(posedge clk)
+    if (rst) state_x <= S0;
+    else
+      casex ({state_x, go})
+        3'b00x: state_x <= S1;
+        3'b01x: state_x <= S2;
+        default: state_x <= S0;
+      endcase
+  /* verilator lint_on CASEX */
+  always_ff @(posedge clk)
+    if (rst) state_p <= S0;
+    else
+      /* verilator lint_off CASEWITHX */
+      casez ({1'b0, state_p})
+        3'b?00: state_p <= S1;
+        3'b?01: state_p <= S2;
+        3'b?1x: state_p <= S3;
+        default: state_p <= S0;
+      endcase
+      /* verilator lint_on CASEWITHX */
+endmodule
+
+// Comparisons of the state concatenated with an input, inequalities, and wildcards
+module fsm_concat_compare (
+    input logic clk,
+    input logic rst,
+    input logic go,
+    input logic abort
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else if ({go, state} == {1'b1, S0}) state <= S1;
+    else if (state != S1 && state !=? 2'b1?) state <= S0;
+    else if (state ==? 2'b1?) state <= S0;
+    else if ({go, abort} == 2'b11) state <= S2;
+    else state <= S3;
+endmodule
+
+// Temporaries chosen by nested conditions, read back in conditions
+module fsm_nested_temporary (
+    input logic clk,
+    input logic rst,
+    input logic go,
+    input logic abort,
+    input logic en
+);
+  import fsm_styles_pkg::*;
+  st_t state, state_d, pick, fallback, forced;
+  always_comb begin
+    pick = (state == S0) ? (go ? S1 : S2) : S0;
+    fallback = (state == S0) ? S0 : (go ? S1 : S2);
+    forced = S1;
+    if (abort) forced = S0;
+    if (en) forced = S0;
+    if (pick == S1 && fallback == S0) state_d = S1;
+    else if (pick == S2) state_d = S2;
+    else if (fallback == S2) state_d = S0;
+    else if (forced == S0) state_d = S0;
+    else state_d = state;
+  end
+  always_ff @(posedge clk) if (rst) state <= S0; else state <= state_d;
+endmodule
+
+// A chain of eight temporaries, each chosen by the one before it: both S0 arcs are reported
+module fsm_deep_temporaries (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, state_d;
+  st_t t0, t1, t2, t3, t4, t5, t6, t7;
+  always_comb begin
+    t0 = go ? S1 : S2;
+    t1 = (t0 == S1) ? S1 : S2;
+    t2 = (t1 == S1) ? S1 : S2;
+    t3 = (t2 == S1) ? S1 : S2;
+    t4 = (t3 == S1) ? S1 : S2;
+    t5 = (t4 == S1) ? S1 : S2;
+    t6 = (t5 == S1) ? S1 : S2;
+    t7 = (t6 == S1) ? S1 : S2;
+    state_d = state;
+    case (state)
+      S0: if (t7 == S1) state_d = S1;
+      else state_d = S2;
+      default: state_d = S0;
+    endcase
+  end
+  always_ff @(posedge clk) if (rst) state <= S0; else state <= state_d;
+endmodule
+
+// Decodes and copies of the state through chains of continuous assignments: the register
+// read four copies deep is an FSM, the one read five copies deep is not
+module fsm_deep_alias_chain (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, state2, c1, c2, c3, c4, c5;
+  logic d1, d2, d3, d4, d5;
+  assign c1 = state;
+  assign c2 = c1;
+  assign c3 = c2;
+  assign c4 = c3;
+  assign c5 = c4;
+  assign d1 = (state == S0);
+  assign d2 = d1 | go;
+  assign d3 = d2 & go;
+  assign d4 = d3 | go;
+  assign d5 = d4 & go;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else if (d4) state <= S1;
+    else
+      case (c4)
+        S1: state <= S2;
+        default: state <= S0;
+      endcase
+  always_ff @(posedge clk)
+    if (rst) state2 <= S0;
+    else if (d5) state2 <= S1;
+    else
+      case (c5)
+        S1: state2 <= S2;
+        default: state2 <= S0;
+      endcase
+endmodule
+
+// A clock expression in the sensitivity list: not reported
+module fsm_expression_clock (
+    input logic clk,
+    input logic en,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge (clk & en))
+    if (rst) state <= S0;
+    else
+      case (state)
+        S0: if (go) state <= S1;
+        S1: state <= S0;
+        default: state <= S0;
+      endcase
+endmodule
+
+// A real register is not a state machine
+module fsm_real_register (
+    input logic clk,
+    input logic rst
+);
+  real r;
+  always_ff @(posedge clk)
+    if (rst) r <= 0.0;
+    else if (r == 0.0) r <= 1.0;
+    else r <= 0.0;
+endmodule
+
+// A select narrower than the register: its states are the select's values, 3'h0 and 3'h3, not
+// the source's
+module fsm_narrow_select (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  logic [2:0] s;
+  logic [7:0] wide;
+  assign wide = go ? 8'hFF : 8'h00;
+  always_ff @(posedge clk)
+    if (rst) s <= 3'd0;
+    else if (s == 3'd0) s <= 3'(wide[1:0]);
+    else s <= 3'd0;
+endmodule
+
+// Registers assigned inside tasks: the enum registers are FSMs with no arc of their own for
+// the task's assignments, and the plain register is not an FSM; a task that writes the state
+// with '<=' before the case leaves the case reading the state's old value
+module fsm_task_write (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  logic [1:0] plain;
+  logic [3:0] count;
+  task note();
+    count <= count + 4'd1;
+  endtask
+  task go_idle();
+    note();
+    state <= S0;
+    note();
+  endtask
+  task clear_plain();
+    plain <= 2'd0;
+  endtask
+  st_t state_c;
+  task clear_state_c();
+    state_c <= S0;
+  endtask
+  always_ff @(posedge clk)
+    if (rst) state_c <= S0;
+    else begin
+      clear_state_c();
+      case (state_c)
+        S0: if (go) state_c <= S1;
+        S1: state_c <= S2;
+        default: ;
+      endcase
+    end
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else
+      case (state)
+        S0: if (go) state <= S1;
+        S1: go_idle();
+        default: state <= S0;
+      endcase
+  always_ff @(posedge clk)
+    if (rst) plain <= 2'd0;
+    else
+      case (plain)
+        2'd0: if (go) plain <= 2'd1;
+        2'd1: clear_plain();
+        default: plain <= 2'd0;
+      endcase
+endmodule
+
+// A combinational temporary with several values, read in conditions: S3 is unreachable
+module fsm_comb_temporary (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, nxt;
+  assign nxt = go ? S1 : S2;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else
+      case (state)
+        S0:
+        if (nxt == S1) state <= S1;
+        else if (nxt == S2) state <= S2;
+        else state <= S3;
+        default: state <= S0;
+      endcase
+endmodule
+
+// A load from an input beside a case on the register: not a state machine
+module fsm_load_beside_case (
+    input logic clk,
+    input logic go,
+    input logic [1:0] din
+);
+  logic [1:0] r;
+  always_ff @(posedge clk)
+    if (go) r <= din;
+    else
+      case (r)
+        2'd0: r <= 2'd1;
+        2'd1: r <= 2'd0;
+        default: r <= 2'd0;
+      endcase
+endmodule
+
+// Overlapping conditions: whenever the first assignment's condition holds so does the later
+// one's, so S0->S1 and S1->S3 are not arcs; and under 'go', 'go || en' holds, so S3->S2 is
+// not an arc
+module fsm_overlapping_guards (
+    input logic clk,
+    input logic rst,
+    input logic en,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, state_d;
+  always_comb begin
+    state_d = state;
+    case (state)
+      S0: begin
+        if (en && go) state_d = S1;
+        if (en) state_d = S2;
+      end
+      S1, S2: begin
+        if (go) state_d = S3;
+        if (go) state_d = S0;
+      end
+      default:
+      if (go) begin
+        if (go || en) state_d = S1;
+        else state_d = S2;
+      end
+    endcase
+  end
+  always_ff @(posedge clk) if (rst) state <= S0; else state <= state_d;
+endmodule
+
+// Comparisons that can never hold, of a two-bit state with 5, name no state; a top-level
+// condition that holds in every state is no reset, so its register has no reset arc
+module fsm_impossible_compare (
+    input logic clk,
+    input logic rst
+);
+  logic [1:0] always_one  /*verilator fsm_state*/;
+  always_ff @(posedge clk)
+    if (always_one == 2'd0 || always_one != 2'd0) always_one <= 2'd1;
+    else
+      case (always_one)
+        2'd1: always_one <= 2'd2;
+        default: always_one <= 2'd0;
+      endcase
+  logic [1:0] state;
+  /* verilator lint_off WIDTH */
+  always_ff @(posedge clk)
+    if (rst) state <= 2'd0;
+    else if (state == 0) state <= 2'd2;
+    else if (state == 5) state <= 2'd0;
+    else
+      case (state)
+        2'd2: state <= 2'd0;
+        5: state <= 2'd0;
+        default: state <= 2'd0;
+      endcase
+  /* verilator lint_on WIDTH */
+endmodule
+
+// A case on the state in another block names states too (S3); a case on an expression of
+// the state names none (S2)
+module fsm_output_decoder (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  logic [1:0] code;
+  logic flip;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else if (state == S0 && go) state <= S1;
+    else state <= S0;
+  always_comb begin
+    case (state)
+      S0: code = 2'd1;
+      S3: code = 2'd2;
+      default: code = 2'd0;
+    endcase
+    case (state ^ 2'b01)
+      S2: flip = 1'b1;
+      default: flip = 1'b0;
+    endcase
+  end
+endmodule
+
+// Two parameters with one value name one state, after the first one seen; a case label with
+// an X, which never matches, names no state; an X reset value is random under the test's
+// --x-assign unique, so that register is not an FSM
+module fsm_param_alias (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  localparam logic [1:0] IDLE = 2'h0;
+  localparam logic [1:0] RESET = 2'h0;
+  localparam logic [1:0] BUSY = 2'h1;
+  logic [1:0] dup, xlabel, xreset, xconcat;
+  /* verilator lint_off CASEOVERLAP */
+  always_ff @(posedge clk)
+    if (rst) dup <= IDLE;
+    else
+      case (dup)
+        IDLE: dup <= go ? BUSY : IDLE;
+        RESET: dup <= IDLE;
+        BUSY: dup <= IDLE;
+        default: dup <= IDLE;
+      endcase
+  /* verilator lint_on CASEOVERLAP */
+  /* verilator lint_off CASEWITHX */
+  always_ff @(posedge clk)
+    if (rst) xlabel <= 2'h0;
+    else
+      case (xlabel)
+        2'h0: xlabel <= 2'h1;
+        2'b1x: xlabel <= 2'h0;
+        default: xlabel <= 2'h0;
+      endcase
+  always_ff @(posedge clk)
+    if (rst) xconcat <= 2'h0;
+    else
+      case ({xconcat, go})
+        3'b000: xconcat <= 2'h1;
+        3'b11x: xconcat <= 2'h2;
+        default: xconcat <= 2'h0;
+      endcase
+  /* verilator lint_on CASEWITHX */
+  always_ff @(posedge clk)
+    if (rst) xreset <= 2'b0x;
+    else
+      case (xreset)
+        2'h0: xreset <= 2'h1;
+        2'h1: xreset <= 2'h0;
+        default: xreset <= 2'h0;
+      endcase
+endmodule
+
+// Seventeen guarded overrides in sequence: not reported as an FSM
+module fsm_many_paths (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, state_d;
+  logic [33:0] g;
+  always_ff @(posedge clk) g <= {g[32:0], g[33] ^ g[20] ^ go};
+  always_comb begin
+    state_d = state;
+    if (g[0]) begin
+      if (g[17]) state_d = S1;
+    end
+    if (g[1]) begin
+      if (g[18]) state_d = S2;
+    end
+    if (g[2]) begin
+      if (g[19]) state_d = S1;
+    end
+    if (g[3]) begin
+      if (g[20]) state_d = S2;
+    end
+    if (g[4]) begin
+      if (g[21]) state_d = S1;
+    end
+    if (g[5]) begin
+      if (g[22]) state_d = S2;
+    end
+    if (g[6]) begin
+      if (g[23]) state_d = S1;
+    end
+    if (g[7]) begin
+      if (g[24]) state_d = S2;
+    end
+    if (g[8]) begin
+      if (g[25]) state_d = S1;
+    end
+    if (g[9]) begin
+      if (g[26]) state_d = S2;
+    end
+    if (g[10]) begin
+      if (g[27]) state_d = S1;
+    end
+    if (g[11]) begin
+      if (g[28]) state_d = S2;
+    end
+    if (g[12]) begin
+      if (g[29]) state_d = S1;
+    end
+    if (g[13]) begin
+      if (g[30]) state_d = S2;
+    end
+    if (g[14]) begin
+      if (g[31]) state_d = S1;
+    end
+    if (g[15]) begin
+      if (g[32]) state_d = S2;
+    end
+    if (g[16]) begin
+      if (g[33]) state_d = S1;
+    end
+    if (state == S3) state_d = S0;
+  end
+  always_ff @(posedge clk) if (rst) state <= S0; else state <= state_d;
+endmodule
+
+// A temporary chosen between two counts, read in a condition: still an FSM
+module fsm_opaque_temporary (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  logic [3:0] cnt, lim;
+  always_ff @(posedge clk) cnt <= cnt + 4'd1;
+  assign lim = go ? cnt : ~cnt;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else if (state == S0 && lim > 4'd8) state <= S1;
+    else if (state == S1) state <= S0;
+endmodule
+
+// A register written by two clocked blocks: not reported
+module fsm_two_writers (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  /* verilator lint_off MULTIDRIVEN */
+  always @(posedge clk)
+    if (state == S0 && go) state <= S1;
+    else if (state == S1) state <= S0;
+  always @(posedge clk) if (rst) state <= S0;
+  /* verilator lint_on MULTIDRIVEN */
+endmodule
+
+// A temporary reached on two paths of the clocked block: S1 needs 'go && a && !en', but the
+// temporary is used without 'en' only when 'go' is false, so nothing goes to S1. And in an
+// if chain, R4 needs both 'b' and '!b', so nothing goes to R4
+module fsm_shared_temporary (
+    input logic clk,
+    input logic rst,
+    input logic en,
+    input logic go,
+    input logic a,
+    input logic b
+);
+  import fsm_styles_pkg::*;
+  st_t s, next;
+  always_comb begin
+    next = s;
+    if (go && a) begin
+      if (en) next = S3;
+      else next = S1;
+    end
+    else if (s == S3) next = S0;
+  end
+  always_ff @(posedge clk)
+    if (rst) s <= S0;
+    else if (en) s <= next;
+    else if (go) s <= S2;
+    else s <= next;
+  typedef enum logic [2:0] {
+    R0,
+    R1,
+    R2,
+    R3,
+    R4
+  } r_t;
+  r_t r;
+  always_ff @(posedge clk)
+    if (rst) r <= R0;
+    else if (r == R0) begin
+      if (a) begin
+        if (b && go) r <= R1;
+        else r <= R2;
+      end
+      else if (b) r <= R3;
+      else if (b && go) r <= R4;
+    end
+    else r <= R0;
+endmodule
+
+// A constant loaded under an input at the top of the clocked process is taken as the reset,
+// so 'start' gives reset arcs into S1
+module fsm_load_constant (
+    input logic clk,
+    input logic go,
+    input logic start
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge clk)
+    if (start) state <= S1;
+    else
+      case (state)
+        S0: if (go) state <= S2;
+        default: state <= S0;
+      endcase
+endmodule
+
+// Case equality, case inequality, and a wildcard inequality on the state
+module fsm_case_equality (
+    input logic clk,
+    input logic rst,
+    input logic go,
+    input logic a
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else if (state === S0 && go) state <= S1;
+    else if (state !== S0 && {state, a} !=? 3'b10?) state <= S0;
+    else if ({state, a} === {S2, 1'b1}) state <= S3;
+    else state <= S0;
+endmodule
+
+// A real temporary read in a condition keeps its arcs
+module fsm_real_temporary (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  real r;
+  always_ff @(posedge clk) begin
+    r = 1.5;
+    if (rst) state <= S0;
+    else if (state == S0 && r > 1.0) state <= S1;
+    else if (state == S1 && go) state <= S2;
+    else state <= S0;
+  end
+endmodule
+
+// A guard at the top of the next-state block is no reset, so 'abort' gives ordinary arcs
+// into S0; a reset computed from an input is a reset
+module fsm_guarded_next (
+    input logic clk,
+    input logic rst,
+    input logic go,
+    input logic abort
+);
+  import fsm_styles_pkg::*;
+  st_t state, next, state_r;
+  logic clear;
+  always_comb begin
+    next = state;
+    if (abort) next = S0;
+    else
+      case (state)
+        S0: if (go) next = S1;
+        S1: next = S2;
+        S2: next = S3;
+        default: ;
+      endcase
+  end
+  always_ff @(posedge clk) state <= next;
+  always_comb
+    if (rst) clear = 1'b1;
+    else clear = 1'b0;
+  always_ff @(posedge clk)
+    if (clear) state_r <= S0;
+    else
+      case (state_r)
+        S0: if (go) state_r <= S1;
+        default: state_r <= S0;
+      endcase
+endmodule
+
+// A reset computed from two inputs is a reset; an assignment under one of those inputs after
+// the reset is never reached, so nothing goes to S2
+module fsm_computed_reset (
+    input logic clk,
+    input logic rst,
+    input logic flush,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state, s;
+  logic clear;
+  always_comb begin
+    clear = 1'b0;
+    if (rst) clear = 1'b1;
+    if (flush) clear = 1'b1;
+  end
+  always_ff @(posedge clk)
+    if (clear) state <= S0;
+    else
+      case (state)
+        S0: if (go) state <= S1;
+        S1: state <= S2;
+        default: state <= S0;
+      endcase
+  always_ff @(posedge clk)
+    if (clear) s <= S0;
+    else if (rst) s <= S2;
+    else
+      case (s)
+        S0: if (go) s <= S1;
+        default: s <= S0;
+      endcase
+endmodule
+
+// Copies that change width: a one-bit select of the state and a widened copy of it name no
+// state (no 2'h3 from 'wide == 8'hFF'), and a widened copy of a one-bit expression adds no
+// state; registers loaded from narrowed values get their low bits (4'h1 and 4'h2, not 4'hd and
+// 4'he), from a copy of a variable, from constants, and through a choice that shares a value
+module fsm_width_copies (
+    input logic clk,
+    input logic rst,
+    input logic go,
+    input logic a
+);
+  logic [1:0] state, idx, st_copy;
+  logic [3:0] st4, st5, st6;
+  logic [1:0] idx2, idx4;
+  logic [7:0] tmp;
+  logic phase, y;
+  logic [7:0] wide, big;
+  assign phase = state[0];
+  assign big = go ? 8'hF1 : 8'hF2;
+  assign idx = big[1:0];
+  assign y = go & a;
+  /* verilator lint_off WIDTH */
+  assign idx2 = go ? 8'hFD : 8'hFE;
+  always_comb begin
+    tmp = go ? 8'hFD : 8'hFE;
+    idx4 = a ? tmp : (y ? tmp : 8'h01);
+  end
+  assign wide = state;
+  assign st_copy = y;
+  /* verilator lint_on WIDTH */
+  always_ff @(posedge clk)
+    if (rst) state <= 2'd0;
+    else if (state == 2'd0) state <= 2'd1;
+    else if (phase == 1'b1 && go) state <= 2'd2;
+    else if (wide == 8'hFF || st_copy == 2'd1) state <= 2'd1;
+    else state <= 2'd0;
+  /* verilator lint_off WIDTH */
+  always_ff @(posedge clk)
+    if (rst) st4 <= 4'd0;
+    else if (st4 == 4'd0) st4 <= idx;
+    else st4 <= 4'd0;
+  always_ff @(posedge clk)
+    if (rst) st5 <= 4'd0;
+    else if (st5 == 4'd0) st5 <= idx2;
+    else st5 <= 4'd0;
+  always_ff @(posedge clk)
+    if (rst) st6 <= 4'd0;
+    else if (st6 == 4'd0) st6 <= idx4;
+    else st6 <= 4'd0;
+  /* verilator lint_on WIDTH */
+endmodule
+
+// A next state wider than the register, truncated into it: the states are its low bits, IDLE,
+// RUN and 2'h2, and the first split is a reset; st_w holds through its wider next state; st_lo,
+// given its own low bit, is not reported
+module fsm_wide_next (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  localparam logic [1:0] IDLE = 2'b00, RUN = 2'b01, DONE = 2'b10;
+  logic [1:0] state, st_w, st_lo;
+  logic [2:0] next_state, st_w_next;
+  /* verilator lint_off WIDTH */
+  always @(posedge clk) state <= rst ? {1'b0, IDLE} : next_state;
+  always @(posedge clk) st_w <= rst ? {1'b0, IDLE} : st_w_next;
+  always_comb begin
+    st_w_next = st_w;
+    if (st_w == IDLE && go) st_w_next = {1'b1, RUN};
+    else if (st_w == RUN) st_w_next = {1'b0, IDLE};
+  end
+  always @(posedge clk)
+    if (rst) st_lo <= 2'd0;
+    else
+      case (st_lo)
+        2'd0: st_lo <= 2'd1;
+        2'd1: st_lo <= 2'd2;
+        default: st_lo <= st_lo[0];
+      endcase
+  /* verilator lint_on WIDTH */
+  always @(state or go)
+    case (state)
+      IDLE: next_state = go ? {1'b1, RUN} : {1'b0, IDLE};
+      RUN: next_state = {1'b1, DONE};
+      default: next_state = {1'b0, IDLE};
+    endcase
+endmodule
+
+// Writes that are not followed, so neither register is reported: an enum state written inside
+// a for loop, and a two-bit state written through part selects beside a full write
+module fsm_unfollowed_writes (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t sl;
+  logic [1:0] sp;
+  always_ff @(posedge clk)
+    if (rst) sl <= S0;
+    else
+      for (int i = 0; i < 1; ++i)
+        case (sl)
+          S0: if (go) sl <= S1;
+          S1: sl <= S2;
+          default: sl <= S0;
+        endcase
+  always_ff @(posedge clk)
+    if (rst) sp <= 2'd0;
+    else
+      case (sp)
+        2'd0: sp[0] <= 1'b1;
+        2'd1: sp[1:0] <= 2'd2;
+        default: sp <= 2'd0;
+      endcase
+endmodule
+
+// Not FSMs: a counter, and a pipeline register of a state-typed value
+module fsm_not_fsms (
+    input logic clk,
+    input logic rst,
+    input fsm_styles_pkg::st_t din
+);
+  import fsm_styles_pkg::*;
+  logic [3:0] cnt;
+  st_t q;
+  always_ff @(posedge clk) begin
+    cnt <= rst ? 4'd0 : cnt + 4'd1;
+    q <= din;
+  end
+endmodule
+
+// The next-state logic in an instance of its own
+module fsm_child_logic (
+    input logic [1:0] state,
+    input logic go,
+    output logic [1:0] nxt
+);
+  always_comb begin
+    nxt = state;
+    case (state)
+      2'd0: if (go) nxt = 2'd1;
+      2'd1: nxt = 2'd2;
+      default: nxt = 2'd0;
+    endcase
+  end
+endmodule
+
+// Two instances, so their ports are copies rather than the parent's variables
+module fsm_child_next (
+    input logic clk,
+    input logic rst,
+    input logic go
+);
+  logic [1:0] state, nxt, state2, nxt2;
+  fsm_child_logic logic_u (.*);
+  fsm_child_logic logic2_u (
+      .state(state2),
+      .go(go),
+      .nxt(nxt2)
+  );
+  always_ff @(posedge clk) state <= rst ? 2'd0 : nxt;
+  always_ff @(posedge clk) state2 <= rst ? 2'd0 : nxt2;
+endmodule
+
+// The last split of a chain has a constant on both sides: neither is the reset
+module fsm_both_constant (
+    input logic clk,
+    input logic rst_n,
+    input logic go
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge clk)
+    if (state == S1 && go) state <= S2;
+    else if (state == S2) state <= S0;
+    else if (rst_n) state <= S1;
+    else state <= S0;
+endmodule
+
+// A later statement overriding the reset: the reset is still the first if
+module fsm_reset_override (
+    input logic clk,
+    input logic rst,
+    input logic go,
+    input logic abort
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  always_ff @(posedge clk) begin
+    if (rst) state <= S0;
+    else
+      case (state)
+        S0: if (go) state <= S1;
+        S1: state <= S2;
+        default: state <= S0;
+      endcase
+    if (abort) state <= S3;
+  end
+endmodule
+
+class fsm_token;
+endclass
+
+// A condition comparing class handles, which aren't bit patterns
+module fsm_class_compare (
+    input logic clk,
+    input logic rst,
+    input logic go,
+    input logic done
+);
+  import fsm_styles_pkg::*;
+  st_t state;
+  fsm_token a, b;
+  initial a = new;
+  always_ff @(posedge clk) b <= done ? a : null;
+  always_ff @(posedge clk)
+    if (rst) state <= S0;
+    else
+      case (state)
+        S0: state <= (a == b) ? S1 : S2;
+        default: if (go) state <= S0;
+      endcase
+endmodule
+
+module t (
+    input logic clk
+);
+  import fsm_styles_pkg::*;
+  integer cyc;
+  logic rst, rst_n, flush, go, en, start, done, a, b, abort, wr, trst, tms;
+  logic [15:0] paddr;
+  logic [7:0] wdata;
+  st_t din;
+
+  fsm_two_proc two_proc_u (.*);
+  fsm_other_assign other_assign_u (.*);
+  fsm_enable enable_u (.*);
+  fsm_compound_reset compound_reset_u (.*);
+  fsm_input_guard input_guard_u (.*);
+  fsm_or_states or_states_u (.*);
+  fsm_three_targets three_targets_u (.*);
+  fsm_beside_others beside_others_u (.*);
+  fsm_ternary_hold ternary_hold_u (.*);
+  fsm_default_override default_override_u (.*);
+  fsm_reset_other_first reset_other_first_u (.*);
+  fsm_case_on_wire case_on_wire_u (.*);
+  fsm_unsized_params unsized_params_u (.*);
+  fsm_alias_cond alias_cond_u (.*);
+  fsm_two_in_block two_in_block_u (.*);
+  fsm_two_in_comb two_in_comb_u (.*);
+  fsm_same_reg_twice same_reg_twice_u (.*);
+  fsm_ifchain_twice ifchain_twice_u (.*);
+  fsm_nextstate_overwrite nextstate_overwrite_u (.*);
+  fsm_enum_unknown_value enum_unknown_value_u (.*);
+  fsm_plain_always plain_always_u (.*);
+  fsm_nonenum_x_target nonenum_x_target_u (.*);
+  fsm_nonenum_var_target nonenum_var_target_u (.paddr_lo(paddr[1:0]), .*);
+  fsm_clocked_temporary clocked_temporary_u (.*);
+  fsm_case_without_assign case_without_assign_u (.*);
+  fsm_case_inside case_inside_u (.*);
+  fsm_casez_concat casez_concat_u (.*);
+  fsm_concat_compare concat_compare_u (.*);
+  fsm_nested_temporary nested_temporary_u (.*);
+  fsm_deep_temporaries deep_temporaries_u (.*);
+  fsm_deep_alias_chain deep_alias_chain_u (.*);
+  fsm_expression_clock expression_clock_u (.*);
+  fsm_real_register real_register_u (.*);
+  fsm_narrow_select narrow_select_u (.*);
+  fsm_task_write task_write_u (.*);
+  fsm_comb_temporary comb_temporary_u (.*);
+  fsm_load_beside_case load_beside_case_u (.din(wdata[1:0]), .*);
+  fsm_overlapping_guards overlapping_guards_u (.*);
+  fsm_impossible_compare impossible_compare_u (.*);
+  fsm_output_decoder output_decoder_u (.*);
+  fsm_param_alias param_alias_u (.*);
+  fsm_many_paths many_paths_u (.*);
+  fsm_opaque_temporary opaque_temporary_u (.*);
+  fsm_two_writers two_writers_u (.*);
+  fsm_shared_temporary shared_temporary_u (.*);
+  fsm_load_constant load_constant_u (.*);
+  fsm_case_equality case_equality_u (.*);
+  fsm_real_temporary real_temporary_u (.*);
+  fsm_guarded_next guarded_next_u (.*);
+  fsm_computed_reset computed_reset_u (.*);
+  fsm_width_copies width_copies_u (.*);
+  fsm_wide_next wide_next_u (.*);
+  fsm_unfollowed_writes unfollowed_writes_u (.*);
+  fsm_not_fsms not_fsms_u (.*);
+  fsm_child_next child_next_u (.*);
+  fsm_both_constant both_constant_u (.*);
+  fsm_reset_override reset_override_u (.*);
+  fsm_class_compare class_compare_u (.*);
+
+  initial cyc = 0;
+
+  always_comb begin
+    rst = cyc < 2;
+    rst_n = !rst;
+    trst = !rst;
+    flush = cyc == 9;
+    go = cyc[0];
+    en = cyc[1] | cyc[0];
+    start = cyc == 5;
+    done = cyc[2];
+    a = cyc[1];
+    b = cyc[2];
+    abort = cyc == 7;
+    wr = cyc[0];
+    tms = cyc[1];
+    paddr = cyc[0] ? 16'h4000 : 16'h0000;
+    wdata = cyc[7:0];
+    din = st_t'(cyc[1:0]);
+  end
+
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 40) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
+endmodule

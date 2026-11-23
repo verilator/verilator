@@ -42,11 +42,14 @@ module t;
   // verilator lint_off ENUMVALUE
   // verilator lint_off EOFNEWLINE
   // verilator lint_off FINALDLY
+  // verilator lint_off FSMMULTI
   // verilator lint_off FUNCTIMECTL
+  // verilator lint_off FUTURE
   // verilator lint_off GENCLK
   // verilator lint_off GENUNNAMED
   // verilator lint_off HIERBLOCK
   // verilator lint_off HIERPARAM
+  // verilator lint_off IEEEMAYDEPRECATE
   // verilator lint_off IFDEPTH
   // verilator lint_off IGNOREDRETURN
   // verilator lint_off IMPERFECTSCH
@@ -67,7 +70,9 @@ module t;
   // verilator lint_off MODDUP
   // verilator lint_off MODMISSING
   // verilator lint_off MULTIDRIVEN
+  // verilator lint_off MULTIDRIVENPROC
   // verilator lint_off MULTITOP
+  // verilator lint_off NEVERMATCH
   // verilator lint_off NEWERSTD
   // verilator lint_off NOEFFECT
   // verilator lint_off NOLATCH
@@ -94,6 +99,7 @@ module t;
   // verilator lint_off SELRANGE
   // verilator lint_off SHORTREAL
   // verilator lint_off SIDEEFFECT
+  // verilator lint_off SIMILARNAME
   // verilator lint_off SPECIFYIGN
   // verilator lint_off SPLITVAR
   // verilator lint_off STATICVAR
@@ -102,10 +108,12 @@ module t;
   // verilator lint_off SYMRSVDWORD
   // verilator lint_off SYNCASYNCNET
   // verilator lint_off TICKCOUNT
+  // verilator lint_off TIMEPRECTRUNC
   // verilator lint_off TIMESCALEMOD
   // verilator lint_off UNDRIVEN
   // verilator lint_off UNOPT
   // verilator lint_off UNOPTFLAT
+  // verilator lint_off UNOPTPUBLIC
   // verilator lint_off UNOPTTHREADS
   // verilator lint_off UNPACKED
   // verilator lint_off UNSATCONSTR
@@ -115,6 +123,7 @@ module t;
   // verilator lint_off UNUSEDLOOP
   // verilator lint_off UNUSEDPARAM
   // verilator lint_off UNUSEDSIGNAL
+  // verilator lint_off USEBEFOREDECL
   // verilator lint_off USERERROR
   // verilator lint_off USERFATAL
   // verilator lint_off USERINFO
@@ -123,6 +132,7 @@ module t;
   // verilator lint_off WAITCONST
   // verilator lint_off WIDTH
   // verilator lint_off WIDTHCONCAT
+  // verilator lint_off WIDTHDIGITS
   // verilator lint_off WIDTHEXPAND
   // verilator lint_off WIDTHTRUNC
   // verilator lint_off WIDTHXZEXPAND

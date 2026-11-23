@@ -30,6 +30,7 @@
 %000009     state_next = state;
 %000009     case (state)
         // [FSM coverage]
+%000001        // [fsm_arc t.two_proc_u.state::BUSY->IDLE]
 %000001        // [fsm_arc t.two_proc_u.state::IDLE->BUSY]
 %000001        // [fsm_state t.two_proc_u.state::BUSY]
 %000002        // [fsm_state t.two_proc_u.state::IDLE]
@@ -96,6 +97,14 @@
 %000002     if (rst) begin
             end
 %000004     else if (state == WAITING) begin
+        // [FSM coverage]
+%000001        // [fsm_arc t.inline_u.state::COLLECTING->SENDING]
+%000001        // [fsm_arc t.inline_u.state::SENDING->WAITING]
+%000001        // [fsm_arc t.inline_u.state::WAITING->COLLECTING]
+%000000        // [fsm_arc t.inline_u.state::WAITING->SENDING]
+%000001        // [fsm_state t.inline_u.state::COLLECTING]
+%000001        // [fsm_state t.inline_u.state::SENDING]
+%000002        // [fsm_state t.inline_u.state::WAITING]
 %000003       if (input_valid) begin
 %000001         saved_data <= input_data;
 %000001         state <= input_last ? SENDING : COLLECTING;
@@ -152,6 +161,7 @@
 %000009     state_next = state;
 %000009     case (state)
         // [FSM coverage]
+%000001        // [fsm_arc t.two_proc_wide_u.state::DONE->IDLE]
 %000001        // [fsm_arc t.two_proc_wide_u.state::IDLE->RUN]
 %000001        // [fsm_arc t.two_proc_wide_u.state::RUN->DONE]
 %000001        // [fsm_state t.two_proc_wide_u.state::DONE]
@@ -184,6 +194,7 @@
             end
 %000004     else if (state == IDLE) begin
         // [FSM coverage]
+%000001        // [fsm_arc t.chain_u.state::DONE->IDLE]
 %000001        // [fsm_arc t.chain_u.state::IDLE->RUN]
 %000001        // [fsm_arc t.chain_u.state::RUN->DONE]
 %000001        // [fsm_state t.chain_u.state::DONE]
@@ -226,6 +237,7 @@
 %000009     state_next = state;
 %000009     case (state)
         // [FSM coverage]
+%000001        // [fsm_arc t.negated_enable_u.state::DONE->IDLE]
 %000001        // [fsm_arc t.negated_enable_u.state::IDLE->RUN]
 %000001        // [fsm_arc t.negated_enable_u.state::RUN->DONE]
 %000001        // [fsm_state t.negated_enable_u.state::DONE]
@@ -263,6 +275,7 @@
 %000009     state_next = state;
 %000009     case (state)
         // [FSM coverage]
+%000001        // [fsm_arc t.compound_u.state::DONE->IDLE]
 %000001        // [fsm_arc t.compound_u.state::IDLE->RUN]
 %000001        // [fsm_arc t.compound_u.state::RUN->DONE]
 %000001        // [fsm_state t.compound_u.state::DONE]

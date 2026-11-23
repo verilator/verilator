@@ -26,6 +26,10 @@ module t (
   logic [39:0] forced_case_if_state  /*verilator fsm_state*/;
   logic [47:0] param_state_q;
   logic [47:0] param_state_d;
+  // Wider than 64 bits
+  localparam logic [71:0] W_S0_IDLE = 72'h01_0000_0000_0000_0001;
+  localparam logic [71:0] W_S1_BUSY = 72'hff_8000_0000_0000_0002;
+  logic [71:0] wide_state;
 
   initial begin
     rst = 1'b1;
@@ -109,6 +113,12 @@ module t (
     else begin
       param_state_q <= param_state_d;
     end
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) wide_state <= W_S0_IDLE;
+    else if (wide_state == W_S0_IDLE) wide_state <= start ? W_S1_BUSY : W_S0_IDLE;
+    else wide_state <= W_S0_IDLE;
   end
 
 endmodule

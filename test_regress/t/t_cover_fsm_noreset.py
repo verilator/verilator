@@ -17,7 +17,8 @@ test.scenarios('simulator')
 # keeps coverage extraction in the supported subset, but forces lowering down
 # the "hasResetCond() == false" path so we validate the no-reset machinery
 # rather than only reset-wrapped FSMs.
-test.compile(verilator_flags2=['--cc --coverage-fsm'])
+# The FSM has 2 arcs and no reset; the arc limit counts only those
+test.compile(verilator_flags2=['--cc --coverage-fsm --coverage-fsm-max-arcs 2'])
 
 test.execute()
 

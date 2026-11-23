@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: FSM coverage ignores grouped unsupported FSM extraction patterns
+# DESCRIPTION: Verilator: FSM coverage of less common FSM shapes
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3

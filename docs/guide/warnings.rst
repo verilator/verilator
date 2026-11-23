@@ -918,14 +918,10 @@ List Of Warnings
 
 .. option:: FSMMULTI
 
-   Warns that the same always block contains multiple enum-typed case
-   statements that look like FSM candidates for native FSM coverage when
-   :vlopt:`--coverage-fsm` or :vlopt:`--coverage` is enabled.
+   Historical, never issued since version 5.056.
 
-   Verilator's FSM coverage instruments only the first such candidate in
-   source order. Split the FSMs into separate always blocks, or explicitly
-   annotate the intended state variables and restructure the RTL for full
-   coverage of such multiple state machines.
+   Warned that an always block contained several state machines, of which
+   FSM coverage instrumented only the first.
 
 
 .. option:: FUNCTIMECTL

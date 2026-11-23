@@ -19,6 +19,7 @@ module t (
   logic [1:0] literal_state;
   logic [1:0] param_state;
   logic unbased_state;
+  logic [1:0] unbased_wide_state;
   logic [1:0] body_symbol_state;
   logic [1:0] multiline_expr_state;
   logic [1:0] duplicate_expr_state;
@@ -62,6 +63,20 @@ module t (
         '0: unbased_state <= '1;
         '1: unbased_state <= '0;
         default: unbased_state <= '0;
+      endcase
+    end
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      unbased_wide_state <= '0;
+    end
+    else begin
+      case (unbased_wide_state)
+        '0: if (start) unbased_wide_state <= 2'd1;
+        2'd1: unbased_wide_state <= '1;
+        '1: unbased_wide_state <= '0;
+        default: unbased_wide_state <= '0;
       endcase
     end
   end

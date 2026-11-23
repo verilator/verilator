@@ -38,6 +38,15 @@ module t;
   bit start2;
   state2_t state2  /*verilator fsm_arc_include_cond*/;
 
+  // Found from its logic alone, and too wide for 'full': it gets 'auto'
+  localparam bit [39:0] K_A = 40'h01_2345_6789;
+  localparam bit [39:0] K_B = 40'hde_adbe_efde;
+  bit [39:0] key;
+  always_ff @(posedge clk) begin
+    if (rst) key <= K_A;
+    else if (start) key <= (key == K_A) ? K_B : K_A;
+  end
+
   always_ff @(posedge clk) begin
     if (rst2) begin
       state2 <= S2_IDLE;
