@@ -819,7 +819,7 @@ class SvaNfaBuilder final {
             if (matchItemExprp) {
                 UASSERT_OBJ(!liveRepVtxp->m_liveRepMatchItemsp, liveRepVtxp,
                             "Live repetition match items set more than once");
-                liveRepVtxp->m_liveRepMatchItemsp = matchItemExprp->stmtsp()->cloneTree(false);
+                liveRepVtxp->m_liveRepMatchItemsp = matchItemExprp->stmtsp()->cloneTree(true);
                 SampleMatchItemReadsVisitor{liveRepVtxp->m_liveRepMatchItemsp};
             }
 
