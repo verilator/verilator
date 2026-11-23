@@ -46,6 +46,7 @@ module ifc #(
     end
   endcase
   for (genvar i = 0; i < 2; ++i) begin : f
+    bus_if fb ();
     if (R) begin : g
       bus_if bus ();
     end
@@ -58,6 +59,7 @@ module ifc #(
   sink u_arr (.b(g.ba[1]));
   sink u_case (.b(c.n.bus));
   sink u_for (.b(f[1].g.bus));
+  sink u_loop (.b(f[1].fb));
 endmodule
 
 module t;

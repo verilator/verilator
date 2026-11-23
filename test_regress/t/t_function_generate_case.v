@@ -153,6 +153,9 @@ module mid #(
     bus_if #(.W(7)) bus (.cyc);
     bus_if #(.W(7)) bus_arr[2] (.cyc);
     probe u_p ();
+    for (genvar i = 0; i < 2; ++i) begin : lp
+      probe u_p ();
+    end
     if (R == 1) begin : h
       int h1 = 31;
     end
@@ -197,11 +200,16 @@ module mid #(
   virtual bus_if #(.W(BUS_W)).mp vmp;
   virtual bus_if #(.W(BUS_W)) vel;
   Holder #(BUS_W) holder;
+  for (genvar i = 0; i < 2; ++i) begin : lp
+    bus_if #(.W(BUS_W + i)) lbus (.cyc);
+  end
+  virtual bus_if #(.W(BUS_W + 1)) vlp;
   initial begin
     vif = g.bus;
     vmp = g.bus.mp;
     vel = g.bus_arr[1];
     holder = new(g.bus);
+    vlp = lp[1].lbus;
   end
 
   case (R)
@@ -349,6 +357,9 @@ module t;
       `checkd(u_r1.g.u_p.core_sz(), 32);
       `checkd(u_r2.g.u_w.u_p.core_sz(), 8);
       `checkd(u_r0.g.u_w.u_p.core_sz(), 8);
+      `checkd(u_r1.g.lp[1].u_p.s_bits, 32);
+      `checkd($bits(u_r2.vlp.d), 16);
+      `checkd(int'(u_r2.vlp.d), cyc % (1 << 16));
     end
     $write("*-* All Finished *-*\n");
     $finish;
