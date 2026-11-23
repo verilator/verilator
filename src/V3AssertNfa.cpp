@@ -272,7 +272,7 @@ class SampleMatchItemReadsVisitor final : public VNVisitor {
         nodep->replaceWith(sampledp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateAndNextNull(nodep); }
 
 public:
     explicit SampleMatchItemReadsVisitor(AstNode* nodep) { iterate(nodep); }
