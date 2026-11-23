@@ -243,6 +243,8 @@ module t;
   defparam u_r1.g.u_core.E = 99;
   defparam u_r0.g.u_core.E = 97;
 
+  Holder #(15) holder_r2;
+
   if (R1 == 1) begin : g_chk1
     function automatic int get();
       return u_r1.g.u_a.mem;
@@ -266,6 +268,7 @@ module t;
   end
 
   initial begin
+    holder_r2 = new(u_r2.g.bus);
     for (int i = 0; i < 5; ++i) begin
       cyc = i * 7 + 5;
       #1;
@@ -306,6 +309,8 @@ module t;
       `checkd(int'(u_r2.vel.d), cyc % (1 << 15));
       `checkd($bits(u_r0.holder.vif.d), 9);
       `checkd(int'(u_r0.holder.vif.d), cyc % (1 << 9));
+      `checkd($bits(holder_r2.vif.d), 15);
+      `checkd(int'(holder_r2.vif.d), cyc % (1 << 15));
     end
     $write("*-* All Finished *-*\n");
     $finish;
