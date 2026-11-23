@@ -114,6 +114,29 @@ interface bus_if #(
   modport mp(input d);
 endinterface
 
+interface bus_wrap_if #(
+    parameter int X = 1
+) (
+    bus_if b
+);
+  int wb;
+  assign wb = $bits(b.d) + X;
+endinterface
+
+module bus_sink (
+    bus_if b
+);
+  int bits;
+  assign bits = $bits(b.d);
+endmodule
+
+module bus_mp_sink (
+    bus_if.mp b
+);
+  int val;
+  assign val = int'(b.d);
+endmodule
+
 module probe;
   int s_bits = $bits(u_core.s);
   int bus_bits = $bits(bus.d);
@@ -145,6 +168,9 @@ module mid #(
   function automatic int bump(input int i);
     return i + 11;
   endfunction
+
+  // Connected before the alternatives are declared
+  bus_wrap_if #(.X(100)) u_wrap (.b(g.bus));
 
   if (R == 1) begin : g
     leaf #(.V(1)) u_a (.cyc);
@@ -191,6 +217,10 @@ module mid #(
 
   // Applies to whichever alternative is elaborated
   defparam g.u_core.D = 50 + R;
+
+  bus_sink u_sink (.b(g.bus));
+  bus_mp_sink u_mp_sink (.b(g.bus.mp));
+  bus_mp_sink u_arr_sink (.b(g.bus_arr[1]));
 
   localparam int BUS_W = R == 1 ? 7 : R == 2 ? 15 : 9;
   virtual bus_if #(.W(BUS_W)) vif;
@@ -271,6 +301,8 @@ module t;
 
   Holder #(15) holder_r2;
 
+  bus_sink u_r2_sink (.b(u_r2.g.bus));
+
   if (R1 == 1) begin : g_chk1
     function automatic int get();
       return u_r1.g.u_a.mem;
@@ -349,6 +381,16 @@ module t;
       `checkd(u_r1.g.u_p.core_sz(), 32);
       `checkd(u_r2.g.u_w.u_p.core_sz(), 8);
       `checkd(u_r0.g.u_w.u_p.core_sz(), 8);
+      `checkd(u_r1.u_sink.bits, 7);
+      `checkd(u_r2.u_sink.bits, 15);
+      `checkd(u_r0.u_sink.bits, 9);
+      `checkd(u_r1.u_wrap.wb, 107);
+      `checkd(u_r2.u_wrap.wb, 115);
+      `checkd(u_r0.u_wrap.wb, 109);
+      `checkd(u_r1.u_mp_sink.val, cyc % (1 << 7));
+      `checkd(u_r2.u_mp_sink.val, cyc % (1 << 15));
+      `checkd(u_r0.u_arr_sink.val, cyc % (1 << 9));
+      `checkd(u_r2_sink.bits, 15);
     end
     $write("*-* All Finished *-*\n");
     $finish;
