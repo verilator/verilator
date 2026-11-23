@@ -1532,6 +1532,7 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     bool isStrong() const { return m_isStrong; }
+    string verilogKwd() const override { return isStrong() ? "s_eventually" : "eventually"; }
 };
 class AstExprStmt final : public AstNodeExpr {
     // Perform a statement, often assignment inside an expression node,

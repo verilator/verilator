@@ -1540,7 +1540,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts("\n");
     }
     void visit(AstEventually* nodep) override {
-        puts(nodep->isStrong() ? "s_eventually" : "eventually");
+        puts(nodep->verilogKwd());
         if (nodep->loBoundp()) {
             puts(" [");
             iterateConst(nodep->loBoundp());
