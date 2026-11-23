@@ -1515,7 +1515,7 @@ class RandomizeVisitor final : public VNVisitor {
                                                              : RandModeVars::randModeVarp(classp);
         return RandModeVars::wrapIfMode(rmode, modeVarp, stmtp);
     }
-    AstVarRef* enumValueTabRefp(AstEnumDType* const nodep) {
+    AstVarRef* enumValueTabRefp(AstEnumDType* nodep) {
         // Return a reference to a constant table of the values of the given enum. The reference
         // is cached, so the table is built only once.
         if (nodep->user2p()) return VN_AS(nodep->user2p(), VarRef)->cloneTree(false);
@@ -1563,7 +1563,8 @@ class RandomizeVisitor final : public VNVisitor {
         if (!varp->isRandC()) return nullptr;
 
         uint64_t items = 0;
-        if (AstEnumDType* const enumDtp = VN_CAST(varp->dtypep()->skipRefToEnump(), EnumDType)) {
+        if (AstEnumDType* const enumDtp
+            = VN_CAST(varp->dtypep()->skipRefToEnump(true), EnumDType)) {
             items = static_cast<uint64_t>(enumDtp->itemCount());
         } else if (AstBasicDType* const basicp = varp->dtypep()->skipRefp()->basicp()) {
             if (basicp->width() > 32) {
@@ -1607,6 +1608,10 @@ class RandomizeVisitor final : public VNVisitor {
                 return new AstVar{fl, VVarType::VAR, m_randArrayUniqueNames.get(""),
                                   VN_AS(tempDTypep, AssocArrayDType)->keyDTypep()};
             }
+            if (VN_IS(tempDTypep, WildcardArrayDType)) {
+                return new AstVar{fl, VVarType::VAR, m_randArrayUniqueNames.get(""),
+                                  dtypep->findStringDType()};
+            }
             return new AstVar{fl, VVarType::VAR, m_randArrayUniqueNames.get(""),
                               dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
         };
@@ -1631,6 +1636,8 @@ class RandomizeVisitor final : public VNVisitor {
                         new AstConst{fl, 0}, V3Number::log2b(aryDTypep->hi()) + 1}};
             } else if (VN_IS(tempDTypep, AssocArrayDType)) {
                 tempElementp = new AstAssocSel{fl, tempExprp, tempRefp};
+            } else if (VN_IS(tempDTypep, WildcardArrayDType)) {
+                tempElementp = new AstWildcardSel{fl, tempExprp, tempRefp};
             } else if (VN_IS(tempDTypep, QueueDType)) {
                 tempElementp
                     = new AstCMethodHard{fl, tempExprp, VCMethod::DYN_AT_WRITE_APPEND, tempRefp};
@@ -1698,11 +1705,14 @@ class RandomizeVisitor final : public VNVisitor {
             return createArrayForeachLoop(fl, unpackarrayDtp, exprp, outputVarp);
         } else if (AstAssocArrayDType* const assocarrayDtp = VN_CAST(memberDtp, AssocArrayDType)) {
             return createArrayForeachLoop(fl, assocarrayDtp, exprp, outputVarp);
+        } else if (AstWildcardArrayDType* const wildDtp = VN_CAST(memberDtp, WildcardArrayDType)) {
+            return createArrayForeachLoop(fl, wildDtp, exprp, outputVarp);
         } else {
             AstNodeExpr* valp;
-            if (AstEnumDType* const enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
-                                                              : exprp->dtypep()->subDTypep(),
-                                                      EnumDType)) {
+            if (AstEnumDType* enumDtp = VN_CAST(memberp ? memberp->subDTypep()->subDTypep()
+                                                        : exprp->dtypep()->subDTypep(),
+                                                EnumDType)) {
+                enumDtp = enumDtp->originalOrThisDTypep();
                 AstVarRef* const tabRefp = enumValueTabRefp(enumDtp);
                 AstNodeExpr* const randp
                     = newRandValue(fl, randcVarp, exprp->findBasicDType(VBasicDTypeKwd::UINT32));

@@ -415,6 +415,8 @@ class WidthVisitor final : public VNVisitor {
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
     std::unordered_set<const AstVar*> m_seqUntypedFormals;  // Untyped formals of current sequence
     std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
+    std::unordered_map<const AstNodeDType*, AstNodeDType*>
+        m_derivedDTypeps;  // Maps from a two-state dtype to a four-state counterpart
 
     static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
 
@@ -739,6 +741,37 @@ class WidthVisitor final : public VNVisitor {
         const AstCond* const condp = VN_CAST(nodep, Cond);
         return condp && isOverridePattern(condp->thenp()) && isOverridePattern(condp->elsep());
     }
+    AstNodeDType* findFourstateCounterpart(AstNodeDType* const dtypep) {
+        const auto it = m_derivedDTypeps.emplace(dtypep, nullptr);
+        if (!it.second) return it.first->second;
+        AstNodeDType* const skipToEnumDTypep = dtypep->skipRefToEnump();
+        AstNodeDType*& resultp = it.first->second;
+        if (AstEnumDType* const enumDTypep = VN_CAST(skipToEnumDTypep, EnumDType)) {
+            AstEnumItem* const itemsp = enumDTypep->itemsp()->unlinkFrBackWithNext();
+            AstEnumDType* const newp = enumDTypep->cloneTreePure(false);
+            enumDTypep->addItemsp(itemsp);
+            newp->refDTypep(newp->findLogicDType(newp->subDTypep()->width(),
+                                                 newp->subDTypep()->widthMin(),
+                                                 newp->subDTypep()->numeric()));
+            newp->dtypep(newp);
+            newp->originalDTypep(enumDTypep);
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            resultp = newp;
+        } else if (AstNodeUOrStructDType* const uOrStructDTypep
+                   = VN_CAST(skipToEnumDTypep, NodeUOrStructDType)) {
+            AstNodeUOrStructDType* const newp = uOrStructDTypep->cloneTreePure(false);
+            newp->isFourstate(true);
+            newp->dtypep(newp);
+            newp->refDTypep(newp->subDTypep()->findStatesCounterpart(true));
+            newp->originalDTypep(uOrStructDTypep);
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            resultp = newp;
+        } else {
+            dtypep->v3fatalSrc("findFourstateCounterpart can be called only on AstEnumDType and "
+                               "AstNodeUOrStructDType");
+        }
+        return resultp;
+    }
     void visit(AstCond* nodep) override {
         // op = cond ? expr1 : expr2
         // See IEEE-2012 11.4.11 and Table 11-21.
@@ -827,43 +860,61 @@ class WidthVisitor final : public VNVisitor {
                 nodep->dtypeSetDouble();
             } else if (thenDTypep->isString() || elseDTypep->isString()) {
                 // There is a specific case:
-                // strings and how they should be handled when condp() is 'x
+                // string literals and how they should be handled when condp() is 'x
                 // ('x ? "Option1" : "Option2") === "Option0"
                 // ('x ? "Option1" : "Option2") ===
                 // 56'b010011110111000001110100011010010110111101101110001100xx
                 // Issue is that the type of this is still string but the value contains 'x - types
                 // and domains are not the same thing in SystemVerilog but in Verilator they are
+                //
+                // However in case of a string (not literals):
+                // string a = "Option1"
+                // string b = "Option2"
+                // ('x ? a : b) === ""
                 nodep->dtypeSetString();
             } else {
                 const bool isAnyResultFourstate
                     = thenDTypeSkippedp->isFourstate() || elseDTypeSkippedp->isFourstate();
-                bool handled = false;
                 const bool isCondpFourstate = nodep->condp()->isFourstateOrNoDtype();
                 AstNodeDType* const thenEnumDTypep = thenDTypep->skipRefToEnump();
                 if (VN_IS(thenDTypeSkippedp, NodeUOrStructDType)
-                    && thenDTypeSkippedp->sameTree(elseDTypeSkippedp)) {
-                    nodep->dtypep(thenDTypep);
-                    handled = true;
+                    && AstNode::computeCastable(thenDTypeSkippedp, elseDTypeSkippedp, nullptr)
+                           .isMatching()) {
+                    nodep->dtypep(
+                        (isAnyResultFourstate || !isCondpFourstate)
+                            ? (thenDTypeSkippedp->isFourstate() ? thenDTypep : elseDTypep)
+                            : findFourstateCounterpart(thenEnumDTypep));
                 } else if (VN_IS(thenEnumDTypep, EnumDType)
-                           && thenEnumDTypep->sameTree(elseDTypep->skipRefToEnump())) {
-                    // Preserve enum identity even when the condition can contain X or Z.
-                    nodep->dtypep(thenEnumDTypep);
-                    handled = true;
-                }
-                if (!handled) {
+                           && AstNode::computeCastable(thenEnumDTypep, elseDTypep, nullptr)
+                                  .isMatching()) {
+                    // if enum is two-state we have to check condp() - because if it is
+                    // four-state the result must be four-state as well
+                    nodep->dtypep(
+                        (isAnyResultFourstate || !isCondpFourstate)
+                            ? (thenDTypeSkippedp->isFourstate() ? thenDTypep : elseDTypep)
+                            : findFourstateCounterpart(thenEnumDTypep));
+                } else {
                     const int width = std::max(thenDTypep->width(), elseDTypep->width());
                     const int widthMin = std::max(thenDTypep->widthMin(), elseDTypep->widthMin());
                     const VSigning numeric
                         = VSigning::fromBool(thenDTypep->isSigned() && elseDTypep->isSigned());
                     const bool isFourstate = isAnyResultFourstate || isCondpFourstate;
+                    const bool canPreserveElseDType
+                        = !VN_IS(elseDTypep->skipRefToEnump(), EnumDType)
+                          && !VN_IS(elseDTypeSkippedp, NodeUOrStructDType);
+                    const bool canPreserveThenDType
+                        = !VN_IS(thenDTypep->skipRefToEnump(), EnumDType)
+                          && !VN_IS(thenDTypeSkippedp, NodeUOrStructDType);
                     // Try to preserve a dtype
-                    if ((width == elseDTypeSkippedp->width()
-                         && widthMin == elseDTypeSkippedp->widthMin())
+                    if (canPreserveElseDType
+                        && (width == elseDTypeSkippedp->width()
+                            && widthMin == elseDTypeSkippedp->widthMin())
                         && elseDTypeSkippedp->numeric() == numeric
                         && isFourstate == elseDTypeSkippedp->isFourstate()) {
                         nodep->dtypep(elseDTypep);
-                    } else if ((width == thenDTypeSkippedp->width()
-                                && widthMin == thenDTypeSkippedp->widthMin())
+                    } else if (canPreserveThenDType
+                               && (width == thenDTypeSkippedp->width()
+                                   && widthMin == thenDTypeSkippedp->widthMin())
                                && thenDTypeSkippedp->numeric() == numeric
                                && isFourstate == thenDTypeSkippedp->isFourstate()) {
                         nodep->dtypep(thenDTypep);
@@ -1455,6 +1506,8 @@ class WidthVisitor final : public VNVisitor {
                     UINFO(1, "    Related node: " << nodep);
                 }
             }
+            if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), PackArrayDType))
+                V3Const::constifyEdit(nodep->lsbp());
             if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() > frommsb) {
                 // See also warning in V3Const
                 // We need to check here, because the widthCheckSized may silently
@@ -1467,11 +1520,13 @@ class WidthVisitor final : public VNVisitor {
                 if (m_doGenerate) {
                     UINFO(5, "Selection index out of range inside generate");
                 } else if (!inParameterizedTemplate) {
+                    const int indexDiv = nodep->widthConst() == elw ? elw : 1;
                     if (nodep->declRange().ranged()) {
                         nodep->v3warn(SELRANGE, "Selection index out of range: "
-                                                    << nodep->msbConst() << ":"
-                                                    << nodep->lsbConst() << " outside " << frommsb
-                                                    << ":" << fromlsb);
+                                                    << (nodep->msbConst() / indexDiv) << ":"
+                                                    << (nodep->lsbConst() / indexDiv)
+                                                    << " outside " << (frommsb / indexDiv) << ":"
+                                                    << (fromlsb / indexDiv));
                     } else {
                         nodep->v3warn(SELRANGE,
                                       "Selection "
@@ -2716,6 +2771,15 @@ class WidthVisitor final : public VNVisitor {
         // Opaque returns, so arbitrary
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
         // Type set in constructor
+        // A string is a dynamic array of bytes in a bit-stream cast (IEEE 1800-2023 6.24.3)
+        if (isByteArrayDType(nodep->lhsp()->dtypep(), true)) {
+            AstCvtArrayToString* const newp = new AstCvtArrayToString{
+                nodep->fileline(), nodep->lhsp()->unlinkFrBack(), nodep->dtypep()};
+            newp->didWidth(true);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         // A class handle is not a legal implicit conversion to string
         if (AstNodeDType* const dtp = nodep->lhsp()->dtypep()) {
             if (VN_IS(dtp->skipRefToEnump(), ClassRefDType)) {
@@ -2734,6 +2798,16 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->didWidthAndSet()) return;
         // Opaque returns, so arbitrary
         userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
+        // Type set in constructor
+    }
+    void visit(AstCvtArrayToString* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+        // Type set in constructor
+    }
+    void visit(AstCvtStringToQueue* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
         // Type set in constructor
     }
     void visit(AstCvtArrayToPacked* nodep) override {
@@ -3487,12 +3561,16 @@ class WidthVisitor final : public VNVisitor {
             // bit-stream cast
             const bool assignable = castable.isSameish()
                                     || (castable.isCompatible() && VN_IS(toDtp, UnpackArrayDType));
+            // A string is a dynamic array of bytes in a bit-stream cast (IEEE 1800-2023 6.24.3)
+            const bool stringBytes = (fromDtp->isString() && isByteArrayDType(toDtp, false))
+                                     || (toDtp->isString() && isByteArrayDType(fromDtp, true));
             const bool bitstream
-                = !assignable
+                = !assignable && !stringBytes
                   && (isUnpackedArrayOrUOrStruct(toDtp) || isUnpackedArrayOrUOrStruct(fromDtp));
             // No follow-on errors for an operand that reported an error
-            const bool bad = nodep->fromp()->fileline()->erroringOn()
-                             || castError(nodep, toDtp, fromDtp, castable, bitstream);
+            const bool bad
+                = nodep->fromp()->fileline()->erroringOn()
+                  || (!stringBytes && castError(nodep, toDtp, fromDtp, castable, bitstream));
             // For now, replace it ASAP, so widthing can propagate easily
             // The cast may change signing, but we don't know the sign yet.  Make it so.
             // Note we don't sign fromp() that would make the algorithm O(n^2) if lots of casting.
@@ -3504,6 +3582,19 @@ class WidthVisitor final : public VNVisitor {
                 constp->dtypeFrom(nodep);
                 constp->didWidth(true);
                 nodep->replaceWith(constp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            } else if (stringBytes) {
+                iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, fromDtp, EXTEND_EXP,
+                             false);
+                AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+                if (fromDtp->isString()) {
+                    newp = new AstCvtStringToQueue{nodep->fileline(), fromp, nodep->dtypep()};
+                } else {
+                    newp = new AstCvtArrayToString{nodep->fileline(), fromp, nodep->dtypep()};
+                }
+                newp->didWidth(true);
+                nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             } else if (bitstream) {
@@ -3755,6 +3846,16 @@ class WidthVisitor final : public VNVisitor {
             return false;
         }
         return true;
+    }
+    // A dynamic array or queue, or if 'fixed' an unpacked array, of byte sized integral elements
+    static bool isByteArrayDType(const AstNodeDType* const dtypep, const bool fixed) {
+        const AstNodeDType* const arrayp = dtypep->skipRefp();
+        if (!VN_IS(arrayp, DynArrayDType) && !VN_IS(arrayp, QueueDType)
+            && !(fixed && VN_IS(arrayp, UnpackArrayDType))) {
+            return false;
+        }
+        const AstNodeDType* const elemp = arrayp->subDTypep()->skipRefp();
+        return elemp->isIntegralOrPacked() && elemp->width() == 8;
     }
     // An unpacked array, struct or union, which has a fixed size
     static bool isUnpackedArrayOrUOrStruct(const AstNodeDType* const dtypep) {
@@ -4594,7 +4695,7 @@ class WidthVisitor final : public VNVisitor {
             inewp->dtypeSetBit();
             inewp->didWidth(true);
             return inewp;
-        } else if (VN_IS(itemDtp, AssocArrayDType)) {
+        } else if (VN_IS(itemDtp, AssocArrayDType) || VN_IS(itemDtp, WildcardArrayDType)) {
             nodep->v3error("Inside operator not specified on associative arrays "
                            "(IEEE 1800-2023 11.4.13)");
             VL_DO_DANGLING(exprp->deleteTree(), exprp);
@@ -4698,7 +4799,9 @@ class WidthVisitor final : public VNVisitor {
             // MSB is first, so loop backwards
             for (itemp = nodep->membersp(); itemp && itemp->nextp();
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {}
-            bool isFourstate = false;
+            // Curently AstNodeUOrStructDType::originalDTypep() returns non-null value for mock
+            // four-state AstNodeUOrStructDType derived from a two-state original version
+            bool isFourstate = nodep->originalDTypep();
             for (; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
                 isFourstate |= itemp->isFourstate();
                 itemp->lsb(lsb);
@@ -5271,7 +5374,7 @@ class WidthVisitor final : public VNVisitor {
         } else if (nodep->name() == "constraint_mode") {
             methodCallConstraint(nodep, nullptr);
         } else if (AstEnumDType* const adtypep = VN_CAST(fromDtp, EnumDType)) {
-            methodCallEnum(nodep, adtypep);
+            methodCallEnum(nodep, adtypep->originalOrThisDTypep());
         } else if (AstAssocArrayDType* const adtypep = VN_CAST(fromDtp, AssocArrayDType)) {
             methodCallAssoc(nodep, adtypep);
         } else if (AstWildcardArrayDType* const adtypep = VN_CAST(fromDtp, WildcardArrayDType)) {
@@ -5709,7 +5812,8 @@ class WidthVisitor final : public VNVisitor {
         }
         if (AstNodeVarRef* const varrefp = VN_CAST(childp, NodeVarRef)) {
             varrefp->access(access);
-        } else if (const AstMemberRef* const ichildp = VN_CAST(childp, MemberRef)) {
+        } else if (AstMemberRef* const ichildp = VN_CAST(childp, MemberRef)) {
+            ichildp->access(access);
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
         } else if (const AstStructSel* const ichildp = VN_CAST(childp, StructSel)) {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
@@ -11599,6 +11703,7 @@ class WidthVisitor final : public VNVisitor {
         // of small width and complete and so can use an array, and
         // a map for when the value is many bits and sparse.
         uint64_t maxval = 0;
+        adtypep = adtypep->originalOrThisDTypep();
         for (const AstEnumItem* const itemp : adtypep->itemspList()) {
             const AstConst* const vconstp = VN_CAST(itemp->valuep(), Const);
             UASSERT_OBJ(vconstp, errNodep, "Enum item without constified value");
@@ -11617,11 +11722,13 @@ class WidthVisitor final : public VNVisitor {
         // Return a reference to a constant table which has the specified attrType information
         // for this enum, for next/prev moving 'step' items. The reference is cached, so the
         // table is built only once.
-        UASSERT_OBJ(nodep->itemsp(), nodep, "enum without items");
+        UASSERT_OBJ(nodep->originalOrThisDTypep()->itemsp(), nodep, "enum without items");
         std::vector<const AstEnumItem*> items;  // For next/prev, the items in order
         size_t offset = 0;  // For next/prev, how many items to move forwards
         if (attrType == VAttrType::ENUM_NEXT || attrType == VAttrType::ENUM_PREV) {
-            for (const AstEnumItem* const itemp : nodep->itemspList()) items.push_back(itemp);
+            for (const AstEnumItem* const itemp : nodep->originalOrThisDTypep()->itemspList()) {
+                items.push_back(itemp);
+            }
             // Moving 'step' items wraps around the enum (IEEE 1800-2023 6.19.5.3), and moving
             // backwards is moving forwards by the remaining items, so e.g. next(1), next(N + 1)
             // and prev(N - 1) of N items share one table
@@ -11674,7 +11781,7 @@ class WidthVisitor final : public VNVisitor {
         {
             uint64_t ordinal = 0;
             size_t idx = 0;
-            for (const AstEnumItem* const itemp : nodep->itemspList()) {
+            for (const AstEnumItem* const itemp : nodep->originalOrThisDTypep()->itemspList()) {
                 const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
                 UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
                 if (!vconstp->num().isAnyXZ()) {  // Can 2-state runtime decode
@@ -11748,7 +11855,7 @@ class WidthVisitor final : public VNVisitor {
             // Wide values select an ordinal in the shared name table.
             AstNodeExpr* indexp = new AstConst{nodep->fileline(), 0};
             uint32_t ordinal = 0;
-            for (const AstEnumItem* const itemp : adtypep->itemspList()) {
+            for (const AstEnumItem* const itemp : adtypep->originalOrThisDTypep()->itemspList()) {
                 const AstConst* const constp = VN_AS(itemp->valuep(), Const);
                 if (constp->num().isAnyXZ()) continue;
                 indexp = new AstCond{nodep->fileline(),

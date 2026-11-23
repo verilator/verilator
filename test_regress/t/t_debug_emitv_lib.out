@@ -1,0 +1,27 @@
+module t;
+    final begin
+        $write("*-* All Finished *-*\n");
+    end
+endmodule
+package __Vconstpool;
+endpackage
+module m1;
+    initial begin
+        $display("liba:m1 %%m=%m %%l=liba.m1");
+    end
+endmodule
+module m2;
+    initial begin
+        $display("libb:m2 %%m=%m %%l=libb.m2");
+    end
+endmodule
+module m3;
+    initial begin
+        $display("liba:m3 %%m=%m %%l=liba.m3");
+    end
+endmodule
+module m3;
+    initial begin
+        $display("libb:m3 %%m=%m %%l=libb.m3");
+    end
+endmodule

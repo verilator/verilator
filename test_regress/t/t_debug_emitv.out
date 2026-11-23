@@ -463,12 +463,7 @@ module t;
             if (((usarr.marr[1'h0]) != 32'sh0)) begin
                 $write("");
             end
-            if ((((arraymanyd[4'h0])[4'h0])[4'h0])[$unsigned(5'(
-                                                                (32'h4 
-                                                                 * 
-                                                                 32'sh1)))
-                +:4][$unsigned(4'((32'h2 * 32'sh1)))
-                +:2][2]) begin
+            if ((((arraymanyd[4'h0])[4'h0])[4'h0])[7:4][3:2][2]) begin
                 $write("");
             end
             if ((var_part != 32'sh0)) begin
@@ -1783,9 +1778,21 @@ function int rand_restricted(input Cls obj, input int member);
         disable label9;
     end
 endfunction
+typedef enum int{
+    UNIT_A = 32'h0,
+    UNIT_B = 32'h1
+} unit_e;
 class ClsParamExt extends ClsParam__Tz7d09f080_P2;
     function new();
         new();
+    endfunction
+endclass
+class \Cls.c__Tzc7cce3e0_P2 ;
+    byte \m.m ;
+    task \t.k (input int \a.a );
+        \m.m  = $unsigned(8'((\a.a  + \P.p )));
+    endtask
+    function new();
     endfunction
 endclass
 package __Vconstpool;
@@ -1844,6 +1851,156 @@ module seq_event;
 
         ???? // FIREEVENT
         __VseqEvent_h9d9f741d__0end
+endmodule
+package escapes;
+    typedef enum int{
+        ESC_A = 32'h0,
+        ESC_B = 32'h1
+    } esc_e;
+endpackage
+package \esc.pkg ;
+    localparam int \esc.lp  = 32'sh1;
+endpackage
+module escapes;
+    import "DPI-C" esc_dpi = function int \$esc_dpi (input 
+                                                     int \i.n );
+    typedef enum int{
+        \E.a  = 32'h0,
+        \E.b  = 32'h1
+    } \esc.e ;
+    typedef struct {
+        logic \m.x ;
+    } \st.s ;
+    logic \escaped.sig ;
+    logic \input ;
+    logic dollar$sig;
+    logic \$unit ;
+    logic \par) ;
+    logic bool;
+    int esc_enum;
+    esc_enum = escapes::ESC_B;
+    int esc_unit_enum;
+    esc_unit_enum = $unit::UNIT_B;
+    int esc_e_var;
+    esc_e_var = \E.b ;
+    struct {
+        logic \m.x ;
+    } esc_st;
+    \Cls.c__Tzc7cce3e0_P2  esc_cls;
+    byte esc_mem;
+    int esc_q[$];
+    int esc_dpi_out;
+    \esc.ifc  \i.f  ();
+    export "DPI-C" function \f.e ;
+    function int \f.e ();
+        \f.e  = 32'sh1;
+    endfunction
+    assign \escaped.sig  = \input ;
+    assign dollar$sig = \input ;
+    assign \$unit  = \input ;
+    assign \par)  = \input ;
+    /* generate */ begin : genblk1
+        logic unnamed_gen;
+    end : genblk1
+    /* generate */ begin : \gen.g 
+        logic gen_sig;
+    end : \gen.g 
+    initial begin
+        esc_dpi_out = $esc_dpi(32'sh1);
+    end
+    initial begin
+        begin : \blk.b} 
+            esc_e_var = \E.a ;
+            esc_cls = new();
+            esc_cls.\t.k (\f.e ());
+            esc_mem = esc_cls.\m.m ;
+            \u.s .\t.s ();
+            esc_q = esc_q.find() with ((\it.x  > 32'sh0)) ;
+            fork : \frk.f 
+            begin
+                esc_st.\m.x  = \u.s .\sub.sig ;
+            end
+            join
+        end
+    end
+    covergroup \cg.g ;
+    function new();
+        \cp.c : coverpoint esc_dpi_out {
+            bins \b.b  = {32'sh1};
+        };
+        \cp.d : coverpoint esc_dpi_out {
+            bins \d.b  = {32'sh0};
+        };
+        \cx.x : cross \cp.c , \cp.d  {
+            bins \cb.b  = binsof(\cp.c .\b.b );
+        }
+    endfunction
+    static int __Vint;
+    struct {
+        string name;
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        int cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } option;
+    static struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } type_option;
+    function void sample();
+    endfunction
+    function void start();
+    endfunction
+    function void stop();
+    endfunction
+    static function real get_coverage(input string covered_bins, input 
+                                      string total_bins);
+        get_coverage = /*CRESET*/;
+    endfunction
+    function real get_inst_coverage(input string covered_bins, input 
+                                    string total_bins);
+        get_inst_coverage = /*CRESET*/;
+    endfunction
+    function void set_inst_name(input string name);
+    endfunction
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } \__Vcg_cp.c__option ;
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } \__Vcg_cp.d__option ;
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int cross_num_print_missing;
+        bit cross_retain_auto_bins;
+    } \__Vcg_cx.x__option ;
+    endcovergroup
+    \cg.g  \cg.i ;
+    \cg.i  = new();
 endmodule
 package p;
     logic pkgvar;
@@ -2078,3 +2235,16 @@ package Pkg;
         BAZ = 32'h2
     } enum_t;
 endpackage
+module \esc.sub ;
+    \esc.ifc  \port.p  (????);
+    logic \sub.sig ;
+    assign \sub.sig  = \port.p .\sig.i ;
+    task \t.s ();
+    endtask
+endmodule
+interface \esc.ifc ;
+    logic \sig.i ;
+    modport \mp.m  (
+        input logic \sig.i 
+    );
+endinterface

@@ -23,12 +23,13 @@ defaults:
 
 concurrency:
   # At most 1 job per branch. Auto cancel all but scheduled jobs.
-  # Of the pull request events, only one that starts a run, or that removes the
-  # 'pr: rtlmeter' label to cancel one, shares the group. The rest are
-  # skipped (a change of another label, or a payload that does not carry the
-  # label, like an 'opened' delivered after it was added), and a skipped run
-  # must not cancel the one in progress, so they are given a unique group.
-  # This way adding the label starts a run, removing it cancels the in-progress
+  # Of the pull request events, only one that starts a run, or that removes a
+  # gating label ('pr: rtlmeter-perf' or 'pr: rtlmeter-test') to cancel one,
+  # shares the group. The rest are skipped (a change of another label, or a
+  # payload that does not carry the label, like an 'opened' delivered after it
+  # was added), and a skipped run must not cancel the one in progress, so they
+  # are given a unique group.
+  # This way adding a label starts a run, removing it cancels the in-progress
   # run, and anything else has no effect. Note such an event still creates a
   # run of this workflow, which is skipped, and would then hide the one in
   # progress on the pull request. 'pr-run-cleanup.yml' deletes those.
@@ -36,7 +37,7 @@ concurrency:
   # the pull request is closed, so unlabel events would cancel base runs.
   # NOTE: The last part of the group expression must be kept in sync with the
   # 'start' job condition below: it maps to 'shared' exactly those events that
-  # satisfy that condition, plus the 'unlabeled' event of the gating label.
+  # satisfy that condition, plus the 'unlabeled' event of a gating label.
   group: |-
     ${{
       github.workflow
@@ -46,10 +47,12 @@ concurrency:
     }}-${{
       (github.event_name == 'pull_request'
        && (((github.event.action == 'labeled' || github.event.action == 'unlabeled')
-            && github.event.label.name != 'pr: rtlmeter')
+            && github.event.label.name != 'pr: rtlmeter-perf'
+            && github.event.label.name != 'pr: rtlmeter-test')
            || (github.event.action != 'labeled'
                && github.event.action != 'unlabeled'
-               && !contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter'))))
+               && !contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter-perf')
+               && !contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter-test'))))
       && github.run_id || 'shared'
     }}
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
@@ -65,10 +68,12 @@ jobs:
         && vars.ENABLE_SCHEDULED_JOBS == 'true') ||
       (github.event_name == 'pull_request'
         && ((github.event.action == 'labeled'
-             && github.event.label.name == 'pr: rtlmeter')
+             && (github.event.label.name == 'pr: rtlmeter-perf'
+                 || github.event.label.name == 'pr: rtlmeter-test'))
             || (github.event.action != 'labeled'
                 && github.event.action != 'unlabeled'
-                && contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter')))) ||
+                && (contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter-perf')
+                    || contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter-test'))))) ||
       (github.event_name == 'workflow_dispatch') ||
       (github.event_name == 'push')
     runs-on: ubuntu-26.04
@@ -96,10 +101,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          [[ "${{ github.event_name }}" == 'pull_request' ]] || exit 0
-          # For a pull request, 'github.sha' is the test merge commit. Its
-          # first parent is the target branch commit it was merged with for this run.
-          OLD_SHA="$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}" --jq '.parents[0].sha')"
+          OLD_SHA=""
+          # Only a performance run on a pull request compares against the target
+          # branch. This takes precedence when both labels are present.
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter-perf') }}" == 'true' ]]; then
+            # For a pull request, 'github.sha' is the test merge commit. Its
+            # first parent is the target branch commit it was merged with for this run.
+            OLD_SHA="$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}" --jq '.parents[0].sha')"
+          fi
           echo "old-sha=$OLD_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Load RTLMeter cases
@@ -237,12 +246,16 @@ jobs:
     name: Combine results
     needs: [run-gcc, run-clang, run-gcc-hier]
     # Skip if cancelled.
-    # On PRs, run if something succeeded and nothing failed.
+    # On PRs, run for a performance run, if something succeeded and nothing failed.
     # On non-PRs, run if anything succeeded or failed (so partial results are still published).
     if: >-
       ${{ !cancelled() && (
-               (github.event_name == 'pull_request' && (contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure')))
-            || (github.event_name != 'pull_request' && (contains(needs.*.result, 'success') ||  contains(needs.*.result, 'failure')))
+               (github.event_name == 'pull_request'
+                && contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter-perf')
+                && contains(needs.*.result, 'success')
+                && !contains(needs.*.result, 'failure'))
+            || (github.event_name != 'pull_request'
+                && (contains(needs.*.result, 'success') || contains(needs.*.result, 'failure')))
           )}}
     runs-on: ubuntu-26.04
     outputs:
@@ -291,8 +304,9 @@ jobs:
           overwrite: true
           retention-days: 30
 
-      # The reference (old) results only exist for pull requests, where the
-      # 'build-*-old' jobs run and the run jobs produce '*-reference-*' artifacts.
+      # The reference (old) results only exist for pull request performance
+      # runs, where the 'build-*-old' jobs run and the run jobs produce
+      # '*-reference-*' artifacts.
       - name: Download reference results
         if: ${{ github.event_name == 'pull_request' }}
         run: |
