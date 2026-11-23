@@ -5656,10 +5656,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
                 if (fromDtp) {
                     const AstNodeDType* const resolvedDtp = fromDtp->skipRefOrNullp();
-                    // Inherited type references may remain unresolved until after V3Param.
+                    // Type references may remain unresolved in the primary pass
                     if (m_statep->forPrimary()
-                        && (isParamedClassRefDType(fromDtp)
-                            || (m_insideClassExtParam && !resolvedDtp))) {
+                        && (isParamedClassRefDType(fromDtp) || !resolvedDtp)) {
                         m_ds.m_unresolvedClass = true;
                     } else {
                         const AstClassRefDType* const classDtp
