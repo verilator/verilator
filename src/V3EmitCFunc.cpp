@@ -485,7 +485,7 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
     AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
     const string vlSelf = VSelfPointerText::replaceThis(m_useSelfForThis, "this->");
     const bool plain = VN_IS(m_modp, Class) || varp->isFuncLocal();
-    const string newPrefix = plain              ? prefix + varName(varp)
+    const string newPrefix = plain             ? prefix + varName(varp)
                              : !prefix.empty() ? memberResetText(varp, prefix)
                                                : memberResetText(varp, vlSelf);
     if (varp->isIO() && m_modp->isTop() && optSystemC()) {
