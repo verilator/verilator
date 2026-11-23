@@ -99,6 +99,8 @@
 #include "V3Randomize.h"
 #include "V3Reloop.h"
 #include "V3Reorder.h"
+#include "V3RepCutGraph.h"
+#include "V3RepCutPlan.h"
 #include "V3Rtmd.h"
 #include "V3Sampled.h"
 #include "V3Sched.h"
@@ -756,6 +758,8 @@ static bool verilate(const string& argString) {
         VHashSha512::selfTest();
         VSpellCheck::selfTest();
         V3Graph::selfTest();
+        V3RepCut::Graph::selfTest();
+        V3RepCut::Plan::selfTest();
         V3ExecGraph::selfTest();
         V3PreShell::selfTest();
         V3Broken::selfTest();

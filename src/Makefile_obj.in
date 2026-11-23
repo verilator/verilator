@@ -347,6 +347,9 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Randomize.o \
   V3Reloop.o \
   V3Reorder.o \
+  V3RepCutGraph.o \
+  V3RepCutGraphTest.o \
+  V3RepCutPlan.o \
   V3Rtmd.o \
   V3RtmdScoped.o \
   V3Sampled.o \
