@@ -1422,9 +1422,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 nodep->strengthSpecp()->unlinkFrBack()->deleteTree();
             }
         } else if (AstVarRef* const varRefp = VN_CAST(nodep->lhsp()->baseFromp(true), VarRef)) {
-            if (varRefp->varp()->isWiredNet()) {
-                m_assigns[varRefp->varp()].push_back(nodep);
-            }
+            if (varRefp->varp()->isWiredNet()) { m_assigns[varRefp->varp()].push_back(nodep); }
         } else if (nodep->strengthSpecp()) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Assignments with signal strength with LHS of type: "
