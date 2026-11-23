@@ -59,6 +59,8 @@ for filename in sorted(hit.keys()):
         continue
     if re.search(r'_sc', filename):  # SystemC files are not built by this test
         continue
+    if re.search(r'_gpu', filename):  # GPU files are only built with --gpu
+        continue
     if re.search(r'_timing', filename) and not test.have_coroutines:
         continue
     test.error("Include file not covered by t_verilated_all test: ", filename)
