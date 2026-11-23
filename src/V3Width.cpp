@@ -4644,7 +4644,7 @@ class WidthVisitor final : public VNVisitor {
             inewp->dtypeSetBit();
             inewp->didWidth(true);
             return inewp;
-        } else if (VN_IS(itemDtp, AssocArrayDType)) {
+        } else if (VN_IS(itemDtp, AssocArrayDType) || VN_IS(itemDtp, WildcardArrayDType)) {
             nodep->v3error("Inside operator not specified on associative arrays "
                            "(IEEE 1800-2023 11.4.13)");
             VL_DO_DANGLING(exprp->deleteTree(), exprp);
