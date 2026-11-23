@@ -224,4 +224,11 @@ module sub;
   assert property (p_local_init);
   assert property (p_local_init);
 
+  // An actual of a formal the body does not use is not a use, as the instance is inlined
+  logic arg_unused = 0;
+  sequence s_unused_formal(x, y);
+    x ##1 x;
+  endsequence
+  assert property (@(posedge prop_clk) s_unused_formal(1'b1, arg_unused));
+
 endmodule

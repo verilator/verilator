@@ -1455,6 +1455,8 @@ class WidthVisitor final : public VNVisitor {
                     UINFO(1, "    Related node: " << nodep);
                 }
             }
+            if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), PackArrayDType))
+                V3Const::constifyEdit(nodep->lsbp());
             if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() > frommsb) {
                 // See also warning in V3Const
                 // We need to check here, because the widthCheckSized may silently
@@ -1467,11 +1469,13 @@ class WidthVisitor final : public VNVisitor {
                 if (m_doGenerate) {
                     UINFO(5, "Selection index out of range inside generate");
                 } else if (!inParameterizedTemplate) {
+                    const int indexDiv = nodep->widthConst() == elw ? elw : 1;
                     if (nodep->declRange().ranged()) {
                         nodep->v3warn(SELRANGE, "Selection index out of range: "
-                                                    << nodep->msbConst() << ":"
-                                                    << nodep->lsbConst() << " outside " << frommsb
-                                                    << ":" << fromlsb);
+                                                    << (nodep->msbConst() / indexDiv) << ":"
+                                                    << (nodep->lsbConst() / indexDiv)
+                                                    << " outside " << (frommsb / indexDiv) << ":"
+                                                    << (fromlsb / indexDiv));
                     } else {
                         nodep->v3warn(SELRANGE,
                                       "Selection "
@@ -7816,9 +7820,14 @@ class WidthVisitor final : public VNVisitor {
                 // A streaming target legally unpacks an aggregate (IEEE 1800-2023 11.4.14)
                 if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType()
                     && (!lhsRefp || !rhsRefp) && !VN_IS(nodep->lhsp(), NodeStream)) {
-                    nodep->v3error("Illegal assignment between unpacked aggregate and "
-                                   "integral type (IEEE 1800-2023 7.6)"
-                                   << warnDTypes(nodep, lhsDtp, rhsDtp));
+                    const bool needsIndex = rhsRefp && VN_IS(rhsDtp, UnpackArrayDType);
+                    const string hint = needsIndex ? "\n" + V3Error::warnMore()
+                                                         + "... Array needs an array index"
+                                                   : string{};
+                    nodep->v3error(
+                        "Illegal assignment between unpacked aggregate and integral type "
+                        "(IEEE 1800-2023 7.6)"
+                        << hint << warnDTypes(nodep, lhsDtp, rhsDtp));
                 }
             }
 
@@ -8748,8 +8757,7 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
         nodep->doingWidth(true);
-        // Temporaries made for the body are property-local variables, promoted per instance by
-        // V3AssertPre/V3AssertNfa
+        // Temporaries made for the body are property-local variables, promoted per instance
         VL_RESTORER(m_propertyp);
         m_propertyp = nodep;
         userIterateAndNext(nodep->declsp(), nullptr);
@@ -8761,7 +8769,6 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSequence* nodep) override {
         // IEEE 1800-2023 16.7 (sequence declarations), 16.8 (sequence instances)
         // Width-check the sequence body so expressions are typed for later inlining.
-        // Referenced sequences in assertion context will be inlined by V3AssertPre.
         if (nodep->didWidth()) return;
         // An untyped formal may be assigned when its actual is a local variable
         // (IEEE 1800-2023 16.8.1, 16.10)
@@ -9023,16 +9030,18 @@ class WidthVisitor final : public VNVisitor {
                                   << portp->prettyNameQ()
                                   << " requires a compatible interface type, parameters, and "
                                      "modport.");
-                } else if (portp->isWritable() && pinp->width() != portp->width()) {
-                    pinp->v3widthWarn(portp->width(), pinp->width(),
-                                      "Function output argument "
-                                          << portp->prettyNameQ() << " requires " << portp->width()
-                                          << " bits, but connection's " << pinp->prettyTypeNameQ()
-                                          << " generates " << pinp->width() << " bits.");
-                    VNRelinker relinkHandle;
-                    pinp->unlinkFrBack(&relinkHandle);
-                    AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
-                    relinkHandle.relink(newp);
+                } else if (portp->isWritable()) {
+                    // Packed output arguments need an lvalue resize for the copy back. Unpacked
+                    // arguments use array assignment conversions instead.
+                    const int portWidth = portDTypep->elemDTypep()->width();
+                    const int pinWidth = pinDTypep->elemDTypep()->width();
+                    if (portWidth != pinWidth
+                        && !(portDTypep->isNonPackedArray() && pinDTypep->isNonPackedArray())) {
+                        VNRelinker relinkHandle;
+                        pinp->unlinkFrBack(&relinkHandle);
+                        AstNodeExpr* const newp = new AstResizeLValue{pinp->fileline(), pinp};
+                        relinkHandle.relink(newp);
+                    }
                 }
                 if (portp->direction() != VDirection::REF
                     && ((VN_IS(portDTypep, BasicDType) && pinDTypep->isNonPackedArray())
@@ -10526,9 +10535,13 @@ class WidthVisitor final : public VNVisitor {
         const bool isRhsAggregate = rhsDtp->isAggregateType();
         if (!isLhsAggregate && !isRhsAggregate) return;
         if (isLhsAggregate ^ isRhsAggregate) {
+            const bool needsIndex = isRhsAggregate && VN_IS(rhsDtp, UnpackArrayDType);
+            const string hint = needsIndex
+                                    ? "\n" + V3Error::warnMore() + "... Array needs an array index"
+                                    : string{};
             nodep->v3error(
                 "Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)"
-                << warnDTypes(nodep, lhsDtp, rhsDtp, lhsName, rhsName));
+                << hint << warnDTypes(nodep, lhsDtp, rhsDtp, lhsName, rhsName));
             return;
         } else if (VN_IS(lhsDtp, QueueDType) && VN_IS(rhsDtp, EmptyQueueDType)) {
             return;
@@ -10945,8 +10958,28 @@ class WidthVisitor final : public VNVisitor {
         } else if (expDTypep->isString() && !underp->dtypep()->isString()) {
             AstNode* const oldp
                 = underp;  // Need FINAL on children; otherwise splice would block it
-            spliceCvtString(VN_AS(underp, NodeExpr));
+            AstCvtPackString* const cvtp
+                = VN_AS(spliceCvtString(VN_AS(underp, NodeExpr)), CvtPackString);
             underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
+            AstNodeStream* const streamp = VN_CAST(underp, NodeStream);
+            // A fixed-size unpacked operand is packed, then the stream is padded before constant
+            // folding loses it
+            if (streamp && VN_IS(streamp->dtypep(), StreamDType)) packStreamOperand(streamp);
+            if (streamp && !VN_IS(streamp->dtypep(), StreamDType)) {
+                AstNodeExpr* const paddedp = padStringStream(streamp->unlinkFrBack());
+                cvtp->lhsp(paddedp);
+                underp = paddedp;
+            } else if (streamp && !stringStreamSupported(streamp)) {
+                streamp->v3warn(E_UNSUPPORTED, "Unsupported: Streaming concatenation "
+                                                   << (VN_IS(streamp, StreamL) ? "'<<'" : "'>>'")
+                                                   << " of "
+                                                   << streamp->lhsp()->dtypep()->prettyDTypeNameQ()
+                                                   << " assigned to a string.");
+                AstConst* const newp = new AstConst{cvtp->fileline(), AstConst::String{}, ""};
+                cvtp->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(cvtp), cvtp);
+                underp = newp;
+            }
         } else {
             const AstNodeDType* const underDtp = underp->dtypep()->skipRefp();
             if (determ != ASSIGN && expDTypep->skipRefp()->isIntegralOrPacked()
@@ -10973,6 +11006,7 @@ class WidthVisitor final : public VNVisitor {
                 && !unpackedArraySizesMatch(expDtp, underDtp)) {
                 parentp->v3error("Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)"
                                  << warnDTypes(parentp, expDtp, underDtp));
+                warnOn = false;  // Suppress cascading warnings for the incompatible assignment
             }
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
@@ -11225,6 +11259,29 @@ class WidthVisitor final : public VNVisitor {
         } else {
             return nodep;
         }
+    }
+    // Return a fixed-width stream assigned to a string, filled with zero bits on the right to
+    // whole bytes, as a string is a dynamic array of bytes (IEEE 1800-2023 11.4.14, 6.24.3)
+    static AstNodeExpr* padStringStream(AstNodeExpr* const streamp) {
+        const int width = streamp->width();
+        const int paddedWidth = VL_BYTES_I(width) * VL_BYTESIZE;
+        if (width == paddedWidth) return streamp;
+        FileLine* const flp = streamp->fileline();
+        AstNodeExpr* const extendp = new AstExtend{flp, streamp, paddedWidth};
+        AstNodeExpr* const shiftp = new AstConst{flp, static_cast<uint32_t>(paddedWidth - width)};
+        AstNodeExpr* const newp = new AstShiftL{flp, extendp, shiftp, paddedWidth};
+        extendp->didWidth(true);
+        shiftp->didWidth(true);
+        newp->didWidth(true);
+        return newp;
+    }
+    // Whether a stream assigned to a string converts: a queue or dynamic array of packed
+    // elements, or of strings concatenated in order
+    static bool stringStreamSupported(const AstNodeStream* const streamp) {
+        const AstNodeDType* const fromDtp = streamp->lhsp()->dtypep()->skipRefp();
+        if (!VN_IS(fromDtp, QueueDType) && !VN_IS(fromDtp, DynArrayDType)) return true;
+        const AstNodeDType* const elemDtp = fromDtp->subDTypep()->skipRefp();
+        return elemDtp->isIntegralOrPacked() || (elemDtp->isString() && VN_IS(streamp, StreamR));
     }
     AstNodeExpr* spliceCvtString(AstNodeExpr* nodep) {
         // IEEE-2012 11.8.1: Signed: Type coercion creates signed
@@ -12266,7 +12323,10 @@ public:
                 VL_DO_DANGLING(pushDeletep(streamp), streamp);
                 return;
             }
-            const int lwidth = lhsDTypeSkippedRefp->widthStream();
+            // A dynamically sized target, such as a string, takes the whole stream
+            const int lwidth = lhsDTypeSkippedRefp->isDynamicallySized()
+                                   ? 0
+                                   : lhsDTypeSkippedRefp->widthStream();
             const int rwidth = streamp->lhsp()->dtypep()->skipRefp()->widthStream();
             if (lwidth != 0 && lwidth < rwidth) {
                 nodep->v3widthWarn(lwidth, rwidth,

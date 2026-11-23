@@ -654,6 +654,13 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
         return VN_AS(invarp->user1p(), Var);
     }
+    AstVarRef* newEnVarRefp(const AstVarRef* origp) {
+        // Read of the __en variable of origp, which lives beside the original, e.g. in a package
+        AstVarRef* const refp = new AstVarRef{
+            origp->fileline(), getCreateEnVarp(origp->varp(), false), VAccess::READ};
+        refp->classOrPackagep(origp->classOrPackagep());
+        return refp;
+    }
     AstConst* getNonZConstp(AstConst* const constp) {
         FileLine* const fl = constp->fileline();
         V3Number numz{constp, constp->width()};
@@ -664,8 +671,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
     AstNodeExpr* getEnExprBasedOnOriginalp(AstNodeExpr* const nodep) {
         if (AstVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
-            return new AstVarRef{varrefp->fileline(), getCreateEnVarp(varrefp->varp(), false),
-                                 VAccess::READ};
+            return newEnVarRefp(varrefp);
         } else if (AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef)) {
             AstVar* const enVarp = getCreateEnVarp(xrefp->varp(), false);
             return newVarXRef(xrefp->fileline(), enVarp, xrefp->dotted(), VAccess::READ,
@@ -2133,13 +2139,12 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                      << nodep->prettyTypeNameQ());
                     return;
                 }
-                AstVar* const envarp = getCreateEnVarp(varrefp->varp(), false);
                 // If any drops, we need to add in the count of Zs (from __en)
                 UINFO(4, " COUNTBITS('z)-> " << nodep);
+                AstNodeExpr* const enp = newEnVarRefp(varrefp);
                 VNRelinker relinkHandle;
                 nodep->unlinkFrBack(&relinkHandle);
-                AstNodeExpr* newp = new AstCountOnes{
-                    nodep->fileline(), new AstVarRef{nodep->fileline(), envarp, VAccess::READ}};
+                AstNodeExpr* newp = new AstCountOnes{nodep->fileline(), enp};
                 if (nonXp) {  // Need to still count '0 or '1 or 'x's
                     if (dropop[0]) {
                         nodep->rhsp()->unlinkFrBack()->deleteTree();

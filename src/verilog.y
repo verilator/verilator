@@ -326,7 +326,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              '['
 %token<fl>              ']'
 %token<fl>              '^'
-%token<fl>              '{'
+%token<fl>              '{'  // See also yP_CURLY__EMPTY
 %token<fl>              '|'
 %token<fl>              '}'
 %token<fl>              '~'
@@ -846,6 +846,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 
 %token<fl>              yP_COLON__BEGIN ":-then-begin"
 %token<fl>              yP_COLON__FORK  ":-then-fork"
+%token<fl>              yP_CURLY__EMPTY "{"             // Used when constraint_set is '{' '}'
 %token<fl>              yP_EQ__NEW      "=-then-new"
 %token<fl>              yP_PAR__IGNORE  "(-ignored"     // Used when sequence_expr:expr:( is ignored
 %token<fl>              yP_PAR__STRENGTH "(-for-strength"
@@ -6805,7 +6806,7 @@ property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
                         { $$ = PARSEP->makePropertyCase($1, $3, nullptr); }
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr  %prec prIF
                         { $$ = new AstImplication{$1, $3, $5, true}; }
-        |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr
+        |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr  %prec prIF
                         { AstNodeExpr* const elseCondp = new AstLogNot{$1, $3->cloneTreePure(false)};
                           $$ = new AstSAnd{$1, new AstImplication{$1, $3, $5, true},
                                            new AstImplication{$1, elseCondp, $7, true},
@@ -8336,6 +8337,8 @@ constraint_expression<nodeConstraintItemp>:  // ==IEEE: constraint_expression
         //                      // item V3Randomize already knows how to
         //                      // lower (with disable-soft hoisted by the
         //                      // ConstraintExprVisitor pre-pass).
+        |       expr yP_MINUSGT yP_CURLY__EMPTY '}'
+                        { $$ = new AstConstraintIf{$2, $1, nullptr, nullptr}; }
         |       expr yP_MINUSGT '{' constraint_expressionList '}'
                         { $$ = new AstConstraintIf{$2, $1, $4, nullptr}; }
         |       expr yP_MINUSGT yIF '(' expr ')' constraint_set %prec prLOWER_THAN_ELSE
@@ -8380,6 +8383,7 @@ constraint_expression<nodeConstraintItemp>:  // ==IEEE: constraint_expression
 
 constraint_set<nodeConstraintItemp>:  // ==IEEE: constraint_set
                 constraint_expression                   { $$ = $1; }
+        |       yP_CURLY__EMPTY '}'                     { $$ = nullptr; }
         |       '{' constraint_expressionList '}'       { $$ = $2; }
         //
         |       '{' error '}'                           { $$ = nullptr; }  // LCOV_EXCL_LINE

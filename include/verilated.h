@@ -618,6 +618,12 @@ protected:
         int m_logFD;  // Log file descriptor
     } m_ns;
 
+    /// Callback typedef for addEndContextCb
+    using VoidPCb = void (*)(void*);
+    mutable VerilatedMutex m_endContextMutex;  // Protect m_endContextCbs
+    std::vector<std::pair<VoidPCb, void*>> m_endContextCbs
+        VL_GUARDED_BY(m_endContextMutex);  // Callbacks to run when context is destroyed
+
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
     // no need to be save-restored (serialized) the
     // assumption is that the restore is allowed to pass different arguments
@@ -866,6 +872,10 @@ public:
     const VerilatedContextImp* impp() const VL_MT_SAFE {
         return reinterpret_cast<const VerilatedContextImp*>(this);
     }
+
+    /// Add callback to run once when the context is destroyed, after final blocks and any
+    /// coverage write
+    void addEndContextCb(void (*cb)(void*), void* datap) VL_MT_SAFE_EXCLUDES(m_endContextMutex);
 
     // Internal: Model and thread setup
     void addModel(VerilatedModel* modelp);

@@ -143,8 +143,7 @@ public:
         UASSERT_OBJ(headp, procp, "Empty process should have been deleted earlier");
         headp->unlinkFrBackWithNext();
         // 'procp' is no longer needed but the OrderGraph still references
-        // it (for debug dump). It will get deleted when deleting the
-        // AstActives in V3Order.
+        // it (for debug dump). Its ProcessList deletes it in V3Order.
         // Process each statement in the list starting at headp
         for (AstNodeStmt *currp = headp, *nextp; currp; currp = nextp) {
             nextp = VN_AS(currp->nextp(), NodeStmt);

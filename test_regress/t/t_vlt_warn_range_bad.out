@@ -8,4 +8,8 @@
                                                     : ... note: In instance 't'
    26 |   reg unuse_warn5_var_line26;   
       |       ^~~~~~~~~~~~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_vlt_warn_range_bad.v:24:7: Signal is not driven, nor used: 'unuse_warn6_var_line24'
+                                                    : ... note: In instance 't'
+   24 |   reg unuse_warn6_var_line24;   
+      |       ^~~~~~~~~~~~~~~~~~~~~~
 %Error: Exiting due to
