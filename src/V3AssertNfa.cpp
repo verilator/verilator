@@ -2180,7 +2180,7 @@ class SvaNfaLowering final {
                     c.flp, matchItemLoop,
                     new AstGt{c.flp, new AstVarRef{c.flp, remainingMatchCountVarp, VAccess::READ},
                               newTypedConstp(c.flp, m_u32DTypep, 0)}});
-                matchItemLoop->addStmtsp(vtxp->m_liveRepMatchItemsp->cloneTree(false));
+                matchItemLoop->addStmtsp(vtxp->m_liveRepMatchItemsp->cloneTree(true));
                 matchItemLoop->addStmtsp(new AstAssign{
                     c.flp, new AstVarRef{c.flp, remainingMatchCountVarp, VAccess::WRITE},
                     new AstSub{c.flp, new AstVarRef{c.flp, remainingMatchCountVarp, VAccess::READ},
