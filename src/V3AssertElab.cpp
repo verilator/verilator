@@ -147,45 +147,39 @@ class AssertElabVisitor final : public VNVisitor {
         V3Const::constifyParamsEdit(nodep->hiBoundp());
         const AstConst* const loConstp = VN_CAST(nodep->loBoundp(), Const);
         const AstConst* const hiConstp = VN_CAST(nodep->hiBoundp(), Const);
-        if (!loConstp) {
-            nodep->v3error("eventually range low bound must be a constant expression"
-                           " (IEEE 1800-2023 16.12.13)");
-        } else {
-            if (loConstp->num().isOpaque()) {
-                nodep->loBoundp()->v3error("eventually range low bound must be integral"
-                                           " (IEEE 1800-2023 16.12.13)");
-                return false;
-            }
-            if (loConstp->dtypep()->isSigned() && loConstp->num().isNegative()) {
-                nodep->loBoundp()->v3error("eventually range low bound must be non-negative"
-                                           " (IEEE 1800-2023 16.12.13)");
-                return false;
-            }
-            if (!V3AssertCommon::checkSvaValueLimit(nodep, loConstp,
-                                                    "eventually range low bound value")) {
-                return false;
-            }
+        if (!loConstp || !hiConstp) return false;
+
+        if (loConstp->num().isOpaque()) {
+            nodep->loBoundp()->v3error("eventually range low bound must be integral"
+                                       " (IEEE 1800-2023 16.12.13)");
+            return false;
         }
-        if (!hiConstp) {
-            nodep->v3error("eventually range high bound must be a constant expression"
-                           " (IEEE 1800-2023 16.12.13)");
-        } else {
-            if (hiConstp->num().isOpaque()) {
-                nodep->hiBoundp()->v3error("eventually range high bound must be integral"
-                                           " (IEEE 1800-2023 16.12.13)");
-                return false;
-            }
-            if (!V3AssertCommon::checkSvaValueLimit(nodep, hiConstp,
-                                                    "eventually high bound value")) {
-                return false;
-            }
+        if (loConstp->dtypep()->isSigned() && loConstp->num().isNegative()) {
+            nodep->loBoundp()->v3error("eventually range low bound must be non-negative"
+                                       " (IEEE 1800-2023 16.12.13)");
+            return false;
         }
-        if (loConstp && hiConstp && hiConstp->num().isLt(loConstp->num())) {
+        if (!V3AssertCommon::checkSvaValueLimit(nodep, loConstp,
+                                                "eventually range low bound value")) {
+            return false;
+        }
+
+        if (hiConstp->num().isOpaque()) {
+            nodep->hiBoundp()->v3error("eventually range high bound must be integral"
+                                       " (IEEE 1800-2023 16.12.13)");
+            return false;
+        }
+        if ((hiConstp->dtypep()->isSigned() && hiConstp->num().isNegative())
+            || (loConstp && hiConstp->num().isLt(loConstp->num()))) {
             nodep->hiBoundp()->v3error("eventually range high bound must be >= low bound"
                                        " (IEEE 1800-2023 16.12.13)");
             return false;
         }
-        return loConstp && hiConstp;
+        if (!V3AssertCommon::checkSvaValueLimit(nodep, hiConstp,
+                                                "eventually range high bound value")) {
+            return false;
+        }
+        return true;
     }
     // The property instantiated as the whole of specp, if any
     static const AstProperty* instancedProperty(const AstPropSpec* specp) {

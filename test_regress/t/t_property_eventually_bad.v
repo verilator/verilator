@@ -19,6 +19,7 @@ module t;
   assert property (@(posedge clk) eventually[-1: 5] 1'b0);
   assert property (@(posedge clk) eventually[-2: -3] 1'b0);
   assert property (@(posedge clk) eventually[5: 0] 1'b0);
+  assert property (@(posedge clk) eventually[0: -1] 1'b0);
 
   localparam string LO = "";
   typedef string bound_t;

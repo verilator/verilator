@@ -2031,7 +2031,7 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3warn(E_NOTIMING, "s_eventually requires --timing");
                 nodep->replaceWith(
                     new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 1, 0});
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
