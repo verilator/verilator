@@ -34,6 +34,7 @@
 #include "V3Const.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
+#include "V3Task.h"
 #include "V3UniqueNames.h"
 
 #include <unordered_set>
@@ -266,16 +267,26 @@ static AstNodeExpr* sampled(AstNodeExpr* exprp) {
 // assertion's sampling region. Wrap read-only references while leaving writable operands intact.
 class SampleMatchItemReadsVisitor final : public VNVisitor {
     void visit(AstSampled*) override {}
+    void visit(AstNodeFTaskRef* nodep) override {
+        const V3TaskConnects tconnects
+            = V3Task::taskConnects(nodep, nodep->taskp()->declsp(), nullptr, false);
+        for (const auto& tconnect : tconnects) {
+            AstVar* const portp = tconnect.first;
+            AstArg* const argp = tconnect.second;
+            if (!portp->isInput()) continue;
+            iterateNull(argp->exprp());
+        }
+    }
     void visit(AstNodeVarRef* nodep) override {
         if (!nodep->access().isReadOnly()) return;
         AstNodeExpr* const sampledp = sampled(nodep->cloneTreePure(false));
         nodep->replaceWith(sampledp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstNode* nodep) override { iterateAndNextNull(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
-    explicit SampleMatchItemReadsVisitor(AstNode* nodep) { iterate(nodep); }
+    explicit SampleMatchItemReadsVisitor(AstNode* nodep) { iterateAndNextNull(nodep); }
 };
 
 static const char* assertPassOnQuery(bool vacuous) {

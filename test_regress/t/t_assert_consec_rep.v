@@ -213,6 +213,18 @@ module unbounded_rep_match_item_test (input logic clk);
   int disable_failures = 0;
   int read_passes = 0;
   int follow_failures = 0;
+  int const_ref_calls = 0;
+  int const_ref_failures = 0;
+  int value_calls = 0;
+  int value_failures = 0;
+
+  function void count_const_ref(const ref int value);
+    const_ref_calls += value;
+  endfunction
+
+  function void count_value(input int value);
+    value_calls += value;
+  endfunction
 
   property p;
     int x;
@@ -241,6 +253,14 @@ module unbounded_rep_match_item_test (input logic clk);
   read_passes++;
   else read_passes--;
 
+  assert property (@(posedge clk)
+    start |-> a [*1:$] ##0 (b, count_const_ref(read_data)))
+  else const_ref_failures++;
+
+  assert property (@(posedge clk)
+    start |-> a [*1:$] ##0 (b, count_value(read_data)))
+  else value_failures++;
+
   assert property (@(posedge clk) follow_a #-# follow_b)
   else follow_failures++;
 
@@ -265,6 +285,10 @@ module unbounded_rep_match_item_test (input logic clk);
     repeat (2) @(posedge clk);
     `checkh(passes, 1);
     `checkh(failures, 0);
+    `checkh(const_ref_calls, 1);
+    `checkh(const_ref_failures, 0);
+    `checkh(value_calls, 1);
+    `checkh(value_failures, 0);
 
     @(negedge clk);
     disable_start = 1;
