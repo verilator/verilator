@@ -454,6 +454,10 @@ add_custom_command(
         "${BISON_V3ParseBison_OUTPUT_SOURCE}" "${verilog_y}"
 )
 list(APPEND GENERATED_FILES V3ParseBison.c V3ParseBison.h)
+set_source_files_properties(
+    "${BISON_V3ParseBison_OUTPUT_SOURCE}"
+    PROPERTIES HEADER_FILE_ONLY TRUE
+)
 # Output used directly by the `verilator` target
 
 set(verilog_l "${srcdir}/verilog.l")
@@ -607,6 +611,7 @@ add_dependencies(
 )
 
 target_link_libraries(${verilator} PRIVATE Threads::Threads)
+target_link_libraries(${verilator} PRIVATE $<$<NOT:${coverage_config}>:repcut>)
 
 if(NOT MSVC)
     target_compile_features(${verilator} PRIVATE cxx_std_11)

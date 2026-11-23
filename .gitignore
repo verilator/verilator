@@ -53,3 +53,4 @@ xrun.history
 
 # Normal CMake build directory
 /build
+/third_party_build/

@@ -48,8 +48,8 @@ AC_ARG_ENABLE([partial-static],
               [AS_HELP_STRING([--disable-partial-static],
                               [By default, for Verilation performance, Verilator
                                is linked against some of its dependencies
-                               statically. Use this to link the Verilator binary
-                               fully dynamically.])],
+                               statically. Use this to link those system
+                               libraries dynamically.])],
               [case "${enableval}" in
                 yes) CFG_ENABLE_PARTIAL_STATIC=yes ;;
                 no)  CFG_ENABLE_PARTIAL_STATIC=no ;;
@@ -898,6 +898,23 @@ LIBS="$ACO_SAVE_LIBS"
 AC_SUBST(HAVE_SYSTEMC)
 
 # Checks for system services
+
+# Build the bundled partitioner with its own C++17/exception settings. Keep
+# the same selected compiler and user flags, without compiler-only flags.
+AC_ARG_VAR([CMAKE], [CMake 3.15 or newer for the bundled RepCut library])
+AC_ARG_VAR([REPCUT_CMAKE_FLAGS], [Additional CMake settings for the bundled RepCut library])
+AC_PATH_PROG([CMAKE], [cmake])
+AS_IF([test -z "$CMAKE"], [AC_MSG_ERROR([CMake 3.15 or newer is required])])
+AC_MSG_NOTICE([configuring the bundled RepCut library])
+REPCUT_CXXFLAGS="$CXXFLAGS $CPPFLAGS"
+AS_IF([test "$CFG_WITH_DEV_ASAN" = "yes"],
+      [REPCUT_CXXFLAGS="$REPCUT_CXXFLAGS -fsanitize=address"])
+AS_IF([test "$CFG_WITH_DEV_GCOV" = "yes"],
+      [REPCUT_CXXFLAGS="$REPCUT_CXXFLAGS --coverage"])
+CXX="$CXX" "$CMAKE" -G "Unix Makefiles" -S "$srcdir/third_party" -B third_party_build \
+    -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$REPCUT_CXXFLAGS" \
+    -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS" $REPCUT_CMAKE_FLAGS \
+    || AC_MSG_ERROR([bundled RepCut configuration failed])
 
 ######################################################################
 ## Output

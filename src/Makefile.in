@@ -53,6 +53,10 @@ obj_shared:
 
 .SUFFIXES:
 
+.PHONY: repcut
+repcut:
+	+$(MAKE) -C ../third_party_build repcut
+
 .PHONY: ../bin/verilator_bin$(EXEEXT) ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)
 
 opt: ../bin/verilator_bin$(EXEEXT) ../bin/verilator_coverage_bin$(EXEEXT)
@@ -64,7 +68,7 @@ ifeq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... One build
 	-cp -p $< $@.tmp
 	-mv -f $@.tmp $@
 else
-  ../bin/verilator_bin$(EXEEXT): obj_opt ../bin prefiles
+  ../bin/verilator_bin$(EXEEXT): obj_opt ../bin prefiles repcut
 	$(MAKE) -C obj_opt -j 1  TGT=../$@ -f ../Makefile_obj serial
 	$(MAKE) -C obj_opt       TGT=../$@ -f ../Makefile_obj
   ../bin/verilator_coverage_bin$(EXEEXT): obj_opt ../bin prefiles
@@ -72,7 +76,7 @@ else
 endif
 
 dbg: ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)
-../bin/verilator_bin_dbg$(EXEEXT): obj_dbg ../bin prefiles
+../bin/verilator_bin_dbg$(EXEEXT): obj_dbg ../bin prefiles repcut
 	$(BEAR_OBJ_OPT) $(MAKE) -C obj_dbg -j 1  TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
 	$(BEAR_OBJ_OPT) $(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
 
@@ -105,6 +109,7 @@ clang-format:
 
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
+	+if test -f ../third_party_build/Makefile; then $(MAKE) -C ../third_party_build clean; fi
 	-rm -f config_rev.h
 	-rm -rf obj_* *.log *.dmp *.vpd core
 	-rm -f *.o *.d *_gen_*

@@ -120,6 +120,15 @@ LDFLAGS += $(CFG_LDFLAGS_SRC)
 CPPFLAGSWALL = $(CPPFLAGS)
 CPPFLAGSPARSER = $(CPPFLAGS) $(CFG_CXXFLAGS_PARSER)
 
+ifneq ($(VL_VLCOV),1)
+  CPPFLAGS += -I$(srcdir)/../third_party/repcut/include
+  REPCUT_BUILD = $(abspath $(bldsrc)/../third_party_build)
+  REPCUT_ARCHIVES = $(REPCUT_BUILD)/repcut/lib/repcut/librepcut.a \
+    $(REPCUT_BUILD)/repcut/external/mt-kahypar/lib/libmtkahypar.a
+  REPCUT_RESPONSE = $(REPCUT_BUILD)/repcut-libs.rsp
+  REPCUT_LIBS = @$(REPCUT_RESPONSE)
+endif
+
 # Allow RPM builds to specify hardcoded data directories
 # To do this:
 ifeq ($(CFG_WITH_DEFENV),yes)
@@ -416,9 +425,9 @@ else
   OBJS += $(VLCOV_OBJS)
 endif
 
-$(TGT): $(PREDEP_H) $(OBJS)
+$(TGT): $(PREDEP_H) $(OBJS) $(REPCUT_ARCHIVES) $(REPCUT_RESPONSE)
 	@echo "      Linking $@..."
-	${LINK} ${LDFLAGS} -o $@ $(OBJS) $(CCMALLOC) ${LIBS}
+	${LINK} ${LDFLAGS} -o $@ $(OBJS) $(REPCUT_LIBS) $(CCMALLOC) ${LIBS}
 
 #### Modules
 

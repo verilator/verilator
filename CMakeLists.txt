@@ -18,7 +18,7 @@ project(
     Verilator
     VERSION 5.055
     HOMEPAGE_URL https://verilator.org
-    LANGUAGES CXX
+    LANGUAGES C CXX
 )
 
 # Set default build type to Release if not specified
@@ -127,6 +127,8 @@ mark_as_advanced(FLEX_EXECUTABLE FLEX_INCLUDE_DIR)
 
 # Build
 #set_property(GLOBAL PROPERTY JOB_POOLS one_job=1)
+
+add_subdirectory(third_party EXCLUDE_FROM_ALL)
 
 if(DEBUG_AND_RELEASE_AND_COVERAGE)
     if(CMAKE_GENERATOR MATCHES "^Visual Studio ")
@@ -238,6 +240,8 @@ foreach(
 )
     install(PROGRAMS bin/${program} TYPE BIN)
 endforeach()
+
+install(FILES third_party/NOTICES.txt DESTINATION licenses)
 
 install(
     DIRECTORY examples

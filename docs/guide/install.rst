@@ -158,6 +158,14 @@ need to be present to run Verilator:
 .. code-block:: bash
 
    sudo apt-get install git autoconf flex bison
+   sudo apt-get install cmake
+
+Building the bundled RepCut partitioner requires CMake 3.15 or newer and a
+C++17-capable compiler. Both the Autoconf/Make and CMake builds use the
+bundled sources without downloading dependencies. Partitioning runs on one
+thread using a serial Mt-KaHyPar backend. No separate ``rcp`` installation,
+oneTBB, Boost, hwloc, or Python bindings for Mt-KaHyPar are required.
+Generated simulators do not link the partitioner.
 
 Those developing Verilator itself also need the following additional
 packages (see internals.rst), and a Python virtual environment:
