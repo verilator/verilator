@@ -639,25 +639,7 @@ static void process() {
             // Create AstCUse to determine what class forward declarations/#includes needed in C
             V3CUse::cUseAll();
 
-            if (v3Global.opt.gpu()) {
-                const bool lowered = V3Gpu::lowerTiming(v3Global.rootp());
-                if (!v3Global.opt.gpuHybrid()) {
-                    if (!lowered && !V3Error::errorCount()) {
-                        v3Global.rootp()->v3error(
-                            "GPU-resident mode needs a design that makes its own clocks with "
-                            "--timing\n"
-                            << v3Global.rootp()->warnMore()
-                            << "... Use --gpu-hybrid to drive it from C++");
-                    }
-                    if (lowered) V3Gpu::residentPrepare(v3Global.rootp());
-                }
-                V3Gpu::analyze(v3Global.rootp());
-                if (V3Gpu::residentMode()) {
-                    V3Gpu::residentPartition(v3Global.rootp());
-                } else {
-                    V3Gpu::partition(v3Global.rootp());
-                }
-            }
+            if (v3Global.opt.gpu()) V3Gpu::apply(v3Global.rootp());
 
             // Evaluate cost of a current hierarchical block
             if (!v3Global.opt.libCreate().empty()) {

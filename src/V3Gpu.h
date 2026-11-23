@@ -89,6 +89,7 @@ public:
     static bool lowerTiming(AstNetlist* nodep) VL_MT_DISABLED;
     static void residentPrepare(AstNetlist* nodep) VL_MT_DISABLED;
     static void residentPartition(AstNetlist* nodep) VL_MT_DISABLED;
+    static void apply(AstNetlist* nodep) VL_MT_DISABLED;
     static bool residentMode() VL_MT_DISABLED;
     static const V3GpuResident& resident() VL_MT_DISABLED;
     static bool isResidentGraphPoint(const AstNode* nodep, int& graph, int& label) VL_MT_DISABLED;

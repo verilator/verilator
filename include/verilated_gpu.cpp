@@ -39,6 +39,7 @@
 #include <vector>
 
 namespace {
+void recordPlusarg(const char* prefixp);
 int s_gpuDevice = -1;
 VerilatedContext* s_contextp = nullptr;
 bool s_residentReplay = false;
@@ -152,6 +153,7 @@ void memberRead(void* hostp, void* basep, int n, size_t offset, size_t size) {
 void VerilatedGpu::init(VerilatedContext* contextp) {
     if (s_gpuDevice >= 0) return;
     s_contextp = contextp;
+    contextp->m_plusargReadCb = &recordPlusarg;
     int count = 0;
     gpuCheck(cudaGetDeviceCount(&count), "cudaGetDeviceCount");
     if (count < 1) gpuFatal("no CUDA device found");
@@ -936,6 +938,10 @@ bool jobPlusargsShared(int copy) {
     return true;
 }
 
+void recordPlusarg(const char* prefixp) {
+    if (prefixp && *prefixp) hostPlusargs().insert(prefixp);
+}
+
 void residentInitCopy(int copy, int n) {
     if (!jobPlusargsShared(copy)) return;
     s_currentCopy = copy;
@@ -1428,8 +1434,4 @@ size_t VerilatedGpu::stateBytes(size_t stride, int n) {
 #else
     return stride * static_cast<size_t>(n);
 #endif
-}
-
-extern "C" void vlGpuPlusargRead(const char* prefixp) {
-    if (prefixp && *prefixp) hostPlusargs().insert(prefixp);
 }

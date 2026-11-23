@@ -1,4 +1,4 @@
-%Error: GPU-resident mode needs a design that makes its own clocks with --timing
+%Error: GPU-resident mode needs a design that makes its own clocks with --timing.
         ... Use --gpu-hybrid to drive it from C++
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

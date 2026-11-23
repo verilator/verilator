@@ -12,6 +12,31 @@
 // SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
+// V3Gpu prepares the model for --gpu, after scheduling and V3ExecGraph.
+//
+// Classification: each statement of the evaluation functions is DEVICE (runs
+//   on the GPU as is), DEFERRED (a $display-like task whose effect is recorded
+//   on the GPU and replayed on the host) or HOST (cannot run on the GPU, such
+//   as host DPI or VPI calls). A function is device capable when all its
+//   statements are DEVICE or DEFERRED.
+//
+// Replay: each DEFERRED statement gets a host replay function. The device
+//   stores the values the statement reads in the copy's output buffer; the
+//   host copies them back into the model and runs the original statement, so
+//   formatting and output are those of the CPU model.
+//
+// Resident mode (default): the region functions (ico, act, nba, ...) and all
+//   functions they reach run on the GPU in one persistent kernel. A call of a
+//   multithreaded task graph becomes a suspension point: the region function
+//   records the graph it waits for and returns, the kernel runs the graph for
+//   all waiting copies, and the region is called again to resume after the
+//   call (a protothread, using the __Vgpu_rpc_* resume point variables).
+//   Anything that cannot run on the GPU is an error in this mode.
+//
+// Hybrid mode (--gpu-hybrid): the host keeps the scheduler, and runs of
+//   consecutive device statements become kernels that the host launches,
+//   level by level for task graphs.
+//
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"
@@ -801,11 +826,13 @@ public:
                 m_reg.m_deviceSet.insert(funcp);
             }
         }
+        std::unordered_set<const AstCCall*> graphCalls;
         netlistp->foreach([&](AstExecGraph* graphp) {
             if (!graphOnDevice(graphp)) return;
             if (AstCFunc* const runp = graphp->runfuncp()) m_graphHostFuncs.insert(runp);
             for (const AstCCall* callp = graphp->callsp(); callp;
                  callp = VN_AS(callp->nextp(), CCall)) {
+                graphCalls.insert(callp);
                 if (!m_reg.m_deviceSet.count(callp->funcp())) m_splitTasks.insert(callp->funcp());
             }
         });
@@ -814,9 +841,7 @@ public:
             bool callsTask = false;
             funcp->foreach([&](const AstCCall* callp) {
                 if (!m_mtaskFuncs.count(callp->funcp())) return;
-                const AstNode* headp = callp;
-                while (headp->backp() && headp->backp()->nextp() == headp) headp = headp->backp();
-                if (!VN_IS(headp->backp(), ExecGraph)) callsTask = true;
+                if (!graphCalls.count(callp)) callsTask = true;
             });
             if (callsTask) m_graphHostFuncs.insert(funcp);
         }
@@ -1167,6 +1192,7 @@ public:
 };
 
 class GpuResidentPartition final {
+    static constexpr int MAX_UNSUPPORTED_REPORTS = 20;  // Functions reported before stopping
     GpuRegistry& m_reg = registry();  // GPU state of this Verilation
 
     bool capable(const AstCFunc* funcp, std::string& why) const {
@@ -1236,9 +1262,9 @@ public:
         for (AstCFunc* const funcp : m_reg.m_deviceFuncs) {
             std::string why;
             if (capable(funcp, why)) continue;
-            if (errors++ < 20) {
-                funcp->v3warn(E_UNSUPPORTED,
-                              "Unsupported: GPU-resident mode: " << funcp->name() << ": " << why);
+            if (errors++ < MAX_UNSUPPORTED_REPORTS) {
+                funcp->v3warn(E_UNSUPPORTED, "Unsupported: GPU-resident mode: "
+                                                 << funcp->prettyNameQ() << ": " << why);
             }
         }
         for (AstCFunc* const funcp : m_reg.m_deviceFuncs) {
@@ -1393,4 +1419,23 @@ AstVar* V3Gpu::residentGraphPc(const AstNode* nodep) {
 
 bool V3Gpu::isResidentStmt(const AstNode* nodep) {
     return registry().m_residentStmts.count(nodep) > 0;
+}
+
+void V3Gpu::apply(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ":");
+    const bool lowered = lowerTiming(nodep);
+    if (!v3Global.opt.gpuHybrid()) {
+        if (!lowered && !V3Error::errorCount()) {
+            nodep->v3error("GPU-resident mode needs a design that makes its own clocks with "
+                           "--timing.\n"
+                           << nodep->warnMore() << "... Use --gpu-hybrid to drive it from C++");
+        }
+        if (lowered) residentPrepare(nodep);
+    }
+    analyze(nodep);
+    if (residentMode()) {
+        residentPartition(nodep);
+    } else {
+        partition(nodep);
+    }
 }

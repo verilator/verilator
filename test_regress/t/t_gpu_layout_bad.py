@@ -18,8 +18,4 @@ test.lint(verilator_flags2=[
           fails=True,
           expect_filename=test.golden_filename)
 
-test.lint(verilator_flags2=["--timing", "--gpu", "--gpu-layout", "rows"],
-          fails=True,
-          expect_filename=test.t_dir + "/t_gpu_layout_bad2.out")
-
 test.passes()

@@ -648,6 +648,8 @@ protected:
     std::unique_ptr<VerilatedVirtualBase> m_threadPool;
     // The execution profiler shared by all models added to this context
     std::unique_ptr<VerilatedVirtualBase> m_executionProfiler;
+    // Told about each plusarg the design reads; set by the GPU runtime
+    void (*m_plusargReadCb)(const char* prefixp) = nullptr;
     // Coverage access
     std::unique_ptr<VerilatedVirtualBase> m_coveragep;  // Pointer for coveragep()
     // Covergroup type/instance nodes. Covergroup data is always collected,

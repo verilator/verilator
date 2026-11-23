@@ -736,7 +736,11 @@ public:
     }
 
     static std::vector<ThreadSchedule> apply(V3Graph& mtaskGraph) {
-        if (v3Global.opt.gpu()) return PackThreads{1}.pack(mtaskGraph);
+        // In GPU-resident mode the GPU runs the task graph from its dependencies; the host copy
+        // of the model only runs for VERILATOR_GPU_RESIDENT=0 debugging, so run it on one thread
+        // instead of starting a thread pool in every process of a batch
+        if (v3Global.opt.gpu() && !v3Global.opt.gpuHybrid())
+            return PackThreads{1}.pack(mtaskGraph);
         return PackThreads{}.pack(mtaskGraph);
     }
 };

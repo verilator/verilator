@@ -224,12 +224,13 @@
 #define VL_MT_DISABLED \
     VL_CLANG_ATTR(annotate("MT_DISABLED")) \
     VL_EXCLUDES(VlOs::MtScopeMutex::s_haveThreadScope)
-// Comment tag that function is threadsafe
+// Mark a function as callable from both host and CUDA device code
 #ifdef __CUDACC__
 # define VL_HD __host__ __device__
 #else
 # define VL_HD
 #endif
+// Bit builtins, using the CUDA intrinsics when compiling device code
 #if defined(__CUDA_ARCH__)
 # define VL_BUILTIN_PARITYL(x) (__popcll(static_cast<unsigned long long>(x)) & 1)
 # define VL_BUILTIN_PARITYLL(x) (__popcll(static_cast<unsigned long long>(x)) & 1)
@@ -245,6 +246,7 @@
 # define VL_BUILTIN_CLZ(x) __builtin_clz(x)
 # define VL_BUILTIN_CLZLL(x) __builtin_clzll(x)
 #endif
+// Comment tag that function is threadsafe
 #define VL_MT_SAFE VL_CLANG_ATTR(annotate("MT_SAFE"))
 // Comment tag that function is pretending to be threadsafe due to very special usage
 #define VL_MT_SAFE_PRETEND VL_CLANG_ATTR(annotate("MT_SAFE"))

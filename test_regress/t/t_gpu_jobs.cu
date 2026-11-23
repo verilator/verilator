@@ -7,6 +7,7 @@
 #include "verilated_gpu_device.h"
 
 #include <cstdlib>
+#include <cstring>
 
 static __device__ int* g_seeds = nullptr;
 

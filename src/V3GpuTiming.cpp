@@ -12,6 +12,27 @@
 // SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
+// V3GpuTiming lowers the timing coroutines of a --gpu model into code that
+// the GPU can run without C++ coroutines or the host delay scheduler.
+//
+// Each process with timing controls (an initial block with delays, an
+// assign #d fork) gets one or more slots. A slot is a set of variables: a
+// resume point (pc), the time it waits for (wake), a sequence number that
+// orders wake-ups at the same time (seq) and a zero-delay flag. The coroutine
+// body becomes a step function: a switch on pc that runs from the resume
+// point to the next delay, stores the new pc and wake time, and returns.
+// Processes that can be started again while running (forks) get several
+// slots (--gpu-fork-slots); a start with no free slot sets an overflow flag.
+//
+// The delay scheduler is replaced by functions over all slots: the earliest
+// wake time (__Vgpu_nextTime, also behind eventsPending and nextTimeSlot) and
+// a resume statement that runs the due slots in wake and seq order. With at
+// most 64 slots, a bit mask of active slots avoids scanning idle ones.
+//
+// $time, $finish and fatal errors use per-copy variables: the time is the
+// global GPU time minus the copy's time base, so a slot refilled with a new
+// job starts at time zero.
+//
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"
@@ -188,7 +209,7 @@ class GpuTimingLower final {
             if (funcp->needsVlProcess()) unsupported(funcp, "process control");
             m_procs.push_back(Proc{funcp, {}, {}, nullptr});
         });
-        std::map<const AstCFunc*, Proc*> procOf;
+        std::unordered_map<const AstCFunc*, Proc*> procOf;
         for (Proc& proc : m_procs) procOf.emplace(proc.m_origp, &proc);
         m_netlistp->foreach([&](AstNodeCCall* callp) {
             const auto it = procOf.find(callp->funcp());
