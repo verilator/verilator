@@ -3436,11 +3436,15 @@ class ConstVisitor final : public VNVisitor {
         replaceWithSimulation(nodep);
     }
 
+    // Not folded, so not constant
+    void visit(AstAssocSel* nodep) override { visit(static_cast<AstNode*>(nodep)); }
+    void visit(AstWildcardSel* nodep) override { visit(static_cast<AstNode*>(nodep)); }
+
     void visit(AstStructSel* nodep) override {
         iterateChildren(nodep);
 
         if (const AstConsStruct* const consp = VN_CAST(nodep->fromp(), ConsStruct)) {
-            AstNodeExpr* const valuep = consp->memberValuep(nodep->name());
+            AstNodeExpr* const valuep = consp->memberValuep(nodep->memberp());
             if (const AstConst* const constp = VN_CAST(valuep, Const)) {
                 VL_DO_DANGLING(replaceNum(nodep, constp->num()), nodep);
             } else {
@@ -3493,16 +3497,9 @@ class ConstVisitor final : public VNVisitor {
                 } else if (const AstConst* const itemp = VN_CAST(selItemp, Const)) {
                     VL_DO_DANGLING(replaceNum(nodep, itemp->num()), nodep);
                     did = true;
-                } else if (m_params && consp) {
-                    // Allow parameters to pass arrays
-                    // Earlier recursion of ConsArray made sure each array value is constant
-                    // This exception is fairly fragile, i.e. doesn't
-                    // support arrays of arrays or other stuff
-                    AstNode* const newp = valuep->cloneTree(false);
-                    nodep->replaceWithKeepDType(newp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    did = true;
-                } else if (m_params && VN_IS(valuep, ConsStruct)) {
+                } else if (m_params && VN_IS(valuep, NodeCons)
+                           && VN_AS(valuep, NodeCons)->isConstantTree()) {
+                    // Allow parameters to pass aggregates
                     AstNode* const newp = valuep->cloneTree(false);
                     nodep->replaceWithKeepDType(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -4281,10 +4278,8 @@ class ConstVisitor final : public VNVisitor {
         if (operandBoolShift(nodep->condp())) replaceBoolShift(nodep->condp());
     }
 
-    void visit(AstConsArray* nodep) override { iterateChildren(nodep); }
-    void visit(AstConsStruct* nodep) override { iterateChildren(nodep); }
-    void visit(AstConsStructItem* nodep) override { iterateChildren(nodep); }
-    void visit(AstConsArrayItem* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeCons* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeConsItem* nodep) override { iterateChildren(nodep); }
     void visit(AstUnbounded* nodep) override { iterateChildren(nodep); }
     // These are converted by V3Param.  Don't constify as we don't want the
     // from() VARREF to disappear, if any.
@@ -4389,7 +4384,9 @@ class ConstVisitor final : public VNVisitor {
     //-----
     // clang-format off
     TREE_SKIP_VISIT("ArraySel");
+    TREE_SKIP_VISIT("AssocSel");
     TREE_SKIP_VISIT("CAwait");
+    TREE_SKIP_VISIT("WildcardSel");
 
     //-----
     //  "AstNODETYPE {             # bracket not paren
@@ -4845,10 +4842,9 @@ void V3Const::collectFixedAggregateTerms(VNDeleter& deleter, AstNodeExpr* const 
                 termps, packReal, warnImpure);
         }
     } else if (sdtypep && !sdtypep->packed()) {
-        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
+        for (AstMemberDType* const itemp : sdtypep->memberspList()) {
             AstStructSel* const selp
-                = new AstStructSel{flp, fromp->cloneTree(false, warnImpure), itemp->name()};
-            selp->dtypeFrom(itemp->dtypep());
+                = new AstStructSel{flp, fromp->cloneTree(false, warnImpure), itemp};
             selp->didWidth(true);
             collectFixedAggregateTerms(deleter, selp, termps, packReal, warnImpure);
         }

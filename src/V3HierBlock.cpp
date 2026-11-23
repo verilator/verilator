@@ -455,7 +455,7 @@ void V3HierGraph::writeCommandArgsFiles(bool forMkJson) const {
     if (!forMkJson) {
         const VStringSet& cppFiles = v3Global.opt.cppFiles();
         for (const string& i : cppFiles) *of << i << "\n";
-        *of << "--top-module " << v3Global.rootp()->topModulep()->name() << "\n";
+        *of << "--top-module-encoded " << v3Global.rootp()->topModulep()->name() << "\n";
         *of << "--prefix " << v3Global.opt.prefix() << "\n";
         *of << "-Mdir " << v3Global.opt.makeDir() << "\n";
         *of << "--mod-prefix " << v3Global.opt.modPrefix() << "\n";

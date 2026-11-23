@@ -906,9 +906,9 @@ Verilator Tree Dump (format 0x3900) from <e0> to <e4858>
     1:1: CLASS (VJB) {d199ad}  semaphore  L4 D4 [1ps] cost=-1
     1:1:1: TYPEDEF (WJB) {d203ah} @dt=0@  procKeys [UNDCLS] -> STRUCTDTYPE (XJB) {d200an} @dt=0@  semaphore.procKeys
     1:1:1:1: STRUCTDTYPE (XJB) {d200an} @dt=0@  semaphore.procKeys
-    1:1:1:1:1: MEMBERDTYPE (YJB) {d201ap} @dt=0@  proc lsb=-1 name=proc
+    1:1:1:1:1: MEMBERDTYPE (YJB) {d201ap} @dt=0@  proc lsb=-1 index=0 name=proc
     1:1:1:1:1:1: CLASSREFDTYPE (ZJB) {d201ah} @dt=this@(w0)class:process  process cpkg=(EDB) -> CLASS (EDB) {d105ad}  process  L4 D4 [1ps] cost=-1
-    1:1:1:1:1: MEMBERDTYPE (AKB) {d202al} @dt=0@  reqKeys lsb=-1 name=reqKeys
+    1:1:1:1:1: MEMBERDTYPE (AKB) {d202al} @dt=0@  reqKeys lsb=-1 index=1 name=reqKeys
     1:1:1:1:1:1: BASICDTYPE (BKB) {d202ah} @dt=this@(sw32)  int kwd=int range=[31:0]
     1:1:1: VAR (CKB) {d204ao} @dt=0@  m_queue [VAUTOMI]  MEMBER
     1:1:1:1: BRACKETARRAYDTYPE (DKB) {d204av} @dt=0@
@@ -1062,95 +1062,95 @@ Verilator Tree Dump (format 0x3900) from <e0> to <e4858>
     1:1:3:2: VARREF (VPB) {d250af} @dt=0@  randomize [LV] => VAR (RPB) {d249aq} @dt=0@  randomize OUTPUT dd=OUTPUT [FUNCRTN] [VAUTOM]  VAR
     1:1: TYPEDEF (RU) {d268af} @dt=0@  vl_covergroup_options_t -> STRUCTDTYPE (SU) {d256al} @dt=0@  std::vl_covergroup_options_t
     1:1:1: STRUCTDTYPE (SU) {d256al} @dt=0@  std::vl_covergroup_options_t
-    1:1:1:1: MEMBERDTYPE (WPB) {d257am} @dt=0@  name lsb=-1 name=name
+    1:1:1:1: MEMBERDTYPE (WPB) {d257am} @dt=0@  name lsb=-1 index=0 name=name
     1:1:1:1:1: BASICDTYPE (XPB) {d257af} @dt=this@(str)  string kwd=string
-    1:1:1:1: MEMBERDTYPE (YPB) {d258aj} @dt=0@  weight lsb=-1 name=weight
+    1:1:1:1: MEMBERDTYPE (YPB) {d258aj} @dt=0@  weight lsb=-1 index=1 name=weight
     1:1:1:1:1: BASICDTYPE (ZPB) {d258af} @dt=this@(sw32)  int kwd=int range=[31:0]
     1:1:1:1:3: CONST (AQB) {d258as} @dt=(L)@(G/swu32/1)  ?32?sh1
-    1:1:1:1: MEMBERDTYPE (BQB) {d259aj} @dt=0@  goal lsb=-1 name=goal
+    1:1:1:1: MEMBERDTYPE (BQB) {d259aj} @dt=0@  goal lsb=-1 index=2 name=goal
     1:1:1:1:1: BASICDTYPE (CQB) {d259af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (DQB) {d260am} @dt=0@  comment lsb=-1 name=comment
+    1:1:1:1: MEMBERDTYPE (DQB) {d260am} @dt=0@  comment lsb=-1 index=3 name=comment
     1:1:1:1:1: BASICDTYPE (EQB) {d260af} @dt=this@(str)  string kwd=string
-    1:1:1:1: MEMBERDTYPE (FQB) {d261aj} @dt=0@  at_least lsb=-1 name=at_least
+    1:1:1:1: MEMBERDTYPE (FQB) {d261aj} @dt=0@  at_least lsb=-1 index=4 name=at_least
     1:1:1:1:1: BASICDTYPE (GQB) {d261af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (HQB) {d262aj} @dt=0@  auto_bin_max lsb=-1 name=auto_bin_max
+    1:1:1:1: MEMBERDTYPE (HQB) {d262aj} @dt=0@  auto_bin_max lsb=-1 index=5 name=auto_bin_max
     1:1:1:1:1: BASICDTYPE (IQB) {d262af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (JQB) {d263aj} @dt=0@  cross_num_print_missing lsb=-1 name=cross_num_print_missing
+    1:1:1:1: MEMBERDTYPE (JQB) {d263aj} @dt=0@  cross_num_print_missing lsb=-1 index=6 name=cross_num_print_missing
     1:1:1:1:1: BASICDTYPE (KQB) {d263af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (LQB) {d264aj} @dt=0@  cross_retain_auto_bins lsb=-1 name=cross_retain_auto_bins
+    1:1:1:1: MEMBERDTYPE (LQB) {d264aj} @dt=0@  cross_retain_auto_bins lsb=-1 index=7 name=cross_retain_auto_bins
     1:1:1:1:1: BASICDTYPE (MQB) {d264af} @dt=this@(w1)  bit kwd=bit
-    1:1:1:1: MEMBERDTYPE (NQB) {d265aj} @dt=0@  detect_overlap lsb=-1 name=detect_overlap
+    1:1:1:1: MEMBERDTYPE (NQB) {d265aj} @dt=0@  detect_overlap lsb=-1 index=8 name=detect_overlap
     1:1:1:1:1: BASICDTYPE (OQB) {d265af} @dt=this@(w1)  bit kwd=bit
-    1:1:1:1: MEMBERDTYPE (PQB) {d266aj} @dt=0@  per_instance lsb=-1 name=per_instance
+    1:1:1:1: MEMBERDTYPE (PQB) {d266aj} @dt=0@  per_instance lsb=-1 index=9 name=per_instance
     1:1:1:1:1: BASICDTYPE (QQB) {d266af} @dt=this@(w1)  bit kwd=bit
-    1:1:1:1: MEMBERDTYPE (RQB) {d267aj} @dt=0@  get_inst_coverage lsb=-1 name=get_inst_coverage
+    1:1:1:1: MEMBERDTYPE (RQB) {d267aj} @dt=0@  get_inst_coverage lsb=-1 index=10 name=get_inst_coverage
     1:1:1:1:1: BASICDTYPE (SQB) {d267af} @dt=this@(w1)  bit kwd=bit
     1:1: TYPEDEF (XV) {d277af} @dt=0@  vl_coverpoint_options_t -> STRUCTDTYPE (YV) {d270al} @dt=0@  std::vl_coverpoint_options_t
     1:1:1: STRUCTDTYPE (YV) {d270al} @dt=0@  std::vl_coverpoint_options_t
-    1:1:1:1: MEMBERDTYPE (TQB) {d271aj} @dt=0@  weight lsb=-1 name=weight
+    1:1:1:1: MEMBERDTYPE (TQB) {d271aj} @dt=0@  weight lsb=-1 index=0 name=weight
     1:1:1:1:1: BASICDTYPE (UQB) {d271af} @dt=this@(sw32)  int kwd=int range=[31:0]
     1:1:1:1:3: CONST (VQB) {d271as} @dt=(L)@(G/swu32/1)  ?32?sh1
-    1:1:1:1: MEMBERDTYPE (WQB) {d272aj} @dt=0@  goal lsb=-1 name=goal
+    1:1:1:1: MEMBERDTYPE (WQB) {d272aj} @dt=0@  goal lsb=-1 index=1 name=goal
     1:1:1:1:1: BASICDTYPE (XQB) {d272af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (YQB) {d273am} @dt=0@  comment lsb=-1 name=comment
+    1:1:1:1: MEMBERDTYPE (YQB) {d273am} @dt=0@  comment lsb=-1 index=2 name=comment
     1:1:1:1:1: BASICDTYPE (ZQB) {d273af} @dt=this@(str)  string kwd=string
-    1:1:1:1: MEMBERDTYPE (ARB) {d274aj} @dt=0@  at_least lsb=-1 name=at_least
+    1:1:1:1: MEMBERDTYPE (ARB) {d274aj} @dt=0@  at_least lsb=-1 index=3 name=at_least
     1:1:1:1:1: BASICDTYPE (BRB) {d274af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (CRB) {d275aj} @dt=0@  auto_bin_max lsb=-1 name=auto_bin_max
+    1:1:1:1: MEMBERDTYPE (CRB) {d275aj} @dt=0@  auto_bin_max lsb=-1 index=4 name=auto_bin_max
     1:1:1:1:1: BASICDTYPE (DRB) {d275af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (ERB) {d276aj} @dt=0@  detect_overlap lsb=-1 name=detect_overlap
+    1:1:1:1: MEMBERDTYPE (ERB) {d276aj} @dt=0@  detect_overlap lsb=-1 index=5 name=detect_overlap
     1:1:1:1:1: BASICDTYPE (FRB) {d276af} @dt=this@(w1)  bit kwd=bit
     1:1: TYPEDEF (DW) {d286af} @dt=0@  vl_cross_options_t -> STRUCTDTYPE (EW) {d279al} @dt=0@  std::vl_cross_options_t
     1:1:1: STRUCTDTYPE (EW) {d279al} @dt=0@  std::vl_cross_options_t
-    1:1:1:1: MEMBERDTYPE (GRB) {d280aj} @dt=0@  weight lsb=-1 name=weight
+    1:1:1:1: MEMBERDTYPE (GRB) {d280aj} @dt=0@  weight lsb=-1 index=0 name=weight
     1:1:1:1:1: BASICDTYPE (HRB) {d280af} @dt=this@(sw32)  int kwd=int range=[31:0]
     1:1:1:1:3: CONST (IRB) {d280as} @dt=(L)@(G/swu32/1)  ?32?sh1
-    1:1:1:1: MEMBERDTYPE (JRB) {d281aj} @dt=0@  goal lsb=-1 name=goal
+    1:1:1:1: MEMBERDTYPE (JRB) {d281aj} @dt=0@  goal lsb=-1 index=1 name=goal
     1:1:1:1:1: BASICDTYPE (KRB) {d281af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (LRB) {d282am} @dt=0@  comment lsb=-1 name=comment
+    1:1:1:1: MEMBERDTYPE (LRB) {d282am} @dt=0@  comment lsb=-1 index=2 name=comment
     1:1:1:1:1: BASICDTYPE (MRB) {d282af} @dt=this@(str)  string kwd=string
-    1:1:1:1: MEMBERDTYPE (NRB) {d283aj} @dt=0@  at_least lsb=-1 name=at_least
+    1:1:1:1: MEMBERDTYPE (NRB) {d283aj} @dt=0@  at_least lsb=-1 index=3 name=at_least
     1:1:1:1:1: BASICDTYPE (ORB) {d283af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (PRB) {d284aj} @dt=0@  cross_num_print_missing lsb=-1 name=cross_num_print_missing
+    1:1:1:1: MEMBERDTYPE (PRB) {d284aj} @dt=0@  cross_num_print_missing lsb=-1 index=4 name=cross_num_print_missing
     1:1:1:1:1: BASICDTYPE (QRB) {d284af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (RRB) {d285aj} @dt=0@  cross_retain_auto_bins lsb=-1 name=cross_retain_auto_bins
+    1:1:1:1: MEMBERDTYPE (RRB) {d285aj} @dt=0@  cross_retain_auto_bins lsb=-1 index=5 name=cross_retain_auto_bins
     1:1:1:1:1: BASICDTYPE (SRB) {d285af} @dt=this@(w1)  bit kwd=bit
     1:1: TYPEDEF (VU) {d296af} @dt=0@  vl_covergroup_type_options_t -> STRUCTDTYPE (WU) {d288al} @dt=0@  std::vl_covergroup_type_options_t
     1:1:1: STRUCTDTYPE (WU) {d288al} @dt=0@  std::vl_covergroup_type_options_t
-    1:1:1:1: MEMBERDTYPE (TRB) {d289aj} @dt=0@  weight lsb=-1 name=weight
+    1:1:1:1: MEMBERDTYPE (TRB) {d289aj} @dt=0@  weight lsb=-1 index=0 name=weight
     1:1:1:1:1: BASICDTYPE (URB) {d289af} @dt=this@(sw32)  int kwd=int range=[31:0]
     1:1:1:1:3: CONST (VRB) {d289as} @dt=(L)@(G/swu32/1)  ?32?sh1
-    1:1:1:1: MEMBERDTYPE (WRB) {d290aj} @dt=0@  goal lsb=-1 name=goal
+    1:1:1:1: MEMBERDTYPE (WRB) {d290aj} @dt=0@  goal lsb=-1 index=1 name=goal
     1:1:1:1:1: BASICDTYPE (XRB) {d290af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (YRB) {d291am} @dt=0@  comment lsb=-1 name=comment
+    1:1:1:1: MEMBERDTYPE (YRB) {d291am} @dt=0@  comment lsb=-1 index=2 name=comment
     1:1:1:1:1: BASICDTYPE (ZRB) {d291af} @dt=this@(str)  string kwd=string
-    1:1:1:1: MEMBERDTYPE (ASB) {d292aj} @dt=0@  strobe lsb=-1 name=strobe
+    1:1:1:1: MEMBERDTYPE (ASB) {d292aj} @dt=0@  strobe lsb=-1 index=3 name=strobe
     1:1:1:1:1: BASICDTYPE (BSB) {d292af} @dt=this@(w1)  bit kwd=bit
-    1:1:1:1: MEMBERDTYPE (CSB) {d293aj} @dt=0@  merge_instances lsb=-1 name=merge_instances
+    1:1:1:1: MEMBERDTYPE (CSB) {d293aj} @dt=0@  merge_instances lsb=-1 index=4 name=merge_instances
     1:1:1:1:1: BASICDTYPE (DSB) {d293af} @dt=this@(w1)  bit kwd=bit
-    1:1:1:1: MEMBERDTYPE (ESB) {d294aj} @dt=0@  distribute_first lsb=-1 name=distribute_first
+    1:1:1:1: MEMBERDTYPE (ESB) {d294aj} @dt=0@  distribute_first lsb=-1 index=5 name=distribute_first
     1:1:1:1:1: BASICDTYPE (FSB) {d294af} @dt=this@(w1)  bit kwd=bit
-    1:1:1:1: MEMBERDTYPE (GSB) {d295ak} @dt=0@  real_interval lsb=-1 name=real_interval
+    1:1:1:1: MEMBERDTYPE (GSB) {d295ak} @dt=0@  real_interval lsb=-1 index=6 name=real_interval
     1:1:1:1:1: BASICDTYPE (HSB) {d295af} @dt=this@(d)  real kwd=real
     1:1: TYPEDEF (ISB) {d303af} @dt=0@  vl_coverpoint_type_options_t -> STRUCTDTYPE (JSB) {d298al} @dt=0@  std::vl_coverpoint_type_options_t
     1:1:1: STRUCTDTYPE (JSB) {d298al} @dt=0@  std::vl_coverpoint_type_options_t
-    1:1:1:1: MEMBERDTYPE (KSB) {d299aj} @dt=0@  weight lsb=-1 name=weight
+    1:1:1:1: MEMBERDTYPE (KSB) {d299aj} @dt=0@  weight lsb=-1 index=0 name=weight
     1:1:1:1:1: BASICDTYPE (LSB) {d299af} @dt=this@(sw32)  int kwd=int range=[31:0]
     1:1:1:1:3: CONST (MSB) {d299as} @dt=(L)@(G/swu32/1)  ?32?sh1
-    1:1:1:1: MEMBERDTYPE (NSB) {d300aj} @dt=0@  goal lsb=-1 name=goal
+    1:1:1:1: MEMBERDTYPE (NSB) {d300aj} @dt=0@  goal lsb=-1 index=1 name=goal
     1:1:1:1:1: BASICDTYPE (OSB) {d300af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (PSB) {d301am} @dt=0@  comment lsb=-1 name=comment
+    1:1:1:1: MEMBERDTYPE (PSB) {d301am} @dt=0@  comment lsb=-1 index=2 name=comment
     1:1:1:1:1: BASICDTYPE (QSB) {d301af} @dt=this@(str)  string kwd=string
-    1:1:1:1: MEMBERDTYPE (RSB) {d302ak} @dt=0@  real_interval lsb=-1 name=real_interval
+    1:1:1:1: MEMBERDTYPE (RSB) {d302ak} @dt=0@  real_interval lsb=-1 index=3 name=real_interval
     1:1:1:1:1: BASICDTYPE (SSB) {d302af} @dt=this@(d)  real kwd=real
     1:1: TYPEDEF (TSB) {d309af} @dt=0@  vl_cross_type_options_t -> STRUCTDTYPE (USB) {d305al} @dt=0@  std::vl_cross_type_options_t
     1:1:1: STRUCTDTYPE (USB) {d305al} @dt=0@  std::vl_cross_type_options_t
-    1:1:1:1: MEMBERDTYPE (VSB) {d306aj} @dt=0@  weight lsb=-1 name=weight
+    1:1:1:1: MEMBERDTYPE (VSB) {d306aj} @dt=0@  weight lsb=-1 index=0 name=weight
     1:1:1:1:1: BASICDTYPE (WSB) {d306af} @dt=this@(sw32)  int kwd=int range=[31:0]
     1:1:1:1:3: CONST (XSB) {d306as} @dt=(L)@(G/swu32/1)  ?32?sh1
-    1:1:1:1: MEMBERDTYPE (YSB) {d307aj} @dt=0@  goal lsb=-1 name=goal
+    1:1:1:1: MEMBERDTYPE (YSB) {d307aj} @dt=0@  goal lsb=-1 index=1 name=goal
     1:1:1:1:1: BASICDTYPE (ZSB) {d307af} @dt=this@(sw32)  int kwd=int range=[31:0]
-    1:1:1:1: MEMBERDTYPE (ATB) {d308am} @dt=0@  comment lsb=-1 name=comment
+    1:1:1:1: MEMBERDTYPE (ATB) {d308am} @dt=0@  comment lsb=-1 index=2 name=comment
     1:1:1:1:1: BASICDTYPE (BTB) {d308af} @dt=this@(str)  string kwd=string
     3: TYPETABLE (CTB) {a0aa}
 		     bit  -> BASICDTYPE (JF) {d122aq} @dt=this@(G/w1)  bit [GENERIC] kwd=bit

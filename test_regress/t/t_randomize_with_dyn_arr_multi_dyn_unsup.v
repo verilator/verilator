@@ -19,7 +19,7 @@ class Cls;
     arr = new[2];
     arr[1] = new[2];
     repeat (40) begin
-      ok = this.randomize() with {x == arr[1][1];};
+      ok = this.randomize() with {x == local::arr[1][1];};
       `checkd(ok, 1);
       `checkd(x, arr[1][1]);
     end

@@ -29,6 +29,60 @@ module t (
 
   byte unpack1[0:4];
 
+  typedef byte unsigned ubytes_dyn_t[];
+  typedef byte unsigned ubytes_q_t[$];
+
+  initial begin
+    // A string is a dynamic array of bytes in a bit-stream cast (IEEE 1800-2023 6.24.3)
+    automatic string hello = "Hello world!";
+    automatic byte unsigned fixed[12] = '{
+        8'h48, 8'h65, 8'h6C, 8'h6C, 8'h6F, 8'h20, 8'h77, 8'h6F, 8'h72, 8'h6C, 8'h64, 8'h21
+    };
+    automatic ubytes_dyn_t dyn;
+    automatic ubytes_q_t q;
+    automatic string str;
+    dyn = ubytes_dyn_t'(hello);
+    `checkd(dyn.size(), 12);
+    `checkh(dyn[0], 8'h48);
+    `checkh(dyn[11], 8'h21);
+    q = ubytes_q_t'(hello);
+    `checkd(q.size(), 12);
+    `checkh(q[1], 8'h65);
+    str = string'(fixed);
+    `checks(str, hello);
+    str = string'(dyn);
+    `checks(str, hello);
+    str = string'(q);
+    `checks(str, hello);
+    dyn = ubytes_dyn_t'(string'(""));
+    `checkd(dyn.size(), 0);
+  end
+
+  initial begin
+    // Signed bytes and other 8-bit elements, and zero bytes are dropped from a string
+    automatic byte sfixed[4] = '{8'h41, 8'h00, 8'hC3, 8'h42};
+    automatic bit [7:0] bits[$] = {8'h41, 8'h00, 8'h42};
+    automatic logic [7:0] logics[];
+    automatic string str;
+    str = string'(sfixed);
+    `checkd(str.len(), 3);
+    `checkh(str.getc(1), 8'hC3);
+    str = string'(bits);
+    `checks(str, "AB");
+    logics = new[2];
+    logics = '{8'h43, 8'h44};
+    str = string'(logics);
+    `checks(str, "CD");
+    bits = ubytes_q_t'(str);
+    `checkd(bits.size(), 2);
+    // As a function argument
+    `checkd(len_of(string'(sfixed)), 3);
+  end
+
+  function automatic int len_of(string s);
+    return s.len();
+  endfunction
+
   // Operators == != < <= > >=  {a,b}  {a{b}}  a[b]
   // a.len, a.putc, a.getc, a.toupper, a.tolower, a.compare, a.icompare, a.substr
   // a.atoi, a.atohex, a.atooct, a.atobin, a.atoreal,

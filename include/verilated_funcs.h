@@ -275,6 +275,38 @@ inline std::string VL_CVT_N_CSTR(const char* lhsp) VL_PURE {
     return lhsp ? std::string{lhsp} : ""s;
 }
 
+// Return dynamic array or queue of bytes from a string
+template <typename T_Queue>
+inline T_Queue VL_CVT_N_TO_Q(const std::string& lhs) VL_PURE {
+    T_Queue ret;
+    for (const char c : lhs) ret.push_back(c);
+    return ret;
+}
+
+// Append a byte to a string, dropping zero as a string cannot hold it
+template <typename T_Value>
+inline void _vl_cvt_byte_to_n(std::string& str, const T_Value value) VL_PURE {
+    if (value) str.push_back(static_cast<char>(value));
+}
+
+// Return string from a queue or dynamic array of bytes
+template <typename T_Value>
+inline std::string VL_CVT_Q_TO_N(const VlQueue<T_Value>& from) VL_PURE {
+    std::string ret;
+    ret.reserve(from.size());
+    for (int i = 0; i < from.size(); ++i) _vl_cvt_byte_to_n(ret, from.at(i));
+    return ret;
+}
+
+// Return string from an unpacked array of bytes
+template <typename T_Value, std::size_t N_Depth>
+inline std::string VL_CVT_UNPACK_TO_N(const VlUnpacked<T_Value, N_Depth>& from) VL_PURE {
+    std::string ret;
+    ret.reserve(N_Depth);
+    for (std::size_t i = 0; i < N_Depth; ++i) _vl_cvt_byte_to_n(ret, from[i]);
+    return ret;
+}
+
 // Return queue from an unpacked array
 template <typename T, std::size_t N_Depth>
 inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_PURE {
