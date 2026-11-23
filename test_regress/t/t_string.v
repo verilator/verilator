@@ -40,6 +40,9 @@ module t (
     };
     automatic ubytes_dyn_t dyn;
     automatic ubytes_q_t q;
+    automatic bit [7:0] packed_byte = 8'h43;
+    automatic bit [15:0] packed_word = 16'h0041;
+    localparam bit [7:0] PARAM_CONST = 8'h44;
     automatic string str;
     dyn = ubytes_dyn_t'(hello);
     `checkd(dyn.size(), 12);
@@ -56,6 +59,39 @@ module t (
     `checks(str, hello);
     dyn = ubytes_dyn_t'(string'(""));
     `checkd(dyn.size(), 0);
+    dyn = ubytes_dyn_t'("literal");
+    `checkd(dyn.size(), 7);
+    `checkh(dyn[0], 8'h6c);
+    `checkh(dyn[6], 8'h6c);
+    q = ubytes_q_t'("Q");
+    `checkd(q.size(), 1);
+    `checkh(q[0], 8'h51);
+    dyn = ubytes_dyn_t'("");
+    `checkd(dyn.size(), 0);
+    dyn = ubytes_dyn_t'(8'h41);
+    `checkd(dyn.size(), 1);
+    `checkh(dyn[0], 8'h41);
+    dyn = ubytes_dyn_t'(8'h00);
+    `checkd(dyn.size(), 1);
+    `checkh(dyn[0], 8'h00);
+    dyn = ubytes_dyn_t'(16'h0041);
+    `checkd(dyn.size(), 2);
+    `checkh(dyn[0], 8'h00);
+    `checkh(dyn[1], 8'h41);
+    q = ubytes_q_t'(16'h0041);
+    `checkd(q.size(), 2);
+    `checkh(q[0], 8'h00);
+    `checkh(q[1], 8'h41);
+    dyn = ubytes_dyn_t'(packed_byte);
+    `checkd(dyn.size(), 1);
+    `checkh(dyn[0], 8'h43);
+    dyn = ubytes_dyn_t'(packed_word);
+    `checkd(dyn.size(), 2);
+    `checkh(dyn[0], 8'h00);
+    `checkh(dyn[1], 8'h41);
+    dyn = ubytes_dyn_t'(PARAM_CONST);
+    `checkd(dyn.size(), 1);
+    `checkh(dyn[0], 8'h44);
   end
 
   initial begin
