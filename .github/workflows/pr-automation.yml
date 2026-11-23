@@ -128,7 +128,6 @@ jobs:
 
       # The grade is optional, so a failure must not stop the comment on open
       - name: Apply grade
-        id: grade
         if: ${{ github.event.action == 'opened' || github.event.action == 'reopened' }}
         continue-on-error: true
         env:
@@ -136,20 +135,19 @@ jobs:
           GRADE: ${{ needs.grade.outputs.output }}
         run: |-
           ci/ci-pr-grade.py --repo "${{ github.repository }}" \
-            --pr "${{ github.event.number }}" --grade="${GRADE}"
+            --pr "${{ github.event.number }}" --grade="${GRADE}" --comment grade.md
 
       - name: Comment on open
         if: ${{ github.event.action == 'opened' }}
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-          RISK: ${{ steps.grade.outputs.risk }}
         run: |-
           # The first line requests the review in 'claude-review.yml', so the
-          # risk goes after it
+          # grade, if applied, goes after it
           {
             head -n 1 .github/pr-open-comment.md
-            if [ -n "${RISK}" ]; then
-              echo "PR appears ${RISK} risk."
+            if [ -f grade.md ]; then
+              cat grade.md
               echo
             fi
             tail -n +2 .github/pr-open-comment.md
