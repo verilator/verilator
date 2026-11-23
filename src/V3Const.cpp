@@ -2574,7 +2574,10 @@ class ConstVisitor final : public VNVisitor {
                 nodep->addHereThisAsNext(asnp);
                 nodep->rhsp(new AstVarRef{rhsp->fileline(), tempPurep, VAccess::READ});
                 // Only the assignment of the temporary waits
-                if (waits) pushDeletep(nodep->timingControlp()->unlinkFrBack());
+                if (waits) {
+                    AstNode* const timingControlp = nodep->timingControlp();
+                    VL_DO_DANGLING(pushDeletep(timingControlp->unlinkFrBack()), timingControlp);
+                }
             } else if (need_temp) {
                 // The first time we constify, there may be the same variable on the LHS
                 // and RHS.  In that case, we must use temporaries, or {a,b}={b,a} will break.
