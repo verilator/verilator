@@ -84,6 +84,10 @@ int AstNodeArrayDType::lo() const VL_MT_STABLE { return rangep()->loConst(); }
 int AstNodeArrayDType::elementsConst() const VL_MT_STABLE { return rangep()->elementsConst(); }
 VNumRange AstNodeArrayDType::declRange() const VL_MT_STABLE { return VNumRange{left(), right()}; }
 
+int AstNodeUOrStructDType::nMembers() const {
+    return membersp() ? VN_AS(membersp()->lastp(), MemberDType)->index() + 1 : 0;
+}
+
 AstFuncRef::AstFuncRef(FileLine* fl, AstFunc* taskp, AstArg* argsp)
     : ASTGEN_SUPER_FuncRef(fl, taskp->name(), argsp) {
     this->taskp(taskp);

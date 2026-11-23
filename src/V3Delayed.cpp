@@ -995,10 +995,11 @@ class DelayedRewrite final : public VNDeleter, public DelayedBase {
             dtypepr->classOrPackagep(scopep->modp());
             dtypepr->dtypep(dtypepr);
             dtypepr->widthForce(1, 1);  // Same as what V3Width does
-            size_t nMembers = 0;
+            int index = 0;
             for (AstNodeDType* const memberDTypep : memberDTypeps) {
-                const std::string memberName = "val" + std::to_string(nMembers++);
-                dtypepr->addMembersp(new AstMemberDType{flp, memberName, memberDTypep});
+                const std::string memberName = "val" + std::to_string(index);
+                dtypepr->addMembersp(
+                    new AstMemberDType{flp, dtypepr, index++, memberName, memberDTypep});
             }
             v3Global.rootp()->typeTablep()->addTypesp(dtypepr);
             // Typedef needed for V3Emit to actually emit the struct
@@ -1044,11 +1045,10 @@ class DelayedRewrite final : public VNDeleter, public DelayedBase {
         AstVarRef* const queueRefp = new AstVarRef{flp, queueVscp, VAccess::READWRITE};
         AstVarRef* const poolRefp = new AstVarRef{flp, poolVscp, VAccess::READWRITE};
         AstNbaEnqueue* const enqueuep = new AstNbaEnqueue{flp, queueRefp, poolRefp, funcp};
-        const AstMemberDType* memberp = dtypep->membersp();
+        AstMemberDType* memberp = dtypep->membersp();
         for (AstNodeExpr* const exprp : captureps) {
             AstVarRef* const argRefp = new AstVarRef{flp, argVscp, VAccess::READ};
-            AstStructSel* const selp = new AstStructSel{flp, argRefp, memberp->name()};
-            selp->dtypep(exprp->dtypep()->skipRefToEnump());
+            AstStructSel* const selp = new AstStructSel{flp, argRefp, memberp};
             exprp->replaceWith(selp);
             enqueuep->addArgsp(exprp);
             memberp = VN_AS(memberp->nextp(), MemberDType);

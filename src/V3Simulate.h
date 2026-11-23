@@ -1253,7 +1253,8 @@ private:
                     consp->valuep(index, itemp);
                 }
             } else {
-                itemp = VN_AS(itemp, ConsStruct)->memberValuep(selp->name());
+                const AstMemberDType* const memberp = VN_AS(selp, StructSel)->memberp();
+                itemp = VN_AS(itemp, ConsStruct)->memberValuep(memberp);
             }
         }
         // Clone first, as the value assigned may be the old value of the element
@@ -1443,7 +1444,7 @@ private:
         iterateChildrenConst(nodep);
         if (m_checkOnly || !optimizable()) return;
         AstConsStruct* const consp = VN_AS(fetchValue(nodep->fromp()), ConsStruct);
-        setValue(nodep, consp->memberValuep(nodep->name()));
+        setValue(nodep, consp->memberValuep(nodep->memberp()));
     }
 
     // Evaluate a slice of an unpacked array.  If the base value is a constant

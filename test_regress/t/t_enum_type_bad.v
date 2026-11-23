@@ -98,5 +98,6 @@ module t;
     other_value = select ? BIT_A : BIT_B;
     bit_value = select ? BIT_A : (select ? OTHER_A : OTHER_B);
     bit_value = select ? BIT_A : (select ? raw_value : raw_value);
+    other_value = select ? BIT_A : (select ? OTHER_A : OTHER_B);
   end
 endmodule
