@@ -3952,8 +3952,7 @@ class ConstVisitor final : public VNVisitor {
                 condp->unlinkFrBackWithNext();
                 elsesp->unlinkFrBackWithNext();
                 if (nodep->thensp()) {  // Must have been comment
-                    AstNode* const thensp = nodep->thensp();
-                    VL_DO_DANGLING(pushDeletep(thensp->unlinkFrBackWithNext()), thensp);
+                    pushDeletep(nodep->thensp()->unlinkFrBackWithNext());
                 }
                 nodep->condp(new AstLogNot{condp->fileline(),
                                            condp});  // LogNot, as C++ optimization also possible
@@ -4340,8 +4339,7 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstJumpGo* nodep) override {
         // Any statements following the JumpGo (at this statement level) never execute, delete
         if (nodep->nextp() && canDeleteStatements()) {
-            AstNode* const nextp = nodep->nextp();
-            VL_DO_DANGLING(pushDeletep(nextp->unlinkFrBackWithNext()), nextp);
+            pushDeletep(nodep->nextp()->unlinkFrBackWithNext());
         }
 
         // JumpGo as last statement in target JumpBlock (including last in a last sub-list),
