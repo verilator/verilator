@@ -3307,6 +3307,14 @@ class AssertNfaVisitor final : public VNVisitor {
     // Returns the PropSpec to lower, or nullptr when fully handled here.
     AstPropSpec* prepareAssertionProp(AstNodeCoverOrAssert* assertp) {
         if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
+            // Blackbox only the ranged eventually, leaving surrounding sequences to the NFA.
+            specp->propp()->foreach([this](AstEventually* ep) {
+                if (!ep->loBoundp()) return;
+                ep->v3warn(E_UNSUPPORTED,
+                           "Unsupported: " << ep->verilogKwd() << "[] (in property expression)");
+                ep->replaceWith(new AstConst{ep->fileline(), AstConst::BitTrue{}});
+                VL_DO_DANGLING(pushDeletep(ep), ep);
+            });
             // Leave a chain of property instances to V3AssertPre: the NFA lowering
             // reports one fail for attempts failing in the same cycle, e.g. after a goto
             // repetition antecedent, but each attempt fails (IEEE 1800-2023 16.14.1).

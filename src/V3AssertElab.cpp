@@ -135,48 +135,60 @@ class AssertElabVisitor final : public VNVisitor {
     VDouble0 m_statSeqInlined;  // Statistic tracking
 
     // METHODS
-    // Fold and validate weak eventually bounds after any formal arguments are substituted.
-    static bool checkSvaWeakEventuallyBounds(AstEventually* nodep) {
-        UASSERT_OBJ(!nodep->isStrong(), nodep, "Should be weak");
-        if (VN_IS(nodep->loBoundp(), Unbounded) || VN_IS(nodep->hiBoundp(), Unbounded)) {
+    // Fold and validate ranged eventually bounds after substituting property arguments.
+    static bool checkSvaEventuallyBounds(AstEventually* nodep) {
+        const int errorsBefore = V3Error::errorCount();
+        V3Const::constifyParamsEdit(nodep->loBoundp());
+        if (!VN_IS(nodep->hiBoundp(), Unbounded)) V3Const::constifyParamsEdit(nodep->hiBoundp());
+        if (V3Error::errorCount() != errorsBefore) return false;
+        const bool hiUnbounded = VN_IS(nodep->hiBoundp(), Unbounded);
+        if (!nodep->isStrong() && hiUnbounded) {
             nodep->v3error("The range for a weak eventually must be bounded (IEEE "
                            "1800-2023 16.12.13)");
             return false;
         }
-        V3Const::constifyParamsEdit(nodep->loBoundp());
-        V3Const::constifyParamsEdit(nodep->hiBoundp());
         const AstConst* const loConstp = VN_CAST(nodep->loBoundp(), Const);
         const AstConst* const hiConstp = VN_CAST(nodep->hiBoundp(), Const);
-        if (!loConstp || !hiConstp) return false;
 
-        if (loConstp->num().isOpaque()) {
-            nodep->loBoundp()->v3error("eventually range low bound must be integral"
-                                       " (IEEE 1800-2023 16.12.13)");
+        if (!loConstp || loConstp->num().isOpaque()) {
+            nodep->loBoundp()->v3error(nodep->verilogKwd() << " range low bound must be integral"
+                                                              " (IEEE 1800-2023 16.12.13)");
+            return false;
+        }
+        if (loConstp->num().isFourState()) {
+            loConstp->v3error(nodep->verilogKwd() << " range low bound cannot contain X or Z"
+                                                     " (IEEE 1800-2023 16.12.13)");
             return false;
         }
         if (loConstp->dtypep()->isSigned() && loConstp->num().isNegative()) {
-            nodep->loBoundp()->v3error("eventually range low bound must be non-negative"
-                                       " (IEEE 1800-2023 16.12.13)");
+            loConstp->v3error(nodep->verilogKwd() << " range low bound must be non-negative"
+                                                     " (IEEE 1800-2023 16.12.13)");
             return false;
         }
-        if (!V3AssertCommon::checkSvaValueLimit(nodep, loConstp,
-                                                "eventually range low bound value")) {
+        if (!V3AssertCommon::checkSvaValueLimit(
+                nodep, loConstp, (nodep->verilogKwd() + " range low bound value").c_str())) {
             return false;
         }
+        if (hiUnbounded) return true;
 
-        if (hiConstp->num().isOpaque()) {
-            nodep->hiBoundp()->v3error("eventually range high bound must be integral"
-                                       " (IEEE 1800-2023 16.12.13)");
+        if (!hiConstp || hiConstp->num().isOpaque()) {
+            nodep->hiBoundp()->v3error(nodep->verilogKwd() << " range high bound must be integral"
+                                                              " (IEEE 1800-2023 16.12.13)");
+            return false;
+        }
+        if (hiConstp->num().isFourState()) {
+            hiConstp->v3error(nodep->verilogKwd() << " range high bound cannot contain X or Z"
+                                                     " (IEEE 1800-2023 16.12.13)");
             return false;
         }
         if ((hiConstp->dtypep()->isSigned() && hiConstp->num().isNegative())
-            || (loConstp && hiConstp->num().isLt(loConstp->num()))) {
-            nodep->hiBoundp()->v3error("eventually range high bound must be >= low bound"
-                                       " (IEEE 1800-2023 16.12.13)");
+            || hiConstp->num().isLt(loConstp->num())) {
+            hiConstp->v3error(nodep->verilogKwd() << " range high bound must be >= low bound"
+                                                     " (IEEE 1800-2023 16.12.13)");
             return false;
         }
-        if (!V3AssertCommon::checkSvaValueLimit(nodep, hiConstp,
-                                                "eventually range high bound value")) {
+        if (!V3AssertCommon::checkSvaValueLimit(
+                nodep, hiConstp, (nodep->verilogKwd() + " range high bound value").c_str())) {
             return false;
         }
         return true;
@@ -341,8 +353,8 @@ class AssertElabVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->propp());
     }
     void visit(AstEventually* nodep) override {
-        if (!nodep->isStrong() && !checkSvaWeakEventuallyBounds(nodep)) {
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+        if (nodep->loBoundp() && !checkSvaEventuallyBounds(nodep)) {
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }

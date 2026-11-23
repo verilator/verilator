@@ -9,8 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-test.lint(verilator_flags2=['--timing --bbox-unsup'])
+test.compile(timing_loop=True, verilator_flags2=['--timing', '--bbox-unsup'])
+
+test.execute()
 
 test.passes()

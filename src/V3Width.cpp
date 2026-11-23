@@ -2030,19 +2030,19 @@ class WidthVisitor final : public VNVisitor {
 
         nodep->dtypeSetBit();
 
-        if (nodep->isStrong()) {
+        if (!nodep->loBoundp()) {
             if (v3Global.opt.timing().isSetFalse() || !v3Global.opt.timing().isSetTrue()) {
-                nodep->v3warn(E_NOTIMING, "s_eventually requires --timing");
+                nodep->v3warn(E_NOTIMING, nodep->verilogKwd() << " requires --timing");
                 nodep->replaceWith(
                     new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 1, 0});
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
-            return;  // Ranged s_eventually is rejected by the parser.
+            return;
         }
 
-        userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
+        iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
 
         if (!VN_IS(nodep->loBoundp(), Unbounded)) {
             userIterateAndNext(nodep->loBoundp(), WidthVP{SELF, BOTH}.p());

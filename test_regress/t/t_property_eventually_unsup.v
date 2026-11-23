@@ -19,18 +19,17 @@ module t;
     s_eventually always[2: 5] clk;
   endproperty
 
-`ifdef PARSING_TIME
   property p_s_ev;
     s_eventually[2: 5] clk;
   endproperty
 
-  property p_s_alw_ev;
-    always s_eventually[2: 5] clk;
+  localparam HI = $;
+  property p_s_alw_ev(lo);
+    always s_eventually[lo: HI] clk;
   endproperty
 
   assert property (@(posedge clk) p_s_ev);
-  assert property (@(posedge clk) p_s_alw_ev);
-`endif
+  assert property (@(posedge clk) p_s_alw_ev(2));
 
   sequence delayed; 1 ##1 1; endsequence
 
@@ -57,6 +56,8 @@ module t;
 `ifdef WIDTH_TIME
   assert property (@(posedge clk) eventually[32'h8000_0000: 32'h8000_0000] 1'b1);
   assert property (@(posedge clk) eventually[0: 64'h1_0000_0000] 1'b1);
+  assert property (@(posedge clk) s_eventually[32'h8000_0000: $] 1'b1);
+  assert property (@(posedge clk) s_eventually[0: 64'h1_0000_0000] 1'b1);
 `endif
 
   always @(posedge clk) begin

@@ -946,15 +946,10 @@ private:
         return sizep;
     }
     void visit(AstEventually* nodep) override {
-        if (nodep->exprp()->isMultiCycleSva() || !nodep->isStrong()) {
-            if (nodep->exprp()->isMultiCycleSva()) {
-                const char* const keyword = nodep->isStrong() ? "s_eventually" : "eventually";
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Unsupported: property/sequence operator inside "s + keyword);
-            } else {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: eventually[] (in property expression)");
-            }
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+        if (nodep->exprp()->isMultiCycleSva()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: property/sequence operator inside "
+                                             << nodep->verilogKwd());
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }

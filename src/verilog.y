@@ -6906,8 +6906,8 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
                             $$ = new AstEventually{$1, $2, nullptr, nullptr, true};
                             PARSEP->importIfInStd($1, "process");
                         }
-        |       yS_EVENTUALLY anyrange pexpr  %prec prS_EVENTUALLY
-                        { $$ = $3; BBUNSUP($1, "Unsupported: s_eventually[] (in property expression)"); DEL($2); }
+        |       yS_EVENTUALLY '[' constExpr ':' constExpr ']' pexpr  %prec prS_EVENTUALLY
+                        { $$ = new AstEventually{$1, $7, $3, $5, true}; }
         |       yEVENTUALLY '[' constExpr ':' constExpr ']' pexpr  %prec prEVENTUALLY
                         { $$ = new AstEventually{$1, $7, $3, $5, false}; }
         |       ~o~pexpr yUNTIL pexpr

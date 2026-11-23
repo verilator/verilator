@@ -33,4 +33,24 @@ module t;
   assert property (@(posedge clk) p_hi($));
   assert property (@(posedge clk) p_lo(OPAQUE));
   assert property (@(posedge clk) p_hi(OPAQUE));
+
+  property p_strong(lo, hi);
+    s_eventually[lo: hi] 1'b1;
+  endproperty
+  assert property (@(posedge clk) p_strong(n, $));
+  assert property (@(posedge clk) p_strong(0, n));
+  assert property (@(posedge clk) p_strong(3, 2));
+
+  localparam UNBOUNDED = $;
+  assert property (@(posedge clk) s_eventually[UNBOUNDED:3] clk);
+
+  localparam int HI[2] = '{1, 2};
+  assert property (@(posedge clk) eventually[0:HI] clk);
+
+  localparam X_BOUND = 2'b0x;
+  localparam Z_BOUND = 2'b1z;
+  assert property (@(posedge clk) eventually[X_BOUND:2] clk);
+  assert property (@(posedge clk) s_eventually[0:Z_BOUND] clk);
+  assert property (@(posedge clk) p_hi(X_BOUND));
+  assert property (@(posedge clk) p_strong(Z_BOUND, $));
 endmodule

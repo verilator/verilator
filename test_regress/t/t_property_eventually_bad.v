@@ -29,6 +29,13 @@ module t;
   assert property (@(posedge clk) eventually[0.0: 1] 1'b0);
   assert property (@(posedge clk) eventually[0: 1.0] 1'b0);
 
+  assert property (@(posedge clk) s_eventually[$: 2] 1'b0);
+  assert property (@(posedge clk) s_eventually[-1: $] 1'b0);
+  assert property (@(posedge clk) s_eventually[0: -1] 1'b0);
+  assert property (@(posedge clk) s_eventually[0.5: $] 1'b0);
+  assert property (@(posedge clk) s_eventually[0: HI] 1'b0);
+  assert property (@(posedge clk) a |-> s_eventually[0:65537] b);
+
   always @(posedge clk) begin
     ++cyc;
     if (cyc == MAX) begin

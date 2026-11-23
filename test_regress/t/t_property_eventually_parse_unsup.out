@@ -1,8 +1,0 @@
-%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:24:5: Unsupported: s_eventually[] (in property expression)
-   24 |     s_eventually[2: 5] clk;
-      |     ^~~~~~~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:28:12: Unsupported: s_eventually[] (in property expression)
-   28 |     always s_eventually[2: 5] clk;
-      |            ^~~~~~~~~~~~
-%Error: Exiting due to
