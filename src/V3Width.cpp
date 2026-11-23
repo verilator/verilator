@@ -1632,7 +1632,9 @@ class WidthVisitor final : public VNVisitor {
         } else if (const AstMemberRef* const mrefp = VN_CAST(basep, MemberRef)) {
             varp = mrefp->varp();
         }
-        if (!varp || varp->rand().isRandomizable()) return false;
+        if (!varp || varp->rand().isRandomizable() || m_stdRandomizeArgVars.count(varp)) {
+            return false;
+        }
         return nodep->dtypep()->skipRefp()->isIntegralOrPacked();
     }
     void visit(AstAssocSel* nodep) override {

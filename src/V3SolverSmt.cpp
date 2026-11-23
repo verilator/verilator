@@ -2179,7 +2179,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         const bool fromIndexIsRand = nodep->fromp()->exists([](const AstNodeSel* selp) {
             return refsRandVar(selp->bitp());
         }) || nodep->fromp()->exists([](const AstCMethodHard* methodp) {
-            return methodp->method() == VCMethod::ARRAY_AT && refsRandVar(methodp->pinsp());
+            return methodp->method() == VCMethod::ARRAY_AT
+                   && (!methodp->pinsp() || refsRandVar(methodp->pinsp()));
         });
         if (fromIndexIsRand) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Randomized index in complex expression");

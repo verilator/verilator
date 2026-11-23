@@ -938,10 +938,24 @@ class ItemMemberSumIndexUnsat;
   endfunction
 endclass
 
+// A std::randomize() argument array indexed wider than the 32-bit array index
+// sort: the argument is solved like a rand array, so its index must stay
+// truncated to the address width.
+/* verilator lint_off WIDTHTRUNC */
+class StdArgWideIndex;
+  bit [7:0] arr[4];
+  longint idx;
+  function int go();
+    return std::randomize(arr, idx) with {idx == 1; arr[idx] == 8'h66;};
+  endfunction
+endclass
+/* verilator lint_on WIDTHTRUNC */
+
 
 module t;
   initial begin
     UniqueIdPool obj;
+    StdArgWideIndex stdwide_obj;
     UniqueIdPoolViaMember mobj;
     UniqueIdPoolNonZeroBase nzobj;
     UniqueIdPoolDescBase descobj;
@@ -1288,6 +1302,22 @@ module t;
         `checkd(std_result, 1);
         `checkd(sarr[sidx], 8'hFF);
       end
+    end
+
+    // Same, with an index wider than the 32-bit array index sort.
+    begin
+      bit [7:0] warr[4];
+      longint widx;
+      int wide_result;
+      warr = '{0, 0, 0, 0};
+      /* verilator lint_off WIDTHTRUNC */
+      wide_result = std::randomize(warr, widx) with {widx == 2; warr[widx] == 8'h5A;};
+      /* verilator lint_on WIDTHTRUNC */
+      `checkd(wide_result, 1);
+      `checkd(warr[2], 8'h5A);
+      stdwide_obj = new;
+      `checkd(stdwide_obj.go(), 1);
+      `checkd(stdwide_obj.arr[1], 8'h66);
     end
 
     // Same rand index, but also reaching a plain non-rand array in the same
