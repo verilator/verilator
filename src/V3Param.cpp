@@ -284,13 +284,6 @@ public:
     }
 };
 
-// A pin through a generate if/case, unlinked before its alternatives are pruned (see ParamTop)
-static AstVarXRef* unlinkedGenBlockPinRef(AstNode* exprp) {
-    while (const AstNodePreSel* const selp = VN_CAST(exprp, NodePreSel)) exprp = selp->fromp();
-    AstVarXRef* const xrefp = VN_CAST(exprp, VarXRef);
-    return xrefp && !xrefp->varp() && xrefp->containsGenBlock() ? xrefp : nullptr;
-}
-
 //######################################################################
 // Remove parameters from cells and build new modules
 
@@ -1804,41 +1797,6 @@ class ParamProcessor final {
         }
     }
 
-    // Elaborated generate block of the given name among the items, in an implied block or not
-    static AstGenBlock* findGenBlock(AstNode* itemsp, const string& name) {
-        for (AstNode* itemp = itemsp; itemp; itemp = itemp->nextp()) {
-            if (AstGenBlock* const blockp = VN_CAST(itemp, GenBlock)) {
-                if (blockp->implied()) {
-                    if (AstGenBlock* const foundp = findGenBlock(blockp->itemsp(), name)) {
-                        return foundp;
-                    }
-                } else if (blockp->name() == name) {
-                    return blockp;
-                }
-            }
-        }
-        return nullptr;
-    }
-    // Link a pin through a generate if/case to the interface in the elaborated alternative
-    // Returns false if not found, which V3LinkDot reports when it relinks the pin
-    bool relinkGenBlockPin(AstNode* exprp) {
-        AstVarXRef* const xrefp = unlinkedGenBlockPinRef(exprp);
-        if (!xrefp) return true;
-        AstNode* itemsp = m_modp->stmtsp();
-        string remaining = xrefp->dotted();
-        while (!remaining.empty()) {
-            const size_t dotPos = remaining.find('.');
-            const AstGenBlock* const blockp = findGenBlock(itemsp, remaining.substr(0, dotPos));
-            if (!blockp) return false;
-            itemsp = blockp->itemsp();
-            remaining = dotPos == string::npos ? "" : remaining.substr(dotPos + 1);
-        }
-        for (AstNode* itemp = itemsp; itemp; itemp = itemp->nextp()) {
-            AstVar* const varp = VN_CAST(itemp, Var);
-            if (varp && varp->name() == xrefp->name()) xrefp->varp(varp);
-        }
-        return xrefp->varp();
-    }
     void cellInterfaceCleanup(AstPin* pinsp, AstNodeModule* srcModp, string& longnamer,
                               bool& any_overridesr, IfaceRefRefs& ifaceRefRefs) {
         for (AstPin* const pinp : VNList<AstPin>{pinsp}) {
@@ -1856,7 +1814,6 @@ class ParamProcessor final {
                     UINFO(9, "Skipping interface cleanup for CellArrayRef pin: " << pinp);
                     continue;
                 }
-                if (!relinkGenBlockPin(pinp->exprp())) continue;
                 AstIfaceRefDType* pinIrefp = nullptr;
                 // Pin is a VarRef to a var of (possibly arrayed) iface type.
                 if (const AstNodeVarRef* const vrp = VN_CAST(exprp, NodeVarRef)) {
@@ -3385,12 +3342,7 @@ class ParamVisitor final : public VNVisitor {
         // Deparameterize iface cells early so types are available for lparams.
         if (isIface && VN_CAST(nodep, Cell) && VN_CAST(nodep, Cell)->paramsp()) {
             AstCell* const cellp = VN_CAST(nodep, Cell);
-            // A pin through a generate block is only linked once the block is elaborated
-            bool pinsLinked = true;
-            for (AstPin* const pinp : VNList<AstPin>{cellp->pinsp()}) {
-                if (unlinkedGenBlockPinRef(pinp->exprp())) pinsLinked = false;
-            }
-            if (pinsLinked && !cellParamsReferenceIfacePorts(cellp)) {
+            if (!cellParamsReferenceIfacePorts(cellp)) {
                 AstNodeModule* const srcModp = cellp->modp();
                 AstNodeModule* const newModp = m_processor.nodeDeparam(
                     cellp, srcModp, m_modp, m_modp->someInstanceName() + m_generateHierName);

@@ -22,15 +22,6 @@ module core_b;
   endfunction
 endmodule
 
-interface bus_if;
-  logic d;
-endinterface
-
-module sink (
-    bus_if b
-);
-endmodule
-
 module mid #(
     parameter bit R = 1
 );
@@ -59,9 +50,7 @@ module mid #(
       int h3;
     end
     int last_only;
-    bus_if last_bus ();
   end
-  sink u_sink (.b(g.last_bus));
 endmodule
 
 module noelse #(

@@ -3502,6 +3502,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         bool m_unresolvedGenericIface;  // Unresolved generic interface, needs help from V3Param
         bool m_genBlk;  // Contains gen block reference
         bool m_genIfBlk;  // Contains generate if/case block reference, V3Param may prune
+        bool m_genAltBlk;  // Contains block of same-named generate alternatives
         AstNode* m_unlinkedScopep;  // Unresolved scope, needs corresponding VarXRef
         AstDisable* m_disablep;  // Disable statement under which the reference is
         bool m_dotErr;  // Error found in dotted resolution, ignore upwards
@@ -3520,6 +3521,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_unresolvedGenericIface = false;
             m_genBlk = false;
             m_genIfBlk = false;
+            m_genAltBlk = false;
             m_unlinkedScopep = nullptr;
             m_disablep = nullptr;
         }
@@ -3539,6 +3541,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (m_unresolvedGenericIface) sstr << "  [unrGIface]";
             if (m_genBlk) sstr << "  [genBlk]";
             if (m_genIfBlk) sstr << "  [genIfBlk]";
+            if (m_genAltBlk) sstr << "  [genAltBlk]";
             sstr << "  txt=" << m_dotText;
             return sstr.str();
         }
@@ -3711,8 +3714,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     AstVarXRef* newIfaceXRef(FileLine* fl, AstVar* varp, const string& dotted) {
         AstVarXRef* const refp = new AstVarXRef{fl, varp, dotted, VAccess::READ};
-        // Relinked once V3Param has chosen among the generate alternatives
-        refp->containsGenBlock(m_ds.m_genIfBlk);
+        if (!m_pinp) {  // E.g. a virtual interface value, relinked after V3Param
+            refp->containsGenBlock(m_ds.m_genIfBlk);
+        } else if (m_ds.m_genAltBlk) {
+            // Only same-named alternatives, as V3Param would need to choose one first
+            refp->v3error("Interface port connection cannot use a hierarchical reference"
+                          " through a generate block (IEEE 1800-2023 25.3)");
+        }
         return refp;
     }
     AstRSProd* findProd(AstNode* nodep, VSymEnt* parentEntp, const string& name) {
@@ -4989,6 +4997,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         if (VN_IS(blkp->backp(), GenIf) || VN_IS(blkp->backp(), GenCaseItem)) {
                             m_ds.m_genIfBlk = true;
                         }
+                        if (foundp->shadowedp()) m_ds.m_genAltBlk = true;
                         if (m_ds.m_disablep) {
                             m_ds.m_disablep->v3warn(
                                 E_UNSUPPORTED,
