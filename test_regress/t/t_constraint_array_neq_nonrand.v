@@ -456,6 +456,38 @@ class frame_randmode_off_randidx;
   endfunction
 endclass
 
+// A frozen row reached through a queue, which the frozen table cannot follow:
+// randomize() fails instead of solving against the index's pre-solve row.
+class frame_randmode_off_queue_rows;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[$][2];
+  rand int idx;
+  constraint c { idx == 1; frame == target[idx]; }
+  function new();
+    target = '{'{8'h12, 8'h34}, '{8'hab, 8'hcd}};
+    idx = 0;
+  endfunction
+endclass
+
+// The same frozen row compare inside a with-clause in the class's own method,
+// spelled with and without this.
+class frame_randmode_off_method;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[2][2];
+  rand int idx;
+  function new();
+    target[0][0] = 8'h12; target[0][1] = 8'h34;
+    target[1][0] = 8'hab; target[1][1] = 8'hcd;
+    idx = 0;
+  endfunction
+  function int run_this();
+    return randomize() with { this.idx == 1; this.frame == this.target[this.idx]; };
+  endfunction
+  function int run_bare();
+    return randomize() with { idx == 1; frame == target[idx]; };
+  endfunction
+endclass
+
 class frame_randmode_off_randidx_lhs;
   rand bit [7:0] frame[2];
   rand bit [7:0] target[2][2];
@@ -500,7 +532,8 @@ class frame_arg_excluded_index;
 endclass
 
 // An out-of-range index wraps the same way in both mode branches, so it
-// reads row 1 over a [0:1] table when the index solves to 5.
+// reads row 1 over a [0:1] table when the index solves to 5 (the wrap itself
+// is #9038).
 class frame_frozen_oob_wrap;
   rand bit [7:0] frame[2];
   rand bit [7:0] target[2][2];
@@ -627,6 +660,8 @@ module t;
     frame_randmode_off_randidx rmodeidx_on_obj;
     frame_randmode_off_randidx rmodeidx_toggled_obj;
     frame_randmode_off_randidx_lhs rmodeidx_lhs_obj;
+    frame_randmode_off_queue_rows rmodeq_obj;
+    frame_randmode_off_method rmodem_obj;
     frame_randmode_off_base rmodeoff_obj;
     rmode_off_base rmodeoff_bobj;
     frame_arg_excluded_index argexclidx_obj;
@@ -993,6 +1028,25 @@ module t;
     `checkd(rmodeidx_toggled_obj.idx, 1);
     `checkd(rmodeidx_toggled_obj.frame
             == rmodeidx_toggled_obj.target[rmodeidx_toggled_obj.idx], 1);
+
+    rmodeq_obj = new;
+    rmodeq_obj.target.rand_mode(0);
+    randomize_result = rmodeq_obj.randomize();
+    `checkd(randomize_result, 0);
+
+    rmodem_obj = new;
+    rmodem_obj.target.rand_mode(0);
+    randomize_result = rmodem_obj.run_this();
+    `checkd(randomize_result, 1);
+    `checkd(rmodem_obj.idx, 1);
+    `checkd(rmodem_obj.frame == rmodem_obj.target[1], 1);
+    `checkd(rmodem_obj.target[1][0], 8'hab);
+    rmodem_obj.idx = 0;
+    rmodem_obj.frame = '{8'h00, 8'h00};
+    randomize_result = rmodem_obj.run_bare();
+    `checkd(randomize_result, 1);
+    `checkd(rmodem_obj.idx, 1);
+    `checkd(rmodem_obj.frame == rmodem_obj.target[1], 1);
 
     rmodeidx_lhs_obj = new;
     rmodeidx_lhs_obj.target.rand_mode(0);

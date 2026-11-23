@@ -11,7 +11,8 @@
 
 // A randomized index into a table larger than the frozen-select expansion
 // limit still solves while the table's mode is on, even though rand_mode()
-// is called on it.
+// is called on it; while it is frozen there is no right answer to give, so
+// randomize() fails instead of solving against the index's pre-solve row.
 class over_cap_table;
   rand bit [7:0] frame;
   rand bit [7:0] target[20000][2];
@@ -19,9 +20,17 @@ class over_cap_table;
   constraint c { idx == 12345; frame == target[idx][1]; target[12345][1] == 8'h5a; }
 endclass
 
+class over_cap_frozen;
+  rand bit [7:0] frame[2];
+  rand bit [7:0] target[20000][2];
+  rand int idx;
+  constraint c { idx == 1; frame == target[idx]; }
+endclass
+
 module t;
   initial begin
     automatic over_cap_table obj = new;
+    automatic over_cap_frozen frozen_obj = new;
     automatic int ok;
     obj.target.rand_mode(0);
     obj.target.rand_mode(1);
@@ -29,6 +38,12 @@ module t;
     `checkd(ok, 1);
     `checkd(obj.idx, 12345);
     `checkd(obj.frame, 8'h5a);
+    frozen_obj.target[0] = '{8'h12, 8'h34};
+    frozen_obj.target[1] = '{8'hab, 8'hcd};
+    frozen_obj.idx = 0;
+    frozen_obj.target.rand_mode(0);
+    ok = frozen_obj.randomize();
+    `checkd(ok, 0);
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -162,6 +162,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     bool m_structSel = false;  // Marks when inside structSel
                                // (used to format "%s.%s" for struct arrays and nested structs)
     bool m_deferRandModeHoist = false;  // Wait for the complete struct member path
+    // Mode gates of frozen selects whose random index was read at its pre-solve value
+    std::vector<AstNodeExpr*> m_frozenStaleModesp;
     std::set<std::string>& m_writtenVars;  // Track which variable paths have write_var generated
                                            // (shared across all constraints)
     std::set<std::string> m_inlineWrittenVars;  // Per-instance tracking for inline constraints
@@ -2221,6 +2223,39 @@ class ConstraintExprVisitor final : public VNVisitor {
         });
         return rand;
     }
+    // Also a rand member captured from a method's with-clause as __Vthis.member.
+    static bool namesRandVar(AstNode* nodep) {
+        return nodep->exists([](const AstNodeVarRef* vrefp) {
+            return vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg();
+        }) || nodep->exists([](const AstMemberRef* mrefp) {
+            const AstNodeVarRef* const fromp = VN_CAST(mrefp->fromp(), NodeVarRef);
+            return fromp && fromp->varp()->name() == "__Vthis" && mrefp->varp()->isRand();
+        });
+    }
+    // Levels the frozen table keeps symbolic (tableBuilt) do not count.
+    static bool chainReadsStaleIndex(AstNodeExpr* origp, bool tableBuilt) {
+        for (AstNodeExpr* curp = origp; curp;) {
+            AstNodeExpr* idxp = nullptr;
+            AstNodeExpr* nextp = nullptr;
+            if (AstNodeSel* const selp = VN_CAST(curp, NodeSel)) {
+                idxp = selp->bitp();
+                nextp = selp->fromp();
+            } else if (AstCMethodHard* const methodp = VN_CAST(curp, CMethodHard)) {
+                idxp = methodp->pinsp();
+                nextp = methodp->fromp();
+            } else if (AstStructSel* const sselp = VN_CAST(curp, StructSel)) {
+                nextp = sselp->fromp();
+            } else if (AstMemberRef* const mselp = VN_CAST(curp, MemberRef)) {
+                nextp = mselp->fromp();
+            }
+            if (idxp && namesRandVar(idxp)
+                && !(tableBuilt && VN_IS(curp, ArraySel) && selectIndexIsRand(idxp))) {
+                return true;
+            }
+            curp = nextp;
+        }
+        return false;
+    }
     // One ArraySel level of a frozen select chain, outermost first.
     struct FrozenSelectLevel final {
         AstNodeExpr* idxEmissionp = nullptr;  // Formatted index from its frame
@@ -2353,11 +2388,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         if (!modeCondp) return false;
         FileLine* const fl = newp->fileline();
-        // Bound the table. Past the bound the mode-off branch reads the current
-        // value instead, which stays correct while the mode is on; rejecting at
-        // compile time would also break programs that never disable it.
+        // Past the bound, or for a chain the table cannot follow, the mode-off branch reads
+        // the current value (see m_frozenStaleModesp).
         static constexpr int MAX_FROZEN_INDEX_CASES = 16384;
         AstNodeExpr* elsep = nullptr;
+        bool staleIndex = false;
         if (origp->dtypep()->skipRefp()->isIntegralOrPacked()) {
             std::vector<FrozenSelectLevel> levels;
             if (collectFrozenLevels(origp, frames, levels)) {
@@ -2369,13 +2404,18 @@ class ConstraintExprVisitor final : public VNVisitor {
                     cases *= lvl.elements;
                 }
                 if (hasSymbolic && cases <= MAX_FROZEN_INDEX_CASES) {
+                    staleIndex = chainReadsStaleIndex(origp, true);
                     elsep = frozenSelectElsep(fl, origp, levels, {}, 0, origp->width());
                     VL_DO_DANGLING(origp->deleteTree(), origp);
                 }
             }
         }
-        if (!elsep) elsep = getConstFormat(origp);
+        if (!elsep) {
+            staleIndex = chainReadsStaleIndex(origp, false);
+            elsep = getConstFormat(origp);
+        }
         AstNodeExpr* const modep = modeCondp->condp()->unlinkFrBack();
+        if (staleIndex) m_frozenStaleModesp.push_back(modep->cloneTree(false));
         AstNodeExpr* activep = modeCondp->thenp()->unlinkFrBack();
         // Rebuild the select chain text around the SMT name, innermost first
         for (auto it = frames.rbegin(); it != frames.rend(); ++it) {
@@ -2848,11 +2888,31 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Emit as soft or hard constraint per IEEE 1800-2023 18.5.13
         const VCMethod method
             = nodep->isSoft() ? VCMethod::RANDOMIZER_SOFT : VCMethod::RANDOMIZER_HARD;
+        AstNodeStmt* const stmtp
+            = newConstraintCallp(nodep, method, nodep->exprp()->unlinkFrBack(), vars);
+        // A random index read at its pre-solve value has no right answer while its array is
+        // frozen: fail randomize() then, instead of solving against the wrong element.
+        FileLine* const fl = nodep->fileline();
+        for (AstNodeExpr* const modep : m_frozenStaleModesp) {
+            AstSFormatF* const onp = getConstFormat(new AstConst{fl, AstConst::BitTrue{}});
+            onp->user1(true);
+            AstSFormatF* const offp = getConstFormat(new AstConst{fl, AstConst::BitFalse{}});
+            offp->user1(true);
+            AstCond* const okp = new AstCond{fl, modep, onp, offp};
+            okp->user1(true);
+            stmtp->addNextHere(newConstraintCallp(nodep, VCMethod::RANDOMIZER_HARD, okp, {}));
+        }
+        m_frozenStaleModesp.clear();
+        nodep->replaceWith(stmtp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+    AstNodeStmt* newConstraintCallp(AstConstraintExpr* nodep, VCMethod method, AstNodeExpr* exprp,
+                                    const std::set<std::string>& vars) {
         AstCMethodHard* const callp = new AstCMethodHard{
             nodep->fileline(),
             new AstVarRef{nodep->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
                           VAccess::READWRITE},
-            method, nodep->exprp()->unlinkFrBack()};
+            method, exprp};
         callp->dtypeSetVoid();
         if (method == VCMethod::RANDOMIZER_HARD) {
             // hard() pin layout is asserted in EmitCFunc: the variable list is always pin 2
@@ -2879,8 +2939,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         callp->addPinsp(
             new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, "\"" + prettyText + "\""});
-        nodep->replaceWith(callp->makeStmt());
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        return callp->makeStmt();
     }
     void visit(AstCMethodHard* nodep) override {
         if (editFormat(nodep)) return;
