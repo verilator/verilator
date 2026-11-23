@@ -2130,6 +2130,11 @@ class ParamProcessor final {
             longname += "__Vdefparam" + V3Hash{srcModp->someInstanceName()}.toString();
             any_overrides = true;
         }
+        if (VN_IS(nodep, Cell) && srcModp->hasUpwardRef()) {
+            // Upward references may resolve differently from each enclosing module
+            longname += "__Vup" + V3Hash{m_modp->name()}.toString();
+            any_overrides = true;
+        }
 
         UINFO(9,
               "nodeDeparamCommon: " << srcModp->prettyNameQ() << " overrides=" << any_overrides);

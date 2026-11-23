@@ -355,6 +355,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_ctorVarReset : 1;  // Ctor needs to call ctor_var_reset
     bool m_dead : 1;  // LinkDot believes is dead; will remove in Dead visitors
     bool m_hasGParam : 1;  // Has global parameter (for link)
+    bool m_hasUpwardRef : 1;  // Contains a reference resolved above it (for V3Param)
     bool m_hasParameterList : 1;  // Has #() for parameter declaration
     bool m_hierBlock : 1;  // Hierarchical Block marked by HIER_BLOCK pragma
     bool m_hierParams : 1;  // Block containing params for parameterized hier blocks
@@ -377,6 +378,7 @@ protected:
         , m_ctorVarReset{false}
         , m_dead{false}
         , m_hasGParam{false}
+        , m_hasUpwardRef{false}
         , m_hasParameterList{false}
         , m_hierBlock{false}
         , m_hierParams{false}
@@ -424,6 +426,8 @@ public:
     void dead(bool flag) { m_dead = flag; }
     bool hasGParam() const { return m_hasGParam; }
     void hasGParam(bool flag) { m_hasGParam = flag; }
+    bool hasUpwardRef() const { return m_hasUpwardRef; }
+    void hasUpwardRef(bool flag) { m_hasUpwardRef = flag; }
     bool hasParameterList() const { return m_hasParameterList; }
     void hasParameterList(bool flag) { m_hasParameterList = flag; }
     bool hierBlock() const { return m_hierBlock; }

@@ -14,6 +14,9 @@
 // alternative it is, and references in unelaborated alternatives are not
 // resolved (IEEE 1800-2023 27.5).
 //
+// Upward references resolve from each instance's own context, so differ
+// between instances of the same module (IEEE 1800-2023 23.8).
+//
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Hongseok Choi
 // SPDX-License-Identifier: CC0-1.0
@@ -83,6 +86,9 @@ module core_a #(
   int s = 1;
   int dv = D;
   int ev = E;
+  function automatic int sz();
+    return $bits(s);
+  endfunction
 endmodule
 
 module core_b #(
@@ -93,6 +99,9 @@ module core_b #(
   byte s = 2;
   int dv = D;
   int ev = E;
+  function automatic int sz();
+    return $bits(s);
+  endfunction
 endmodule
 
 interface bus_if #(
@@ -104,6 +113,20 @@ interface bus_if #(
   assign d = W'(cyc);
   modport mp(input d);
 endinterface
+
+module probe;
+  int s_bits = $bits(u_core.s);
+  int bus_bits = $bits(bus.d);
+  int dv;
+  assign dv = u_core.dv;
+  function automatic int core_sz();
+    return u_core.sz();
+  endfunction
+endmodule
+
+module wrap;
+  probe u_p ();
+endmodule
 
 class Holder #(
     parameter int W = 1
@@ -129,6 +152,7 @@ module mid #(
     core_a u_core ();
     bus_if #(.W(7)) bus (.cyc);
     bus_if #(.W(7)) bus_arr[2] (.cyc);
+    probe u_p ();
     if (R == 1) begin : h
       int h1 = 31;
     end
@@ -146,12 +170,14 @@ module mid #(
     core_b u_core ();
     bus_if #(.W(15)) bus (.cyc);
     bus_if #(.W(15)) bus_arr[2] (.cyc);
+    wrap u_w ();
   end
   else begin : g
     leaf #(.V(2)) u_b (.cyc);
     core_b u_core ();
     bus_if #(.W(9)) bus (.cyc);
     bus_if #(.W(9)) bus_arr[2] (.cyc);
+    wrap u_w ();
     if (R == 0) begin : h
       int h0 = 33;
     end
@@ -311,6 +337,18 @@ module t;
       `checkd(int'(u_r0.holder.vif.d), cyc % (1 << 9));
       `checkd($bits(holder_r2.vif.d), 15);
       `checkd(int'(holder_r2.vif.d), cyc % (1 << 15));
+      `checkd(u_r1.g.u_p.s_bits, 32);
+      `checkd(u_r2.g.u_w.u_p.s_bits, 8);
+      `checkd(u_r0.g.u_w.u_p.s_bits, 8);
+      `checkd(u_r1.g.u_p.bus_bits, 7);
+      `checkd(u_r2.g.u_w.u_p.bus_bits, 15);
+      `checkd(u_r0.g.u_w.u_p.bus_bits, 9);
+      `checkd(u_r1.g.u_p.dv, 51);
+      `checkd(u_r2.g.u_w.u_p.dv, 52);
+      `checkd(u_r0.g.u_w.u_p.dv, 50);
+      `checkd(u_r1.g.u_p.core_sz(), 32);
+      `checkd(u_r2.g.u_w.u_p.core_sz(), 8);
+      `checkd(u_r0.g.u_w.u_p.core_sz(), 8);
     end
     $write("*-* All Finished *-*\n");
     $finish;

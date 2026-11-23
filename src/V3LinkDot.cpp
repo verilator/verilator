@@ -212,6 +212,8 @@ private:
     std::array<ScopeAliasMap, SAMN__MAX> m_scopeAliasMap;  // Map of <lhs,rhs> aliases
     std::vector<VSymEnt*> m_ifaceVarSyms;  // List of AstIfaceRefDType's to be imported
     std::vector<VSymEnt*> m_shadowingSyms;  // Generate blocks that replaced a same-named one
+    // Each instance of a module, as modp->user1p() keeps only the last
+    std::unordered_map<const AstNodeModule*, std::vector<VSymEnt*>> m_modInstSyms;
     IfaceModSyms m_ifaceModSyms;  // List of AstIface+Symbols to be processed
     const VLinkDotStep m_step;  // Operational step
 
@@ -406,6 +408,27 @@ public:
         m_packageEntp->fallbackp(dunitEntp());
         rootEntp()->insert("$packages ", m_packageEntp);
     }
+    // When an upward reference resolves to different targets from different instances of its
+    // module, mark each module it resolves outside of, so V3Param specializes them per context
+    void markUpwardEscapes(AstNodeModule* modp, const string& ident, const string& altIdent) {
+        std::vector<AstNodeModule*> escapedModps{modp};
+        std::set<const AstNode*> targetps;
+        for (VSymEnt* const instSymp : m_modInstSyms[modp]) {
+            for (VSymEnt* symp = instSymp->parentp(); symp; symp = symp->parentp()) {
+                const AstCell* const cellp = VN_CAST(symp->nodep(), Cell);
+                if (cellp && cellp->modp()->origName() == ident) {
+                    targetps.insert(cellp);
+                    break;
+                } else if (VSymEnt* const foundp = findWithAltFallback(symp, ident, altIdent)) {
+                    targetps.insert(foundp->nodep());
+                    break;
+                }
+                if (cellp) escapedModps.push_back(cellp->modp());
+            }
+        }
+        if (targetps.size() < 2) return;
+        for (AstNodeModule* const escModp : escapedModps) escModp->hasUpwardRef(true);
+    }
     VSymEnt* insertTopCell(AstNodeModule* nodep, const string& scopename) {
         // Only called on the module at the very top of the hierarchy
         VSymEnt* const symp = new VSymEnt{&m_syms, nodep};
@@ -443,6 +466,7 @@ public:
         if (nodep->modp()) nodep->modp()->user1p(symp);
         checkDuplicate(abovep, nodep, nodep->origName());
         abovep->reinsert(nodep->origName(), symp);
+        if (nodep->modp() && !forScopeCreation()) m_modInstSyms[nodep->modp()].push_back(symp);
         if (forScopeCreation() && abovep != modSymp && !modSymp->findIdFlat(nodep->name())) {
             // If it's foo_DOT_bar, we need to be able to find it under "foo_DOT_bar" too.
             // Duplicates are possible, as until resolve generates might
@@ -868,7 +892,9 @@ public:
                 // Move up and check cellname + modname
                 else {
                     bool crossedCell = false;  // Crossed a cell boundary
+                    const AstCell* fromCellp = nullptr;  // Instance first resolved outside of
                     while (lookupSymp) {
+                        if (!fromCellp) fromCellp = VN_CAST(lookupSymp->nodep(), Cell);
                         lookupSymp = lookupSymp->parentp();
                         cellp = lookupSymp ? VN_CAST(lookupSymp->nodep(), Cell)
                                            : nullptr;  // Replicated above
@@ -894,6 +920,9 @@ public:
                         }
                     }
                     if (!lookupSymp) return nullptr;  // Not found
+                    if (fromCellp && !forScopeCreation()) {
+                        markUpwardEscapes(fromCellp->modp(), ident, altIdent);
+                    }
                 }
             } else {  // Searching for middle path component, must be a cell or interface port
                 VSymEnt* findSymp = findWithAltFlat(lookupSymp, ident, altIdent);
