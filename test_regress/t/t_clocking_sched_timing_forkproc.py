@@ -7,12 +7,14 @@
 # SPDX-FileCopyrightText: 2024 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 import vltest_bootstrap
+from clocking_sched import check_output
 
 test.scenarios('vlt')
 test.top_filename = "t/t_clocking_sched.v"
 
 test.compile(timing_loop=True, verilator_flags2=["--timing"])
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
+check_output(test)
 
 test.passes()

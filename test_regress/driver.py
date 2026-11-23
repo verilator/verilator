@@ -1087,7 +1087,7 @@ class VlTest:
     def _exit(self):
         if self.ok:
             self.oprint("Self PASSED")
-        elif self._skips and not self.errors:
+        elif self._skips and not self.errors and not self.errors_keep_going:
             self.oprint("-Skip: " + self._skips)
         else:
             # If no worse errors, promote errors_keep_going to normal errors

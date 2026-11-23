@@ -57,6 +57,9 @@ test.run(
     ])
 fixup(dump_1)
 
+# The dumped argument file already includes VERILATOR_TEST_FLAGS.
+os.environ.pop("VERILATOR_TEST_FLAGS", None)
+
 obj_dir_2 = test.obj_dir + "/obj_dir_2"
 test.mkdir_ok(obj_dir_2)
 dump_2 = obj_dir_2 + "/Vprefix__inputs.vpp"
