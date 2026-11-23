@@ -798,8 +798,7 @@ class SvaNfaBuilder final {
         }
         // A failed required repetition cannot be recovered by a later endpoint.
         // Reject the attempt even when the endpoint is false on this tick.
-        if (m_allowLiveRepReject && !m_noEosFailure && isTopLevelStep && !m_inRangedDelayRhs
-            && !m_inSequencePrefix && currentp->m_liveRepCondp) {
+        if (m_allowLiveRepReject && !m_inSequencePrefix && currentp->m_liveRepCondp) {
             AstNodeExpr* const liveRepCondp = currentp->m_liveRepCondp;
             UASSERT_OBJ(currentp->m_liveRepCheckVtxp, currentp,
                         "Live repetition endpoint missing check vertex");
@@ -2156,11 +2155,9 @@ class SvaNfaLowering final {
                 UASSERT_OBJ(vtxp->m_liveRepEntryEdgep, vtxp,
                             "Live-repetition count missing entry edge");
                 AstNodeExpr* nextCountp = gatedEdgeCountp(c, *vtxp->m_liveRepEntryEdgep);
-                if (vtxp->m_liveRepClearCondp) {
-                    nextCountp
-                        = new AstCond{c.flp, vtxp->m_liveRepClearCondp->cloneTreePure(false),
-                                      newTypedConstp(c.flp, nextCountp->dtypep(), 0), nextCountp};
-                }
+                nextCountp
+                    = new AstCond{c.flp, vtxp->m_liveRepClearCondp->cloneTreePure(false),
+                                  newTypedConstp(c.flp, nextCountp->dtypep(), 0), nextCountp};
                 bodyp = AstNode::addNextNull(
                     bodyp, new AstAssignDly{c.flp,
                                             new AstVarRef{c.flp, vtxp->datap()->liveRepCountVarp,

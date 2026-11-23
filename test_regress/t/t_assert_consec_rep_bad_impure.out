@@ -1,7 +1,7 @@
-%Warning-SIDEEFFECT: t/t_assert_consec_rep_bad.v:19:57: Expression side effect may be mishandled
+%Warning-SIDEEFFECT: t/t_assert_consec_rep_bad.v:34:57: Expression side effect may be mishandled
                                                       : ... note: In instance 't'
                                                       : ... Suggest use a temporary variable in place of this expression
-   19 |   assert property (@(posedge clk) start |-> a[*1:$] ##0 endpoint());
+   34 |   assert property (@(posedge clk) start |-> a[*1:$] ##0 endpoint());
       |                                                         ^~~~~~~~
                      ... For warning description see https://verilator.org/warn/SIDEEFFECT?v=latest
                      ... Use "/* verilator lint_off SIDEEFFECT */" and lint_on around source to disable this message.

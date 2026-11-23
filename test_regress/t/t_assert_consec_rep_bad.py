@@ -15,5 +15,8 @@ test.lint(fails=True, expect_filename=test.golden_filename)
 test.lint(fails=True,
           expect_filename=test.golden_filename.replace('.out', '_impure.out'),
           verilator_flags2=['--assert --timing +define+TEST_IMPURE_ENDPOINT'])
+test.lint(fails=True,
+          expect_filename=test.golden_filename.replace('.out', '_impure_rep.out'),
+          verilator_flags2=['--assert --timing +define+TEST_IMPURE_REPETITION'])
 
 test.passes()

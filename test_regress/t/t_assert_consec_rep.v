@@ -264,6 +264,12 @@ module unbounded_rep_match_item_test (input logic clk);
   assert property (@(posedge clk) follow_a #-# follow_b)
   else follow_failures++;
 
+  assert property (@(posedge clk)
+    1'b0 |-> (follow_a[*1:$] ##0 follow_b) ##1 read_b);
+
+  assert property (@(posedge clk)
+    1'b0 |-> ((follow_a[*1:$] ##0 follow_b) or (read_a ##1 read_b)));
+
   function void count_overlap_match();
     overlap_match_items++;
   endfunction
