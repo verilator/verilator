@@ -53,9 +53,6 @@ t (vpiModule) t  vpiDefName=t
         a (vpiReg) t.s.a 
         b (vpiReg) t.s.b 
         c (vpiReg) t.s.c 
-    a (vpiReg) t.s.a 
-    b (vpiReg) t.s.b 
-    c (vpiReg) t.s.c 
     self_loop (vpiReg) t.self_loop 
     tstamp (vpiReg) t.tstamp 
     xscope_o (vpiReg) t.xscope_o 
