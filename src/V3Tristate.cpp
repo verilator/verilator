@@ -1421,9 +1421,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             } else if (nodep->strengthSpecp()) {
                 nodep->strengthSpecp()->unlinkFrBack()->deleteTree();
             }
-        } else if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
-            AstVarRef* const varRefp = VN_CAST(selp->fromp(), VarRef);
-            if (varRefp && varRefp->varp()->isWiredNet()) {
+        } else if (AstVarRef* const varRefp = VN_CAST(nodep->lhsp()->baseFromp(true), VarRef)) {
+            if (varRefp->varp()->isWiredNet()) {
                 m_assigns[varRefp->varp()].push_back(nodep);
             }
         } else if (nodep->strengthSpecp()) {
@@ -1491,21 +1490,19 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (assigns.size() <= 1) continue;
             AstVar* const varp = varpAssigns.first;
             if (!varp->isWiredNet()) continue;
-            for (size_t i = 0; i < assigns.size(); ++i) {
-                AstAssignW* const assignWp0 = assigns[i];
+            // Nested sameTree is O(n^2) in assigns to one net, not the design.
+            // Each compare is a small LHS; grouping by hash would add more code than it saves.
+            for (AstAssignW* const assignWp0 : assigns) {
+                if (!assignWp0) continue;
                 FileLine* const fl = assignWp0->fileline();
                 AstNodeExpr* wExp = nullptr;
-                for (size_t j = i + 1; j < assigns.size();) {
-                    AstAssignW* const assignWpip = assigns[j];
-                    if (!assignWp0->lhsp()->sameTree(assignWpip->lhsp())) {
-                        ++j;
-                        continue;
-                    }
+                for (AstAssignW*& assignWpip : assigns) {
+                    if (!assignWpip || assignWpip == assignWp0) continue;
+                    if (!assignWp0->lhsp()->sameTree(assignWpip->lhsp())) continue;
                     if (!wExp) wExp = assignWp0->rhsp()->cloneTreePure(false);
                     wExp = newMergeExpr(wExp, assignWpip->rhsp()->cloneTreePure(false), fl,
                                         varp->isWor());
-                    VL_DO_DANGLING((assignWpip->unlinkFrBack()->deleteTree()), assignWpip);
-                    assigns.erase(assigns.begin() + j);
+                    VL_DO_CLEAR(assignWpip->unlinkFrBack()->deleteTree(), assignWpip = nullptr);
                 }
                 if (wExp) {
                     AstNodeExpr* const oldRhsp = assignWp0->rhsp();
@@ -1513,6 +1510,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     VL_DO_DANGLING(pushDeletep(oldRhsp), oldRhsp);
                 }
             }
+            assigns.erase(std::remove(assigns.begin(), assigns.end(), nullptr), assigns.end());
         }
     }
 
