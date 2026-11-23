@@ -1,0 +1,259 @@
+diff --git a/third_party/repcut/external/mt-kahypar/include/mtkahypar.h b/third_party/repcut/external/mt-kahypar/include/mtkahypar.h
+index 8782f5bc8..2b8428ead 100644
+--- a/third_party/repcut/external/mt-kahypar/include/mtkahypar.h
++++ b/third_party/repcut/external/mt-kahypar/include/mtkahypar.h
+@@ -57,2 +57,9 @@ MT_KAHYPAR_API mt_kahypar_context_t* mt_kahypar_context_from_file(const char* in
+
++/**
++ * Loads a partitioning context from null-terminated INI text without file I/O.
++ * Returns NULL and fills error if the text is NULL or cannot be parsed.
++ */
++MT_KAHYPAR_API mt_kahypar_context_t* mt_kahypar_context_from_string(const char* ini_text,
++                                                                  mt_kahypar_error_t* error);
++
+ /**
+diff --git a/third_party/repcut/external/mt-kahypar/lib/mtkahypar.cpp b/third_party/repcut/external/mt-kahypar/lib/mtkahypar.cpp
+index d9b1c1ca3..a353c6026 100644
+--- a/third_party/repcut/external/mt-kahypar/lib/mtkahypar.cpp
++++ b/third_party/repcut/external/mt-kahypar/lib/mtkahypar.cpp
+@@ -32,3 +32,5 @@
+ #include <cstring>
++#include <memory>
+ #include <optional>
++#include <sstream>
+ #include <string>
+@@ -154,2 +156,18 @@ mt_kahypar_context_t* mt_kahypar_context_from_file(const char* ini_file_name,
+
++mt_kahypar_context_t* mt_kahypar_context_from_string(const char* ini_text,
++                                                     mt_kahypar_error_t* error) {
++  try {
++    if (!ini_text) {
++      throw InvalidInputException("Configuration text must not be NULL");
++    }
++    auto context = std::make_unique<Context>(false);
++    std::istringstream input(ini_text);
++    parseIniToContext(*context, input, true);
++    return reinterpret_cast<mt_kahypar_context_t*>(context.release());
++  } catch ( std::exception& ex ) {
++    *error = to_error(ex);
++    return nullptr;
++  }
++}
++
+ mt_kahypar_context_t* mt_kahypar_context_from_preset(const mt_kahypar_preset_type_t preset) {
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/io/command_line_options.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/io/command_line_options.cpp
+index f185df84c..63534a3c6 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/io/command_line_options.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/io/command_line_options.cpp
+@@ -1236,6 +1236,2 @@ namespace mt_kahypar {
+   void parseIniToContext(Context& context, const std::string& ini_filename, bool disable_logging) {
+-    if (disable_logging) {
+-      context.partition.enable_logging = false;
+-    }
+-
+     std::ifstream file(ini_filename.c_str());
+@@ -1245,2 +1241,9 @@ namespace mt_kahypar {
+     }
++    parseIniToContext(context, file, disable_logging);
++  }
++
++  void parseIniToContext(Context& context, std::istream& input, bool disable_logging) {
++    if (disable_logging) {
++      context.partition.enable_logging = false;
++    }
+
+@@ -1256,3 +1259,3 @@ namespace mt_kahypar {
+     try {
+-      app.parse_from_stream(file);
++      app.parse_from_stream(input);
+     } catch (const CLI::ParseError &e) {
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/io/command_line_options.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/io/command_line_options.h
+index 8db718718..decf8923b 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/io/command_line_options.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/io/command_line_options.h
+@@ -29,2 +29,3 @@
+
++#include <iosfwd>
+ #include <string>
+@@ -41,2 +42,4 @@ void parseIniToContext(Context& context, const std::string& ini_filename, bool d
+
++void parseIniToContext(Context& context, std::istream& input, bool disable_logging);
++
+ void presetToContext(Context& context, PresetType preset, bool disable_logging);
+diff --git a/third_party/repcut/include/MtKaHyPar.h b/third_party/repcut/include/MtKaHyPar.h
+index 5da9c3086..a4003b560 100644
+--- a/third_party/repcut/include/MtKaHyPar.h
++++ b/third_party/repcut/include/MtKaHyPar.h
+@@ -14,4 +14,4 @@ namespace repcut {
+     // Load the embedded default preset with low-memory Louvain contraction.
+-    // The caller owns the returned context; the temporary file is removed.
+-    mt_kahypar_context_t* makeMtKaHyParContext(const char* work_directory);
++    // The caller owns the returned context; no files are read or written.
++    mt_kahypar_context_t* makeMtKaHyParContext();
+
+@@ -34,3 +34,3 @@ namespace repcut {
+
+-        MtKaHyPar(int parts, float imbalance, int32_t seed, RepCutLogLevel log_level, const char* work_directory);
++        MtKaHyPar(int parts, float imbalance, int32_t seed, RepCutLogLevel log_level);
+         ~MtKaHyPar();
+diff --git a/third_party/repcut/lib/repcut/MtKaHyPar.cpp b/third_party/repcut/lib/repcut/MtKaHyPar.cpp
+index 55eebe126..697741a67 100644
+--- a/third_party/repcut/lib/repcut/MtKaHyPar.cpp
++++ b/third_party/repcut/lib/repcut/MtKaHyPar.cpp
+@@ -6,4 +6,2 @@
+ #include <cmath>
+-#include <filesystem>
+-#include <fstream>
+ #include <limits>
+@@ -14,28 +12,4 @@ using namespace repcut;
+
+-mt_kahypar_context_t* repcut::makeMtKaHyParContext(const char* work_directory)
++mt_kahypar_context_t* repcut::makeMtKaHyParContext()
+ {
+-    // MtKaHyPar's public parameter setter does not expose Louvain options.
+-    // Its file loader accepts the full preset, so materialize the embedded
+-    // configuration under the caller's already-locked working directory.
+-    struct ConfigFile
+-    {
+-        std::filesystem::path path;
+-        bool created = false;
+-        ~ConfigFile()
+-        {
+-            if (created) {
+-                std::error_code ec;
+-                std::filesystem::remove(path, ec);
+-            }
+-        }
+-    } file{std::filesystem::path(work_directory) / "mtkahypar.ini"};
+-    std::ofstream output(file.path);
+-    if (!output)
+-        throw std::runtime_error("Cannot create MtKaHyPar configuration file: " + file.path.string());
+-    file.created = true;
+-    output << mtkahypar_preset;
+-    output.close();
+-    if (!output)
+-        throw std::runtime_error("Cannot write MtKaHyPar configuration file: " + file.path.string());
+-
+     mt_kahypar_error_t error{};
+@@ -43,3 +17,3 @@ mt_kahypar_context_t* repcut::makeMtKaHyParContext(const char* work_directory)
+         &error, mt_kahypar_free_error_content);
+-    auto* context = mt_kahypar_context_from_file(file.path.string().c_str(), &error);
++    auto* context = mt_kahypar_context_from_string(mtkahypar_preset, &error);
+     if (!context)
+@@ -65,4 +39,4 @@ bool MtKaHyPar::initialize(int threads, RepCutLogLevel log_level)
+
+-MtKaHyPar::MtKaHyPar(int parts, float imbalance, int32_t seed, RepCutLogLevel log_level, const char* work_directory)
+-    : context(makeMtKaHyParContext(work_directory), mt_kahypar_free_context), log_level(log_level), num_parts(parts)
++MtKaHyPar::MtKaHyPar(int parts, float imbalance, int32_t seed, RepCutLogLevel log_level)
++    : context(makeMtKaHyParContext(), mt_kahypar_free_context), log_level(log_level), num_parts(parts)
+ {
+diff --git a/third_party/repcut/lib/repcut/RepCutPartitioner.cpp b/third_party/repcut/lib/repcut/RepCutPartitioner.cpp
+index 3fa2eb67f..2024fdc55 100644
+--- a/third_party/repcut/lib/repcut/RepCutPartitioner.cpp
++++ b/third_party/repcut/lib/repcut/RepCutPartitioner.cpp
+@@ -87,3 +87,3 @@ bool RepCutPartitioner::_partitionCones(DirectedAcyclicGraph& dag)
+
+-    MtKaHyPar backend(desired_parts, kahypar_imbalance_factor, mtkahypar_seed, log_level, work_directory.c_str());
++    MtKaHyPar backend(desired_parts, kahypar_imbalance_factor, mtkahypar_seed, log_level);
+     if (!backend.create(*clusters))
+diff --git a/third_party/repcut/tests/test_memory.cpp b/third_party/repcut/tests/test_memory.cpp
+index 5c66f0c60..812964dca 100644
+--- a/third_party/repcut/tests/test_memory.cpp
++++ b/third_party/repcut/tests/test_memory.cpp
+@@ -129,2 +129,11 @@ int main(int argc, char** argv) {
+                 }
++                // The graph API must not write a configuration file, even transiently.
++                fs::create_directory("mtkahypar.ini");
++                std::ofstream("mtkahypar.ini/sentinel") << "preserve\n";
++                Output blocked_path;
++                require(repcut_run_graph(&ctx, &graph, Output::collect, &blocked_path, nullptr) == 0);
++                require(blocked_path.parts.size() == 4);
++                require(fs::is_regular_file("mtkahypar.ini/sentinel"));
++                fs::remove("mtkahypar.ini/sentinel");
++                fs::remove("mtkahypar.ini");
+                 Input empty(0); auto emptyGraph = empty.view(); Output emptyOutput;
+diff --git a/third_party/repcut/tests/test_mtkahypar_config.cpp b/third_party/repcut/tests/test_mtkahypar_config.cpp
+index e9ee4be8c..eda99450f 100644
+--- a/third_party/repcut/tests/test_mtkahypar_config.cpp
++++ b/third_party/repcut/tests/test_mtkahypar_config.cpp
+@@ -21,2 +21,35 @@ static void require(bool condition, const char* message)
+
++static void checkTextLoading(const fs::path& directory)
++{
++    const char* text = "preset-type=default\nmode=direct\np-louvain-low-memory-contraction=true\n";
++    const auto file = directory / "loader.ini";
++    std::ofstream(file) << text;
++    mt_kahypar_error_t error{};
++    const Context from_file(mt_kahypar_context_from_file(file.string().c_str(), &error), mt_kahypar_free_context);
++    const Context from_text(mt_kahypar_context_from_string(text, &error), mt_kahypar_free_context);
++    require(from_file && from_text, "Cannot load matching file and text contexts");
++    auto& file_config = *reinterpret_cast<mt_kahypar::Context*>(from_file.get());
++    auto& text_config = *reinterpret_cast<mt_kahypar::Context*>(from_text.get());
++    require(file_config.preprocessing.community_detection.low_memory_contraction &&
++                text_config.preprocessing.community_detection.low_memory_contraction,
++            "INI loader lost the low-memory option");
++    file_config.partition.verbose_logging = true;
++    text_config.partition.verbose_logging = true;
++    std::ostringstream file_dump, text_dump;
++    file_dump << file_config;
++    text_dump << text_config;
++    require(file_dump.str() == text_dump.str(), "File and text INI loaders differ");
++    fs::remove(file);
++    require(!mt_kahypar_context_from_file(file.string().c_str(), &error), "Missing INI file was accepted");
++    mt_kahypar_free_error_content(&error);
++    for (const char* invalid :
++         {static_cast<const char*>(nullptr), "unknown-option=true\n", "p-max-louvain-pass-iterations=not-a-number\n"}) {
++        const Context bad(mt_kahypar_context_from_string(invalid, &error), mt_kahypar_free_context);
++        require(!bad && error.status != SUCCESS && error.msg, "Invalid INI text was accepted");
++        mt_kahypar_free_error_content(&error);
++    }
++    const Context recovered(mt_kahypar_context_from_string(text, &error), mt_kahypar_free_context);
++    require(recovered != nullptr, "Text loader did not recover after a parse error");
++}
++
+ int main(int argc, char** argv)
+@@ -39,5 +72,10 @@ int main(int argc, char** argv)
+         owner.unlock();
+-        fs::create_directories(argv[1]);
++        const auto directory = fs::absolute(argv[1]);
++        fs::create_directories(directory);
++        fs::current_path(directory);
++        const fs::path file = directory / "mtkahypar.ini";
++        fs::create_directory(file);
++        std::ofstream(file / "sentinel") << "preserve\n";
+         mt_kahypar_initialize(1, false);
+-        const Context actual(repcut::makeMtKaHyParContext(argv[1]), mt_kahypar_free_context);
++        const Context actual(repcut::makeMtKaHyParContext(), mt_kahypar_free_context);
+         const Context baseline(mt_kahypar_context_from_preset(DEFAULT), mt_kahypar_free_context);
+@@ -62,20 +100,15 @@ int main(int argc, char** argv)
+
+-        const fs::path file = fs::path(argv[1]) / "mtkahypar.ini";
+-        require(!fs::exists(file), "Temporary configuration file leaked");
+-        fs::create_directory(file);
+-        std::ofstream(file / "sentinel") << "preserve\n";
+-        bool rejected = false;
+-        try {
+-            const Context blocked(repcut::makeMtKaHyParContext(argv[1]), mt_kahypar_free_context);
+-        }
+-        catch (const std::runtime_error&) {
+-            rejected = true;
+-        }
+-        require(rejected, "Configuration write failure was ignored");
+-        require(fs::is_regular_file(file / "sentinel"), "Failed write removed an existing directory");
++        // A directory at the old temporary filename must not affect loading.
++        require(fs::is_regular_file(file / "sentinel"), "Context loading touched the old temporary path");
++        std::ifstream sentinel(file / "sentinel");
++        std::string content;
++        std::getline(sentinel, content);
++        require(content == "preserve", "Context loading changed the sentinel");
++        sentinel.close();
+         fs::remove(file / "sentinel");
+         fs::remove(file);
+-        const Context recovered(repcut::makeMtKaHyParContext(argv[1]), mt_kahypar_free_context);
+-        require(recovered && !fs::exists(file), "Configuration did not recover after failure");
+-        std::cout << "Linked low-memory configuration, preset preservation and cleanup passed\n";
++        const Context repeated(repcut::makeMtKaHyParContext(), mt_kahypar_free_context);
++        require(repeated && !fs::exists(file), "Context loading created a temporary file");
++        checkTextLoading(directory);
++        std::cout << "Linked low-memory configuration, preset preservation and memory parsing passed\n";
+     }

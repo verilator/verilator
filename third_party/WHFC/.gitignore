@@ -1,0 +1,14 @@
+#let git ignore the following directories and files
+
+googletest/
+binaries
+cmake-build-*
+*debug*
+*release*
+build/
+/build*
+/.build*
+.idea
+g++*
+
+datastructure/sparse_reset_vector.h

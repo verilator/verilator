@@ -1,0 +1,96 @@
+exclude: ^(.github/workflows/|docs/img/|docs/doxygen-awesome|docs/header.html|tests/fuzzFail)
+ci:
+  autoupdate_commit_msg: "chore(deps): pre-commit.ci autoupdate"
+  autofix_commit_msg: "style: pre-commit.ci fixes"
+  autoupdate_schedule: "monthly"
+
+repos:
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 26.5.1
+    hooks:
+      - id: black
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+      - id: check-illegal-windows-names
+      - id: check-shebang-scripts-are-executable
+      - id: check-executables-have-shebangs
+      - id: debug-statements
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v22.1.5
+    hooks:
+      - id: clang-format
+        types_or: [c++, c, cuda]
+
+  - repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: v0.6.13
+    hooks:
+      - id: cmake-format
+        additional_dependencies: [pyyaml]
+
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.9.4
+    hooks:
+      - id: prettier
+        types_or: [yaml, markdown, html, css, scss, javascript, json]
+        args: [--prose-wrap=always]
+  - repo: https://github.com/jumanjihouse/pre-commit-hooks
+    rev: 3.0.0
+    hooks:
+      - id: script-must-have-extension
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.0 # Use the latest stable version
+    hooks:
+      - id: markdownlint-cli2
+        args: ["--fix", "--config", "./scripts/.markdownlint-cli2.jsonc"] # Optional: specify a custom config file
+  # - repo: local
+  #   hooks:
+  #     - id: remarklint
+  #       name: remarklint
+  #       language: node
+  #       entry: remark
+  #       types: [markdown]
+  #       args: ["--frail", "--quiet"]
+  #       additional_dependencies:
+  #         [
+  #           remark,
+  #           remark-lint,
+  #           remark-cli,
+  #           remark-preset-lint-recommended,
+  #           remark-lint-list-item-indent,
+  #           remark-lint-no-undefined-references,
+  #         ]
+
+  - repo: local
+    hooks:
+      - id: disallow-caps
+        name: Disallow improper capitalization
+        language: pygrep
+        entry: PyBind|Numpy|Cmake|CCache|PyTest|Github
+        exclude: .pre-commit-config.yaml
+
+  - repo: local
+    hooks:
+      - id: avoid-msvc-macro
+        name: Avoid MSVC <=2017 min/max macro (use extra parens)
+        language: pygrep
+        entry: \b(min|max)\(
+        exclude: .pre-commit-config.yaml
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.2
+    hooks:
+      - id: codespell
+        args: ["-L", "atleast,ans,doub,inout,AtMost,hep"]

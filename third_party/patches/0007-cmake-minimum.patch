@@ -1,0 +1,49 @@
+diff --git a/third_party/repcut/external/mt-kahypar/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/CMakeLists.txt
+index 452424272..b53d0b707 100644
+--- a/third_party/repcut/external/mt-kahypar/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/CMakeLists.txt
+@@ -1,3 +1,3 @@
+-cmake_minimum_required(VERSION 3.26)
++cmake_minimum_required(VERSION 3.15)
+ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+
+@@ -169,8 +169,10 @@ if(UNIX)
+   endif()
+
+-  include(CheckThreadPinning)
+-  if(KAHYPAR_ENABLE_THREAD_PINNING AND NOT THREAD_PINNING_WORKS)
+-    message(WARNING "Thread pinning disabled since required system APIs are not available.")
+-    set(KAHYPAR_ENABLE_THREAD_PINNING FALSE CACHE STRING "" FORCE)
++  if(KAHYPAR_ENABLE_THREAD_PINNING)
++    include(CheckThreadPinning)
++    if(NOT THREAD_PINNING_WORKS)
++      message(WARNING "Thread pinning disabled since required system APIs are not available.")
++      set(KAHYPAR_ENABLE_THREAD_PINNING FALSE CACHE STRING "" FORCE)
++    endif()
+   endif()
+ elseif(NOT WIN32)
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/mt-kahypar/CMakeLists.txt
+index f4afa1c0e..e1c776644 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/CMakeLists.txt
+@@ -5,4 +5,7 @@ add_subdirectory(io)
+ add_subdirectory(utils)
+
+-target_precompile_headers(MtKaHyPar-Sources INTERFACE definitions.h)
+-target_precompile_headers(MtKaHyPar-Sources INTERFACE partition/context.h)
++# Precompiled headers are an optional build optimization (CMake 3.16+).
++if(COMMAND target_precompile_headers)
++  target_precompile_headers(MtKaHyPar-Sources INTERFACE definitions.h)
++  target_precompile_headers(MtKaHyPar-Sources INTERFACE partition/context.h)
++endif()
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/buffered_vector.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/buffered_vector.h
+index 5e9d659e0..27abca0c6 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/buffered_vector.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/buffered_vector.h
+@@ -28,4 +28,6 @@
+ #pragma once
+
++#include <algorithm>
++#include <atomic>
+ #include <vector>
+ #include <cassert>

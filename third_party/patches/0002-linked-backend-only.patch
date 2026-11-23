@@ -1,0 +1,448 @@
+--- a/third_party/repcut/CMakeLists.txt
++++ b/third_party/repcut/CMakeLists.txt
+@@ -13,7 +13,10 @@
+ # boost::program_options.  Disable to build and install only librepcut, which
+ # has zero Boost dependency.
+ option(RCP_BUILD_CLI "Build the rcp command-line tool (requires boost::program_options)" ON)
+-option(RCP_USE_MTKAHYPAR "Link MtKaHyPar instead of requiring its executable" ON)
++option(RCP_USE_MTKAHYPAR "Link MtKaHyPar" ON)
++if(NOT RCP_USE_MTKAHYPAR)
++    message(FATAL_ERROR "The bundled RepCut requires the MtKaHyPar library")
++endif()
+ option(RCP_BUILD_TESTS "Build library API regression tests" OFF)
+ 
+ set(RCP_MTKAHYPAR_USE_HWLOC OFF)
+@@ -43,8 +46,6 @@
+         DESTINATION lib)
+ install(FILES include/repcut.h DESTINATION include)
+ install(FILES LICENSE DESTINATION share/licenses/repcut)
+-install(FILES external/tiny-process-library/LICENSE
+-        DESTINATION share/licenses/repcut RENAME tiny-process-library-LICENSE)
+ 
+ # Generate and install the package config so consumers can do:
+ #   find_package(repcut CONFIG REQUIRED)
+--- a/third_party/repcut/include/RepCutPartitioner.h
++++ b/third_party/repcut/include/RepCutPartitioner.h
+@@ -19,18 +19,13 @@
+         bool _resolveSeed();
+         bool _partitionCones(DirectedAcyclicGraph& dag);
+         void _partitionIndependentCones(const std::vector<uint32_t>& weights);
+-        bool _callMtKaHyPar();
+-        bool _parseKaHyParResult();
+         bool _saveConeAssignment() const;
+         bool _reconstruct(DirectedAcyclicGraph& dag);
+ 
+-        bool use_mtkahypar_library = false;
+-        // hmetis file path for the executable backend or optional debug dump.
++        // hmetis file path for the optional debug dump.
+         fs::path hmetis_path;
+         // Output filename produced by MtKaHyPar.
+         fs::path mtkahypar_output_filename;
+-        // Resolved MtKaHyPar binary path (set by prepareMtKaHyPar).
+-        std::string mtkahypar_bin_resolved;
+         // Resolved once per partition() call; the requested seed may remain -1.
+         int32_t mtkahypar_seed = 0;
+ 
+@@ -48,7 +43,7 @@
+         // Log threshold carried from RepCutContext.
+         RepCutLogLevel log_level = REPCUT_LOG_SILENT;
+ 
+-        // Select the linked library, or verify an executable override.
++        // Initialize the linked library; executable overrides are unsupported.
+         bool prepareMtKaHyPar(const char* bin);
+ 
+         // Result: cone (sink) → partition id.
+--- a/third_party/repcut/include/repcut.h
++++ b/third_party/repcut/include/repcut.h
+@@ -30,10 +30,8 @@
+     int seed;                      // nonnegative fixed seed; -1 = choose randomly, logged at INFO
+     enum RepCutLogLevel log_level; // default SILENT
+ 
+-    // Optional MtKaHyPar-compatible executable. A nonempty value overrides
+-    // the linked backend. NULL/empty uses linked MtKaHyPar, or searches PATH
+-    // for "MtKaHyPar" in executable-only builds.
+-    // An explicit executable is checked with --version before graph traversal.
++    // Reserved for compatibility with upstream RCP. The bundled build accepts
++    // only NULL/empty, selecting linked MtKaHyPar; nonempty values are rejected.
+     const char* mtkahypar_bin;
+ 
+     // Default false. Save parts.hmetis and cone assignments in work_directory.
+--- a/third_party/repcut/lib/repcut/CMakeLists.txt
++++ b/third_party/repcut/lib/repcut/CMakeLists.txt
+@@ -10,16 +10,7 @@
+     Util.cpp
+     RepCut.cpp
+     RepCutPartitioner.cpp
+-    ${PROJECT_SOURCE_DIR}/external/tiny-process-library/process.cpp
+     )
+-
+-if(WIN32)
+-    target_sources(repcut PRIVATE
+-        ${PROJECT_SOURCE_DIR}/external/tiny-process-library/process_win.cpp)
+-else()
+-    target_sources(repcut PRIVATE
+-        ${PROJECT_SOURCE_DIR}/external/tiny-process-library/process_unix.cpp)
+-endif()
+ 
+ find_package(Threads REQUIRED)
+ target_link_libraries(repcut Threads::Threads)
+@@ -45,7 +36,3 @@
+ target_include_directories(repcut PUBLIC
+     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+     $<INSTALL_INTERFACE:include>)
+-
+-# The vendored tiny-process-library header is a private internal dependency.
+-target_include_directories(repcut PRIVATE
+-    ${PROJECT_SOURCE_DIR}/external/tiny-process-library)
+--- a/third_party/repcut/lib/repcut/RepCutPartitioner.cpp
++++ b/third_party/repcut/lib/repcut/RepCutPartitioner.cpp
+@@ -2,15 +2,10 @@
+ 
+ #include "ClusterGraph.h"
+ #include "Log.h"
+-#include "StringUtils.h"
+-
+-#ifdef RCP_USE_MTKAHYPAR
+ #include "MtKaHyPar.h"
+-#endif
+ 
+ #include <algorithm>
+ #include <cassert>
+-#include <cerrno>
+ #include <chrono>
+ #include <cstddef>
+ #include <cstdio>
+@@ -19,7 +14,6 @@
+ #include <exception>
+ #include <filesystem>
+ #include <fstream>
+-#include <functional>
+ #include <limits>
+ #include <numeric>
+ #include <queue>
+@@ -29,8 +23,6 @@
+ #include <string>
+ #include <utility>
+ 
+-#include "process.hpp"
+-
+ using namespace repcut;
+ 
+ namespace fs = std::filesystem;
+@@ -62,40 +54,15 @@
+ // Select and initialize the backend before any expensive work.
+ bool RepCutPartitioner::prepareMtKaHyPar(const char* bin)
+ {
+-#ifdef RCP_USE_MTKAHYPAR
+-    use_mtkahypar_library = bin == nullptr || bin[0] == '\0';
+-    if (use_mtkahypar_library)
+-        return MtKaHyPar::initialize(parallel_threads, log_level);
+-#endif
+-    const std::string resolved = (bin != nullptr && bin[0] != '\0') ? std::string(bin) : std::string("MtKaHyPar");
+-
+-    rcp_log(log_level, REPCUT_LOG_DEBUG, "Verifying MtKaHyPar binary: %s\n", resolved.c_str());
+-
+-    std::vector<std::string> args;
+-    args.push_back(resolved);
+-    args.push_back("--version");
+-
+-    // Discard stdout/stderr (exit status is all that matters).
+-    auto noop = [](const char*, size_t) {};
+-    TinyProcessLib::Process proc(args, "", noop, noop, false);
+-    const auto rc = proc.get_exit_status();
+-
+-    if (rc != 0) {
++    if (bin != nullptr && bin[0] != '\0') {
+         rcp_log(log_level, REPCUT_LOG_ERROR,
+-                "MtKaHyPar binary '%s' not found or not usable (exit code %ld). "
+-                "Set ctx.mtkahypar_bin to the MtKaHyPar executable, or install it on $PATH.\n",
+-                resolved.c_str(), static_cast<long>(rc));
+-        return false;
+-    }
+-
+-    mtkahypar_bin_resolved = resolved;
+-    rcp_log(log_level, REPCUT_LOG_DEBUG, "MtKaHyPar binary verified: %s\n", resolved.c_str());
+-    return true;
+-}
+-
+-// Keep cluster construction and MtKaHyPar partitioning in separate lifetimes.
+-// This matters on large designs: neither backend needs the clusters once its
+-// hypergraph has been constructed or written.
++                "The bundled RepCut does not support an MtKaHyPar executable override\n");
++        return false;
++    }
++    return MtKaHyPar::initialize(parallel_threads, log_level);
++}
++
++// Release the cluster graph once MtKaHyPar owns its hypergraph.
+ bool RepCutPartitioner::_partitionCones(DirectedAcyclicGraph& dag)
+ {
+     rcp_log(log_level, REPCUT_LOG_INFO, "Collapse into cluster graph\n");
+@@ -103,7 +70,7 @@
+     clusters->log_level = log_level;
+     clusters->collapseFromDAG(dag);
+ 
+-    if (!use_mtkahypar_library || save_intermediate_files) {
++    if (save_intermediate_files) {
+         hmetis_path = fs::path(work_directory) / "parts.hmetis";
+         std::ostringstream oss;
+         oss << hmetis_path.filename().string() << ".part" << desired_parts << ".epsilon" << kahypar_imbalance_factor
+@@ -118,22 +85,16 @@
+         return !save_intermediate_files || _saveConeAssignment();
+     }
+ 
+-#ifdef RCP_USE_MTKAHYPAR
+-    if (use_mtkahypar_library) {
+-        MtKaHyPar backend(desired_parts, kahypar_imbalance_factor, mtkahypar_seed, log_level, work_directory.c_str());
+-        if (!backend.create(*clusters))
+-            return false;
+-        clusters.reset();
+-        if (!backend.partition(coneIdToPartId))
+-            return false;
+-        partIdToConeId.assign(desired_parts, {});
+-        for (uint32_t cone = 0; cone < coneIdToPartId.size(); ++cone)
+-            partIdToConeId[coneIdToPartId[cone]].push_back(cone);
+-        return !save_intermediate_files || _saveConeAssignment();
+-    }
+-#endif
++    MtKaHyPar backend(desired_parts, kahypar_imbalance_factor, mtkahypar_seed, log_level, work_directory.c_str());
++    if (!backend.create(*clusters))
++        return false;
+     clusters.reset();
+-    return _callMtKaHyPar() && _parseKaHyParResult();
++    if (!backend.partition(coneIdToPartId))
++        return false;
++    partIdToConeId.assign(desired_parts, {});
++    for (uint32_t cone = 0; cone < coneIdToPartId.size(); ++cone)
++        partIdToConeId[coneIdToPartId[cone]].push_back(cone);
++    return !save_intermediate_files || _saveConeAssignment();
+ }
+ 
+ bool RepCutPartitioner::_saveConeAssignment() const
+@@ -184,104 +145,6 @@
+     }
+ }
+ 
+-bool RepCutPartitioner::_callMtKaHyPar()
+-{
+-    rcp_log(log_level, REPCUT_LOG_INFO, "Call MtKaHyPar\n");
+-    assert(this->parallel_threads > 0);
+-    assert(!mtkahypar_bin_resolved.empty() && "prepareMtKaHyPar must be called before _callMtKaHyPar");
+-
+-    std::vector<std::string> args;
+-
+-    args.push_back(mtkahypar_bin_resolved);
+-
+-    args.push_back("-t");
+-    args.push_back(std::to_string(this->parallel_threads));
+-    args.push_back("-h");
+-    args.push_back(this->hmetis_path.string());
+-    args.push_back("-k");
+-    args.push_back(std::to_string(this->desired_parts));
+-    args.push_back("-e");
+-    args.push_back(std::to_string(this->kahypar_imbalance_factor));
+-    args.push_back("--preset-type");
+-    args.push_back("default");
+-    args.push_back("--p-louvain-low-memory-contraction=true");
+-    args.push_back("--seed");
+-    args.push_back(std::to_string(this->mtkahypar_seed));
+-    args.push_back("--mode");
+-    args.push_back("direct");
+-    args.push_back("-o");
+-    args.push_back("km1");
+-    args.push_back("--write-partition-file=true");
+-
+-    std::ostringstream oss;
+-    for (const auto& s : args) {
+-        oss << s << " ";
+-    }
+-    rcp_log(log_level, REPCUT_LOG_INFO, "MtKaHyPar cmd: %s\n", oss.str().c_str());
+-
+-    // Forward MtKaHyPar output only at info/debug log level.
+-    using Reader = std::function<void(const char*, size_t)>;
+-    auto noop = [](const char*, size_t) {};
+-    Reader fwd = [this](const char* bytes, size_t n) {
+-        rcp_log(log_level, REPCUT_LOG_INFO, "%.*s", static_cast<int>(n), bytes);
+-    };
+-    const bool verbose = rcp_should_log(log_level, REPCUT_LOG_INFO);
+-    TinyProcessLib::Process kahypar_process(args, "", verbose ? fwd : noop, verbose ? fwd : noop, false);
+-    auto ret_code = kahypar_process.get_exit_status();
+-
+-    if (ret_code != 0) {
+-        rcp_log(log_level, REPCUT_LOG_ERROR, "MtKaHyPar returns non-zero code: %d\n", ret_code);
+-        return false;
+-    }
+-    return true;
+-}
+-
+-bool RepCutPartitioner::_parseKaHyParResult()
+-{
+-    auto kahypar_output_fullpath = fs::path(work_directory) / this->mtkahypar_output_filename;
+-
+-    auto file_status = fs::status(kahypar_output_fullpath);
+-    if (!fs::exists(file_status) || !fs::is_regular_file(file_status)) {
+-        rcp_log(log_level, REPCUT_LOG_ERROR, "KaHyPar result file %s does not exist or is not a regular file!\n",
+-                kahypar_output_fullpath.c_str());
+-        return false;
+-    }
+-
+-    std::ifstream kFile(kahypar_output_fullpath);
+-    std::string line;
+-    uint32_t lineno = 0;
+-
+-    this->coneIdToPartId.clear();
+-    this->partIdToConeId.clear();
+-    this->partIdToConeId.assign(this->desired_parts, std::vector<uint32_t>());
+-
+-    while (std::getline(kFile, line)) {
+-        TokenView tv(line);
+-        auto tok = tv.next();
+-        if (tok.empty()) {
+-            rcp_log(log_level, REPCUT_LOG_ERROR, "Empty partition id at line %u\n", lineno);
+-            return false;
+-        }
+-        std::string buf(tok); // strtol needs NUL-terminated
+-        char* end = nullptr;
+-        errno = 0;
+-        long pid_long = std::strtol(buf.c_str(), &end, 10);
+-        if (errno != 0 || end == buf.c_str() || *end != '\0') {
+-            rcp_log(log_level, REPCUT_LOG_ERROR, "Invalid partition id at line %u: '%.*s'\n", lineno,
+-                    static_cast<int>(tok.size()), tok.data());
+-            return false;
+-        }
+-        int32_t pid = static_cast<int32_t>(pid_long);
+-        // cone ${lineno} is assigned to partition ${pid}
+-        assert(pid < this->desired_parts);
+-        this->coneIdToPartId.push_back(pid);
+-        this->partIdToConeId[pid].push_back(lineno);
+-
+-        lineno++;
+-    }
+-    return true;
+-}
+-
+ bool RepCutPartitioner::_reconstruct(DirectedAcyclicGraph& dag)
+ {
+     rcp_log(log_level, REPCUT_LOG_INFO, "Reconstruct partitions\n");
+--- a/third_party/repcut/tests/CMakeLists.txt
++++ b/third_party/repcut/tests/CMakeLists.txt
+@@ -1,7 +1,7 @@
+ add_executable(test-library test_library.cpp)
+ target_link_libraries(test-library PRIVATE repcut)
+-add_test(NAME library-overlap
+-    COMMAND test-library overlap "${CMAKE_CURRENT_BINARY_DIR}/overlap")
++add_test(NAME library-external-disabled
++    COMMAND test-library external-disabled "${CMAKE_CURRENT_BINARY_DIR}/external-disabled")
+ add_executable(test-hypergraph test_hypergraph.cpp)
+ target_link_libraries(test-hypergraph PRIVATE repcut)
+ add_test(NAME hypergraph-merge
+@@ -19,4 +19,4 @@
+     add_test(NAME library-repeat-2t
+         COMMAND test-library repeat "${CMAKE_CURRENT_BINARY_DIR}/repeat-2t" 2)
+ endif()
+-set_tests_properties(library-overlap PROPERTIES TIMEOUT 40)
++set_tests_properties(library-external-disabled PROPERTIES TIMEOUT 40)
+--- a/third_party/repcut/tests/test_library.cpp
++++ b/third_party/repcut/tests/test_library.cpp
+@@ -1,6 +1,5 @@
+ #include "repcut.h"
+ 
+-#include <chrono>
+ #include <cmath>
+ #include <filesystem>
+ #include <fstream>
+@@ -25,17 +24,6 @@
+     std::ifstream file(path);
+     require(file.good(), "Cannot read test output");
+     return {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+-}
+-
+-static bool waitFor(const fs::path& path)
+-{
+-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
+-    while (!fs::exists(path)) {
+-        if (std::chrono::steady_clock::now() >= deadline)
+-            return false;
+-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+-    }
+-    return true;
+ }
+ 
+ static void writeGraph(unsigned n)
+@@ -154,50 +142,29 @@
+     std::cout << "100 sequential calls, dependency closure and error recovery passed\n";
+ }
+ 
+-static void overlap(const std::string& executable)
++static void externalDisabled()
+ {
+     writeGraph(16);
+-    fs::remove("version-ready");
+-    fs::remove("version-release");
+-    std::ofstream("hold-version");
+-    RepCutContext ctx{"input.graph", ".", 2, 0.1f, 1, 42, REPCUT_LOG_SILENT, executable.c_str(), false};
+-    int first = 0;
+-    std::thread caller([&]() { first = repcut_run(&ctx, nullptr); });
+-    const bool started = waitFor("version-ready");
+-    // The other thread is held inside --version, so this must reject overlap
+-    // even though the second caller has a separate work directory.
+-    fs::create_directory("other");
+-    auto other = ctx;
+-    other.work_directory = "other";
+-    other.save_intermediate_files = true;
+-    const int second = started ? repcut_run(&other, nullptr) : 0;
+-    std::ofstream("version-release");
+-    caller.join();
+-    fs::remove("hold-version");
+-    require(started, "Executable stub did not start");
+-    require(second != 0, "Overlapping call was accepted");
+-    require(first != 0, "Executable partition failure was not propagated");
+-    require(!fs::exists(".lock") && !fs::exists("other/.lock"), "Lock leaked after failure");
+-    std::ofstream("input.graph") << "0 2\na 1\nb 1\n";
+-    require(repcut_run(&ctx, nullptr) == 0, "Call after overlap/failure did not recover");
+-    std::cout << "Overlap rejection and recovery passed\n";
++    fs::remove("rcp_output.txt");
++    RepCutContext ctx{"input.graph", ".", 2, 0.1f, 1, 42, REPCUT_LOG_SILENT, "unused-MtKaHyPar", false};
++    require(repcut_run(&ctx, nullptr) != 0, "Executable override was accepted");
++    require(!fs::exists(".lock"), "Lock leaked after executable rejection");
++    require(!fs::exists("rcp_output.txt"), "Rejected call wrote a partition");
++    ctx.mtkahypar_bin = nullptr;
++    require(repcut_run(&ctx, nullptr) == 0, "Linked call after rejection failed");
++    const auto output = read("rcp_output.txt");
++    checkClosure(output, 16, ctx.nparts);
++    ctx.mtkahypar_bin = "";
++    require(repcut_run(&ctx, nullptr) == 0, "Empty override did not select linked backend");
++    require(read("rcp_output.txt") == output, "Linked partition changed with empty override");
++    require(!fs::exists(".lock"), "Work directory lock leaked");
++    std::cout << "Executable rejection and linked-library recovery passed\n";
+ }
+ 
+ int main(int argc, char** argv)
+ {
+     try {
+-        // Act as an executable stub as well as a test driver.
+-        if (argc == 2 && std::string(argv[1]) == "--version") {
+-            if (fs::exists("hold-version")) {
+-                std::ofstream("version-ready");
+-                return waitFor("version-release") ? 0 : 90;
+-            }
+-            return 0;
+-        }
+-        if (argc > 1 && std::string(argv[1]) == "-t")
+-            return 73;
+-        require(argc >= 3, "Usage: test-library repeat|overlap WORKDIR [THREADS]");
+-        const auto executable = fs::absolute(argv[0]).string();
++        require(argc >= 3, "Usage: test-library repeat|external-disabled WORKDIR [THREADS]");
+         fs::create_directories(argv[2]);
+         fs::current_path(argv[2]);
+         if (std::string(argv[1]) == "repeat") {
+@@ -205,7 +172,8 @@
+             repeat(std::stoi(argv[3]));
+         }
+         else {
+-            overlap(executable);
++            require(std::string(argv[1]) == "external-disabled", "Unknown test case");
++            externalDisabled();
+         }
+     }
+     catch (const std::exception& error) {

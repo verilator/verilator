@@ -1,0 +1,535 @@
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/static_graph.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/static_graph.cpp
+index ad753ecd6..6a184bab6 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/static_graph.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/static_graph.cpp
+@@ -178,3 +178,2 @@ namespace mt_kahypar::ds {
+     parallel::scalable_vector<HypernodeID> high_degree_vertices;
+-    std::mutex high_degree_vertex_mutex;
+     tbb::parallel_for(ID(0), coarsened_num_nodes, [&](const HypernodeID& coarse_node) {
+@@ -188,3 +187,2 @@ namespace mt_kahypar::ds {
+       } else {
+-        std::lock_guard<std::mutex> lock(high_degree_vertex_mutex);
+         high_degree_vertices.push_back(coarse_node);
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/static_hypergraph.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/static_hypergraph.cpp
+index a7091acd5..7500b4906 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/static_hypergraph.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/static_hypergraph.cpp
+@@ -228,3 +228,2 @@ namespace mt_kahypar::ds {
+       // Setup temporary hypernodes
+-      std::mutex high_degree_vertex_mutex;
+       parallel::scalable_vector<HypernodeID> high_degree_vertices;
+@@ -246,3 +245,2 @@ namespace mt_kahypar::ds {
+         } else {
+-          std::lock_guard<std::mutex> lock(high_degree_vertex_mutex);
+           high_degree_vertices.push_back(coarse_hn);
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/atomic_wrapper.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/atomic_wrapper.h
+index dac22f65e..adc85d368 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/atomic_wrapper.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/atomic_wrapper.h
+@@ -75,9 +75,10 @@ class SpinLock {
+ public:
+-  // boilerplate to make it 'copyable'. but we just clear the spinlock. there is never a use case to copy a locked spinlock
+-  SpinLock() { }
++  SpinLock() = default;
+   SpinLock(const SpinLock&) { }
+-  SpinLock& operator=(const SpinLock&) { spinner.clear(std::memory_order_relaxed); return *this; }
++  SpinLock& operator=(const SpinLock&) { _locked = false; return *this; }
+
+   bool tryLock() {
+-    return !spinner.test_and_set(std::memory_order_acquire);
++    if (_locked) return false;
++    _locked = true;
++    return true;
+   }
+@@ -85,14 +86,10 @@ public:
+   void lock() {
+-    while (spinner.test_and_set(std::memory_order_acquire)) {
+-      // spin
+-      // stack overflow says adding 'cpu_relax' instruction may improve performance
+-    }
++    ALWAYS_ASSERT(!_locked);
++    _locked = true;
+   }
+
+-  void unlock() {
+-    spinner.clear(std::memory_order_release);
+-  }
++  void unlock() { _locked = false; }
+
+ private:
+-  std::atomic_flag spinner = ATOMIC_FLAG_INIT;
++  bool _locked = false;
+ };
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/memory_pool.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/memory_pool.h
+index cc1996485..cdb0e7cf2 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/memory_pool.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/memory_pool.h
+@@ -29,8 +29,7 @@
+
++#include "repcut_serial.h"
++
+ #include <cmath>
+-#include <mutex>
+-#include <shared_mutex>
+ #include <memory>
+ #include <unordered_map>
+-#include <atomic>
+ #include <vector>
+@@ -93,3 +92,2 @@ class MemoryPoolT {
+                          const size_t size) :
+-      _chunk_mutex(),
+       _num_elements(num_elements),
+@@ -105,3 +103,2 @@ class MemoryPoolT {
+     MemoryChunk(MemoryChunk&& other) :
+-      _chunk_mutex(),
+       _num_elements(other._num_elements),
+@@ -125,3 +122,2 @@ class MemoryPoolT {
+     char* request_chunk() {
+-      std::lock_guard<std::mutex> lock(_chunk_mutex);
+       if ( _data && !_is_assigned ) {
+@@ -135,14 +131,8 @@ class MemoryPoolT {
+     char* request_unused_chunk(const size_t size, const size_t page_size) {
+-      size_t aligned_used_size = align_with_page_size(_used_size, page_size);
++      const size_t aligned_used_size = align_with_page_size(_used_size, page_size);
+       if ( _data && aligned_used_size < _total_size &&
+             size <= _total_size - aligned_used_size ) {
+-        std::lock_guard<std::mutex> lock(_chunk_mutex);
+-        // Double check
+-        aligned_used_size = align_with_page_size(_used_size, page_size);
+-        if ( _data && aligned_used_size < _total_size &&
+-             size <= _total_size - aligned_used_size ) {
+-          char* data = _data + aligned_used_size;
+-          _used_size = aligned_used_size + size;
+-          return data;
+-        }
++        char* data = _data + aligned_used_size;
++        _used_size = aligned_used_size + size;
++        return data;
+       }
+@@ -153,3 +143,2 @@ class MemoryPoolT {
+     void release_chunk() {
+-      std::lock_guard<std::mutex> lock(_chunk_mutex);
+       _is_assigned = false;
+@@ -201,3 +190,2 @@ class MemoryPoolT {
+
+-    std::mutex _chunk_mutex;
+     // ! Number of elements to allocate
+@@ -267,3 +255,2 @@ class MemoryPoolT {
+                              const size_t size) {
+-    std::unique_lock<std::shared_timed_mutex> lock(_memory_mutex);
+     if ( _memory_groups.find(group) != _memory_groups.end() ) {
+@@ -283,3 +270,2 @@ class MemoryPoolT {
+   void allocate_memory_chunks(const bool optimize_allocations = true) {
+-    std::unique_lock<std::shared_timed_mutex> lock(_memory_mutex);
+     if ( optimize_allocations ) {
+@@ -312,3 +298,2 @@ class MemoryPoolT {
+     if ( !_use_minimum_allocation_size || size_in_bytes > MINIMUM_ALLOCATION_SIZE ) {
+-      std::shared_lock<std::shared_timed_mutex> lock(_memory_mutex);
+       MemoryChunk* chunk = find_memory_chunk(group, key);
+@@ -340,6 +325,5 @@ class MemoryPoolT {
+           (!_use_minimum_allocation_size || size_in_bytes > MINIMUM_ALLOCATION_SIZE)) {
+-        std::shared_lock<std::shared_timed_mutex> lock(_memory_mutex);
+         const size_t n = _active_memory_chunks.size();
+         if (n > 0) {
+-          const size_t end = _next_active_memory_chunk.load() % n;
++          const size_t end = _next_active_memory_chunk % n;
+           const size_t start = (end + 1) % n;
+@@ -373,3 +357,2 @@ class MemoryPoolT {
+                   const std::string& key) {
+-    std::shared_lock<std::shared_timed_mutex> lock(_memory_mutex);
+     MemoryChunk* chunk = find_memory_chunk(group, key);
+@@ -387,3 +370,2 @@ class MemoryPoolT {
+                          const std::string& key) {
+-    std::shared_lock<std::shared_timed_mutex> lock(_memory_mutex);
+     MemoryChunk* chunk = find_memory_chunk(group, key);
+@@ -399,3 +381,2 @@ class MemoryPoolT {
+   void release_mem_group(const std::string& group) {
+-    std::unique_lock<std::shared_timed_mutex> lock(_memory_mutex);
+
+@@ -437,3 +418,2 @@ class MemoryPoolT {
+   void reset() {
+-    std::unique_lock<std::shared_timed_mutex> lock(_memory_mutex);
+
+@@ -471,3 +451,2 @@ class MemoryPoolT {
+   void free_memory_chunks() {
+-    std::unique_lock<std::shared_timed_mutex> lock(_memory_mutex);
+     const size_t num_memory_segments = _memory_chunks.size();
+@@ -508,3 +487,2 @@ class MemoryPoolT {
+                        const std::string& key) {
+-    std::shared_lock<std::shared_timed_mutex> lock(_memory_mutex);
+     MemoryChunk* chunk = find_memory_chunk(group, key);
+@@ -521,3 +499,2 @@ class MemoryPoolT {
+     ASSERT(parent);
+-    std::shared_lock<std::shared_timed_mutex> lock(_memory_mutex);
+     for ( const auto& group_element : _memory_groups ) {
+@@ -537,3 +514,2 @@ class MemoryPoolT {
+   void explain_optimizations() const {
+-    std::unique_lock<std::shared_timed_mutex> lock(_memory_mutex);
+     using GroupKey = std::pair<std::string, std::string>;
+@@ -591,3 +567,2 @@ class MemoryPoolT {
+   explicit MemoryPoolT() :
+-    _memory_mutex(),
+     _is_initialized(false),
+@@ -739,3 +714,2 @@ class MemoryPoolT {
+   // ! Read-Write Lock for memory pool
+-  mutable std::shared_timed_mutex _memory_mutex;
+   // ! Initialize Flag
+@@ -750,3 +724,3 @@ class MemoryPoolT {
+   // ! Next active memory chunk for unused memory allocation (round-robin fashion)
+-  std::atomic<size_t> _next_active_memory_chunk;
++  size_t _next_active_memory_chunk;
+   // ! Active memory chunks (with allocated memory)
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/tbb_initializer.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/tbb_initializer.h
+index ca2939388..d609884f9 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/tbb_initializer.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/tbb_initializer.h
+@@ -29,20 +29,5 @@
+
+-#ifndef KAHYPAR_DISABLE_HWLOC
+-  #include <hwloc.h>
+-#endif
+-
+-#include <mutex>
+-#include <memory>
+-#include <shared_mutex>
+-#include <functional>
+-
+-#include <tbb/task_arena.h>
+-#include <tbb/task_group.h>
++#include "repcut_serial.h"
+ #include <tbb/global_control.h>
+
+-#include "mt-kahypar/macros.h"
+-#ifndef KAHYPAR_DISABLE_HWLOC
+-#include "mt-kahypar/parallel/thread_pinning_observer.h"
+-#endif
+-
+ namespace mt_kahypar {
+@@ -50,120 +35,2 @@ namespace parallel {
+
+-#ifndef KAHYPAR_DISABLE_HWLOC
+-/**
+- * Creates number of NUMA nodes TBB task arenas. Each task arena is pinned
+- * to a unique NUMA node. Each task arena can then be used to execute tasks
+- * on specific NUMA node.
+- */
+-template <typename HwTopology, bool is_numa_aware>
+-class TBBInitializer {
+-
+-  static constexpr bool debug = false;
+-
+-  using Self = TBBInitializer<HwTopology, is_numa_aware>;
+-  using ThreadPinningObserver = mt_kahypar::parallel::ThreadPinningObserver<HwTopology>;
+-
+- public:
+-  static constexpr bool provides_numa_information = true;
+-
+-  TBBInitializer(const TBBInitializer&) = delete;
+-  TBBInitializer & operator= (const TBBInitializer &) = delete;
+-
+-  TBBInitializer(TBBInitializer&&) = delete;
+-  TBBInitializer & operator= (TBBInitializer &&) = delete;
+-
+-  static void initialize(const size_t num_threads) {
+-    instanceImpl(num_threads);
+-  }
+-
+-  static TBBInitializer& instance() {
+-    return instanceImpl(0);
+-  }
+-
+-  int total_number_of_threads() const {
+-    return _num_threads;
+-  }
+-
+-  int number_of_used_cpus_on_numa_node(const int node) const {
+-    ASSERT(static_cast<size_t>(node) < _numa_node_to_cpu_id.size());
+-    return _numa_node_to_cpu_id[node].size();
+-  }
+-
+-  int num_used_numa_nodes() const {
+-    return _numa_node_to_cpu_id.size();
+-  }
+-
+-  hwloc_cpuset_t used_cpuset() const {
+-    hwloc_cpuset_t cpuset = hwloc_bitmap_alloc();
+-    for ( const auto& numa_node : _numa_node_to_cpu_id ) {
+-      for ( const int cpu_id : numa_node ) {
+-        hwloc_bitmap_set(cpuset, cpu_id);
+-      }
+-    }
+-    return cpuset;
+-  }
+-
+-  void terminate() {
+-    if ( _global_observer ) {
+-      _global_observer->observe(false);
+-    }
+-  }
+-
+- private:
+-  explicit TBBInitializer(const int num_threads) :
+-    _num_threads(num_threads),
+-    _gc(tbb::global_control::max_allowed_parallelism, num_threads),
+-    _global_observer(nullptr),
+-    _cpus(),
+-    _numa_node_to_cpu_id() {
+-    ALWAYS_ASSERT(num_threads > 0);
+-    HwTopology& topology = HwTopology::instance();
+-    int num_numa_nodes = topology.num_numa_nodes();
+-    DBG << "Initialize TBB with" << num_threads << "threads";
+-    _cpus = topology.get_all_cpus();
+-    // Sort cpus in the following order
+-    // 1.) Non-hyperthread first
+-    // 2.) Increasing order of numa node
+-    // 3.) Increasing order of cpu id
+-    // ...
+-    std::sort(_cpus.begin(), _cpus.end(),
+-              [&](const int& lhs, const int& rhs) {
+-          int node_lhs = topology.numa_node_of_cpu(lhs);
+-          int node_rhs = topology.numa_node_of_cpu(rhs);
+-          bool is_hyperthread_lhs = topology.is_hyperthread(lhs);
+-          bool is_hyperthread_rhs = topology.is_hyperthread(rhs);
+-          return is_hyperthread_lhs < is_hyperthread_rhs ||
+-          (is_hyperthread_lhs == is_hyperthread_rhs && node_lhs < node_rhs) ||
+-          (is_hyperthread_lhs == is_hyperthread_rhs && node_lhs == node_rhs && lhs < rhs);
+-        });
+-    // ... this ensure that we first pop nodes in hyperthreading
+-    while (static_cast<int>(_cpus.size()) > _num_threads) {
+-      _cpus.pop_back();
+-    }
+-    _global_observer = std::make_unique<ThreadPinningObserver>(_cpus);
+-
+-    _numa_node_to_cpu_id.resize(num_numa_nodes);
+-    for ( const int cpu_id : _cpus ) {
+-      int node = topology.numa_node_of_cpu(cpu_id);
+-      ASSERT(node < static_cast<int>(_numa_node_to_cpu_id.size()));
+-      _numa_node_to_cpu_id[node].push_back(cpu_id);
+-    }
+-    while( !_numa_node_to_cpu_id.empty() && _numa_node_to_cpu_id.back().empty() ) {
+-      _numa_node_to_cpu_id.pop_back();
+-    }
+-  }
+-
+-  static TBBInitializer& instanceImpl(const size_t num_threads) {
+-    static TBBInitializer instance(num_threads);
+-    return instance;
+-  }
+-
+-  int _num_threads;
+-  tbb::global_control _gc;
+-  std::unique_ptr<ThreadPinningObserver> _global_observer;
+-  std::vector<int> _cpus;
+-  std::vector<std::vector<int>> _numa_node_to_cpu_id;
+-};
+-
+-#else
+-
+ class SimpleTBBInitializer {
+@@ -210,4 +77,2 @@ class SimpleTBBInitializer {
+ };
+-#endif
+-
+
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/thread_management.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/thread_management.cpp
+index e261bf7ae..cbaaa2ee6 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/thread_management.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/thread_management.cpp
+@@ -28,21 +28,7 @@
+
+-#ifndef KAHYPAR_DISABLE_HWLOC
+-  #include <hwloc.h>
+-#endif
+-
+ #include "mt-kahypar/parallel/tbb_initializer.h"
+-#ifndef KAHYPAR_DISABLE_HWLOC
+-  #include "mt-kahypar/parallel/hardware_topology.h"
+-#endif
+
+ namespace mt_kahypar {
+-
+-#ifndef KAHYPAR_DISABLE_HWLOC
+-  using HardwareTopology = mt_kahypar::parallel::HardwareTopology<>;
+-  using TBBInitializer = mt_kahypar::parallel::TBBInitializer<HardwareTopology, false>;
+-#else
+-  using TBBInitializer = mt_kahypar::parallel::SimpleTBBInitializer;
+-#endif
+-
+-static_assert(parallel::provides_hardware_information == TBBInitializer::provides_numa_information);
++using TBBInitializer = parallel::SimpleTBBInitializer;
++static_assert(!parallel::provides_hardware_information);
+
+@@ -62,17 +48,2 @@ int total_number_of_threads() {
+
+-#ifndef KAHYPAR_DISABLE_HWLOC
+-size_t num_hardware_cpus() {
+-  return HardwareTopology<>::instance().num_cpus();
+-}
+-
+-int num_used_numa_nodes() {
+-  return mt_kahypar::TBBInitializer::instance().num_used_numa_nodes();
+-}
+-
+-void activate_interleaved_membind_policy() {
+-  hwloc_cpuset_t cpuset = mt_kahypar::TBBInitializer::instance().used_cpuset();
+-  parallel::HardwareTopology<>::instance().activate_interleaved_membind_policy(cpuset);
+-  hwloc_bitmap_free(cpuset);
+-}
+-#endif
+
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/initial_partitioning/initial_partitioning_data_container.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/initial_partitioning/initial_partitioning_data_container.h
+index 9c5926591..5cb8d7191 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/initial_partitioning/initial_partitioning_data_container.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/initial_partitioning/initial_partitioning_data_container.h
+@@ -29,3 +29,2 @@
+ #include <sstream>
+-#include <mutex>
+
+@@ -138,3 +137,2 @@ class InitialPartitioningDataContainer {
+     explicit GlobalInitialPartitioningStats(const Context& context) :
+-      _stat_mutex(),
+       _context(context),
+@@ -151,3 +149,2 @@ class InitialPartitioningDataContainer {
+                  const bool is_feasible) {
+-      std::lock_guard<std::mutex> _lock(_stat_mutex);
+       const uint8_t algo_idx = static_cast<uint8_t>(algorithm);
+@@ -173,3 +170,2 @@ class InitialPartitioningDataContainer {
+     bool should_initial_partitioner_run_ignoring_deterministic(const InitialPartitioningAlgorithm algorithm) const {
+-      std::lock_guard<std::mutex> lock(_stat_mutex);
+       const uint8_t algo_idx = static_cast<uint8_t>(algorithm);
+@@ -180,3 +176,2 @@ class InitialPartitioningDataContainer {
+
+-    mutable std::mutex _stat_mutex;
+     const Context& _context;
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/initial_partitioning/pool_initial_partitioner.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/initial_partitioning/pool_initial_partitioner.cpp
+index bd7b6f6ef..fd581b6ac 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/initial_partitioning/pool_initial_partitioner.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/initial_partitioning/pool_initial_partitioner.cpp
+@@ -28,4 +28,2 @@
+
+-#include <tbb/task_group.h>
+-
+ #include "mt-kahypar/definitions.h"
+@@ -47,3 +45,3 @@ void Pool<TypeTraits>::bipartition(PartitionedHypergraph& hypergraph,
+                                    const Context& context,
+-                                   const bool run_parallel) {
++                                   const bool /*run_parallel*/) {
+   ASSERT(context.shared_memory.num_threads > 0);
+@@ -73,3 +71,2 @@ void Pool<TypeTraits>::bipartition(PartitionedHypergraph& hypergraph,
+
+-  tbb::task_group tg;
+   InitialPartitioningDataContainer<TypeTraits> ip_data(hypergraph, context);
+@@ -80,17 +77,7 @@ void Pool<TypeTraits>::bipartition(PartitionedHypergraph& hypergraph,
+     const int tag = std::get<2>(ip_task);
+-    if ( run_parallel ) {
+-      tg.run([&, algorithm, seed, tag] {
+-        std::unique_ptr<IInitialPartitioner> initial_partitioner =
+-          InitialPartitionerFactory::getInstance().createObject(
+-            algorithm, algorithm, ip_data_ptr, context, seed, tag);
+-        initial_partitioner->partition();
+-      });
+-    } else {
+-      std::unique_ptr<IInitialPartitioner> initial_partitioner =
+-        InitialPartitionerFactory::getInstance().createObject(
+-          algorithm, algorithm, ip_data_ptr, context, seed, tag);
+-      initial_partitioner->partition();
+-    }
++    std::unique_ptr<IInitialPartitioner> initial_partitioner =
++      InitialPartitionerFactory::getInstance().createObject(
++        algorithm, algorithm, ip_data_ptr, context, seed, tag);
++    initial_partitioner->partition();
+   }
+-  tg.wait();
+   ip_data.apply();
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/timer.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/timer.cpp
+index 4161ea2f5..5b83e6959 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/timer.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/timer.cpp
+@@ -40,3 +40,2 @@ static constexpr size_t SUB_LEVEL_PREFIX_LENGTH = 3;
+ Timer::Timer() :
+-  _timing_mutex(),
+   _timings(),
+@@ -50,3 +49,2 @@ Timer::Timer() :
+ Timer::Timer(const Timer& other) :
+-  _timing_mutex(),
+   _timings(other._timings),
+@@ -54,3 +52,3 @@ Timer::Timer(const Timer& other) :
+   _local_active_timings(other._local_active_timings),
+-  _index(other._index.load(std::memory_order_relaxed)),
++  _index(other._index),
+   _is_enabled(other._is_enabled),
+@@ -60,3 +58,2 @@ Timer::Timer(const Timer& other) :
+ Timer::Timer(Timer&& other) :
+-  _timing_mutex(),
+   _timings(std::move(other._timings)),
+@@ -64,3 +61,3 @@ Timer::Timer(Timer&& other) :
+   _local_active_timings(std::move(other._local_active_timings)),
+-  _index(other._index.load(std::memory_order_relaxed)),
++  _index(other._index),
+   _is_enabled(std::move(other._is_enabled)),
+@@ -70,3 +67,2 @@ Timer::Timer(Timer&& other) :
+ void Timer::enable() {
+-  std::lock_guard<std::mutex> lock(_timing_mutex);
+   _is_enabled = true;
+@@ -75,3 +71,2 @@ void Timer::enable() {
+ void Timer::disable() {
+-  std::lock_guard<std::mutex> lock(_timing_mutex);
+   _is_enabled = false;
+@@ -80,3 +75,2 @@ void Timer::disable() {
+ void Timer::clear() {
+-  std::lock_guard<std::mutex> lock(_timing_mutex);
+   _timings.clear();
+@@ -91,3 +85,2 @@ void Timer::start_timer(const std::string& key,
+   if (_is_enabled || force) {
+-    std::lock_guard<std::mutex> lock(_timing_mutex);
+     if (force || is_parallel_context) {
+@@ -103,3 +96,2 @@ void Timer::stop_timer(const std::string& key, bool force) {
+   if (_is_enabled || force) {
+-    std::lock_guard<std::mutex> lock(_timing_mutex);
+     HighResClockTimepoint end = std::chrono::high_resolution_clock::now();
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/timer.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/timer.h
+index c04cb0ecd..4483a14f2 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/timer.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/timer.h
+@@ -28,5 +28,5 @@
+
+-#include <atomic>
++#include "repcut_serial.h"
++
+ #include <chrono>
+-#include <mutex>
+ #include <string>
+@@ -186,3 +186,2 @@ class Timer {
+  private:
+-  std::mutex _timing_mutex;
+   std::unordered_map<Key, Timing, KeyHasher, KeyEqual> _timings;
+@@ -196,3 +195,3 @@ class Timer {
+   LocalActiveTimingStack _local_active_timings;
+-  std::atomic<int> _index;
++  int _index;
+   bool _is_enabled;
+diff --git a/third_party/repcut/tests/test_mtkahypar_config.cpp b/third_party/repcut/tests/test_mtkahypar_config.cpp
+index 2923360ee..e9ee4be8c 100644
+--- a/third_party/repcut/tests/test_mtkahypar_config.cpp
++++ b/third_party/repcut/tests/test_mtkahypar_config.cpp
+@@ -2,2 +2,3 @@
+
++#include "mt-kahypar/parallel/atomic_wrapper.h"
+ #include "mt-kahypar/partition/context.h"
+@@ -24,2 +25,16 @@ int main(int argc, char** argv)
+         require(argc == 2, "Usage: test-mtkahypar-config WORKDIR");
++        SpinLock owner;
++        require(owner.tryLock(), "Cannot acquire free serial owner");
++        require(!owner.tryLock(), "Serial ownership was lost");
++        SpinLock copied(owner);
++        require(copied.tryLock(), "Copied serial owner should be free");
++        copied.unlock();
++        copied.lock();
++        copied = owner;
++        require(copied.tryLock(), "Assigned serial owner should be free");
++        copied.unlock();
++        owner.unlock();
++        owner.lock();
++        require(!owner.tryLock(), "Serial lock did not retain ownership");
++        owner.unlock();
+         fs::create_directories(argv[1]);

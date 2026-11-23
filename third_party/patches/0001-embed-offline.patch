@@ -1,0 +1,92 @@
+--- a/third_party/repcut/CMakeLists.txt
++++ b/third_party/repcut/CMakeLists.txt
+@@ -37,6 +37,7 @@
+     add_subdirectory(tests)
+ endif()
+ 
++if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+ install(TARGETS repcut
+         EXPORT repcut-targets
+         DESTINATION lib)
+@@ -68,3 +69,4 @@
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/repcut-config.cmake"
+               "${CMAKE_CURRENT_BINARY_DIR}/repcut-config-version.cmake"
+         DESTINATION lib/cmake/repcut)
++endif()
+--- a/third_party/repcut/cmake/MtKaHyPar.cmake
++++ b/third_party/repcut/cmake/MtKaHyPar.cmake
+@@ -16,6 +16,10 @@
+     set(KAHYPAR_STATIC_LINK_DEPENDENCIES OFF)
+     set(KAHYPAR_STATIC_LINK_TBB OFF)
+     add_subdirectory("${mt_source}" "${mt_binary}" EXCLUDE_FROM_ALL)
++
++    if(NOT CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
++        return()
++    endif()
+ 
+     # The archive contains upstream's object library. Installed consumers need
+     # only its system link dependencies, not the internal build targets.
+--- a/third_party/repcut/lib/repcut/CMakeLists.txt
++++ b/third_party/repcut/lib/repcut/CMakeLists.txt
+@@ -10,15 +10,15 @@
+     Util.cpp
+     RepCut.cpp
+     RepCutPartitioner.cpp
+-    ${CMAKE_SOURCE_DIR}/external/tiny-process-library/process.cpp
++    ${PROJECT_SOURCE_DIR}/external/tiny-process-library/process.cpp
+     )
+ 
+ if(WIN32)
+     target_sources(repcut PRIVATE
+-        ${CMAKE_SOURCE_DIR}/external/tiny-process-library/process_win.cpp)
++        ${PROJECT_SOURCE_DIR}/external/tiny-process-library/process_win.cpp)
+ else()
+     target_sources(repcut PRIVATE
+-        ${CMAKE_SOURCE_DIR}/external/tiny-process-library/process_unix.cpp)
++        ${PROJECT_SOURCE_DIR}/external/tiny-process-library/process_unix.cpp)
+ endif()
+ 
+ find_package(Threads REQUIRED)
+@@ -43,9 +43,9 @@
+ # Only repcut.h is the public ABI; the other headers under include/ are
+ # internal to the library.
+ target_include_directories(repcut PUBLIC
+-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
++    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+     $<INSTALL_INTERFACE:include>)
+ 
+ # The vendored tiny-process-library header is a private internal dependency.
+ target_include_directories(repcut PRIVATE
+-    ${CMAKE_SOURCE_DIR}/external/tiny-process-library)
++    ${PROJECT_SOURCE_DIR}/external/tiny-process-library)
+--- a/third_party/repcut/external/mt-kahypar/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/CMakeLists.txt
+@@ -414,6 +414,20 @@
+ set(KAHYPAR_GOOGLETEST_VERSION   v1.15.2)
+ set(KAHYPAR_PYBIND11_VERSION     v3.0.4)
+ 
++if(DEFINED KAHYPAR_DEPENDENCY_ROOT)
++  # Verilator supplies pinned sources; configuring a release never downloads code.
++  add_subdirectory("${KAHYPAR_DEPENDENCY_ROOT}/cli11"
++                   "${CMAKE_CURRENT_BINARY_DIR}/cli11" EXCLUDE_FROM_ALL)
++  target_link_libraries(MtKaHyPar-Include INTERFACE CLI11::CLI11)
++  target_include_directories(MtKaHyPar-Include INTERFACE
++      "${KAHYPAR_DEPENDENCY_ROOT}/kahypar-shared-resources"
++      "${KAHYPAR_DEPENDENCY_ROOT}")
++  if(NOT KAHYPAR_DISABLE_PARLAY)
++    target_include_directories(MtKaHyPar-Include INTERFACE
++        "${KAHYPAR_DEPENDENCY_ROOT}/parlay/include")
++    target_compile_options(MtKaHyPar-BuildFlags INTERFACE -DPARLAY_TBB)
++  endif()
++else()
+ message(STATUS "Fetching dependencies...")
+ 
+ # Include header-only dependencies
+@@ -452,6 +466,7 @@
+   target_compile_options(MtKaHyPar-BuildFlags INTERFACE -DPARLAY_TBB)
+ endif()
+ 
++endif()
+ 
+ if (KAHYPAR_ENABLE_TESTING)
+   FetchContent_Declare(

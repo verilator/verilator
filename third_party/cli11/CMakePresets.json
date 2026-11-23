@@ -1,0 +1,121 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Default",
+      "binaryDir": "build",
+      "generator": "Ninja",
+      "errors": {
+        "dev": true,
+        "deprecated": true
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+        "CLI11_WARNINGS_AS_ERRORS": true,
+        "CMAKE_COLOR_DIAGNOSTICS": true
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Development (fast rebuilds)",
+      "inherits": "default",
+      "binaryDir": "build-dev",
+      "cacheVariables": {
+        "CLI11_PRECOMPILED": true,
+        "CLI11_BUILD_EXAMPLES": false,
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
+      }
+    },
+    {
+      "name": "tidy",
+      "displayName": "Clang-tidy",
+      "inherits": "default",
+      "binaryDir": "build-tidy",
+      "cacheVariables": {
+        "CMAKE_CXX_CLANG_TIDY": "clang-tidy;--use-color;--warnings-as-errors=*",
+        "CMAKE_CXX_STANDARD": "17",
+        "CLI11_PRECOMPILED": true,
+        "CLI11_ENABLE_EXTRA_VALIDATORS": true
+      }
+    },
+    {
+      "name": "iwyu",
+      "displayName": "Include-what-you-use",
+      "inherits": "default",
+      "binaryDir": "build-iwyu",
+      "cacheVariables": {
+        "CMAKE_CXX_INCLUDE_WHAT_YOU_USE": "include-what-you-use;-Xiwyu;--mapping_file=${sourceDir}/scripts/iwyu.imp;-Xiwyu;--check_also=${sourceDir}/include/CLI/*.hpp;-Xiwyu;--check_also=${sourceDir}/include/CLI/impl/*.hpp;-Xiwyu;--keep=*/CLI/*.hpp;-Xiwyu;--no_fwd_decls",
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_OSX_SYSROOT": "macosx",
+        "CLI11_PRECOMPILED": true,
+        "CLI11_ENABLE_EXTRA_VALIDATORS": true,
+        "CLI11_WARNINGS_AS_ERRORS": false,
+        "CLI11_BUILD_TESTS": false,
+        "CLI11_BUILD_EXAMPLES": false
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "displayName": "Default Build",
+      "configurePreset": "default"
+    },
+    {
+      "name": "dev",
+      "displayName": "Development Build",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "tidy",
+      "displayName": "Clang-tidy Build",
+      "configurePreset": "tidy",
+      "nativeToolOptions": ["-k0"]
+    },
+    {
+      "name": "iwyu",
+      "displayName": "Include-what-you-use Build",
+      "configurePreset": "iwyu"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "displayName": "Default",
+      "configurePreset": "default",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Development",
+      "configurePreset": "dev",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "default",
+      "displayName": "Default Workflow",
+      "steps": [
+        { "type": "configure", "name": "default" },
+        { "type": "build", "name": "default" },
+        { "type": "test", "name": "default" }
+      ]
+    },
+    {
+      "name": "dev",
+      "displayName": "Development Workflow",
+      "steps": [
+        { "type": "configure", "name": "dev" },
+        { "type": "build", "name": "dev" },
+        { "type": "test", "name": "dev" }
+      ]
+    }
+  ]
+}

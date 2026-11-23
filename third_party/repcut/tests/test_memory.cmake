@@ -1,0 +1,23 @@
+# Each invocation has a fresh process and RNG state.
+file(REMOVE_RECURSE "${WORK}")
+file(MAKE_DIRECTORY "${WORK}")
+foreach(seed 0 42 117)
+    foreach(mode file memory)
+        execute_process(COMMAND "${TEST}" "${mode}" "${WORK}/${seed}-${mode}" "${seed}" "${WORK}/${seed}-${mode}.stats"
+            RESULT_VARIABLE status OUTPUT_FILE "${WORK}/${seed}-${mode}.csv")
+        if(NOT status EQUAL 0)
+            message(FATAL_ERROR "${mode} API failed with seed ${seed}")
+        endif()
+    endforeach()
+    foreach(ext csv stats)
+        execute_process(COMMAND "${CMAKE_COMMAND}" -E compare_files "${WORK}/${seed}-file.${ext}" "${WORK}/${seed}-memory.${ext}"
+            RESULT_VARIABLE status)
+        if(NOT status EQUAL 0)
+            message(FATAL_ERROR "File/memory ${ext} mismatch with seed ${seed}")
+        endif()
+    endforeach()
+endforeach()
+execute_process(COMMAND "${TEST}" checks "${WORK}/checks" 42 "${WORK}/checks.stats" RESULT_VARIABLE status OUTPUT_QUIET)
+if(NOT status EQUAL 0)
+    message(FATAL_ERROR "Memory API validation failed")
+endif()

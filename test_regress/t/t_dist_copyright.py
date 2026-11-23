@@ -40,6 +40,8 @@ EXEMPT_COPYRIGHT_FILES = """
     test_regress/t/t_altera_lpm.v
     test_regress/t/t_randsequence_svtests.v
     test_regress/t/uvm/
+    third_party/NOTICES.txt
+    third_party/manifest.json
     verilator.pc.in
     """
 
@@ -50,7 +52,7 @@ Exempt_Copyright_Files_Re = '^(' + '|'.join(Exempt_Copyright_Files_Re) + ")"
 if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
-cmd = "cd " + test.root + " && git ls-files --exclude-standard"
+cmd = "cd " + test.root + " && git ls-files --exclude-standard -- \":(exclude,glob)third_party/*/**\""
 out = test.run_capture(cmd)
 
 year = datetime.datetime.now().year

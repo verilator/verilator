@@ -1,0 +1,23 @@
+---
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 120
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: false
+  AfterFunction: true
+  AfterStruct: true
+  BeforeCatch: true
+  BeforeElse: true
+  SplitEmptyFunction: false
+SpaceBeforeParens: ControlStatements
+PointerAlignment: Left
+ReferenceAlignment: Left
+SortIncludes: true
+NamespaceIndentation: All
+...

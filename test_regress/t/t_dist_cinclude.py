@@ -15,7 +15,7 @@ if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 ### Must trim output before and after our file list
-cmd = "cd " + test.root + " && git ls-files --exclude-standard"
+cmd = "cd " + test.root + " && git ls-files --exclude-standard -- \":(exclude,glob)third_party/*/**\""
 files = test.run_capture(cmd)
 if test.verbose:
     print("ST " + files)
