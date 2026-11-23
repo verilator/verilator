@@ -736,6 +736,7 @@ public:
     }
 
     static std::vector<ThreadSchedule> apply(V3Graph& mtaskGraph) {
+        if (v3Global.opt.gpu()) return PackThreads{1}.pack(mtaskGraph);
         return PackThreads{}.pack(mtaskGraph);
     }
 };

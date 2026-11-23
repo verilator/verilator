@@ -294,6 +294,15 @@ public:
     void emitCCallArgs(const AstNodeCCall* nodep, const string& selfPointer, bool inProcess);
     void emitDereference(AstNode* nodep, const string& pointer);
     std::string dereferenceString(const std::string& pointer) const;
+    virtual std::string memberResetText(const AstVar* varp, const std::string& vlSelf) const {
+        return vlSelf + varName(varp);
+    }
+    virtual std::string varRefText(const AstVarRef* refp) const {
+        return (refp->selfPointer().isEmpty()
+                    ? std::string{}
+                    : dereferenceString(refp->selfPointerProtect(m_useSelfForThis)))
+               + varName(refp->varp());
+    }
     void emitCvtPackStr(AstNode* nodep);
     void emitConstant(AstConst* nodep);
     void emitConstantString(const AstConst* nodep);
@@ -347,10 +356,7 @@ public:
                 puts(cvtToStr(nodep->widthMin()));
             }
             puts(",");
-            if (!assigntop->selfPointer().isEmpty()) {
-                emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
-            }
-            puts(varName(assigntop->varp()));
+            puts(varRefText(assigntop));
             for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
                 ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
@@ -365,10 +371,7 @@ public:
             puts("X(");
             puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
             puts(",");
-            if (!assigntop->selfPointer().isEmpty()) {
-                emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
-            }
-            puts(varName(assigntop->varp()));
+            puts(varRefText(assigntop));
             for (int word = EMITC_NUM_CONSTW - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
                 ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(

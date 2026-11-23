@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_gpu_unsup.v:12:5: Unsupported: GPU-resident mode: event control (@) in a process
+                                        : ... Use --gpu-hybrid to run it with CPU assistance
+   12 |     @(posedge clk);
+      |     ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

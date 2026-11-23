@@ -168,6 +168,7 @@ class Capabilities:
     _cached_have_dev_asan = None
     _cached_have_dev_gcov = None
     _cached_have_gdb = None
+    _cached_have_gpu = None
     _cached_have_lldb = None
     _cached_have_sc = None
     _cached_have_solver = None
@@ -241,6 +242,14 @@ class Capabilities:
             out = VtOs.run_capture('gdb --version 2>/dev/null', check=False)
             Capabilities._cached_have_gdb = bool('Copyright' in out)
         return Capabilities._cached_have_gdb
+
+    @staticproperty
+    def have_gpu() -> bool:  # pylint: disable=no-method-argument
+        if Capabilities._cached_have_gpu is None:
+            nvcc = VtOs.run_capture('nvcc --version 2>/dev/null', check=False)
+            smi = VtOs.run_capture('nvidia-smi -L 2>/dev/null', check=False)
+            Capabilities._cached_have_gpu = bool('release' in nvcc and 'GPU ' in smi)
+        return Capabilities._cached_have_gpu
 
     @staticproperty
     def have_lldb() -> bool:  # pylint: disable=no-method-argument
@@ -1907,6 +1916,10 @@ class VlTest:
     @property
     def have_gdb(self) -> bool:
         return Capabilities.have_gdb
+
+    @property
+    def have_gpu(self) -> bool:
+        return Capabilities.have_gpu
 
     @property
     def have_lldb(self) -> bool:

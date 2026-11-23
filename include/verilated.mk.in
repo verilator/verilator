@@ -211,6 +211,48 @@ ifneq ($(VM_TIMING),0)
 endif
 
 #######################################################################
+##### GPU builds
+
+VK_GPU_OBJS =
+ifeq ($(VM_GPU),1)
+  ifneq ($(CUDA_HOME),)
+    NVCC ?= $(CUDA_HOME)/bin/nvcc
+    CPPFLAGS += -I$(CUDA_HOME)/include
+    LDFLAGS += -L$(CUDA_HOME)/lib64 -Wl,-rpath,$(CUDA_HOME)/lib64
+  else
+    NVCC ?= nvcc
+  endif
+  NVCC_STD ?= -std=c++17
+  OPT_GPU ?= -O3 -maxrregcount=64 -Xptxas --disable-optimizer-constants
+  NVCC_HOST ?= $(firstword $(CXX))
+  NVCCFLAGS += -arch=$(VM_GPU_ARCH) $(NVCC_STD) -rdc=true -ccbin $(NVCC_HOST) -diag-suppress 68
+  ifeq ($(filter clean,$(MAKECMDGOALS)),)
+    VL_GPU_CUDA_HEADERS := $(shell printf '\043include <cuda_runtime_api.h>\n' \
+      | $(CXX) $(filter -I% -D%,$(CPPFLAGS)) -x c++ -fsyntax-only - >/dev/null 2>&1 && echo ok)
+    ifneq ($(VL_GPU_CUDA_HEADERS),ok)
+      $(error $(CXX) cannot find cuda_runtime_api.h. Use a C++ compiler that sees the CUDA \
+        headers, for example CXX=/usr/bin/g++ LINK=/usr/bin/g++, or set CUDA_HOME)
+    endif
+  endif
+  ifneq ($(VM_GPU_DEFER_BYTES),)
+    CPPFLAGS += -DVL_GPU_DEFER_BYTES=$(VM_GPU_DEFER_BYTES)
+  endif
+  ifeq ($(VM_GPU_LAYOUT),aos)
+    CPPFLAGS += -DVL_GPU_LAYOUT_AOS
+  endif
+  ifeq ($(VM_GPU_LAYOUT),aosoa)
+    CPPFLAGS += -DVL_GPU_LAYOUT_AOSOA -DVL_GPU_LAYOUT_GROUP=$(VM_GPU_LAYOUT_GROUP)
+  endif
+  NVCC_CPPFLAGS = -I. -I$(VERILATOR_ROOT)/include -I$(VERILATOR_ROOT)/include/vltstd \
+    $(filter -D% -I%,$(CPPFLAGS))
+  LDLIBS += -lcudadevrt -lcudart
+  VK_GPU_OBJS = $(addsuffix .o, $(VM_GPU_CLASSES) $(VM_GPU_GLOBAL) $(VM_GPU_USER_CLASSES))
+  VK_GPU_DLINK = $(VM_PREFIX)__gpu_dlink.o
+  VK_GPU_LINK_OBJS = $(VK_GPU_OBJS) $(VK_GPU_DLINK)
+  $(VK_GPU_OBJS): $(VM_PREFIX).mk
+endif
+
+#######################################################################
 ### Aggregates
 
 VM_FAST += $(VM_CLASSES_FAST) $(VM_SUPPORT_FAST)
@@ -334,6 +376,14 @@ ifneq ($(VM_DEFAULT_RULES),0)
 
   $(VK_GLOBAL_OBJS): %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(OPT_GLOBAL) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) -c -o $@ $<
+
+ifeq ($(VM_GPU),1)
+  $(VK_GPU_OBJS): %.o: %.cu
+	$(NVCC) $(OPT_GPU) $(NVCCFLAGS) $(NVCC_CPPFLAGS) -MMD -MP -c -o $@ $<
+
+  $(VK_GPU_DLINK): $(VK_GPU_OBJS)
+	$(NVCC) -arch=$(VM_GPU_ARCH) -dlink -o $@ $^
+endif
 
 # Precompile a header file
 # PCH's compiler flags must match exactly the rules' above FAST/SLOW

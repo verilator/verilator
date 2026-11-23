@@ -47,6 +47,7 @@ class EmitCPch final : public EmitCBaseVisitorConst {
         puts("\n");
         puts("\n#include \"verilated.h\"\n");
         if (v3Global.dpi()) puts("#include \"verilated_dpi.h\"\n");
+        if (v3Global.opt.gpu()) puts("#include \"verilated_gpu.h\"\n");
 
         puts("\n");
         puts("#include \"" + EmitCUtil::symClassName() + ".h\"\n");

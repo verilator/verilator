@@ -222,6 +222,7 @@ RAW_OBJS_PCH_ASTMT = \
   V3EmitCExecGraph.o \
   V3EmitCFunc.o \
   V3EmitCHeaders.o \
+  V3EmitCGpu.o \
   V3EmitCImp.o \
   V3EmitCInlines.o \
   V3EmitCPch.o \
@@ -297,6 +298,8 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3FsmDetect.o \
   V3Fork.o \
   V3Gate.o \
+  V3Gpu.o \
+  V3GpuTiming.o \
   V3HierBlock.o \
   V3Inline.o \
   V3InlineCFuncs.o \

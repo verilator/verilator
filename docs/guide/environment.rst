@@ -93,6 +93,12 @@ associated programs.
    "ddd". If not specified, it will use "gdb" if available, otherwise
    "lldb" if available.
 
+.. option:: VERILATOR_GPU_JOBS
+
+   Read by executables built with :vlopt:`--gpu`: a job file of tests to
+   run as copies on the GPU. This and the other :code:`VERILATOR_GPU_*`
+   runtime variables are described in :ref:`gpu simulation`.
+
 .. option:: VERILATOR_NUMA_STRATEGY
 
    If set, controls NUMA assignment strategy for Verilator's thread pool

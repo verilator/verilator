@@ -267,5 +267,12 @@ std::vector<std::string> V3Global::verilatedCppFiles() {
     }
     result.emplace_back("verilated_threads.cpp");
     if (v3Global.opt.usesProfiler()) result.emplace_back("verilated_profiler.cpp");
+    if (v3Global.opt.gpu()) result.emplace_back("verilated_gpu.cpp");
+    return result;
+}
+
+std::vector<std::string> V3Global::verilatedGpuFiles() {
+    std::vector<std::string> result;
+    if (v3Global.opt.gpu()) result.emplace_back("verilated_gpu_kernels.cu");
     return result;
 }

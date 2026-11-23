@@ -65,6 +65,7 @@
 #include "V3FuncOpt.h"
 #include "V3Gate.h"
 #include "V3Global.h"
+#include "V3Gpu.h"
 #include "V3Graph.h"
 #include "V3HashTable.h"
 #include "V3HierBlock.h"
@@ -638,6 +639,26 @@ static void process() {
             // Create AstCUse to determine what class forward declarations/#includes needed in C
             V3CUse::cUseAll();
 
+            if (v3Global.opt.gpu()) {
+                const bool lowered = V3Gpu::lowerTiming(v3Global.rootp());
+                if (!v3Global.opt.gpuHybrid()) {
+                    if (!lowered && !V3Error::errorCount()) {
+                        v3Global.rootp()->v3error(
+                            "GPU-resident mode needs a design that makes its own clocks with "
+                            "--timing\n"
+                            << v3Global.rootp()->warnMore()
+                            << "... Use --gpu-hybrid to drive it from C++");
+                    }
+                    if (lowered) V3Gpu::residentPrepare(v3Global.rootp());
+                }
+                V3Gpu::analyze(v3Global.rootp());
+                if (V3Gpu::residentMode()) {
+                    V3Gpu::residentPartition(v3Global.rootp());
+                } else {
+                    V3Gpu::partition(v3Global.rootp());
+                }
+            }
+
             // Evaluate cost of a current hierarchical block
             if (!v3Global.opt.libCreate().empty()) {
                 v3Global.currentHierBlockCost(V3Control::getCurrentHierBlockCost());
@@ -670,6 +691,7 @@ static void process() {
     if (!v3Global.opt.serializeOnly()
         && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitcImp.
         V3EmitC::emitcImp();
+        V3EmitC::emitcGpu();
     }
     if (v3Global.opt.serializeOnly()) {
         emitSerialized();

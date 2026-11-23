@@ -950,6 +950,17 @@ void V3Options::notify() VL_MT_DISABLED {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
+    if (!m_gpuLayout.empty() && m_gpuLayout != "soa" && m_gpuLayout != "aos"
+        && m_gpuLayout != "aosoa") {
+        cmdfl->v3error("--gpu-layout must be soa, aos or aosoa: " << m_gpuLayout);
+    }
+    if (m_gpuHybrid && (m_gpuLayout == "aos" || m_gpuLayout == "aosoa")) {
+        cmdfl->v3error("--gpu-layout " << m_gpuLayout << " needs resident mode, not --gpu-hybrid");
+    }
+    if (m_gpuLayoutGroup < 32 || (m_gpuLayoutGroup & (m_gpuLayoutGroup - 1))) {
+        cmdfl->v3error("--gpu-layout-group must be a power of two of at least 32");
+    }
+
     // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_jsonOnly are mutually
     // exclusive
     std::vector<std::string> backendFlags;
@@ -1594,6 +1605,25 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-G", CbPartialMatch, [this](const char* optp) { addParameter(optp, false); });
     DECL_OPTION("-gate-stmts", Set, &m_gateStmts);
     DECL_OPTION("-gdb", CbCall, []() {});  // Processed only in bin/verilator shell
+    DECL_OPTION("-gpu", OnOff, &m_gpu);
+    DECL_OPTION("-gpu-arch", Set, &m_gpuArch);
+    DECL_OPTION("-gpu-hybrid", OnOff, &m_gpuHybrid);
+    DECL_OPTION("-gpu-fork-slots", Set, &m_gpuForkSlots);
+    DECL_OPTION("-gpu-output-bytes", Set, &m_gpuOutputBytes);
+    DECL_OPTION("-gpu-layout", Set, &m_gpuLayout);
+    DECL_OPTION("-gpu-layout-group", Set, &m_gpuLayoutGroup);
+    DECL_OPTION("-gpu-dpi", CbVal, [this](const char* valp) {
+        std::string names{valp};
+        size_t pos = 0;
+        while (pos <= names.size()) {
+            const size_t comma = names.find(',', pos);
+            const std::string name
+                = names.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
+            if (!name.empty()) m_gpuDpis.insert(name);
+            if (comma == std::string::npos) break;
+            pos = comma + 1;
+        }
+    });
     DECL_OPTION("-gdbbt", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-generate-key", CbCall, [this]() {
         cout << protectKeyDefaulted() << '\n';
@@ -2118,6 +2148,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                    || suffixed(filename, ".ixx")) {
             V3Options::addCppFile(filename);
             m_moduleFiles.insert(filename);
+        } else if (suffixed(filename, ".cu")) {
+            V3Options::addGpuFile(filename);
         } else if (suffixed(filename, ".a")  //
                    || suffixed(filename, ".o")  //
                    || suffixed(filename, ".so")) {

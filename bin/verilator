@@ -487,6 +487,14 @@ detailed descriptions of these arguments.
     --generate-key              Create random key for --protect-key
     --get-supported <feature>   Get if feature is supported
     --getenv <var>              Get environment variable with defaults
+    --gpu                       Also build a GPU model for batches of copies
+    --gpu-arch <arch>           GPU architecture for nvcc
+    --gpu-dpi <names>           DPI imports with a GPU implementation
+    --gpu-fork-slots <n>        Concurrent forks per process on the GPU
+    --gpu-hybrid                Run the GPU scheduler from the host
+    --gpu-layout <layout>       GPU state layout: soa, aos or aosoa
+    --gpu-layout-group <n>      Copies per group with aosoa layout
+    --gpu-output-bytes <n>      Per-copy GPU output buffer size
     --help                      Show this help
     --hierarchical              Enable hierarchical Verilation
     --hierarchical-block <block>  Internal use only for --hierarchical

@@ -522,6 +522,7 @@ public:
 
 class VerilatedContext VL_NOT_FINAL {
     friend class VerilatedContextImp;
+    friend class VerilatedGpu;
 
 private:
     // MEMBERS

@@ -307,6 +307,15 @@ private:
     bool m_jsonOnly = false;        // main switch: --json-only
     bool m_lintOnly = false;        // main switch: --lint-only
     bool m_gmake = false;           // main switch: --make gmake
+    bool m_gpu = false;             // main switch: --gpu
+    string m_gpuArch = "native";    // main switch: --gpu-arch
+    bool m_gpuHybrid = false;       // main switch: --gpu-hybrid
+    int m_gpuForkSlots = 4;         // main switch: --gpu-fork-slots
+    int m_gpuOutputBytes = 65536;   // main switch: --gpu-output-bytes
+    string m_gpuLayout;             // main switch: --gpu-layout
+    int m_gpuLayoutGroup = 128;     // main switch: --gpu-layout-group
+    VStringSet m_gpuDpis;           // argument: --gpu-dpi function names
+    VStringSet m_gpuFiles;          // argument: .cu files to compile with nvcc
     bool m_makeJson = false;        // main switch: --make json
     bool m_main = false;            // main switch: --main
     bool m_outFormatOk = false;     // main switch: --cc, --sc or --sp was specified
@@ -534,6 +543,7 @@ public:
 
     // METHODS
     void addCppFile(const string& filename);
+    void addGpuFile(const string& filename) { m_gpuFiles.insert(filename); }
     void addCFlags(const string& filename);
     void addCompilerIncludes(const string& filename);
     void addLdLibFile(const string& filename);
@@ -629,6 +639,13 @@ public:
     bool flatten() const { return m_flatten; }
     bool fourstate() const { return m_fourstate; }
     bool gmake() const { return m_gmake; }
+    bool gpu() const { return m_gpu; }
+    string gpuArch() const { return m_gpuArch; }
+    bool gpuHybrid() const { return m_gpuHybrid; }
+    int gpuForkSlots() const { return m_gpuForkSlots; }
+    int gpuOutputBytes() const { return m_gpuOutputBytes; }
+    string gpuLayout() const { return m_gpuLayout; }
+    int gpuLayoutGroup() const { return m_gpuLayoutGroup; }
     bool makeJson() const { return m_makeJson; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
     bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }
@@ -776,6 +793,8 @@ public:
     const VStringSet& cppFiles() const { return m_cppFiles; }
     const VStringSet& moduleFiles() const { return m_moduleFiles; }
     bool cxxModules() const { return m_cxxModules || !m_moduleFiles.empty(); }
+    const VStringSet& gpuFiles() const { return m_gpuFiles; }
+    const VStringSet& gpuDpis() const { return m_gpuDpis; }
     const VStringList& cFlags() const { return m_cFlags; }
     const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
     const VStringList& ldLibFiles() const { return m_ldLibFiles; }
