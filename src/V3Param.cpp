@@ -373,6 +373,15 @@ class ParamProcessor final {
     bool m_visitBaseQueued = false;  // ParamVisitor queued m_visitModp's base, to specialize it
     std::unordered_set<const AstNode*> m_inheritBaseps;  // Bases specialized for a lookup
 
+    // Function/task names each module need to resolve by searching with upward name resolution
+    std::unordered_map<const AstNodeModule*, std::set<std::string>> m_upwardNames;
+    // Cells instantiating each module variant that has function/task upward names to resolve
+    std::unordered_map<const AstNodeModule*, AstCell*> m_upwardCellps;
+    // Collection of variants which are based on to what function/task they resolve.
+    // Each variant is identified by an index and its instance is assigned '__Vupward{id}' prefix.
+    using UpwardRefVariantMap = std::map<std::vector<const AstNodeFTask*>, size_t>;
+    std::unordered_map<const AstNodeModule*, UpwardRefVariantMap> m_upwardVariants;
+
     // METHODS
 
     static void makeSmallNames(AstNodeModule* modp) {
@@ -2109,6 +2118,22 @@ class ParamProcessor final {
         cellInterfaceCleanup(pinsp, srcModp, longname /*ref*/, any_overrides /*ref*/,
                              ifaceRefRefs /*ref*/);
 
+        // Reuse a specialization when all upward names resolve to the same declarations
+        const auto namesIt = m_upwardNames.find(srcModp);
+        if (VN_IS(nodep, Cell) && namesIt != m_upwardNames.end()) {
+            std::vector<const AstNodeFTask*> targets;
+            for (const string& name : namesIt->second) {
+                targets.push_back(findUpwardFTask(nodep, name));
+            }
+            auto& variants = m_upwardVariants[srcModp];
+            auto variantIndex = variants.emplace(targets, variants.size()).first->second;
+            // Specialize module with upward references only if there are more than one variant
+            if (variantIndex > 0) {
+                longname += "__Vupward" + std::to_string(variantIndex);
+                any_overrides = true;
+            }
+        }
+
         // Template classes with type parameters need specialization even when types match
         // defaults. This is required for UVM parameterized classes. However, interfaces should NOT
         // be specialized when type params match defaults (needed for nested interface ports).
@@ -2406,6 +2431,23 @@ class ParamProcessor final {
                 }
             }
         }
+        void visit(AstNodeFTaskRef* nodep) override {
+            iterateChildren(nodep);
+            AstNodeFTask* taskp = nodep->taskp();
+            if (nodep->upwardReference()) {
+                taskp = m_processor.findUpwardFTask(nodep, nodep->name());
+                if (!taskp) {
+                    nodep->v3error(
+                        "Can't find definition of task/function: " << nodep->prettyNameQ());
+                    nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+                nodep->taskp(taskp);
+            }
+            // Widthing follows calls into their definitions, which may contain deferred refs
+            if (taskp && firstReach(taskp)) iterateDecl(taskp, taskp);
+        }
 
     public:
         DeferredResolverVisitor(ParamProcessor& processor, AstNode* rootp)
@@ -2608,6 +2650,9 @@ public:
 
         // Set name for later warnings
         newModp->someInstanceName(instanceName);
+        if (AstCell* const cellp = VN_CAST(nodep, Cell)) {
+            if (m_upwardNames.count(srcModp)) m_upwardCellps.emplace(newModp, cellp);
+        }
 
         UINFO(9, "nodeDeparam EXIT  node=<"
                      << AstNode::nodeAddr(nodep) << ">" << " type=" << nodep->typeName()
@@ -2631,11 +2676,94 @@ public:
         return taken;
     }
 
+    AstNodeFTask* findUpwardFTask(AstNode* nodep, const string& name) const {
+        // IEEE 1800-2023 23.8.1: search each scope enclosing nodep, continuing from a module's
+        // instantiating cell, so generate blocks and classes on the way are searched too.
+        for (AstNode* itemp = nodep; itemp && !VN_IS(itemp, Netlist);) {
+            // If itemp is a module, jump to the scope where it is instantiated with a cell
+            if (VN_IS(itemp, NodeModule) && !VN_IS(itemp, Class)) {
+                const auto it = m_upwardCellps.find(VN_AS(itemp, NodeModule));
+                if (it == m_upwardCellps.end()) return nullptr;
+                itemp = it->second;
+            }
+
+            // Skip to the head of the siblings list
+            while (itemp->backp()->nextp() == itemp) itemp = itemp->backp();
+
+            const AstPackageImport* explicitImportp = nullptr;
+            AstNodeFTask* wildcardTaskp = nullptr;
+            for (AstNode* scanp = itemp; scanp; scanp = scanp->nextp()) {
+                if (AstNodeFTask* const ftaskp = VN_CAST(scanp, NodeFTask)) {
+                    if (ftaskp->name() == name) return ftaskp;
+                } else if (const AstPackageImport* const importp = VN_CAST(scanp, PackageImport)) {
+                    if (importp->name() == name) {
+                        explicitImportp = !explicitImportp ? importp : explicitImportp;
+                    } else if (!wildcardTaskp) {
+                        wildcardTaskp = findImportedFTask(importp, name);
+                    }
+                }
+            }
+            AstNodeFTask* const taskp
+                = explicitImportp ? findImportedFTask(explicitImportp, name) : wildcardTaskp;
+            if (taskp) return taskp;
+            itemp = itemp->backp();
+        }
+        return nullptr;
+    }
+
+    // Task/function 'name' that an import or export makes visible, if any
+    template <typename T>
+    static AstNodeFTask* findImportedFTask(const T* nodep, const string& name) {
+        if (!nodep->packagep() || (nodep->name() != "*" && nodep->name() != name)) return nullptr;
+        return findPackageFTask(nodep->packagep(), name);
+    }
+
+    static AstNodeFTask* findPackageFTask(const AstPackage* packagep, const string& name) {
+        bool exportsImports = false;
+        // First search if any function/task in this package matches searched name.
+        // Then try to find it in imported/exported packages.
+        for (AstNode* itemp = packagep->stmtsp(); itemp; itemp = itemp->nextp()) {
+            AstNodeFTask* const ftaskp = VN_CAST(itemp, NodeFTask);
+            if (ftaskp && ftaskp->name() == name) return ftaskp;
+            exportsImports |= VN_IS(itemp, PackageExportStarStar);
+        }
+        for (AstNode* itemp = packagep->stmtsp(); itemp; itemp = itemp->nextp()) {
+            AstNodeFTask* ftaskp = nullptr;
+            if (const AstPackageExport* const exportp = VN_CAST(itemp, PackageExport)) {
+                ftaskp = findImportedFTask(exportp, name);
+            } else if (const AstPackageImport* const importp = VN_CAST(itemp, PackageImport)) {
+                if (exportsImports) ftaskp = findImportedFTask(importp, name);
+            }
+            if (ftaskp) return ftaskp;
+        }
+        return nullptr;
+    }
+
     // CONSTRUCTORS
     explicit ParamProcessor(AstNetlist* nodep)
         : m_hierBlocks{v3Global.opt.hierBlocks(), nodep} {
-        for (AstNodeModule* const modp : nodep->modulespList()) {
+        AstNodeModule* const firstModp = nodep->modulesp();
+        AstNode* const lastModp = firstModp ? firstModp->lastp() : nullptr;
+        // Bottom-up, so the names of instantiated modules are known first
+        for (AstNodeModule* modp = VN_AS(lastModp, NodeModule); modp;
+             modp = VN_AS(modp->prevp(), NodeModule)) {
             m_allModuleNames.insert(modp->name());
+            std::set<std::string> names;
+            modp->foreach([&](AstNode* itemp) {
+                if (const AstNodeFTaskRef* const refp = VN_CAST(itemp, NodeFTaskRef)) {
+                    if (refp->upwardReference()) names.insert(refp->name());
+                } else if (AstCell* const cellp = VN_CAST(itemp, Cell)) {
+                    // Propagate names that must be resolved above this module.
+                    // As there are no upward cells recorded yet, it only performs
+                    // search in the current module scope.
+                    const auto it = m_upwardNames.find(cellp->modp());
+                    if (it == m_upwardNames.end()) return;
+                    for (const string& name : it->second) {
+                        if (!findUpwardFTask(cellp, name)) names.insert(name);
+                    }
+                }
+            });
+            if (!names.empty()) m_upwardNames.emplace(modp, std::move(names));
         }
     }
     ~ParamProcessor() = default;
