@@ -1132,6 +1132,134 @@ improvement would be to emit an unique class for each instance of a module,
 and sort its variables optimally for that instance's code stream.
 
 
+RepCut Diagnostics
+------------------
+
+The graph-dump option supports internal diagnostics. It is omitted from
+normal help, the user option reference, and typo suggestions. It does not
+override an explicit :vlopt:`-fno-repcut` selection.
+
+.. option:: --repcut-dump-graph
+
+   For internal use only. Disabled by default. Enable graph diagnostic tables,
+   partition ownership/plan tables, and chunk, cut, publication, native-cost,
+   and source-cost reports, including the graph input and partition membership.
+   The bundled partitioner exchanges its graph and results in memory when this
+   option is disabled. An explicit :vlopt:`--repcut-partitioner` override still
+   uses graph and membership files for communication with the external tool.
+
+   Export a word-level candidate-kernel graph after
+   dataflow and gate optimization and before delayed-assignment lowering.
+   Procedures outside the supported kernel subset retain ordinary Verilator
+   scheduling. Combine this option with :vlopt:`-fno-repcut` to export the graph
+   without partitioning or changing the generated model's algorithm.
+
+   Writes ``<prefix>__repcut_early.nodes.tsv``, a ``.report.txt`` coverage
+   report, an empty ``.clocks.tsv`` compatibility table, and a ``.memories.tsv`` memory
+   inventory in the output directory. The additional ``.storage.tsv``,
+   ``.domains.tsv``, and ``.bindings.tsv`` tables record storage identities,
+   scheduler sensitivity identities, sink destinations, memory-write priority, and constant
+   value words independently of diagnostic labels. These internal IDs are
+   local to one graph. The ``.regions.tsv`` and ``.controls.tsv`` tables
+   describe branch nesting, predicate polarity, and controlled operations.
+   Ordered data operands remain in ``.nodes.tsv``; the partitioner graph
+   includes both data and control dependencies. Procedural merges are
+   recorded as ``JOIN`` nodes, distinct from conditional expressions.
+   Complete acyclic kernel graphs also produce a ``.graph`` file; incomplete
+   graphs produce a ``.partial`` file instead. Retained procedures and native
+   convergence boundaries do not make the kernel graph incomplete.
+   Partial exports must not be used as complete partitioning problems.
+   Weights are provisional unit operation costs. Initialization, finalization,
+   and post-update settling are outside this prototype; output nodes describe
+   pre-edge observations. Initialized X-replacement values are explicit graph
+   inputs, not newly sampled values. Read the coverage report before
+   interpreting results.
+
+   Integral packed arrays and packed structures, signed and unsigned division
+   and remainder, and one-dimensional unpacked memories are supported.
+   Unpacked memory indices may have nonzero or ascending declaration bounds.
+   Values and memories written only during initialization retain their ordinary
+   Verilator initialization. This includes constant lookup tables. Clocked
+   processes may use blocking temporaries whose accesses are confined to that
+   process; deferred state assignments still read the appropriate old state.
+
+   Supported clocked DPI procedures retain their original scheduling and
+   foreign-call ABI. Independent ``CALLBACK`` sinks capture read-only input
+   values in partitions before the original procedure executes on the caller.
+   In ``.bindings.tsv``, ``aux`` identifies the procedure and ``priority``
+   identifies the captured input within it. Foreign procedure bodies and their
+   C++ execution costs are outside the partitioner graph. Context or reentrant
+   callbacks remain entirely under ordinary scheduling.
+
+RepCut Publication
+------------------
+
+With RepCut and multiple threads, eligible candidate state is published on
+its partition owner. The ordinary scheduler orders publication after
+old-state readers and before consumers of the new state. Memory writes
+retain source priority, and SystemC channel writes remain on the calling
+thread. Published storage is grouped by owner to reduce false sharing.
+Generated functions retain their compilation size limit.
+
+In closed models, a scalar with one writer and no old-state reader outside
+its owning partition and clock domain can publish at the end of that
+partition's compute task. Other state retains a separate publication phase;
+memories are not eligible for this local publication shortcut.
+
+Wide primary outputs that depend only on locally published state can also
+be formed inside the owning worker before its existing completion. This
+requires exclusive ownership of each complete C++ output word, matching
+clock conditions, and no other readers of that output. Shared words and
+unproven dependencies retain ordinary scheduling. Output helpers retain the
+compilation size limit; this shortcut adds no synchronization phase.
+
+Parallel publication adds a separate fixed-worker publication dispatch for
+the remaining state in each active domain. When all publication writes in a
+domain have an enable, the dispatch is skipped if those enables are all
+false. Publication writes without enables always require dispatch. Its
+synchronization cost and locality benefit depend on the design. Verilator
+chooses parallel publication separately for each native clock domain using
+a conservative estimate of copied values, shared enable checks, owner
+balance, and additional synchronization. Small or poorly balanced domains
+retain publication on the calling thread. SystemC channel writes always
+remain on the calling thread. This is the default publication policy for
+multithreaded native RepCut models.
+
+This policy uses static estimates, without profiling or runtime adaptation.
+Actual input activity and cache behavior may make either placement faster.
+The estimate discounts conditional copies to one-quarter activity, allows
+512 scalar-copy equivalents for dispatch, and requires a further 25%
+serial-work margin. These allowances are heuristics, not calibrated
+execution times or a performance guarantee.
+
+With ``--repcut-dump-graph``, native emission writes
+``<prefix>__repcut_early.publication.tsv`` with each domain's decision,
+reason, and work per owner. Four work units represent an unconditional
+scalar copy or enable check; a wide copy counts its 32-bit words.
+Single-threaded models retain serial publication.
+
+RepCut Shared Computation
+-------------------------
+
+RepCut shares eligible pure combinational computations across sensitivity
+domains assigned to the same partition, including single-threaded
+evaluation. A shared computation runs once when any consuming domain is
+active. Original event guards, state publication, and ordered effects are
+preserved. Values are not cached across evaluations, and functions remain
+bounded by :vlopt:`--output-split-cfuncs`. Partitions with too little
+common computation retain their original domain-local evaluation. In other
+partitions, eligible shared computations and their dependencies remain
+together.
+
+Sharing applies only to eligible native models using batched partition
+evaluation. Single-threaded evaluation uses guarded serial calls. Models
+without profitable shared prefixes retain the per-domain serial path.
+Models outside the eligibility restrictions are unchanged. It does not
+change the graph supplied to the partitioner. Sharing may increase
+temporary storage and call overhead when consuming domains rarely activate
+together.
+
+
 Verilated Flow
 --------------
 
