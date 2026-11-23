@@ -37,7 +37,6 @@ class VerilatedVcdSc final : VerilatedScTraceBase, public VerilatedVcdC {
 
 public:
     VerilatedVcdSc() {
-        spTrace()->set_time_unit(VerilatedScTraceBase::getScTimeUnit());
         spTrace()->set_time_resolution(VerilatedScTraceBase::getScTimeResolution());
         VerilatedScTraceBase::enableDeltaCycles(false);
     }

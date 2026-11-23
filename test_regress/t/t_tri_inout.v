@@ -219,6 +219,31 @@ module pad_checker (
     `checkh(sampled, expected_sampled);
   end
 
+  // Constant function and system function calls remain valid connection indices.
+  function automatic int constant_index();
+    return 2;
+  endfunction
+  wire [3:2] selected_pad;
+  wire [1:0] selected_q;
+  io function_index (
+      .A(in[0]),
+      .OE(oe[0]),
+      .Z(selected_pad[constant_index()]),
+      .Y(selected_q[0])
+  );
+  io system_index (
+      .A(in[1]),
+      .OE(oe[1]),
+      .Z(selected_pad[$clog2(8)]),
+      .Y(selected_q[1])
+  );
+  assign selected_pad[2] = oe[0] ? 1'bz : ~in[0];
+  assign selected_pad[3] = oe[1] ? 1'bz : ~in[1];
+  always @(negedge clk) begin
+    `checkh(selected_q[0], oe[0] ? in[0] : ~in[0]);
+    `checkh(selected_q[1], oe[1] ? in[1] : ~in[1]);
+  end
+
 endmodule
 
 module tri_pad (

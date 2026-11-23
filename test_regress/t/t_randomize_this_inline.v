@@ -19,7 +19,7 @@ class DataItem;
   constraint default_con {limit inside {[8'd50 : 8'd200]};}
 endclass
 
-// Test 4: 'this' in inline constraint called from another class method.
+// Test: 'this' in inline constraint called from another class method.
 // 'this' must bind to the randomized object, not the calling class.
 class Caller;
   rand bit [7:0] own_value;
@@ -37,7 +37,7 @@ module t;
     automatic Caller caller = new();
     automatic int rand_ok;
 
-    // Test 1: 'this.member' in inline constraint from module-level code
+    // Test: 'this.member' in inline constraint from module-level code
     rand_ok = item.randomize() with {
       this.value > 8'd10;
       this.value < 8'd50;
@@ -46,7 +46,7 @@ module t;
     `check_range(item.value, 11, 49)
     `check_range(item.limit, 50, 200)
 
-    // Test 2: multiple 'this.member' references
+    // Test: multiple 'this.member' references
     rand_ok = item.randomize() with {
       this.value > 8'd20;
       this.value < 8'd30;
@@ -54,7 +54,7 @@ module t;
     `checkd(rand_ok, 1)
     `check_range(item.value, 21, 29)
 
-    // Test 3: mix of 'this.member' and unqualified member
+    // Test: mix of 'this.member' and unqualified member
     rand_ok = item.randomize() with {
       this.value > 8'd5;
       this.value < 8'd100;
@@ -64,7 +64,7 @@ module t;
     `check_range(item.value, 6, 99)
     `check_range(item.limit, 151, 200)
 
-    // Test 4: 'this' binds to randomized object, not calling class
+    // Test: 'this' binds to randomized object, not calling class
     rand_ok = caller.do_rand(item);
     `checkd(rand_ok, 1)
     `check_range(item.value, 31, 39)

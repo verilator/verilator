@@ -22,7 +22,6 @@
 
 #include "V3DfgOptimizer.h"
 
-#include "V3Const.h"
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
 #include "V3Error.h"
@@ -33,7 +32,10 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class DataflowOptimize final {
     // NODE STATE
-    // AstVar::user1, AstVarScope::user1 -> int, used as a bit-field
+    // AstVar::user1 -> int, used as a bit-field
+    // - bit0: Read via AstMemberRef (virtual interface)
+    // - bit1: Written via AstMemberRef (virtual interface)
+    // AstVarScope::user1 -> int, used as a bit-field
     // - bit0: Read via AstVarXRef (hierarchical reference)
     // - bit1: Written via AstVarXRef (hierarchical reference)
     // - bit2: Read by logic in same module/netlist not represented in DFG
@@ -74,11 +76,12 @@ class DataflowOptimize final {
 
     // Mark variables with external references
     void markExternallyReferencedVariables(AstNetlist* netlistp) {
-        netlistp->foreach([](AstNode* nodep) {
+        std::vector<AstVarScope*> ifaceVscps;  // Variables in interfaces
+        netlistp->foreach([&](AstNode* nodep) {
             // Check variable flags
             if (AstVarScope* const vscp = VN_CAST(nodep, VarScope)) {
                 const AstVar* const varp = vscp->varp();
-                // Force and trace have already been processed
+                // Force has already been processed
                 const bool hasExtRd =  //
                     varp->isPrimaryIO()  // Top level port - readable
                     || varp->isSigUserRdPublic()  // Readable by user
@@ -87,9 +90,23 @@ class DataflowOptimize final {
                 const bool hasExtWr =  //
                     (varp->isPrimaryIO() && varp->isNonOutput())  // Top level port - writable
                     || varp->isSigUserRWPublic()  // Writable by user
+                    || varp->keepPort()  // Kept port of a non-inlined module
                     ;
                 if (hasExtRd) DfgVertexVar::setHasExtRdRefs(vscp);
                 if (hasExtWr) DfgVertexVar::setHasExtWrRefs(vscp);
+                if (VN_IS(vscp->scopep()->modp(), Iface)) ifaceVscps.push_back(vscp);
+                return;
+            }
+            // Check member references. The referenced instance is not known statically.
+            if (const AstMemberRef* const refp = VN_CAST(nodep, MemberRef)) {
+                AstVar* const varp = refp->varp();
+                if (refp->access().isReadOrRW()) varp->user1(varp->user1() | 0x01);
+                if (refp->access().isWriteOrRW()) varp->user1(varp->user1() | 0x02);
+                return;
+            }
+            // Variables read by descriptors are read externally
+            if (const AstRtmdVar* const sigp = VN_CAST(nodep, RtmdVar)) {
+                if (sigp->refp()) DfgVertexVar::setHasExtRdRefs(sigp->vscp());
                 return;
             }
             // Check references
@@ -106,6 +123,11 @@ class DataflowOptimize final {
                 return;
             }
         });
+        // Mark all instances of variables read through a member reference.
+        // Written vars are rejected by V3Dfg::isSupported.
+        for (AstVarScope* const vscp : ifaceVscps) {
+            if (vscp->varp()->user1() & 0x01) DfgVertexVar::setHasExtRdRefs(vscp);
+        }
     }
 
     void optimize(DfgGraph& dfg) {
@@ -164,24 +186,6 @@ class DataflowOptimize final {
         endOfStage("regularize", dfg, {});
     }
 
-    void removeNeverActives(AstNetlist* netlistp) {
-        std::vector<AstActive*> neverActiveps;
-        netlistp->foreach([&](AstActive* activep) {
-            AstSenTree* const senTreep = activep->sentreep();
-            if (!senTreep) return;
-            const AstNode* const nodep = V3Const::constifyEdit(senTreep);
-            UASSERT_OBJ(nodep == senTreep, nodep, "Should not have been repalced");
-            if (senTreep->sensesp()->isNever()) {
-                UASSERT_OBJ(!senTreep->sensesp()->nextp(), nodep,
-                            "Never senitem should be alone, else the never should be eliminated.");
-                neverActiveps.emplace_back(activep);
-            }
-        });
-        for (AstActive* const activep : neverActiveps) {
-            VL_DO_DANGLING(activep->unlinkFrBack()->deleteTree(), activep);
-        }
-    }
-
     explicit DataflowOptimize(AstNetlist* netlistp) {
         // Mark variables with external references
         markExternallyReferencedVariables(netlistp);
@@ -197,8 +201,6 @@ class DataflowOptimize final {
         // Convert back to Ast
         V3DfgPasses::dfgToAst(*dfgp, m_ctx);
         endOfStage("dfgToAst", *dfgp, {});
-        // Some sentrees might have become constant, remove them
-        removeNeverActives(netlistp);
         // Reset interned types so the corresponding Ast types can be garbage collected
         DfgDataType::reset();
         // Dump stage stats

@@ -93,6 +93,11 @@ module t (
       n++;
     end
 
+    // multi if with an empty else, which is still a final else (hit when cyc == 3)
+    unique if (cyc < 3) e <= 17;
+    else if (cyc > 3) e <= 19;
+    else ;
+
     if (cyc == 10) begin
       `checkd(uq_then.n, 2);
       `checkd(uq_else.n, 18);

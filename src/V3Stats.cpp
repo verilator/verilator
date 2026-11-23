@@ -77,7 +77,7 @@ class StatsVisitor final : public VNVisitorConst {
         countThenIterateChildren(nodep);
     }
 
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         // Track prediction
         ++m_accump->m_statPred[nodep->branchPred()];
         countThenIterateChildren(nodep);

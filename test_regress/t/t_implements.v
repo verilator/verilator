@@ -63,6 +63,32 @@ module t;
     if (i1.icf1() != 1) $stop;
     if (i1.icf101() != 101) $stop;
 
+    // Issue #9016: $cast to an interface class handle
+    begin
+      Icls2 i2;
+      Cls c2;
+      // verilator lint_off CASTCONST
+      if ($cast(i2, c) != 1) $stop;
+      if (i2.icf2(5) != 7) $stop;
+      if ($cast(i1, c) != 1) $stop;
+      // verilator lint_on CASTCONST
+      if ($cast(c2, i1) != 1) $stop;
+      if (c2 != c) $stop;
+      // Unrelated interface class, checked at runtime
+      i1 = c;
+      if ($cast(i2, i1) != 1) $stop;
+      if (i2.icf2(6) != 8) $stop;
+      // Interface class handle to a class, and a cast that fails at runtime
+      begin
+        Base b;
+        Icempty ie;
+        if ($cast(b, i2) != 1) $stop;
+        if (b != c) $stop;
+        if ($cast(ie, i2) != 0) $stop;
+        if (ie != null) $stop;
+      end
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -1,0 +1,19 @@
+%Warning-IEEEMAYDEPRECATE: t/t_covergroup_coverpoint_weight_unsup.v:18:5: Feature may be deprecated in future IEEE standard
+   18 |     assign cov.cp.option.weight = 0;
+      |     ^~~~~~
+                           ... For warning description see https://verilator.org/warn/IEEEMAYDEPRECATE?v=latest
+                           ... Use "/* verilator lint_off IEEEMAYDEPRECATE */" and lint_on around source to disable this message.
+%Error: t/t_covergroup_coverpoint_weight_unsup.v:17:9: Unsupported: non-blocking or procedural assignment to coverpoint option.weight (IEEE 1800-2023 6.21)
+                                                     : ... note: In instance 't'
+   17 |     cov.cp.option.weight <= 0;
+      |         ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_coverpoint_weight_unsup.v:18:16: Unsupported: non-blocking or procedural assignment to coverpoint option.weight (IEEE 1800-2023 6.21)
+                                                      : ... note: In instance 't'
+   18 |     assign cov.cp.option.weight = 0;
+      |                ^~
+%Error: t/t_covergroup_coverpoint_weight_unsup.v:19:15: Unsupported: force assignment to coverpoint option.weight (IEEE 1800-2023 6.21)
+                                                      : ... note: In instance 't'
+   19 |     force cov.cp.option.weight = 0;
+      |               ^~
+%Error: Exiting due to

@@ -73,7 +73,7 @@ NOTIFICATION_DIR=notification
 mkdir -p ${NOTIFICATION_DIR}
 
 cat > ${NOTIFICATION_DIR}/body.txt <<NOTIFICATION_TEMPLATE
-Patch coverage report [${RUN_ID}](${REPORT_URL}) from PR workflow [#${RUN_NUM}](${RUN_URL}) (code coverage of lines changed relative to ${COVERAGE_BASE}):
+PR [coverage report ${RUN_ID}](${REPORT_URL}) from [PR workflow #${RUN_NUM}](${RUN_URL}). Code coverage of lines changed relative to ${COVERAGE_BASE}:
 NOTIFICATION_TEMPLATE
 
 if [ -f ${COVERAGE_DIR}/empty-patch ]; then

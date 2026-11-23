@@ -24,6 +24,7 @@ test.compile(
     verilator_flags2=[
         '--stats',
         '--hierarchical',
+        '--top t',
         '--Wno-TIMESCALEMOD',  #
         '-GPARAM_A=100',
         '-pvalue+PARAM_B=200',

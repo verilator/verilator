@@ -18,7 +18,7 @@
 
 module t;
 
-  // Test 1: solve with conditional constraints
+  // Test: solve with conditional constraints
   class Packet;
     rand bit [2:0] mode;
     rand bit [7:0] data;
@@ -32,7 +32,7 @@ module t;
     }
   endclass
 
-  // Test 2: basic solve before with range constraints
+  // Test: basic solve before with range constraints
   class Simple;
     rand bit [3:0] x;
     rand bit [3:0] y;
@@ -45,7 +45,7 @@ module t;
     }
   endclass
 
-  // Test 3: multi-level solve before (a -> b -> c)
+  // Test: multi-level solve before (a -> b -> c)
   class MultiLevel;
     rand bit [3:0] a;
     rand bit [3:0] b;
@@ -69,7 +69,7 @@ module t;
     int ok;
     int randomize_result;
 
-    // Test 1: Packet with conditional constraints
+    // Test: Packet with conditional constraints
     p = new;
     repeat (20) begin
       randomize_result = p.randomize();
@@ -85,7 +85,7 @@ module t;
       end
     end
 
-    // Test 2: Simple range constraints
+    // Test: Simple range constraints
     s = new;
     repeat (20) begin
       randomize_result = s.randomize();
@@ -97,7 +97,7 @@ module t;
       `checkd(ok, 1);
     end
 
-    // Test 3: Multi-level chain
+    // Test: Multi-level chain
     m = new;
     repeat (20) begin
       randomize_result = m.randomize();
@@ -107,6 +107,18 @@ module t;
       `checkd(ok, 1);
       ok = (m.c > m.b && m.c < 4'hf) ? 1 : 0;
       `checkd(ok, 1);
+    end
+
+    // Test: std::randomize calls ordering the same arguments both ways (issue #8882)
+    begin
+      bit [6:0] x;
+      bit [6:0] y;
+      randomize_result = std::randomize(x, y) with { solve x before y; x < y; };
+      `checkd(randomize_result, 1);
+      `checkd(x < y, 1);
+      randomize_result = std::randomize(x, y) with { solve y before x; x < y; };
+      `checkd(randomize_result, 1);
+      `checkd(x < y, 1);
     end
 
     $write("*-* All Finished *-*\n");

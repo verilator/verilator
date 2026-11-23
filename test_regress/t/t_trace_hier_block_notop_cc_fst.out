@@ -11,7 +11,7 @@ $end
 $scope module $rootio $end
 $var wire 1 ! clk $end
 $upscope $end
-$scope module stateless_pkg $end
+$scope package stateless_pkg $end
 $var parameter 32 " ONE [31:0] $end
 $upscope $end
 $scope module t $end

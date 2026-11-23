@@ -186,7 +186,7 @@ public:
     };
 
 private:
-    AstNode* const m_nodep;  // The logic this vertex represents
+    AstNodeProcedure* const m_nodep;  // The process this vertex represents
     AstScope* const m_scopep;  // Scope the logic is under
     const OrderDomain* const m_hybridp;  // Additional sensitivities for hybrid combinational logic
     const bool m_comb;  // Is from combinational logic
@@ -197,7 +197,7 @@ private:
 public:
     // CONSTRUCTOR
     OrderLogicVertex(OrderGraph* graphp, AstScope* scopep, const OrderDomain* domainp,
-                     const OrderDomain* hybridp, AstNode* nodep) VL_MT_DISABLED
+                     const OrderDomain* hybridp, AstNodeProcedure* nodep) VL_MT_DISABLED
         : OrderEitherVertex{graphp, domainp},
           m_nodep{nodep},
           m_scopep{scopep},
@@ -212,7 +212,7 @@ public:
     bool domainMatters() override { return true; }
 
     // ACCESSORS
-    AstNode* nodep() const VL_MT_STABLE { return m_nodep; }
+    AstNodeProcedure* nodep() const VL_MT_STABLE { return m_nodep; }
     AstScope* scopep() const VL_MT_STABLE { return m_scopep; }
     const OrderDomain* hybridp() const { return m_hybridp; }
     bool comb() const { return m_comb; }
@@ -225,7 +225,7 @@ public:
     string name() const override VL_MT_STABLE {
         return (cvtToHex(m_nodep) + "\\n " + cvtToStr(nodep()->typeName()));
     }
-    string dotShape() const override { return VN_IS(m_nodep, Active) ? "doubleoctagon" : "rect"; }
+    string dotShape() const override { return "rect"; }
     // LCOV_EXCL_STOP
 };
 

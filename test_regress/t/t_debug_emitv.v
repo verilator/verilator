@@ -35,6 +35,9 @@ class Cls;
     solve rarray[0] before rmember1;
     foreach (rarray[i]) rarray[i] == rmember1 + i;
   }
+  static constraint static_c {rmember2 > 0;}
+  constraint :initial init_c {rmember1 > 0;}
+  constraint :final final_c {rmember2 != 7;}
   covergroup cg_in_class @(posedge cg_clk);
     cp_m: coverpoint member {
       bins one = {1};
@@ -50,6 +53,7 @@ class Cls;
   function void method;
     if (this != this) $stop;
   endfunction
+  extern function int extf();
   task delay_method;
     #1;
   endtask
@@ -57,6 +61,10 @@ class Cls;
     delay_method();
   endtask
 endclass
+
+function int Cls::extf();
+  return 7;
+endfunction
 
 class ClsParam #(type T = int, int P = 1);
   T pval;
@@ -78,16 +86,20 @@ class ClsParam2 #(
 endclass
 
 virtual class VBase;
+  rand int pv;
   pure virtual function int vfunc();
+  pure constraint pure_c;
 endclass
 
 class VDer extends VBase;
   function int vfunc();
     return 1;
   endfunction
+  constraint pure_c {pv > 0;}
 endclass
 
 class ClsExt extends Cls;
+  constraint :extends init_c {rmember1 < 100;}
   function int inherited();
     return rmember1 + member;
   endfunction
@@ -321,7 +333,7 @@ module t (/*AUTOARG*/
 
   int cyc;
   int fo;
-  int sum;
+  int sum /*verilator forceable*/;
   real r;
   string str;
   int mod_val;
@@ -495,6 +507,14 @@ module t (/*AUTOARG*/
   property p1;
     @(clk) sum[0]
   endproperty
+  property p_args(x, y);
+    @(posedge clk) x
+  endproperty
+  property p_chain;
+    p_args(in, sum[1])
+  endproperty
+
+  assert_chain: assert property (p_chain);
 
   assert property (@(clk) not ##1 in);
 
@@ -616,10 +636,35 @@ module t (/*AUTOARG*/
     }
   endgroup
 
+  // Covergroup with both-open and default range lists
+  covergroup cg_open_default;
+    open_both: coverpoint cg_sig {
+      bins all[] = {[$ : $]};
+    }
+    defaults: coverpoint cg_sig {
+      bins remaining[] = default;
+    }
+    illegal_defaults: coverpoint cg_sig {
+      bins zero = {0};
+      illegal_bins remaining = default iff (cg_sig2[1]);
+    }
+  endgroup
+
+  // Covergroup with array transitions and an array-valued set expression.
+  int cg_set_values[$] = '{1, 2};
+  covergroup cg_forms with function sample (bit [3:0] value);
+    cp: coverpoint value {
+      bins lists[] = (1, 2 => 3, 4);
+      ignore_bins ignored_array[] = (7 => 8);
+      illegal_bins illegal_array[] = (11 => 12);
+      bins selected[] = cg_set_values;
+    }
+  endgroup
+
   // Covergroup with cross coverage
   covergroup cg_cross;
     cp_x: coverpoint cg_sig {
-      bins x0 = {0};
+      bins x0 = {(0)};
       bins x1 = {1};
     }
     cp_y: coverpoint cg_sig2 {
@@ -669,7 +714,11 @@ module t (/*AUTOARG*/
     Cls obj;
     obj = new;
     obj.delay_caller();
+    if (obj.extf() != 7) $stop;
+    vder = new;
+    if (vder.randomize() != 1) $stop;
   end
+  escapes escapes();
 endmodule
 
 module param_mod #(
@@ -710,9 +759,113 @@ module seq_event(input logic clk);
   end
 endmodule
 
+bind t Iface bound_iface (.clk(clk));
+
+// In the compilation-unit package, unlike the variable \$unit in module escapes
+typedef enum {UNIT_A, UNIT_B} unit_e;
+
+// Same name as module escapes, both keep it when emitted
+package escapes;
+  typedef enum {ESC_A, ESC_B} esc_e;
+endpackage
+
+// Escaped names in each kind of declaration and reference
+package \esc.pkg ;
+  localparam int \esc.lp = 1;
+endpackage
+
+interface \esc.ifc ;
+  logic \sig.i ;
+  modport \mp.m (input \sig.i );
+endinterface
+
+module \esc.sub (
+    \esc.ifc .\mp.m \port.p
+);
+  logic \sub.sig ;
+  assign \sub.sig = \port.p .\sig.i ;
+  task \t.s ;
+  endtask
+endmodule
+
+class \Cls.c #(
+    type \T.t = int,
+    int \P.p = 1
+);
+  \T.t \m.m ;
+  task \t.k (int \a.a );
+    \m.m = \T.t '(\a.a + \P.p );
+  endtask
+endclass
+
+module escapes;
+  // System function name of a DPI import, called as written
+  import "DPI-C" esc_dpi = function int \$esc_dpi (int \i.n );
+  export "DPI-C" esc_exp = function \f.e ;
+  typedef enum {\E.a , \E.b } \esc.e ;
+  typedef struct {logic \m.x ;} \st.s ;
+  logic \escaped.sig ;
+  logic \input ;
+  logic dollar$sig;
+  logic \$unit ;
+  logic \par) ;
+  // A C++ keyword that is not a SystemVerilog keyword
+  logic bool;
+  escapes::esc_e esc_enum = escapes::ESC_B;
+  unit_e esc_unit_enum = $unit::UNIT_B;
+  \esc.e esc_e_var = \E.b ;
+  \st.s esc_st;
+  \Cls.c #(.\T.t (byte), .\P.p (2)) esc_cls;
+  byte esc_mem;
+  int esc_q[$];
+  int esc_dpi_out;
+  \esc.ifc \i.f ();
+  \esc.sub \u.s (.\port.p (\i.f ));
+  function int \f.e ();
+    \f.e = 1;
+  endfunction
+  assign \escaped.sig = \input ;
+  assign dollar$sig = \input ;
+  assign \$unit = \input ;
+  assign \par) = \input ;
+  if (1) begin
+    logic unnamed_gen;
+  end
+  if (1) begin : \gen.g
+    logic gen_sig;
+  end
+  initial esc_dpi_out = $esc_dpi(1);
+  initial begin : \blk.b}
+    esc_e_var = \E.a ;
+    esc_cls = new;
+    esc_cls.\t.k (.\a.a (\f.e ()));
+    esc_mem = esc_cls.\m.m ;
+    \u.s .\t.s ();
+    esc_q = esc_q.find(\it.x ) with (\it.x > 0);
+    fork : \frk.f
+      esc_st.\m.x = \u.s .\sub.sig ;
+    join
+  end
+  covergroup \cg.g ;
+    \cp.c : coverpoint esc_dpi_out {
+      bins \b.b = {1};
+    }
+    \cp.d : coverpoint esc_dpi_out {
+      bins \d.b = {0};
+    }
+    \cx.x : cross \cp.c , \cp.d {
+      bins \cb.b = binsof (\cp.c .\b.b );
+    }
+  endgroup
+  \cg.g \cg.i = new;
+endmodule
+
 package p;
   logic pkgvar;
 endpackage
+
+class ClsParamExt extends ClsParam #(bit, 2);
+endclass
 
 `verilator_config
 threads_group -module "sub"

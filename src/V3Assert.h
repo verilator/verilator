@@ -29,7 +29,6 @@ public:
     // Return the innermost fixed-size array element type, following typedefs
     static const AstNodeDType* sampledValueDTypep(const AstNodeDType* dtypep) VL_MT_DISABLED;
     static void collectDefaultDisable(AstNetlist* nodep) VL_MT_DISABLED;
-    static void lowerSequenceEvents(AstNetlist* nodep) VL_MT_DISABLED;
     static string assertCtlGetCall(const char* query, VAssertType type,
                                    VAssertDirectiveType directiveType) VL_MT_DISABLED;
     // Check an SVA value is within the implementation limit, else report it on nodep
@@ -41,9 +40,6 @@ public:
     static void checkSvaCycleDelay(AstDelay* nodep, AstNode* errp) VL_MT_DISABLED;
     // True if the expression references a formal argument of a sequence or property
     static bool refsSvaFormal(const AstNode* nodep) VL_MT_DISABLED;
-    // Check the cycle delays of a sequence or property instance, after its formal arguments are
-    // replaced with the actual arguments (IEEE 1800-2023 16.8), reporting errors on instp
-    static void checkSvaInstanceDelays(AstNode* nodep, AstNode* instp) VL_MT_DISABLED;
 };
 
 class V3Assert final {

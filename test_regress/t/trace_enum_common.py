@@ -15,7 +15,7 @@ def run(test, *, verilator_flags2=()):
     # Any variations after the format name must yield the exact same trace
     test.golden_filename = test.py_filename.rpartition(fmt)[0] + fmt + ".out"
 
-    flags = [f"--trace-{fmt}", "--output-split-ctrace", "1"]
+    flags = [f"--trace-{fmt}"]
     flags.extend(verilator_flags2)
 
     # Run test

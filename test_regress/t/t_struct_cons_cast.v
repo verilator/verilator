@@ -60,7 +60,7 @@ module t;
     begin
       typedef logic [6:0] element_t;
       typedef struct {
-        element_t data [2];
+        element_t data[2];
         element_t first;
         logic [14:0] second;
       } sample_t;

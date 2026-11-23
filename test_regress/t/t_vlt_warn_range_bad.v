@@ -25,4 +25,6 @@ module t;
   reg unuse_warn5_var_line25;  // Unused warning - must be line 25
   reg unuse_warn5_var_line26;  // Unused warning - must be line 26 (turned on)
   reg unuse_warn5_var_line27;  // Unused warning - must be line 27
+`line 24 "t/t_vlt_warn_range_bad.v" 0
+  reg unuse_warn6_var_line24;  // Unused warning - renumbered line 24 must not stay suppressed
 endmodule

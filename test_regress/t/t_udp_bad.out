@@ -17,7 +17,7 @@
    14 | primitive udp_x (a_bad, b, c_bad);
       |           ^~~~~
                     ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
-%Error: t/t_udp_bad.v:17:10: Multiple outputs not allowed in udp modules
+%Error: t/t_udp_bad.v:17:10: Multiple outputs not allowed in UDP modules (IEEE 1800-2023 29.3.1)
    17 |   output c_bad;
       |          ^~~~~
 %Error: t/t_udp_bad.v:15:8: Only inputs and outputs are allowed in udp modules

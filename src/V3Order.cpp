@@ -99,7 +99,7 @@ void V3Order::orderOrderGraph(OrderGraph& graph, const std::string& tag) {
 
 //######################################################################
 
-AstCFunc* V3Order::order(const std::vector<V3Sched::LogicByScope*>& logic,  //
+AstCFunc* V3Order::order(const std::vector<V3Sched::ProcessList*>& logic,  //
                          const V3Sched::TriggerKit& trigKit,  //
                          AstVarScope* trigVscp,  //
                          const V3Sched::CovergroupRefBindings& cgRefBindings,
@@ -136,7 +136,7 @@ AstCFunc* V3Order::order(const std::vector<V3Sched::LogicByScope*>& logic,  //
     if (dumpGraphLevel()) graph->dumpDotFilePrefixed(tag + "_orderg_done");
 
     // Dispose of the remnants of the inputs
-    for (auto* const lbsp : logic) lbsp->deleteActives();
+    for (auto* const procListp : logic) procListp->deleteProcesses();
 
     // If there is no resulting logic, then don't create an empty function
     if (!stmtsp) return nullptr;

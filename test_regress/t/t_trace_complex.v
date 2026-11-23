@@ -96,6 +96,16 @@ module t (
       a_module_instantiation_with_a_very_long_name_that_once_its_signals_get_concatenated_and_inlined_will_almost_certainly_result_in_them_getting_hashed
       ();
 
+  // Generate blocks without begin-end are levels of hierarchy (IEEE 1800-2023 27.5)
+  if (1) p #(.PARAM(5)) p_if ();  // genblk1
+  case (1)  // genblk2
+    1: p #(.PARAM(6)) p_case ();
+  endcase
+  // Except a generate if directly nested in an else, and a generate loop
+  if (0) p p_else_if ();  // genblk3
+  else if (1) p #(.PARAM(7)) p_else_if ();
+  for (genvar i = 0; i < 2; ++i) p #(.PARAM(8 + i)) p_for ();  // genblk4[i]
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     v_strp <= ~v_strp;

@@ -12,7 +12,7 @@ interface simple_if;
   modport sink(input data, input value);
 endinterface
 
-// Test 6: Submodule with interface array as sink modport port
+// Test: Submodule with interface array as sink modport port
 module sub_sink (
     simple_if.sink ifaces[3:0],
     output logic [7:0] sum_out
@@ -25,7 +25,7 @@ module sub_sink (
   end
 endmodule
 
-// Test 7: Submodule with interface array as source modport port
+// Test: Submodule with interface array as source modport port
 module sub_source (
     simple_if.source ifaces[3:0]
 );
@@ -37,7 +37,7 @@ module sub_source (
   end
 endmodule
 
-// Test 8: Submodule with interface array without modport
+// Test: Submodule with interface array without modport
 module sub_generic (
     simple_if ifaces[3:0]
 );
@@ -49,7 +49,7 @@ module sub_generic (
   end
 endmodule
 
-// Test 11: Parameterized submodule with interface array size from parameter
+// Test: Parameterized submodule with interface array size from parameter
 module l1_param_sub #(
     parameter NUM_IFACES = 4
 ) (
@@ -72,14 +72,14 @@ module t (
 
   simple_if ifaces[N-1:0] ();
 
-  // Test 1: Simple for loop writing to interface array
+  // Test: Simple for loop writing to interface array
   always_comb begin
     for (int i = 0; i < N; i++) begin
       ifaces[i].data = '0;
     end
   end
 
-  // Test 2: For loop reading from interface array
+  // Test: For loop reading from interface array
   logic [N-1:0] read_data;
   always_comb begin
     for (int j = 0; j < N; j++) begin
@@ -87,7 +87,7 @@ module t (
     end
   end
 
-  // Test 3: For loop with expression in body
+  // Test: For loop with expression in body
   always_comb begin
     for (int k = 0; k < N - 1; k++) begin
       // Use k to index, accessing different member
@@ -96,7 +96,7 @@ module t (
     ifaces[N-1].value = 8'hFF;
   end
 
-  // Test 4: Descending loop with >= comparison
+  // Test: Descending loop with >= comparison
   logic [N-1:0] desc_data;
   always_comb begin
     for (int p = N - 1; p >= 0; p--) begin
@@ -121,7 +121,7 @@ module t (
     end
   end
 
-  // Test 5: Multiple interface arrays in same loop
+  // Test: Multiple interface arrays in same loop
   simple_if other_ifaces[N-1:0] ();
   always_comb begin
     for (int q = 0; q < N; q++) begin
@@ -130,22 +130,22 @@ module t (
     end
   end
 
-  // Test 6: Interface array as sink modport port (read from ports in loop)
+  // Test: Interface array as sink modport port (read from ports in loop)
   logic [7:0] sink_sum;
   sub_sink u_sub_sink (
       .ifaces(ifaces),
       .sum_out(sink_sum)
   );
 
-  // Test 7: Interface array as source modport port (write to ports in loop)
+  // Test: Interface array as source modport port (write to ports in loop)
   simple_if source_ifaces[N-1:0] ();
   sub_source u_sub_source (.ifaces(source_ifaces));
 
-  // Test 8: Interface array without modport (read/write in loop)
+  // Test: Interface array without modport (read/write in loop)
   simple_if generic_ifaces[N-1:0] ();
   sub_generic u_sub_generic (.ifaces(generic_ifaces));
 
-  // Test 9: Ascending loop with step of 2
+  // Test: Ascending loop with step of 2
   simple_if step2_ifaces[7:0] ();
   always_comb begin
     for (int i = 0; i < 8; i += 2) begin
@@ -158,7 +158,7 @@ module t (
     end
   end
 
-  // Test 10: Descending loop with step of -2
+  // Test: Descending loop with step of -2
   simple_if step2d_ifaces[7:0] ();
   always_comb begin
     for (int i = 6; i >= 0; i -= 2) begin
@@ -171,7 +171,7 @@ module t (
     end
   end
 
-  // Test 11: Parameterized submodule with interface array size from parameter
+  // Test: Parameterized submodule with interface array size from parameter
   // Override NUM_IFACES from default 4 to 6 to test that pre-unroll
   // uses the overridden parameter value (not the default)
   simple_if l0_param_ifaces[5:0] ();
@@ -189,7 +189,7 @@ module t (
       .l0_sum(l0_param_sum)
   );
 
-  // Test 12: Complex index expression (N-1-i) - reversed assignment
+  // Test: Complex index expression (N-1-i) - reversed assignment
   simple_if rev_ifaces[N-1:0] ();
   always_comb begin
     for (int i = 0; i < N; i++) begin
@@ -198,7 +198,7 @@ module t (
     end
   end
 
-  // Test 13: Non-zero-based interface array range [2:5]
+  // Test: Non-zero-based interface array range [2:5]
   simple_if nzb_ifaces[2:5] ();
   always_comb begin
     for (int i = 2; i <= 5; i++) begin
@@ -257,13 +257,13 @@ module t (
         end
       end
 
-      // Test 6: Check sink_sum (sum of ifaces[0..3].value = 0+1+2+255 = 258 = 0x02)
+      // Test: Check sink_sum (sum of ifaces[0..3].value = 0+1+2+255 = 258 = 0x02)
       if (sink_sum !== 8'h02) begin
         $display("%%Error: sink_sum should be 0x02, got 0x%02x", sink_sum);
         $stop;
       end
 
-      // Test 7: Check source_ifaces (written by sub_source with i+100)
+      // Test: Check source_ifaces (written by sub_source with i+100)
       for (int i = 0; i < N; i++) begin
         if (source_ifaces[i].data !== 1'b1) begin
           $display("%%Error: source_ifaces[%0d].data should be 1, got %b", i,
@@ -277,7 +277,7 @@ module t (
         end
       end
 
-      // Test 8: Check generic_ifaces (written by sub_generic with i+50)
+      // Test: Check generic_ifaces (written by sub_generic with i+50)
       for (int i = 0; i < N; i++) begin
         if (generic_ifaces[i].data !== 1'b0) begin
           $display("%%Error: generic_ifaces[%0d].data should be 0, got %b", i,
@@ -291,7 +291,7 @@ module t (
         end
       end
 
-      // Test 9: Check step2_ifaces (even indices have i, odd have 0xAA)
+      // Test: Check step2_ifaces (even indices have i, odd have 0xAA)
       for (int i = 0; i < 8; i++) begin
         if (i % 2 == 0) begin
           if (step2_ifaces[i].data !== 1'b1) begin
@@ -319,7 +319,7 @@ module t (
         end
       end
 
-      // Test 10: Check step2d_ifaces (even indices descending, odd indices 0xBB)
+      // Test: Check step2d_ifaces (even indices descending, odd indices 0xBB)
       for (int i = 0; i < 8; i++) begin
         if (i % 2 == 0) begin
           if (step2d_ifaces[i].data !== 1'b1) begin
@@ -347,13 +347,13 @@ module t (
         end
       end
 
-      // Test 11: Check l0_param_sum (0*10 + 1*10 + 2*10 + 3*10 + 4*10 + 5*10 = 150)
+      // Test: Check l0_param_sum (0*10 + 1*10 + 2*10 + 3*10 + 4*10 + 5*10 = 150)
       if (l0_param_sum !== 8'd150) begin
         $display("%%Error: l0_param_sum should be 150, got %0d", l0_param_sum);
         $stop;
       end
 
-      // Test 12: Check rev_ifaces (reversed: rev_ifaces[N-1-i].value = i)
+      // Test: Check rev_ifaces (reversed: rev_ifaces[N-1-i].value = i)
       // So rev_ifaces[3].value=0, rev_ifaces[2].value=1, rev_ifaces[1].value=2, rev_ifaces[0].value=3
       for (int i = 0; i < N; i++) begin
         if (rev_ifaces[i].data !== 1'b1) begin
@@ -367,7 +367,7 @@ module t (
         end
       end
 
-      // Test 13: Check nzb_ifaces (non-zero-based [2:5], nzb_ifaces[i].value = i)
+      // Test: Check nzb_ifaces (non-zero-based [2:5], nzb_ifaces[i].value = i)
       for (int i = 2; i <= 5; i++) begin
         if (nzb_ifaces[i].data !== 1'b1) begin
           $display("%%Error: nzb_ifaces[%0d].data should be 1, got %b", i, nzb_ifaces[i].data);

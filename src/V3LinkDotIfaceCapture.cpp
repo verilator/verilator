@@ -98,7 +98,7 @@ AstIfaceRefDType* V3LinkDotIfaceCapture::ifaceRefFromVarDType(AstNodeDType* dtyp
         } else if (AstUnpackArrayDType* const unpackp = VN_CAST(curp, UnpackArrayDType)) {
             curp = unpackp->subDTypep();
         } else {
-            v3fatalSrc("ifaceRefFromVarDType: unexpected dtype " << curp->prettyTypeName()
+            v3fatalSrc("ifaceRefFromVarDType: unexpected dtype " << curp->prettyTypeNameQ()
                                                                  << " in chain");
         }
     }
@@ -277,10 +277,11 @@ const VIfaceCaptureTag* V3LinkDotIfaceCapture::captureTag(AstRefDType* refp) {
 // nullptr if any component cannot be resolved.
 // Cell/port names are preserved across clones by cloneTree, so this works
 // identically on template and cloned modules.
-AstNodeModule* V3LinkDotIfaceCapture::followCellPath(AstNodeModule* startModp,
+AstNodeModule* V3LinkDotIfaceCapture::followCellPath(const AstNodeModule* startModp,
                                                      const string& cellPath) {
     if (cellPath.empty() || !startModp) return nullptr;
-    AstNodeModule* curModp = startModp;
+    const AstNodeModule* curModp = startModp;
+    AstNodeModule* nextModp = nullptr;
     string remaining = cellPath;
     while (!remaining.empty() && curModp) {
         string component;
@@ -295,7 +296,7 @@ AstNodeModule* V3LinkDotIfaceCapture::followCellPath(AstNodeModule* startModp,
         // Matched without any array index; the elements of an instance array (see V3Param) all
         // instantiate the same module, so any of them will do
         const string componentBase = AstNode::nameNoArray(component);
-        AstNodeModule* nextModp = nullptr;
+        nextModp = nullptr;
         for (AstNode* const sp : curModp->stmtspList()) {
             if (AstCell* const cellp = VN_CAST(sp, Cell)) {
                 if ((cellp->name() == component
@@ -328,7 +329,7 @@ AstNodeModule* V3LinkDotIfaceCapture::followCellPath(AstNodeModule* startModp,
         }
         curModp = nextModp;
     }
-    return curModp;
+    return nextModp;
 }
 
 // replaces the lambda used in V3LinkDot.cpp for iface capture
@@ -396,11 +397,11 @@ void V3LinkDotIfaceCapture::addParamType(AstRefDType* refp, const string& cellPa
     UINFO(9, "addParamType: paramTypep subDTypep chain:");
     if (debug())
         paramTypep->foreach([&](AstRefDType* innerRefp) {
-            UINFO(9,
-                  "  inner RefDType: "
-                      << innerRefp << " refDTypep=" << innerRefp->refDTypep()
-                      << (innerRefp->refDTypep() ? " refDTypep->name=" : "")
-                      << (innerRefp->refDTypep() ? innerRefp->refDTypep()->prettyTypeName() : ""));
+            UINFO(9, "  inner RefDType: " << innerRefp << " refDTypep=" << innerRefp->refDTypep()
+                                          << (innerRefp->refDTypep() ? " refDTypep->name=" : "")
+                                          << (innerRefp->refDTypep()
+                                                  ? innerRefp->refDTypep()->prettyTypeNameQ()
+                                                  : ""));
         });
     tag(refp, ownerModp, VIfaceCaptureTag::Kind::PARAM_TYPE, cellPath, ptOwnerName);
 }

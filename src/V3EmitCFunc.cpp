@@ -110,7 +110,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
             case 'P':
                 if (nodep->isWide() && !usesQueue) {
                     UASSERT_OBJ(m_wideTempRefp, nodep,
-                                "Wide op " << nodep->prettyTypeName()
+                                "Wide op " << nodep->prettyTypeNameQ()
                                            << " w/ no temp, perhaps missing op in V3EmitC?");
                     commaOut();
                     putOut();
@@ -292,8 +292,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         ofp()->putsQuoted(vformat);
     }
 
-    int exprArgs = 0;
-    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) ++exprArgs;
+    const int exprArgs = static_cast<int>(VNList<AstNode>{exprsp}.size());
     if (VL_UNCOVERABLE(!exprFormat && exprArgs != formatArgs)) {  // LCOV_EXCL_START
         // expectDisplay() checks this first, so probably internal error if found here
         nodep->v3error("Internal: Missing or extra arguments for $display-like format, "
@@ -304,7 +303,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     int argc = 0;
     if (needsScope) ++argc;
     if (needsTimescale) ++argc;
-    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
+    for (AstNode* const argp : VNList<AstNode>{exprsp}) {
         ++argc;
         const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
         if (fargp && fargp->formatAttr().isEnum()) ++argc;  // Additional name argument
@@ -345,7 +344,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     }
 
     // Arguments
-    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
+    for (AstNode* const argp : VNList<AstNode>{exprsp}) {
         ofp()->indentInc();
         ofp()->putbs("");
         AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
@@ -392,7 +391,7 @@ void EmitCFunc::emitCCallArgs(const AstNodeCCall* nodep, const string& selfPoint
         puts(selfPointer);
         comma = true;
     }
-    if (nodep->funcp()->needProcess()) {
+    if (nodep->funcp()->needsVlProcess()) {
         if (comma) puts(", ");
         if (VN_IS(nodep->backp(), CAwait) || !nodep->funcp()->isCoroutine()) {
             puts("vlProcess");
@@ -433,8 +432,24 @@ void EmitCFunc::emitCvtPackStr(AstNode* nodep) {
     if (const AstConst* const constp = VN_CAST(nodep, Const)) {
         emitConstantString(constp);
     } else if (VN_IS(nodep->dtypep(), StreamDType)) {
-        putnbs(nodep, "VL_CVT_PACK_STR_ND(");
-        iterateAndNextConstNull(nodep);
+        const AstNodeStream* const streamp = VN_AS(nodep, NodeStream);
+        const AstNodeDType* const elemDtp
+            = streamp->lhsp()->dtypep()->skipRefp()->subDTypep()->skipRefp();
+        if (elemDtp->isIntegralOrPacked()) {
+            // A queue or dynamic array of packed elements, as V3Width packs fixed-size operands
+            putnbs(nodep, "VL_CVT_PACK_STR_NR(");
+            puts(cvtToStr(elemDtp->width()));
+            puts(", ");
+            puts(VN_IS(streamp, StreamL) ? cvtToStr(VN_AS(streamp->rhsp(), Const)->toUInt())
+                                         : "0");
+            puts(", ");
+            iterateAndNextConstNull(streamp->lhsp());
+        } else {
+            UASSERT_OBJ(elemDtp->isString() && VN_IS(streamp, StreamR), nodep,
+                        "Stream assigned to a string should be unsupported in V3Width");
+            putnbs(nodep, "VL_CVT_PACK_STR_ND(");
+            iterateAndNextConstNull(nodep);
+        }
         puts(")");
     } else {
         putnbs(nodep, "VL_CVT_PACK_STR_N");
@@ -486,8 +501,7 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
         // If an ARRAYINIT we initialize it using an initial block similar to a signal
         // puts("// parameter "+varp->nameProtect()+" = "+varp->valuep()->name()+"\n");
     } else {
-        putns(varp,
-              emitVarResetRecurse(varp, constructing, newPrefix, dtypep, 0, "", varp->valuep()));
+        putns(varp, emitVarResetRecurse(varp, constructing, newPrefix, dtypep, 0, "", nullptr));
     }
 }
 
@@ -574,6 +588,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
         return "";
     } else if (basicp && basicp->isDynamicTriggerScheduler()) {
         return "";
+    } else if (basicp && basicp->isNbaGenericQueue()) {
+        return "";
     } else if (basicp && (basicp->isRandomGenerator() || basicp->isStdRandomGenerator())) {
         return "";
     } else if (basicp && basicp->isCovergroupInstHandle()) {
@@ -644,7 +660,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
             return out;
         }
     } else {  // LCOV_EXCL_BR_LINE
-        v3fatalSrc("Unknown node type in reset generator: " << varp->prettyTypeName());
+        v3fatalSrc("Unknown node type in reset generator: " << varp->prettyTypeNameQ());
     }
     return "";
 }

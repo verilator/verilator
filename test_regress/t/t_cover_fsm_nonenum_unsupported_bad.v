@@ -246,4 +246,19 @@ module t (
     end
   end
 
+  logic [1:0] duplicate_guarded_target_state;
+
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      duplicate_guarded_target_state <= IDLE;
+    end
+    else begin
+      case (duplicate_guarded_target_state)
+        IDLE: if (start) duplicate_guarded_target_state <= BUSY;
+        BUSY: if (start) duplicate_guarded_target_state <= RESET;
+        default: duplicate_guarded_target_state <= IDLE;
+      endcase
+    end
+  end
+
 endmodule

@@ -97,67 +97,67 @@ case $OPT_SUITE in
     "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --driver-clean" DRIVER_HASHSET=--hashset=2/3
     ;;
   coverage-dist)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist"
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --no-driver-clean"
     ;;
   coverage-vlt-0)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=0/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt --no-driver-clean" DRIVER_HASHSET=--hashset=0/10
     ;;
   coverage-vlt-1)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=1/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt --no-driver-clean" DRIVER_HASHSET=--hashset=1/10
     ;;
   coverage-vlt-2)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=2/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt --no-driver-clean" DRIVER_HASHSET=--hashset=2/10
     ;;
   coverage-vlt-3)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=3/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt --no-driver-clean" DRIVER_HASHSET=--hashset=3/10
     ;;
   coverage-vlt-4)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=4/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt --no-driver-clean" DRIVER_HASHSET=--hashset=4/10
     ;;
   coverage-vlt-5)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=5/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt --no-driver-clean" DRIVER_HASHSET=--hashset=5/10
     ;;
   coverage-vlt-6)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=6/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt --no-driver-clean" DRIVER_HASHSET=--hashset=6/10
     ;;
   coverage-vlt-7)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=7/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt --no-driver-clean" DRIVER_HASHSET=--hashset=7/10
     ;;
   coverage-vlt-8)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=8/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt --no-driver-clean" DRIVER_HASHSET=--hashset=8/10
     ;;
   coverage-vlt-9)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=9/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt --no-driver-clean" DRIVER_HASHSET=--hashset=9/10
     ;;
   coverage-vltmt-0)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=0/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --no-driver-clean" DRIVER_HASHSET=--hashset=0/10
     ;;
   coverage-vltmt-1)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=1/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --no-driver-clean" DRIVER_HASHSET=--hashset=1/10
     ;;
   coverage-vltmt-2)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=2/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --no-driver-clean" DRIVER_HASHSET=--hashset=2/10
     ;;
   coverage-vltmt-3)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=3/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --no-driver-clean" DRIVER_HASHSET=--hashset=3/10
     ;;
   coverage-vltmt-4)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=4/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --no-driver-clean" DRIVER_HASHSET=--hashset=4/10
     ;;
   coverage-vltmt-5)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=5/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --no-driver-clean" DRIVER_HASHSET=--hashset=5/10
     ;;
   coverage-vltmt-6)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=6/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --no-driver-clean" DRIVER_HASHSET=--hashset=6/10
     ;;
   coverage-vltmt-7)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=7/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --no-driver-clean" DRIVER_HASHSET=--hashset=7/10
     ;;
   coverage-vltmt-8)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=8/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --no-driver-clean" DRIVER_HASHSET=--hashset=8/10
     ;;
   coverage-vltmt-9)
-    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=9/10
+    "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --no-driver-clean" DRIVER_HASHSET=--hashset=9/10
     ;;
   *)
     fatal "Unknown suite: $OPT_SUITE"

@@ -275,11 +275,51 @@ inline std::string VL_CVT_N_CSTR(const char* lhsp) VL_PURE {
     return lhsp ? std::string{lhsp} : ""s;
 }
 
+// Return dynamic array or queue of bytes from a string
+template <typename T_Queue>
+inline T_Queue VL_CVT_N_TO_Q(const std::string& lhs) VL_PURE {
+    T_Queue ret;
+    for (const char c : lhs) ret.push_back(c);
+    return ret;
+}
+
+// Append a byte to a string, dropping zero as a string cannot hold it
+template <typename T_Value>
+inline void _vl_cvt_byte_to_n(std::string& str, const T_Value value) VL_PURE {
+    if (value) str.push_back(static_cast<char>(value));
+}
+
+// Return string from a queue or dynamic array of bytes
+template <typename T_Value>
+inline std::string VL_CVT_Q_TO_N(const VlQueue<T_Value>& from) VL_PURE {
+    std::string ret;
+    ret.reserve(from.size());
+    for (int i = 0; i < from.size(); ++i) _vl_cvt_byte_to_n(ret, from.at(i));
+    return ret;
+}
+
+// Return string from an unpacked array of bytes
+template <typename T_Value, std::size_t N_Depth>
+inline std::string VL_CVT_UNPACK_TO_N(const VlUnpacked<T_Value, N_Depth>& from) VL_PURE {
+    std::string ret;
+    ret.reserve(N_Depth);
+    for (std::size_t i = 0; i < N_Depth; ++i) _vl_cvt_byte_to_n(ret, from[i]);
+    return ret;
+}
+
 // Return queue from an unpacked array
 template <typename T, std::size_t N_Depth>
 inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_PURE {
     VlQueue<T> ret;
     for (size_t i = 0; i < N_Depth; ++i) ret.push_back(q[i]);
+    return ret;
+}
+
+// Return queue from a descending unpacked array, left index first
+template <typename T, std::size_t N_Depth>
+inline VlQueue<T> VL_CVT_UNPACK_TO_Q_REVERSED(const VlUnpacked<T, N_Depth>& q) VL_PURE {
+    VlQueue<T> ret;
+    for (size_t i = 0; i < N_Depth; ++i) ret.push_back(q[N_Depth - 1 - i]);
     return ret;
 }
 
@@ -3754,6 +3794,53 @@ inline std::string VL_CVT_PACK_STR_NQ(QData lhs) VL_PURE {
     VL_SET_WQ(lw, lhs);
     return VL_CVT_PACK_STR_NW(VL_WQ_WORDS_E, lw);
 }
+// Insert a queue element into a wide value
+template <typename T>
+inline void _vl_insert_W_elem(WDataOutP owp, T ld, int hbit, int lbit) VL_MT_SAFE {
+    _vl_insert_WQ(owp, ld, hbit, lbit);
+}
+template <std::size_t N_Words>
+inline void _vl_insert_W_elem(WDataOutP owp, const VlWide<N_Words>& ld, int hbit,
+                              int lbit) VL_MT_SAFE {
+    _vl_insert_WW(owp, ld, hbit, lbit);
+}
+// Convert the stream of a queue or dynamic array to a string, '<<' if rd is nonzero
+template <typename T, size_t N_MaxSize>
+inline std::string VL_CVT_PACK_STR_NR(int lbits, IData rd,
+                                      const VlQueue<T, N_MaxSize>& q) VL_MT_SAFE {
+    QData streamBits = static_cast<QData>(q.size()) * lbits;
+    // A slice at least as wide as the stream does not reorder it
+    const bool reorder = rd && rd < streamBits;
+    // The stream rounded to words, and an index a slice past it, must fit the int bit counts
+    // below
+    if (VL_UNLIKELY(streamBits + (reorder ? rd : 0) > static_cast<QData>(
+                        std::numeric_limits<int>::max() - VL_EDATASIZE - VL_BYTESIZE))) {
+        const std::string msg = "Streaming concatenation of " + std::to_string(streamBits)
+                                + " bits into a string exceeds the supported size";
+        streamBits = 0;  // Converts to an empty string if the fatal error is deferred
+        VL_FATAL_MT("", 0, "", msg.c_str());
+    }
+    const int obits = static_cast<int>(streamBits);
+    if (VL_UNLIKELY(!obits)) return "";
+    // A string is a dynamic array of bytes, so the stream is filled with zero bits on the
+    // right to whole bytes (IEEE 1800-2023 11.4.14, 6.24.3)
+    const int pbits = VL_BYTES_I(obits) * VL_BYTESIZE;
+    // Pack the elements, the first one most significant, as for a packed value
+    const int offset = reorder ? 0 : pbits - obits;
+    std::vector<EData> packed(VL_WORDS_I(pbits));
+    for (int i = 0; i < q.size(); ++i) {
+        const int lsb = offset + obits - (i + 1) * lbits;
+        _vl_insert_W_elem(WDataOutP::external(packed.data()), q.at(i), lsb + lbits - 1, lsb);
+    }
+    if (reorder) {
+        std::vector<EData> streamed(packed.size());
+        VL_STREAML_WWI(obits, WDataOutP::external(streamed.data()),
+                       WDataInP::external(packed.data()), rd);
+        VL_SHIFTL_WWI(pbits, pbits, 32, WDataOutP::external(packed.data()),
+                      WDataInP::external(streamed.data()), pbits - obits);
+    }
+    return VL_CVT_PACK_STR_NW(packed.size(), WDataInP::external(packed.data()));
+}
 inline std::string VL_CVT_PACK_STR_NN(const std::string& lhs) VL_PURE { return lhs; }
 inline std::string& VL_CVT_PACK_STR_NN(std::string& lhs) VL_PURE { return lhs; }
 inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
@@ -3764,6 +3851,8 @@ inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
 inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs) VL_PURE {
     return lhs + rhs;
 }
+// Append in place, unlike 'lhs = VL_CONCATN_NNN(lhs, rhs)', which copies 'lhs'
+inline void VL_APPENDN_NN(std::string& lhsr, const std::string& rhs) VL_PURE { lhsr += rhs; }
 inline std::string VL_REPLICATEN_NNQ(const std::string& lhs, IData rep) VL_PURE {
     std::string result;
     result.reserve(lhs.length() * rep);

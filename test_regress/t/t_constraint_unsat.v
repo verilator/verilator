@@ -40,28 +40,28 @@ module t_constraint_unsat;
 
     pkt = new;
 
-    // Test 1: Valid randomization
-    $display("\n=== Test 1: Valid constraints ===");
+    // Test: Valid randomization
+    $display("\n=== Test: Valid constraints ===");
     pkt.check(50, 100);
 
-    // Test 2: addr out of range
-    $display("\n=== Test 2: addr out of range ===");
+    // Test: addr out of range
+    $display("\n=== Test: addr out of range ===");
     pkt.check(128, 18);
 
-    // Test 3: data out of range (too small)
-    $display("\n=== Test 3: data out of range (too small) ===");
+    // Test: data out of range (too small)
+    $display("\n=== Test: data out of range (too small) ===");
     pkt.check(100, 5);
 
-    // Test 4: data out of range (too large)
-    $display("\n=== Test 4: data out of range (too large) ===");
+    // Test: data out of range (too large)
+    $display("\n=== Test: data out of range (too large) ===");
     pkt.check(100, 250);
 
-    // Test 5: Both constraints violated
-    $display("\n=== Test 5: Both constraints violated ===");
+    // Test: Both constraints violated
+    $display("\n=== Test: Both constraints violated ===");
     pkt.check(200, 5);
 
-    // Test 6: Conflicting constraints
-    $display("\n=== Test 6: Conflicting constraints (x > 100 && x < 50) ===");
+    // Test: Conflicting constraints
+    $display("\n=== Test: Conflicting constraints (x > 100 && x < 50) ===");
     tc = new;
     if (!tc.try_randomize()) begin
       $display("Expected failure: conflicting constraints detected");
@@ -69,6 +69,21 @@ module t_constraint_unsat;
     else begin
       $display("ERROR: Should have failed with conflicting constraints");
       $stop;
+    end
+
+    // Test: std::randomize reports only the failing call's constraints (issue #8882)
+    $display("\n=== Test: std::randomize conflict (y > 10 && y < 5) after a valid call ===");
+    begin
+      bit [3:0] x;
+      bit [3:0] y;
+      if (std::randomize(x) with { x < 5; } != 1) $stop;
+      if (std::randomize(y) with { y > 10; y < 5; } == 0) begin
+        $display("Expected failure: conflicting constraints detected");
+      end
+      else begin
+        $display("ERROR: Should have failed with conflicting constraints");
+        $stop;
+      end
     end
 
     $write("*-* All Finished *-*\n");

@@ -395,7 +395,9 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
                 _unlink(fullname.c_str());
             }
         }
-    } catch (std::filesystem::filesystem_error const& ex) {}
+    } catch (std::filesystem::filesystem_error const&) {
+        // Directory may have been removed, or not be readable; nothing to unlink
+    }
 #else
     if (DIR* const dirp = opendir(dir.c_str())) {
         while (struct dirent* const direntp = readdir(dirp)) {

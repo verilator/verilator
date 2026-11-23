@@ -10,8 +10,6 @@
 // verilog_format: on
 
 module t;
-  localparam string AB = "AB";
-
   bit r;
 
   initial begin
@@ -22,14 +20,7 @@ module t;
     if (('bxz10 !=? 'bxxx0) !== 0) $stop;
     if (('bxz10 !=? 'b1xx0) !== 'x) $stop;
 
-    r = (AB ==? "AA");
-    `checkd(r, 0);
-    r = (AB ==? "AB");
-    `checkd(r, 1);
-    r = (AB !=? "AB");
-    `checkd(r, 0);
-
-    // real/shortreal is illegal so not tested here
+    // string/real/shortreal is illegal so not tested here
 
     $write("*-* All Finished *-*\n");
     $finish;

@@ -11,10 +11,8 @@
 require 5.006_001;
 use warnings;
 use Getopt::Long;
-use FindBin qw($RealBin $RealScript);
-use IO::File;
-use Pod::Usage;
-use Cwd qw(abs_path getcwd);
+use File::Basename qw(dirname);
+use Cwd qw(abs_path getcwd realpath);
 
 use strict;
 use vars qw($Debug @Opt_Verilator_Sw);
@@ -26,11 +24,13 @@ use vars qw($Debug @Opt_Verilator_Sw);
 autoflush STDOUT 1;
 autoflush STDERR 1;
 
+my $RealBin = dirname(realpath($0));  # Faster than 'use FindBin'
+
 $Debug = 0;
 
 # No arguments can't do anything useful.  Give help
 if ($#ARGV < 0) {
-    pod2usage(-exitstatus => 2, -verbose => 0);
+    pod2usagelazy(-exitstatus => 2, -verbose => 0);
 }
 
 # We sneak a look at the flags so we can do some pre-environment checks
@@ -50,7 +50,7 @@ if (! GetOptions (
           # Additional parameters
           "<>"          => sub {},      # Ignored
     )) {
-    pod2usage(-exitstatus => 2, -verbose => 0);
+    pod2usagelazy(-exitstatus => 2, -verbose => 0);
 }
 
 # Normal, non-gdb
@@ -60,7 +60,7 @@ run(verilator_coverage_bin()
 #----------------------------------------------------------------------
 
 sub usage {
-    pod2usage(-verbose => 2, -exitval => 0, -output => \*STDOUT);
+    pod2usagelazy(-verbose => 2, -exitval => 0, -output => \*STDOUT);
 }
 
 sub debug {
@@ -121,6 +121,11 @@ sub bin_exists {
 #######################################################################
 #######################################################################
 # Utilities
+
+sub pod2usagelazy {
+    require Pod::Usage;  # Lazy-load Pod::Usage for speed
+    Pod::Usage::pod2usage(@_);
+}
 
 sub run {
     # Run command, check errors

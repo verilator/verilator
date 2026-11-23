@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-TEST_FILENAME_RE = r'test_regress/t/.*\.(c|cpp|dat|gitattributes|gprof|h|map|mem|mk|out|pf|py|tree|vc|vh|vlt)$'
+TEST_FILENAME_RE = r'test_regress/t/.*\.(c|cpp|cppm|dat|gitattributes|gprof|h|ixx|map|mem|mk|out|pf|py|tree|vc|vh|vlt)$'
 TEST_FILENAME_EXEMPT = r't_inst_v2k__sub.vi'
 
 
@@ -66,7 +66,7 @@ for filename in sorted(files.keys()):
     contents = test.file_contents(filename)
 
     check_pattern(
-        filename, contents, r'`check[a-z]+\([^\n]*?randomize\(',
+        filename, contents, r'`check[a-z]+\([^\n]*?\brandomize\b',
         "check macros have side effects, suggest assign to randomize_result variable and check that"
     )
 

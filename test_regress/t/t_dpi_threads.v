@@ -52,7 +52,13 @@ module t (clk);
   //   which persist beyond FixDataHazards should persist in the final
   //   generated C code.
 
+  // Repeat the hazardous call around a profiled, nonhazardous DPI wrapper.
+  // Visiting each callee once must retain the first call's serialization hazard.
   always @ (posedge clk) begin
+    $dpii_sys();
+
+    void'($dpii_failure());
+
     $dpii_sys();
   end
 
@@ -61,3 +67,9 @@ module t (clk);
   end
 
 endmodule
+
+`ifdef VERILATOR
+`verilator_config
+profile_data -hier-dpi "dpii_failure" -cost 64'd1
+`verilog
+`endif

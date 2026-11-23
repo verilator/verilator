@@ -146,6 +146,7 @@ class LogicMTask final : public V3GraphVertex {
     // Cost estimates and critical path lengths are bounded by number of AstNodes * constant,
     // will run out of host memory storing the Ast way before they can overflow.
     uint64_t m_cost = 0;
+    int m_fixedThread = -1;  // Thread this MTask must run on, or -1 for any
 
     // Critical path in each direction: going FORWARD from graph-start to the start of this vertex,
     // and going REVERSE from graph-exit to the end of this vertex. Exclusive of the cost of this
@@ -180,6 +181,12 @@ public:
     // METHODS
     OrderMoveVertex::List& vertexList() { return m_mVertices; }
     uint32_t id() const { return m_id; }
+    int fixedThread() const { return m_fixedThread; }
+    void fixedThread(int thread) { m_fixedThread = thread; }
+    bool canMergeWith(const LogicMTask* otherp) const {
+        return m_fixedThread < 0 || otherp->m_fixedThread < 0
+               || m_fixedThread == otherp->m_fixedThread;
+    }
     bool operator<(const LogicMTask& rhs) const { return id() < rhs.id(); }
 
     uint64_t cost() const VL_MT_SAFE { return m_cost; }

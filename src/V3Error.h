@@ -83,7 +83,7 @@ public:
         BADSTDPRAGMA,   // Any error related to pragmas
         BADVLTPRAGMA,   // Unknown Verilator pragma
         BLKANDNBLK,     // Blocked and non-blocking assignments to same variable
-        BLKLOOPINIT,    // Delayed assignment to array inside for loops
+        BLKLOOPINIT,    // Delayed assignment to array inside for loops. Historical, never issued.
         BLKSEQ,         // Blocking assignments in sequential block
         BSSPACE,        // Backslash space
         CASEINCOMPLETE, // Case statement has missing values
@@ -96,6 +96,7 @@ public:
         CMPCONST,       // Comparison is constant due to limited range
         COLONPLUS,      // :+ instead of +:
         COMBDLY,        // Combinatorial delayed assignment
+        COMBDLYCALL,    // Delayed assignment in a call from combinational logic
         CONSTRAINTIGN,  // Constraint ignored
         CONTASSREG,     // Continuous assignment on reg
         COVERIGN,       // Coverage ignored
@@ -130,6 +131,7 @@ public:
         INSECURE,       // Insecure options
         INSIDETRUE,     // Inside range is always true
         LATCH,          // Latch detected outside of always_latch block
+        LATCHDLY,       // Delayed assignment in always_latch
         LITENDIAN,      // Little endian, renamed to ASCRANGE
         MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
         MISINDENT,      // Misleading indentation
@@ -174,6 +176,7 @@ public:
         SYMRSVDWORD,    // Symbol is Reserved Word
         SYNCASYNCNET,   // Mixed sync + async reset
         TICKCOUNT,      // Too large tick count
+        TIMEPRECTRUNC,  // Time literal truncated by time precision
         TIMESCALEMOD,   // Need timescale for module
         UNDRIVEN,       // No drivers
         UNOPT,          // Unoptimizable block. Historical, never issued.
@@ -188,6 +191,7 @@ public:
         UNUSEDLOOP,     // Loop is unused
         UNUSEDPARAM,    // No receivers for parameters
         UNUSEDSIGNAL,   // No receivers for signals
+        USEBEFOREDECL,  // Parameter referenced before its declaration
         USERERROR,      // Elaboration time $error
         USERFATAL,      // Elaboration time $fatal
         USERINFO,       // Elaboration time $info
@@ -232,25 +236,26 @@ public:
             " EC_FIRST_WARN", "ALWCOMBORDER", "ALWNEVER", "ASCRANGE", "ASSIGNDLY", "ASSIGNEQEXPR",
             "ASSIGNIN", "BADSTDPRAGMA", "BADVLTPRAGMA", "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ",
             "BSSPACE", "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST",
-            "CDCRSTLOGIC", "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN",
-            "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
-            "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "FINALDLY",
-            "FSMMULTI", "FUNCTIMECTL", "FUTURE", "GENCLK", "GENUNNAMED", "HIERBLOCK", "HIERPARAM",
-            "IEEEMAYDEPRECATE", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT",
-            "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP", "INITIALDLY",
-            "INSECURE", "INSIDETRUE", "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP",
-            "MODMISSING", "MULTIDRIVEN", "MULTIDRIVENPROC", "MULTITOP", "NEVERMATCH", "NEWERSTD",
-            "NOEFFECT", "NOLATCH", "NONSTD", "NORETURN", "NOTREDOP", "NULLPORT", "PARAMNODEFAULT",
-            "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL",
-            "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED",
-            "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
-            "SHORTREAL", "SIDEEFFECT", "SIMILARNAME", "SPECIFYIGN", "SPLITVAR", "STATICVAR",
-            "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD",
-            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTPUBLIC", "UNOPTTHREADS", "UNPACKED",
-            "UNSATCONSTR", "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM",
-            "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN",
-            "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHDIGITS", "WIDTHEXPAND", "WIDTHTRUNC",
-            "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
+            "CDCRSTLOGIC", "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "COMBDLYCALL",
+            "CONSTRAINTIGN", "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM",
+            "DEPRECATED", "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE",
+            "FINALDLY", "FSMMULTI", "FUNCTIMECTL", "FUTURE", "GENCLK", "GENUNNAMED", "HIERBLOCK",
+            "HIERPARAM", "IEEEMAYDEPRECATE", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH",
+            "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP",
+            "INITIALDLY", "INSECURE", "INSIDETRUE", "LATCH", "LATCHDLY", "LITENDIAN",
+            "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTIDRIVENPROC",
+            "MULTITOP", "NEVERMATCH", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NORETURN",
+            "NOTREDOP", "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING",
+            "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT",
+            "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED", "PROTOTYPEMIS", "RANDC", "REALCVT",
+            "REDEFMACRO", "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SIMILARNAME",
+            "SPECIFYIGN", "SPLITVAR", "STATICVAR", "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD",
+            "SYNCASYNCNET", "TICKCOUNT", "TIMEPRECTRUNC", "TIMESCALEMOD", "UNDRIVEN", "UNOPT",
+            "UNOPTFLAT", "UNOPTPUBLIC", "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR", "UNSIGNED",
+            "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USEBEFOREDECL",
+            "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH",
+            "WIDTHCONCAT", "WIDTHDIGITS", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY",
+            "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
@@ -274,12 +279,13 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
-                || m_e == BLKLOOPINIT || m_e == COMBDLY || m_e == CONTASSREG || m_e == ENCAPSULATED
-                || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == FINALDLY
-                || m_e == HIERPARAM || m_e == FUNCTIMECTL || m_e == IMPURE || m_e == MODMISSING
-                || m_e == NOTREDOP || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND
-                || m_e == PKGNODECL || m_e == PROCASSWIRE || m_e == PROTOTYPEMIS
-                || m_e == SUPERNFIRST || m_e == ZEROREPL);
+                || m_e == BLKLOOPINIT || m_e == COMBDLYCALL || m_e == CONTASSREG
+                || m_e == ENCAPSULATED || m_e == ENDLABEL || m_e == ENUMITEMWIDTH
+                || m_e == ENUMVALUE || m_e == FINALDLY || m_e == HIERPARAM || m_e == FUNCTIMECTL
+                || m_e == IMPURE || m_e == MODMISSING || m_e == NOTREDOP || m_e == PARAMNODEFAULT
+                || m_e == PINNOTFOUND || m_e == PKGNODECL || m_e == PROCASSWIRE
+                || m_e == PROTOTYPEMIS || m_e == SUPERNFIRST || m_e == USEBEFOREDECL
+                || m_e == ZEROREPL);
     }
     // Warnings to mention manual
     bool mentionManual() const VL_MT_SAFE {
@@ -293,8 +299,8 @@ public:
                 || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST || m_e == CMPCONST
                 || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC || m_e == LATCH
                 || m_e == MISINDENT || m_e == NEWERSTD || m_e == PREPROCZERO || m_e == PINMISSING
-                || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH
-                || m_e == WIDTHDIGITS || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
+                || m_e == REALCVT || m_e == STATICVAR || m_e == TIMEPRECTRUNC || m_e == UNSIGNED
+                || m_e == WIDTH || m_e == WIDTHDIGITS || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
                 || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
@@ -683,8 +689,8 @@ public:
 
 // Global versions, so that if the class doesn't define an operator, we get the functions anyway.
 void v3errorEnd(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex) VL_MT_SAFE;
-void v3errorEndFatal(std::ostringstream& sstr)
-    VL_RELEASE(V3Error::s().m_mutex) VL_MT_SAFE VL_ATTR_NORETURN;
+[[noreturn]] void v3errorEndFatal(std::ostringstream& sstr)
+    VL_RELEASE(V3Error::s().m_mutex) VL_MT_SAFE;
 
 #ifdef VL_MT_DISABLED_CODE_UNIT
 #define VL_MT_DISABLED_CODE_UNIT_DEFINED 1

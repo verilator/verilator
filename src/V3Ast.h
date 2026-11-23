@@ -163,18 +163,18 @@ class VNUser final {
 
 public:
 #ifdef VL_USER_TYPE_CHECKS
-    VNUser() = default;
+    VL_ATTR_ALWINLINE VNUser() = default;
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
-    VNUser(uint64_t i) {
+    VL_ATTR_ALWINLINE VNUser(uint64_t i) {
         // VNUser{0} represents the monostate
         if (i) m_u = i;
     }
-    explicit VNUser(void* p) {
+    VL_ATTR_ALWINLINE explicit VNUser(void* p) {
         // VNUser{nullptr} represents the monostate
         if (p) m_u = p;
     }
-    ~VNUser() = default;
+    VL_ATTR_ALWINLINE ~VNUser() = default;
     // Casters
     template <typename T>
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
@@ -190,15 +190,18 @@ public:
         return *uip;
     }
 #else
-    VNUser() = default;
+    VL_ATTR_ALWINLINE VNUser() = default;
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
-    VNUser(uint64_t i) {
+    VL_ATTR_ALWINLINE VNUser(uint64_t i) {
         m_u.up = nullptr;
         m_u.uq = i;
     }
-    explicit VNUser(void* p) { m_u.up = p; }
-    ~VNUser() = default;
+    VL_ATTR_ALWINLINE explicit VNUser(void* p) {
+        m_u.uq = 0;  // For 32-bit targets where up is 32-bits
+        m_u.up = p;
+    }
+    VL_ATTR_ALWINLINE ~VNUser() = default;
     // Casters
     template <typename T>
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
@@ -600,7 +603,7 @@ protected:
 public:
     // ACCESSORS
     VNType type() const VL_MT_SAFE { return m_type; }
-    const char* typeName() const VL_MT_SAFE { return type().ascii(); }  // See also prettyTypeName
+    const char* typeName() const VL_MT_SAFE { return type().ascii(); }  // See also prettyTypeNameQ
     AstNode* nextp() const VL_MT_STABLE { return m_nextp; }
     AstNode* backp() const VL_MT_STABLE { return m_backp; }
     AstNode* abovep() const;  // Get parent node above, only for list head and tail
@@ -674,22 +677,24 @@ public:
     static string nameNoArray(const string& namein);  // Name with any array index removed
     static string prettyName(const string& namein) VL_PURE;  // Name for printing out to the user
     static string vpiName(const string& namein);  // Name for vpi access
+    // Name for emitting as Verilog, escaped if needed (IEEE 1800-2023 5.6.1)
+    static string verilogIdent(const string& namein);
     static string prettyNameQ(const string& namein) {  // Quoted pretty name (for errors)
         return "'"s + prettyName(namein) + "'";
     }
     // Encode user name into internal C representation
     static string encodeName(const string& namein);
     static string encodeNumber(int64_t num);  // Encode number into internal C representation
-    static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const { return prettyName(name()); }
+    string verilogIdent() const { return verilogIdent(name()); }
     // Name for messages to the user, by default prettyName(), but friendlier for some nodes,
     // such as a specialized class, whose name() is internal
     virtual string prettyNameMsg() const { return prettyName(); }
     string prettyNameQ() const { return "'"s + prettyNameMsg() + "'"; }  // Quoted, for messages
     string verilogName() const { return vpiName(origName()); }  // Decoded original Verilog name
     // "VARREF" for error messages (NOT dtype's pretty name)
-    string prettyTypeName() const;
-    virtual string prettyOperatorName() const { return "operator " + prettyTypeName(); }
+    string prettyTypeNameQ() const;
+    virtual string prettyOperatorName() const { return "operator " + prettyTypeNameQ(); }
     FileLine* fileline() const VL_MT_SAFE { return m_fileline; }
     void fileline(FileLine* fl) { m_fileline = fl; }
     inline bool width1() const;
@@ -785,13 +790,14 @@ public:
 
 #ifdef VL_DEBUG
     uint64_t editCount() const { return m_editCount; }
+#endif
     void editCountInc() {
-        m_editCount = ++s_editCntGbl;  // Preincrement, so can "watch AstNode::s_editCntGbl=##"
+        ++s_editCntGbl;
+#ifdef VL_DEBUG
+        m_editCount = s_editCntGbl;  // Incremented before, so can "watch AstNode::s_editCntGbl=##"
+#endif
         VIsCached::clearCacheTree();  // Any edit clears all caching
     }
-#else
-    void editCountInc() { ++s_editCntGbl; }
-#endif
     static uint64_t editCountLast() VL_MT_SAFE { return s_editCntLast; }
     static uint64_t editCountGbl() VL_MT_SAFE { return s_editCntGbl; }
     static void editCountSetLast() { s_editCntLast = editCountGbl(); }
@@ -803,7 +809,10 @@ public:
     inline bool isNull() const;
     inline bool isZero() const;
     inline bool isOne() const;
+    inline bool isAnyXZ() const;
     inline bool isNeqZero() const;
+    // Whether value is true - same as !$isunknown(x) && x != 0  // x and z are false
+    inline bool isTrue() const;
     inline bool isAllOnes() const;
     inline bool isAllOnesV() const;  // Verilog width rules apply
 
@@ -820,6 +829,7 @@ public:
     void dtypeChgSigned(bool flag = true);
     void dtypeChgWidth(int width, int widthMin);
     void dtypeChgWidthSigned(int width, int widthMin, VSigning numeric);
+    void dtypeChgStates(const bool isFourstate) { dtypep(findStatesCounterpart(isFourstate)); }
     void dtypeSetBitUnsized(int width, int widthMin, VSigning numeric) {
         dtypep(findBitDType(width, widthMin, numeric));
     }
@@ -894,6 +904,8 @@ public:
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogic2StateDType(int width, int widthMin, VSigning numeric) const;
+    AstNodeDType* findLogic2StateRangeDType(const VNumRange& range, int widthMin,
+                                            VSigning numeric) const VL_MT_STABLE;
     AstNodeDType* findBitOrLogicDType(int width, int widthMin, VSigning numeric,
                                       bool isFourstate) const {
         return isFourstate ? findLogicDType(width, widthMin, numeric)
@@ -910,6 +922,7 @@ public:
     AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin,
                                     VSigning numeric) const VL_MT_STABLE;
     AstNodeDType* findBasicDType(VBasicDTypeKwd kwd) const;
+    AstNodeDType* findStatesCounterpart(bool isFourstate) const;
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     static VCastable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
@@ -918,7 +931,7 @@ public:
 
     // METHODS - dump and error
     void v3errorEnd(const std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
-    void v3errorEndFatal(const std::ostringstream& str) const VL_ATTR_NORETURN
+    [[noreturn]] void v3errorEndFatal(const std::ostringstream& str) const
         VL_RELEASE(V3Error::s().m_mutex);
     string warnContextPrimary() const VL_REQUIRES(V3Error::s().m_mutex) {
         return fileline()->warnContextPrimary();
@@ -1026,7 +1039,7 @@ public:
     virtual bool isBrancher() const { return false; }
     // Else a AstTime etc that can't be pushed out
     virtual bool isGateOptimizable() const { return !isTimingControl(); }
-    // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
+    // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstIf)
     virtual bool isGateDedupable() const { return isGateOptimizable(); }
     // Whether the node can be used in expression coverage
     virtual bool isExprCoverageEligible() const { return isGateDedupable(); }
@@ -1468,6 +1481,7 @@ void AstNode::foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& f
 
     // Visit given node, enqueue children for traversal
     const auto visit = [&](Node* currp) {
+        V3Global::opCountInc();
         // Type test this node
         if (AstNode::privateTypeTest<T_Arg_NonConst>(currp)) {
             // Call the client function
@@ -1552,6 +1566,7 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable&
 
     // Visit given node, enqueue children for traversal, return true if result determined.
     const auto visit = [&](Node* currp) {
+        V3Global::opCountInc();
         // Type test this node
         if (AstNode::privateTypeTest<T_Arg_NonConst>(currp)) {
             // Call the client function
@@ -1728,7 +1743,7 @@ class VDTypeNameScopes final {
     static const VDTypeNameScopes* s_currentp;  // Index in use, or nullptr if none
 
     // METHODS
-    void index(AstNode* nodep, AstNode* scopep);
+    void index(AstNode* nodesp, AstNode* scopep);
     VL_UNCOPYABLE(VDTypeNameScopes);
     VL_UNMOVABLE(VDTypeNameScopes);
 
@@ -1793,6 +1808,7 @@ AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
 #include "V3AstNodeDType.h"
 #include "V3AstNodeOther.h"
 #include "V3AstNodeExpr.h"
+#include "V3AstNodeRtmd.h"
 #include "V3AstNodeStmt.h"
 // clang-format on
 

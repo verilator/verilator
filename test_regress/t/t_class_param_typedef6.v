@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2025 Wilson Snyder
+// SPDX-FileCopyrightText: 2025-2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
 // verilog_format: off
@@ -15,6 +15,16 @@ class pipeline_class #(
 
   typedef struct packed {XWORD pc;} if_id_t;
 
+endclass
+
+class config_t;
+  typedef logic [30:0] if_out_t;
+endclass
+
+class config_extractor #(
+    parameter type T
+);
+  typedef T::if_out_t if_out_t;
 endclass
 
 module pipe_reg #(
@@ -31,12 +41,14 @@ module the_top #() ();
   typedef logic [7:0] my_t;
   typedef pipeline_class#(my_t)::if_id_t if_id2_t;
   typedef if_id2_t if_id_t;
+  typedef config_extractor#(config_t)::if_out_t if_out_t;
   pipe_reg #(if_id_t) if_id_reg ();
 
   initial begin
     #1;
     #1;
     `checkd($bits(if_id_t), 8);
+    `checkd($bits(if_out_t), 31);
     $write("*-* All Finished *-*\n");
     $finish;
   end

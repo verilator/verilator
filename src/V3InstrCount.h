@@ -38,6 +38,8 @@ public:
     // if we see the same node twice (across more than one call to count,
     // potentially) raises an error.
     // Optional osp is stream to dump critical path to.
+    //
+    // Also predicts each AstIf without a prediction yet, see V3Branch.
     static uint32_t count(AstNode* nodep, bool assertNoDups,
                           std::ostream* osp = nullptr) VL_MT_DISABLED;
 };

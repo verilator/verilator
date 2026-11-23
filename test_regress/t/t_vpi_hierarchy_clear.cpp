@@ -18,7 +18,7 @@
 #include <verilated.h>
 
 #include "TestVpi.h"
-#include "Vt_vpi_hierarchy_clear.h"
+#include VM_PREFIX_INCLUDE
 #include "Vt_vpi_hierarchy_clear__Syms.h"
 
 #include <memory>

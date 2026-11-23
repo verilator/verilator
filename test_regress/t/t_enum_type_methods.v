@@ -33,6 +33,8 @@ module t (
 
   string s;
 
+  localparam THREE = 3;
+
   // Check constification
   initial begin
     e = E03;
@@ -90,8 +92,6 @@ module t (
     if (b.next(3)) `stop;  // B0
     if (b.prev(3)) `stop;  // B0
   end
-
-  localparam THREE = 3;
 
   // A value not in the enum steps to the default value of the base type, which is not an item
   // here (IEEE 1800-2023 6.19.5.3, Table 6-7)

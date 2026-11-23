@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')  # no vltmt, as AstMemberSel is unhandled in V3InstrCount
+test.scenarios('vlt')  # no vltmt, as AstMemberRef is unhandled in V3InstrCount
 
 test.lint(fails=True, expect_filename=test.golden_filename)
 

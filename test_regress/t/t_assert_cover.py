@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--assert --cc --coverage-user'],
+test.compile(verilator_flags2=['--assert --timing --cc --coverage-user'],
              nc_flags2=["+nccovoverwrite +nccoverage+all +nccovtest+" + test.name])
 
 test.execute()
@@ -35,5 +35,7 @@ test.file_grep(test.run_log_filename, r'COVER: Cyc==6')
 
 # Allow old SystemC::Coverage format dump, or new binary dump
 test.file_grep(test.coverage_filename, r'(cyc_eq_5.*,c=>[^0]|cyc_eq_5.* [1-9][0-9]*\n)')
+test.file_grep(test.coverage_filename,
+               r'(labeled_case_icov.*,c=>[^0]|labeled_case_icov.* [1-9][0-9]*\n)')
 
 test.passes()

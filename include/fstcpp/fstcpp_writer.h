@@ -261,6 +261,8 @@ private:
 		// Original FST code comments: as a default, use 128MB and increment when
 		// every 1M signals are defined.
 		m_value_change_data_flush_threshold_ = (((m_header_.m_num_handles - 1) >> 20) + 1) << 27;
+		appendGeometry_(m_main_fst_file_);
+		appendHierarchy_(m_main_fst_file_);
 	}
 	template <typename... T>
 	void emitValueChangeHelper_(Handle handle, T &&...val);

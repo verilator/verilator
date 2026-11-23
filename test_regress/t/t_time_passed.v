@@ -13,8 +13,10 @@ module t (
 
   time in;
   // verilator lint_off REALCVT
+  // verilator lint_off TIMEPRECTRUNC
   initial in = 5432109876.543210ns;  // Will round to time units
   // verilator lint_on REALCVT
+  // verilator lint_off TIMEPRECTRUNC
 
   // This shows time changes when passed between modules with different units
   // See also discussion in uvm_tlm2_time.svh

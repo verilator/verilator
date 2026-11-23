@@ -1,0 +1,33 @@
+%Warning-IMPLICIT: t/t_gen_implicit_port.v:30:12: Signal definition not found, creating implicitly: 'x'
+   30 |         .a(x),
+      |            ^
+                   ... For warning description see https://verilator.org/warn/IMPLICIT?v=latest
+                   ... Use "/* verilator lint_off IMPLICIT */" and lint_on around source to disable this message.
+%Warning-IMPLICIT: t/t_gen_implicit_port.v:35:12: Signal definition not found, creating implicitly: 'x_expr'
+   35 |         .a(x_expr | 2'b00),
+      |            ^~~~~~
+%Error-USEBEFOREDECL: t/t_gen_implicit_port.v:46:12: Reference to parameter 'P' before its declaration (IEEE 1800-2023 6.20.1)
+                                                   : ... Suggest move the declaration before the reference
+   46 |         .a(P),
+      |            ^
+                      t/t_gen_implicit_port.v:95:26: ... Location of declaration
+   95 |   localparam logic [1:0] P = 2'b11;
+      |                          ^
+                      ... For error description see https://verilator.org/warn/USEBEFOREDECL?v=latest
+%Warning-IMPLICIT: t/t_gen_implicit_port.v:55:14: Signal definition not found, creating implicitly: 'x_nested'
+                                                : ... Suggested alternative: 'y_nested'
+   55 |           .a(x_nested),
+      |              ^~~~~~~~
+%Warning-IMPLICIT: t/t_gen_implicit_port.v:65:12: Signal definition not found, creating implicitly: 'x_if'
+   65 |         .a(x_if),
+      |            ^~~~
+%Warning-IMPLICIT: t/t_gen_implicit_port.v:73:12: Signal definition not found, creating implicitly: 'x_blk'
+   73 |     assign x_blk = 1'b1;
+      |            ^~~~~
+%Warning-IMPLICIT: t/t_gen_implicit_port.v:81:13: Signal definition not found, creating implicitly: 'x_blk'
+   81 |         .a({x_blk, 1'b0}),
+      |             ^~~~~
+%Warning-IMPLICIT: t/t_gen_implicit_port.v:88:12: Signal definition not found, creating implicitly: 'x_assign'
+   88 |     assign x_assign = 1'b1;
+      |            ^~~~~~~~
+%Error: Exiting due to

@@ -2498,6 +2498,21 @@ extern "C" int releaseSingleBit(  // NOLINT(readability-function-cognitive-compl
 }
 
 #ifdef VERILATOR
+int forceTopPort_cpp(const int value, const int releasePort) {
+    if (!releasePort) return forceSignal("TOP", "obs", vpiIntVal, {.integer = value});
+    TestVpiHandle const handle = vpi_handle_by_name(const_cast<PLI_BYTE8*>("TOP.obs"), nullptr);
+    CHECK_RESULT_NZ(handle);
+    s_vpi_value released{};
+    released.format = vpiIntVal;
+    vpi_put_value(handle, &released, nullptr, vpiReleaseFlag);
+    CHECK_RESULT_Z(vpiCheckErrorLevel(maxAllowedErrorLevel));
+    return 0;
+}
+
+int checkTopPort_cpp(const int expected) {
+    return checkValue("TOP", "obs", vpiIntVal, {.integer = expected});
+}
+
 // For calling from $c, which cannot declare an extern "C" function
 int checkContinuousValuesPartiallyReleased_cpp() {
     return checkContinuousValuesPartiallyReleased();

@@ -96,9 +96,9 @@ module t_randomize_union;
   UnionInUnionUnconstrainedTest test_union_in_union_unconstrained;
 
   initial begin
-    // Test 1: SimpleUnion Constrained Test
+    // Test: SimpleUnion Constrained Test
     test_simple_union_constrained = new();
-    $display("\n--- Test 1: SimpleUnion Constrained Test ---");
+    $display("\n--- Test: SimpleUnion Constrained Test ---");
     repeat (10) begin
       int success;
       success = test_simple_union_constrained.randomize();
@@ -108,9 +108,9 @@ module t_randomize_union;
                test_simple_union_constrained.union_instance.bits);
     end
 
-    // Test 2: SimpleUnion Unconstrained Test
+    // Test: SimpleUnion Unconstrained Test
     test_simple_union_unconstrained = new();
-    $display("\n--- Test 2: SimpleUnion Unconstrained Test ---");
+    $display("\n--- Test: SimpleUnion Unconstrained Test ---");
     repeat (10) begin
       int success;
       success = test_simple_union_unconstrained.randomize();
@@ -120,9 +120,9 @@ module t_randomize_union;
                test_simple_union_unconstrained.union_instance.bits);
     end
 
-    // Test 3: StructInUnion Constrained Test
+    // Test: StructInUnion Constrained Test
     test_struct_in_union_constrained = new();
-    $display("\n--- Test 3: StructInUnion Constrained Test ---");
+    $display("\n--- Test: StructInUnion Constrained Test ---");
     repeat (10) begin
       int success;
       success = test_struct_in_union_constrained.randomize();
@@ -133,9 +133,9 @@ module t_randomize_union;
                test_struct_in_union_constrained.union_instance.inner_bits);
     end
 
-    // Test 4: StructInUnion Unconstrained Test
+    // Test: StructInUnion Unconstrained Test
     test_struct_in_union_unconstrained = new();
-    $display("\n--- Test 4: StructInUnion Unconstrained Test ---");
+    $display("\n--- Test: StructInUnion Unconstrained Test ---");
     repeat (10) begin
       int success;
       success = test_struct_in_union_unconstrained.randomize();
@@ -146,9 +146,9 @@ module t_randomize_union;
                test_struct_in_union_unconstrained.union_instance.inner_bits);
     end
 
-    // Test 5: UnionInUnion Constrained Test
+    // Test: UnionInUnion Constrained Test
     test_union_in_union_constrained = new();
-    $display("\n--- Test 5: UnionInUnion Constrained Test ---");
+    $display("\n--- Test: UnionInUnion Constrained Test ---");
     repeat (10) begin
       int success;
       success = test_union_in_union_constrained.randomize();
@@ -159,9 +159,9 @@ module t_randomize_union;
                test_union_in_union_constrained.union_instance.inner_union.struct_fields.field_b);
     end
 
-    // Test 6: UnionInUnion Unconstrained Test
+    // Test: UnionInUnion Unconstrained Test
     test_union_in_union_unconstrained = new();
-    $display("\n--- Test 6: UnionInUnion Unconstrained Test ---");
+    $display("\n--- Test: UnionInUnion Unconstrained Test ---");
     repeat (10) begin
       int success;
       success = test_union_in_union_unconstrained.randomize();

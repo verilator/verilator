@@ -263,7 +263,7 @@ module fsm_combo_sel_expr_bad (
   end
 endmodule
 
-module fsm_normalized_if_noelse_bad (
+module fsm_normalized_if_noelse (
     input logic clk
 );
   typedef enum logic [1:0] {
@@ -843,6 +843,74 @@ module fsm_reset_then_bad (
 
 endmodule
 
+module fsm_oneblock_guarded (
+    input logic clk
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+  logic rst;
+  integer cyc;
+  state_t state_q;
+
+  initial begin
+    rst = 1'b1;
+    cyc = 0;
+  end
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 1) rst <= 1'b0;
+  end
+  // A register that is not assigned holds its state
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else
+      case (state_q)
+        S0: if (cyc[0]) state_q <= S1;
+        S1:
+        if (cyc[1]) state_q <= S2;
+        else if (cyc[2]) state_q <= S0;
+        default: state_q <= S0;
+      endcase
+  end
+endmodule
+
+module fsm_forced_guarded (
+    input logic clk
+);
+  localparam logic [1:0] IDLE = 2'd0;
+  localparam logic [1:0] RUN = 2'd1;
+  localparam logic [1:0] DONE = 2'd2;
+  logic rst;
+  integer cyc;
+  logic [1:0] state_q  /*verilator fsm_state*/;
+  logic [1:0] state_d;
+
+  initial begin
+    rst = 1'b1;
+    cyc = 0;
+  end
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 1) rst <= 1'b0;
+  end
+  // DONE is only a guarded target, not a case item
+  always_comb begin
+    state_d = state_q;
+    case (state_q)
+      IDLE: if (cyc[0]) state_d = RUN;
+      RUN: if (!cyc[0]) state_d = DONE;
+      default: ;
+    endcase
+  end
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= IDLE;
+    else state_q <= state_d;
+  end
+endmodule
+
 module t (
     input logic clk
 );
@@ -855,7 +923,7 @@ module t (
   fsm_oneblock_then_bad oneblock_then_bad_u (.clk(clk));
   fsm_oneblock_else_bad oneblock_else_bad_u (.clk(clk));
   fsm_combo_sel_expr_bad combo_sel_expr_bad_u (.clk(clk));
-  fsm_normalized_if_noelse_bad normalized_if_noelse_bad_u (.clk(clk));
+  fsm_normalized_if_noelse normalized_if_noelse_u (.clk(clk));
   fsm_normalized_if_then_nonconst_bad normalized_if_then_nonconst_bad_u (.clk(clk));
   fsm_normalized_if_else_nonconst_bad normalized_if_else_nonconst_bad_u (.clk(clk));
   fsm_normalized_if_temp_mismatch_bad normalized_if_temp_mismatch_bad_u (.clk(clk));
@@ -869,6 +937,8 @@ module t (
   fsm_forced_if_wide forced_if_wide_u (.clk(clk));
   fsm_reset_commit_mismatch_bad reset_commit_mismatch_bad_u (.clk(clk));
   fsm_reset_then_bad reset_then_bad_u (.clk(clk));
+  fsm_oneblock_guarded oneblock_guarded_u (.clk(clk));
+  fsm_forced_guarded forced_guarded_u (.clk(clk));
 
   initial cyc = 0;
 

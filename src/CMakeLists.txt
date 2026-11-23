@@ -42,6 +42,7 @@ set(HEADERS
     V3Active.h
     V3ActiveTop.h
     V3Assert.h
+    V3AssertElab.h
     V3AssertNfa.h
     V3AssertPre.h
     V3Ast.h
@@ -50,9 +51,9 @@ set(HEADERS
     V3AstNodeDType.h
     V3AstNodeExpr.h
     V3AstNodeOther.h
+    V3AstNodeRtmd.h
     V3AstNodeStmt.h
     V3AstPatterns.h
-    V3AstUserAllocator.h
     V3Begin.h
     V3BitBlast.h
     V3Branch.h
@@ -65,7 +66,7 @@ set(HEADERS
     V3Cfg.h
     V3Class.h
     V3Clean.h
-    V3Clock.h
+    V3Coalesce.h
     V3Combine.h
     V3Common.h
     V3Const.h
@@ -156,6 +157,7 @@ set(HEADERS
     V3OrderMoveGraph.h
     V3OrderMTaskGraph.h
     V3Os.h
+    V3Outline.h
     V3PairingHeap.h
     V3Param.h
     V3Parse.h
@@ -173,6 +175,7 @@ set(HEADERS
     V3Randomize.h
     V3Reloop.h
     V3Reorder.h
+    V3Rtmd.h
     V3Rtti.h
     V3Sampled.h
     V3Sched.h
@@ -182,6 +185,8 @@ set(HEADERS
     V3SharedTmps.h
     V3Simulate.h
     V3Slice.h
+    V3SolverBackend.h
+    V3SolverSmt.h
     V3Split.h
     V3StackCount.h
     V3Stats.h
@@ -194,7 +199,6 @@ set(HEADERS
     V3ThreadPool.h
     V3Timing.h
     V3Trace.h
-    V3TraceDecl.h
     V3Tristate.h
     V3Udp.h
     V3Undriven.h
@@ -202,6 +206,7 @@ set(HEADERS
     V3UniqueNames.h
     V3Unknown.h
     V3Unroll.h
+    V3VNUserAllocator.h
     V3VariableOrder.h
     V3Waiver.h
     V3Width.h
@@ -220,6 +225,7 @@ set(COMMON_SOURCES
     V3Active.cpp
     V3ActiveTop.cpp
     V3Assert.cpp
+    V3AssertElab.cpp
     V3AssertNfa.cpp
     V3AssertPre.cpp
     V3Ast.cpp
@@ -238,7 +244,7 @@ set(COMMON_SOURCES
     V3CfgLiveVariables.cpp
     V3Class.cpp
     V3Clean.cpp
-    V3Clock.cpp
+    V3Coalesce.cpp
     V3Combine.cpp
     V3Common.cpp
     V3ConstPool.cpp
@@ -279,6 +285,7 @@ set(COMMON_SOURCES
     V3EmitCMain.cpp
     V3EmitCModel.cpp
     V3EmitCPch.cpp
+    V3EmitCRtmd.cpp
     V3EmitCSyms.cpp
     V3EmitMk.cpp
     V3EmitMkJson.cpp
@@ -338,6 +345,7 @@ set(COMMON_SOURCES
     V3OrderProcessDomains.cpp
     V3OrderSerial.cpp
     V3Os.cpp
+    V3Outline.cpp
     V3Param.cpp
     V3ParseGrammar.cpp
     V3ParseImp.cpp
@@ -351,6 +359,8 @@ set(COMMON_SOURCES
     V3Randomize.cpp
     V3Reloop.cpp
     V3Reorder.cpp
+    V3Rtmd.cpp
+    V3RtmdScoped.cpp
     V3Sampled.cpp
     V3Sched.cpp
     V3SchedAcyclic.cpp
@@ -364,6 +374,8 @@ set(COMMON_SOURCES
     V3SchedVirtIface.cpp
     V3Scope.cpp
     V3Slice.cpp
+    V3SolverBackend.cpp
+    V3SolverSmt.cpp
     V3Split.cpp
     V3StackCount.cpp
     V3Stats.cpp
@@ -375,7 +387,6 @@ set(COMMON_SOURCES
     V3ThreadPool.cpp
     V3Timing.cpp
     V3Trace.cpp
-    V3TraceDecl.cpp
     V3Tristate.cpp
     V3Udp.cpp
     V3Undriven.cpp
@@ -416,8 +427,8 @@ add_custom_command(
     COMMAND ${PYTHON3}
     ARGS
         ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef
-        V3AstNodeExpr.h --astdef V3AstNodeOther.h --astdef V3AstNodeStmt.h
-        --dfgdef V3DfgVertices.h --classes
+        V3AstNodeExpr.h --astdef V3AstNodeOther.h --astdef V3AstNodeRtmd.h
+        --astdef V3AstNodeStmt.h --dfgdef V3DfgVertices.h --classes
 )
 list(
     APPEND GENERATED_FILES
@@ -528,8 +539,8 @@ foreach(astgen_name ${ASTGENERATED_NAMES})
         COMMAND ${PYTHON3}
         ARGS
             ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef
-            V3AstNodeExpr.h --astdef V3AstNodeOther.h --astdef V3AstNodeStmt.h
-            --dfgdef V3DfgVertices.h ${astgen_name}.cpp
+            V3AstNodeExpr.h --astdef V3AstNodeOther.h --astdef V3AstNodeRtmd.h
+            --astdef V3AstNodeStmt.h --dfgdef V3DfgVertices.h ${astgen_name}.cpp
     )
     list(APPEND GENERATED_FILES ${astgen_name}__gen.cpp)
 endforeach()

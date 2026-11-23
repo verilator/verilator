@@ -20,7 +20,6 @@
 -V{t#,#}+        Vt_timing_debug2_t__03A__03ANoDelay::new
 -V{t#,#}+        Vt_timing_debug2_t__03A__03AAssignDelayClass::new
 -V{t#,#}+        Vt_timing_debug2_t__03A__03AAssignDelayClass::_ctor_var_reset
--V{t#,#}+    Vt_timing_debug2___024root___timing_ready
 -V{t#,#}+    Vt_timing_debug2___024root___eval_initial
 -V{t#,#}+      Vt_timing_debug2_t___eval_initial__TOP__t__Vtiming__0
 -V{t#,#}+    Vt_timing_debug2___024root____VbeforeTrig_h########__0

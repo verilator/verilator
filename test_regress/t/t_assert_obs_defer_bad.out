@@ -1,0 +1,17 @@
+%Error: t/t_assert_obs_defer_bad.v:18:10: Observed deferred immediate assertion action block must be a single subroutine call (IEEE 1800-2023 16.4).
+   18 |     else begin
+      |          ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assert_obs_defer_bad.v:23:12: Observed deferred immediate assertion action block must be a single subroutine call (IEEE 1800-2023 16.4).
+   23 |     else x = 1;
+      |            ^
+%Error: t/t_assert_obs_defer_bad.v:25:10: Observed deferred immediate assertion action block must be a single subroutine call (IEEE 1800-2023 16.4).
+   25 |     else if (x[0]) report(2);
+      |          ^~
+%Error: t/t_assert_obs_defer_bad.v:27:11: Observed deferred immediate assertion action block must be a single subroutine call (IEEE 1800-2023 16.4).
+   27 |     else x++;
+      |           ^~
+%Error: t/t_assert_obs_defer_bad.v:29:24: Observed deferred immediate assertion action argument must be input, ref, or const ref (IEEE 1800-2023 16.4).
+   29 |     else report_output(x);
+      |                        ^
+%Error: Exiting due to

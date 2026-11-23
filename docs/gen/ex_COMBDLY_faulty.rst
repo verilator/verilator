@@ -4,4 +4,4 @@
    :emphasize-lines: 2
 
      logic a, b;
-     always_comb b <= a;  // <--- Error
+     always_comb b <= a;  // <--- Warning

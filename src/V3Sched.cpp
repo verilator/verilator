@@ -58,13 +58,13 @@ namespace {
 //============================================================================
 // Utility functions
 
-std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicByScope*>& lbsps) {
+std::vector<const AstSenTree*>
+getSenTreesUsedBy(const std::vector<const ProcessList*>& procListps) {
     const VNUser1InUse user1InUse;
     std::vector<const AstSenTree*> result;
-    for (const LogicByScope* const lbsp : lbsps) {
-        for (const auto& entry : *lbsp) {
-            AstActive* const activep = entry.m_activep;
-            AstSenTree* const senTreep = activep->sentreep();
+    for (const ProcessList* const procListp : procListps) {
+        for (const Process& process : *procListp) {
+            AstSenTree* const senTreep = process.m_senTreep;
             if (senTreep->user1SetOnce()) continue;
             if (senTreep->hasClocked() || senTreep->hasHybrid()) result.push_back(senTreep);
         }
@@ -72,11 +72,11 @@ std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicBy
     return result;
 }
 
-void addTriggerIndices(LogicByScope& lbs, const TriggerKit& trigKit, bool pre) {
-    for (LogicByScope::Entry& entry : lbs) {
-        AstSenTree* const senTreep = entry.m_activep->sentreep();
+void addTriggerIndices(ProcessList& procList, const TriggerKit& trigKit, bool pre) {
+    for (const Process& process : procList) {
+        AstSenTree* const senTreep = process.m_senTreep;
         if (senTreep->hasCombo()) continue;
-        entry.m_triggers = trigKit.triggerIndices(senTreep, pre);
+        procList.triggers(senTreep, trigKit.triggerIndices(senTreep, pre));
     }
 }
 
@@ -119,11 +119,7 @@ void createEvalRegion(
     AstVarScope* trigp,  // The trigger vector - may be nullptr if no triggers or using 'condp'
     AstNodeExpr* condp,  // Explicit condition that must be true to run 'phaseWorkp'
     AstNodeStmt* phasePrepp,  // Prep statements run before checking triggers
-    AstNodeStmt* phaseWorkp,  // The work to do if anything triggered
-    // Extra statements to run after the work, even if no triggers fired. This function is
-    // passed a variable, which must be set to true if we must continue and loop again,
-    // and must be unmodified otherwise.
-    std::function<AstNodeStmt*(AstVarScope*)> phaseExtra = [](AstVarScope*) { return nullptr; }  //
+    AstNodeStmt* phaseWorkp  // The work to do if anything triggered
 ) {
     UASSERT(!trigp || !condp, "Cannot use both 'trigp' and 'condp' in 'createEvalRegion'");
     UASSERT(!eval.firstIteration() || trigp,
@@ -187,13 +183,9 @@ void createEvalRegion(
             funcp->addStmtsp(ifp);
         }
 
-        // Construct the extra statements
-        AstNodeStmt* const extraWorkp = phaseExtra(executeFlagp);
-        if (extraWorkp) funcp->addStmtsp(extraWorkp);
-
         // The function returns true iff it did run work
         AstNodeExpr* const retp
-            = phaseWorkp || extraWorkp
+            = phaseWorkp
                   ? static_cast<AstNodeExpr*>(new AstVarRef{flp, executeFlagp, VAccess::READ})
                   : static_cast<AstNodeExpr*>(new AstConst{flp, AstConst::BitFalse{}});
         funcp->addStmtsp(new AstCReturn{flp, retp});
@@ -205,42 +197,55 @@ void createEvalRegion(
 
 LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
     LogicClasses result;
+    VNDeleter deleter;  // Deletes the AstActives once their processes are moved
 
     netlistp->foreach([&](AstScope* scopep) {
         scopep->foreach([&](AstActive* activep) {
             AstSenTree* const senTreep = activep->sentreep();
+            ProcessList* logicClassp = nullptr;
             if (senTreep->hasStatic()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "static initializer with additional sensitivities");
-                result.m_static.add(scopep, activep);
+                logicClassp = &result.m_static;
             } else if (senTreep->hasInitial()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "'initial' logic with additional sensitivities");
-                result.m_initial.add(scopep, activep);
+                logicClassp = &result.m_initial;
             } else if (senTreep->hasFinal()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "'final' logic with additional sensitivities");
-                result.m_final.add(scopep, activep);
+                logicClassp = &result.m_final;
             } else if (senTreep->hasCombo()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "combinational logic with additional sensitivities");
                 if (activep->isPostponed()) {
-                    UASSERT_OBJ(!activep->stmtsp()->nextp(), activep,
+                    UASSERT_OBJ(!activep->procsp()->nextp(), activep,
                                 "AlwaysPostponed must be alone under its active");
-                    result.m_postponed.add(scopep, activep);
+                    logicClassp = &result.m_postponed;
                 } else {
-                    result.m_comb.add(scopep, activep);
+                    logicClassp = &result.m_comb;
                 }
             } else {
                 UASSERT_OBJ(senTreep->hasClocked(), activep, "What else could it be?");
-                if (VN_IS(activep->stmtsp(), AlwaysObserved)) {
-                    result.m_observed.add(scopep, activep);
-                } else if (VN_IS(activep->stmtsp(), AlwaysReactive)) {
-                    result.m_reactive.add(scopep, activep);
+                if (VN_IS(activep->procsp(), AlwaysObserved)) {
+                    logicClassp = &result.m_observed;
+                } else if (VN_IS(activep->procsp(), AlwaysReactive)) {
+                    logicClassp = &result.m_reactive;
                 } else {
-                    result.m_clocked.add(scopep, activep);
+                    logicClassp = &result.m_clocked;
                 }
             }
+            // Move the processes to their class, the AstActive is no longer needed
+            while (AstNodeProcedure* const procp = activep->procsp()) {
+                procp->unlinkFrBack();
+                // Only combinational logic has implicit sensitivities
+                std::unordered_set<const AstVarScope*> implicitSensitivities;
+                if (senTreep->hasCombo()) {
+                    implicitSensitivities = util::computeImplicitSensitivities(procp);
+                }
+                logicClassp->add({scopep, senTreep, procp, std::move(implicitSensitivities)});
+            }
+            VL_DO_DANGLING(deleter.pushDeletep(activep->unlinkFrBack()), activep);
         });
     });
 
@@ -250,7 +255,7 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
 //============================================================================
 // Simple ordering in source order
 
-void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
+void orderSequentially(AstCFunc* funcp, ProcessList& procList) {
     // Create new subfunc for scope
     const auto createNewSubFuncp = [&](AstScope* const scopep) {
         const string subName{funcp->name() + "__" + scopep->nameDotless()};
@@ -266,78 +271,52 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
     };
     const VNUser1InUse user1InUse;  // AstScope -> AstCFunc: the sub-function for the scope
     const VNUser2InUse user2InUse;  // AstScope -> int: sub-function counter used for names
-    for (const auto& entry : lbs) {
-        AstScope* const scopep = entry.m_scopep;
-        AstActive* const activep = entry.m_activep;
+    for (const Process& process : procList) {
+        AstScope* const scopep = process.m_scopep;
+        AstNodeProcedure* const procp = process.m_procp;
         // Create a sub-function per scope so we can V3Combine them later
         if (!scopep->user1p()) scopep->user1p(createNewSubFuncp(scopep));
         // Add statements to sub-function
-        for (AstNode* const logicp : activep->stmtspList()) {
-            auto* subFuncp = VN_AS(scopep->user1p(), CFunc);
-            if (AstNodeProcedure* const procp = VN_CAST(logicp, NodeProcedure)) {
-                if (AstNode* bodyp = procp->stmtsp()) {
-                    bodyp->unlinkFrBackWithNext();
-                    // If the process is suspendable, we need a separate function (a coroutine)
-                    if (procp->isSuspendable()) {
-                        funcp->slow(false);
-                        subFuncp = createNewSubFuncp(scopep);
-                        subFuncp->name(subFuncp->name() + "__Vtiming__"
-                                       + cvtToStr(scopep->user2Inc()));
-                        subFuncp->rtnType("VlCoroutine");
-                        if (VN_IS(procp, Always)) {
-                            subFuncp->slow(false);
-                            FileLine* const flp = procp->fileline();
-                            AstNodeExpr* const condp = new AstCExpr{
-                                flp, "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1};
-                            AstLoop* const loopp = new AstLoop{flp};
-                            loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
-                            loopp->addStmtsp(bodyp);
-                            bodyp = loopp;
-                        }
-                    }
-                    subFuncp->addStmtsp(bodyp);
-                    if (procp->needProcess()) subFuncp->setNeedProcess();
-                    // A coroutine holds a single process, so it is complete here
-                    if (procp->isSuspendable()) util::splitCheck(subFuncp);
-                }
-            } else {
-                logicp->unlinkFrBack();
-                subFuncp->addStmtsp(logicp);
+        auto* subFuncp = VN_AS(scopep->user1p(), CFunc);
+        if (AstNodeStmt* const bodyp = procp->stmtsp()) {
+            bodyp->unlinkFrBackWithNext();
+            // If the process is suspendable, we need a separate function (a coroutine)
+            if (procp->isSuspendable()) {
+                funcp->slow(false);
+                subFuncp = createNewSubFuncp(scopep);
+                subFuncp->name(subFuncp->name() + "__Vtiming__" + cvtToStr(scopep->user2Inc()));
+                subFuncp->rtnType("VlCoroutine");
             }
+            subFuncp->addStmtsp(bodyp);
+            if (procp->needsVlProcess()) subFuncp->setNeedsVlProcess();
+            // A coroutine holds a single process, so it is complete here
+            if (procp->isSuspendable()) util::splitCheck(subFuncp);
         }
-        if (activep->backp()) activep->unlinkFrBack();
-        VL_DO_DANGLING(activep->deleteTree(), activep);
     }
     // Split sub-functions once complete
-    for (const auto& entry : lbs) {
-        AstScope* const scopep = entry.m_scopep;
+    for (const Process& process : procList) {
+        AstScope* const scopep = process.m_scopep;
         if (AstCFunc* const subFuncp = VN_AS(scopep->user1p(), CFunc)) {
             util::splitCheck(subFuncp);
             scopep->user1p(nullptr);
         }
     }
+    procList.deleteProcesses();
 }
 
 //============================================================================
 // Create simply ordered functions
 
-AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
+AstCFunc* createStatic(AstNetlist* netlistp, LogicClasses& logicClasses) {
     AstCFunc* const funcp = netlistp->evalFuncp(VEval::STATIC);
-
-    const LogicByScope& orig = logicClasses.m_static;
-    if (orig.size() <= 1) {
-        orderSequentially(funcp, orig);
-        return funcp;
-    }
 
     // Level-based module sorting can reorder packages so that an importing
     // package runs before the imported one.  Re-sort package entries by source
     // file position to restore compilation order (IEEE 1800-2023 26.3).
-    std::vector<size_t> indices(orig.size());
-    for (size_t i = 0; i < orig.size(); ++i) indices[i] = i;
-    std::stable_sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {
-        const AstNodeModule* const modAp = orig[a].m_scopep->modp();
-        const AstNodeModule* const modBp = orig[b].m_scopep->modp();
+    ProcessList& procList = logicClasses.m_static;
+    std::stable_sort(procList.begin(), procList.end(), [](const Process& a, const Process& b) {
+        const AstNodeModule* const modAp = a.m_scopep->modp();
+        const AstNodeModule* const modBp = b.m_scopep->modp();
         const bool isPkgA = VN_IS(modAp, Package);
         const bool isPkgB = VN_IS(modBp, Package);
         if (isPkgA != isPkgB) return isPkgA;  // Packages before non-packages
@@ -347,26 +326,24 @@ AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
         }
         return false;  // Both non-package: preserve original order
     });
-    LogicByScope sorted;
-    for (const size_t i : indices) sorted.add(orig[i].m_scopep, orig[i].m_activep);
 
-    orderSequentially(funcp, sorted);
+    orderSequentially(funcp, procList);
     return funcp;  // Not splitting yet as it is not final
 }
 
-void createInitial(AstNetlist* netlistp, const LogicClasses& logicClasses) {
+void createInitial(AstNetlist* netlistp, LogicClasses& logicClasses) {
     AstCFunc* const funcp = netlistp->evalFuncp(VEval::INITIAL);
     orderSequentially(funcp, logicClasses.m_initial);
     util::splitCheck(funcp);
 }
 
-void createPostponed(AstNetlist* netlistp, const LogicClasses& logicClasses) {
+void createPostponed(AstNetlist* netlistp, LogicClasses& logicClasses) {
     AstCFunc* const funcp = netlistp->evalFuncp(VEval::POSTPONED);
     orderSequentially(funcp, logicClasses.m_postponed);
     util::splitCheck(funcp);
 }
 
-void createFinal(AstNetlist* netlistp, const LogicClasses& logicClasses) {
+void createFinal(AstNetlist* netlistp, LogicClasses& logicClasses) {
     AstCFunc* const funcp = netlistp->evalFuncp(VEval::FINAL);
     orderSequentially(funcp, logicClasses.m_final);
     util::splitCheck(funcp);
@@ -389,8 +366,8 @@ void addVirtIfaceTriggerAssignments(AstNetlist* netlistp, AstCFunc* initFuncp,
 void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilder& senExprBulider,
                   LogicClasses& logicClasses, const CovergroupRefBindings& cgRefBindings) {
     // Clone, because ordering is destructive, but we still need them for the other regions
-    LogicByScope comb = logicClasses.m_comb.clone();
-    LogicByScope hybrid = logicClasses.m_hybrid.clone();
+    ProcessList comb = logicClasses.m_comb.clone();
+    ProcessList hybrid = logicClasses.m_hybrid.clone();
 
     // We have an extra trigger denoting this is the first iteration of the settle loop
     TriggerKit::ExtraTriggers extraTriggers;
@@ -433,21 +410,21 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
 // Order the replicated combinational logic to create the 'ico' region
 
 void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
-                     SenExprBuilder& senExprBuilder, LogicByScope& logic,
+                     SenExprBuilder& senExprBuilder, ProcessList& logic,
                      const VirtIfaceTriggers& virtIfaceTriggers,
                      const CovergroupRefBindings& cgRefBindings) {
     // SystemC only: Any top level inputs feeding a combinational logic must be marked,
     // so we can make them sc_sensitive
     if (v3Global.opt.systemC()) {
-        logic.foreachLogic([](AstNode* logicp) {
-            logicp->foreach([](AstVarRef* refp) {
+        for (const Process& process : logic) {
+            process.m_procp->foreach([](AstVarRef* refp) {
                 if (refp->access().isWriteOnly()) return;
                 AstVarScope* const vscp = refp->varScopep();
                 if (vscp->scopep()->isTop() && vscp->varp()->isNonOutput()) {
                     vscp->varp()->scSensitive(true);
                 }
             });
-        });
+        }
     }
 
     // We have some extra trigger denoting external conditions
@@ -703,27 +680,7 @@ void createEval(AstNetlist* netlistp,  //
             workp = AstNode::addNext(workp, trigKit.newClearCall(nbaKit.m_vscp));
             //
             return workp;
-        }(),
-        // Extra work (not conditional on having had a fired trigger)
-        [&](AstVarScope* continuep) -> AstNodeStmt* {
-            // Check if any dynamic NBAs are pending, if there are any in the design
-            if (!netlistp->nbaEventp()) return nullptr;
-            AstVarScope* const nbaEventp = netlistp->nbaEventp();
-            AstVarScope* const nbaEventTriggerp = netlistp->nbaEventTriggerp();
-            UASSERT(nbaEventTriggerp, "NBA event trigger var should exist");
-            netlistp->nbaEventp(nullptr);
-            netlistp->nbaEventTriggerp(nullptr);
-
-            // If a dynamic NBA is pending, clear the pending flag and fire the ready event
-            AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, nbaEventTriggerp, VAccess::READ}};
-            ifp->addThensp(util::setVar(continuep, 1));
-            ifp->addThensp(util::setVar(nbaEventTriggerp, 0));
-            AstCMethodHard* const firep = new AstCMethodHard{
-                flp, new AstVarRef{flp, nbaEventp, VAccess::WRITE}, VCMethod::EVENT_FIRE};
-            firep->dtypeSetVoid();
-            ifp->addThensp(firep->makeStmt());
-            return ifp;
-        });
+        }());
 
     // Create the 'obs' region
     createEvalRegion(  //
@@ -786,9 +743,9 @@ VirtIfaceTriggers::VscpTrigMap VirtIfaceTriggers::makeVscpToTrigMap(const Trigge
 // Top level entry-point to scheduling
 
 void schedule(AstNetlist* netlistp) {
-    const auto addSizeStat = [](const string& name, const LogicByScope& lbs) {
+    const auto addSizeStat = [](const string& name, const ProcessList& procList) {
         uint64_t size = 0;
-        lbs.foreachLogic([&](AstNode* nodep) { size += nodep->nodeCount(); });
+        for (const Process& process : procList) size += process.m_procp->nodeCount();
         V3Stats::addStat("Scheduling, " + name, size);
     };
 
@@ -822,8 +779,7 @@ void schedule(AstNetlist* netlistp) {
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-final");
 
     // Step 5: Break combinational cycles by introducing hybrid logic
-    // Note: breakCycles also removes corresponding logic from logicClasses.m_comb;
-    logicClasses.m_hybrid = breakCycles(netlistp, logicClasses.m_comb);
+    breakCycles(netlistp, logicClasses);
     if (v3Global.opt.stats()) {
         addSizeStat("size of class: clocked", logicClasses.m_clocked);
         addSizeStat("size of class: combinational", logicClasses.m_comb);
@@ -844,10 +800,7 @@ void schedule(AstNetlist* netlistp) {
     // Step 7: Partition the clocked and combinational (including hybrid) logic into pre/act/nba.
     // All clocks (signals referenced in an AstSenTree) generated via a blocking assignment
     // (including combinationally generated signals) are computed within the act region.
-    LogicRegions logicRegions
-        = partition(logicClasses.m_clocked, logicClasses.m_comb, logicClasses.m_hybrid);
-    logicRegions.m_obs = logicClasses.m_observed;
-    logicRegions.m_react = logicClasses.m_reactive;
+    LogicRegions logicRegions = partition(logicClasses);
     if (v3Global.opt.stats()) {
         addSizeStat("size of region: Active Pre", logicRegions.m_pre);
         addSizeStat("size of region: Active", logicRegions.m_act);
@@ -893,7 +846,7 @@ void schedule(AstNetlist* netlistp) {
                                                &logicRegions.m_nba,  //
                                                &logicRegions.m_obs,  //
                                                &logicRegions.m_react,  //
-                                               &timingKit.m_lbs});
+                                               &timingKit.m_procList});
     const TriggerKit trigKit
         = TriggerKit::create(netlistp, staticp, senExprBuilder, preTreeps, senTreeps, "act",
                              extraTriggers, false, v3Global.usesTiming());
@@ -919,7 +872,7 @@ void schedule(AstNetlist* netlistp) {
     addTriggerIndices(logicRegions.m_pre, trigKit, true);
     addTriggerIndices(logicRegions.m_act, trigKit, false);
     addTriggerIndices(logicReplicas.m_act, trigKit, false);
-    addTriggerIndices(timingKit.m_lbs, trigKit, false);
+    addTriggerIndices(timingKit.m_procList, trigKit, false);
 
     // External triggers of variables. Trigger indices are the same in all regions, so share.
     const std::map<const AstVarScope*, std::vector<uint32_t>> timingTriggers
@@ -948,11 +901,11 @@ void schedule(AstNetlist* netlistp) {
 
     // Orders a region's logic and creates the region eval function
     const auto order = [&](const std::string& name,
-                           const std::vector<V3Sched::LogicByScope*>& logic) -> EvalKit {
+                           const std::vector<V3Sched::ProcessList*>& logic) -> EvalKit {
         UINFO(2, "Scheduling " << name << " #logic = " << logic.size());
         AstVarScope* const trigVscp = trigKit.newTrigVec(name);
         // Add the trigger indices of the input logic
-        for (LogicByScope* lbsp : logic) addTriggerIndices(*lbsp, trigKit, false);
+        for (ProcessList* procListp : logic) addTriggerIndices(*procListp, trigKit, false);
 
         AstCFunc* const funcp
             = V3Order::order(logic, trigKit, trigVscp, cgRefBindings, name,
@@ -969,7 +922,7 @@ void schedule(AstNetlist* netlistp) {
     // Orders a region's logic and creates the region eval function (only if there is any logic in
     // the region)
     const auto orderIfNonEmpty
-        = [&](const std::string& name, const std::vector<LogicByScope*>& logic) -> EvalKit {
+        = [&](const std::string& name, const std::vector<ProcessList*>& logic) -> EvalKit {
         if (logic[0]->empty())
             return {};  // if region is empty, replica is supposed to be empty as well
         const auto& kit = order(name, logic);
@@ -991,44 +944,14 @@ void schedule(AstNetlist* netlistp) {
     createEval(netlistp, trigKit, actKit, nbaKit, obsKit, reactKit, timingKit);
 
     // Step 17: Add neccessary evaluation before awaits
-    if (AstCCall* const readyp = timingKit.createReady(trigKit.vscp())) {
-        staticp->addStmtsp(readyp->makeStmt());
-        beforeTrigVisitor(netlistp, senExprBuilder, trigKit);
-    } else {
-        // beforeTrigVisitor clears Sentree pointers in AstCAwaits (as these sentrees will get
-        // deleted later) if there was no need to call it, SenTrees have to be cleaned manually
-        netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
-    }
-    if (AstVarScope* const trigAccp = trigKit.vscAccp()) {
-        // Copy trigger vector to accumulator at the end of static initialziation so,
-        // triggers fired during initialization persist to the first resume.
-        const AstUnpackArrayDType* const trigAccDTypep
-            = VN_AS(trigAccp->dtypep(), UnpackArrayDType);
-        UASSERT_OBJ(
-            trigAccDTypep->right() == 0, trigAccp,
-            "Expected that trigger vector and accumulator start elements enumeration from 0");
-        UASSERT_OBJ(trigAccDTypep->left() >= 0, trigAccp,
-                    "Expected that trigger vector and accumulator has no negative indexes");
-        FileLine* const flp = trigAccp->fileline();
-        AstVarScope* const vscp = netlistp->topScopep()->createTemp("__Vi", 32);
-        AstLoop* const loopp = new AstLoop{flp};
-        loopp->addStmtsp(
-            new AstAssign{flp,
-                          new AstArraySel{flp, new AstVarRef{flp, trigAccp, VAccess::WRITE},
-                                          new AstVarRef{flp, vscp, VAccess::READ}},
-                          new AstArraySel{flp, new AstVarRef{flp, actKit.m_vscp, VAccess::READ},
-                                          new AstVarRef{flp, vscp, VAccess::READ}}});
-        loopp->addStmtsp(util::incrementVar(vscp));
-        loopp->addStmtsp(new AstLoopTest{
-            flp, loopp,
-            new AstLte{flp, new AstVarRef{flp, vscp, VAccess::READ},
-                       new AstConst{flp, AstConst::WidthedValue{}, 32,
-                                    static_cast<uint32_t>(trigAccDTypep->left())}}});
-        staticp->addStmtsp(loopp);
-    }
+    beforeTrigVisitor(netlistp, senExprBuilder, trigKit);
 
     // Step 18: Clean up
     netlistp->clearStlFirstIterationp();
+    netlistp->nbaQueuep(nullptr);  // Finished with this here
+    if (AstSenTree* const senTreesp = topScopep->senTreesp()) {
+        VL_DO_DANGLING(senTreesp->unlinkFrBackWithNext()->deleteTree(), senTreesp);
+    }
 
     if (v3Global.opt.stats()) {
         // A sample() call resolved to the union over its covergroup's constructions reads more

@@ -237,6 +237,7 @@ private:
 
     // clang-format off
     VStringSet m_cppFiles;     // argument: C++ files to link against
+    VStringSet m_moduleFiles;  // argument: C++ module interface files
     VStringList m_cFlags;      // argument: user CFLAGS
     VStringList m_ldLibs;      // argument: user LDFLAGS
     VStringList m_ldLibFiles;  // argument: library files, subset of m_ldLibs
@@ -277,6 +278,7 @@ private:
     bool m_coverageToggle = false;  // main switch: --coverage-toggle
     bool m_coverageUnderscore = false;  // main switch: --coverage-underscore
     bool m_coverageUser = false;    // main switch: --coverage-func
+    bool m_cxxModules = false;      // main switch: --cxx-modules
     bool m_debugCheck = false;      // main switch: --debug-check
     bool m_debugCollision = false;  // main switch: --debug-collision
     bool m_debugEmitV = false;      // main switch: --debug-emitv
@@ -330,6 +332,7 @@ private:
     bool m_quietStats = false;      // main switch: --quiet-stats
     bool m_relativeIncludes = false;  // main switch: --relative-includes
     bool m_reportUnoptflat = false;  // main switch: --report-unoptflat
+    bool m_rtmd = false;            // main switch: --rtmd
     bool m_savable = false;         // main switch: --savable
     VOptionBool m_schedZeroDelay;  // main switch: --sched-zero-delay
     bool m_stdPackage = true;       // main switch: --std-package
@@ -385,7 +388,7 @@ private:
     int64_t     m_outputGroupsSize = 512 * 1024 * 1024;  // main switch: --output-groups-size
     int         m_outputSplit = 20000;  // main switch: --output-split
     int         m_outputSplitCFuncs = -1;  // main switch: --output-split-cfuncs
-    int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
+    int         m_outputSplitRtmdLog2 = 14;  // main switch: --output-split-rtmd, log2 of it
     int         m_pinsBv = 65;       // main switch: --pins-bv
     int         m_preprocTokenLimit = 40000; // main switch: --preproc-token-limit
     int         m_publicDepth = 0;   // main switch: --public-depth
@@ -408,6 +411,7 @@ private:
     int         m_constraintArrayLimit = 64;  // main switch: --constraint-array-limit
     int         m_verilateJobs = -1;  // main switch: --verilate-jobs
 
+    bool        m_compilerMsvc = false;  // compiler selection: --compiler msvc
     int         m_compLimitBlocks = 0;  // compiler selection; number of nested blocks
     int         m_compLimitMembers = 64;  // compiler selection; number of members in struct before make anon array
     int         m_compLimitParens = 240;  // compiler selection; number of nested parens
@@ -445,6 +449,7 @@ private:
     bool m_fCaseDecoder; // main switch: -fno-case-decoder: case decoder conversion
     bool m_fCaseTable;   // main switch: -fno-case-table: case table conversion
     bool m_fCaseTree;    // main switch: -fno-case-tree: case tree conversion
+    bool m_fCoalesce;    // main switch: -fno-coalesce: coalesce copied variables
     bool m_fCombine;     // main switch: -fno-combine: common icode packing
     bool m_fConst;       // main switch: -fno-const: constant folding
     bool m_fConstBeforeDfg = true;  // main switch: -fno-const-before-dfg for testing only!
@@ -476,6 +481,7 @@ private:
     bool m_fLocalize;    // main switch: -fno-localize: convert temps to local variables
     bool m_fMergeCond;   // main switch: -fno-merge-cond: merge conditionals
     bool m_fMergeCondMotion = true; // main switch: -fno-merge-cond-motion: perform code motion
+    bool m_fOutline = true;  // main switch: -fno-outline: outline parts of large functions
     bool m_fReloop;      // main switch: -fno-reloop: reform loops
     bool m_fReorder;     // main switch: -fno-reorder: reorder assignments in blocks
     bool m_fSlice = true;  // main switch: -fno-slice: array assignment slicing
@@ -666,6 +672,7 @@ public:
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
     bool quietStats() const VL_MT_SAFE { return m_quietStats; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
+    bool rtmd() const { return m_rtmd; }
     bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi.isTrue(); }
     bool waiverMultiline() const { return m_waiverMultiline; }
@@ -697,7 +704,7 @@ public:
     int moduleRecursionDepth() const { return m_moduleRecursion; }
     int outputSplit() const { return m_outputSplit; }
     int outputSplitCFuncs() const { return m_outputSplitCFuncs; }
-    int outputSplitCTrace() const { return m_outputSplitCTrace; }
+    uint32_t outputSplitRtmdLog2() const { return m_outputSplitRtmdLog2; }
     int outputGroups() const { return m_outputGroups; }
     int64_t outputGroupsSize() const { return m_outputGroupsSize; }
     int pinsBv() const VL_MT_SAFE { return m_pinsBv; }
@@ -767,6 +774,8 @@ public:
     string xInitial() const { return m_xInitial; }
 
     const VStringSet& cppFiles() const { return m_cppFiles; }
+    const VStringSet& moduleFiles() const { return m_moduleFiles; }
+    bool cxxModules() const { return m_cxxModules || !m_moduleFiles.empty(); }
     const VStringList& cFlags() const { return m_cFlags; }
     const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
     const VStringList& ldLibFiles() const { return m_ldLibFiles; }
@@ -795,6 +804,7 @@ public:
     bool fCaseDecoder() const { return m_fCaseDecoder; }
     bool fCaseTable() const { return m_fCaseTable; }
     bool fCaseTree() const { return m_fCaseTree; }
+    bool fCoalesce() const { return m_fCoalesce; }
     bool fCombine() const { return m_fCombine; }
     bool fConst() const { return m_fConst; }
     bool fConstBeforeDfg() const { return m_fConstBeforeDfg; }
@@ -830,6 +840,7 @@ public:
     bool fLocalize() const { return m_fLocalize; }
     bool fMergeCond() const { return m_fMergeCond; }
     bool fMergeCondMotion() const { return m_fMergeCondMotion; }
+    bool fOutline() const { return m_fOutline; }
     bool fReloop() const { return m_fReloop; }
     bool fReorder() const { return m_fReorder; }
     bool fSlice() const { return m_fSlice; }
@@ -840,12 +851,7 @@ public:
     bool fTable() const { return m_fTable; }
     bool fTaskifyAll() const { return m_fTaskifyAll; }
 
-    std::string traceClassBase() const VL_MT_SAFE;  // Deprecated
-    std::string traceClassLang() const VL_MT_SAFE;  // Deprecated
-    std::vector<std::string> traceClassBases() const VL_MT_SAFE;
-    std::vector<std::string> traceClassLangs() const VL_MT_SAFE;
     std::vector<std::string> traceSourceBases() const VL_MT_SAFE;
-    std::vector<std::string> traceSourceLangs() const VL_MT_SAFE;
 
     bool hierarchical() const { return m_hierarchical; }
     int hierChild() const VL_MT_SAFE { return m_hierChild; }

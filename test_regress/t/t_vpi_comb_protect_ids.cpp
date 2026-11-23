@@ -79,4 +79,21 @@ void bootstrap() {
 
 }  // namespace
 
+extern "C" int forceTopPort(const int value, const unsigned char releasePort) {
+    const std::string name = "TOP." + hashedName("obs");
+    TestVpiHandle handle = vpi_handle_by_name(const_cast<PLI_BYTE8*>(name.c_str()), nullptr);
+    TEST_CHECK_NZ_LABEL(name, handle);
+    if (!handle) return errors;
+    s_vpi_value putValue{};
+    putValue.format = vpiIntVal;
+    putValue.value.integer = value;
+    vpi_put_value(handle, &putValue, nullptr, releasePort ? vpiReleaseFlag : vpiForceFlag);
+    return errors;
+}
+
+extern "C" int checkTopPort(const int expected) {
+    checkInt("TOP." + hashedName("obs"), expected);
+    return errors;
+}
+
 void (*vlog_startup_routines[])() = {bootstrap, 0};

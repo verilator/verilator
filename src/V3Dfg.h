@@ -274,6 +274,7 @@ public:
     bool foreachSource(T_Callable&& f) {
         static_assert(vlstd::is_invocable_r<bool, T_Callable, DfgVertex&>::value,
                       "T_Callable 'f' must have a signature compatible with 'bool(DfgVertex&)'");
+        V3Global::opCountInc(m_nInputs);
         for (size_t i = 0; i < m_nInputs; ++i) {
             if (DfgVertex* const srcp = inputEdgep(i)->srcp()) {
                 if (f(*srcp)) return true;
@@ -290,6 +291,7 @@ public:
         static_assert(
             vlstd::is_invocable_r<bool, T_Callable, const DfgVertex&>::value,
             "T_Callable 'f' must have a signature compatible with 'bool(const DfgVertex&)'");
+        V3Global::opCountInc(m_nInputs);
         for (size_t i = 0; i < m_nInputs; ++i) {
             if (const DfgVertex* const srcp = inputEdgep(i)->srcp()) {
                 if (f(*srcp)) return true;
@@ -307,6 +309,7 @@ public:
         static_assert(vlstd::is_invocable_r<bool, T_Callable, DfgVertex&>::value,
                       "T_Callable 'f' must have a signature compatible with 'bool(DfgVertex&)'");
         for (const DfgEdge* const edgep : m_sinks.unlinkable()) {
+            V3Global::opCountInc();
             if (f(*edgep->dstp())) return true;
         }
         return false;
@@ -321,6 +324,7 @@ public:
             vlstd::is_invocable_r<bool, T_Callable, const DfgVertex&>::value,
             "T_Callable 'f' must have a signature compatible with 'bool(const DfgVertex&)'");
         for (const DfgEdge& edge : m_sinks) {
+            V3Global::opCountInc();
             if (f(*edge.dstp())) return true;
         }
         return false;
@@ -334,7 +338,7 @@ public:
     void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
         m_filelinep->v3errorEnd(str);
     }
-    void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN
+    [[noreturn]] void v3errorEndFatal(std::ostringstream& str) const
         VL_RELEASE(V3Error::s().m_mutex) {
         m_filelinep->v3errorEndFatal(str);
     }
@@ -507,22 +511,28 @@ public:
 #endif
     }
 
+#define F_OP(v) \
+    do { \
+        V3Global::opCountInc(); \
+        f(v); \
+    } while (0)
+
     // Calls given function 'f' for each vertex in the graph. It is safe to manipulate any vertices
     // in the graph, or to delete/unlink the vertex passed to 'f' during iteration. It is however
     // not safe to delete/unlink any vertex in the same graph other than the one passed to 'f'.
     void forEachVertex(std::function<void(DfgVertex&)> f) {
-        for (DfgVertexVar* const vtxp : m_varVertices.unlinkable()) f(*vtxp);
-        for (DfgVertexAst* const vtxp : m_astVertices.unlinkable()) f(*vtxp);
-        for (DfgConst* const vtxp : m_constVertices.unlinkable()) f(*vtxp);
-        for (DfgVertex* const vtxp : m_opVertices.unlinkable()) f(*vtxp);
+        for (DfgVertexVar* const vtxp : m_varVertices.unlinkable()) F_OP(*vtxp);
+        for (DfgVertexAst* const vtxp : m_astVertices.unlinkable()) F_OP(*vtxp);
+        for (DfgConst* const vtxp : m_constVertices.unlinkable()) F_OP(*vtxp);
+        for (DfgVertex* const vtxp : m_opVertices.unlinkable()) F_OP(*vtxp);
     }
 
     // 'const' variant of 'forEachVertex'. No mutation allowed.
     void forEachVertex(std::function<void(const DfgVertex&)> f) const {
-        for (const DfgVertexVar& vtx : m_varVertices) f(vtx);
-        for (const DfgVertexAst& vtx : m_astVertices) f(vtx);
-        for (const DfgConst& vtx : m_constVertices) f(vtx);
-        for (const DfgVertex& vtx : m_opVertices) f(vtx);
+        for (const DfgVertexVar& vtx : m_varVertices) F_OP(vtx);
+        for (const DfgVertexAst& vtx : m_astVertices) F_OP(vtx);
+        for (const DfgConst& vtx : m_constVertices) F_OP(vtx);
+        for (const DfgVertex& vtx : m_opVertices) F_OP(vtx);
     }
 
     // Merge contents of other graphs into this graph. Deletes the other graphs.
@@ -592,19 +602,16 @@ namespace V3Dfg {
 // Returns true if variable can be represented in the graph
 inline bool isSupported(const AstVarScope* vscp) {
     const AstNodeModule* const modp = vscp->scopep()->modp();
-    if (VN_IS(modp, Module) || VN_IS(modp, Package)) {
-        // Regular modules and packages supported
-    } else if (const AstIface* const ifacep = VN_CAST(modp, Iface)) {
-        // Interfaces supported if there are no virtual interfaces for
-        // them, otherwise they cannot be resovled statically.
-        if (ifacep->hasVirtualRef()) return false;
-    } else {
-        return false;  // Anything else (class, etc) not supported
-    }
+    // Classes etc. not supported
+    if (!VN_IS(modp, Module) && !VN_IS(modp, Iface) && !VN_IS(modp, Package)) return false;
     if (DfgVertexVar::hasRWRefs(vscp)) return false;  // Referenced via READWRITE references
     // Check the AstVar
     AstVar* const varp = vscp->varp();
     if (varp->isIfaceRef()) return false;  // Cannot handle interface references
+    // Written through a virtual interface (AstVar::user1 bit1, set by DataflowOptimize).
+    // DFG would convert its other writers to cont assignments, which V3Delayed treats as
+    // exclusive, resulting in potentially missed BLKANDNBLKs.
+    if (varp->user1() & 0x02) return false;
     if (varp->delayp()) return false;  // Cannot handle delayed variables
     if (varp->isSc()) return false;  // SystemC variables are special and rare, we can ignore
     return DfgDataType::fromAst(varp->dtypep());
@@ -800,6 +807,7 @@ public:
 
         // Process the work list
         while (m_headp != m_sentinelp) {
+            V3Global::opCountInc();
             // Pick up the head
             DfgVertex& vtx = *m_headp;
             // Detach the head
@@ -809,10 +817,12 @@ public:
             // This item is now off the work list
             m_nextp.at(vtx) = nullptr;
             // Apply 'f'
-            f(vtx);
+            F_OP(vtx);
         }
     }
 };
+
+#undef F_OP
 
 //------------------------------------------------------------------------------
 // Inline method definitions
@@ -821,15 +831,6 @@ public:
 
 void DfgEdge::unlinkSrcp() {
     if (!m_srcp) return;
-#ifdef VL_DEBUG
-    bool contained = false;
-    for (const DfgEdge& edge : m_srcp->m_sinks) {
-        if (&edge != this) continue;
-        contained = true;
-        break;
-    }
-    UASSERT_OBJ(contained, m_srcp, "'m_srcp' does not have this as sink");
-#endif
     m_srcp->m_sinks.unlink(this);
     m_srcp = nullptr;
 }

@@ -1,0 +1,24 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Antmicro Ltd
+// SPDX-License-Identifier: CC0-1.0
+
+class Cls;
+  task bar;
+    static int qux;
+    qux <= '1;
+    // Use qux to prevent V3Dead optimizations
+    $display("qux = %d\n", qux);
+  endtask
+endclass
+
+module t;
+  initial begin
+    Cls c;
+    c = new;
+    c.bar();
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
+endmodule

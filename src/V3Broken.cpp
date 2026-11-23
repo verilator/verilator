@@ -184,11 +184,25 @@ private:
         UASSERT_OBJ(!whyp, nodep,
                     "Broken link in node (or something without maybePointedTo): " << whyp);
         if (!s_brokenAllowMidvisitorCheck) nodep->checkIter();
-        if (nodep->dtypep()) {
-            UASSERT_OBJ(nodep->dtypep()->brokeExists(), nodep,
-                        "Broken link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
-            UASSERT_OBJ(nodep->dtypep(), nodep,
-                        "Non-dtype link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
+        if (const AstNodeDType* const dtypep = nodep->dtypep()) {
+            UASSERT_OBJ(dtypep->brokeExists(), nodep,
+                        "Broken link in node->dtypep() to " << cvtToHex(dtypep));
+            if (v3Global.fourstateResolved()) {
+                if (const AstNodeDType* const ndtypep = VN_CAST(nodep, NodeDType)) {
+                    UASSERT_OBJ(!ndtypep->subDTypep() || !ndtypep->subDTypep()->isFourstate(),
+                                nodep,
+                                "After resolving four-state values in V3Tristate and V3Unknown no "
+                                "four-state dtype should be present");
+                    UASSERT_OBJ(!ndtypep->subDType2p() || !ndtypep->subDType2p()->isFourstate(),
+                                nodep,
+                                "After resolving four-state values in V3Tristate and V3Unknown no "
+                                "four-state dtype should be present");
+                } else {
+                    UASSERT_OBJ(!dtypep->isFourstate(), nodep,
+                                "After resolving four-state values in V3Tristate and V3Unknown no "
+                                "four-state dtype should be present");
+                }
+            }
         }
         if (v3Global.assertDTypesResolved()) {
             if (nodep->hasDType()) {
@@ -196,7 +210,7 @@ private:
                 UASSERT_OBJ(!VN_IS(nodep, NodeExpr), nodep,
                             "All AstNodeExpr must have a dtype post V3WidthCommit");
                 UASSERT_OBJ(!nodep->dtypep(), nodep,
-                            "DType on node without hasDType(): " << nodep->prettyTypeName());
+                            "DType on node without hasDType(): " << nodep->prettyTypeNameQ());
             }
             UASSERT_OBJ(!nodep->getChildDTypep(), nodep,
                         "childDTypep() non-null on node after should have removed");
@@ -211,11 +225,8 @@ private:
         iterateChildrenConst(nodep);
         processExit(nodep);
     }
-    void processAndIterateList(AstNode* nodep) {
-        while (nodep) {
-            processAndIterate(nodep);
-            nodep = nodep->nextp();
-        }
+    void processAndIterateList(AstNode* nodesp) {
+        for (AstNode* const nodep : VNList<AstNode>{nodesp}) processAndIterate(nodep);
     }
     void pushLocalScope() {
         if (m_cfuncp) m_localsStack.emplace_back();
@@ -234,7 +245,7 @@ private:
 
         // Check each argument
         const char* dp = descrp;
-        for (AstNodeExpr* argp = argsp; argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+        for (AstNodeExpr* const argp : VNList<AstNodeExpr>{argsp}) {
             if (argp->fileline()->erroringOn()) return;  // Intentionally skip all checks
             const AstNodeExpr* const lvalp = argp->getVAccessTargetRecurse();
             const VAccess access
@@ -258,6 +269,13 @@ private:
                             "Inout argument of library call is not a valid C++ LValue");
                 UASSERT_OBJ(access.isRW(), argp,
                             "Inout argument of library call is not read-write");
+                break;
+            case 'f':
+                if (access.isWriteOrRW()) {
+                    UASSERT_OBJ(
+                        lvalp, argp,
+                        "Mutable forwarded argument of library call is not a valid C++ LValue");
+                }
                 break;
             default:
                 UASSERT_OBJ(dp[0], argp, "Unexpected trailing arguments to library call");
@@ -325,7 +343,7 @@ private:
         }
         if (nodep->access().isWriteOrRW()) ++m_nWriteRefs;
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         processAndIterate(nodep);
         if (nodep->access().isWriteOrRW()) ++m_nWriteRefs;  // Writes the member
     }
@@ -370,7 +388,7 @@ private:
                         "Local variable not in scope where referenced: " << pair.first);
         }
     }
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         // Each branch is a separate local variable scope
         pushLocalScope();
         processEnter(nodep);

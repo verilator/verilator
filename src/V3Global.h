@@ -31,6 +31,7 @@
 #include "V3Mutex.h"
 #include "V3Options.h"
 
+#include <atomic>
 #include <string>
 #include <thread>
 #include <type_traits>
@@ -41,6 +42,7 @@ class AstNetlist;
 class V3ConstPool;
 class V3HierGraph;
 class V3LibMap;
+class V3SolverBackend;
 class V3ThreadPool;
 
 //######################################################################
@@ -84,6 +86,8 @@ class V3Global final {
     V3ThreadPool* m_threadPoolp = nullptr;
     // Library Mapping, nullptr unless --libmap is used
     V3LibMap* m_libMapp = nullptr;
+    // Constraint solver back-end, see V3SolverBackend.h, set via solverBackendp(V3SolverBackend*)
+    V3SolverBackend* m_solverBackendp = nullptr;
     VWidthMinUsage m_widthMinUsage
         = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
 
@@ -96,6 +100,7 @@ class V3Global final {
     // Experimenting with always requiring heavy, see issue #2701
     bool m_needTraceDumper = false;  // Need __Vm_dumperp in symbols
     bool m_dpi = false;  // Need __Dpi include files
+    bool m_fourstateResolved = false;  // No four-state types should be present in AST
     bool m_hasEvents = false;  // Design uses SystemVerilog named events
     bool m_hasClasses = false;  // Design uses SystemVerilog classes
     bool m_hasSampled = false;  // Design uses SAMPLED expresions
@@ -103,6 +108,8 @@ class V3Global final {
     bool m_hasVirtIfaces = false;  // Design uses virtual interfaces
     bool m_usesProbDist = false;  // Uses $dist_*
     bool m_usesStdPackage = false;  // Design uses the std package
+    bool m_usesSuspendableExports = false;  // Design uses timing constructs in suspendable exports
+                                            // (implies m_usesTiming)
     bool m_usesTiming = false;  // Design uses timing constructs
     bool m_usesForce = false;  // Design uses force/release statements
     bool m_usesZeroDelay = false;  // Design uses #0 delay (or non-constant delay)
@@ -114,6 +121,8 @@ class V3Global final {
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
     bool m_hasPrintedObjects = false;  // Design has format args printed with to_string()
     uint64_t m_currentHierBlockCost = 0;  // Total cost of this hier block, used for scheduling
+
+    static std::atomic<uint64_t> s_opCount;  // Pseudo-instruction/operation count
 
     // Memory address to short string mapping (for debug)
     std::unordered_map<const void*, std::string>
@@ -169,6 +178,8 @@ public:
     void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
     bool dpi() const VL_MT_SAFE { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
+    bool fourstateResolved() const { return m_fourstateResolved; }
+    void fourstateResolved(bool flag) { m_fourstateResolved = flag; }
     bool assignsEvents() const { return m_assignsEvents; }
     void setAssignsEvents() { m_assignsEvents = true; }
     bool hasEvents() const { return m_hasEvents; }
@@ -185,6 +196,8 @@ public:
     void setUsesProbDist() { m_usesProbDist = true; }
     bool usesStdPackage() const { return m_usesStdPackage; }
     void setUsesStdPackage() { m_usesStdPackage = true; }
+    bool usesSuspendableExports() const { return m_usesSuspendableExports; }
+    void setUsesSuspendableExports() { m_usesSuspendableExports = true; }
     bool usesTiming() const { return m_usesTiming; }
     void setUsesTiming() { m_usesTiming = true; }
     bool usesZeroDelay() const { return m_usesZeroDelay; }
@@ -197,6 +210,11 @@ public:
     void setUsesForce() { m_usesForce = true; }
     V3HierGraph* hierGraphp() const { return m_hierGraphp; }
     void hierGraphp(V3HierGraph* graphp) { m_hierGraphp = graphp; }
+    V3SolverBackend* solverBackendp() const { return m_solverBackendp; }
+    void solverBackendp(V3SolverBackend* backendp) {
+        UASSERT(!m_solverBackendp, "attempted to create multiple solver back-ends");
+        m_solverBackendp = backendp;
+    }
     bool useParallelBuild() const { return m_useParallelBuild; }
     void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useRandSequence() const { return m_useRandSequence; }
@@ -215,6 +233,16 @@ public:
     static std::vector<std::string> verilatedCppFiles();
     uint64_t currentHierBlockCost() const { return m_currentHierBlockCost; }
     void currentHierBlockCost(uint64_t cost) { m_currentHierBlockCost = cost; }
+
+    // Under debug, the number of accept() or visit() or other accesses.
+    // Roughly correlates to instruction count to detect O(n^2) iteration problems;
+    // ideally use instruction counters but are not available on all platforms/VMs.
+    static uint64_t opCount() { return s_opCount; }  // 0 if not debug
+    VL_ATTR_ALWINLINE static void opCountInc(uint64_t inc = 1) VL_MT_SAFE {
+#ifdef VL_DEBUG
+        s_opCount.fetch_add(inc, std::memory_order_relaxed);
+#endif
+    }
 };
 
 extern V3Global v3Global;

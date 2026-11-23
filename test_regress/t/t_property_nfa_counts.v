@@ -165,6 +165,30 @@ module t (
     @(negedge clk) guard = 1;
   end
 
+  // A property whose body is a property instance (IEEE 1800-2023 16.12) also runs the fail
+  // statement for every attempt that fails (IEEE 1800-2023 16.14.1)
+  wire inst_a = cyc == 2;
+  wire inst_b = cyc == 2 || cyc == 4;
+  int inst_or_fail = 0, inst_goto_fail = 0;
+
+  property p_or(x, y, z);
+    x |=> y || z;
+  endproperty
+  property p_or_chain(x, y, z);
+    p_or(x, y, z);
+  endproperty
+  property p_goto(x, y);
+    x [->2] |-> y;
+  endproperty
+  property p_goto_chain(x, y);
+    p_goto(x, y);
+  endproperty
+
+  assert property (@(posedge clk) p_or_chain(inst_a, 1'b0, 1'b0))
+  else inst_or_fail++;
+  assert property (@(posedge clk) p_goto_chain(inst_b, 1'b0))
+  else inst_goto_fail++;
+
   always @(negedge clk) begin
     if (cyc == 12) begin
       `checkd(imp_pass, 10);
@@ -188,6 +212,8 @@ module t (
       `checkd(negated_vacuous_pass, 12);
       `checkd(case_fail, 2);
       `checkd(throughout_or_fail, 3);
+      `checkd(inst_or_fail, 1);
+      `checkd(inst_goto_fail, 3);
       $write("*-* All Finished *-*\n");
       $finish;
     end

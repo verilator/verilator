@@ -2,16 +2,16 @@
    10 |     return 1;   
       |     ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_func_return_bad.v:13:5: Return underneath a function should have return value
+%Error: t/t_func_return_bad.v:13:5: Return underneath a function should have return value (IEEE 1800-2023 12.8)
    13 |     return;   
       |     ^~~~~~
-%Error: t/t_func_return_bad.v:17:5: Return isn't underneath a task or function
+%Error: t/t_func_return_bad.v:17:5: Return isn't underneath a task or function (IEEE 1800-2023 12.8)
    17 |     return;   
       |     ^~~~~~
-%Error: t/t_func_return_bad.v:18:5: continue isn't underneath a loop
+%Error: t/t_func_return_bad.v:18:5: continue isn't underneath a loop (IEEE 1800-2023 12.8)
    18 |     continue;   
       |     ^~~~~~~~
-%Error: t/t_func_return_bad.v:19:5: break isn't underneath a loop
+%Error: t/t_func_return_bad.v:19:5: break isn't underneath a loop (IEEE 1800-2023 12.8)
    19 |     break;   
       |     ^~~~~
 %Error: Exiting due to

@@ -63,7 +63,7 @@ public:
     string name() const override {
         std::ostringstream os;
         V3EmitV::verilogForTree(const_cast<AstSenItem*>(m_senItemp), os);
-        return os.str();
+        return VString::quoteBackslash(os.str());
     }
     string dotShape() const override { return "doubleoctagon"; }
     string dotColor() const override { return "red"; }
@@ -72,23 +72,18 @@ public:
 
 class SchedLogicVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(SchedLogicVertex, V3GraphVertex)
-    AstScope* const m_scopep;  // Scope of the logic
-    AstSenTree* const m_senTreep;  // Sensitivity of the logic
-    AstNode* const m_logicp;  // Logic this vertex represents
+    const Process& m_process;  // The process this vertex represents
 
 public:
-    SchedLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* senTreep, AstNode* logicp)
+    SchedLogicVertex(V3Graph* graphp, const Process& process)
         : V3GraphVertex{graphp}
-        , m_scopep{scopep}
-        , m_senTreep{senTreep}
-        , m_logicp{logicp} {}
-    AstScope* scopep() const { return m_scopep; }
-    AstSenTree* senTreep() const { return m_senTreep; }
-    AstNode* logicp() const { return m_logicp; }
+        , m_process{process} {}
+    const Process& process() const { return m_process; }
+    AstNodeProcedure* procp() const { return m_process.m_procp; }
 
     // LCOV_EXCL_START // Debug code
     string name() const override VL_MT_STABLE {
-        return m_logicp->typeName() + ("\n" + m_logicp->fileline()->ascii());
+        return procp()->typeName() + ("\n" + procp()->fileline()->ascii());
     };
     string dotShape() const override { return "rectangle"; }
     // LCOV_EXCL_STOP
@@ -116,7 +111,7 @@ public:
     // LCOV_EXCL_STOP
 };
 
-class SchedGraphBuilder final : public VNVisitor {
+class SchedGraphBuilder final {
     // NODE STATE
     // AstVarScope::user1p() -> SchedVarVertex
     // AstSenItem::user1p() -> SchedSenVertex
@@ -129,8 +124,6 @@ class SchedGraphBuilder final : public VNVisitor {
     V3Graph* const m_graphp = new V3Graph;  // The dataflow graph being built
     // The vertices associated with a unique AstSenItem
     std::unordered_map<VNRef<AstSenItem>, SchedSenVertex*> m_senVertices;
-    AstScope* m_scopep = nullptr;  // AstScope of the current AstActive
-    AstSenTree* m_senTreep = nullptr;  // AstSenTree of the current AstActive
     // Predicate for whether a read of the given variable triggers this block
     std::function<bool(AstVarScope*)> m_readTriggersThisLogic;
     // The DPI export trigger variable, if any
@@ -180,15 +173,15 @@ class SchedGraphBuilder final : public VNVisitor {
         return senItemp->user1u().to<SchedSenVertex*>();
     }
 
-    void visitLogic(AstNode* nodep) {
-        UASSERT_OBJ(m_senTreep, nodep, "Should be under AstActive");
+    void visitLogic(const Process& process) {
+        AstNodeProcedure* const nodep = process.m_procp;
+        AstSenTree* const senTreep = process.m_senTreep;
 
-        SchedLogicVertex* const logicVtxp
-            = new SchedLogicVertex{m_graphp, m_scopep, m_senTreep, nodep};
+        SchedLogicVertex* const logicVtxp = new SchedLogicVertex{m_graphp, process};
 
         // Clocked or hybrid logic has explicit sensitivity, so add edge from sensitivity vertex
-        if (!m_senTreep->hasCombo()) {
-            m_senTreep->foreach([this, nodep, logicVtxp](AstSenItem* senItemp) {
+        if (!senTreep->hasCombo()) {
+            senTreep->foreach([this, nodep, logicVtxp](AstSenItem* senItemp) {
                 UASSERT_OBJ(senItemp->isClocked() || senItemp->isHybrid(), nodep,
                             "Non-clocked SenItem under clocked SenTree");
                 V3GraphVertex* const eventVtxp = getSenVertex(senItemp);
@@ -220,58 +213,32 @@ class SchedGraphBuilder final : public VNVisitor {
         }
     }
 
-    // VISIT methods
-    void visit(AstActive* nodep) override {
-        AstSenTree* const senTreep = nodep->sentreep();
-        UASSERT_OBJ(senTreep->hasClocked() || senTreep->hasCombo() || senTreep->hasHybrid(), nodep,
-                    "Unhandled");
-        UASSERT_OBJ(!m_senTreep, nodep, "Should not nest");
-
-        // Mark explicit sensitivities as not triggering these blocks
-        if (senTreep->hasHybrid()) {
-            AstNode::user2ClearTree();
-            senTreep->foreach([](const AstVarRef* refp) {  //
-                refp->varScopep()->user2(true);
-            });
-        }
-
-        VL_RESTORER(m_senTreep);
-        m_senTreep = senTreep;
-        iterateChildrenConst(nodep);
-    }
-
-    void visit(AstNodeProcedure* nodep) override { visitLogic(nodep); }
-    void visit(AstNodeAssign* nodep) override { visitLogic(nodep); }
-    void visit(AstCoverToggle* nodep) override { visitLogic(nodep); }
-
-    // Pre and Post logic are handled separately
-    void visit(AstAlwaysPre* nodep) override {}
-    void visit(AstAlwaysPost* nodep) override {}
-
-    // LCOV_EXCL_START
-    // Ignore
-    void visit(AstInitialStatic* nodep) override { nodep->v3fatalSrc("Should not need ordering"); }
-    void visit(AstInitial* nodep) override {  //
-        nodep->v3fatalSrc("Should not need ordering");
-    }
-    void visit(AstFinal* nodep) override {  //
-        nodep->v3fatalSrc("Should not need ordering");
-    }
-
-    // Default - Any other AstActive content not handled above will hit this
-    void visit(AstNode* nodep) override {  //
-        nodep->v3fatalSrc("Should be handled above");
-    }
-    // LCOV_EXCL_STOP
-
-    SchedGraphBuilder(const LogicByScope& clockedLogic, const LogicByScope& combinationalLogic,
-                      const LogicByScope& hybridLogic) {
+    SchedGraphBuilder(const ProcessList& clockedLogic, const ProcessList& combinationalLogic,
+                      const ProcessList& hybridLogic) {
         // Build the data flow graph
-        const auto iter = [this](const LogicByScope& lbs) {
-            for (const auto& entry : lbs) {
-                m_scopep = entry.m_scopep;
-                iterate(entry.m_activep);
-                m_scopep = nullptr;
+        const auto iter = [this](const ProcessList& procList) {
+            for (const Process& process : procList) {
+                AstNodeProcedure* const procp = process.m_procp;
+                AstSenTree* const senTreep = process.m_senTreep;
+                UASSERT_OBJ(senTreep->hasClocked() || senTreep->hasCombo()
+                                || senTreep->hasHybrid(),
+                            senTreep, "Unhandled");
+                UASSERT_OBJ(!VN_IS(procp, Initial), procp, "Should not need ordering");
+                UASSERT_OBJ(!VN_IS(procp, InitialStatic), procp, "Should not need ordering");
+                UASSERT_OBJ(!VN_IS(procp, Final), procp, "Should not need ordering");
+                // Pre and Post logic are handled separately
+                if (VN_IS(procp, AlwaysPre) || VN_IS(procp, AlwaysPost)) {
+                    UASSERT_OBJ(senTreep->hasClocked(), procp, "Should be clocked");
+                    continue;
+                }
+                // Mark explicit sensitivities as not triggering this logic
+                if (senTreep->hasHybrid()) {
+                    AstNode::user2ClearTree();
+                    senTreep->foreach([](const AstVarRef* refp) {  //
+                        refp->varScopep()->user2(true);
+                    });
+                }
+                visitLogic(process);
             }
         };
         // Clocked logic is never triggered by reads
@@ -287,9 +254,9 @@ class SchedGraphBuilder final : public VNVisitor {
 
 public:
     // Build the dataflow graph for partitioning
-    static std::unique_ptr<V3Graph> build(const LogicByScope& clockedLogic,
-                                          const LogicByScope& combinationalLogic,
-                                          const LogicByScope& hybridLogic) {
+    static std::unique_ptr<V3Graph> build(const ProcessList& clockedLogic,
+                                          const ProcessList& combinationalLogic,
+                                          const ProcessList& hybridLogic) {
         const SchedGraphBuilder visitor{clockedLogic, combinationalLogic, hybridLogic};
         return std::unique_ptr<V3Graph>{visitor.m_graphp};
     }
@@ -340,9 +307,13 @@ void colorActiveRegion(V3Graph& graph) {
 
 }  // namespace
 
-LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLogic,
-                       LogicByScope& hybridLogic) {
+LogicRegions partition(LogicClasses& logicClasses) {
     UINFO(2, __FUNCTION__ << ":");
+
+    // All of these classes are moved to the result
+    ProcessList clockedLogic = std::move(logicClasses.m_clocked);
+    const ProcessList combinationalLogic = std::move(logicClasses.m_comb);
+    const ProcessList hybridLogic = std::move(logicClasses.m_hybrid);
 
     // Build the graph
     const std::unique_ptr<V3Graph> graphp
@@ -354,6 +325,8 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
     if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("sched-partitioned", true);
 
     LogicRegions result;
+    result.m_obs = std::move(logicClasses.m_observed);
+    result.m_react = std::move(logicClasses.m_reactive);
 
     for (V3GraphVertex& vtx : graphp->vertices()) {
         if (const auto lvtxp = vtx.cast<SchedLogicVertex>()) {
@@ -363,11 +336,9 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
             // in which case **EVERYTHING** that is not a Post block needs to go to 'act'.
             // This severely limits downstream optimizations (e.g. V3LifePost), and severely
             // reduces available parallelism in 'nba' for multi-threaded execution.
-            if (v3Global.usesZeroDelay() && !VN_IS(lvtxp->logicp(), AlwaysPost)) toAct = true;
-            LogicByScope& lbs = toAct ? result.m_act : result.m_nba;
-            AstNode* const logicp = lvtxp->logicp();
-            logicp->unlinkFrBack();
-            lbs.add(lvtxp->scopep(), lvtxp->senTreep(), logicp);
+            if (v3Global.usesZeroDelay() && !VN_IS(lvtxp->procp(), AlwaysPost)) toAct = true;
+            ProcessList& procList = toAct ? result.m_act : result.m_nba;
+            procList.add(lvtxp->process());
         }
     }
 
@@ -385,47 +356,33 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
             });
         };
 
-        for (const auto& entry : result.m_act) {
-            AstActive* const activep = entry.m_activep;
-            markVars(activep->sentreep());
-            markVars(activep);
+        for (const Process& process : result.m_act) {
+            markVars(process.m_senTreep);
+            markVars(process.m_procp);
         }
 
-        // AstAlwaysPre and AstAlwaysPost should only appear under a clocked
-        // AstActive, and should be the only thing left at this point.
-        for (const auto& entry : clockedLogic) {
-            AstScope* const scopep = entry.m_scopep;
-            AstActive* const activep = entry.m_activep;
-            for (AstNode* const nodep : activep->stmtspList()) {
-                if (AstAlwaysPre* const logicp = VN_CAST(nodep, AlwaysPre)) {
-                    bool toActiveRegion = false;
-                    logicp->foreach([&](const AstNodeVarRef* vrefp) {
-                        AstVarScope* const vscp = vrefp->varScopep();
-                        if (vrefp->access().isReadOnly()) {
-                            // Variable only read in Pre, and is written in active region
-                            if (vscp->user2()) toActiveRegion = true;
-                        } else {
-                            // Variable written in Pre, and referenced in active region
-                            if (vscp->user1() || vscp->user2()) toActiveRegion = true;
-                        }
-                    });
-                    LogicByScope& lbs = toActiveRegion ? result.m_pre : result.m_nba;
-                    logicp->unlinkFrBack();
-                    lbs.add(scopep, activep->sentreep(), logicp);
-                } else {
-                    UASSERT_OBJ(VN_IS(nodep, AlwaysPost), nodep,
-                                "Unexpected node type " << nodep->typeName());
-                    nodep->unlinkFrBack();
-                    result.m_nba.add(scopep, activep->sentreep(), nodep);
-                }
+        // AstAlwaysPre and AstAlwaysPost only appear in clocked logic
+        for (Process& process : clockedLogic) {
+            AstNodeProcedure* const nodep = process.m_procp;
+            if (AstAlwaysPre* const logicp = VN_CAST(nodep, AlwaysPre)) {
+                bool toActiveRegion = false;
+                logicp->foreach([&](const AstNodeVarRef* vrefp) {
+                    AstVarScope* const vscp = vrefp->varScopep();
+                    if (vrefp->access().isReadOnly()) {
+                        // Variable only read in Pre, and is written in active region
+                        if (vscp->user2()) toActiveRegion = true;
+                    } else {
+                        // Variable written in Pre, and referenced in active region
+                        if (vscp->user1() || vscp->user2()) toActiveRegion = true;
+                    }
+                });
+                ProcessList& procList = toActiveRegion ? result.m_pre : result.m_nba;
+                procList.add(std::move(process));
+            } else if (VN_IS(nodep, AlwaysPost)) {
+                result.m_nba.add(std::move(process));
             }
         }
     }
-
-    // Clean up remains of inputs
-    clockedLogic.deleteActives();
-    combinationalLogic.deleteActives();
-    hybridLogic.deleteActives();
 
     return result;
 }

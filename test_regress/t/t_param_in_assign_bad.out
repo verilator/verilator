@@ -1,0 +1,16 @@
+%Error-ASSIGNIN: t/t_param_in_assign_bad.v:21:27: Assigning to input/const variable: 'i'
+                                                : ... note: In instance 't'
+   21 |   virtual param_if #(.P(f(i))) pif;   
+      |                           ^
+                 ... For error description see https://verilator.org/warn/ASSIGNIN?v=latest
+%Error: t/t_param_in_assign_bad.v:21:27: Expecting expression to be constant, but variable isn't const: 'i'
+                                       : ... note: In instance 't'
+   21 |   virtual param_if #(.P(f(i))) pif;   
+      |                           ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_in_assign_bad.v:21:25: Expecting expression to be constant, but can't determine constant for FUNCREF 'f'
+                                       : ... note: In instance 't'
+        t/t_param_in_assign_bad.v:17:39: ... Location of non-constant VAR 'o': Language violation: Outputs/refs not allowed in constant functions
+   21 |   virtual param_if #(.P(f(i))) pif;   
+      |                         ^
+%Error: Exiting due to

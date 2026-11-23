@@ -198,6 +198,8 @@ void OrderMTaskGraph::addEdge(LogicMTask* fromp, LogicMTask* top) {
 
 void OrderMTaskGraph::mergeMTasks(LogicMTask* recipientp, LogicMTask* donorp) {
     UASSERT_OBJ(recipientp != donorp, recipientp, "Should not merge an MTask with itself");
+    UASSERT_OBJ(recipientp->canMergeWith(donorp), recipientp, "Merging different fixed threads");
+    if (recipientp->fixedThread() < 0) recipientp->fixedThread(donorp->fixedThread());
 
     // Note we redirect the edges before updating the cost and critical paths of the recipient,
     // which means the redirected edges are inserted into the edge heaps of the relatives using the
@@ -599,6 +601,7 @@ class OrderMTaskGraphBuilder final {
         // Create the LogicMTasks for each OrderMoveVertex, or each threads_group part of them
         const std::unordered_map<const OrderMoveVertex*, Part> vtx2Part = threadsGroupParts();
         std::map<Part, LogicMTask*> partMTasks;
+        size_t placedParts = 0;
         for (V3GraphVertex& vtx : mtaskGraph.moveGraph().vertices()) {
             OrderMoveVertex& mVtx = static_cast<OrderMoveVertex&>(vtx);
 
@@ -607,7 +610,15 @@ class OrderMTaskGraphBuilder final {
                 const Part part = vtx2Part.at(&mVtx);
                 if (part.groupp) {
                     LogicMTask*& mtaskp = partMTasks[part];
-                    if (!mtaskp) mtaskp = new LogicMTask{mtaskGraph, nullptr};
+                    if (!mtaskp) {
+                        mtaskp = new LogicMTask{mtaskGraph, nullptr};
+                        // Worker 0 is the thread calling eval, the scheduler's last thread
+                        const int worker = part.groupp->threadsGroupWorker();
+                        if (worker >= 0) {
+                            mtaskp->fixedThread(worker ? worker - 1 : v3Global.opt.threads() - 1);
+                            ++placedParts;
+                        }
+                    }
                     mtaskp->addVertex(&mVtx);
                     mVtx.userp(mtaskp);
                     continue;
@@ -621,6 +632,7 @@ class OrderMTaskGraphBuilder final {
             }
         }
         V3Stats::addStatSum("MTask graph, threads_group parts", partMTasks.size());
+        V3Stats::addStatSum("MTask graph, threads_group placed parts", placedParts);
 
         LogicMTask& entry = *mtaskGraph.entryp();
         LogicMTask& exit = *mtaskGraph.exitp();

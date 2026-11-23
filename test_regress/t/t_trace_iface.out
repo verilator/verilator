@@ -16,8 +16,18 @@ $timescale 1ps $end
     $var wire 1 ) reset $end
    $upscope $end
    $scope module cif2 $end
+    $scope module c_mp $end
+     $var wire 1 # valid $end
+     $var wire 4 $ value [3:0] $end
+     $var wire 1 ( reset $end
+    $upscope $end
    $upscope $end
    $scope module cif3 $end
+    $scope module c_mp $end
+     $var wire 1 % valid $end
+     $var wire 4 & value [3:0] $end
+     $var wire 1 ) reset $end
+    $upscope $end
    $upscope $end
   $upscope $end
  $upscope $end

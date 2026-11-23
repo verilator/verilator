@@ -25,7 +25,6 @@ MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = YES
 PREDEFINED             = \
                          "DOXYGEN=1" \
-                         "VL_ATTR_NORETURN=" \
                          "VL_ATTR_PRINTF()=" \
                          "VL_ATTR_WEAK=" \
                          "VL_GUARDED_BY()=" \

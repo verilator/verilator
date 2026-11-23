@@ -266,7 +266,7 @@ private:
         // Populate the tables
         createTables(nodep, outputAssignedTableBuilder);
 
-        AstNode* const stmtsp = createLookupInput(fl, indexVscp);
+        AstNodeStmt* const stmtsp = createLookupInput(fl, indexVscp);
         createOutputAssigns(nodep, stmtsp, indexVscp, outputAssignedTableBuilder.varScopep());
 
         // Link it in.
@@ -330,7 +330,7 @@ private:
         }  // each value
     }
 
-    AstNode* createLookupInput(FileLine* fl, AstVarScope* indexVscp) {
+    AstNodeStmt* createLookupInput(FileLine* fl, AstVarScope* indexVscp) {
         // Concat inputs into a single temp variable (inside always)
         // First var in inVars becomes the LSB of the concat
         AstNodeExpr* concatp = nullptr;
@@ -358,9 +358,9 @@ private:
         for (TableOutputVar& tov : m_outVarps) {
             AstNodeExpr* const alhsp = new AstVarRef{fl, tov.varScopep(), VAccess::WRITE};
             AstNodeExpr* const arhsp = select(fl, tov.tabeVarScopep(), indexVscp);
-            AstNode* outsetp = m_assignDly
-                                   ? static_cast<AstNode*>(new AstAssignDly{fl, alhsp, arhsp})
-                                   : static_cast<AstNode*>(new AstAssign{fl, alhsp, arhsp});
+            AstNodeStmt* outsetp
+                = m_assignDly ? static_cast<AstNodeStmt*>(new AstAssignDly{fl, alhsp, arhsp})
+                              : static_cast<AstNodeStmt*>(new AstAssign{fl, alhsp, arhsp});
 
             // If this output is unassigned on some code paths, wrap the assignment in an If
             if (tov.mayBeUnassigned()) {

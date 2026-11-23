@@ -151,8 +151,7 @@ module t (
     // wildcard ignore/illegal bins with transition list
     { wildcard ignore_bins wib_trans = ( 1 => 2 ); }
     { wildcard illegal_bins wlib_trans = ( 1 => 2 ); }
-    // ignore/illegal bins = default sequence
-    { ignore_bins ib_def_seq = default sequence; }
+    // illegal bins = default sequence
     { illegal_bins lib_def_seq = default sequence; }
     // Explicit array size of transition bins
     { bins trans_sized[2] = ( 1 => 2 ); }
