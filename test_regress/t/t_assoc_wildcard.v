@@ -32,6 +32,22 @@ module t (
     o["out"] = {32'h7, 63'h1};
   endtask
 
+  // Element writes keep their effects, once
+  initial begin
+    begin
+      typedef int arr_t[4];
+      arr_t ws[*];
+      ws["x"][0] = 0;
+      ws["x"][1:1] = '{6};
+      `checkh(ws["x"][1], 6);
+    end
+    begin
+      logic [127:0] wa[*];
+      wa[wa.num()][80:20] = 61'h1;
+      `checkh(wa.num(), 1);
+    end
+  end
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     begin

@@ -2108,8 +2108,10 @@ package std;
         } m_queue[$];
         protected int m_keyCount;
         local task dropKilled();
-            while (((m_queue.size() > 32'sh0) && (m_queue.at(
-                                                             32'sh0).proc.status() 
+            while (((m_queue.size() > 32'sh0) && ((
+                                                   m_queue
+                                                   [
+                                                   32'sh0]).proc.status() 
                                                   == 
                                                   process::
                                                   KILLED))) begin
@@ -2129,8 +2131,9 @@ package std;
                                                    m_queue.size() 
                                                    == 
                                                    32'sh0) 
-                                                  || (m_queue.at(
-                                                                 32'sh0).reqKeys 
+                                                  || ((m_queue
+                                                       [
+                                                       32'sh0]).reqKeys 
                                                       > 
                                                       keyCount)))) begin
                     begin
@@ -2146,12 +2149,11 @@ package std;
                     self()
                     ???? // CONSSTRUCTITEM
                     keyCount);
-                while ((m_queue.at(32'sh0).proc != 
-                        self())) begin
+                while (((m_queue[32'sh0]).proc != self())) begin
                     begin
-                        wait(((m_queue.at(32'sh0).proc.status() 
+                        wait((((m_queue[32'sh0]).proc.status() 
                                == process::KILLED) 
-                              || (m_queue.at(32'sh0).proc 
+                              || ((m_queue[32'sh0]).proc 
                                   == self())));
                         dropKilled();
                     end

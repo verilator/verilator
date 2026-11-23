@@ -32,6 +32,7 @@ module t (
     nq[i][7:0] <= 1;  // Error
     nq[0] <= 1;  // Error
     nq[0][7:0] <= 1;  // Error
+    nq[$] <= 1;  // Error
   end
 
   int nd[];
@@ -109,6 +110,7 @@ module t (
   assign cq2 = cq;  // OK
   assign cq[0] = 1;  // Error
   assign cq[1][7:0] = 1;  // Error
+  assign cq[$] = 1;  // Error
 
   int cd[];
   int cd2[];
@@ -157,6 +159,7 @@ module t (
     assign pq2 = pq;  // OK
     assign pq[0] = 1;  // Error
     assign pr = pq[0];  // Error
+    assign pr = pq[$];  // Error
     assign pr8 = pq[0][7:0];  // Error
     assign pbit = pb[pq[0]];  // Error
     assign ps2 = ps;  // OK

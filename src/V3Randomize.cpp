@@ -83,8 +83,11 @@ struct RandModeTarget final {
     // METHODS
     static RandModeTarget get(AstNodeExpr* fromp, AstNodeModule* modp) {
         if (!fromp) return {nullptr, nullptr, VN_AS(modp, Class)};
-        if (AstCMethodHard* const methodHardp = VN_CAST(fromp, CMethodHard)) {
-            return RandModeTarget::get(methodHardp->fromp(), modp);
+        if (AstDynArraySel* const selp = VN_CAST(fromp, DynArraySel)) {
+            return RandModeTarget::get(selp->fromp(), modp);
+        }
+        if (AstQueueSel* const selp = VN_CAST(fromp, QueueSel)) {
+            return RandModeTarget::get(selp->fromp(), modp);
         }
         AstVar* receiverp = nullptr;
         AstClass* classp = VN_CAST(modp, Class);
@@ -285,6 +288,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     exprp = memberRefp->fromp();
                 } else if (const AstArraySel* const arrselp = VN_CAST(exprp, ArraySel)) {
                     exprp = arrselp->fromp();
+                } else if (const AstDynArraySel* const selp = VN_CAST(exprp, DynArraySel)) {
+                    exprp = selp->fromp();
+                } else if (const AstQueueSel* const selp = VN_CAST(exprp, QueueSel)) {
+                    exprp = selp->fromp();
                 } else if (const AstStructSel* const strselp = VN_CAST(exprp, StructSel)) {
                     exprp = strselp->fromp();
                 } else if (const AstCMethodHard* const methodp = VN_CAST(exprp, CMethodHard)) {
@@ -507,10 +514,19 @@ class RandomizeMarkVisitor final : public VNVisitor {
             AstVar* randVarp = nullptr;
             if (AstMemberRef* const memberRefp = VN_CAST(exprp, MemberRef)) {
                 randVarp = memberRefp->varp();
+                memberRefp->access(VAccess::READWRITE);
                 exprp = memberRefp->fromp();
             } else if (AstArraySel* const arraySelp = VN_CAST(exprp, ArraySel)) {
                 exprp = arraySelp->fromp();
                 continue;  // Skip ArraySel, continue traversing
+            } else if (AstDynArraySel* const selp = VN_CAST(exprp, DynArraySel)) {
+                exprp = selp->fromp();
+                continue;
+            } else if (AstQueueSel* const selp = VN_CAST(exprp, QueueSel)) {
+                selp->v3warn(E_UNSUPPORTED,
+                             "Unsupported: Queue element in 'std::randomize()' argument");
+                exprp = selp->fromp();
+                continue;
             } else if (AstStructSel* const structSelp = VN_CAST(exprp, StructSel)) {
                 exprp = structSelp->fromp();
                 continue;  // Skip StructSel, continue traversing
@@ -587,15 +603,15 @@ class RandomizeMarkVisitor final : public VNVisitor {
             } else if (VN_IS(fromp, Sel)) {
                 nodep->v3error("Cannot call 'rand_mode()' on packed array element");
                 valid = false;
-            } else if (AstCMethodHard* const methodHardp = VN_CAST(fromp, CMethodHard)) {
-                if (methodHardp->method() == VCMethod::ARRAY_AT
-                    || methodHardp->method() == VCMethod::ARRAY_AT_WRITE) {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: 'rand_mode()' on dynamic array element");
-                    valid = false;
-                } else {
-                    methodHardp->v3fatalSrc("Unknown rand_mode() receiver");
-                }
+            } else if (VN_IS(fromp, DynArraySel)) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: 'rand_mode()' on dynamic array element");
+                valid = false;
+            } else if (VN_IS(fromp, QueueSel)) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'rand_mode()' on queue element");
+                valid = false;
+            } else if (VN_IS(fromp, CMethodHard)) {
+                fromp->v3fatalSrc("Unknown rand_mode() receiver");
             }
             if (!nodep->argsp() && VN_IS(nodep->backp(), StmtExpr)
                 && !nodep->backp()->fileline()->warnIsOff(V3ErrorCode::IGNOREDRETURN)) {
@@ -1542,9 +1558,8 @@ class RandomizeVisitor final : public VNVisitor {
         iterVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         AstCMethodHard* const sizep = new AstCMethodHard{fl, lhsp, VCMethod::DYN_SIZE, nullptr};
         sizep->dtypeSetUInt32();
-        AstCMethodHard* const setp
-            = new AstCMethodHard{fl, lhsp->cloneTree(false), VCMethod::ARRAY_AT_WRITE,
-                                 new AstVarRef{fl, iterVarp, VAccess::READ}};
+        AstDynArraySel* const setp = new AstDynArraySel{
+            fl, lhsp->cloneTree(false), new AstVarRef{fl, iterVarp, VAccess::READ}};
         setp->dtypeSetUInt32();
         AstNodeStmt* const stmtsp = new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
                                                   startp ? startp : new AstConst{fl, 0}};
@@ -1689,8 +1704,7 @@ class RandomizeVisitor final : public VNVisitor {
             AstNodeExpr* const tempExprp = tempElementp ? tempElementp : exprp;
             AstVarRef* const tempRefp = new AstVarRef{fl, newRandLoopIndxp, VAccess::READ};
             if (VN_IS(tempDTypep, DynArrayDType)) {
-                tempElementp
-                    = new AstCMethodHard{fl, tempExprp, VCMethod::ARRAY_AT_WRITE, tempRefp};
+                tempElementp = new AstDynArraySel{fl, tempExprp, tempRefp};
             } else if (VN_IS(tempDTypep, UnpackArrayDType)) {
                 AstNodeArrayDType* const aryDTypep = VN_CAST(tempDTypep, NodeArrayDType);
                 // Adjust the bitp to ensure it covers all possible indices
@@ -1706,10 +1720,8 @@ class RandomizeVisitor final : public VNVisitor {
             } else if (VN_IS(tempDTypep, WildcardArrayDType)) {
                 tempElementp = new AstWildcardSel{fl, tempExprp, tempRefp};
             } else if (VN_IS(tempDTypep, QueueDType)) {
-                tempElementp
-                    = new AstCMethodHard{fl, tempExprp, VCMethod::DYN_AT_WRITE_APPEND, tempRefp};
+                tempElementp = new AstQueueSel{fl, tempExprp, tempRefp};
             }
-            tempElementp->dtypep(tempDTypep->subDTypep());
             tempDTypep = tempDTypep->virtRefDTypep();
         }
 
@@ -2025,7 +2037,9 @@ class RandomizeVisitor final : public VNVisitor {
         if (AstMemberRef* const memberRefp = VN_CAST(exprp, MemberRef)) {
             AstMemberRef* const newMemberRefp = new AstMemberRef{
                 exprp->fileline(), memberRefp->fromp()->cloneTree(false), modeVarp};
-            newMemberRefp->foreach([access](AstVarRef* varrefp) { varrefp->access(access); });
+            newMemberRefp->access(access);
+            // The handle leading to the mode array is only read
+            newMemberRefp->foreach([](AstVarRef* varrefp) { varrefp->access(VAccess::READ); });
             return newMemberRefp;
         }
         UASSERT_OBJ(VN_IS(exprp, VarRef), exprp, "Should be a VarRef");
@@ -2118,11 +2132,11 @@ class RandomizeVisitor final : public VNVisitor {
             const RandomizeMode randMode = {.asUQuad = memberVarp->user1()};
             if (randMode.usesMode
                 && !memberVarp->rand().isRand()) {  // Not randomizable by default
-                AstCMethodHard* const setp = new AstCMethodHard{
+                AstDynArraySel* const setp = new AstDynArraySel{
                     nodep->fileline(),
                     new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule), randModeVarp,
                                   VAccess::WRITE},
-                    VCMethod::ARRAY_AT_WRITE, new AstConst{nodep->fileline(), randMode.index}};
+                    new AstConst{nodep->fileline(), randMode.index}};
                 setp->dtypeSetUInt32();
                 newp->addStmtsp(new AstAssign{fl, setp, new AstConst{fl, 0}});
             }
@@ -2214,8 +2228,8 @@ class RandomizeVisitor final : public VNVisitor {
                 // mode
                 const RandomizeMode rmode = {.asUQuad = receiverp->user1()};
                 UASSERT_OBJ(rmode.usesMode, ftaskRefp, "Failed to set usesMode");
-                AstCMethodHard* const setp = new AstCMethodHard{fl, lhsp, VCMethod::ARRAY_AT_WRITE,
-                                                                new AstConst{fl, rmode.index}};
+                AstDynArraySel* const setp
+                    = new AstDynArraySel{fl, lhsp, new AstConst{fl, rmode.index}};
                 setp->dtypeSetUInt32();
                 newStmtp = new AstAssign{fl, setp, rhsp};
             } else {
@@ -2232,8 +2246,8 @@ class RandomizeVisitor final : public VNVisitor {
             UASSERT_OBJ(!appendStmtp, ftaskRefp, "Append path requires arg-form rand_mode");
             const RandomizeMode rmode = {.asUQuad = receiverp->user1()};
             UASSERT_OBJ(rmode.usesMode, ftaskRefp, "Failed to set usesMode");
-            AstCMethodHard* const setp = new AstCMethodHard{fl, lhsp, VCMethod::ARRAY_AT_WRITE,
-                                                            new AstConst{fl, rmode.index}};
+            AstDynArraySel* const setp
+                = new AstDynArraySel{fl, lhsp, new AstConst{fl, rmode.index}};
             setp->dtypeSetUInt32();
             ftaskRefp->replaceWith(setp);
             VL_DO_DANGLING(pushDeletep(ftaskRefp), ftaskRefp);
@@ -2323,9 +2337,9 @@ class RandomizeVisitor final : public VNVisitor {
                     tmpVarps = AstNode::addNext(tmpVarps, randModeTmpVarp);
                 }
                 const RandomizeMode randMode = {.asUQuad = randVarp->user1()};
-                AstCMethodHard* setp = new AstCMethodHard{
-                    fl, makeModeVarRef(exprp, randModeVarp, VAccess::WRITE),
-                    VCMethod::ARRAY_AT_WRITE, new AstConst{fl, randMode.index}};
+                AstDynArraySel* const setp
+                    = new AstDynArraySel{fl, makeModeVarRef(exprp, randModeVarp, VAccess::WRITE),
+                                         new AstConst{fl, randMode.index}};
                 setp->dtypeSetUInt32();
                 setStmtsp
                     = AstNode::addNext(setStmtsp, new AstAssign{fl, setp, new AstConst{fl, 1}});
@@ -2656,7 +2670,7 @@ class RandomizeVisitor final : public VNVisitor {
                     withp->foreach([&](AstNodeExpr* exp) {
                         if (isSimilarNode(exp, exprp)) {
                             AstVarRef* const replaceVarp
-                                = new AstVarRef{exprp->fileline(), refvarp, VAccess::READWRITE};
+                                = new AstVarRef{exprp->fileline(), refvarp, VAccess::READ};
                             exp->replaceWith(replaceVarp);
                             replaceVarp->user1(exp->user1());
                             replaceVarp->varp()->user2p(m_modp);
