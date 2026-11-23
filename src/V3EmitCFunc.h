@@ -572,6 +572,19 @@ public:
         }
     }
 
+    void visit(AstCvtArrayToString* nodep) override {
+        const bool unpacked = VN_IS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+        putns(nodep, unpacked ? "VL_CVT_UNPACK_TO_N(" : "VL_CVT_Q_TO_N(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(")");
+    }
+    void visit(AstCvtStringToQueue* nodep) override {
+        putns(nodep, "VL_CVT_N_TO_Q<");
+        puts(nodep->dtypep()->cType("", false, false));
+        puts(">(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(")");
+    }
     void visit(AstCvtUnpackToQueue* nodep) override {
         const AstUnpackArrayDType* const arrayp
             = VN_AS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);

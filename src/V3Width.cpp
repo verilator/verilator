@@ -2720,6 +2720,15 @@ class WidthVisitor final : public VNVisitor {
         // Opaque returns, so arbitrary
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
         // Type set in constructor
+        // A string is a dynamic array of bytes in a bit-stream cast (IEEE 1800-2023 6.24.3)
+        if (isByteArrayDType(nodep->lhsp()->dtypep(), true)) {
+            AstCvtArrayToString* const newp = new AstCvtArrayToString{
+                nodep->fileline(), nodep->lhsp()->unlinkFrBack(), nodep->dtypep()};
+            newp->didWidth(true);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         // A class handle is not a legal implicit conversion to string
         if (AstNodeDType* const dtp = nodep->lhsp()->dtypep()) {
             if (VN_IS(dtp->skipRefToEnump(), ClassRefDType)) {
@@ -2738,6 +2747,16 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->didWidthAndSet()) return;
         // Opaque returns, so arbitrary
         userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
+        // Type set in constructor
+    }
+    void visit(AstCvtArrayToString* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+        // Type set in constructor
+    }
+    void visit(AstCvtStringToQueue* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
         // Type set in constructor
     }
     void visit(AstCvtArrayToPacked* nodep) override {
@@ -3491,12 +3510,16 @@ class WidthVisitor final : public VNVisitor {
             // bit-stream cast
             const bool assignable = castable.isSameish()
                                     || (castable.isCompatible() && VN_IS(toDtp, UnpackArrayDType));
+            // A string is a dynamic array of bytes in a bit-stream cast (IEEE 1800-2023 6.24.3)
+            const bool stringBytes = (fromDtp->isString() && isByteArrayDType(toDtp, false))
+                                     || (toDtp->isString() && isByteArrayDType(fromDtp, true));
             const bool bitstream
-                = !assignable
+                = !assignable && !stringBytes
                   && (isUnpackedArrayOrUOrStruct(toDtp) || isUnpackedArrayOrUOrStruct(fromDtp));
             // No follow-on errors for an operand that reported an error
             const bool bad = nodep->fromp()->fileline()->erroringOn()
-                             || castError(nodep, toDtp, fromDtp, castable, bitstream);
+                             || (!stringBytes
+                                 && castError(nodep, toDtp, fromDtp, castable, bitstream));
             // For now, replace it ASAP, so widthing can propagate easily
             // The cast may change signing, but we don't know the sign yet.  Make it so.
             // Note we don't sign fromp() that would make the algorithm O(n^2) if lots of casting.
@@ -3508,6 +3531,19 @@ class WidthVisitor final : public VNVisitor {
                 constp->dtypeFrom(nodep);
                 constp->didWidth(true);
                 nodep->replaceWith(constp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            } else if (stringBytes) {
+                iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, fromDtp, EXTEND_EXP,
+                             false);
+                AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+                if (fromDtp->isString()) {
+                    newp = new AstCvtStringToQueue{nodep->fileline(), fromp, nodep->dtypep()};
+                } else {
+                    newp = new AstCvtArrayToString{nodep->fileline(), fromp, nodep->dtypep()};
+                }
+                newp->didWidth(true);
+                nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             } else if (bitstream) {
@@ -3759,6 +3795,16 @@ class WidthVisitor final : public VNVisitor {
             return false;
         }
         return true;
+    }
+    // A dynamic array or queue, or if 'fixed' an unpacked array, of byte sized integral elements
+    static bool isByteArrayDType(const AstNodeDType* const dtypep, const bool fixed) {
+        const AstNodeDType* const arrayp = dtypep->skipRefp();
+        if (!VN_IS(arrayp, DynArrayDType) && !VN_IS(arrayp, QueueDType)
+            && !(fixed && VN_IS(arrayp, UnpackArrayDType))) {
+            return false;
+        }
+        const AstNodeDType* const elemp = arrayp->subDTypep()->skipRefp();
+        return elemp->isIntegralOrPacked() && elemp->width() == 8;
     }
     // An unpacked array, struct or union, which has a fixed size
     static bool isUnpackedArrayOrUOrStruct(const AstNodeDType* const dtypep) {
