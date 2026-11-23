@@ -66,6 +66,8 @@ if [ -n "$OPT_RELOC" ]; then
   mv test_regress "$TEST_REGRESS"
   NODIST="$OPT_RELOC/nodist"
   mv nodist "$NODIST"
+  # Source-provenance tests need the bundled snapshots and embedding patches.
+  mv third_party "$OPT_RELOC/third_party"
   # Delete everything else, but keep the CI infrastructure
   find . -mindepth 1 -maxdepth 1 ! -name .github ! -name ci -exec rm -rf {} +
   ls -la .
