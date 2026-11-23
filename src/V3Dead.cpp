@@ -279,6 +279,8 @@ class DeadVisitor final : public VNVisitor {
     bool m_inAssign = false;  // Currently in an assign
     AstNodeDType* m_curDTypep = nullptr;  // Current NodeDType
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstScope* m_classPackageScopep = nullptr;  // Scope of current ClassPackage
+    bool m_hasCoverDecl = false;  // Current module has coverage declarations
     AstForeachHeader* m_foreachHeaderp = nullptr;  // Current foreach header
     AstNode* m_containingFTaskRefp = nullptr;  // Parent of ftaskref (e.g. task/module)
     bool m_inFTask = false;  // Under an AstNodeFTask
@@ -288,6 +290,7 @@ class DeadVisitor final : public VNVisitor {
     VDouble0 m_statFTasksMDeadified;  // Statistic, module function/tasks removed as dead
     VDouble0 m_statFTasksNMDeadified;  // Statistic, non-module function/tasks removed as dead
     VDouble0 m_statFTasksVirtDeadified;  // Statistic, virtual function/tasks removed as dead
+    VDouble0 m_statEmptyClassPackagesDeleted;  // Statistic, empty class packages removed as dead
 
     // METHODS
 
@@ -344,13 +347,18 @@ class DeadVisitor final : public VNVisitor {
         m_modp = nodep;
         VL_RESTORER(m_containingFTaskRefp);
         m_containingFTaskRefp = nodep;
+        VL_RESTORER(m_classPackageScopep);
+        m_classPackageScopep = nullptr;
+        VL_RESTORER(m_hasCoverDecl);
+        m_hasCoverDecl = false;
         if (nodep->dead()) return;
         if (nodep->modPublic()) m_modp->user1Inc();
         iterateChildren(nodep);
         checkAll(nodep);
+        // Coverage of a class is declared in its class package and registered under its scope
+        if (m_classPackageScopep && m_hasCoverDecl) m_classPackageScopep->user1Inc();
         if (AstClass* const classp = VN_CAST(nodep, Class)) {
             if (classp->extendsp()) classp->extendsp()->user1Inc();
-            if (classp->classOrPackagep()) classp->classOrPackagep()->user1Inc();
             m_classesp.push_back(classp);
             // TODO we don't reclaim dead classes yet - graph implementation instead?
             classp->user1Inc();
@@ -375,14 +383,19 @@ class DeadVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->aboveScopep()) nodep->aboveScopep()->user1Inc();
-        // Class packages might have no children, but need to remain as
-        // long as the class they refer to is needed
-        if (VN_IS(m_modp, Class) || VN_IS(m_modp, ClassPackage)) nodep->user1Inc();
+        if (VN_IS(m_modp, Class)) nodep->user1Inc();
+        if (VN_IS(m_modp, ClassPackage)) m_classPackageScopep = nodep;
         // The constant pool scope must remain for entries created later
         if (m_modp->isConstPool()) nodep->user1Inc();
-        if (!nodep->isTop() && !nodep->varsp() && !nodep->blocksp()) {
+        // A class package scope can become empty once its variables (e.g. parameters) are deleted
+        if (!nodep->isTop() && (isScopeEmpty(nodep) || VN_IS(m_modp, ClassPackage))) {
             m_scopesp.push_back(nodep);
         }
+    }
+    void visit(AstNodeCoverDecl* nodep) override {
+        iterateChildren(nodep);
+        checkAll(nodep);
+        m_hasCoverDecl = true;
     }
     void visit(AstCell* nodep) override {
         iterateChildren(nodep);
@@ -693,6 +706,10 @@ class DeadVisitor final : public VNVisitor {
                         });
                     }
                     if (modp->isDollarUnit()) v3Global.rootp()->dollarUnitPkgp(nullptr);
+                    if (const AstClassPackage* const pkgp = VN_CAST(modp, ClassPackage)) {
+                        pkgp->classp()->classOrPackagep(nullptr);
+                        ++m_statEmptyClassPackagesDeleted;
+                    }
                     deleting(modp);
                     retry = true;
                 }
@@ -707,13 +724,17 @@ class DeadVisitor final : public VNVisitor {
         return m_elimUserVars;  // Post-Trace can kill most anything
     }
 
+    static bool isScopeEmpty(const AstScope* scopep) {
+        return !scopep->varsp() && !scopep->blocksp();
+    }
+
     void deadCheckScope() {
         for (bool retry = true; retry;) {
             retry = false;
             for (auto& itr : m_scopesp) {
                 AstScope* const scp = itr;
                 if (!scp) continue;
-                if (scp->user1() == 0) {
+                if (scp->user1() == 0 && isScopeEmpty(scp)) {
                     UINFO(4, "  Dead AstScope " << scp);
                     scp->aboveScopep()->user1Inc(-1);
                     if (scp->dtypep()) scp->dtypep()->user1Inc(-1);
@@ -741,7 +762,6 @@ class DeadVisitor final : public VNVisitor {
                 if (AstClass* const nodep = itr) {  // nullptr if deleted earlier
                     if (nodep->user1() == 0) {
                         if (nodep->extendsp()) nodep->extendsp()->user1Inc(-1);
-                        if (nodep->classOrPackagep()) nodep->classOrPackagep()->user1Inc(-1);
                         deleting(nodep);
                         itr = nullptr;
                         retry = true;
@@ -861,6 +881,8 @@ public:
                             m_statFTasksNMDeadified);
         V3Stats::addStatSum("Optimizations, FTasks, deadified, virtual",
                             m_statFTasksVirtDeadified);
+        V3Stats::addStatSum("Optimizations, Empty class packages deleted",
+                            m_statEmptyClassPackagesDeleted);
     };
 };
 

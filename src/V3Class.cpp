@@ -83,7 +83,7 @@ class ClassVisitor final : public VNVisitor {
         // Note origName is the same as the class origName so errors look correct
         AstClassPackage* const packagep
             = new AstClassPackage{nodep->fileline(), nodep->origName(), nodep->libname()};
-        packagep->name(nodep->name() + "__Vclpkg");
+        packagep->name(AstClassPackage::nameFromClass(nodep->name()));
         nodep->editCountInc();
         nodep->classOrPackagep(packagep);
         packagep->classp(nodep);

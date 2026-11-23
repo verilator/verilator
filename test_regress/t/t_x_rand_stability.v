@@ -4,6 +4,19 @@
 // SPDX-FileCopyrightText: 2025 Todd Strader
 // SPDX-License-Identifier: CC0-1.0
 
+class NoStatic;
+  logic [31:0] m_i;
+  logic [63:0] m_q;
+  logic [255:0] m_w;
+`ifdef ADD_SIGNAL
+  static int s_added;
+`endif
+endclass
+
+class WithStatic;
+  static logic [31:0] s_i;
+  logic [31:0] m_i;
+endclass
 
 module t (
     input clk
@@ -29,11 +42,20 @@ module t (
   sub_yes_inline the_sub_yes_inline_2 ();
 
   initial begin
+    NoStatic ns;
+    WithStatic ws;
     $display("uninitialized = 0x%x", uninitialized);
     $display("x_assigned (initial) = 0x%x", x_assigned);
     $display("uninitialized2 = 0x%x", uninitialized2);
     $display("big = 0x%x", big);
     $display("random_init = 0x%x", random_init);
+    ns = new;
+    ws = new;
+    $display("NoStatic m_i = 0x%x", ns.m_i);
+    $display("NoStatic m_q = 0x%x", ns.m_q);
+    $display("NoStatic m_w = 0x%x", ns.m_w);
+    $display("WithStatic s_i = 0x%x", WithStatic::s_i);
+    $display("WithStatic m_i = 0x%x", ws.m_i);
   end
 
   always @(posedge clk) begin

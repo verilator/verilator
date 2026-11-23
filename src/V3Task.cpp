@@ -1871,28 +1871,16 @@ class TaskVisitor final : public VNVisitor {
         return cfuncp;
     }
 
-    // A new class 'name', as V3Class makes them. Returns its constructor, under the scope of the
-    // class.
+    // A new class 'name'. Returns its constructor, under the scope of the class.
     AstCFunc* newDispatcherClass(FileLine* flp, const std::string& name) {
         AstNetlist* const netlistp = v3Global.rootp();
         AstScope* const topScopep = m_topScopep->scopep();
-        const std::string libname = netlistp->topModulep()->libname();
-        AstClass* const clsp = new AstClass{flp, name, libname};
-        AstClassPackage* const pkgp = new AstClassPackage{flp, name + "__Vclpkg", libname};
-        clsp->classOrPackagep(pkgp);
+        AstClass* const clsp = new AstClass{flp, name, netlistp->topModulep()->libname()};
         clsp->timeunit(netlistp->topModulep()->timeunit());
-        pkgp->classp(clsp);
-        pkgp->timeunit(clsp->timeunit());
         netlistp->addModulesp(clsp);
-        netlistp->addModulesp(pkgp);
-        AstCell* const cellp
-            = new AstCell{flp, flp, pkgp->name(), pkgp->name(), nullptr, nullptr, nullptr};
-        cellp->modp(pkgp);
-        netlistp->topModulep()->addStmtsp(cellp);
         const std::string scopeName = topScopep->name() + "." + name;
-        AstScope* const scopep = new AstScope{flp, clsp, scopeName, topScopep, cellp};
+        AstScope* const scopep = new AstScope{flp, clsp, scopeName, topScopep, nullptr};
         clsp->addMembersp(scopep);
-        pkgp->addStmtsp(new AstScope{flp, pkgp, scopeName, topScopep, cellp});
         AstCFunc* const newp = new AstCFunc{flp, "new", scopep, ""};
         newp->isConstructor(true);
         newp->isStatic(false);

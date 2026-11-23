@@ -3531,6 +3531,9 @@ public:
     bool timescaleMatters() const override { return false; }
     AstClass* classp() const VL_MT_SAFE { return m_classp; }
     void classp(AstClass* classp) { m_classp = classp; }
+    static std::string nameFromClass(const std::string& className) VL_MT_SAFE {
+        return className + "__Vclpkg";
+    }
 };
 class AstIface final : public AstNodeModule {
     // An interface declaration

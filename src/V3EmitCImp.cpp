@@ -457,6 +457,7 @@ class EmitCImp final : public EmitCFunc {
             m_modp = modp;
             const AstClass* const classp = VN_CAST(modp, Class);
             m_classOrPackagep = classp ? classp->classOrPackagep() : VN_CAST(modp, ClassPackage);
+            if (!m_classOrPackagep) m_classOrPackagep = classp;
             for (AstNode* const nodep : modp->stmtspList()) {
                 AstCFunc* const funcp = VN_CAST(nodep, CFunc);
                 if (!funcp || !isImpFunc(funcp)) continue;
@@ -533,6 +534,16 @@ public:
 //######################################################################
 // EmitC class functions
 
+static void addToChunk(std::vector<AstNodeModule*>& chunk, AstNodeModule* implp, size_t& slowCost,
+                       size_t& fastCost) {
+    chunk.push_back(implp);
+    for (const AstNode* const stmtp : implp->stmtspList()) {
+        const AstCFunc* const funcp = VN_CAST(stmtp, CFunc);
+        if (!funcp || !EmitCImp::isImpFunc(funcp)) continue;
+        (funcp->slow() ? slowCost : fastCost) += funcp->nodeCount();
+    }
+}
+
 void V3EmitC::emitcImp() {
     UINFO(2, __FUNCTION__ << ":");
     std::list<std::vector<AstCFile*>> cfiles;
@@ -546,13 +557,13 @@ void V3EmitC::emitcImp() {
         std::vector<std::pair<std::vector<AstNodeModule*>, std::string>> groups;
 
         // Process each module in turn, gathering classes to be emitted below
-        std::vector<AstClassPackage*> clspkgps;  // Class packages, emitted with their class
+        std::vector<AstClass*> classps;  // Classes, emitted with their package (if any)
         for (AstNode* const nodep : v3Global.rootp()->modulespList()) {
             AstNodeModule* const modp = VN_AS(nodep, NodeModule);
             if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
-            if (VN_IS(modp, Class)) continue;  // Emitted with its package
-            if (AstClassPackage* const clspkgp = VN_CAST(modp, ClassPackage)) {
-                clspkgps.push_back(clspkgp);
+            if (VN_IS(modp, ClassPackage)) continue;  // Emitted with its class
+            if (AstClass* const classp = VN_CAST(modp, Class)) {
+                classps.push_back(classp);
                 continue;
             }
             groups.emplace_back(std::vector<AstNodeModule*>{modp},
@@ -569,23 +580,17 @@ void V3EmitC::emitcImp() {
         // Size of the slow and fast code of the current chunk, as measured for --output-split
         size_t slowCost = 0;
         size_t fastCost = 0;
-        for (AstClassPackage* const clspkgp : clspkgps) {
+        for (AstClass* const classp : classps) {
             if (chunks.empty() || (splitLimit && std::max(slowCost, fastCost) >= splitLimit)) {
                 chunks.emplace_back();
                 slowCost = 0;
                 fastCost = 0;
             }
-            AstNodeModule* const pkgp = clspkgp;
-            AstNodeModule* const clsp = clspkgp->classp();
-            chunks.back().push_back(pkgp);
-            chunks.back().push_back(clsp);
-            for (const AstNodeModule* const implp : {pkgp, clsp}) {
-                for (const AstNode* const stmtp : implp->stmtspList()) {
-                    const AstCFunc* const funcp = VN_CAST(stmtp, CFunc);
-                    if (!funcp || !EmitCImp::isImpFunc(funcp)) continue;
-                    (funcp->slow() ? slowCost : fastCost) += funcp->nodeCount();
-                }
+            // Classes without a package are emitted on their own
+            if (AstNodeModule* const pkgp = classp->classOrPackagep()) {
+                addToChunk(chunks.back(), pkgp, slowCost, fastCost);
             }
+            addToChunk(chunks.back(), classp, slowCost, fastCost);
         }
         // Class code is split into multiple files, so use parallel build
         if (chunks.size() > 1) v3Global.useParallelBuild(true);

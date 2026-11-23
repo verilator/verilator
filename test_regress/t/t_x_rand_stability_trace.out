@@ -3,6 +3,11 @@ x_assigned (initial) = 0x00000000
 uninitialized2 = 0xdf5768de
 big = 0x355d75711c3bf0ca3e65805db585c43beae34b336b9dbe44a2d040cbe101a665
 random_init = 0x5fa24450
+NoStatic m_i = 0x528895ea
+NoStatic m_q = 0x764de888bd56d736
+NoStatic m_w = 0xf2ff1f0be18298329ad74be8e584c28bf6c0947061bf4efefd8110e0ada189be
+WithStatic s_i = 0x21a84ba9
+WithStatic m_i = 0xdd7457e1
 top.t.the_sub_yes_inline_2 no_init 0xa36c65459f4b9f46
 top.t.the_sub_yes_inline_1 no_init 0x842cd8b1033a58
 top.t.the_sub_no_inline_1 no_init 0x42d55205d10c58f8

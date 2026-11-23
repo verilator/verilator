@@ -665,9 +665,14 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
         // Include files required by this AstNodeModule
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
             for (const AstClassExtends* const extp : classp->extendspList()) {
-                putns(extp, "#include \""
-                                + EmitCUtil::prefixNameProtect(extp->classp()->classOrPackagep())
-                                + ".h\"\n");
+                const AstClass* const baseClassp = extp->classp();
+                // Classes without a package have their own header
+                const AstNodeModule* const baseClassModulep
+                    = baseClassp->classOrPackagep()
+                          ? baseClassp->classOrPackagep()
+                          : static_cast<const AstNodeModule*>(baseClassp);
+                putns(extp,
+                      "#include \"" + EmitCUtil::prefixNameProtect(baseClassModulep) + ".h\"\n");
             }
         }
 
@@ -794,7 +799,8 @@ void V3EmitC::emitcHeaders() {
 
     // Process each module in turn
     for (const AstNode* const nodep : v3Global.rootp()->modulespList()) {
-        if (VN_IS(nodep, Class)) continue;  // Declared with the ClassPackage
+        const AstClass* const classp = VN_CAST(nodep, Class);
+        if (classp && classp->classOrPackagep()) continue;  // Declared with the ClassPackage
         const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
         if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
         EmitCHeader::main(modp);
