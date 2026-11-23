@@ -1080,6 +1080,11 @@ Summary:
    In versions before 5.054: Disable merging constant pool entries that have
    the same value but different data types.
 
+.. option:: -fno-outline
+
+   Rarely needed. Disable moving parts of large functions into separate
+   functions.
+
 .. option:: -fno-reloop
 
    Rarely needed. Disable converting sequences of statements that differ
