@@ -677,6 +677,8 @@ public:
     static string nameNoArray(const string& namein);  // Name with any array index removed
     static string prettyName(const string& namein) VL_PURE;  // Name for printing out to the user
     static string vpiName(const string& namein);  // Name for vpi access
+    // Name for emitting as Verilog, escaped if needed (IEEE 1800-2023 5.6.1)
+    static string verilogIdent(const string& namein);
     static string prettyNameQ(const string& namein) {  // Quoted pretty name (for errors)
         return "'"s + prettyName(namein) + "'";
     }
@@ -684,6 +686,7 @@ public:
     static string encodeName(const string& namein);
     static string encodeNumber(int64_t num);  // Encode number into internal C representation
     string prettyName() const { return prettyName(name()); }
+    string verilogIdent() const { return verilogIdent(name()); }
     // Name for messages to the user, by default prettyName(), but friendlier for some nodes,
     // such as a specialized class, whose name() is internal
     virtual string prettyNameMsg() const { return prettyName(); }

@@ -17,6 +17,7 @@ try:
     import pty
 except ImportError:
     pty = None
+import random
 import re
 try:
     import resource
@@ -3104,7 +3105,9 @@ def run_them() -> None:
     test_data = {}
     for test_py in Arg_Tests:
         test_data[test_py] = VlTest._prefilter_scenario(test_py)
-    for test_py in sorted(Arg_Tests, key=lambda key: test_data[key]['priority'], reverse=True):
+        test_data[test_py]['order_key'] = (-test_data[test_py]['priority'],
+                                           random.random() if Args.driver_rand else test_py)
+    for test_py in sorted(Arg_Tests, key=lambda key: test_data[key]['order_key']):
         for scenario in sorted(set(Args.scenarios)):
             run_it = False
             for allscarg in All_Scenarios[scenario]:
@@ -3203,6 +3206,9 @@ if __name__ == '__main__':
     parser.add_argument('--driver-prune',
                         action='store_true',
                         help='clean after test passes, but keep files for test-snap/test-diff')
+    parser.add_argument('--driver-rand',
+                        action='store_true',
+                        help='run tests in random order within the same priority')
     parser.add_argument('--fail-max',
                         action='store',
                         default=None,

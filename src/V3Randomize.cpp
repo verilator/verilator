@@ -188,6 +188,13 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
     }
 }
 
+// True if any operand is marked as random-dependent
+static bool anyOpRandDependent(const AstNode* nodep) {
+    return (nodep->op1p() && nodep->op1p()->user1()) || (nodep->op2p() && nodep->op2p()->user1())
+           || (nodep->op3p() && nodep->op3p()->user1())
+           || (nodep->op4p() && nodep->op4p()->user1());
+}
+
 //######################################################################
 // Visitor that marks classes needing a randomize() method
 
@@ -809,10 +816,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void visit(AstNodeExpr* nodep) override {
         iterateChildrenConst(nodep);
         if (!m_constraintExprGenp && !m_inStdWith) return;
-        nodep->user1((nodep->op1p() && nodep->op1p()->user1())
-                     || (nodep->op2p() && nodep->op2p()->user1())
-                     || (nodep->op3p() && nodep->op3p()->user1())
-                     || (nodep->op4p() && nodep->op4p()->user1()));
+        nodep->user1(anyOpRandDependent(nodep));
     }
     void visit(AstArg* nodep) override {
         iterateChildrenConst(nodep);
@@ -865,6 +869,7 @@ class CaptureVisitor final : public VNVisitor {
     std::unordered_set<const AstVar*> m_constraintIterators;  // Enclosing foreach loop variables
     AstVar* m_thisp = nullptr;  // Variable for outer context's object, if necessary
     bool m_staticContext = false;  // True when capturing from a static function context
+    const bool m_randomizesThis;  // True for randomize() in class method
 
     // METHODS
 
@@ -979,9 +984,8 @@ class CaptureVisitor final : public VNVisitor {
         m_ignore.emplace(thisRefp);
         AstMemberRef* const memberRefp
             = new AstMemberRef{nodep->fileline(), thisRefp, nodep->varp()};
-        // Propagate random-dependence marking; forcing it on read-only operands
-        // would route them through the solver write path.
-        if (!m_targetp && nodep->user1()) memberRefp->user1(true);
+        // Propagate random-dependence marking only for randomize() in class method
+        if (nodep->user1() && m_randomizesThis) memberRefp->user1(true);
         memberRefp->user2p(m_targetp);
         nodep->replaceWith(memberRefp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -1042,6 +1046,8 @@ class CaptureVisitor final : public VNVisitor {
     void visit(AstMemberRef* nodep) override {
         if (!isReferenceToInnerMember(nodep)) {
             iterateChildren(nodep);
+            // Selecting from an object that is no longer random-dependent after capture
+            if (!nodep->fromp()->user1()) nodep->user1(false);
             return;
         }
         AstVarRef* const varRefp
@@ -1073,14 +1079,20 @@ class CaptureVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         m_ignore.emplace(taskRefp);
     }
+    void visit(AstNodeExpr* nodep) override {
+        iterateChildren(nodep);
+        // Recompute random-dependence, as capturing may have changed the children's marking
+        nodep->user1(anyOpRandDependent(nodep));
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     explicit CaptureVisitor(AstNode* const nodep, AstNodeModule* callerp, AstClass* const targetp,
-                            bool staticContext = false)
+                            bool staticContext = false, bool randomizesThis = false)
         : m_callerp{callerp}
         , m_targetp{targetp}
-        , m_staticContext{staticContext} {
+        , m_staticContext{staticContext}
+        , m_randomizesThis{randomizesThis} {
         iterateAndNextNull(nodep);
     }
 
@@ -2705,7 +2717,9 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         // Detach the expression and prepare variable copies
-        const CaptureVisitor captured{withp->exprp(), m_modp, classp};
+        // (randomize() in class method is a FuncRef, not a MethodCall)
+        const CaptureVisitor captured{withp->exprp(), m_modp, classp, false,
+                                      !VN_IS(nodep, MethodCall)};
         // Add function arguments
         captured.addFunctionArguments(randomizeFuncp);
 

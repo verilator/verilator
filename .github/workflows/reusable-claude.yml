@@ -1,0 +1,117 @@
+---
+# DESCRIPTION: Github actions config
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+# Runs Claude on a pull request, with the prompt and the schema of its
+# structured output given by the caller. The pull request code is never checked
+# out or executed, Claude only sees its contents, which 'ci-claude-review.py
+# fetch' adds in '.pr'.
+#
+# Anyone can open a pull request or comment on it, so what Claude reads can try
+# to inject instructions. Hence this job can only read the repository, and
+# Claude can only read the files in the working directory. As a reusable
+# workflow, a caller can only lower the permissions of this job, cannot add
+# steps to it, and passes it no secret but the API key, so no token that can
+# write is ever within reach of Claude. Callers take only the structured output
+# from it, as data, to act on in another job, which does not run Claude.
+
+name: reusable-claude
+
+on:
+  workflow_call:
+    inputs:
+      pr-number:
+        description: "Number of the pull request"
+        required: true
+        type: number
+      prompt:
+        description: "Prompt for Claude"
+        required: true
+        type: string
+      json-schema:
+        description: "JSON schema of the structured output, without single quotes"
+        required: true
+        type: string
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: true
+    outputs:
+      base-ref:
+        description: "Base branch of the pull request"
+        value: ${{ jobs.claude.outputs.base-ref }}
+      head-sha:
+        description: "Commit at the head of the pull request that Claude saw"
+        value: ${{ jobs.claude.outputs.head-sha }}
+      output:
+        description: "Structured output of Claude"
+        value: ${{ jobs.claude.outputs.output }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  claude:
+    name: Claude
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    # IMPORTANT: Strictly read only access in this job
+    # (a read only token to a public repo is worthless)
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      base-ref: ${{ steps.base.outputs.ref }}
+      head-sha: ${{ steps.pr.outputs.head-sha }}
+      output: ${{ steps.claude.outputs.structured_output }}
+    steps:
+      # The event does not tell the branches of the pull request
+      - name: Find base branch
+        id: base
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr-number }}
+        run: |-
+          BASE_REF=$(gh pr view "${PR_NUMBER}" --repo "${GITHUB_REPOSITORY}" \
+            --json baseRefName --jq .baseRefName)
+          echo "ref=${BASE_REF}" >> "$GITHUB_OUTPUT"
+
+      # The base branch, for the AGENTS.md guides and the code around the diff.
+      # Keeps the token off the disk, in case Claude can ever read it.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          ref: ${{ steps.base.outputs.ref }}
+          persist-credentials: false
+
+      # Adds the pull request contents in '.pr' for Claude, as it cannot run
+      # commands
+      - name: Fetch PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr-number }}
+          BASE_REF: ${{ steps.base.outputs.ref }}
+        run: |-
+          HEAD_SHA=$(ci/ci-claude-review.py fetch --repo "${GITHUB_REPOSITORY}" \
+            --pr "${PR_NUMBER}" --base-ref "${BASE_REF}")
+          echo "head-sha=${HEAD_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Claude
+        id: claude
+        uses: anthropics/claude-code-action/base-action@4d75e5f390ee76b2e09c1980ecc99ff3a2e088c8  # v1.0.275
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: ${{ inputs.prompt }}
+          # '--restricted' removes the tools that run commands, and confines the
+          # file tools to the working directory. '--strict-mcp-config' ignores
+          # any MCP servers configured in the repository.
+          # IMPORTANT: Do not remove '--restricted', nor add to '--tools'
+          claude_args: |-
+            --restricted
+            --tools Read,Glob,Grep
+            --strict-mcp-config
+            --model claude-opus-5-5
+            --effort medium
+            --max-budget-usd 1
+            --json-schema '${{ inputs.json-schema }}'
