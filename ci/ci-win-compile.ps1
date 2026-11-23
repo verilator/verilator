@@ -43,6 +43,21 @@ cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release --install-prefix $PWD/../install "-
 cmake --build .
 cmake --install . --prefix $PWD/../install
 
+# Installed configuration must come from this CMake build, even if a GNU build
+# left generated headers in the source tree.
+$GeneratedConfig = Get-Content -Raw -LiteralPath "$PWD/include/verilated_config.h"
+$InstalledConfig = Get-Content -Raw -LiteralPath "$PWD/../install/include/verilated_config.h"
+if ($GeneratedConfig -cne $InstalledConfig) {
+    throw "Installed Verilator configuration differs from its CMake build"
+}
+if ($InstalledConfig -notmatch '(?m)^#define VERILATOR_VERSION "([0-9]+)\.([0-9]+)') {
+    throw "Missing Verilator version string"
+}
+$ExpectedVersion = [int]$Matches[1] * 1000000 + [int]$Matches[2] * 1000
+if ($InstalledConfig -notmatch "(?m)^#define VERILATOR_VERSION_INTEGER $ExpectedVersion\r?$") {
+    throw "Missing or inconsistent numeric Verilator version"
+}
+
 # verilated_dpi.cpp is not part of any CMake target, so nothing above compiles it.
 # Whether svdpi.h declares the DPI functions as imports or exports depends on the
 # macros set in that file, and getting it wrong is inconsistent dll linkage: only

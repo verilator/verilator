@@ -150,6 +150,19 @@ endif()
 
 set(PACKAGE_NAME ${PROJECT_NAME})
 set(PACKAGE_VERSION ${PROJECT_VERSION})
+# Match Autoconf's integer encoding, including zero-padded minor versions.
+string(
+    REGEX REPLACE
+    "^0+([0-9])"
+    "\\1"
+    version_minor
+    "${PROJECT_VERSION_MINOR}"
+)
+math(
+    EXPR
+    VERILATOR_VERSION_INTEGER
+    "${PROJECT_VERSION_MAJOR} * 1000000 + ${version_minor} * 1000"
+)
 set(CXX ${CMAKE_CXX_COMPILER})
 set(AR ${CMAKE_AR})
 
@@ -246,4 +259,5 @@ install(
     PATTERN "include/*.sv"
     PATTERN "include/fstcpp/*.[chv]*"
     PATTERN "include/vltstd/*.[chv]*"
+    PATTERN "verilated_config.h" EXCLUDE
 )
