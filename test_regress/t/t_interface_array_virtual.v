@@ -51,6 +51,15 @@ module t;
 
   sub i_sub ();
 
+  if (1) begin : g_blk
+    a_if ga[2] ();
+    a_if ga2d[2][2] ();
+    initial begin
+      ga[1].x = 'h51;
+      ga2d[1][0].x = 'h52;
+    end
+  end
+
   initial begin
     #1;
     // Whole array, left element to left element
@@ -76,6 +85,11 @@ module t;
     `checkh(s[1].x, 'h41);
     `checkh(i_sub.ifs[0].x, 'h40);
     `checkh(i_sub.ifs[1].x, 'h41);
+    // Element through a generate block
+    s[0] = g_blk.ga[1];
+    s[1] = g_blk.ga2d[1][0];
+    `checkh(s[0].x, 'h51);
+    `checkh(s[1].x, 'h52);
     // Class member
     c = new;
     c.vif = asc[2:3];

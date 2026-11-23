@@ -128,6 +128,7 @@ module mid #(
     leaf #(.V(5)) u_arr[2] (.cyc);
     core_a u_core ();
     bus_if #(.W(7)) bus (.cyc);
+    bus_if #(.W(7)) bus_arr[2] (.cyc);
     if (R == 1) begin : h
       int h1 = 31;
     end
@@ -144,11 +145,13 @@ module mid #(
     leaf #(.V(6)) u_m (.cyc);
     core_b u_core ();
     bus_if #(.W(15)) bus (.cyc);
+    bus_if #(.W(15)) bus_arr[2] (.cyc);
   end
   else begin : g
     leaf #(.V(2)) u_b (.cyc);
     core_b u_core ();
     bus_if #(.W(9)) bus (.cyc);
+    bus_if #(.W(9)) bus_arr[2] (.cyc);
     if (R == 0) begin : h
       int h0 = 33;
     end
@@ -166,10 +169,12 @@ module mid #(
   localparam int BUS_W = R == 1 ? 7 : R == 2 ? 15 : 9;
   virtual bus_if #(.W(BUS_W)) vif;
   virtual bus_if #(.W(BUS_W)).mp vmp;
+  virtual bus_if #(.W(BUS_W)) vel;
   Holder #(BUS_W) holder;
   initial begin
     vif = g.bus;
     vmp = g.bus.mp;
+    vel = g.bus_arr[1];
     holder = new(g.bus);
   end
 
@@ -297,6 +302,8 @@ module t;
       `checkd(int'(u_r1.vif.d), cyc % (1 << 7));
       `checkd($bits(u_r2.vmp.d), 15);
       `checkd(int'(u_r2.vmp.d), cyc % (1 << 15));
+      `checkd($bits(u_r2.vel.d), 15);
+      `checkd(int'(u_r2.vel.d), cyc % (1 << 15));
       `checkd($bits(u_r0.holder.vif.d), 9);
       `checkd(int'(u_r0.holder.vif.d), cyc % (1 << 9));
     end

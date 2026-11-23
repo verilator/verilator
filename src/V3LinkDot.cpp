@@ -6097,18 +6097,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
     }
-    // Keep the parent path whenever an interface port selects a referenced interface array.
-    bool isIfacePinSelect(const AstSelBit* nodep) {
-        const VSymEnt* const portSymp
-            = m_pinp && m_pinSymp ? m_pinSymp->findIdFlat(m_pinp->name()) : nullptr;
-        const AstVar* const portp = portSymp ? VN_CAST(portSymp->nodep(), Var) : nullptr;
-        const AstVarXRef* const xrefp = VN_CAST(nodep->fromp(), VarXRef);
-        return portp && portp->isIfaceRef() && xrefp && xrefp->varp()
-               && xrefp->varp()->isIfaceRef();
+    // A dotted reference ending in an interface array select denotes the element, so the
+    // path is already resolved and need not wait for V3Param
+    static bool isIfaceElemSelect(const AstSelBit* nodep) {
+        const AstNodeExpr* fromp = nodep->fromp();
+        while (const AstSelBit* const selp = VN_CAST(fromp, SelBit)) fromp = selp->fromp();
+        const AstVarXRef* const xrefp = VN_CAST(fromp, VarXRef);
+        return xrefp && xrefp->varp() && xrefp->varp()->isIfaceRef();
     }
     void visit(AstSelBit* nodep) override {
         if (nodep->user3SetOnce()) return;
         LINKDOT_VISIT_START();
+        const bool dotFinal = m_ds.m_dotPos == DP_FINAL;
         iterateAndNextNull(nodep->fromp());
         if (m_ds.m_unresolvedClass) {
             UASSERT_OBJ(m_ds.m_dotPos != DP_SCOPE && m_ds.m_dotPos != DP_FIRST, nodep,
@@ -6129,7 +6129,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->fromp());
         symIterateNull(nodep->bitp(), m_curSymp);
         if (m_ds.m_unresolvedCell && (m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST)
-            && !isIfacePinSelect(nodep)) {
+            && !(dotFinal && isIfaceElemSelect(nodep))) {
             AstNodeExpr* const exprp = nodep->bitp()->unlinkFrBack();
             if (AstCellArrayRef* const fromArrRefp = VN_CAST(nodep->fromp(), CellArrayRef)) {
                 // Multi-dim iface array access: append this select to the existing chain
