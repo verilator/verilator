@@ -11,6 +11,10 @@ class Cls;
   integer imemberb;
 endclass : Cls
 
+function automatic int takes_int(int i);
+  return i;
+endfunction
+
 module t;
 
   initial begin
@@ -19,6 +23,13 @@ module t;
     string v;
 
     Cls x;
+    int w [*];
+    Cls cw [*];
+    int q[$];
+    int r;
+    int n2 [*] [2];
+    int n3 [*] [3];
+    bit b;
 
     v = a.num("badarg");
     v = a.size("badarg");
@@ -43,5 +54,10 @@ module t;
     a[x] = "bad";
 
     a.bad_not_defined();
+
+    r = takes_int(w);  // Array to scalar argument
+    q = {q, cw};  // Concatenation item is neither an element nor array of elements
+    n2 = n3;  // Unmatched array sizes
+    b = 1 inside {w};  // Inside not specified on associative arrays
   end
 endmodule

@@ -1,0 +1,82 @@
+%Error: t/t_param_dynamic_bad.v:19:33: Expecting expression to be constant, but variable isn't const: 'v'
+                                     : ... note: In instance 't'
+   19 |   localparam int L_DYN[] = '{1, v};
+      |                                 ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_dynamic_bad.v:20:34: Expecting expression to be constant, but variable isn't const: 'v'
+                                     : ... note: In instance 't'
+   20 |   localparam int L_QUE[$] = '{2, v};
+      |                                  ^
+%Error: t/t_param_dynamic_bad.v:21:41: Expecting expression to be constant, but variable isn't const: 'v'
+                                     : ... note: In instance 't'
+   21 |   localparam int L_ASC[string] = '{"a": v};
+      |                                         ^
+%Error: t/t_param_dynamic_bad.v:22:34: Expecting expression to be constant, but variable isn't const: 'v'
+                                     : ... note: In instance 't'
+   22 |   localparam int L_WLD[*] = '{1: v};
+      |                                  ^
+%Error: t/t_param_dynamic_bad.v:46:33: Expecting expression to be constant, but can't convert a 'array or queue element selection' to constant.
+                                     : ... note: In instance 't'
+   46 |   localparam int C_DYN_1 = C_DYN[1];
+      |                                 ^
+%Error: t/t_param_dynamic_bad.v:48:33: Expecting expression to be constant, but can't convert a 'array or queue element selection' to constant.
+                                     : ... note: In instance 't'
+   48 |   localparam int C_QUE_1 = C_QUE[1];
+      |                                 ^
+%Error: t/t_param_dynamic_bad.v:50:33: Expecting expression to be constant, but can't convert a ASSOCSEL to constant.
+                                     : ... note: In instance 't'
+   50 |   localparam int C_ASC_A = C_ASC["a"];
+      |                                 ^
+%Error: t/t_param_dynamic_bad.v:52:33: Expecting expression to be constant, but can't convert a WILDCARDSEL to constant.
+                                     : ... note: In instance 't'
+   52 |   localparam int C_WLD_1 = C_WLD[1];
+      |                                 ^
+%Error: t/t_param_dynamic_bad.v:26:17: Expecting expression to be constant, but variable isn't const: 'v'
+                                     : ... note: In instance 't'
+   26 |       .DYN('{1, v}),
+      |                 ^
+%Error: t/t_param_dynamic_bad.v:27:17: Expecting expression to be constant, but variable isn't const: 'v'
+                                     : ... note: In instance 't'
+   27 |       .QUE('{2, v}),
+      |                 ^
+%Error: t/t_param_dynamic_bad.v:28:19: Expecting expression to be constant, but variable isn't const: 'v'
+                                     : ... note: In instance 't'
+   28 |       .ASC('{"a": v}),
+      |                   ^
+%Error: t/t_param_dynamic_bad.v:29:17: Expecting expression to be constant, but variable isn't const: 'v'
+                                     : ... note: In instance 't'
+   29 |       .WLD('{1: v})
+      |                 ^
+%Error: t/t_param_dynamic_bad.v:38:12: Expecting expression to be constant, but variable isn't const: 'dv'
+                                     : ... note: In instance 't'
+   38 |       .DYN(dv),
+      |            ^~
+%Error: t/t_param_dynamic_bad.v:39:12: Expecting expression to be constant, but variable isn't const: 'qv'
+                                     : ... note: In instance 't'
+   39 |       .QUE(qv),
+      |            ^~
+%Error: t/t_param_dynamic_bad.v:40:12: Expecting expression to be constant, but variable isn't const: 'av'
+                                     : ... note: In instance 't'
+   40 |       .ASC(av),
+      |            ^~
+%Error: t/t_param_dynamic_bad.v:41:12: Expecting expression to be constant, but variable isn't const: 'wv'
+                                     : ... note: In instance 't'
+   41 |       .WLD(wv)
+      |            ^~
+%Error: t/t_param_dynamic_bad.v:38:8: Can't convert defparam value to constant: Param 'DYN' of 'whole'
+                                    : ... note: In instance 't'
+   38 |       .DYN(dv),
+      |        ^~~
+%Error: t/t_param_dynamic_bad.v:39:8: Can't convert defparam value to constant: Param 'QUE' of 'whole'
+                                    : ... note: In instance 't'
+   39 |       .QUE(qv),
+      |        ^~~
+%Error: t/t_param_dynamic_bad.v:40:8: Can't convert defparam value to constant: Param 'ASC' of 'whole'
+                                    : ... note: In instance 't'
+   40 |       .ASC(av),
+      |        ^~~
+%Error: t/t_param_dynamic_bad.v:41:8: Can't convert defparam value to constant: Param 'WLD' of 'whole'
+                                    : ... note: In instance 't'
+   41 |       .WLD(wv)
+      |        ^~~
+%Error: Exiting due to

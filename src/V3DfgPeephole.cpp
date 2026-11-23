@@ -208,6 +208,7 @@ class V3DfgPeephole final : public DfgVisitor {
     V3DfgCache m_cache{m_dfg};  // Vertex cache to avoid creating redundant vertices
     DfgVertex* m_vtxp = nullptr;  // Currently considered vertex
     std::vector<DfgVertex*> m_movedSinks;  // In replace(), the sinks moving to the replacement
+    std::vector<DfgVertexVar*> m_siblings;  // In visit(DfgVertexVar*), removable variable sinks
     size_t m_currentGeneration = 0;  // Current generation number
     size_t m_lastId = 0;  // Last unique vertex ID assigned
     // Scope for transient temporariy variables cerated in this pass. They should all be
@@ -3388,24 +3389,32 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        // Otherwise remove if there is only one sink that is not a removable variable
-        bool foundOne = false;
-        const bool keep = vtxp->srcp()->foreachSink([&](DfgVertex& sink) -> bool {
+        // Otherwise remove if there is only one sink that is not a removable variable.
+        // This depends only on the driver, so decide for all its removable variable sinks at once.
+        size_t nOther = 0;
+        bool onlyOther = true;  // All sinks seen so far are not removable variables
+        m_siblings.clear();
+        vtxp->srcp()->foreachSink([&](DfgVertex& sink) {
             // Ignore non-observable variable sinks. These can be eliminated.
-            if (const DfgVertexVar* const varp = sink.cast<DfgVertexVar>()) {
-                if (!varp->hasSinks() && !varp->isObserved()) return false;
+            if (DfgVertexVar* const varp = sink.cast<DfgVertexVar>()) {
+                if (!varp->hasSinks() && !varp->isObserved()) {
+                    if (!varp->defaultp()) m_siblings.push_back(varp);
+                    onlyOther = false;
+                    return false;
+                }
             }
-            // Keep if found more than one sink
-            if (foundOne) return true;
-            // Mark first sink found
-            foundOne = true;
-            return false;
+            ++nOther;
+            // Stop if the first two sinks are counted, so such visits are constant time; otherwise
+            // collect the whole batch so no member stays queued to rescan the driver
+            return onlyOther && nOther > 1;
         });
-        if (!keep) {
-            APPLYING(REMOVE_VAR) {
-                deleteVertex(vtxp);
-                return;
-            }
+        // Take all removable variable sinks off the work list; if a sink of the driver is later
+        // removed or replaced, the driver goes on the iter list and they are revisited.
+        for (DfgVertexVar* const varp : m_siblings) {
+            removeFromWorkList(varp);
+            if (nOther > 1) continue;
+            // Collected variables have no sinks, so deleting one cannot delete another
+            APPLYING(REMOVE_VAR) { deleteVertex(varp); }
         }
     }
 

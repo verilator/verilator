@@ -654,7 +654,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                                           varp, leftp, rightp, VNType::Lt);
                 subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
                 subfromp->dtypep(fromDtp->subDTypep());
-            } else if (VN_IS(fromDtp, AssocArrayDType)) {
+            } else if (VN_IS(fromDtp, AssocArrayDType) || VN_IS(fromDtp, WildcardArrayDType)) {
                 // Make this: var KEY_TYPE index;
                 //            bit index__Vfirst;
                 //            index__Vfirst = 0;

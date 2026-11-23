@@ -27,6 +27,8 @@ typedef enum bit [15:0] {
   FOUR = 13
 } Enum;
 
+typedef Enum EnumAlias;
+
 typedef struct packed {
   int a;
   bit b;
@@ -72,12 +74,19 @@ class DerivedCls1 extends BaseCls1;
   rand int j;
   int k;
   rand Enum l;
+  rand enum bit [7:0] {
+    ANON_ONE = 3,
+    ANON_TWO = 77
+  } m;
+  rand EnumAlias n;
 
   function new;
     i = new;
     j = 0;
     k = 0;
     l = ONE;
+    m = ANON_ONE;
+    n = ONE;
   endfunction
 
 endclass
@@ -184,6 +193,8 @@ module t;
       void'(der_int.randomize());
       void'(der_contain.randomize());
       if (!(derived1.l inside {ONE, TWO, THREE, FOUR})) $stop;
+      if (!(derived1.m inside {DerivedCls1::ANON_ONE, DerivedCls1::ANON_TWO})) $stop;
+      if (!(derived1.n inside {ONE, TWO, THREE, FOUR})) $stop;
       if (!(other.str.j.s.c inside {ONE, TWO, THREE, FOUR})) $stop;
       if (!(other.str.j.y inside {ONE, TWO, THREE, FOUR})) $stop;
       if (!(other.str.k inside {ONE, TWO, THREE, FOUR})) $stop;
