@@ -1336,6 +1336,8 @@ class TimingControlVisitor final : public VNVisitor {
                 delayp->lhsp(
                     new AstCond{flp, new AstEq{flp, rhs1p->cloneTree(false), new AstConst{flp, 0}},
                                 fallDelayp, lhsp});
+                // Both values are now in ticks, so visit(AstDelay) must not scale them again
+                delayp->timeunit(v3Global.rootp()->timeprecision());
             }
         }
         AstAssign* const assignp = new AstAssign{nodep->fileline(), lhs1p, rhs1p, controlp};
