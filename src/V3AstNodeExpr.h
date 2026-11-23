@@ -1531,9 +1531,6 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
-    bool sameNode(const AstNode* samep) const override {
-        return m_isStrong == VN_DBG_AS(samep, Eventually)->m_isStrong;
-    }
     bool isStrong() const { return m_isStrong; }
 };
 class AstExprStmt final : public AstNodeExpr {
