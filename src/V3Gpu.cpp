@@ -581,7 +581,7 @@ class GpuPartition final {
         m_modp->addStmtsp(bodyp);
         m_modp->addStmtsp(launchp);
         m_reg.m_kernelBodies.insert(bodyp);
-        m_reg.m_groups.push_back(V3GpuGroup{id, launchp, bodyp, {}});
+        m_reg.m_groups.push_back(V3GpuGroup{id, launchp, bodyp, {}, {}});
         run.clear();
         return replacementp;
     }
