@@ -357,6 +357,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
         if (nodep->rtnTypeVoid() != "void") vtxp->setNoInline("Not void");
         if (nodep->dpiImportPrototype()) vtxp->setNoInline("DPI import prototype");
         if (nodep->recursive()) vtxp->setNoInline("Recursive");
+        if (nodep->noInline()) vtxp->setNoInline("Compilation boundary");
         if (nodep->argsp()) vtxp->setNoInline("Has arguments");
         if (nodep->isVirtual()) vtxp->setNoInline("Virtual method");
 

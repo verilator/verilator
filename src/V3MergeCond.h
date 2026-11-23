@@ -20,13 +20,17 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include <vector>
+
 class AstNetlist;
+class AstNodeStmt;
 
 //============================================================================
 
 class V3MergeCond final {
 public:
     static void mergeAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void mergeScoped(std::vector<AstNodeStmt*>& statements) VL_MT_DISABLED;
 };
 
 #endif  // Guard

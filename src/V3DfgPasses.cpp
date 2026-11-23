@@ -163,6 +163,28 @@ void V3DfgPasses::removeSelects(DfgGraph& dfg, V3DfgRemoveSelectsContext& ctx) {
     }
 }
 
+std::vector<DfgVertex*> V3DfgPasses::topologicalOrder(DfgGraph& dfg) {
+    DfgUserMap<size_t> indegree = dfg.makeUserMap<size_t>();
+    std::vector<DfgVertex*> ready;
+    dfg.forEachVertex([&](DfgVertex& vtx) {
+        size_t count = 0;
+        vtx.foreachSource([&](DfgVertex&) {
+            ++count;
+            return false;
+        });
+        indegree[vtx] = count;
+        if (!count) ready.push_back(&vtx);
+    });
+    for (size_t i = 0; i < ready.size(); ++i) {
+        ready[i]->foreachSink([&](DfgVertex& sink) {
+            if (!--indegree[sink]) ready.push_back(&sink);
+            return false;
+        });
+    }
+    UASSERT(ready.size() == dfg.size(), "Scoped DFG must be acyclic");
+    return ready;
+}
+
 void V3DfgPasses::inlineVars(DfgGraph& dfg) {
     for (DfgVertexVar& vtx : dfg.varVertices()) {
         // Nothing to inline it into
@@ -259,8 +281,8 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
     // Only consider input variables from a reasonable range:
     // - not too big to avoid huge tables, you are doomed anyway at that point..
     // - not too small, as it's probably not worth it
-    constexpr uint32_t WIDTH_MIN = 7;
-    constexpr uint32_t WIDTH_MAX = 20;
+    constexpr uint32_t WIDTH_MIN = V3DfgBinToOneHotContext::WIDTH_MIN;
+    constexpr uint32_t WIDTH_MAX = V3DfgBinToOneHotContext::WIDTH_MAX;
     const auto widthOk = [](const DfgVertex* vtxp) {
         const uint32_t width = vtxp->width();
         return WIDTH_MIN <= width && width <= WIDTH_MAX;
@@ -337,7 +359,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
     }
 
     // Somewhat arbitrarily, only apply if more than 64 unique comparisons are required
-    constexpr uint32_t TERM_LIMIT = 65;
+    constexpr uint32_t TERM_LIMIT = V3DfgBinToOneHotContext::TERM_LIMIT;
     // This should hold, otherwise we do redundant work gathering terms that will never be used
     static_assert((1U << WIDTH_MIN) >= TERM_LIMIT, "TERM_LIMIT too big relative to 2**WIDTH_MIN");
 
@@ -431,6 +453,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 
         // Initialize 'tab' and 'pre' variables statically
         AstInitialStatic* const initp = new AstInitialStatic{flp, nullptr};
+        initp->isDfgDecoder(true);
         staticActivep->addProcsp(initp);
         {  // pre = 0
             initp->addStmtsp(new AstAssign{
@@ -448,6 +471,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 
         // Build the decoder logic
         AstAlways* const logicp = new AstAlways{flp, VAlwaysKwd::ALWAYS_COMB, nullptr, nullptr};
+        logicp->isDfgDecoder(true);
         combActivep->addProcsp(logicp);
         {  // tab[pre] = 0;
             logicp->addStmtsp(new AstAssign{

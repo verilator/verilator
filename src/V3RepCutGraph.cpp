@@ -267,11 +267,56 @@ void V3RepCut::Graph::dumpControl(std::ostream& regions, std::ostream& controls)
 }
 
 void V3RepCut::Graph::dump(const std::string& base) const {
-    // Remove a stale complete graph when a later invocation is incomplete.
-    std::remove((base + ".graph").c_str());
-    std::remove((base + ".partial").c_str());
-    const std::unique_ptr<std::ofstream> graphp{
-        V3File::new_ofstream(base + (m_report.m_failures ? ".partial" : ".graph"))};
+    // Validate every complete normalized graph independently of partitioner
+    // availability. Multi-partition error paths are exercised by selfTest().
+    if (!m_report.m_failures) {
+        std::vector<std::vector<size_t>> partitions(1);
+        for (const Vertex* const vp : m_vertexps) partitions[0].push_back(vp->m_id);
+        Ownership plan;
+        std::string error;
+        UASSERT(ownership(partitions, plan, error), error);
+    }
+    size_t edges = 0;
+    size_t controlEdges = 0;
+    for (const Vertex* const vp : m_vertexps) {
+        edges += vp->inEdges().size();
+        if (vp->m_region != NO_ID) ++controlEdges;
+    }
+    if (v3Global.opt.repcutDumpGraph()
+        || (v3Global.opt.repcut() && !v3Global.opt.repcutPartitioner().empty())) {
+        // Remove a stale complete graph when a later invocation is incomplete.
+        std::remove((base + ".graph").c_str());
+        std::remove((base + ".partial").c_str());
+        const std::unique_ptr<std::ofstream> graphp{
+            V3File::new_ofstream(base + (m_report.m_failures ? ".partial" : ".graph"))};
+        if (graphp->fail()) v3fatal("Cannot write RepCut early graph files: " << base);
+        *graphp << edges << ' ' << m_vertexps.size() << '\n';
+        for (const Vertex* const vp : m_vertexps) {
+            // Unit costs only for operations and sinks; wires/sources have zero cost.
+            *graphp << 'n' << vp->m_id << ' ' << (vp->zeroCost() ? 0 : 1);
+            for (const V3GraphEdge& edge : vp->outEdges()) {
+                *graphp << ' ' << static_cast<Vertex*>(edge.top())->m_id;
+            }
+            *graphp << '\n';
+        }
+        graphp->close();
+        if (graphp->fail()) v3fatal("Cannot write RepCut early graph files: " << base);
+    }
+    V3Stats::addStat("RepCut native, cycle boundaries", m_report.m_nativeCycleBoundaries);
+    for (const auto& pair : m_report.m_nativeRetained)
+        V3Stats::addStat("RepCut native, retained " + pair.first, pair.second);
+    V3Stats::addStat("RepCut early, nodes", m_vertexps.size());
+    V3Stats::addStat("RepCut early, edges", edges);
+    V3Stats::addStat("RepCut early, control edges", controlEdges);
+    V3Stats::addStat("RepCut early, regions", m_regions.size());
+    V3Stats::addStat("RepCut early, supported procedures", m_report.m_supported);
+    V3Stats::addStat("RepCut early, unsupported occurrences", m_report.m_failures);
+    V3Stats::addStat("RepCut early, state variables", m_report.m_stateVariables);
+    V3Stats::addStat("RepCut early, memories with writes", m_report.m_writtenMemories);
+    if (v3Global.opt.repcutDumpGraph()) dumpDiagnostics(base);
+}
+
+void V3RepCut::Graph::dumpDiagnostics(const std::string& base) const {
     const std::unique_ptr<std::ofstream> nodesp{V3File::new_ofstream(base + ".nodes.tsv")};
     const std::unique_ptr<std::ofstream> reportp{V3File::new_ofstream(base + ".report.txt")};
     const std::unique_ptr<std::ofstream> clocksp{V3File::new_ofstream(base + ".clocks.tsv")};
@@ -281,7 +326,7 @@ void V3RepCut::Graph::dump(const std::string& base) const {
     const std::unique_ptr<std::ofstream> bindingsp{V3File::new_ofstream(base + ".bindings.tsv")};
     const std::unique_ptr<std::ofstream> regionsp{V3File::new_ofstream(base + ".regions.tsv")};
     const std::unique_ptr<std::ofstream> controlsp{V3File::new_ofstream(base + ".controls.tsv")};
-    if (graphp->fail() || nodesp->fail() || reportp->fail() || clocksp->fail() || memoriesp->fail()
+    if (nodesp->fail() || reportp->fail() || clocksp->fail() || memoriesp->fail()
         || storagep->fail() || domainsp->fail() || bindingsp->fail() || regionsp->fail()
         || controlsp->fail()) {
         v3fatal("Cannot write RepCut early graph files: " << base);
@@ -317,30 +362,8 @@ void V3RepCut::Graph::dump(const std::string& base) const {
         if (vp->m_aux != NO_ID) *bindingsp << vp->m_aux;
         *bindingsp << '\n';
     }
-    // Validate every complete normalized graph independently of partitioner
-    // availability. Multi-partition error paths are exercised by selfTest().
-    if (!m_report.m_failures) {
-        std::vector<std::vector<size_t>> partitions(1);
-        for (const Vertex* const vp : m_vertexps) partitions[0].push_back(vp->m_id);
-        Ownership plan;
-        std::string error;
-        UASSERT(ownership(partitions, plan, error), error);
-    }
-    size_t edges = 0;
-    size_t controlEdges = 0;
-    for (const Vertex* const vp : m_vertexps) {
-        edges += vp->inEdges().size();
-        if (vp->m_region != NO_ID) ++controlEdges;
-    }
-    *graphp << edges << ' ' << m_vertexps.size() << '\n';
     *nodesp << "id\tkind\twidth\tsigned\tlabel\tinputs\n";
-    for (Vertex* const vp : m_vertexps) {
-        // Unit costs only for operations and sinks; wires/sources have zero cost.
-        *graphp << 'n' << vp->m_id << ' ' << (vp->zeroCost() ? 0 : 1);
-        for (const V3GraphEdge& edge : vp->outEdges()) {
-            *graphp << ' ' << static_cast<Vertex*>(edge.top())->m_id;
-        }
-        *graphp << '\n';
+    for (const Vertex* const vp : m_vertexps) {
         *nodesp << vp->m_id << '\t' << ascii(vp->m_kind) << '\t' << vp->m_width << '\t'
                 << vp->m_signed << '\t' << vp->m_label << '\t';
         for (size_t i = 0; i < vp->m_inputps.size(); ++i) {
@@ -361,9 +384,6 @@ void V3RepCut::Graph::dump(const std::string& base) const {
     *reportp << "native_cycle_boundaries " << m_report.m_nativeCycleBoundaries << '\n';
     for (const auto& pair : m_report.m_nativeRetained)
         *reportp << "native_retained " << pair.first << ": " << pair.second << '\n';
-    V3Stats::addStat("RepCut native, cycle boundaries", m_report.m_nativeCycleBoundaries);
-    for (const auto& pair : m_report.m_nativeRetained)
-        V3Stats::addStat("RepCut native, retained " + pair.first, pair.second);
     *clocksp << "raw\tcanonical\n";
     *memoriesp << "memory\telements\telement_width\n";
     for (const auto& pair : m_report.m_memories) {
@@ -374,14 +394,6 @@ void V3RepCut::Graph::dump(const std::string& base) const {
         *reportp << pair.first << ": " << pair.second << '\n';
     for (const auto& pair : m_report.m_writeTargets)
         *reportp << "unsupported_write_target " << pair.first << ": " << pair.second << '\n';
-    V3Stats::addStat("RepCut early, nodes", m_vertexps.size());
-    V3Stats::addStat("RepCut early, edges", edges);
-    V3Stats::addStat("RepCut early, control edges", controlEdges);
-    V3Stats::addStat("RepCut early, regions", m_regions.size());
-    V3Stats::addStat("RepCut early, supported procedures", m_report.m_supported);
-    V3Stats::addStat("RepCut early, unsupported occurrences", m_report.m_failures);
-    V3Stats::addStat("RepCut early, state variables", m_report.m_stateVariables);
-    V3Stats::addStat("RepCut early, memories with writes", m_report.m_writtenMemories);
 }
 
 bool V3RepCut::Graph::ownership(const std::vector<std::vector<size_t>>& partitions,

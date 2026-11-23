@@ -38,6 +38,8 @@ public:
     // Read RepCut's CSV format: one partition per line, optional trailing comma.
     // Blank lines preserve empty partitions. Revalidate against this graph;
     // input file ordering is never treated as an execution order.
+    static bool build(const Graph& graph, std::vector<std::vector<size_t>> partitions,
+                      Plan& result, std::string& error);
     static bool read(const Graph& graph, std::istream& input, Plan& result, std::string& error);
     // Invoke the external partitioner only for nontrivial automatic plans.
     // Validate generated memberships before constructing the executable plan.

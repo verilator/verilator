@@ -896,6 +896,12 @@ void AstCFunc::dump(std::ostream& str) const {
     if (needsVlProcess()) str << " [NPRC]";
     if (isProcessKill()) str << " [PROCESSKILL]";
     if (entryPoint()) str << " [ENTRY]";
+    if (isRepCut()) str << " [REPCUT]";
+    if (repcutNativeBatch()) str << " [REPCUTBATCH]";
+    if (repcutSharedOrder()) str << " repcutSharedOrder=" << repcutSharedOrder();
+    if (repcutLocalPublish()) str << " [REPCUTLOCALPUBLISH]";
+    if (repcutDependencyArgs()) str << " [REPCUTDEPS]";
+    if (noInline()) str << " [NOINLINE]";
     if (noLife()) str << " [NOLIFE]";
     if (voidSelf()) str << " [VOIDSELF]";
     if (isConst().isKnown()) str << (isConst().trueKnown() ? " [CONST]" : " [!CONST]");
@@ -921,6 +927,12 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isCoroutine);
     dumpJsonBoolFuncIf(str, needsVlProcess);
     dumpJsonBoolFuncIf(str, isProcessKill);
+    dumpJsonBoolFuncIf(str, isRepCut);
+    dumpJsonBoolFuncIf(str, repcutNativeBatch);
+    dumpJsonNumFunc(str, repcutSharedOrder);
+    dumpJsonBoolFuncIf(str, repcutLocalPublish);
+    dumpJsonBoolFuncIf(str, repcutDependencyArgs);
+    dumpJsonBoolFuncIf(str, noInline);
     dumpJsonBoolFuncIf(str, noLife);
     dumpJsonBoolFuncIf(str, voidSelf);
     dumpJsonStr(str, "isConst", isConst().ascii());
@@ -1953,6 +1965,14 @@ const char* AstExecGraph::broken() const {
         BROKEN_RTN(!funcp || !funcp->brokeExists());
     }
     return nullptr;
+}
+void AstExecGraph::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (forceParallel()) str << " [FORCEPAR]";
+}
+void AstExecGraph::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, forceParallel);
+    dumpJsonGen(str);
 }
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
 bool AstExprStmt::isPure() {
@@ -3459,10 +3479,12 @@ void AstNodeProcedure::dump(std::ostream& str) const {
     Super::dump(str);
     if (isSuspendable()) str << " [SUSP]";
     if (needsVlProcess()) str << " [NPRC]";
+    if (isDfgDecoder()) str << " [DFGDEC]";
 }
 void AstNodeProcedure::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isSuspendable);
     dumpJsonBoolFuncIf(str, needsVlProcess);
+    dumpJsonBoolFuncIf(str, isDfgDecoder);
     dumpJsonGen(str);
 }
 const char* AstNodeQuadop::broken() const {
@@ -4783,6 +4805,7 @@ string AstVar::dpiTmpVarType(const string& varName) const {
 }
 void AstVar::dump(std::ostream& str) const {
     Super::dump(str);
+    if (repcutStorageGroup()) str << " [repcutGroup=" << repcutStorageGroup() << "]";
     if (libInoutId()) str << " libInoutId=" << libInoutId();
     if (libInoutEnable()) str << " [LIBINOUTEN]";
     if (isIO()) str << " " << direction().ascii();
@@ -4833,6 +4856,7 @@ void AstVar::dump(std::ostream& str) const {
     if (forceValVarp()) str << " forceValVarp=" << nodeAddr(forceValVarp());
 }
 void AstVar::dumpJson(std::ostream& str) const {
+    if (repcutStorageGroup()) dumpJsonNumFunc(str, repcutStorageGroup);
     if (libInoutId()) dumpJsonNumFunc(str, libInoutId);
     dumpJsonBoolFuncIf(str, libInoutEnable);
     dumpJsonStrFunc(str, origName);

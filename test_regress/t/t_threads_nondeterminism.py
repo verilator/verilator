@@ -12,7 +12,9 @@ import vltest_bootstrap
 test.scenarios('vltmt')
 test.top_filename = "t/t_threads_counter.v"
 
-test.compile(verilator_flags2=['--cc --debug-nondeterminism --no-skip-identical'], threads=2)
+# The shape hash describes the native MTask graph.
+test.compile(verilator_flags2=["-fno-repcut", '--cc --debug-nondeterminism --no-skip-identical'],
+             threads=2)
 
 test.execute()
 

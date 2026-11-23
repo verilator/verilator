@@ -1342,3 +1342,14 @@ void V3Gate::gateAll(AstNetlist* netlistp) {
 
     V3Global::dumpCheckGlobalTree("gate", 0, dumpTreeEitherLevel() >= 3);
 }
+
+void V3Gate::removeUnused(AstNetlist* netlistp) {
+    UINFO(2, __FUNCTION__ << ":");
+    {
+        // Late consumers can move out of native procedures. Prune their dead
+        // cones without inlining across existing scheduling boundaries.
+        std::unique_ptr<GateGraph> graphp = GateBuildVisitor::apply(netlistp);
+        GateUnused::apply(*graphp);
+    }
+    V3Global::dumpCheckGlobalTree("gate_unused", 0, dumpTreeEitherLevel() >= 3);
+}

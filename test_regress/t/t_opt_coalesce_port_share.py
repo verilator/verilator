@@ -16,6 +16,7 @@ test.compile(verilator_flags2=['--binary', '--stats'])
 test.execute()
 
 # The logic of the 4 tiles is shared, which needs the elements of their link ports kept
-test.file_grep(test.stats, r'Optimizations, Combined CFuncs\s+(\d+)', 6 if test.vltmt else 9)
+test.file_grep(test.stats, r'Optimizations, Combined CFuncs\s+(\d+)',
+               (3 if test.vltmt else 14) if test.repcut else (6 if test.vltmt else 9))
 
 test.passes()

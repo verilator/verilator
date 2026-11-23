@@ -1,0 +1,3 @@
+%Error: Cannot partition RepCut graph: Partitioner exited with status 7; see '@OBJ_DIR@/Vt_repcut_native_bad__repcut_early.partition.log'. Check the executable selected with --repcut-partitioner.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

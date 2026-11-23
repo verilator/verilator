@@ -36,6 +36,7 @@ class AstScope;
 class ExecMTask final : public V3GraphVertex {
     VL_RTTI_IMPL(ExecMTask, V3GraphVertex)
 private:
+    static constexpr uint32_t UNASSIGNED_THREAD = 0xffffffff;
     const uint32_t m_id;  // Unique ID of this ExecMTask.
     static std::atomic<uint32_t> s_nextId;  // Next ID to use
     AstCFunc* const m_funcp;  // The function that contains the task body
@@ -69,6 +70,7 @@ public:
     int threads() const { return m_threads; }
     int fixedThread() const { return m_fixedThread; }
     void fixedThread(int thread) { m_fixedThread = thread; }
+    bool hasFixedThread() const { return m_fixedThread >= 0; }
     void dump(std::ostream& str) const;
 
     static uint32_t numUsedIds() VL_MT_SAFE { return s_nextId; }

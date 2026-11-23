@@ -1,0 +1,3 @@
+%Error: Cannot partition RepCut graph: Partitioner returned 1 partitions for 2 threads.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

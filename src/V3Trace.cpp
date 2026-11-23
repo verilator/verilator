@@ -367,7 +367,16 @@ class TraceVisitor final : public VNVisitor {
         if (nodep->user2()) return;
 
         // Process the CCall
-        if (!VN_IS(nodep->exprp(), CCall)) return;
+        AstCCall* const callp = VN_CAST(nodep->exprp(), CCall);
+        if (!callp) return;
+        if (m_cfuncp && m_cfuncp->isRepCut() && v3Global.opt.threads() > 1) {
+            // RepCut chunks can run on different workers. Propagate their writes
+            // through the call graph; the ordinary caller sets activity after
+            // dispatch joins, including ExecGraph's analysis-only placeholders.
+            new V3GraphEdge{&m_graph, getCFuncVertexp(m_cfuncp), getCFuncVertexp(callp->funcp()),
+                            1};
+            return;
+        }
 
         // Gather the run of consecutive CCall statements. They all share the same activity
         // code, which is slow if all calls are.
@@ -394,8 +403,11 @@ class TraceVisitor final : public VNVisitor {
         V3GraphVertex* const funcVtxp = getCFuncVertexp(nodep);
         // If it can be entered from outside the model (public, DPI export, entry point or
         // coroutine), it needs its own activity point for the writes directly in this func
-        if (nodep->funcPublic() || nodep->dpiExportImpl() || nodep->entryPoint()
-            || nodep->isCoroutine()) {
+        // RepCut compilation boundaries are public only to preserve them.
+        // Their callers account for activity after parallel workers join.
+        const bool publicEntry
+            = nodep->funcPublic() && !(nodep->isRepCut() && v3Global.opt.threads() > 1);
+        if (publicEntry || nodep->dpiExportImpl() || nodep->entryPoint() || nodep->isCoroutine()) {
             // Cannot treat a coroutine as slow, it may be resumed later
             const bool slow = nodep->slow() && !nodep->isCoroutine();
             TraceFlagVertex* const flagVtxp = new TraceFlagVertex{&m_graph, nodep, slow};
@@ -404,6 +416,12 @@ class TraceVisitor final : public VNVisitor {
         VL_RESTORER(m_cfuncp);
         m_cfuncp = nodep;
         iterateChildren(nodep);
+    }
+
+    void visit(AstCCall* nodep) override {
+        // These arguments expose scheduling dependencies, not runtime writes.
+        // The callee's real writes already contribute trace activity.
+        if (!nodep->funcp()->repcutDependencyArgs()) iterateChildren(nodep);
     }
 
     void visit(AstVarRef* nodep) override {

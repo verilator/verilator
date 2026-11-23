@@ -21,11 +21,13 @@ if test.vlt_all:
                    r'{"type":"MODULE","name":"l1",.*"loc":"\w,58:[^"]*",.*"origName":"l1"')
     test.file_grep(out_filename,
                    r'{"type":"MODULE","name":"l2",.*"loc":"\w,64:[^"]*",.*"origName":"l2"')
-    test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l3",.*"loc":"\w,71:[^"]*",.*"origName":"l3"')
+    # RepCut moves the private state into kernels and eliminates these scopes.
+    check_private = test.file_grep_not if test.repcut else test.file_grep
+    check_private(out_filename,
+                  r'{"type":"MODULE","name":"l3",.*"loc":"\w,71:[^"]*",.*"origName":"l3"')
     # l4 keeps its output port variable, which is aliased to the net it connects to
-    test.file_grep(out_filename,
-                   r'{"type":"MODULE","name":"l4",.*"loc":"\w,78:[^"]*",.*"origName":"l4"')
+    check_private(out_filename,
+                  r'{"type":"MODULE","name":"l4",.*"loc":"\w,78:[^"]*",.*"origName":"l4"')
     # l5 holds nothing but combinational logic feeding its single reader,
     # so it is optimized away entirely, even though it is marked no_inline
     test.file_grep_not(out_filename, r'{"type":"MODULE","name":"l5__P')

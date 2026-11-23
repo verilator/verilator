@@ -331,6 +331,8 @@ private:
     bool m_quietExit = false;       // main switch: --quiet-exit
     bool m_quietStats = false;      // main switch: --quiet-stats
     bool m_relativeIncludes = false;  // main switch: --relative-includes
+    bool m_repcut = true;           // main switch: -frepcut / -fno-repcut
+    bool m_repcutDumpGraph = false;  // main switch: --repcut-dump-graph
     bool m_reportUnoptflat = false;  // main switch: --report-unoptflat
     bool m_rtmd = false;            // main switch: --rtmd
     bool m_savable = false;         // main switch: --savable
@@ -393,6 +395,7 @@ private:
     int         m_preprocTokenLimit = 40000; // main switch: --preproc-token-limit
     int         m_publicDepth = 0;   // main switch: --public-depth
     int         m_reloopLimit = 40; // main switch: --reloop-limit
+    int         m_repcutSeed = 42;  // main switch: --repcut-seed
     int         m_replicationLimit = 8192; // main switch: --replication-limit
     VOptionBool m_skipIdentical;  // main switch: --skip-identical
     bool        m_stopFail = true;  // main switch: --stop-fail
@@ -430,6 +433,7 @@ private:
     string      m_pipeFilter;   // main switch: --pipe-filter
     string      m_prefix;       // main switch: --prefix
     string      m_protectKey;   // main switch: --protect-key
+    string      m_repcutPartitioner;  // --repcut-partitioner; empty selects the bundled library
     string      m_topModule;    // main switch: --top-module
     string      m_unusedRegexp; // main switch: --unused-regexp
     string      m_waiverOutput;  // main switch: --waiver-output {filename}
@@ -524,6 +528,8 @@ private:
     VL_UNCOPYABLE(V3Options);
 
 public:
+    static constexpr int REPCUT_DEFAULT_CFUNCS = 4000;
+
     V3Options();
     ~V3Options();
     void setDebugMode(int level);
@@ -643,6 +649,11 @@ public:
     bool traceStructs() const { return m_traceStructs; }
     bool traceUnderscore() const { return m_traceUnderscore; }
     bool main() const { return m_main; }
+    const string& repcutPartitioner() const { return m_repcutPartitioner; }
+    int repcutSeed() const { return m_repcutSeed; }
+    bool repcut() const { return m_repcut; }
+    void repcut(bool flag) { m_repcut = flag; }
+    bool repcutDumpGraph() const { return m_repcutDumpGraph; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool jsonOnly() const { return m_jsonOnly; }
     bool keepTempFiles() const { return (V3Error::debugDefault() != 0); }

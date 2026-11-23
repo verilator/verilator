@@ -193,6 +193,8 @@ struct Ownership final {
 // inspectable but cannot be partitioned. Retained native procedures are explicit
 // graph boundaries and do not by themselves make the kernel graph incomplete.
 class Graph final {
+    void dumpDiagnostics(const std::string& base) const;
+
 public:
     V3Graph m_graph;  // Owned operation and dependency graph
     std::vector<Vertex*> m_vertexps;  // Vertices indexed by stable node ID

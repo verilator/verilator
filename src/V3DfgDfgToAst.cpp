@@ -100,6 +100,7 @@ class DfgToAstVisitor final : DfgVisitor {
     AstNodeExpr* m_resultp = nullptr;  // The result node of the current traversal
     AstAlways* m_alwaysp = nullptr;  // Process to add assignments to, if have a default driver
     AstActive* m_activep = nullptr;  // The AstNodeModule or AstActive to insert assigns into
+    std::vector<AstNodeStmt*>* const m_blockp;  // Optional scoped sequential output
 
     // METHODS
     static AstActive* getCombActive(AstScope* scopep) {
@@ -126,6 +127,11 @@ class DfgToAstVisitor final : DfgVisitor {
         AstNodeExpr* const rhsp = convertDfgVertexToAstNodeExpr(driverp);
         // Update LHS locations to reflect the location of the original driver
         lhsp->foreach([&](AstNode* nodep) { nodep->fileline(flp); });
+
+        if (m_blockp) {
+            m_blockp->push_back(new AstAssign{flp, lhsp, rhsp});
+            return;
+        }
 
         // If using a process, add Assign there
         if (m_alwaysp) {
@@ -248,15 +254,27 @@ class DfgToAstVisitor final : DfgVisitor {
 #include "V3Dfg__gen_dfg_to_ast.h"
 
     // Constructor
-    DfgToAstVisitor(DfgGraph& dfg, V3DfgDfgToAstContext& ctx)
-        : m_ctx{ctx} {
+    DfgToAstVisitor(DfgGraph& dfg, V3DfgDfgToAstContext& ctx,
+                    std::vector<AstNodeStmt*>* blockp = nullptr)
+        : m_ctx{ctx}
+        , m_blockp{blockp} {
         if (v3Global.opt.debugCheck()) V3DfgPasses::typeCheck(dfg);
 
         // Convert the graph back to combinational assignments. The graph must have been
         // regularized, so we only need to render variable assignments and update Ast references.
 
+        std::vector<DfgVertexVar*> variables;
+        if (blockp) {
+            for (DfgVertex* const vtxp : V3DfgPasses::topologicalOrder(dfg)) {
+                if (DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>())
+                    variables.push_back(varp);
+            }
+        } else {
+            for (DfgVertexVar& vtx : dfg.varVertices()) variables.push_back(&vtx);
+        }
         // Render variable assignments
-        for (DfgVertexVar& vtx : dfg.varVertices()) {
+        for (DfgVertexVar* const varp : variables) {
+            DfgVertexVar& vtx = *varp;
             // If there is no driver (this vertex is an input to the graph), then nothing to do.
             if (!vtx.srcp()) {
                 UASSERT_OBJ(!vtx.defaultp(), &vtx, "Only default driver on variable");
@@ -271,11 +289,12 @@ class DfgToAstVisitor final : DfgVisitor {
 
             // Add it to the scope holding the target variable
             VL_RESTORER(m_activep);
-            m_activep = getCombActive(vtx.vscp()->scopep());
+            if (!blockp) m_activep = getCombActive(vtx.vscp()->scopep());
 
             // If there is a default value, render all drivers under an AstAlways
             VL_RESTORER(m_alwaysp);
             if (DfgVertex* const defaultp = vtx.defaultp()) {
+                UASSERT_OBJ(!blockp, &vtx, "Scoped DFG cannot contain a default driver");
                 ++m_ctx.m_outputVariablesWithDefault;
                 m_alwaysp = new AstAlways{vtx.fileline(), VAlwaysKwd::ALWAYS_COMB, nullptr};
                 m_activep->addProcsp(m_alwaysp);
@@ -317,8 +336,19 @@ class DfgToAstVisitor final : DfgVisitor {
 
 public:
     static void apply(DfgGraph& dfg, V3DfgDfgToAstContext& ctx) { DfgToAstVisitor{dfg, ctx}; }
+    static void block(DfgGraph& dfg, V3DfgDfgToAstContext& ctx,
+                      std::vector<AstNodeStmt*>& statements) {
+        DfgToAstVisitor{dfg, ctx, &statements};
+    }
 };
 
 void V3DfgPasses::dfgToAst(DfgGraph& dfg, V3DfgContext& ctx) {
     DfgToAstVisitor::apply(dfg, ctx.m_dfg2AstContext);
+}
+
+std::vector<AstNodeStmt*> V3DfgPasses::dfgToBlock(DfgGraph& dfg, V3DfgContext& ctx) {
+    UASSERT(dfg.astVertices().empty(), "Scoped DFG cannot rewrite external AST references");
+    std::vector<AstNodeStmt*> statements;
+    DfgToAstVisitor::block(dfg, ctx.m_dfg2AstContext, statements);
+    return statements;
 }

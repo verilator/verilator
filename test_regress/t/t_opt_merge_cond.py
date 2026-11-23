@@ -17,8 +17,11 @@ test.execute()
 
 if test.vlt:
     # Note, with vltmt this might be split differently, so only checking vlt
-    test.file_grep(test.stats, r'Optimizations, MergeCond merges\s+(\d+)', 12)
-    test.file_grep(test.stats, r'Optimizations, MergeCond merged items\s+(\d+)', 590)
-    test.file_grep(test.stats, r'Optimizations, MergeCond longest merge\s+(\d+)', 129)
+    test.file_grep(test.stats, r'Optimizations, MergeCond merges\s+(\d+)',
+                   11 if test.repcut else 12)
+    test.file_grep(test.stats, r'Optimizations, MergeCond merged items\s+(\d+)',
+                   521 if test.repcut else 590)
+    test.file_grep(test.stats, r'Optimizations, MergeCond longest merge\s+(\d+)',
+                   65 if test.repcut else 129)
 
 test.passes()

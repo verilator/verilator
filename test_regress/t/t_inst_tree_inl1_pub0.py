@@ -18,15 +18,17 @@ test.compile(
     v_flags2=["--no-json-edit-nums", "-fno-dfg", test.t_dir + "/t_inst_tree_inl1_pub0.vlt"])
 
 if test.vlt_all:
-    test.file_grep(
+    # RepCut removes the private nets after extracting their consumers.
+    check_private = test.file_grep_not if test.repcut else test.file_grep
+    check_private(
         out_filename,
         r'{"type":"VAR","name":"t.u.u1.u0.u1.z",.*"loc":"\w,78:[^"]*",.*"origName":"z",.*"dtypeName":"logic"'
     )
-    test.file_grep(
+    check_private(
         out_filename,
         r'{"type":"VAR","name":"t.u.u1.u1.u1.z",.*"loc":"\w,78:[^"]*",.*"origName":"z",.*"dtypeName":"logic"'
     )
-    test.file_grep(
+    check_private(
         out_filename,
         r'{"type":"VAR","name":"t.u.u0.u0.u0.z",.*"loc":"\w,78:[^"]*",.*"origName":"z",.*"dtypeName":"logic"'
     )

@@ -434,6 +434,7 @@ class DfgGraph final {
     size_t m_size = 0;  // Number of vertices in the graph
     V3DfgContext& m_ctx;  // The DFG context this graph is optimized in
     const std::string m_name;  // Name of graph - need not be unique
+    AstScope* const m_tmpScopep;  // Fixed scope for block-local temporaries, otherwise inferred
 
     // The only way to access thes is via DfgUserMap, so mutable is appropriate,
     // the map can change while the graph is const.
@@ -442,7 +443,7 @@ class DfgGraph final {
 
 public:
     // CONSTRUCTOR
-    DfgGraph(V3DfgContext& ctx, const string& name) VL_MT_DISABLED;
+    DfgGraph(V3DfgContext& ctx, const string& name, AstScope* tmpScopep = nullptr) VL_MT_DISABLED;
     ~DfgGraph() VL_MT_DISABLED;
     VL_UNCOPYABLE(DfgGraph);
 

@@ -1060,19 +1060,44 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
                                const std::vector<std::pair<AstCFunc*, uint32_t>>& funcps) {
     // FileLine used for constructing nodes below
     FileLine* const fl = v3Global.rootp()->fileline();
-    const string progress = "vlSymsp->__Vm_schedule_progress_" + execGraphp->name();
+    const string tag = execGraphp->name();
+    const string progress = "vlSymsp->__Vm_schedule_progress_" + tag;
 
     // Add thread function invocations to execGraph
     const auto addCStmt = [=](const string& stmt) -> void {  //
         execGraphp->runfuncp()->addStmtsp(new AstCStmt{fl, stmt});
     };
 
+    // RepCut assigns every MTask to a fixed thread. Keep model-owned worker
+    // slots registered so dispatching a phase does not touch the pool queue.
+    // Hierarchical schedules reserve workers dynamically and keep the queue.
+    const bool fixedDispatch = v3Global.opt.repcut() && v3Global.opt.threads() > 1
+                               && v3Global.opt.hierBlocks().empty() && !v3Global.opt.hierChild();
+
     // Zero the progress of the threads before any of them starts. No thread runs a schedule
     // now, and dispatching to the pool orders this before the workers start.
     addCStmt(progress + ".start();");
 
     const uint32_t last = funcps.size() - 1;
-    if (!v3Global.opt.hierBlocks().empty() && last > 0) {
+    if (fixedDispatch && last > 0) {
+        // Register immutable entry points and model pointers once per graph.
+        // Descriptors belong to this model's symbol table, allowing sequential
+        // evaluation of multiple models using the same context's worker pool.
+        addCStmt("if (VL_UNLIKELY(!vlSymsp->__Vm_fixedRegistered__" + tag + ")) {");
+        for (uint32_t i = 0; i < last; ++i) {
+            AstCFunc* const funcp = funcps[i].first;
+            if (!funcp) continue;
+            AstCStmt* const stmtp = new AstCStmt{fl};
+            stmtp->add("vlSymsp->__Vm_fixedTasks__" + tag + "[" + std::to_string(i)
+                       + "].configure(vlSymsp->__Vm_threadPoolp->workerp(" + std::to_string(i)
+                       + "), ");
+            stmtp->add(new AstAddrOfCFunc{fl, funcp});
+            stmtp->add(", vlSelf);");
+            execGraphp->runfuncp()->addStmtsp(stmtp);
+        }
+        addCStmt("vlSymsp->__Vm_fixedRegistered__" + tag + " = true;\n}");
+    }
+    if (!fixedDispatch && !v3Global.opt.hierBlocks().empty() && last > 0) {
         addCStmt("for (size_t i = 0; i < " + std::to_string(last) + "; ++i) {\n"  //
                  + "indexes.push_back(vlSymsp->__Vm_threadPoolp->assignWorkerIndex());\n"  //
                  + "}");
@@ -1081,18 +1106,23 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
     for (const auto& pair : funcps) {
         AstCFunc* const funcp = pair.first;
         if (i != last) {
-            // The first N-1 will run on the thread pool.
-            AstCStmt* const cstmtp = new AstCStmt{fl};
-            execGraphp->runfuncp()->addStmtsp(cstmtp);
-            cstmtp->add("vlSymsp->__Vm_threadPoolp->workerp(");
-            if (v3Global.opt.hierChild() || !v3Global.opt.hierBlocks().empty()) {
-                cstmtp->add("indexes[" + std::to_string(i) + "]");
+            if (fixedDispatch) {
+                addCStmt("vlSymsp->__Vm_fixedTasks__" + tag + "[" + std::to_string(i)
+                         + "].start();");
             } else {
-                cstmtp->add(std::to_string(i));
+                // The first N-1 will run on the thread pool.
+                AstCStmt* const cstmtp = new AstCStmt{fl};
+                execGraphp->runfuncp()->addStmtsp(cstmtp);
+                cstmtp->add("vlSymsp->__Vm_threadPoolp->workerp(");
+                if (v3Global.opt.hierChild() || !v3Global.opt.hierBlocks().empty()) {
+                    cstmtp->add("indexes[" + std::to_string(i) + "]");
+                } else {
+                    cstmtp->add(std::to_string(i));
+                }
+                cstmtp->add(")->addTask(");
+                cstmtp->add(new AstAddrOfCFunc{fl, funcp});
+                cstmtp->add(", vlSelf);");
             }
-            cstmtp->add(")->addTask(");
-            cstmtp->add(new AstAddrOfCFunc{fl, funcp});
-            cstmtp->add(", vlSelf);");
         } else {
             // The last will run on the main thread.
             AstCCall* const callp = new AstCCall{fl, funcp};
@@ -1116,7 +1146,7 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
         addCStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitEnd();");
     }
     // Free all assigned worker indices in this section
-    if (!v3Global.opt.hierBlocks().empty() && last > 0) {
+    if (!fixedDispatch && !v3Global.opt.hierBlocks().empty() && last > 0) {
         addCStmt("vlSymsp->__Vm_threadPoolp->freeWorkerIndexes(indexes);");
     }
 }

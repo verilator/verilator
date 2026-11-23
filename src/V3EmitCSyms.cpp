@@ -1088,8 +1088,38 @@ void EmitCSyms::emitSymHdr() {
     if (v3Global.opt.mtasks()) {
         puts("\n// MULTI-THREADING\n");
         puts("VlThreadPool* __Vm_threadPoolp;\n");
-        puts("VlScheduleProgress<" + std::to_string(v3Global.opt.threads())
-             + "> __Vm_schedule_progress_nba;\n");
+        // One schedule-progress object per execution graph. The stock backend creates only
+        // the 'nba' graph; RepCut adds more, and implementExecGraph names the progress object
+        // after the graph.
+        std::set<std::string> scheduleNames{"nba"};
+        v3Global.rootp()->topModulep()->foreach(
+            [&](const AstExecGraph* graphp) { scheduleNames.insert(graphp->name()); });
+        for (const std::string& name : scheduleNames) {
+            puts("VlScheduleProgress<" + std::to_string(v3Global.opt.threads())
+                 + "> __Vm_schedule_progress_" + name + ";\n");
+        }
+        if (v3Global.opt.repcut() && v3Global.opt.threads() > 1) {
+            // RepCut dispatches each graph to statically assigned workers. Keep
+            // the model-owned slots so the pool queue is not touched per phase.
+            std::set<std::string> graphNames;
+            v3Global.rootp()->topModulep()->foreach(
+                [&](const AstExecGraph* graphp) { graphNames.insert(graphp->name()); });
+            for (const std::string& name : graphNames) {
+                puts("bool __Vm_fixedRegistered__" + name + " = false;\n");
+                puts("VlFixedTask __Vm_fixedTasks__" + name + "["
+                     + cvtToStr(v3Global.opt.threads() - 1) + "];\n");
+            }
+            // Clone hooks can run before the first evaluation or after the old
+            // pool has gone. Clear every slot without touching workers.
+            puts("void __VresetForClone() {\n");
+            for (const std::string& name : graphNames) {
+                puts("__Vm_fixedRegistered__" + name + " = false;\n");
+                for (int i = 0; i < v3Global.opt.threads() - 1; ++i) {
+                    puts("__Vm_fixedTasks__" + name + "[" + cvtToStr(i) + "].resetForClone();\n");
+                }
+            }
+            puts("}\n");
+        }
     }
 
     if (v3Global.opt.profExec()) {

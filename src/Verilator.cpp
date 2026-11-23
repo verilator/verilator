@@ -99,6 +99,7 @@
 #include "V3Randomize.h"
 #include "V3Reloop.h"
 #include "V3Reorder.h"
+#include "V3RepCut.h"
 #include "V3RepCutGraph.h"
 #include "V3RepCutPlan.h"
 #include "V3Rtmd.h"
@@ -446,7 +447,6 @@ static void process() {
             // directly from force discovery to assign/deassign lowering without rediscovery.
             V3Force::forceAndAssignAll(v3Global.rootp());
 
-            // DFG optimization
             if (v3Global.opt.fDfg()) V3DfgOptimizer::optimize(v3Global.rootp());
 
             // Gate-based logic elimination; eliminate signals and push constant across cell
@@ -466,6 +466,19 @@ static void process() {
             // Remove unused vars
             V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyAllScoped(v3Global.rootp());
+
+            // Partition optimized native expressions before NBA lowering and task
+            // formation. Extraction still creates individual operation vertices;
+            // native DFG/Gate optimization must see the original procedures.
+            if (v3Global.opt.repcut() || v3Global.opt.repcutDumpGraph()) {
+                V3RepCut::partitionAll(v3Global.rootp());
+                if (v3Global.opt.repcut()) {
+                    // Remove disconnected native cones before building trigger sensitivities.
+                    if (v3Global.opt.fGate()) V3Gate::removeUnused(v3Global.rootp());
+                    V3Const::constifyAll(v3Global.rootp());
+                    V3Dead::deadifyAllScoped(v3Global.rootp());
+                }
+            }
 
             // Reorder assignments in pipelined blocks
             if (v3Global.opt.fReorder()) V3Reorder::reorderAll(v3Global.rootp());
@@ -597,6 +610,12 @@ static void process() {
                 // Must be after all Sel/array index based optimizations
                 V3Reloop::reloopAll(v3Global.rootp());
             }
+            if (v3Global.opt.repcut() && v3Global.opt.threads() > 1) {
+                // Whole C++ words are visible now. Preserve native clock guards
+                // while moving terminal output work before existing worker joins.
+                // Run after reloop so the audited word indices remain constant.
+                V3RepCut::placeNativeOutputWords(v3Global.rootp());
+            }
         }
 
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()) {
@@ -627,6 +646,12 @@ static void process() {
             // This should happen as late as possible (after all optimizations)
             // as it relies on cost estimates.
             V3ExecGraph::implement(v3Global.rootp());
+        }
+
+        if (!v3Global.opt.serializeOnly() && v3Global.opt.repcut()) {
+            // Dependency operands must remain visible through optimization and
+            // ExecGraph cost analysis, but do not belong in the runtime ABI.
+            V3RepCut::removeDependencyArgs(v3Global.rootp());
         }
 
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()

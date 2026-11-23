@@ -636,9 +636,14 @@ class EmitCModel final : public EmitCFunc {
                                 : std::max(v3Global.opt.threads(), v3Global.opt.hierThreads());
         putns(modp, "unsigned " + EmitCUtil::topClassName() + "::threads() const { return "
                         + cvtToStr(threads) + "; }\n");
-        putns(modp, "void " + EmitCUtil::topClassName()
-                        + "::prepareClone() const { contextp()->prepareClone(); }\n");
+        const bool fixedClone = v3Global.opt.repcut() && v3Global.opt.threads() > 1;
+        putns(modp, "void " + EmitCUtil::topClassName() + "::prepareClone() const {\n");
+        // Clear fixed-slot registrations before deleting the pool.
+        if (fixedClone) puts("vlSymsp->__VresetForClone();\n");
+        puts("contextp()->prepareClone();\n}\n");
         putns(modp, "void " + EmitCUtil::topClassName() + "::atClone() const {\n");
+        // atClone() is also supported in the child without prepareClone().
+        if (fixedClone) puts("vlSymsp->__VresetForClone();\n");
         if (v3Global.opt.threads() > 1) {
             puts("vlSymsp->__Vm_threadPoolp = static_cast<VlThreadPool*>(");
         }

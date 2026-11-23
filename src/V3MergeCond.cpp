@@ -488,6 +488,7 @@ class MergeCondVisitor final : public VNVisitor {
     // AstNode::user4       -> See CodeMotionAnalysisVisitor/CodeMotionOptimizeVisitor
 
     // STATE
+    const bool m_scoped = false;  // Report independent totals for pre-chunk phases
     VDouble0 m_statMerges;  // Statistic tracking
     VDouble0 m_statMergedItems;  // Statistic tracking
     VDouble0 m_statCandidateItems;  // Statistic tracking
@@ -945,7 +946,18 @@ class MergeCondVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit MergeCondVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit MergeCondVisitor(const AstBegin* rootp)
+        : m_scoped{true} {
+        if (rootp->stmtsp()) process(rootp->stmtsp());
+    }
     ~MergeCondVisitor() override {
+        if (m_scoped) {
+            V3Stats::addStatSum("MergeCond scoped, phases", 1);
+            V3Stats::addStatSum("MergeCond scoped, merges", m_statMerges);
+            V3Stats::addStatSum("MergeCond scoped, candidate items", m_statCandidateItems);
+            V3Stats::addStatSum("MergeCond scoped, merged items", m_statMergedItems);
+            return;
+        }
         V3Stats::addStat("Optimizations, MergeCond merges", m_statMerges);
         V3Stats::addStat("Optimizations, MergeCond candidate items", m_statCandidateItems);
         V3Stats::addStat("Optimizations, MergeCond merged items", m_statMergedItems);
@@ -962,4 +974,19 @@ void V3MergeCond::mergeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { MergeCondVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("merge_cond", 0, dumpTreeEitherLevel() >= 6);
+}
+
+void V3MergeCond::mergeScoped(std::vector<AstNodeStmt*>& statements) {
+    if (statements.empty()) return;
+    // Own the statement list while the normal merger moves and replaces nodes.
+    // Its read/write and side-effect checks preserve guarded evaluation and
+    // publication ordering. This temporary container never enters the netlist.
+    AstBegin* const rootp = new AstBegin{statements.front()->fileline(), "", nullptr, false};
+    for (AstNodeStmt* const stmtp : statements) rootp->addStmtsp(stmtp);
+    { MergeCondVisitor{rootp}; }
+    statements.clear();
+    while (AstNode* const nodep = rootp->stmtsp()) {
+        statements.push_back(VN_AS(nodep->unlinkFrBack(), NodeStmt));
+    }
+    rootp->deleteTree();
 }

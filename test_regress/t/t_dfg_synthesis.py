@@ -54,6 +54,7 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
 
 # Compile un-optimized
 test.compile(verilator_flags2=[
+    "-fno-repcut", # The reference must not run partition-local optimization
     "--stats",
     "-fno-decompose",
     "--build",

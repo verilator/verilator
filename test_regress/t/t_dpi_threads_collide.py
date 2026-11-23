@@ -14,9 +14,10 @@ test.top_filename = "t/t_dpi_threads.v"
 
 test.skip_if_too_few_cores()
 
-# The race needs the DPI calls to run in parallel
+# Exercise the legacy scheduler's concurrent DPI calls. RepCut retains these
+# calls on the caller, so it does not create the intentional collision.
 test.compile(v_flags2=[
-    "t/t_dpi_threads_c.cpp --threads-dpi all --no-threads-coarsen",
+    "-fno-repcut", "t/t_dpi_threads_c.cpp --threads-dpi all --no-threads-coarsen",
     "-CFLAGS -DVL_THREADS_SERIAL_COST=0"
 ])
 

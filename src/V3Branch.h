@@ -21,6 +21,7 @@
 #include "verilatedos.h"
 
 class AstNetlist;
+class AstNode;
 
 //============================================================================
 
@@ -28,6 +29,8 @@ class V3Branch final {
 public:
     // CONSTRUCTORS
     static void branchAll(AstNetlist* nodep) VL_MT_DISABLED;
+    // Preserve source-derived hints before lowering removes unlikely statements.
+    static void branchSubtree(AstNode* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

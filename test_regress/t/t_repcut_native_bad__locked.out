@@ -1,0 +1,4 @@
+Work directory @OBJ_DIR@/Vt_repcut_native_bad__repcut_early.partition is already in use (lock file @OBJ_DIR@/Vt_repcut_native_bad__repcut_early.partition/.lock exists)
+%Error: Cannot partition RepCut graph: Bundled RepCut failed with status 1; see the preceding partitioner diagnostic and '@OBJ_DIR@/Vt_repcut_native_bad__repcut_early.partition.log'.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

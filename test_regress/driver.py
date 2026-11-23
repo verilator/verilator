@@ -759,6 +759,7 @@ class VlTest:
         self._skips = None
         self._start_time = time.time()
         self._uses_asan = False
+        self._verilator_command_flags = None
         self._wall_time = 0
 
         match = re.match(r'^(.*/)?([^/]*)\.py', self.py_filename)
@@ -1263,6 +1264,7 @@ class VlTest:
             # flags from the test itself
             *self.driver_verilator_flags,
         ]
+        self._verilator_command_flags = ' '.join(cmdargs)
         return cmdargs
 
     def lint(self, **kwargs) -> None:
@@ -1814,6 +1816,19 @@ class VlTest:
     @property
     def driver_verilated_flags(self) -> list:
         return Args.passdown_verilated_flags
+
+    @property
+    def repcut(self) -> bool:
+        """Whether the last compile command selects RepCut, or the defaults before compiling."""
+        if not self.vlt_all:
+            return False
+        flags = self._verilator_command_flags
+        if flags is None:
+            flags = self._checkflags(vars(self)) + ' '.join(self.driver_verilator_flags)
+        # bin/verilator appends these after the command-line flags.
+        flags += ' ' + os.environ.get('VERILATOR_TEST_FLAGS', '')
+        options = re.findall(r'(?:^|\s)--?(f(?:no-)?repcut|(?:no-)?repcut)(?=\s|$)', flags)
+        return not options or options[-1] in ('frepcut', 'repcut')
 
     @property
     def get_default_vltmt_threads(self) -> int:

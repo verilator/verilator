@@ -12,7 +12,9 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.top_filename = "t/t_timing_sched.v"
 
-test.compile(verilator_flags2=["--binary", "-fno-inline-cfuncs", "-CFLAGS", "-DVL_DEBUG"])
+# Keep the native scheduling debug trace stable; timing behavior is tested separately.
+test.compile(
+    verilator_flags2=["-fno-repcut", "--binary", "-fno-inline-cfuncs", "-CFLAGS", "-DVL_DEBUG"])
 
 test.execute(all_run_flags=["+verilator+debug"])
 

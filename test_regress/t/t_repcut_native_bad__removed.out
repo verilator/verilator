@@ -1,0 +1,2 @@
+%Error: Invalid option: --repcut-partitions... Suggested alternative: '-repcut-partitioner'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

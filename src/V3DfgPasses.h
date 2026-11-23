@@ -24,6 +24,8 @@
 #include "V3Dfg.h"
 #include "V3DfgContext.h"
 
+#include <set>
+
 class AstModule;
 class DfgGraph;
 
@@ -36,6 +38,15 @@ namespace V3DfgPasses {
 // The logic that is represented by the graph is removed from the netlist.
 // Returns the constructed DfgGraph.
 std::unique_ptr<DfgGraph> astToDfg(AstNetlist&, V3DfgContext&) VL_MT_DISABLED;
+// Convert a straight-line, single-assignment block without consuming its AST.
+// Inputs and 'liveOuts' are boundaries; other private definitions are local.
+// No control flow is accepted. Selections may only read leaf values that are
+// defined earlier in the block or initialized on entry via 'availableInputs'.
+// Caller reserves AstVarScope::user1 until the returned graph is destroyed.
+std::unique_ptr<DfgGraph> astBlockToDfg(AstScope&, const std::vector<AstNodeStmt*>&,
+                                        const std::set<AstVarScope*>& liveOuts,
+                                        const std::set<AstVarScope*>& availableInputs,
+                                        V3DfgContext&) VL_MT_DISABLED;
 // Remove unobservable variabels and logic that drives only such variables
 void removeUnobservable(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
 // Synthesize DfgLogic vertices into primitive operations.
@@ -61,6 +72,11 @@ void peephole(DfgGraph&, V3DfgPeepholeContext&) VL_MT_DISABLED;
 void regularize(DfgGraph&, V3DfgRegularizeContext&) VL_MT_DISABLED;
 // Convert DfgGraph back into Ast, and insert converted graph back into the Ast.
 void dfgToAst(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
+// Render a regularized acyclic graph as sequential assignments in dependency
+// order, without inserting combinational processes into the surrounding scope.
+std::vector<AstNodeStmt*> dfgToBlock(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
+// Return every vertex in dependency order. Requires an acyclic graph.
+std::vector<DfgVertex*> topologicalOrder(DfgGraph&) VL_MT_DISABLED;
 // Dump the patterns in the given graphs
 void dumpPatterns(const std::vector<std::unique_ptr<DfgGraph>>&,
                   const std::string& suffix = "") VL_MT_DISABLED;

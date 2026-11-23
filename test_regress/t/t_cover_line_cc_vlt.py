@@ -18,6 +18,11 @@ test.compile(verilator_flags2=['--cc', '--coverage-line', '--coverage-branch', t
 
 test.execute()
 
+# Counts for pure continuous assignments depend on the evaluation schedule.
+# Keep every coverage point and its exact count checked for each backend.
+if test.repcut:
+    test.golden_filename = "t/t_cover_line_repcut.out"
+
 # Read the input .v file and do any CHECK_COVER requests
 test.inline_checks()
 

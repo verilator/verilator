@@ -134,6 +134,13 @@ bool V3RepCut::Plan::read(const Graph& graph, std::istream& input, Plan& result,
         error = "Cannot read membership file";
         return false;
     }
+    return build(graph, std::move(partitions), result, error);
+}
+
+bool V3RepCut::Plan::build(const Graph& graph, std::vector<std::vector<size_t>> partitions,
+                           Plan& result, std::string& error) {
+    result = Plan{};
+    error.clear();
     Plan plan;
     if (!graph.ownership(partitions, plan.m_ownership, error)) return false;
     plan.order(graph, partitions);
@@ -178,20 +185,26 @@ void V3RepCut::Plan::order(const Graph& graph, std::vector<std::vector<size_t>>&
 }
 
 void V3RepCut::Plan::dump(const Graph& graph, const std::string& base) const {
+    size_t nextNodes = 0;
+    size_t outputNodes = 0;
+    for (const Partition& part : m_partitions) {
+        nextNodes += part.m_next.size();
+        outputNodes += part.m_output.size();
+    }
+    V3Stats::addStat("RepCut plan, partitions", m_partitions.size());
+    V3Stats::addStat("RepCut plan, next phase nodes", nextNodes);
+    V3Stats::addStat("RepCut plan, output phase nodes", outputNodes);
+    if (!v3Global.opt.repcutDumpGraph()) return;
     const std::unique_ptr<std::ofstream> planp{V3File::new_ofstream(base + ".plan.tsv")};
     const std::unique_ptr<std::ofstream> ownersp{V3File::new_ofstream(base + ".owners.tsv")};
     if (planp->fail() || ownersp->fail()) v3fatal("Cannot write RepCut plan files: " << base);
     *planp << "partition\tphase\tordinal\tnode\n";
-    size_t nextNodes = 0;
-    size_t outputNodes = 0;
     for (size_t p = 0; p < m_partitions.size(); ++p) {
         const Partition& part = m_partitions[p];
         for (size_t i = 0; i < part.m_next.size(); ++i)
             *planp << p << "\tnext\t" << i << '\t' << part.m_next[i] << '\n';
         for (size_t i = 0; i < part.m_output.size(); ++i)
             *planp << p << "\tnative_output_reference\t" << i << '\t' << part.m_output[i] << '\n';
-        nextNodes += part.m_next.size();
-        outputNodes += part.m_output.size();
     }
     *ownersp << "node\tstorage\tevaluation_owner\tpublication_owner\tpublication_order\n";
     std::vector<size_t> memoryOrder(graph.m_vertexps.size(), NO_ID);
@@ -209,9 +222,6 @@ void V3RepCut::Plan::dump(const Graph& graph, const std::string& base) const {
         if (memoryOrder[vp->m_id] != NO_ID) *ownersp << memoryOrder[vp->m_id];
         *ownersp << '\n';
     }
-    V3Stats::addStat("RepCut plan, partitions", m_partitions.size());
-    V3Stats::addStat("RepCut plan, next phase nodes", nextNodes);
-    V3Stats::addStat("RepCut plan, output phase nodes", outputNodes);
 }
 
 void V3RepCut::Plan::selfTest() {
