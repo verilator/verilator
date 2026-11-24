@@ -98,9 +98,9 @@
 // driven from their parents: the variable is then PARTIAL, keeping its
 // storage, and each instance's row takes its own class, so writability follows
 // the RTL and not inlining. Explicit public_flat_rw and forceable signals keep
-// --public-flat-rw semantics. V3Active feeds the blocks it forms to the same
-// classification ahead of V3Decompose and V3BitBlast, which split a candidate
-// only if it is driven whole.
+// --public-flat-rw semantics. classifyComb() runs the same classification after
+// V3Active, ahead of V3Decompose and V3BitBlast, which split a candidate only if
+// it is driven whole.
 //
 // RUNTIME
 //
@@ -176,9 +176,6 @@ static constexpr const char* RECONSTRUCT_BODY_FUNC_NAME = "__Vlazy_reconstruct_b
 static constexpr const char* RECONSTRUCT_INST_FUNC_NAME = "__Vlazy_reconstruct_inst";
 
 //######################################################################
-namespace {
-class CombClassifier;
-}
 
 class V3VpiLazyContext final {
 public:
@@ -194,7 +191,6 @@ public:
     std::map<std::pair<std::string, const AstVar*>, const AstCFunc*> m_rowRefresh;
     // A split variable's or its shadow's instances held by the other; see splitKeptInstances()
     std::set<std::pair<std::string, const AstVar*>> m_noRow;
-    std::unique_ptr<CombClassifier> m_combp;  // Classifies the blocks fed to it until finished
 
     VVpiLazyComb combOf(const std::string& scopeName, const AstVar* varp) const {
         if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
@@ -825,13 +821,6 @@ class CombClassifier final {
         }
     }
 
-public:
-    int m_combWhole = 0;  // Read-only variables, per instance
-    int m_combPartial = 0;  // Masked variables, per instance
-
-    explicit CombClassifier(V3VpiLazyContext& ctx)
-        : m_ctx{ctx} {}
-
     void addVarScope(AstVarScope* vscp) {
         AstVar* const varp = vscp->varp();
         varp->vpiLazyComb(VVpiLazyComb::NONE);
@@ -868,7 +857,19 @@ public:
         }
     }
 
-    void finish() {
+public:
+    int m_combWhole = 0;  // Read-only variables, per instance
+    int m_combPartial = 0;  // Masked variables, per instance
+
+    CombClassifier(AstNetlist* nodep, V3VpiLazyContext& ctx)
+        : m_ctx{ctx} {
+        nodep->foreach([this](AstVarScope* vscp) { addVarScope(vscp); });
+        nodep->foreach([this](const AstActive* activep) {
+            if (!activep->hasCombo()) return;
+            for (AstNode* stmtp = activep->procsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (AstAlways* const alwaysp = VN_CAST(stmtp, Always)) addBlock(alwaysp);
+            }
+        });
         for (AstVar* const varp : m_combFootOrder) finishCombFootprint(varp, m_vscpsOf.at(varp));
     }
 };
@@ -878,6 +879,7 @@ class VpiLazyPreparer final {
     AstScope* const m_topScopep;  // Scope of the top module, which anchors cross-scope groups
     V3VpiLazyContext& m_ctx;  // Classification shared with V3EmitCSyms
     LazyGatherVisitor m_gather;  // The one netlist walk's findings
+    const CombClassifier m_comb;  // See WRITABILITY above
 
     int m_combBailRetained = 0;  // Group-bail / non-sole-driver / cycle retains
 
@@ -980,12 +982,12 @@ public:
     VpiLazyPreparer(AstNetlist* nodep, AstScope* topScopep, V3VpiLazyContext& ctx)
         : m_topScopep{topScopep}
         , m_ctx{ctx}
-        , m_gather{nodep} {}
+        , m_gather{nodep}
+        , m_comb{nodep, ctx} {}
 
     const std::vector<AstCFunc*>& splitFuncps() const { return m_splitFuncps; }
 
     void run() {
-        classifyCombDriven();
         findHelperCandidates();
         formGroups();
         analyzeGroups();
@@ -1002,14 +1004,6 @@ public:
 
 private:
     // METHODS
-    // See WRITABILITY above.
-    void classifyCombDriven() {
-        CombClassifier& comb = *m_ctx.m_combp;
-        for (AstVarScope* const vscp : m_gather.m_vscOrder) comb.addVarScope(vscp);
-        for (const CombBlock& b : m_gather.m_combBlocks) comb.addBlock(b.m_alwaysp);
-        comb.finish();
-    }
-
     int instancesOf(const AstVar* varp) const {
         return static_cast<int>(m_gather.m_vscpsOf.at(varp).size());
     }
@@ -2405,8 +2399,8 @@ private:
             V3Stats::addStat("VPI, lazy folded copy cones", m_foldedCount);
             V3Stats::addStat("VPI, lazy helper targets", m_helperCount);
             V3Stats::addStat("VPI, lazy floor retained", floorRetained);
-            V3Stats::addStat("VPI, lazy comb read-only", m_ctx.m_combp->m_combWhole);
-            V3Stats::addStat("VPI, lazy comb masked", m_ctx.m_combp->m_combPartial);
+            V3Stats::addStat("VPI, lazy comb read-only", m_comb.m_combWhole);
+            V3Stats::addStat("VPI, lazy comb masked", m_comb.m_combPartial);
             for (const auto& pr : m_floorReason)
                 V3Stats::addStat(std::string{"VPI, lazy floor residual, "} + pr.first, pr.second);
             for (size_t i = 0; i < static_cast<size_t>(Bail::_COUNT); ++i) {
@@ -2460,23 +2454,11 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("vpi-lazy-prepare", 0, dumpTreeEitherLevel() >= 3);
 }
 
-V3VpiLazyContext* V3VpiLazy::newContext() {
-    V3VpiLazyContext* const ctxp = new V3VpiLazyContext;
-    ctxp->m_combp.reset(new CombClassifier{*ctxp});
-    return ctxp;
-}
+V3VpiLazyContext* V3VpiLazy::newContext() { return new V3VpiLazyContext; }
 void V3VpiLazy::deleteContext(V3VpiLazyContext* ctxp) { delete ctxp; }
 
-void V3VpiLazy::combVarScope(AstVarScope* vscp) {
-    v3Global.rootp()->vpiLazyContextp()->m_combp->addVarScope(vscp);
-}
-void V3VpiLazy::combBlock(AstAlways* alwaysp) {
-    v3Global.rootp()->vpiLazyContextp()->m_combp->addBlock(alwaysp);
-}
 void V3VpiLazy::classifyComb(AstNetlist* nodep) {
-    std::unique_ptr<CombClassifier>& combp = nodep->vpiLazyContextp()->m_combp;
-    combp->finish();
-    combp.reset();  // Frees its footprints; prepare() gathers its own
+    const CombClassifier comb{nodep, nodep->createVpiLazyContext()};
 }
 
 VVpiLazyComb V3VpiLazy::combOf(const AstScope* scopep, const AstVar* varp) {

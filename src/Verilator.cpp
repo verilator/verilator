@@ -412,6 +412,7 @@ static void process() {
             // Move assignments/sensitives into a SBLOCK for each unique sensitivity list
             // (May convert some ALWAYS to combo blocks, so should be before V3Gate step.)
             V3Active::activeAll(v3Global.rootp());
+            if (v3Global.opt.vpiLazy()) V3VpiLazy::classifyComb(v3Global.rootp());
 
             // Decompose arrays and structs into their elements and members
             if (v3Global.opt.fDecompose()) V3Decompose::decomposeAll(v3Global.rootp());

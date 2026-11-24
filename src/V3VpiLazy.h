@@ -22,12 +22,10 @@
 
 #include <vector>
 
-class AstAlways;
 class AstCFunc;
 class AstNetlist;
 class AstScope;
 class AstVar;
-class AstVarScope;
 class V3VpiLazyContext;
 class VVpiLazyComb;
 
@@ -54,11 +52,8 @@ public:
                                         const AstVar* shadowVarp) VL_MT_DISABLED;
     // False where 'varp' has no instance in 'scopep': it is kept apart from its other instances.
     static bool hasRow(const AstScope* scopep, const AstVar* varp) VL_MT_DISABLED;
-    // V3Active feeds each variable instance and combinational block it forms to combVarScope()
-    // and combBlock(); classifyComb() then classifies them.
-    static void combVarScope(AstVarScope* vscp) VL_MT_DISABLED;
-    static void combBlock(AstAlways* alwaysp) VL_MT_DISABLED;
-    // Mark candidates' combinationally driven bits ahead of prepare(), which re-marks them.
+    // Mark candidates' combinationally driven bits after V3Active, ahead of V3Decompose and
+    // V3BitBlast; prepare() re-marks them.
     static void classifyComb(AstNetlist* nodep) VL_MT_DISABLED;
     // Preserve reconstructable lazy signals before optimization.
     static void prepare(AstNetlist* nodep) VL_MT_DISABLED;
