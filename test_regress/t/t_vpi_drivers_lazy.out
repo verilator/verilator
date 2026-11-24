@@ -150,6 +150,7 @@ t.pand0_c 3c r
 t.pand1_c 3c r
 t.pand2_c 21 W
 t.pand_c 3c r
+t.pk_c fc r
 t.plo_l 59 WWrrrrWW
 t.pmem 7d W
 t.pnot_c 3c W

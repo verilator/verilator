@@ -442,6 +442,19 @@ module t #(
     mid_s = 8'h20;
     midEvalRead(int'(mid_s));
   end
+  // A part select read mid-eval, overwritten after the read
+  /* verilator lint_off UNOPTFLAT */
+  logic [7:0] pk_c;
+  /* verilator lint_on UNOPTFLAT */
+  import "DPI-C" context function void midEvalPeek(string name, int want, int mask);
+  /* verilator lint_off ALWCOMBORDER */
+  always_comb begin
+    pk_c[7:4] = pk_c[3:0] ^ d[7:4];
+    pk_c[3:0] = 4'h5;
+    midEvalPeek("t.pk_c", 'h5, 'hf);
+    pk_c[3:0] = d[3:0];
+  end
+  /* verilator lint_on ALWCOMBORDER */
 
   // A cone nested past t_vpi_drivers_lazy's --comp-limit-blocks, over a function's temporaries
   function automatic logic [7:0] nest_f(input logic [7:0] v);

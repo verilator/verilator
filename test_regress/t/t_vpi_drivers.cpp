@@ -764,6 +764,11 @@ extern "C" void midEvalProbe() {
 #endif
 }
 
+// Called mid-eval: the read sees the stores made before the call
+extern "C" void midEvalPeek(const char* name, int want, int mask) {
+    check(name, get(name) & static_cast<uint32_t>(mask), static_cast<uint32_t>(want));
+}
+
 // Called from an initial block: the eval itself consumes the put
 extern "C" void midEvalPut(const char* name, int v) { put(name, static_cast<uint32_t>(v)); }
 
