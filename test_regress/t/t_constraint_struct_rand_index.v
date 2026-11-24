@@ -120,6 +120,37 @@ class Bounds;
   }
 endclass
 
+// A soft constraint yields to a hard one, also when its index is out of range
+class SoftConflict;
+  rand pair_t items[3];
+  rand int idx;
+  rand int other;
+  constraint c_items {
+    soft items[idx].a == 7;
+    idx == 0;
+    items[0].a == 8;
+    soft items[other].b == 9;
+    other == 3;
+  }
+endclass
+
+// The index need not address an element where the select is not evaluated
+class Unselected;
+  rand pair_t empty[];
+  rand int idx;
+  rand bit sel;
+  constraint c_size {empty.size() == 0;}
+  constraint c_items {
+    sel == 0;
+    (sel ? empty[idx].a : 7) == 7;
+    (!sel ? 7 : empty[idx].a) == 7;
+    !(sel && empty[idx].a == 1);
+    !sel || empty[idx].a == 1;
+    (sel -> empty[idx].b == 1);
+    if (sel) empty[idx].b == 2;
+  }
+endclass
+
 class OutOfRange;
   rand pair_t items[3];
   rand int idx;
@@ -151,6 +182,8 @@ module t;
     automatic Mixed mixed = new;
     automatic Bounds bounds = new;
     automatic OutOfRange outOfRange = new;
+    automatic SoftConflict softConflict = new;
+    automatic Unselected unselected = new;
     automatic Outer outer = new;
     automatic Grid grid = new;
     automatic pair_t lookup[3];
@@ -232,6 +265,14 @@ module t;
 
     ok = outOfRange.randomize();
     `checkd(ok, 0);
+
+    ok = softConflict.randomize();
+    `checkd(ok, 1);
+    `checkd(softConflict.items[0].a, 8);
+
+    ok = unselected.randomize();
+    `checkd(ok, 1);
+    `checkd(unselected.empty.size(), 0);
 
     // The bounds of [1:3] are reachable, outside them is not
     ok = asc.randomize() with {idx == 3;};

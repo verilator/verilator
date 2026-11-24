@@ -162,7 +162,6 @@ class ConstraintExprVisitor final : public VNVisitor {
     bool m_structSel = false;  // Marks when inside structSel
                                // (used to format "%s.%s" for struct arrays and nested structs)
     bool m_deferRandModeHoist = false;  // Wait for the complete struct member path
-    AstNodeConstraintItem* m_guardedp = nullptr;  // Item guarded for random struct indices
     std::set<std::string>& m_writtenVars;  // Track which variable paths have write_var generated
                                            // (shared across all constraints)
     std::set<std::string> m_inlineWrittenVars;  // Per-instance tracking for inline constraints
@@ -1770,7 +1769,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Each struct array element member is a solver variable of its own (arr.<index>.member),
     // so the member of the element at random index e becomes a chain over the current
     // elements, built at runtime: (ite (= e 0) arr.0.member (ite (= e 1) arr.1.member ... 0)).
-    // guardRandIndexedStructSels() keeps e within the array.
+    // guardRandIndexedStructSels() keeps e within the array where it is evaluated.
     void lowerRandIndexedStructSel(AstStructSel* nodep) {
         FileLine* const fl = nodep->fileline();
         AstStructSel* const elemp = nodep->cloneTree(false);
@@ -1823,11 +1822,50 @@ class ConstraintExprVisitor final : public VNVisitor {
                                          new AstVarRef{fl, textVarp, VAccess::READ}));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    static bool hasSameSel(const std::vector<AstNodeExpr*>& selps, AstNodeExpr* selp) {
-        return std::any_of(selps.begin(), selps.end(), [selp](AstNodeExpr* otherp) {
-            return arraySelFromp(otherp)->sameTree(arraySelFromp(selp))
-                   && arraySelIndexp(otherp)->sameTree(arraySelIndexp(selp));
-        });
+    static AstNodeExpr* newLogAndp(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
+        if (!lhsp) return rhsp;
+        AstLogAnd* const andp = new AstLogAnd{fl, lhsp, rhsp};
+        andp->dtypeSetBit();
+        andp->user1(true);
+        return andp;
+    }
+    static AstNodeExpr* newLogIfp(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* rhsp) {
+        if (!condp) return rhsp;
+        AstLogIf* const ifp = new AstLogIf{fl, condp, rhsp};
+        ifp->dtypeSetBit();
+        ifp->user1(true);
+        return ifp;
+    }
+    static AstNodeExpr* newLogNotp(FileLine* fl, AstNodeExpr* lhsp) {
+        AstLogNot* const notp = new AstLogNot{fl, lhsp};
+        notp->dtypeSetBit();
+        notp->user1(true);
+        return notp;
+    }
+    // Condition under which nodep within exprp is evaluated, or nullptr if always: the taken
+    // branches of the ?:, &&, || and -> it lies in
+    static AstNodeExpr* newEvaluatedCondp(AstNode* nodep, const AstNode* exprp) {
+        AstNodeExpr* condp = nullptr;
+        for (; nodep != exprp; nodep = nodep->backp()) {
+            const AstNode* const abovep = nodep->backp();
+            if (abovep->nextp() == nodep) continue;  // nodep is not the first operand
+            FileLine* const fl = abovep->fileline();
+            AstNodeExpr* termp = nullptr;
+            if (const AstCond* const cp = VN_CAST(abovep, Cond)) {
+                if (nodep == cp->thenp()) termp = cp->condp()->cloneTreePure(false);
+                if (nodep == cp->elsep())
+                    termp = newLogNotp(fl, cp->condp()->cloneTreePure(false));
+            } else if (const AstLogAnd* const andp = VN_CAST(abovep, LogAnd)) {
+                if (nodep == andp->rhsp()) termp = andp->lhsp()->cloneTreePure(false);
+            } else if (const AstLogIf* const ifp = VN_CAST(abovep, LogIf)) {
+                if (nodep == ifp->rhsp()) termp = ifp->lhsp()->cloneTreePure(false);
+            } else if (const AstLogOr* const orp = VN_CAST(abovep, LogOr)) {
+                if (nodep == orp->rhsp())
+                    termp = newLogNotp(fl, orp->lhsp()->cloneTreePure(false));
+            }
+            if (termp) condp = newLogAndp(fl, condp, termp);
+        }
+        return condp;
     }
     // 'index < size', compared unsigned at a width holding both, so a negative index is out of
     // range
@@ -1858,56 +1896,46 @@ class ConstraintExprVisitor final : public VNVisitor {
         sizep->dtypeSetInt();
         return sizep;
     }
-    // A random index into a struct array must address an element, so a constraint item whose
-    // expression (searchp) uses arr[e].member becomes:
-    //   e < arr.size();  (e < current arr.size()) -> item;
+    // A random index into a struct array must address an element wherever it is evaluated, so
+    // a constraint item 'expr' using arr[e].member, evaluated under condition c, becomes:
+    //   (c -> e < arr.size()) && ((c -> e < current arr.size()) -> expr)
     // The size of a size-constrained array is that being solved, but its elements exist only
-    // once it is resized after solving its size, which the implication waits for.
-    bool guardRandIndexedStructSels(AstNodeConstraintItem* nodep, AstNode* searchp) {
-        if (nodep == m_guardedp) return false;
-        // Distinct element selects
-        std::vector<AstNodeExpr*> selps;
-        searchp->foreach([&](AstStructSel* structSelp) {
+    // once it is resized after solving its size, which the second implication waits for; it is
+    // omitted for other arrays, whose current size is their size.
+    void guardRandIndexedStructSels(AstConstraintExpr* nodep) {
+        AstNodeExpr* const exprp = nodep->exprp();
+        AstNodeExpr* inRangep = nullptr;
+        AstNodeExpr* inCurrentRangep = nullptr;
+        exprp->foreach([&](AstStructSel* structSelp) {
             for (AstNodeExpr* selp = structSelp->fromp(); isArraySel(selp);
                  selp = arraySelFromp(selp)) {
-                if (hasRandIndex(selp) && !hasSameSel(selps, selp)) selps.push_back(selp);
+                if (!hasRandIndex(selp)) continue;
+                FileLine* const fl = selp->fileline();
+                AstNodeExpr* const arrayp = arraySelFromp(selp);
+                AstNodeExpr* const indexp = arraySelIndexp(selp);
+                AstNodeExpr* const evalCondp = newEvaluatedCondp(selp, exprp);
+                AstNodeExpr* sizep = newCurrentSizep(fl, arrayp);
+                const AstVarRef* const arrayRefp = VN_CAST(arrayp, VarRef);
+                if (AstVar* const sizeVarp
+                    = arrayRefp ? VN_CAST(arrayRefp->varp()->user4p(), Var) : nullptr) {
+                    inCurrentRangep = newLogAndp(
+                        fl, inCurrentRangep,
+                        newLogIfp(fl, evalCondp ? evalCondp->cloneTreePure(false) : nullptr,
+                                  newIndexInRangep(fl, indexp->cloneTreePure(false), sizep)));
+                    sizep = new AstVarRef{fl, VN_AS(sizeVarp->user2p(), NodeModule), sizeVarp,
+                                          VAccess::READ};
+                    sizep->user1(true);
+                }
+                inRangep = newLogAndp(
+                    fl, inRangep,
+                    newLogIfp(fl, evalCondp,
+                              newIndexInRangep(fl, indexp->cloneTreePure(false), sizep)));
             }
         });
-        if (selps.empty()) return false;
+        if (!inRangep) return;
         FileLine* const fl = nodep->fileline();
-        const AstConstraintExpr* const exprp = VN_CAST(nodep, ConstraintExpr);
-        AstNodeConstraintItem* guardsp = nullptr;
-        AstNodeExpr* existsp = nullptr;
-        for (AstNodeExpr* const selp : selps) {
-            AstNodeExpr* const arrayp = arraySelFromp(selp);
-            AstNodeExpr* const indexp = arraySelIndexp(selp);
-            AstNodeExpr* sizep = newCurrentSizep(fl, arrayp);
-            AstNodeExpr* const elemExistsp
-                = newIndexInRangep(fl, indexp->cloneTreePure(false), sizep->cloneTreePure(false));
-            existsp = existsp ? new AstLogAnd{fl, existsp, elemExistsp} : elemExistsp;
-            existsp->user1(true);
-            const AstVarRef* const arrayRefp = VN_CAST(arrayp, VarRef);
-            if (AstVar* const sizeVarp
-                = arrayRefp ? VN_CAST(arrayRefp->varp()->user4p(), Var) : nullptr) {
-                VL_DO_DANGLING(sizep->deleteTree(), sizep);
-                sizep = new AstVarRef{fl, VN_AS(sizeVarp->user2p(), NodeModule), sizeVarp,
-                                      VAccess::READ};
-                sizep->user1(true);
-            }
-            AstConstraintExpr* const guardp = new AstConstraintExpr{
-                fl, newIndexInRangep(fl, indexp->cloneTreePure(false), sizep)};
-            guardp->isSoft(exprp && exprp->isSoft());
-            guardsp = AstNode::addNext(guardsp, guardp);
-        }
-        VNRelinker handle;
-        nodep->unlinkFrBack(&handle);
-        AstConstraintIf* const ifp = new AstConstraintIf{fl, existsp, nodep, nullptr};
-        handle.relink(ifp);
-        ifp->addNextHere(guardsp);
-        VL_RESTORER(m_guardedp);
-        m_guardedp = nodep;
-        iterate(ifp);
-        return true;
+        exprp->unlinkFrBack();
+        nodep->exprp(newLogAndp(fl, inRangep, newLogIfp(fl, inCurrentRangep, exprp)));
     }
     void visit(AstStructSel* nodep) override {
         if (editFormat(nodep)) return;
@@ -2292,7 +2320,6 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstSFormatF* nodep) override {}
     void visit(AstConstraintIf* nodep) override {
-        if (guardRandIndexedStructSels(nodep, nodep->condp())) return;
         // Outside a fold, this if's branches are folded here and m_constraintVars collects
         // their names for the constraint replacing it; a nested if adds to its parent's fold
         const bool foldOwner = !m_wantSingle;
@@ -2582,7 +2609,6 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
     void visit(AstConstraintExpr* nodep) override {
-        if (guardRandIndexedStructSels(nodep, nodep->exprp())) return;
         // IEEE 1800-2023 18.5.13: 'disable soft' is a meta-level directive on
         // the constraint graph, lowered to a void RANDOMIZER_DISABLE_SOFT
         // call.  Conditional occurrences (if / foreach / implication body)
@@ -2621,6 +2647,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 nodep->exprp(neqp);
             }
         }
+        guardRandIndexedStructSels(nodep);
         iterateChildren(nodep);
         if (m_wantSingle) {
             nodep->replaceWith(nodep->exprp()->unlinkFrBack());
