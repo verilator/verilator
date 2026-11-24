@@ -3905,7 +3905,7 @@ static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSig
                                     baseSignalVop->readDatap()););
 
         if (VL_UNLIKELY(!baseSignalVop->storageVarp()->isPublicRW())) {
-            if (baseSignalVop->storageVarp()->isLazyComb()) {
+            if (baseSignalVop->storageVarp()->isLazyPutMasked()) {
                 VL_VPI_ERROR_(__FILE__, __LINE__,
                               "vpi_put_value was used on signal combinationally driven under"
                               " --vpi-lazy, use a public_flat_rw attribute to write '%s'",
@@ -4319,7 +4319,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                         PLI_INT32 flags) {
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (VL_UNLIKELY(vop && valuep && vop->storageVarp()->isPublicRW()
-                    && vop->storageVarp()->isLazyComb()))
+                    && vop->storageVarp()->isLazyPutMasked()))
         return vl_vpi_put_value_lazy_comb(object, vop, valuep, flags);
     return vpi_put_value(object, vop, valuep, flags);
 }
@@ -4923,7 +4923,7 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
 
     const VerilatedVar* const varp = vop->storageVarp();
     if (VL_UNLIKELY(!varp->isPublicRW())) {
-        if (varp->isLazyComb()) {
+        if (varp->isLazyPutMasked()) {
             VL_VPI_ERROR_(__FILE__, __LINE__,
                           "Ignoring vpi_put_value_array to signal combinationally driven under"
                           " --vpi-lazy, use a public_flat_rw attribute to write '%s'",
@@ -4964,7 +4964,7 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
     }
     // Rebuilt first, so the masked bits merged back are current
     uint8_t* const putp = static_cast<uint8_t*>(vop->readDatap()) + lo * varp->entSize();
-    if (VL_UNLIKELY(varp->isLazyComb())) {
+    if (VL_UNLIKELY(varp->isLazyPutMasked())) {
         vl_vpi_lazy_comb_put(vop, putp, nElems,
                              [&] { vl_put_value_array(object, arrayvalue_p, index_p, num); });
         return;
