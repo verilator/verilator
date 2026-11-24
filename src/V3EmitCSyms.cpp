@@ -449,11 +449,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         // under --protect-ids, whereas protect() would always hash it.
         const std::string member = rowStorageName(varp);
         const std::string flags = vlEnumDirOf(scopep, varp) + lazyRematFlags(varp);
-        // Rebuilt rows are read-only, and VLVF_LAZY_COMB makes lazyDescSlot() ignore lazyIdx
-        UASSERT_OBJ(!isLazy
-                        || (flags.find("VLVF_PUB_RW") == std::string::npos
-                            && flags.find("VLVF_LAZY_COMB") == std::string::npos),
-                    varp, "--vpi-lazy rebuilt row is writable or comb-masked");
+        // A shadow row is read-only unless its VlLazyReconEntry says otherwise, and
+        // VLVF_LAZY_COMB here would make lazyDescSlot() ignore lazyIdx
+        UASSERT_OBJ(!isLazy || !varp->isSigExternallyRWPublic(), varp,
+                    "--vpi-lazy shadow row carries a write policy");
         std::string row = "{\"" + name + "\", ";
         if (varp->isParam()) {
             row += paramPtrIndex("&" + modClassName + "::" + member) + ", ";
@@ -1731,9 +1730,11 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                         }
                         std::string tail = src.empty() ? "0, 0" : src + ", VLVF_LAZY_COPY";
                         // A cone has no copy source, so the offset names its mask instead
-                        if (V3VpiLazy::combOf(scopep, varp) == VVpiLazyComb::PARTIAL)
+                        if (V3VpiLazy::combOf(scopep, varp) == VVpiLazyComb::PARTIAL) {
+                            UASSERT_OBJ(src.empty(), varp, "--vpi-lazy masked copy row");
                             tail = std::to_string(combMaskIdx(scopep, varp))
                                    + ", VLVF_PUB_RW|VLVF_LAZY_COMB";
+                        }
                         reconFns.emplace_back("{" + fn + ", " + tail + "}");
                     }
                     // A member takes its lazy and write policy from this row, see
