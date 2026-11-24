@@ -386,7 +386,7 @@ static string cellFlatName(const AstCell* cellp) {
 struct ChainStep final {
     enum Kind : uint8_t { ARRAYSEL, STRUCTSEL, BITSEL } kind = ARRAYSEL;
     uint32_t index = 0;  // ARRAYSEL
-    string member;  // STRUCTSEL
+    AstMemberDType* memberp = nullptr;  // STRUCTSEL
     int lsb = 0;  // BITSEL
     int width = 0;  // BITSEL
     AstNodeDType* dtypep = nullptr;  // Type of selected part
@@ -411,6 +411,7 @@ static std::vector<ChainStep> accessChainSteps(const AstVar* rootVarp,
                  memberp = VN_CAST(memberp->nextp(), MemberDType)) {
                 if (memberp->name() == step.member) {
                     memberDTypep = memberp->subDTypep();
+                    out.memberp = memberp;
                     break;
                 }
                 msbOff += aggregateBitWidth(memberp->subDTypep());
@@ -422,7 +423,6 @@ static std::vector<ChainStep> accessChainSteps(const AstVar* rootVarp,
                 out.lsb = structp->width() - msbOff - out.width;
             } else {
                 out.kind = ChainStep::STRUCTSEL;
-                out.member = step.member;
             }
         }
         dtypep = out.dtypep->skipRefp();
@@ -447,7 +447,7 @@ static bool reachesLeaf(const AstNodeVarRef* refp, const std::vector<ChainStep>&
         case ChainStep::STRUCTSEL: {
             const AstStructSel* const structSelp = VN_CAST(parentp, StructSel);
             if (!structSelp || structSelp->fromp() != curp) return true;  // The whole struct
-            if (structSelp->name() != step.member) return false;
+            if (structSelp->name() != step.memberp->name()) return false;
             break;
         }
         case ChainStep::BITSEL: {
@@ -517,9 +517,7 @@ static void collectLeafAccesses(AstNodeExpr* accessp, AstNodeDType* dtypep,
     if (AstStructDType* const structp = VN_CAST(skippedDTypep, StructDType)) {
         for (AstMemberDType* memberp = structp->membersp(); memberp;
              memberp = VN_CAST(memberp->nextp(), MemberDType)) {
-            AstStructSel* const selp
-                = new AstStructSel{fl, accessp->cloneTree(false), memberp->name()};
-            selp->dtypep(memberp->subDTypep());
+            AstStructSel* const selp = new AstStructSel{fl, accessp->cloneTree(false), memberp};
             collectLeafAccesses(selp, memberp->subDTypep(), leafps, widths);
         }
     } else if (AstUnpackArrayDType* const adtypep = VN_CAST(skippedDTypep, UnpackArrayDType)) {
@@ -1870,7 +1868,7 @@ class DpiOverrideBuilder final {
             case ChainStep::ARRAYSEL:
                 selp = new AstArraySel{fl, curp, new AstConst{fl, step.index}};
                 break;
-            case ChainStep::STRUCTSEL: selp = new AstStructSel{fl, curp, step.member}; break;
+            case ChainStep::STRUCTSEL: selp = new AstStructSel{fl, curp, step.memberp}; break;
             case ChainStep::BITSEL: selp = new AstSel{fl, curp, step.lsb, step.width}; break;
             }
             selp->dtypep(step.dtypep);
@@ -1895,7 +1893,7 @@ class DpiOverrideBuilder final {
             }
             case ChainStep::STRUCTSEL: {
                 const AstStructSel* const structSelp = VN_CAST(curp, StructSel);
-                if (!structSelp || structSelp->name() != step.member) return false;
+                if (!structSelp || structSelp->name() != step.memberp->name()) return false;
                 curp = structSelp->fromp();
                 break;
             }
