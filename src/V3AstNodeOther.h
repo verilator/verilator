@@ -1659,12 +1659,11 @@ class AstNetlist final : public AstNode {
     std::array<AstCFunc*, VEval::_ENUM_END> m_dumpTriggersFuncps{};
     // Activity flag sets of the design, built by V3Trace for the RTMD.
     std::vector<std::vector<uint32_t>> m_actSets;
-    // --vpi-lazy pass state
-    V3VpiLazyContext* m_vpiLazyContextp = nullptr;
+    // --vpi-lazy pass state. Not unique_ptr, as astgen's clone() copy-constructs every node.
+    std::shared_ptr<V3VpiLazyContext> m_vpiLazyContextp;
 
 public:
     AstNetlist();
-    ~AstNetlist() override;
     ASTGEN_MEMBERS_AstNetlist;
     const char* broken() const override;
     void pushDeferredParamVarp(AstVar* varp) { m_deferredParamVarps.insert(varp); }
@@ -1678,7 +1677,7 @@ public:
     AstNodeModule* topModulep() const VL_MT_STABLE {  // Top module in hierarchy
         return modulesp();  // First one in the list, for now
     }
-    V3VpiLazyContext* vpiLazyContextp() const { return m_vpiLazyContextp; }
+    V3VpiLazyContext* vpiLazyContextp() const { return m_vpiLazyContextp.get(); }
     V3VpiLazyContext& createVpiLazyContext();
     AstTypeTable* typeTablep() { return m_typeTablep; }
     string astConstOrigParamName(const AstConst* nodep) const;

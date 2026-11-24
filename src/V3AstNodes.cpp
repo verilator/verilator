@@ -2438,13 +2438,12 @@ void AstNetlist::createTopScope(AstScope* scopep) {
     scopep->modp()->addStmtsp(v3Global.rootp()->topScopep());
 }
 V3VpiLazyContext& AstNetlist::createVpiLazyContext() {
-    V3VpiLazy::deleteContext(m_vpiLazyContextp);
-    m_vpiLazyContextp = V3VpiLazy::newContext();
+    m_vpiLazyContextp = std::make_shared<V3VpiLazyContext>();
     return *m_vpiLazyContextp;
 }
 void AstNetlist::deleteContents() {
     // Delete all netlist memory.  Only for use by Verilator.cpp
-    VL_DO_CLEAR(V3VpiLazy::deleteContext(m_vpiLazyContextp), m_vpiLazyContextp = nullptr);
+    m_vpiLazyContextp.reset();
     m_typeTablep = nullptr;
     m_constPoolPkgp = nullptr;
     m_dollarUnitPkgp = nullptr;
@@ -2540,10 +2539,6 @@ void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
     } else if (prec < m_timeprecision) {
         m_timeprecision = prec;
     }
-}
-AstNetlist::~AstNetlist() {
-    // Only VL_LEAK_CHECKS deletes the netlist without deleteContents()
-    V3VpiLazy::deleteContext(m_vpiLazyContextp);  // LCOV_EXCL_LINE
 }
 void AstNew::dump(std::ostream& str) const {
     Super::dump(str);

@@ -20,14 +20,12 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Ast.h"
+
+#include <map>
+#include <set>
 #include <string>
 #include <vector>
-
-class AstNetlist;
-class AstScope;
-class AstVar;
-class V3VpiLazyContext;
-class VVpiLazyComb;
 
 //============================================================================
 
@@ -57,9 +55,30 @@ public:
     static void classifyComb(AstNetlist* nodep) VL_MT_DISABLED;
     // Preserve reconstructable lazy signals before optimization.
     static void prepare(AstNetlist* nodep) VL_MT_DISABLED;
-    // AstNetlist owns this opaque context.
-    static V3VpiLazyContext* newContext() VL_MT_DISABLED;
-    static void deleteContext(V3VpiLazyContext* ctxp) VL_MT_DISABLED;
+};
+
+// The classification V3EmitCSyms reads, owned by AstNetlist
+class V3VpiLazyContext final {
+public:
+    // By name, not node: a node deleted before V3EmitCSyms reads these may have its address
+    // reused. V3Name has already settled the names.
+    using VarKey = std::pair<std::string, std::string>;  // Module or scope name, variable name
+    // PARTIAL variable -> its masked bits, where every instance agrees
+    std::map<VarKey, std::vector<V3VpiLazy::CombRun>> m_combRuns;
+    // One instance of a PARTIAL variable whose instances differ.
+    struct InstComb final {
+        VVpiLazyComb m_comb;  // This instance's class
+        std::vector<V3VpiLazy::CombRun> m_runs;  // Its masked bits, if PARTIAL
+    };
+    std::map<VarKey, InstComb> m_instComb;
+    // Refresh func name of a shadow's row in a scope other than its group's; see rowStub()
+    std::map<VarKey, std::string> m_rowRefresh;
+    // A split variable's or its shadow's instances held by the other; see splitKeptInstances()
+    std::set<VarKey> m_noRow;
+
+    VVpiLazyComb combOf(const AstScope* scopep, const AstVar* varp) const;
+    const std::vector<V3VpiLazy::CombRun>& combRunsOf(const AstScope* scopep,
+                                                      const AstVar* varp) const;
 };
 
 #endif  // Guard

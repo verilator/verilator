@@ -100,9 +100,7 @@ static constexpr const char* RECONSTRUCT_INST_FUNC_NAME = "__Vlazy_reconstruct_i
 
 //######################################################################
 
-// By name, not node: a node deleted before V3EmitCSyms reads these may have its address reused.
-// V3Name has already settled the names.
-using VarKey = std::pair<std::string, std::string>;  // Module or scope name, variable name
+using VarKey = V3VpiLazyContext::VarKey;
 static VarKey varKeyOf(const AstScope* scopep, const AstVar* varp) {
     return {scopep->modp()->name(), varp->name()};
 }
@@ -110,35 +108,19 @@ static VarKey instKeyOf(const AstScope* scopep, const AstVar* varp) {
     return {scopep->name(), varp->name()};
 }
 
-class V3VpiLazyContext final {
-public:
-    // PARTIAL variable -> its masked bits, where every instance agrees
-    std::map<VarKey, std::vector<V3VpiLazy::CombRun>> m_combRuns;
-    // One instance of a PARTIAL variable whose instances differ.
-    struct InstComb final {
-        VVpiLazyComb m_comb;  // This instance's class
-        std::vector<V3VpiLazy::CombRun> m_runs;  // Its masked bits, if PARTIAL
-    };
-    std::map<VarKey, InstComb> m_instComb;
-    // Refresh func name of a shadow's row in a scope other than its group's; see rowStub()
-    std::map<VarKey, std::string> m_rowRefresh;
-    // A split variable's or its shadow's instances held by the other; see splitKeptInstances()
-    std::set<VarKey> m_noRow;
-
-    VVpiLazyComb combOf(const AstScope* scopep, const AstVar* varp) const {
-        if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
-        const auto it = m_instComb.find(instKeyOf(scopep, varp));
-        return it == m_instComb.end() ? VVpiLazyComb{VVpiLazyComb::PARTIAL} : it->second.m_comb;
-    }
-    const std::vector<V3VpiLazy::CombRun>& combRunsOf(const AstScope* scopep,
-                                                      const AstVar* varp) const {
-        const auto it = m_instComb.find(instKeyOf(scopep, varp));
-        if (it != m_instComb.end()) return it->second.m_runs;
-        const auto rit = m_combRuns.find(varKeyOf(scopep, varp));
-        UASSERT_OBJ(rit != m_combRuns.end(), varp, "--vpi-lazy masked variable has no runs");
-        return rit->second;
-    }
-};
+VVpiLazyComb V3VpiLazyContext::combOf(const AstScope* scopep, const AstVar* varp) const {
+    if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
+    const auto it = m_instComb.find(instKeyOf(scopep, varp));
+    return it == m_instComb.end() ? VVpiLazyComb{VVpiLazyComb::PARTIAL} : it->second.m_comb;
+}
+const std::vector<V3VpiLazy::CombRun>& V3VpiLazyContext::combRunsOf(const AstScope* scopep,
+                                                                    const AstVar* varp) const {
+    const auto it = m_instComb.find(instKeyOf(scopep, varp));
+    if (it != m_instComb.end()) return it->second.m_runs;
+    const auto rit = m_combRuns.find(varKeyOf(scopep, varp));
+    UASSERT_OBJ(rit != m_combRuns.end(), varp, "--vpi-lazy masked variable has no runs");
+    return rit->second;
+}
 
 //######################################################################
 
@@ -2345,9 +2327,6 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
 
     V3Global::dumpCheckGlobalTree("vpi-lazy-prepare", 0, dumpTreeEitherLevel() >= 3);
 }
-
-V3VpiLazyContext* V3VpiLazy::newContext() { return new V3VpiLazyContext; }
-void V3VpiLazy::deleteContext(V3VpiLazyContext* ctxp) { delete ctxp; }
 
 void V3VpiLazy::classifyComb(AstNetlist* nodep) {
     // Only the marks are kept: V3Decompose and V3BitBlast add variables, so prepare() reclassifies
