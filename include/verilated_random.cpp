@@ -967,9 +967,8 @@ bool VlRandomizer::isFrozenVar(const std::string& name, const VlRandomVar& var) 
 }
 
 bool VlRandomizer::hasFrozenVar() const {
-    bool mayBeFrozen = m_randmodep || m_static_randmodep;
-    // A disabled var means the class uses rand_mode, so it never shows up without one
-    if (VL_UNCOVERABLE(!mayBeFrozen && !m_disabledVars.empty())) mayBeFrozen = true;
+    // A disabled var may be another class's static, with no rand_mode in this class
+    const bool mayBeFrozen = m_randmodep || m_static_randmodep || !m_disabledVars.empty();
     if (!mayBeFrozen) return false;
     for (const auto& var : m_vars) {
         if (isFrozenVar(var.first, *var.second)) return true;
