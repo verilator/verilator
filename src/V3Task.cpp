@@ -1362,8 +1362,6 @@ class TaskVisitor final : public VNVisitor {
     static AstVar* newDpiRtnArgp(AstVar* rtnvarp) {
         AstVar* const argp = rtnvarp->cloneTree(false);
         argp->funcReturn(false);
-        argp->direction(VDirection::OUTPUT);
-        argp->funcLocal(true);
         return argp;
     }
 

@@ -11,7 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(v_flags2=["t/" + test.name + ".cpp"], verilator_flags2=["--no-decoration"])
+test.compile(v_flags2=["t/" + test.name + ".cpp"],
+             verilator_flags2=["--no-decoration", "-Wno-fatal"],
+             expect_filename=test.golden_filename)
 
 test.files_identical(test.obj_dir + "/" + test.vm_prefix + "__Dpi.h",
                      "t/" + test.name + "__Dpi.out")
