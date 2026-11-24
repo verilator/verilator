@@ -1020,14 +1020,14 @@ public:
 
 /// --vpi-lazy runtime state, a member of a --vpi-lazy model's generated symbol table
 struct VerilatedLazyState final {
-    /// Reconstruction generation. Memos equal to it are fresh; starts at 2 so zero stamps are
-    /// stale. It is odd from the generated evalBegin() to evalEnd(), and a read while it is odd
-    /// moves it first, so a read made mid-eval (from DPI or a callback) never trusts a memo.
-    /// Moves other than those two are by 2, preserving the parity.
+    /// Rematerialization generation: memos equal to it are fresh, and zero stamps never are.
+    /// Odd within an eval, so a mid-eval read never trusts a memo; other moves keep the parity.
     uint64_t epoch = 2;
     const VlLazyCombMask* combMasksp = nullptr;  ///< Comb masks, if any
     bool written = false;  ///< Write to a retained signal awaiting a settle
-    bool evalBegun = false;  ///< An eval() has begun, in this model or the one saved
+    /// An eval() has begun, in this model or the one saved. Unlike the model's m_didInit, set
+    /// before the time 0 settle, and reachable from VerilatedSyms.
+    bool evalBegun = false;
     bool undoOn = false;  ///< Has a reconstructed row, so puts log
     bool undoIn = false;  ///< The undo log is swapped in
     std::vector<VlLazyUndo> undo;  ///< See vl_vpi_undo_log() in verilated_vpi.cpp
@@ -1043,9 +1043,8 @@ struct VerilatedLazyState final {
     }
     /// Bump the epoch, keeping its in-eval parity
     void epochBump() VL_MT_UNSAFE_ONE { epoch += 2; }
-    /// Retire every memo and logged put a restore overwrote. Restored stamps are at most the
-    /// saved epoch, which may be ahead of this model's, and odd if saved mid-eval; a restore
-    /// is between evals, so the result is the next even epoch past both.
+    /// Retire every memo and logged put a restore overwrote: the next even epoch past both, as
+    /// restored stamps are at most the saved epoch, which is odd if saved mid-eval.
     void restore(uint64_t savedEpoch) VL_MT_UNSAFE_ONE {
         epoch = ((savedEpoch > epoch ? savedEpoch : epoch) | 1) + 1;
         undo.clear();

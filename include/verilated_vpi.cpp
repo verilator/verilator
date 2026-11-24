@@ -3504,11 +3504,8 @@ static void vl_vpi_note_write(const VerilatedVpioVar* vop) {
     if (vop->storageVarp()->isLazyRetained()) vop->scopep()->symsp()->lazyp()->written = true;
 }
 
-// --vpi-lazy undo log. A put reaches its dependants only at the next eval, so instead of
-// retiring the reconstruction memos it keeps the bytes it overwrote, and a read swaps them back
-// in around a rebuild: a rebuilt dependant then reads as the last eval left it, as a stored one
-// does under --public-flat-rw, and its memo stays valid until that eval moves the epoch and
-// clears the log.
+// --vpi-lazy undo log: a put reaches dependants only at the next eval, so a read swaps the bytes
+// it overwrote back in around a rebuild, and memos stay valid, as under --public-flat-rw.
 
 // The log, if a put of 'size' bytes (or a string) at 'datap' needs an entry, else nullptr
 static std::vector<VlLazyUndo>* vl_vpi_undo_logp(VerilatedSyms* symsp, const void* datap,
