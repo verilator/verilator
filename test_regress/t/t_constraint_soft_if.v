@@ -165,6 +165,41 @@ class ClsDistForeach;
   constraint c {foreach (a[i]) {a[i] > 10;}}
 endclass
 
+// Soft items under an if with nothing opposing them, beside a conflicting one
+class ClsSoftKept;
+  rand bit [3:0] x;
+  rand bit [3:0] y;
+  rand bit [3:0] z;
+  rand bit sel;
+  constraint s {sel == 1;}
+  constraint d {if (sel) soft x == 1;}
+  constraint d2 {
+    if (sel) {
+      y == 3;
+      soft z == 1;
+    }
+  }
+  constraint c {x > 10;}
+endclass
+
+// A dist in a foreach under an if/else, the else arm free to be taken
+class ClsDistForeachElse;
+  rand bit [3:0] a[3];
+  rand bit sel;
+  constraint d {
+    if (sel) {
+      foreach (a[i]) {
+        a[i] dist {
+          [0 : 3] :/ 90,
+          [12 : 15] :/ 10
+        };
+      }
+    } else {
+      foreach (a[i]) {a[i] == 7;}
+    }
+  }
+endclass
+
 module t;
   initial begin
     int randomize_result;
@@ -273,6 +308,28 @@ module t;
         randomize_result = obj.randomize();
         `checkd(randomize_result, 1);
         foreach (obj.a[i]) `checkd((obj.a[i] inside {[12 : 15]}), 1'b1);
+      end
+    end
+
+    // A soft item under an if still applies when nothing opposes it
+    begin
+      static ClsSoftKept obj = new();
+      repeat (20) begin
+        randomize_result = obj.randomize();
+        `checkd(randomize_result, 1);
+        `checkd(obj.x > 10, 1'b1);
+        `checkd(obj.y, 3);
+        `checkd(obj.z, 1);
+      end
+    end
+
+    // The else arm of a foreach under an if/else
+    begin
+      static ClsDistForeachElse obj = new();
+      repeat (20) begin
+        randomize_result = obj.randomize() with {sel == 1'b0;};
+        `checkd(randomize_result, 1);
+        foreach (obj.a[i]) `checkd(obj.a[i], 7);
       end
     end
 
