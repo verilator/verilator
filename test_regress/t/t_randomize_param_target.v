@@ -168,11 +168,36 @@ task outer_sequence::body();
   end
 endtask
 
+package items;
+  class item;
+    rand int value;
+  endclass
+endpackage
+
+package aliases;
+  typedef items::item handle_t;
+endpackage
+
+package seqs;
+  class seq;
+    function int apply_value(aliases::handle_t it);
+      return it.randomize() with {value == 42;};
+    endfunction
+  endclass
+endpackage
+
 module t;
   outer_sequence outer;
   initial begin
     outer = new;
     outer.body();
+    begin
+      automatic items::item it = new;
+      automatic seqs::seq seq = new;
+      it.value = -1;
+      `checkd(seq.apply_value(it), 1)
+      `checkd(it.value, 42)
+    end
     $write("*-* All Finished *-*\n");
     $finish;
   end
