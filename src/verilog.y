@@ -3584,12 +3584,15 @@ stmtList<nodeStmtp>:
         |       stmtList error ';'                      { $$ = $1; }  // LCOV_EXCL_LINE
         ;
 
-stmt<nodeStmtp>:                    // IEEE: statement + statement_or_null + seq_block + par_block
+stmt<nodeStmtp>:                    // IEEE: statement_or_null
+                stmtNonNull                             { $$ = $1; }
+        |       ';'                                     { $$ = nullptr; }
+        ;
+
+stmtNonNull<nodeStmtp>:             // IEEE: statement + seq_block + par_block
                 statement_item                          { $$ = $1; }
         //                      // S05 block creation rule
         |       id/*block_identifier*/ ':' statement_item       { $$ = new AstBegin{$<fl>1, *$1, $3, false}; }
-        //                      // from _or_null
-        |       ';'                                     { $$ = nullptr; }
         //                      // labeled par_block/seq_block with leading ':'
         |       seq_blockPreId                          { $$ = $1; }
         |       par_blockPreId                          { $$ = $1; }
@@ -3774,9 +3777,11 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
         |       yWAIT '(' expr ')' stmt            { $$ = new AstWait{$1, $3, $5}; }
         |       yWAIT yFORK ';'                         { $$ = new AstWaitFork{$1}; }
         //                      // action_block expanded here
-        |       yWAIT_ORDER '(' vrdList ')' stmt %prec prLOWER_THAN_ELSE
+        |       yWAIT_ORDER '(' vrdList ')' ';'
+                        { $$ = nullptr; BBUNSUP($4, "Unsupported: wait_order"); DEL($3); }
+        |       yWAIT_ORDER '(' vrdList ')' stmtNonNull %prec prLOWER_THAN_ELSE
                         { $$ = nullptr; BBUNSUP($4, "Unsupported: wait_order"); DEL($3, $5); }
-        |       yWAIT_ORDER '(' vrdList ')' stmt yELSE stmt
+        |       yWAIT_ORDER '(' vrdList ')' stmtNonNull yELSE stmt
                         { $$ = nullptr; BBUNSUP($4, "Unsupported: wait_order"); DEL($3, $5, $7);}
         |       yWAIT_ORDER '(' vrdList ')' yELSE stmt
                         { $$ = nullptr; BBUNSUP($4, "Unsupported: wait_order"); DEL($3, $6); }
@@ -3791,9 +3796,11 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
         //
         //                      // IEEE: expect_property_statement
         //                      // action_block expanded here
-        |       yEXPECT '(' property_spec ')' stmt %prec prLOWER_THAN_ELSE
+        |       yEXPECT '(' property_spec ')' ';'
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); DEL($3); }
+        |       yEXPECT '(' property_spec ')' stmtNonNull %prec prLOWER_THAN_ELSE
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); DEL($3, $5); }
-        |       yEXPECT '(' property_spec ')' stmt yELSE stmt
+        |       yEXPECT '(' property_spec ')' stmtNonNull yELSE stmt
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); DEL($3, $5, $7); }
         |       yEXPECT '(' property_spec ')' yELSE stmt
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); DEL($3, $6); }
@@ -6508,11 +6515,13 @@ immediate_assertion_statement<nodeStmtp>:   // ==IEEE: immediate_assertion_state
 
 simple_immediate_assertion_statement<nodeStmtp>:    // ==IEEE: simple_immediate_assertion_statement
         //                      // action_block expanded here, for compatibility with AstAssert
-                assertOrAssume '(' expr ')' stmt %prec prLOWER_THAN_ELSE
+                assertOrAssume '(' expr ')' ';'
+                        { $$ = new AstAssert{$<fl>1, $3, nullptr, nullptr, VAssertType::SIMPLE_IMMEDIATE, $1}; }
+        |       assertOrAssume '(' expr ')' stmtNonNull %prec prLOWER_THAN_ELSE
                         { $$ = new AstAssert{$<fl>1, $3, $5, nullptr, VAssertType::SIMPLE_IMMEDIATE, $1}; }
         |       assertOrAssume '(' expr ')'           yELSE stmt
                         { $$ = new AstAssert{$<fl>1, $3, nullptr, $6, VAssertType::SIMPLE_IMMEDIATE, $1}; }
-        |       assertOrAssume '(' expr ')' stmt yELSE stmt
+        |       assertOrAssume '(' expr ')' stmtNonNull yELSE stmt
                         { $$ = new AstAssert{$<fl>1, $3, $5, $7, VAssertType::SIMPLE_IMMEDIATE, $1}; }
         //                      // IEEE: simple_immediate_cover_statement
         |       yCOVER '(' expr ')' stmt                { $$ = new AstCover{$1, $3, $5, VAssertType::SIMPLE_IMMEDIATE}; }
@@ -6533,11 +6542,13 @@ final_zero<asserttypeen>:                     // IEEE: part of deferred_immediat
 
 deferred_immediate_assertion_statement<nodeStmtp>:  // ==IEEE: deferred_immediate_assertion_statement
         //                      // IEEE: deferred_immediate_assert_statement
-                assertOrAssume final_zero '(' expr ')' stmt %prec prLOWER_THAN_ELSE
+                assertOrAssume final_zero '(' expr ')' ';'
+                        { $$ = new AstAssert{$<fl>1, $4, nullptr, nullptr, $2, $1}; }
+        |       assertOrAssume final_zero '(' expr ')' stmtNonNull %prec prLOWER_THAN_ELSE
                         { $$ = new AstAssert{$<fl>1, $4, $6, nullptr, $2, $1}; }
         |       assertOrAssume final_zero '(' expr ')'           yELSE stmt
                         { $$ = new AstAssert{$<fl>1, $4, nullptr, $7, $2, $1}; }
-        |       assertOrAssume final_zero '(' expr ')' stmt yELSE stmt
+        |       assertOrAssume final_zero '(' expr ')' stmtNonNull yELSE stmt
                         { $$ = new AstAssert{$<fl>1, $4, $6, $8, $2, $1}; }
         //                      // IEEE: deferred_immediate_cover_statement
         |       yCOVER final_zero '(' expr ')' stmt     { $$ = new AstCover{$1, $4, $6, $2}; }
@@ -6557,9 +6568,11 @@ concurrent_assertion_statement<nodeStmtp>:  // ==IEEE: concurrent_assertion_stat
         //                      // IEEE: assert_property_statement
         //                      // IEEE: assume_property_statement
         //                      // action_block expanded here
-                assertOrAssume yPROPERTY '(' property_spec ')' stmt %prec prLOWER_THAN_ELSE
+                assertOrAssume yPROPERTY '(' property_spec ')' ';'
+                        { $$ = new AstAssert{$<fl>1, $4, nullptr, nullptr, VAssertType::CONCURRENT, $1}; }
+        |       assertOrAssume yPROPERTY '(' property_spec ')' stmtNonNull %prec prLOWER_THAN_ELSE
                         { $$ = new AstAssert{$<fl>1, $4, $6, nullptr, VAssertType::CONCURRENT, $1}; }
-        |       assertOrAssume yPROPERTY '(' property_spec ')' stmt yELSE stmt
+        |       assertOrAssume yPROPERTY '(' property_spec ')' stmtNonNull yELSE stmt
                         { $$ = new AstAssert{$<fl>1, $4, $6, $8, VAssertType::CONCURRENT, $1}; }
         |       assertOrAssume yPROPERTY '(' property_spec ')' yELSE stmt
                         { $$ = new AstAssert{$<fl>1, $4, nullptr, $7, VAssertType::CONCURRENT, $1}; }

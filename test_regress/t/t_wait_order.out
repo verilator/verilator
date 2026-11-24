@@ -1,17 +1,20 @@
-%Error-UNSUPPORTED: t/t_wait_order.v:19:21: Unsupported: wait_order
-   19 |     wait_order (a, b) wif[0] = '1;
-      |                     ^
+%Error-UNSUPPORTED: t/t_wait_order.v:21:23: Unsupported: wait_order
+   21 |       wait_order (a, b);
+      |                       ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_wait_order.v:28:21: Unsupported: wait_order
-   28 |     wait_order (a, b) else welse[1] = '1;
+%Error-UNSUPPORTED: t/t_wait_order.v:27:21: Unsupported: wait_order
+   27 |     wait_order (a, b) wif[0] = '1;
       |                     ^
-%Error-UNSUPPORTED: t/t_wait_order.v:31:21: Unsupported: wait_order
-   31 |     wait_order (b, a) else nelse[1] = '1;
+%Error-UNSUPPORTED: t/t_wait_order.v:36:21: Unsupported: wait_order
+   36 |     wait_order (a, b) else welse[1] = '1;
       |                     ^
-%Error-UNSUPPORTED: t/t_wait_order.v:35:21: Unsupported: wait_order
-   35 |     wait_order (a, b) wif[2] = '1; else welse[2] = '1;
+%Error-UNSUPPORTED: t/t_wait_order.v:39:21: Unsupported: wait_order
+   39 |     wait_order (b, a) else nelse[1] = '1;
       |                     ^
-%Error-UNSUPPORTED: t/t_wait_order.v:38:21: Unsupported: wait_order
-   38 |     wait_order (b, a) nif[2] = '1; else nelse[2] = '1;
+%Error-UNSUPPORTED: t/t_wait_order.v:43:21: Unsupported: wait_order
+   43 |     wait_order (a, b) wif[2] = '1; else welse[2] = '1;
+      |                     ^
+%Error-UNSUPPORTED: t/t_wait_order.v:46:21: Unsupported: wait_order
+   46 |     wait_order (b, a) nif[2] = '1; else nelse[2] = '1;
       |                     ^
 %Error: Exiting due to

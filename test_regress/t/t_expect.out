@@ -8,4 +8,7 @@
 %Error-UNSUPPORTED: t/t_expect.v:21:5: Unsupported: expect
    21 |     expect (@(posedge clk) a ##1 b) a = 300;
       |     ^~~~~~
+%Error-UNSUPPORTED: t/t_expect.v:28:7: Unsupported: expect
+   28 |       expect (@(posedge clk) b);
+      |       ^~~~~~
 %Error: Exiting due to
