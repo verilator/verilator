@@ -107,8 +107,12 @@ class RtmdTypeBuilder final {
         case VBasicDTypeKwd::CHANDLE:
         case VBasicDTypeKwd::TIME:
         case VBasicDTypeKwd::EVENT:
-        case VBasicDTypeKwd::STRING:
             // Supported in RTMD
+            return new AstRtmdDTAtom{flp, kwd, dtypep->isSigned()};
+
+        case VBasicDTypeKwd::STRING:
+            // Never traced, so described only to pin --vpi-lazy storage
+            if (!v3Global.opt.vpiLazy()) return nullptr;
             return new AstRtmdDTAtom{flp, kwd, dtypep->isSigned()};
 
         case VBasicDTypeKwd::UINT32:
