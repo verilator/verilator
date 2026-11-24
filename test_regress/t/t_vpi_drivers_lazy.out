@@ -2,7 +2,7 @@ reset t.pull_b 00000000
 mid-eval t.mid_c 0x11
 mid-eval t.mid_c 0x21
 cbValueChange t.ch1 fired 1 0x06
-cbValueChange t.fmid_c fired 1 0x1d
+cbValueChange t.fmid_c fired 1 0x11d
 cbValueChange t.sib_b fired 1 0x06
 cbValueChange t.al_sw fired 0 0x00
 cbValueChange t.ff_q fired 0 0x00
@@ -57,7 +57,7 @@ t.am_x 3c r
 t.am_z 00 r
 t.arn_q 3c W
 t.bus.q 3c W
-t.c1_c 3c r
+t.c1_c 1c r
 t.cf_casepart 15 r
 t.cg_c 5a r
 t.ch1 43 r
@@ -67,7 +67,7 @@ t.cpy0.m 3c W
 t.cpy1.c 66 r
 t.cpy1.m 66 r
 t.cst_w 3c r
-t.ct_c 3c r
+t.ct_c 003c r
 t.dlp_c 3f r
 t.dlp_t 40 W
 t.dus ? ?
@@ -75,8 +75,8 @@ t.dus_c 42 r
 t.fa 00123456789abcd3c W
 t.fb 00123456789abcd3c r
 t.ff_q 3c W
-t.fmid_c 00 r
-t.fold_c 00 r
+t.fmid_c 100 r
+t.fold_c 100 r
 t.frc2 55 r
 t.frc_al 5a W
 t.frc_cb 18 W

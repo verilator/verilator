@@ -188,19 +188,19 @@ module t #(
 
   // Writability must not depend on optimization flags: a latch beside an impure statement, a
   // full case, and conditions on parameters
-  logic [7:0] spl_l;
-  logic [7:0] c1_c;
+  logic [6:0] spl_l;
+  logic [4:0] c1_c;
   logic [7:0] cg_c;
   /* verilator lint_off LATCH */
   always @* begin
-    if (en) spl_l = d;
+    if (en) spl_l = d[6:0];
     if (never) $display("never");
   end
   /* verilator lint_on LATCH */
   always @*
     case (en)
-      1'b0: c1_c = d;
-      1'b1: c1_c = in_a;
+      1'b0: c1_c = d[4:0];
+      1'b1: c1_c = in_a[4:0];
     endcase
   always @*
     case (d)
@@ -215,32 +215,32 @@ module t #(
     endcase
 
   localparam bit ON = 1'b1;
-  logic [7:0] pon_c;
-  logic [7:0] pand_c, pnot_c, por0_c, pand0_c, pand1_c, pand2_c;
+  logic [6:0] pon_c;
+  logic [6:0] pand_c, pnot_c, por0_c, pand0_c, pand1_c, pand2_c;
   /* verilator lint_off LATCH */
-  always @* if (ON || en) pon_c = d;
-  always @* if (!(!ON && en)) pand_c = d;
-  always @* if (!en) pnot_c = d;
+  always @* if (ON || en) pon_c = d[6:0];
+  always @* if (!(!ON && en)) pand_c = d[6:0];
+  always @* if (!en) pnot_c = d[6:0];
   always @*
-    if (!ON || !ON) por0_c = ~d;
-    else por0_c = d;
+    if (!ON || !ON) por0_c = ~d[6:0];
+    else por0_c = d[6:0];
   always @*
-    if (en && !ON) pand0_c = ~d;
-    else pand0_c = d;
-  always @* if (ON && ~(!ON)) pand1_c = d;
-  always @* if (ON & en) pand2_c = d;
+    if (en && !ON) pand0_c = ~d[6:0];
+    else pand0_c = d[6:0];
+  always @* if (ON && ~(!ON)) pand1_c = d[6:0];
+  always @* if (ON & en) pand2_c = d[6:0];
   /* verilator lint_on LATCH */
 
   // Comb logic over an instance's input port expression and over a strength-resolved net
   logic [7:0] px_o;
-  wire [7:0] tw;
-  logic [7:0] tw_r;
+  wire [6:0] tw;
+  logic [6:0] tw_r;
   sub u_px (
       .i(d ^ in_a),
       .o(px_o)
   );
-  assign (strong0, strong1) tw = en ? d : 8'bz;
-  assign (weak0, weak1) tw = in_a;
+  assign (strong0, strong1) tw = en ? d[6:0] : 7'bz;
+  assign (weak0, weak1) tw = in_a[6:0];
   assign tw_r = tw;
 
   // Mixed
@@ -377,8 +377,9 @@ module t #(
   assign al_sw = k_q;
   assign sib_bt = ch1;
   // A plain copy of a comb signal, and a second copy of a signal another row copies
-  logic [7:0] fold_c, fmid_c, sib_b;
-  always_comb fold_c = d ^ 8'h3c;
+  logic [8:0] fold_c, fmid_c;
+  logic [7:0] sib_b;
+  always_comb fold_c = 9'(d) ^ 9'h13c;
   always_comb fmid_c = fold_c;
   assign sib_b = ch1;
 
@@ -518,10 +519,10 @@ module t #(
     rbs_c[3:0] = d[3:0];
   end
   /* verilator lint_on ALWCOMBORDER */
-  logic [7:0] ct_c;
+  logic [14:0] ct_c;
   always_comb begin
-    if (1'b1 && 1'b1) ct_c = d;
-    else ct_c = in_a;
+    if (1'b1 && 1'b1) ct_c = 15'(d);
+    else ct_c = 15'(in_a);
   end
 
   // Arms defining different elements and variables, and an else holding an if and more
