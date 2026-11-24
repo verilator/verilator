@@ -68,7 +68,7 @@ module sub_ni;
   logic [7:0] m;
 endmodule
 
-// A cone over the instance's own flop, read from the parent
+// Comb logic over the instance's own flop, read from the parent
 module sub_fy (
     input logic clk,
     input logic [7:0] a,
@@ -79,7 +79,7 @@ module sub_fy (
   logic [7:0] y;
   always_ff @(posedge clk) r <= a;
   assign y = r + 8'd1;
-  // Refused alike in every instance: a cycle no merge can order, and an impure cone
+  // Read-only alike in every instance: a combinational cycle, and comb logic over an impure call
   /* verilator lint_off UNOPTFLAT */
   logic [7:0] cyc_p, cyc_q;
   /* verilator lint_on UNOPTFLAT */
@@ -96,7 +96,7 @@ module sub_fy (
 endmodule
 
 // Non-ANSI ports with separate net declarations, public_flat_rw/rd after or before the port.
-// Writability follows the RTL name, whether or not the port is inlined.
+// Writability follows the RTL name.
 module sub_na (
     y,
     z,
@@ -120,7 +120,6 @@ module sub_na (
 endmodule
 
 // One-hot encoder as bsg_encode_one_hot: each level drives only some bits, reading only those.
-// Literal selects, as -fno-const-before-dfg leaves a generate loop's index arithmetic unfolded.
 module put_oh (
     input logic [3:0] i,
     output logic [1:0] addr_o,
@@ -188,8 +187,7 @@ module t #(
   assign cst_w = CST;
 
   // Writability must not depend on optimization flags: a latch beside an impure statement, a
-  // full case lowered as a tree or as an if/else chain, and a parameter condition folded or
-  // not before DFG
+  // full case, and conditions on parameters
   logic [7:0] spl_l;
   logic [7:0] c1_c;
   logic [7:0] cg_c;
@@ -229,7 +227,7 @@ module t #(
   always @* if (ON & en) pand2_c = d;
   /* verilator lint_on LATCH */
 
-  // Compiler temporaries keep the storage a cone reads, but no VPI name
+  // Comb logic over an instance's input port expression and over a strength-resolved net
   logic [7:0] px_o;
   wire [7:0] tw;
   logic [7:0] tw_r;
@@ -292,7 +290,7 @@ module t #(
   end
 
   // Instances of one variable driven differently from their parent: each is writable as
-  // --public-flat-rw would persist a put into it, inlined or not
+  // --public-flat-rw would persist a put into it
   logic [7:0] n_ia;
   logic [7:0] n_mc2;
   ifc_pair ia ();
@@ -351,7 +349,7 @@ module t #(
   bit [7:0] sib_bt;
   assign al_sw = k_q;
   assign sib_bt = ch1;
-  // A fold row, and a sibling of another row on the same cone
+  // A plain copy of a comb signal, and a second copy of a signal another row copies
   logic [7:0] fold_c, fmid_c, sib_b;
   always_comb fold_c = d ^ 8'h3c;
   always_comb fmid_c = fold_c;
@@ -374,7 +372,7 @@ module t #(
       .a(d)
   );
 
-  // Each a cone reading another instance's cone, which refreshes that instance
+  // Each comb logic reading another instance's comb signal, which reads as that instance drives it
   logic [7:0] fyx0_c, fyx1_c;
   /* verilator lint_off PINMISSING */
   sub_fy fy0 (
@@ -392,7 +390,7 @@ module t #(
   logic [7:0] fyx1b_c;
   assign fyx1b_c = fy1.y + 8'h01;
 
-  // Statement shapes a cone refuses or keeps: a read before its write; a dead store in a loop
+  // Comb statement shapes: a read before its write; a dead store in a loop
   // left by a break; an unpacked struct member lvalue, and one a flop holds; an impure continuous
   // assign
   /* verilator lint_off UNOPTFLAT */
@@ -429,17 +427,16 @@ module t #(
   always_ff @(posedge clk) fus.a <= d;
   assign rnd_w = $urandom(seedv);
 
-  // A comb signal kept in storage, as its impure driver can't be rebuilt, read from a flop and
-  // sampled by one
+  // A comb signal with an impure driver, read from a flop and sampled by one
   import "DPI-C" function int dpiOne();
   logic [7:0] ret_c, ret_q;
   always_comb ret_c = k_q ^ 8'(8'h5a * dpiOne());
   always_ff @(posedge clk) ret_q <= ret_c;
 
-  // A cone read twice from one eval, its input moved between the reads
+  // A comb signal read twice from one eval, its input moved between the reads
   logic [7:0] mid_s, mid_c;
   assign mid_c = mid_s + 8'h1;
-  // A cone read mid-eval, its source put between evals
+  // A comb signal read mid-eval, its source put between evals
   logic [7:0] prb_s, prb_c;
   assign prb_c = prb_s ^ 8'h3c;
   import "DPI-C" context function void midEvalProbe();
@@ -465,7 +462,7 @@ module t #(
   end
   /* verilator lint_on ALWCOMBORDER */
 
-  // A cone nested past t_vpi_drivers_lazy's --comp-limit-blocks, over a function's temporaries
+  // Deeply nested comb logic over a function's temporaries
   function automatic logic [7:0] nest_f(input logic [7:0] v);
     nest_f = v + 8'd3;
   endfunction
@@ -479,8 +476,7 @@ module t #(
     end
   end
 
-  // A constant select read before its write, which a cone refuses, and a branch both constant
-  // operands of which hold under -fno-const-before-dfg, which it takes
+  // A constant select read before its write, and a branch on two constant operands
   /* verilator lint_off UNOPTFLAT */
   logic [7:0] rbs_c;
   /* verilator lint_on UNOPTFLAT */
@@ -529,8 +525,7 @@ module t #(
   always @* vbx[sel] = en;
   always_comb vbx[3:2] = d[1:0];
 
-  // A cycle between groups, not bits, merged with a function's temporaries (under -O0, as
-  // otherwise the vector is split into bits)
+  // A cycle between whole vectors, not their bits, through a function's temporaries
   /* verilator lint_off UNOPTFLAT */
   logic [1:0][3:0] mc_x;
   logic [3:0] mc_y;
@@ -539,7 +534,7 @@ module t #(
   always_comb mc_y = 4'(nest_f({4'h0, mc_x[0]}));
   assign mc_x[1] = mc_y;
 
-  // A cycle between groups calling one static function, so sharing its local
+  // A cycle between comb blocks calling one static function, so sharing its local
   function logic [7:0] sfc_f(input logic [7:0] v);
     logic [7:0] tmp;
     tmp = v ^ 8'h5;
@@ -554,7 +549,7 @@ module t #(
   assign sfc_o2 = sfc_f(sfc_src);
   assign sfc_rdy = sfc_o1[7] & sfc_o2[7];
 
-  // Its undriven element read by the design, so retained with storage
+  // Its undriven element read by the design
   logic [7:0] gmem[2];
   logic [7:0] gmem_r;
   assign gmem[1] = d;
@@ -563,13 +558,13 @@ module t #(
   // A forceable alias of a top input
   logic [7:0] frc_al  /*verilator forceable*/;
   assign frc_al = in_a;
-  // A forceable comb signal a cone reads
+  // A forceable comb signal other comb logic reads
   logic [7:0] frc_cb  /*verilator forceable*/;
   logic [7:0] frc_cn;
   assign frc_cb = d & in_a;
   assign frc_cn = frc_cb ^ 8'h01;
 
-  // A cycle between groups in two scopes
+  // A combinational cycle across two scopes
   /* verilator lint_off UNOPTFLAT */
   logic [7:0] xc_x, xc_y;
   /* verilator lint_on UNOPTFLAT */
@@ -579,13 +574,13 @@ module t #(
   );
   assign xc_x = {d[7:4], xc_y[7:4]};
 
-  // Copies of a source stored in one instance and a cone in the other
+  // Copies of a source that a flop drives in one instance and comb logic in the other
   sub_cpy cpy0 ();
   sub_cpy cpy1 ();
   always_ff @(posedge clk) cpy0.m <= d;
   assign cpy1.m = d ^ in_a;
 
-  // An interface written through its modport by a child, a cone over $random, and a module
+  // An interface written through its modport by a child, comb logic over $random, and a module
   // copying its input twice, instanced over a stored and a comb source
   logic [7:0][7:0] sh;
   logic [7:0][7:0] sw_o;
@@ -610,7 +605,8 @@ module t #(
       .po(pull_o1)
   );
 
-  // Real and string cones and copies, a formatted string, and rows a mask cannot name bits of
+  // Real and string comb signals and copies, a formatted string, and comb-driven unpacked arrays
+  // and structs
   real r_comb, rc_src, rf_mid;
   string s_fmt, sc_src, sc_alias;
   real ra_c[2];
@@ -642,8 +638,8 @@ module t #(
   assign ncs_c[sel] = en;
 `endif
 
-  // A memory assembled from its own elements, and its copy in the opposite range, which slices
-  // into one continuous assign per element, all in one block
+  // A memory assembled from its own elements, and its copy in the opposite range, all in one
+  // block
   logic [7:0] mem_chain[0:2];
   logic [7:0] mem_rev[2:0];
   always_comb begin
@@ -772,7 +768,7 @@ endmodule
 interface iface2_mi;
   logic [6:0] a;
   logic [6:0] b;
-  logic [6:0] s;  // Undriven but read in if1, which keeps its storage apart from if0's cone
+  logic [6:0] s;  // Undriven, but read in if1 and comb-driven in if0
 endinterface
 
 module child (
@@ -782,7 +778,7 @@ module child (
   /*verilator no_inline_module*/
   logic [7:0] cflop;
   always_ff @(posedge clk) cflop <= din ^ 8'h5a;
-  // Driven in part alike in both instances, so they share one comb mask
+  // Driven in part alike in both instances, so they take puts into the same bits
   logic [7:0] cpart;
   assign cpart[3:0] = din[3:0];
 endmodule
@@ -867,7 +863,7 @@ module lz_order (
   logic [7:0] f  /*verilator forceable*/;
   wire [7:0] f_comb = f ^ 8'h0f;
   always_ff @(posedge clk) f <= s + 8'd1;
-  // A top output's copy, which must not make f continuously assigned
+  // A top output's copy, which leaves f writable
   assign fo = f;
   import "DPI-C" context function void midEvalPut(string name, int v);
   // A put between two reads of the same condition reaches the second
@@ -879,7 +875,7 @@ module lz_order (
     midEvalPut("t.u_po.mcnd", 0);
     mc_b = mcnd ? 8'h03 : 8'h04;
   end
-  // Read by a DPI export, which pins its storage
+  // Read by a DPI export
   export "DPI-C" function t_mc_b;
   function int t_mc_b();
     return int'(mc_b);
@@ -920,7 +916,7 @@ module lz_save (
   end
 endmodule
 
-// An initial-only variable, its copy, a cone, and the cone's own copy and reader
+// An initial-only variable, its copy, comb logic over it, and that logic's own copy and reader
 module lz_trace;
   logic [6:0] keep;
   logic [6:0] cmb;

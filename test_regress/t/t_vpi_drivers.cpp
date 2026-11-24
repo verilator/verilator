@@ -184,8 +184,7 @@ PLI_INT32 startOfSimulation(p_cb_data) {
     in("clk", 0);
     s_ch1Reset = get("lz_save.ch1");
     if (plusArg("+restore")) {
-        // Saved mid-eval, so at an epoch ahead of this model's: restored between evals, a
-        // put's readers read as before it
+        // Saved mid-eval: restored between evals, a put's readers read as before it
         restoreModel(s_midPath);
         const uint32_t kq = get("lz_save.k_q");
         put("lz_save.k_q", kq ^ 0x80);
@@ -315,12 +314,12 @@ std::string fullName(vpiHandle handle) { return vpi_get_str(vpiFullName, handle)
 
 #ifdef T_VPI_DRIVERS_LAZY
 // Before the first eval a variable reads its reset value, all ones under
-// +verilator+rand+reset+1, whether stored or rebuilt on read; the golden lists the others
+// +verilator+rand+reset+1; the golden lists the others
 void printResetValues() {
     walk(nullptr, [](vpiHandle handle) {
         const PLI_INT32 type = vpi_get(vpiType, handle);
         if (type == vpiParameter || type == vpiRealVar || type == vpiStringVar) return;
-        // Whether a constant is folded into its net before the first eval depends on -O
+        // A constant net reads either its constant or its reset value before the first eval
         if (fullName(handle) == "t.cst_w") return;
         const std::string bin = getStr(handle, vpiBinStrVal);
         if (bin != "?" && bin.find_first_not_of('1') != std::string::npos)
@@ -426,13 +425,13 @@ void script() {
     step([] { in("clk", 1); });
     step([] { in("clk", 0); });
     step([] {
-        // Before either instance's own row refreshes it, so a refresh of the wrong one shows
+        // Each reads its own instance's flop, read before the flop's own row
         for (const char* inst : {"0", "1"}) {
             const std::string fy = std::string{"t.fy"} + inst;
             check("t.fyx" + std::string{inst} + "_c", get("t.fyx" + std::string{inst} + "_c"),
                   0xff & ((get(fy + ".r") + 1) ^ 0x55));
         }
-        // Each cone reads storage only a compiler temporary holds
+        // Comb logic over a port expression and over a function's temporaries
         check("t.px_o", get("t.px_o"), 0xff & ~(0x21 ^ 0x40));
         check("t.u_px.i", get("t.u_px.i"), 0x21 ^ 0x40);
         check("t.nest_c", get("t.nest_c"), (0x21 + 3) ^ (0x40 + 3));
@@ -465,7 +464,7 @@ void script() {
     step([] { in("clk", 0); });
     step([] {
         check("t.ff_q edge", get("t.ff_q"), 0x33);
-        // The put is in the storage the logic reads
+        // The logic reads the put
         check("t.n_ff", get("t.n_ff"), 0x5a);
         check("t.n_mix", get("t.n_mix"), (s_mix & 1) | 0xa4);
         check("t.n_if", get("t.n_if"), 0x5a);
@@ -529,7 +528,7 @@ void script() {
         const uint32_t st = get("t.st");
         accept("t.st", (st & 1) | (0x05 << 1));
         merge("t.st", get("t.st") ^ 1, 0x01);
-        // An inertial put is merged when it lands, after this step's eval
+        // An inertial put lands after this step's eval
         s_st = get("t.st");
         accept("t.st", s_st ^ 0xff, vpiInertialDelay);
     });
@@ -542,7 +541,7 @@ void script() {
         landInertial();
         check("t.st.cnt inertial", get("t.st.cnt"), 0x09);
 #ifdef T_VPI_DRIVERS_LAZY
-        // Rebuilt from the landed put before the eval
+        // Reads the landed put before the eval
         check("t.st.busy", get("t.st.busy"), 1);
 #endif
         // Under --vpi-lazy, a packed member takes its parent's mask
@@ -601,7 +600,7 @@ void script() {
         check("t.pmem[1] array kept", get("t.pmem[1]"), pmem1);
         putArray("t.vidx", 0, one, 1, true);
 #endif
-        // A retained memory's array put reaches a cone reading it only at the next eval
+        // An array put into a memory reaches its comb readers only at the next eval
         s_g0 = get("t.gmem[0]");
         const PLI_INT32 flipped[1] = {static_cast<PLI_INT32>(s_g0 ^ 0xff)};
         putArray("t.gmem", 0, flipped, 1, false);
@@ -613,7 +612,7 @@ void script() {
         const uint32_t d = get(port("d"));
         check("t.ct_c", get("t.ct_c"), d);
         check("t.mc_x", get("t.mc_x"), (((d + 3) & 0xf) << 4) | (d & 0xf));
-        // A refused put into a retained comb signal leaves the flop sampling it its driven value
+        // A refused put into a comb signal leaves the flop sampling it its driven value
         s_driven = get("t.ret_c");
         reject("t.ret_c", s_driven ^ 0x5b);
         in("clk", 1);
@@ -634,7 +633,7 @@ void script() {
     });
     step([] { in("clk", 0); });
     step([] {
-        // A packed member reads through its reconstructed parent and takes its write policy
+        // A packed member reads as its parent and takes its write policy
         check("t.hl_c.hi", get("t.hl_c.hi"), 0x3);
         reject("t.hl_c.hi", get("t.hl_c.hi") ^ 0x5);
         accept("t.st.cnt", get("t.st.cnt") ^ 0x2a);
@@ -711,14 +710,14 @@ void script() {
         check("t.u_po.mc_b", get("t.u_po.mc_b"), 0x04);
         // A parameter is read-only
         reject("t.INTF_QTY", 5);
-        // An element of a rebuilt memory
+        // An element of a comb-driven memory
         const uint32_t d = get(port("d"));
         const uint32_t m1 = ((d >> 4) | ((((d >> 4) ^ get(port("in_a"))) & 0xf) << 4)) & 0xff;
         check("t.mem_chain[2]", get(vpi_handle_by_index(find("t.mem_chain"), 2)), (m1 + 1) & 0xff);
-        // A member of a rebuilt memory's element
+        // A member of a comb-driven memory's element
         check("t.hla_c[1].lo", get("t.hla_c[1].lo"), ~d & 0xf);
         reject("t.hla_c[1].lo", get("t.hla_c[1].lo") ^ 0x5);
-        // Members of an unpacked struct, one rebuilt and one stored at its own offset
+        // Members of an unpacked struct, one comb-driven and one holding a put
         reject("t.dus.b", get("t.dus.b") ^ 0x5);
         const uint32_t fusA = get("t.fus.a");
         accept("t.fus.b", 0xa5);
@@ -749,7 +748,7 @@ PLI_INT32 startOfSimulation(p_cb_data) {
 }
 }  // namespace
 
-// An impure 1, which a cone can't be rebuilt over
+// An impure 1
 extern "C" int dpiOne() { return 1; }
 
 // Called from an initial block: each read is from the same eval, after its input moved
@@ -761,7 +760,7 @@ extern "C" void midEvalRead(int src) {
 #endif
 }
 
-// Called at each rising edge: the cone reads its source as the eval sees it
+// Called at each rising edge: comb logic reads its source as the eval sees it
 extern "C" void midEvalProbe() {
     ++s_probes;
 #ifdef T_VPI_DRIVERS_LAZY
