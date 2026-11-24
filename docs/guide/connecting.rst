@@ -488,13 +488,12 @@ with ``vpi_put_value``, and behave as under :vlopt:`--public-flat-rw`:
 flops, latches, top-level inputs, and initial-only or undriven variables.
 Signals the design keeps recomputing are read-only.
 
-Precisely, a bit is read-only if a combinational process writes it: a
-continuous assignment, ``always_comb``, or an ``always`` with only level
-sensitivity, such as ``@*``. A submodule input port counts as such, as it
-follows its connection. Latch bits are the exception: those assigned in
-``always_latch``, and those a combinational ``always`` leaves unassigned on
-some branch of its ``if`` or ``case`` statements. A latch written inside a
-loop or through a variable index is treated as combinational.
+Precisely, a bit is read-only if a continuous assignment, ``always_comb``,
+or an ``always`` with only level sensitivity, such as ``@*``, assigns it, and
+so is a submodule input port, which follows its connection. Latch bits remain
+writable: those assigned in ``always_latch``, and those a combinational
+``always`` leaves unassigned on some branch of its ``if`` or ``case``
+statements, unless assigned inside a loop or through a variable index.
 ``public_flat_rw`` and ``forceable`` make any signal writable.
 
 A put into a read-only signal fails with an error through
