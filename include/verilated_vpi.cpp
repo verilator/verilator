@@ -4255,17 +4255,7 @@ static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSig
     return nullptr;
 }
 
-// A handle whose storage is a caller's buffer, so a put into it reaches no model state
-class VerilatedVpioVarScratch final : public VerilatedVpioVar {
-public:
-    VerilatedVpioVarScratch(const VerilatedVpioVar* vop, void* datap)
-        : VerilatedVpioVar{vop} {
-        m_varDatap = datap;
-    }
-};
-
-// A trial put writes only a scratch buffer: leaves the put state as it found it, and keeps the
-// buffer out of the undo log
+// Leaves the put state as it found it, so a put is noted only once known to change a bit
 class VlLazyTrialPut final {
     VerilatedLazyState* const m_lazyp;  // Model state the trial put must leave unchanged
     const bool m_evalWas = VerilatedVpiImp::evalNeeded();  // Restored on destruction
@@ -4284,35 +4274,45 @@ public:
     }
 };
 
-// A --vpi-lazy put keeps the masked bits, so is made on a copy of the element, merged, then
-// stored. An inertial put is merged when it lands.
+// A --vpi-lazy put keeps the masked bits: 'put' writes the 'nElems' elements at 'putp', which
+// then take back their masked bits. True if that changed any bit.
+template <typename T_Put>
+static bool vl_vpi_lazy_comb_put(const VerilatedVpioVar* vop, uint8_t* putp, size_t nElems,
+                                 T_Put put) {
+    VerilatedSyms* const symsp = vop->scopep()->symsp();
+    const VerilatedVar* const varp = vop->storageVarp();
+    const size_t entSize = varp->entSize();
+    const size_t bytes = nElems * entSize;
+    std::string before(reinterpret_cast<char*>(putp), bytes);
+    {
+        const VlLazyTrialPut trialPut{symsp->lazyp()};
+        put();
+    }
+    const uint8_t* const beforep = reinterpret_cast<const uint8_t*>(before.data());
+    const uint8_t* const storep = static_cast<uint8_t*>(VerilatedVpioVar::storagep(varp));
+    vl_vpi_lazy_comb_merge(varp, symsp, beforep, putp, (putp - storep) / entSize, nElems);
+    if (std::memcmp(putp, beforep, bytes) == 0) return false;
+    vl_vpi_note_write(vop);
+    // No design read reaches a shadow's undriven bits, and an undo would revert its rebuild
+    std::vector<VlLazyUndo>* const logp
+        = varp->isLazyRemat() ? nullptr : vl_vpi_undo_logp(symsp, putp, bytes, false);
+    if (logp) logp->push_back({putp, false, std::move(before)});
+    return true;
+}
+
+// A failed put writes nothing, so changes nothing. An inertial put is merged when it lands.
 static vpiHandle vl_vpi_put_value_lazy_comb(vpiHandle object, const VerilatedVpioVar* vop,
                                             p_vpi_value valuep, PLI_INT32 flags) {
     const PLI_INT32 mode = flags & 0xfff;
     // Not forceable, so a force or release is refused as it stands
     if (mode == vpiForceFlag || mode == vpiReleaseFlag || mode == vpiInertialDelay)
         return vpi_put_value(object, vop, valuep, flags);
-    VerilatedSyms* const symsp = vop->scopep()->symsp();
-    const VerilatedVar* const varp = vop->storageVarp();
+    vpiHandle resultp = nullptr;
     // Rebuilt first, so the masked bits merged back are current
-    uint8_t* const elemp = static_cast<uint8_t*>(vop->readDatap());
-    const uint32_t entSize = varp->entSize();
-    std::vector<uint8_t> scratch(elemp, elemp + entSize);
-    VerilatedVpioVarScratch trial{vop, scratch.data()};
-    {
-        const VlLazyTrialPut trialPut{symsp->lazyp()};
-        if (!vpi_put_value(trial.castVpiHandle(), &trial, valuep, vpiNoDelay)) return nullptr;
-    }
-    const size_t elem
-        = (elemp - static_cast<const uint8_t*>(VerilatedVpioVar::storagep(varp))) / entSize;
-    vl_vpi_lazy_comb_merge(varp, symsp, elemp, scratch.data(), elem, 1);
-    if (std::memcmp(elemp, scratch.data(), entSize) == 0) return object;
-    vl_vpi_note_write(vop);
-    VerilatedVpiImp::evalNeeded(true);
-    // No design read reaches a shadow's undriven bits, and an undo would revert its rebuild
-    if (!varp->isLazyRemat()) vl_vpi_undo_log(vop);
-    std::memcpy(elemp, scratch.data(), entSize);
-    return object;
+    if (vl_vpi_lazy_comb_put(vop, static_cast<uint8_t*>(vop->readDatap()), 1,
+                             [&] { resultp = vpi_put_value(object, vop, valuep, vpiNoDelay); }))
+        VerilatedVpiImp::evalNeeded(true);
+    return resultp;
 }
 
 vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_p*/,
@@ -4953,7 +4953,6 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         return;
     }
     if (num == 0) return;
-    VerilatedSyms* const symsp = vop->scopep()->symsp();
     // The elements written, as one span; a put that wraps past an end spans the whole array
     const bool leftIsLow = vop->rangep()->left() == lowRange;
     const int first = leftIsLow ? index_p[0] - lowRange : highRange - index_p[0];
@@ -4963,26 +4962,15 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         lo = 0;
         nElems = size;
     }
-    const size_t entSize = varp->entSize();
-    const size_t bytes = nElems * entSize;
     // Rebuilt first, so the masked bits merged back are current
-    uint8_t* const putp = static_cast<uint8_t*>(vop->readDatap()) + lo * entSize;
+    uint8_t* const putp = static_cast<uint8_t*>(vop->readDatap()) + lo * varp->entSize();
     if (VL_UNLIKELY(varp->isLazyComb())) {
-        // A --vpi-lazy put keeps the masked bits; the undo log needs the bytes from before it
-        std::string before(reinterpret_cast<char*>(putp), bytes);
-        vl_put_value_array(object, arrayvalue_p, index_p, num);
-        const uint8_t* const beforep = reinterpret_cast<const uint8_t*>(before.data());
-        const uint8_t* const storep = static_cast<uint8_t*>(VerilatedVpioVar::storagep(varp));
-        vl_vpi_lazy_comb_merge(varp, symsp, beforep, putp, (putp - storep) / entSize, nElems);
-        if (std::memcmp(putp, beforep, bytes) == 0) return;
-        // No design read reaches a shadow's undriven bits, and an undo would revert its rebuild
-        std::vector<VlLazyUndo>* const logp
-            = varp->isLazyRemat() ? nullptr : vl_vpi_undo_logp(symsp, putp, bytes, false);
-        if (logp) logp->push_back({putp, false, std::move(before)});
-    } else {
-        vl_vpi_undo_log(symsp, putp, bytes, false);
-        vl_put_value_array(object, arrayvalue_p, index_p, num);
+        vl_vpi_lazy_comb_put(vop, putp, nElems,
+                             [&] { vl_put_value_array(object, arrayvalue_p, index_p, num); });
+        return;
     }
+    vl_vpi_undo_log(vop->scopep()->symsp(), putp, nElems * varp->entSize(), false);
+    vl_put_value_array(object, arrayvalue_p, index_p, num);
     vl_vpi_note_write(vop);
 }
 
