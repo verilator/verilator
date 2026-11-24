@@ -1646,8 +1646,10 @@ class RandomizeVisitor final : public VNVisitor {
             tempDTypep = tempDTypep->virtRefDTypep();
         }
 
-        AstForeachHeader* const headerp
-            = new AstForeachHeader{fl, exprp->cloneTree(false), randLoopIndxp};
+        // Iterating only reads the array, the elements are written through tempElementp
+        AstNodeExpr* const arrayp = exprp->cloneTree(false);
+        arrayp->foreach([](AstVarRef* refp) { refp->access(VAccess::READ); });
+        AstForeachHeader* const headerp = new AstForeachHeader{fl, arrayp, randLoopIndxp};
         AstNodeStmt* const randStmtsp = newRandStmtsp(fl, tempElementp, nullptr, outputVarp);
         // TODO: we should just not clone in 'newRandStmtsp' if not necessary
         if (!tempElementp->backp()) VL_DO_DANGLING(pushDeletep(tempElementp), tempElementp);
