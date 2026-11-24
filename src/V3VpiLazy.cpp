@@ -14,133 +14,55 @@
 //
 //*************************************************************************
 //
-// V3VpiLazy implements --vpi-lazy: VPI access to combinational signals the
-// optimizer eliminates, at no cost to the hot eval path. LinkParse marks every
-// VPI-accessible non-parameter variable isSigVpiLazyCandidate(), which unlike
-// --public-flat-rw does not block optimization (parameters become read-only
-// public); this pass then gives each signal one of three outcomes:
+// V3VpiLazy implements --vpi-lazy: VPI access to signals the optimizer would
+// eliminate, at no cost to the eval path. LinkParse marks every VPI-accessible
+// variable isSigVpiLazyCandidate(), which unlike --public-flat-rw does not block
+// optimization. prepare() runs before DFG and V3Gate and gives each candidate
+// one of three roles:
 //
-//   reconstructed - no storage, recomputed on demand by a cold function
-//   copied        - no eval-path storage; its own cold shadow refreshed by memcpy on read
-//   retained      - ordinary storage, as --public-flat-rw would give it
+//   reconstructed - no storage; a cold function recomputes it on read
+//   copied        - a cold shadow of its own, refreshed by memcpy from its source
+//   retained      - ordinary storage, as under --public-flat-rw
 //
-// Anything the first two cannot claim is retained, so the VPI-visible set is
+// Whatever the first two do not claim is retained, so the VPI-visible set is
 // never smaller than --public-flat-rw's (the completeness floor).
 //
 // UNIT OF RECONSTRUCTION
 //
-// Post-V3Active every combinational driver is an AstAlways under a combo
-// AstActive (a continuous assign being an AstAlways{CONT_ASSIGN} wrapping one
-// AstAssignW), so the unit is one such block: a "group". Continuous assigns
-// writing disjoint constant ranges or constant-index elements of one variable
-// merge into one group, assembled in its shadow. A group's targets are the
-// VPI-visible variables it solely drives, its other written variables temp
-// shadows. Its statements are cloned into a cold loose function with every
-// written variable redirected to a "shadow", leaving the originals deletable.
-// Operands belonging to another group are rewired to that group's shadows,
-// keeping reconstruction O(N); other "boundary" operands keep their storage so
-// the cone has something to read: retained if VPI-visible, else pinned with no
-// row, as a compiler temporary has no RTL name.
+// A "group" is one combinational block, or continuous assigns writing disjoint
+// constant parts of one variable. Its targets are the candidates it solely
+// drives, its other written variables temps. Its body is cloned into a cold
+// function writing "shadows", so the originals may be deleted; reads of another
+// group's targets read that group's shadows, and any other operand keeps its
+// storage. A group is claimed only if one ordered walk proves it pure and every
+// read of its variables preceded by a write on every path; a dependency cycle
+// merges into one group and is walked again. Otherwise its targets are
+// retained, and Bail records why for --stats. A group whose body is `t = u;`
+// becomes a copy row if u is stored, or shares u's shadow if u is another
+// cone's target: a copy keeps its own shadow so that, after a put into u, it
+// still reads u's last-eval value until the next eval, as --public-flat-rw does.
 //
-// A group is claimed only if one ordered walk over its statements proves that
-// every read of a group variable's bits follows a write of them on every path,
-// that every statement is pure and of a modeled kind, and that every target
-// is written on all paths. Groups in a dependency cycle merge into one, its
-// blocks in encounter order, and are claimed if that walk proves the merged
-// group. Otherwise its targets are retained, and Bail records why for --stats.
-//
-// PHASES, in the fixed order run() lists
-//
-//   classifyCombDriven                       the bits a VPI put may not change
-//   findHelperCandidates                     vars a copy needs promoted to a target
-//   formGroups, analyzeGroups                form, then prove or bail
-//   anchorConsumersOfAnchored                anchor shared cones reading an anchored one
-//   buildDependencyGraph, splitCyclesRetainCores, topoOrderSurvivors
-//                                            retain cycle cores, order the rest
-//   copyStoredSources                        copy rows: the source holds storage
-//   foldTrivialCopyGroups                    fold rows: the source is another cone
-//   emitReconstructions                      emit the funcs and shadows
-//   retainCompletenessFloor                  retain what is left
-//
-// COPY AND FOLD
-//
-// A group whose whole body is `target = u;` needs no cone, costing no function
-// and no epoch slot. copyStoredSources takes a u that holds storage: the row
-// keeps a shadow of its own, refreshed by memcpy from u. foldTrivialCopyGroups
-// takes a u that is another live cone's target: the row is that cone's shadow,
-// its read that cone's, and it has no member of its own (isLazyShadowAlias).
-//
-// A copy of stored state keeps its own shadow, as each alias has storage of
-// its own under --public-flat-rw: after a put into u and before the next eval,
-// the copy must still read u's last-eval value, which the undo log swaps in
-// around its memcpy. A fold's source is itself rebuilt under the undo log, and
-// no put reaches it, so sharing its shadow reads exactly what a copy would.
+// One function serves every instance of a module, so it reads variables, not
+// instance-specific drivers (AstCFunc::vpiLazyReconstruct). A group writing
+// outside its own scope, and a shared group reading such a one, is anchored
+// instead: one function per instance. A variable's instances may then differ in
+// role, and the claimed ones move to an unflagged twin (splitKeptInstances).
 //
 // WRITABILITY
 //
 // A put is accepted where a --public-flat-rw put would persist: into bits that
-// hold their value without a driver, as flops, latches, undriven or
-// initial-only storage and top-level inputs do. classifyCombDriven unions per
-// instance the bits each combinational block writes: a constant select or
-// element names its own, any other write the whole variable. Latch bits
-// contribute nothing: all of an always_latch's, else those a walk of the
-// block's if-tree proves unassigned on some path, per bit, as full-width and
-// constant-select assigns define them. The walk reads only control flow, and
-// folds constant conditions itself, so how V3Split, V3Case or V3Const reshaped
-// the block does not change its answer. A target written under a loop or jump,
-// or through any other lvalue, is not proven, so each of its writes counts as
-// combinational. A variable driven whole is read-only; one driven in part
-// keeps its storage and a mask of the bits a put may not change. Assembled
-// from constant-select assigns, and read in the design and in cones only in
-// the bits they drive, it is reconstructed instead: its shadow holds the
-// undriven bits, which the cone never writes, and takes the mask. Instances of
-// one AstVar, as a non-inlined module's or an interface's are, can differ,
-// driven from their parents: the variable is then PARTIAL, keeping its
-// storage, and each instance's row takes its own class, so writability follows
-// the RTL and not inlining. Explicit public_flat_rw and forceable signals keep
-// --public-flat-rw semantics. classifyComb() runs the same classification after
-// V3Active, ahead of V3Decompose and V3BitBlast, which split a candidate only if
-// it is driven whole.
+// hold their value without a driver. CombClassifier unions per instance the
+// bits combinational blocks drive, latch bits excluded; classifyComb() runs it
+// after V3Active for V3Decompose and V3BitBlast, and prepare() again. A
+// variable driven whole is read-only; one driven in part keeps a mask of the
+// bits a put may not change. Instances that differ make the variable PARTIAL,
+// and each row takes its own class.
 //
-// RUNTIME
+// At run time a read compares its group's stamp against the model epoch, which
+// eval() bumps, so a cone is rebuilt at most once per eval step. A put logs the
+// bytes it overwrites, swapped back in around a rebuild until the next eval.
 //
-// A reconstructed row's datap is a VerilatedVarLazyDatap {refreshp, selfp,
-// stamp, offsets}. A read of a cone row calls refreshp, which compares the
-// group's stamp in its module's epoch array against vlSymsp->__Vm_lazy.epoch,
-// recomputes the cone if stale, and restamps; a copy row compares the
-// descriptor's own stamp instead, and memcpys if stale. eval() bumps the epoch,
-// so a cone is recomputed at most once per eval step however many of its
-// signals are read. The epoch is odd during eval(), and a read then moves it
-// first, so a read from DPI or a callback mid-eval never trusts a memo.
-//
-// Reconstructed, copied and wholly combinational rows are read-only, and a put
-// into a masked row keeps the masked bits, changing nothing if it changes no
-// other bit. A put logs the bytes it overwrites, which a read swaps back in
-// around a reconstruction until the next eval, so a put reaches a rebuilt
-// dependant when it would reach a --public-flat-rw one. A put into a writable
-// retained signal also sets vlSymsp->__Vm_lazy.written, so the next eval runs
-// lazySettle(), the stl region to convergence, to propagate it.
-//
-// A lazy read is thus model code that writes model state - the shadow and the
-// memo stamps - from whatever thread called VPI, and those stamps are plain
-// words. A read racing eval() is therefore a user error, as it is under --vpi
-// and --public-flat-rw; VPI's answer, a synch callback, is dispatched on the
-// eval thread, and this pass emits nothing thread-aware.
-//
-// One function serves every instance of a module, so it must read variables
-// rather than instance-specific driver expressions; AstCFunc::vpiLazyReconstruct
-// tells V3Gate and V3Dfg to leave those reads alone. A group writing outside the
-// scope that authored it is anchored in the written scope if that has one
-// instance, else in the top scope: one function per instance, addressing every
-// variable absolute, which a row in another module reaches through a stub. So is
-// a shared group reading an anchored one, as a shared function cannot call one
-// instance's. An anchored group's instance may thus be claimed while another of
-// its variable is retained: the variable keeps its role and storage for the
-// retained instances, and the claimed ones move to an unflagged twin the
-// optimizer is free to eliminate, so storage is kept per instance.
-//
-// Determinism: pointer-keyed maps are never iterated where order reaches
-// output; iteration always walks a companion vector in tree-encounter order.
+// Determinism: pointer-keyed maps are never iterated where order reaches output.
 //
 //*************************************************************************
 
