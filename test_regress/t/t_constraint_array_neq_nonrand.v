@@ -456,8 +456,7 @@ class frame_randmode_off_randidx;
   endfunction
 endclass
 
-// A frozen row reached through a queue, which the frozen table cannot follow:
-// randomize() fails instead of solving against the index's pre-solve row.
+// Frozen queue rows the frozen table cannot follow: randomize() fails.
 class frame_randmode_off_queue_rows;
   rand bit [7:0] frame[2];
   rand bit [7:0] target[$][2];
@@ -469,8 +468,42 @@ class frame_randmode_off_queue_rows;
   endfunction
 endclass
 
-// The same frozen row compare inside a with-clause in the class's own method,
-// spelled with and without this.
+// Same, under an untaken branch: the constraint still solves.
+class frame_randmode_off_queue_untaken;
+  rand bit [7:0] x;
+  rand bit [7:0] target[$][2];
+  rand int idx;
+  bit en;
+  constraint c { idx == 1; if (en) x == target[idx][1]; else x == 8'd9; }
+  function new();
+    target = '{'{8'h12, 8'h34}, '{8'hab, 8'hcd}};
+    idx = 0;
+  endfunction
+endclass
+
+// Same, under nested branches.
+class frame_randmode_off_queue_nested;
+  rand bit [7:0] x;
+  rand bit [7:0] target[$][2];
+  rand int idx;
+  bit a;
+  bit b;
+  constraint c {
+    idx == 1;
+    if (a) {
+      if (b) x == target[idx][1];
+      else x == 8'd3;
+    } else {
+      x == 8'd9;
+    }
+  }
+  function new();
+    target = '{'{8'h12, 8'h34}, '{8'hab, 8'hcd}};
+    idx = 0;
+  endfunction
+endclass
+
+// A frozen row compare in a with-clause of the class's own method.
 class frame_randmode_off_method;
   rand bit [7:0] frame[2];
   rand bit [7:0] target[2][2];
@@ -532,8 +565,7 @@ class frame_arg_excluded_index;
 endclass
 
 // An out-of-range index wraps the same way in both mode branches, so it
-// reads row 1 over a [0:1] table when the index solves to 5 (the wrap itself
-// is #9038).
+// reads row 1 over a [0:1] table when the index solves to 5 (#9038).
 class frame_frozen_oob_wrap;
   rand bit [7:0] frame[2];
   rand bit [7:0] target[2][2];
@@ -661,6 +693,8 @@ module t;
     frame_randmode_off_randidx rmodeidx_toggled_obj;
     frame_randmode_off_randidx_lhs rmodeidx_lhs_obj;
     frame_randmode_off_queue_rows rmodeq_obj;
+    frame_randmode_off_queue_untaken rmodequ_obj;
+    frame_randmode_off_queue_nested rmodeqn_obj;
     frame_randmode_off_method rmodem_obj;
     frame_randmode_off_base rmodeoff_obj;
     rmode_off_base rmodeoff_bobj;
@@ -1032,6 +1066,28 @@ module t;
     rmodeq_obj = new;
     rmodeq_obj.target.rand_mode(0);
     randomize_result = rmodeq_obj.randomize();
+    `checkd(randomize_result, 0);
+
+    rmodequ_obj = new;
+    rmodequ_obj.target.rand_mode(0);
+    randomize_result = rmodequ_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(rmodequ_obj.x, 8'd9);
+
+    rmodeqn_obj = new;
+    rmodeqn_obj.target.rand_mode(0);
+    rmodeqn_obj.a = 1;
+    rmodeqn_obj.b = 0;
+    randomize_result = rmodeqn_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(rmodeqn_obj.x, 8'd3);
+    rmodeqn_obj.a = 0;
+    randomize_result = rmodeqn_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(rmodeqn_obj.x, 8'd9);
+    rmodeqn_obj.a = 1;
+    rmodeqn_obj.b = 1;
+    randomize_result = rmodeqn_obj.randomize();
     `checkd(randomize_result, 0);
 
     rmodem_obj = new;

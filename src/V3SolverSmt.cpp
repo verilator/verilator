@@ -162,8 +162,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     bool m_structSel = false;  // Marks when inside structSel
                                // (used to format "%s.%s" for struct arrays and nested structs)
     bool m_deferRandModeHoist = false;  // Wait for the complete struct member path
-    // Mode gates of frozen selects whose random index was read at its pre-solve value
-    std::vector<AstNodeExpr*> m_frozenStaleModesp;
+    int m_conditionalDepth = 0;  // Inside branches the solver decides
+    std::vector<AstNodeExpr*> m_stateGuardsp;  // Run-time conditions of enclosing branches
+    std::vector<std::pair<AstNodeExpr*, AstNodeExpr*>> m_frozenStaleReadsp;  // Mode gate, guard
     std::set<std::string>& m_writtenVars;  // Track which variable paths have write_var generated
                                            // (shared across all constraints)
     std::set<std::string> m_inlineWrittenVars;  // Per-instance tracking for inline constraints
@@ -1955,6 +1956,27 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
     }
+    void visit(AstLogIf* nodep) override {
+        VL_RESTORER(m_conditionalDepth);
+        const bool stateCond = !nodep->lhsp()->user1();
+        if (stateCond) {
+            m_stateGuardsp.push_back(nodep->lhsp()->cloneTree(false));
+        } else {
+            ++m_conditionalDepth;
+        }
+        visit(static_cast<AstNodeBiop*>(nodep));
+        if (stateCond) popStateGuard();
+    }
+    void visit(AstLogOr* nodep) override {
+        VL_RESTORER(m_conditionalDepth);
+        ++m_conditionalDepth;
+        visit(static_cast<AstNodeBiop*>(nodep));
+    }
+    void visit(AstLogNot* nodep) override {
+        VL_RESTORER(m_conditionalDepth);
+        ++m_conditionalDepth;
+        visit(static_cast<AstNodeUniop*>(nodep));
+    }
     void visit(AstNodeUniop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp());
@@ -1965,10 +1987,14 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstCond* nodep) override {
         if (editFormat(nodep)) return;
+        VL_RESTORER(m_conditionalDepth);
         if (!nodep->condp()->user1()) {
             // Do not burden the solver if cond computable: (cond ? "then" : "else")
+            m_stateGuardsp.push_back(nodep->condp()->cloneTree(false));
             iterate(nodep->thenp());
+            negateStateGuard(nodep->fileline());
             iterate(nodep->elsep());
+            popStateGuard();
             UASSERT_OBJ(
                 nodep->thenp()->isString() && nodep->elsep()->isString(), nodep,
                 "Branches of conditional expression in constraint not converted to strings");
@@ -1976,6 +2002,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             return;
         }
         // Fall back to "(ite cond then else)"
+        ++m_conditionalDepth;
         visit(static_cast<AstNodeTriop*>(nodep));
     }
     void visit(AstReplicate* nodep) override {
@@ -2223,17 +2250,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         });
         return rand;
     }
-    // Also a rand member captured from a method's with-clause as __Vthis.member.
-    static bool namesRandVar(AstNode* nodep) {
-        return nodep->exists([](const AstNodeVarRef* vrefp) {
-            return vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg();
-        }) || nodep->exists([](const AstMemberRef* mrefp) {
-            const AstNodeVarRef* const fromp = VN_CAST(mrefp->fromp(), NodeVarRef);
-            return fromp && fromp->varp()->name() == "__Vthis" && mrefp->varp()->isRand();
-        });
-    }
-    // Levels the frozen table keeps symbolic (tableBuilt) do not count.
-    static bool chainReadsStaleIndex(AstNodeExpr* origp, bool tableBuilt) {
+    static bool chainHasRandIndex(AstNodeExpr* origp) {
         for (AstNodeExpr* curp = origp; curp;) {
             AstNodeExpr* idxp = nullptr;
             AstNodeExpr* nextp = nullptr;
@@ -2248,10 +2265,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             } else if (AstMemberRef* const mselp = VN_CAST(curp, MemberRef)) {
                 nextp = mselp->fromp();
             }
-            if (idxp && namesRandVar(idxp)
-                && !(tableBuilt && VN_IS(curp, ArraySel) && selectIndexIsRand(idxp))) {
-                return true;
-            }
+            if (idxp && selectIndexIsRand(idxp)) return true;
             curp = nextp;
         }
         return false;
@@ -2388,8 +2402,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         if (!modeCondp) return false;
         FileLine* const fl = newp->fileline();
-        // Past the bound, or for a chain the table cannot follow, the mode-off branch reads
-        // the current value (see m_frozenStaleModesp).
+        // Past the bound the mode-off branch reads the current value (see m_frozenStaleReadsp).
         static constexpr int MAX_FROZEN_INDEX_CASES = 16384;
         AstNodeExpr* elsep = nullptr;
         bool staleIndex = false;
@@ -2404,18 +2417,29 @@ class ConstraintExprVisitor final : public VNVisitor {
                     cases *= lvl.elements;
                 }
                 if (hasSymbolic && cases <= MAX_FROZEN_INDEX_CASES) {
-                    staleIndex = chainReadsStaleIndex(origp, true);
                     elsep = frozenSelectElsep(fl, origp, levels, {}, 0, origp->width());
                     VL_DO_DANGLING(origp->deleteTree(), origp);
                 }
             }
         }
         if (!elsep) {
-            staleIndex = chainReadsStaleIndex(origp, false);
+            staleIndex = chainHasRandIndex(origp) && !m_conditionalDepth;
             elsep = getConstFormat(origp);
         }
         AstNodeExpr* const modep = modeCondp->condp()->unlinkFrBack();
-        if (staleIndex) m_frozenStaleModesp.push_back(modep->cloneTree(false));
+        if (staleIndex) {
+            AstNodeExpr* guardp = nullptr;
+            for (AstNodeExpr* const condp : m_stateGuardsp) {
+                AstNodeExpr* const clonep = condp->cloneTree(false);
+                if (guardp) {
+                    guardp = new AstLogAnd{fl, guardp, clonep};
+                    guardp->dtypeSetBit();
+                } else {
+                    guardp = clonep;
+                }
+            }
+            m_frozenStaleReadsp.emplace_back(modep->cloneTree(false), guardp);
+        }
         AstNodeExpr* activep = modeCondp->thenp()->unlinkFrBack();
         // Rebuild the select chain text around the SMT name, innermost first
         for (auto it = frames.rbegin(); it != frames.rend(); ++it) {
@@ -2559,8 +2583,21 @@ class ConstraintExprVisitor final : public VNVisitor {
                     "Constraint names of an earlier fold were not taken over");
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
-        AstNodeExpr* const thenp = editSingle(fl, nodep->thensp());
-        AstNodeExpr* const elsep = editSingle(fl, nodep->elsesp());
+        AstNodeExpr* thenp;
+        AstNodeExpr* elsep;
+        {
+            VL_RESTORER(m_conditionalDepth);
+            const bool stateCond = !nodep->condp()->user1();
+            if (stateCond) {
+                m_stateGuardsp.push_back(nodep->condp()->cloneTree(false));
+            } else {
+                ++m_conditionalDepth;
+            }
+            thenp = editSingle(fl, nodep->thensp());
+            if (stateCond) negateStateGuard(fl);
+            elsep = editSingle(fl, nodep->elsesp());
+            if (stateCond) popStateGuard();
+        }
         if (thenp && elsep) {
             newp = new AstCond{fl, nodep->condp()->unlinkFrBack(), thenp, elsep};
         } else if (thenp) {
@@ -2890,21 +2927,37 @@ class ConstraintExprVisitor final : public VNVisitor {
             = nodep->isSoft() ? VCMethod::RANDOMIZER_SOFT : VCMethod::RANDOMIZER_HARD;
         AstNodeStmt* const stmtp
             = newConstraintCallp(nodep, method, nodep->exprp()->unlinkFrBack(), vars);
-        // A random index read at its pre-solve value has no right answer while its array is
-        // frozen: fail randomize() then, instead of solving against the wrong element.
+        // A frozen read at a stale random index has no right answer: fail randomize() instead.
         FileLine* const fl = nodep->fileline();
-        for (AstNodeExpr* const modep : m_frozenStaleModesp) {
-            AstSFormatF* const onp = getConstFormat(new AstConst{fl, AstConst::BitTrue{}});
-            onp->user1(true);
-            AstSFormatF* const offp = getConstFormat(new AstConst{fl, AstConst::BitFalse{}});
-            offp->user1(true);
-            AstCond* const okp = new AstCond{fl, modep, onp, offp};
+        for (const auto& read : m_frozenStaleReadsp) {
+            AstNodeExpr* okp
+                = new AstCond{fl, read.first, newBitFormatp(fl, true), newBitFormatp(fl, false)};
             okp->user1(true);
+            if (read.second) {
+                okp = new AstCond{fl, read.second, okp, newBitFormatp(fl, true)};
+                okp->user1(true);
+            }
             stmtp->addNextHere(newConstraintCallp(nodep, VCMethod::RANDOMIZER_HARD, okp, {}));
         }
-        m_frozenStaleModesp.clear();
+        m_frozenStaleReadsp.clear();
         nodep->replaceWith(stmtp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+    AstSFormatF* newBitFormatp(FileLine* fl, bool value) {
+        AstSFormatF* const formatp
+            = getConstFormat(value ? new AstConst{fl, AstConst::BitTrue{}}
+                                   : new AstConst{fl, AstConst::BitFalse{}});
+        formatp->user1(true);
+        return formatp;
+    }
+    void negateStateGuard(FileLine* fl) {
+        AstNodeExpr* const notp = new AstLogNot{fl, m_stateGuardsp.back()};
+        notp->dtypeSetBit();
+        m_stateGuardsp.back() = notp;
+    }
+    void popStateGuard() {
+        VL_DO_DANGLING(m_stateGuardsp.back()->deleteTree(), m_stateGuardsp.back());
+        m_stateGuardsp.pop_back();
     }
     AstNodeStmt* newConstraintCallp(AstConstraintExpr* nodep, VCMethod method, AstNodeExpr* exprp,
                                     const std::set<std::string>& vars) {

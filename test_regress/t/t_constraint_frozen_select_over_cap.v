@@ -11,8 +11,7 @@
 
 // A randomized index into a table larger than the frozen-select expansion
 // limit still solves while the table's mode is on, even though rand_mode()
-// is called on it; while it is frozen there is no right answer to give, so
-// randomize() fails instead of solving against the index's pre-solve row.
+// is called on it, and fails while it is frozen.
 class over_cap_table;
   rand bit [7:0] frame;
   rand bit [7:0] target[20000][2];
