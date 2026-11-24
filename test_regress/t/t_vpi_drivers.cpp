@@ -30,6 +30,7 @@ extern VM_PREFIX* testVpiTopp;
 #include <cstdint>
 #include <cstdio>
 #include <functional>
+#include <initializer_list>
 #include <string>
 #include <utility>
 #include <vector>
@@ -256,6 +257,68 @@ void merge(const std::string& name, uint32_t v, uint32_t combMask) {
 #endif
 }
 
+using Words = std::vector<uint32_t>;
+
+Words getVec(const std::string& name) {
+    const vpiHandle handle = find(name);
+    s_vpi_value value{};
+    value.format = vpiVectorVal;
+    vpi_get_value(handle, &value);
+    Words words;
+    for (int i = 0; i < (vpi_get(vpiSize, handle) + 31) / 32; ++i) {
+        TEST_CHECK_EQ_LABEL(name, value.value.vector[i].bval, 0);
+        words.push_back(value.value.vector[i].aval);
+    }
+    return words;
+}
+
+void putVec(const std::string& name, const Words& words) {
+    std::vector<s_vpi_vecval> vec;
+    for (const uint32_t word : words) vec.push_back({word, 0});
+    s_vpi_value value{};
+    value.format = vpiVectorVal;
+    value.value.vector = vec.data();
+    s_vpi_time time{vpiSimTime, 0, 0, 0};
+    vpi_put_value(find(name), &value, &time, vpiNoDelay);
+    TEST_CHECK_ERROR(false);
+}
+
+void checkVec(const std::string& label, const Words& got, const Words& exp) {
+    TEST_CHECK_EQ_LABEL(label, got.size(), exp.size());
+    for (size_t i = 0; i < std::min(got.size(), exp.size()); ++i)
+        check(label + " word " + std::to_string(i), got[i], exp[i]);
+}
+
+// A concatenation of {value, width} parts, most significant first, as in the RTL
+Words cat(std::initializer_list<std::pair<uint32_t, int>> parts) {
+    int width = 0;
+    for (const auto& part : parts) width += part.second;
+    Words words((width + 31) / 32, 0);
+    int lsb = width;
+    for (const auto& part : parts) {
+        lsb -= part.second;
+        for (int bit = 0; bit < part.second; ++bit)
+            if (part.first >> bit & 1) words[(lsb + bit) / 32] |= 1U << ((lsb + bit) % 32);
+    }
+    return words;
+}
+
+// Flips every bit; under --vpi-lazy the comb-driven bits keep their value
+void putVecMasked(const std::string& name, const Words& combMask) {
+    const int size = vpi_get(vpiSize, find(name));
+    const Words before = getVec(name);
+    Words flipped = before;
+    for (uint32_t& word : flipped) word = ~word;
+    if (size % 32) flipped.back() &= (1U << (size % 32)) - 1;
+    Words exp = flipped;
+#ifdef T_VPI_DRIVERS_LAZY
+    for (size_t i = 0; i < exp.size(); ++i)
+        exp[i] = (flipped[i] & ~combMask[i]) | (before[i] & combMask[i]);
+#endif
+    putVec(name, flipped);
+    checkVec(name, getVec(name), exp);
+}
+
 void putArray(const std::string& name, int index, const PLI_INT32* valsp, int num,
               bool expectError) {
     s_vpi_arrayvalue value{};
@@ -444,6 +507,61 @@ void script() {
     step([] {
         check("t.tw_r strong", get("t.tw_r"), 0x21);
         in("en", 0);
+    });
+    step([] {
+        // Wide values read whole across word boundaries; comb-driven bits refuse a put
+        const uint32_t d = 0x21;
+        const uint32_t ina = 0x40;
+        const uint32_t x = d ^ ina;
+        checkVec("t.w33_c", getVec("t.w33_c"), cat({{d & 1, 1}, {x, 8}, {x, 8}, {x, 8}, {x, 8}}));
+        checkVec(
+            "t.w65_c", getVec("t.w65_c"),
+            cat({{d, 8}, {x, 8}, {x, 8}, {x, 8}, {d & 1, 1}, {x, 8}, {x, 8}, {x, 8}, {x, 8}}));
+        checkVec("t.w95_c", getVec("t.w95_c"),
+                 cat({{x & 0x3f, 6},
+                      {x, 8},
+                      {x, 8},
+                      {x, 8},
+                      {~d & 0xff, 8},
+                      {~x & 0xff, 8},
+                      {~x & 0xff, 8},
+                      {~x & 0xff, 8},
+                      {~d & 1, 1},
+                      {~x & 0xff, 8},
+                      {~x & 0xff, 8},
+                      {~x & 0xff, 8},
+                      {~x & 0xff, 8}}));
+        const Words wm33 = cat(
+            {{static_cast<uint32_t>(__builtin_parity(d)), 1}, {d, 8}, {d, 8}, {d, 8}, {d, 8}});
+        const Words wm65 = cat({{d, 8},
+                                {d, 8},
+                                {d, 8},
+                                {d & 0x1f, 5},
+                                {ina, 8},
+                                {d & 0xf, 4},
+                                {ina, 8},
+                                {ina, 8},
+                                {ina, 8}});
+        const Words wm95 = cat({{ina, 8},
+                                {ina, 8},
+                                {ina, 8},
+                                {d & 7, 3},
+                                {ina, 8},
+                                {d & 0xf, 4},
+                                {d, 8},
+                                {d, 8},
+                                {d, 8},
+                                {d, 8},
+                                {d, 8},
+                                {d, 8},
+                                {d, 8}});
+        checkVec("t.wm33", getVec("t.wm33"), wm33);
+        checkVec("t.wm65", getVec("t.wm65"), wm65);
+        checkVec("t.wm95", getVec("t.wm95"), wm95);
+        putVecMasked("t.wm33", cat({{1, 1}, {0, 32}}));
+        putVecMasked("t.wm65", cat({{0, 24}, {0x1fff, 13}, {0, 28}}));
+        putVecMasked("t.wm95", cat({{0, 24}, {0x7ff, 11}, {0, 30}, {0, 30}}));
+        for (const char* name : {"t.w33_c", "t.w65_c", "t.w95_c"}) reject(name, get(name) ^ 1);
     });
     step([] {
         for (const char* name : {"t.ff_q", "t.arn_q", "t.lat_q", "t.in_a", "t.frc_al", "t.u_ff.q",

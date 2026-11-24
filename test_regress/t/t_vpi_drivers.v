@@ -259,6 +259,29 @@ module t #(
       .v_o(oh_vo)
   );
 
+  // Wide comb logic, read whole across word boundaries
+  logic [32:0] w33_c;
+  logic [64:0] w65_c;
+  logic [94:0] w95_c;
+  assign w33_c = {d[0], {4{d ^ in_a}}};
+  assign w65_c = {w33_c[31:0], w33_c} ^ {in_a, 57'h0};
+  assign w95_c = {w65_c[29:0], ~w65_c};
+
+  // Wide variables a flop drives in part: a put changes only the bits no comb logic drives
+  logic [32:0] wm33;
+  logic [64:0] wm65;
+  logic [94:0] wm95;
+  always_ff @(posedge clk) begin
+    wm33[31:0] <= {4{d}};
+    wm65[64:41] <= {3{d}};
+    wm65[27:0] <= {d[3:0], {3{in_a}}};
+    wm95[94:71] <= {3{in_a}};
+    wm95[59:0] <= {d[3:0], {7{d}}};
+  end
+  assign wm33[32] = ^d;
+  assign wm65[40:28] = {d[4:0], in_a};
+  assign wm95[70:60] = {d[2:0], in_a};
+
   // Ports: a child's output flop is writable, the parent's net on it is not
   logic [7:0] w_ff;
   logic [7:0] w_mix;

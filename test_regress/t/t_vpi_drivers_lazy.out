@@ -10,7 +10,10 @@ cbValueChange t.hl_c.hi fired 1 0x02
 cbValueChange t.hl_c.lo fired 1 0x01
 cbValueChange t.hl_c fired 1 0x21
 cbValueChange t.u_px.i fired 1 0x61
-vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 'TOP.out_c'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.w33_c'
+reject 't.w65_c'
+reject 't.w95_c'
+reject 'TOP.out_c'
 reject 't.cst_w'
 reject 't.w_ff'
 reject 't.u_px.i'
@@ -277,8 +280,14 @@ t.u_xc.i 33 r
 t.u_xc.o 32 r
 t.vbx 1 r
 t.vidx ff r
+t.w33_c 066666666 ?
+t.w65_c 078cccccc66666666 ?
+t.w95_c 4ccccccd8733333399999999 ?
 t.w_ff 3c r
 t.w_mix 3c r
+t.wm33 03c3c3c3c ?
+t.wm65 0787879c5ac5a5a5a ?
+t.wm95 2d2d2d45ac3c3c3c3c3c3c3c ?
 t.xc_x 33 r
 t.xc_y 32 r
 *-* All Finished *-*
