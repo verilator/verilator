@@ -1422,9 +1422,8 @@ void EmitCSyms::emitVarTables() {
         puts("};\n");
     }
     putOffsetofPragmaPop();
-    if (v3Global.opt.vpi() || !m_ifaceRefTableRows.empty()) {
-        // Every module is a Syms member, so this bounds all 32 bit Syms offsets: hierarchy,
-        // interface reference and --vpi-lazy descriptor.
+    if (v3Global.opt.vpiLazy()) {
+        // Every module is a Syms member, so this bounds the 32 bit --vpi-lazy storage offsets
         puts("static_assert(sizeof(" + symClassName() + ") <= 0x7fffffffULL,\n");
         puts("              \"Symbol table too large for 32 bit VPI offsets\");\n");
     }
