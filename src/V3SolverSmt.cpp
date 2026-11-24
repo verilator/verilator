@@ -1265,8 +1265,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         AstNodeModule* const classOrPackagep = nodep->classOrPackagep();
         const RandomizeMode randMode = {.asUQuad = varp->user1()};
-        if (!randMode.usesMode && editFormat(nodep)) return;
         const bool foreignStatic = !memberRefp && isForeignStatic(varp);
+        // Unless reached through rand class handles, a foreign static is a state variable
+        // even when its rand_mode is used
+        if ((!randMode.usesMode || foreignStatic) && editFormat(nodep)) return;
 
         AstEnumDType* enumDtp = VN_CAST(nodep->dtypep()->skipRefToEnump(), EnumDType);
         if (enumDtp

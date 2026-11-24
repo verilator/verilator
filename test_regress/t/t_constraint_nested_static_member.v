@@ -127,6 +127,90 @@ endclass
 class own_cfg_derived extends own_cfg_base;
 endclass
 
+// Test: a static rand member not reached through a rand handle is a state variable
+class state_cfg;
+  static rand bit [6:0] x;
+endclass
+
+class state_cfg_user;
+  state_cfg o;
+  rand bit [6:0] y;
+  rand bit [6:0] z;
+  constraint c {
+    y == o.x;
+    z == state_cfg::x;
+  }
+  function new();
+    o = new;
+  endfunction
+endclass
+
+// Test: a static rand member of a sibling class, with rand_mode used, is a state variable
+class sibling_state_root;
+endclass
+
+class sibling_state_cfg extends sibling_state_root;
+  static rand bit [3:0] x;
+endclass
+
+class sibling_state_user extends sibling_state_root;
+  rand bit [3:0] y;
+  constraint c {y == sibling_state_cfg::x;}
+endclass
+
+// Test: a base class constraint on a static rand member of its derived class
+typedef class lineage_derived;
+class lineage_base;
+  rand bit [3:0] y;
+  constraint c {
+    lineage_derived::x == 5;
+    y == lineage_derived::x;
+  }
+endclass
+
+class lineage_derived extends lineage_base;
+  static rand bit [3:0] x;
+endclass
+
+// Test: a base class constraint on a static rand member reached by a derived class rand handle
+class handle_cfg;
+  static rand bit [3:0] g;
+endclass
+
+class handle_base;
+  rand bit [3:0] y;
+  constraint c {
+    handle_cfg::g == 7;
+    y == handle_cfg::g;
+  }
+endclass
+
+class handle_derived extends handle_base;
+  rand handle_cfg s;
+  function new();
+    s = new;
+  endfunction
+endclass
+
+// Test: static rand member of a rand member, randomized from another class's method
+class method_cfg;
+  static rand bit [3:0] g;
+  constraint c {g == 9;}
+endclass
+
+class method_cfg_holder;
+  rand method_cfg s;
+  function new();
+    s = new;
+  endfunction
+endclass
+
+class method_caller;
+  static function int run(method_cfg_holder h);
+    return h.randomize();
+  endfunction
+endclass
+
 module t;
   initial begin
     group_t g;
@@ -209,6 +293,65 @@ module t;
         if (own_cfg_base::g != 3) changed = 1;
       end
       `checkd(changed, 1);
+    end
+
+    begin
+      automatic state_cfg_user su = new;
+      automatic int ok;
+      state_cfg::x.rand_mode(1);
+      state_cfg::x = 93;
+      repeat (20) begin
+        ok = su.randomize();
+        `checkd(ok, 1);
+        `checkd(state_cfg::x, 93);
+        `checkd(su.y, 93);
+        `checkd(su.z, 93);
+      end
+    end
+
+    begin
+      automatic sibling_state_user ssu = new;
+      automatic int ok;
+      sibling_state_cfg::x.rand_mode(1);
+      sibling_state_cfg::x = 7;
+      repeat (20) begin
+        ok = ssu.randomize();
+        `checkd(ok, 1);
+        `checkd(sibling_state_cfg::x, 7);
+        `checkd(ssu.y, 7);
+      end
+    end
+
+    begin
+      automatic lineage_derived ld = new;
+      automatic int ok;
+      repeat (20) begin
+        ok = ld.randomize();
+        `checkd(ok, 1);
+        `checkd(lineage_derived::x, 5);
+        `checkd(ld.y, 5);
+      end
+    end
+
+    begin
+      automatic handle_derived hd = new;
+      automatic int ok;
+      repeat (20) begin
+        ok = hd.randomize();
+        `checkd(ok, 1);
+        `checkd(handle_cfg::g, 7);
+        `checkd(hd.y, 7);
+      end
+    end
+
+    begin
+      automatic method_cfg_holder mch = new;
+      automatic int ok;
+      repeat (20) begin
+        ok = method_caller::run(mch);
+        `checkd(ok, 1);
+        `checkd(method_cfg::g, 9);
+      end
     end
 
     $display("*-* All Finished *-*");
