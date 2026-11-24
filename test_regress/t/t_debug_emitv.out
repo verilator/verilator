@@ -480,6 +480,9 @@ module t;
             end
             sel_idx <= cyc[3:0];
             queue_of_t.push_back(32'sh1);
+            if (((q[$ - 32'h0]) != (q[$ - 32'sh1]))) begin
+                $write("");
+            end
             $display("%g", $log10(r));
             $display("%g", $ln(r));
             $display("%g", $exp(r));

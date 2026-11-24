@@ -814,7 +814,7 @@ public:
     void visit(AstAssocSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         const std::string atFunc = nodep->isLValue() ? ".atWrite(" : ".at(";
-        putnbs(nodep, atFunc);
+        putns(nodep, atFunc);
         iterateAndNextConstNull(nodep->bitp());
         puts(")");
     }
@@ -838,7 +838,7 @@ public:
     void visit(AstWildcardSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         const std::string atFunc = nodep->isLValue() ? ".atWrite(" : ".at(";
-        putnbs(nodep, atFunc);
+        putns(nodep, atFunc);
         iterateAndNextConstNull(nodep->bitp());
         puts(")");
     }

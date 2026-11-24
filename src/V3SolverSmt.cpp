@@ -1260,7 +1260,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 newp = createSolverArrDerefp(fl, nodep->fromp()->unlinkFrBack(), bitp);
             }
             nodep->replaceWith(newp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             if (origp && !hoistRandModeOverSelectAndMember(newp, origp)) {
                 VL_DO_DANGLING(origp->deleteTree(), origp);
             }
