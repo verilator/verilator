@@ -1689,6 +1689,11 @@ List Of Warnings
    ``{default: 0}`` as accepted by other simulators, is replaced by
    ``'{default: 0}``.
 
+   Also warns when a DPI function returns a 4-state vector or a 2-state
+   vector wider than 32 bits, which IEEE 1800-2023 35.5.5 does not allow.
+   The C function then returns void, and takes the result as its first
+   argument, like an output argument.
+
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 

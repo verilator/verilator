@@ -1,0 +1,33 @@
+// Verilated -*- C++ -*-
+// DESCRIPTION: Verilator output: Prototypes for DPI import and export functions.
+//
+// Verilator includes this file in all generated .cpp files that use DPI functions.
+// Manually include this file where DPI .c import functions are declared to ensure
+// the C functions match the expectations of the DPI imports.
+
+#ifndef VERILATED_VT_DPI_RESULT_TYPE_NONSTD__DPI_H_
+#define VERILATED_VT_DPI_RESULT_TYPE_NONSTD__DPI_H_  // guard
+
+#include "svdpi.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+// DPI EXPORTS
+extern void e_bit65(svBitVecVal* e_bit65__Vfuncrtn, const svBitVecVal* in);
+extern void e_logic56(svLogicVecVal* e_logic56__Vfuncrtn, const svLogicVecVal* in);
+
+// DPI IMPORTS
+extern int check_exports();
+extern void i_bit128(svBitVecVal* i_bit128__Vfuncrtn, const svBitVecVal* in);
+extern void i_bit33(svBitVecVal* i_bit33__Vfuncrtn, const svBitVecVal* in);
+extern void i_logic100(svLogicVecVal* i_logic100__Vfuncrtn, const svLogicVecVal* in);
+extern void i_logic2(svLogicVecVal* i_logic2__Vfuncrtn, const svLogicVecVal* in);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  // guard
