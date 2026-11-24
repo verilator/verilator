@@ -52,12 +52,43 @@ package user_pkg;
   endclass
 endpackage
 
+package items_pkg;
+  class base_item;
+    rand int x;
+  endclass
+  class item extends base_item;
+  endclass
+
+  class param_base #(type T = int);
+    rand int y;
+  endclass
+  class param_mid extends param_base #(int);
+    rand int z;
+  endclass
+  class param_item extends param_mid;
+  endclass
+endpackage
+
+package seqs_pkg;
+  class seq;
+    function int apply_value(items_pkg::item it, int value);
+      return it.randomize() with {x == local::value;};
+    endfunction
+    function int apply_param(items_pkg::param_item it, int value);
+      return it.randomize() with {y == local::value; z == local::value + 1;};
+    endfunction
+  endclass
+endpackage
+
 module t;
   import lib_pkg::*;
   import user_pkg::*;
 
   initial begin
     automatic Agent #(Driver) agent = new;
+    automatic items_pkg::item it = new;
+    automatic items_pkg::param_item pit = new;
+    automatic seqs_pkg::seq s = new;
     agent.build();
     for (int i = 0; i < 20; ++i) begin
       automatic bit [14:0] want = 15'(i * 1237 + 3);
@@ -67,6 +98,14 @@ module t;
       `checkd(agent.drv.item.len, want);
       ok_inline = agent.drv.send_inline();
       `checkd(ok_inline, 1);
+    end
+    for (int i = 0; i < 20; ++i) begin
+      automatic int want = i * 7919 - 50000;
+      `checkd(s.apply_value(it, want), 1);
+      `checkd(it.x, want);
+      `checkd(s.apply_param(pit, want), 1);
+      `checkd(pit.y, want);
+      `checkd(pit.z, want + 1);
     end
     $write("*-* All Finished *-*\n");
     $finish;
