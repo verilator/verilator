@@ -951,11 +951,77 @@ class StdArgWideIndex;
 endclass
 /* verilator lint_on WIDTHTRUNC */
 
+// A std::randomize() argument indexing a state array: 2 reads element 2.
+class StdArgIndexUnsat;
+  int idx;
+  bit used[1:3] = '{1, 1, 1};
+  function int go();
+    return std::randomize(idx) with {idx == 2; used[idx] == 0;};
+  endfunction
+endclass
+
+// A selected std::randomize() argument: 4 is out of range and reads the default.
+class StdArgSelectIndexSat;
+  int idx[1];
+  bit used[4] = '{1, 1, 1, 1};
+  function int go();
+    return std::randomize(idx[0]) with {idx[0] == 4; used[idx[0]] == 0;};
+  endfunction
+endclass
+
+// A 32-bit operand widens the sum: 100+100 is 200, not -56.
+class ContextWidthAddUnsat;
+  rand byte a;
+  rand byte b;
+  bit pool[1:200] = '{default: 1};
+  constraint c { a == 100; b == 100; pool[(a + b) + 0] == 0; }
+endclass
+
+// $unsigned() is self-determined: -1 is 255, not -1 sign-extended.
+class UnsignedCastIndexUnsat;
+  rand byte a;
+  bit pool[1:255] = '{default: 1};
+  constraint c { a == 1; pool[$unsigned(-a)] == 0; }
+endclass
+
+// An argument list makes a state member random: 4 is out of range on every call.
+class ArgListIndexSat;
+  int idx;
+  bit used[4] = '{1, 1, 1, 1};
+endclass
+
+// A sized constant keeps its width: 127+8'sd1 wraps to -128, not 128.
+class SizedConstIndexUnsat;
+  rand byte a;
+  bit pool[-130:210];
+  constraint c { a == 127; pool[a + 8'sd1] == 1; }
+  function new();
+    pool[128] = 1;
+  endfunction
+endclass
+
+// Signed modulus takes the dividend's sign: -7%4 reads element -3.
+class SignedModIndex;
+  rand byte a;
+  bit pool[-10:10];
+  constraint c { a == -7; pool[a % 4] == 1; }
+  function new();
+    pool[-3] = 1;
+  endfunction
+endclass
+
 
 module t;
   initial begin
     UniqueIdPool obj;
     StdArgWideIndex stdwide_obj;
+    StdArgIndexUnsat stdidx_u_obj;
+    StdArgSelectIndexSat stdsel_obj;
+    ContextWidthAddUnsat ctxadd_u_obj;
+    UnsignedCastIndexUnsat ucast_u_obj;
+    ArgListIndexSat arglist_obj;
+    SizedConstIndexUnsat sized_u_obj;
+    SignedModIndex smod_obj;
     UniqueIdPoolViaMember mobj;
     UniqueIdPoolNonZeroBase nzobj;
     UniqueIdPoolDescBase descobj;
@@ -1609,6 +1675,37 @@ module t;
     ims_u_obj = new;
     randomize_result = ims_u_obj.randomize();
     `checkd(randomize_result, 0);
+
+    stdidx_u_obj = new;
+    `checkd(stdidx_u_obj.go(), 0);
+
+    stdsel_obj = new;
+    `checkd(stdsel_obj.go(), 1);
+    `checkd(stdsel_obj.idx[0], 4);
+
+    ctxadd_u_obj = new;
+    randomize_result = ctxadd_u_obj.randomize();
+    `checkd(randomize_result, 0);
+
+    ucast_u_obj = new;
+    randomize_result = ucast_u_obj.randomize();
+    `checkd(randomize_result, 0);
+
+    arglist_obj = new;
+    repeat (2) begin
+      randomize_result = arglist_obj.randomize(idx) with { idx == 4; used[idx] == 0; };
+      `checkd(randomize_result, 1);
+      `checkd(arglist_obj.idx, 4);
+    end
+
+    sized_u_obj = new;
+    randomize_result = sized_u_obj.randomize();
+    `checkd(randomize_result, 0);
+
+    smod_obj = new;
+    randomize_result = smod_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(smod_obj.a, -7);
 
     $write("*-* All Finished *-*\n");
     $finish;

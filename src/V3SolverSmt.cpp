@@ -689,7 +689,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Bottom-up user1 propagation on inlined expression tree
     void propagateUser1InlineRecurse(AstNodeExpr* nodep) {
         if (VN_IS(nodep, NodeVarRef)) {
-            nodep->user1(VN_AS(nodep, NodeVarRef)->varp()->rand().isRandomizable());
+            const AstVar* const varp = VN_AS(nodep, NodeVarRef)->varp();
+            nodep->user1(varp->rand().isRandomizable() || varp->isStdRandomizeArg());
             return;
         }
         if (VN_IS(nodep, Const)) {
@@ -2001,10 +2002,27 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         return nodep->width();
     }
+    static int biasedIndexKidCtx(AstNodeExpr* nodep, AstNodeExpr* kidp, bool isTop, int ctxWidth) {
+        if (isTop) return biasedIndexValueWidth(kidp);
+        if (biasedIndexNeedsSignedCtx(nodep) && !VN_IS(nodep, Div) && !VN_IS(nodep, ModDiv)) {
+            const AstNodeBiop* const biopp = VN_AS(nodep, NodeBiop);
+            return std::max(biasedIndexValueWidth(biopp->lhsp()),
+                            biasedIndexValueWidth(biopp->rhsp()));
+        }
+        if ((VN_IS(nodep, ShiftL) || VN_IS(nodep, ShiftR)) && kidp == nodep->op2p()) {
+            return biasedIndexValueWidth(kidp);
+        }
+        if (const AstCond* const condp = VN_CAST(nodep, Cond)) {
+            if (kidp == condp->condp()) return biasedIndexValueWidth(kidp);
+        }
+        if (VN_IS(nodep, Sel)) return biasedIndexValueWidth(kidp);
+        return ctxWidth;
+    }
     static void normalizeBiasedIndexInner(AstNodeExpr* nodep, bool isTop, bool extendCtx,
-                                          int parentWidth) {
+                                          int parentWidth, int ctxWidth) {
+        if (nodep->width() < ctxWidth) ctxWidth = nodep->width();
         if (AstExtend* const extendp = VN_CAST(nodep, Extend)) {
-            normalizeBiasedIndexInner(extendp->lhsp(), false, true, extendp->width());
+            normalizeBiasedIndexInner(extendp->lhsp(), false, true, extendp->width(), ctxWidth);
             // Unsigned division and comparison operands keep widening with zeros;
             // the mark tells the later scan those are intended, not missed.
             if (!extendp->lhsp()->isSigned() || !extendCtx) {
@@ -2021,7 +2039,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         if (VN_IS(nodep, ExtendS)) {
             normalizeBiasedIndexInner(VN_AS(nodep, ExtendS)->lhsp(), false, extendCtx,
-                                      nodep->width());
+                                      nodep->width(), ctxWidth);
             return;
         }
         if (!biasedIndexIsKnown(nodep)) return;
@@ -2032,19 +2050,19 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         // Known nodes take at most three operands.
         if (AstNodeExpr* const cp = VN_CAST(nodep->op1p(), NodeExpr)) {  // LCOV_EXCL_BR_LINE
-            normalizeBiasedIndexInner(cp, false,
-                                      VN_IS(cp, Extend) || VN_IS(cp, ExtendS) ? kidCtx : true,
-                                      nodep->width());
+            normalizeBiasedIndexInner(
+                cp, false, VN_IS(cp, Extend) || VN_IS(cp, ExtendS) ? kidCtx : true, nodep->width(),
+                biasedIndexKidCtx(nodep, cp, isTop, ctxWidth));
         }
         if (AstNodeExpr* const cp = VN_CAST(nodep->op2p(), NodeExpr)) {
-            normalizeBiasedIndexInner(cp, false,
-                                      VN_IS(cp, Extend) || VN_IS(cp, ExtendS) ? kidCtx : true,
-                                      nodep->width());
+            normalizeBiasedIndexInner(
+                cp, false, VN_IS(cp, Extend) || VN_IS(cp, ExtendS) ? kidCtx : true, nodep->width(),
+                biasedIndexKidCtx(nodep, cp, isTop, ctxWidth));
         }
         if (AstNodeExpr* const cp = VN_CAST(nodep->op3p(), NodeExpr)) {
-            normalizeBiasedIndexInner(cp, false,
-                                      VN_IS(cp, Extend) || VN_IS(cp, ExtendS) ? kidCtx : true,
-                                      nodep->width());
+            normalizeBiasedIndexInner(
+                cp, false, VN_IS(cp, Extend) || VN_IS(cp, ExtendS) ? kidCtx : true, nodep->width(),
+                biasedIndexKidCtx(nodep, cp, isTop, ctxWidth));
         }
         // Division flavors follow the operands: an unsigned node dividing
         // sign-extended values computes the wrong quotient, so flip it to match.
@@ -2067,12 +2085,10 @@ class ConstraintExprVisitor final : public VNVisitor {
                 nodep = newp;
             }
         }
-        // Narrow arithmetic wraps at its own width before widening (e.g. -128/-1 stays
-        // out of range instead of aliasing). The top feeds storage directly, never wrapped.
-        if (!isTop && biasedIndexIsWrappable(nodep)
-            && biasedIndexValueWidth(nodep) < parentWidth) {
+        // Arithmetic wraps at its context width (IEEE 1800-2023 11.8.2); the top is never wrapped
+        if (!isTop && biasedIndexIsWrappable(nodep) && nodep->width() > ctxWidth) {
             FileLine* const fl = nodep->fileline();
-            const int width = biasedIndexValueWidth(nodep);
+            const int width = ctxWidth;
             const bool randDependent = nodep->user1();
             VNRelinker relinker;
             nodep->unlinkFrBack(&relinker);
@@ -2138,7 +2154,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     static bool normalizeBiasedIndex(AstNodeExpr* idxp) {
         if (biasedIndexClearAndCheckShift(idxp)) return false;
-        normalizeBiasedIndexInner(idxp, true, true, 32);
+        normalizeBiasedIndexInner(idxp, true, true, 32, 32);
         return !biasedIndexHasBadExtend(idxp);
     }
     void handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl) {
