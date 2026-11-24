@@ -71,7 +71,8 @@ endmodule
 // A cone over the instance's own flop, read from the parent
 module sub_fy (
     input logic clk,
-    input logic [7:0] a
+    input logic [7:0] a,
+    input logic [7:0] e
 );
   /*verilator no_inline_module*/
   logic [7:0] r;
@@ -87,6 +88,11 @@ module sub_fy (
   import "DPI-C" function int dpiOne();
   logic [7:0] imp_c;
   assign imp_c = r ^ 8'(dpiOne());
+  // DPI-read port, comb-driven in one instance only
+  export "DPI-C" function fy_e;
+  function int fy_e();
+    return int'(e);
+  endfunction
 endmodule
 
 // Non-ANSI ports with separate net declarations, public_flat_rw/rd after or before the port.
@@ -370,13 +376,16 @@ module t #(
 
   // Each a cone reading another instance's cone, which refreshes that instance
   logic [7:0] fyx0_c, fyx1_c;
+  /* verilator lint_off PINMISSING */
   sub_fy fy0 (
       .clk(clk),
       .a(d)
   );
+  /* verilator lint_on PINMISSING */
   sub_fy fy1 (
       .clk(clk),
-      .a(~d)
+      .a(~d),
+      .e(d ^ 8'h0f)
   );
   assign fyx0_c = fy0.y ^ 8'h55;
   assign fyx1_c = fy1.y ^ 8'h55;

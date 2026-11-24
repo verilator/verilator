@@ -83,6 +83,7 @@ t.fy0.a 3c r
 t.fy0.clk 0 r
 t.fy0.cyc_p fc r
 t.fy0.cyc_q c0 r
+t.fy0.e ff W
 t.fy0.imp_c 3d r
 t.fy0.r 3c W
 t.fy0.y 3d r
@@ -90,6 +91,7 @@ t.fy1.a c3 r
 t.fy1.clk 0 r
 t.fy1.cyc_p f3 r
 t.fy1.cyc_q 30 r
+t.fy1.e 33 r
 t.fy1.imp_c c2 r
 t.fy1.r c3 W
 t.fy1.y c4 r

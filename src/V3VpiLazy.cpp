@@ -2334,6 +2334,8 @@ private:
             if (vit == m_gather.m_vscpsOf.end()) continue;  // A twin made below
             const std::vector<AstVarScope*>& vscps = vit->second;
             if (vscp != vscps.front()) continue;
+            // Made public-rw by the completeness floor: every instance keeps its storage and row
+            if (varp->isSigUserRWPublic()) continue;
             const bool cand = varp->isSigVpiLazyCandidate();
             std::vector<AstVarScope*> freed;
             for (AstVarScope* const instp : vscps)
@@ -2364,7 +2366,11 @@ private:
                 instp->varp(twinp);
                 for (AstVarRef* const refp : m_gather.m_refsOf[instp]) refp->varp(twinp);
             }
-            AstVar* const shadowVarp = m_shadowVarOfOrig.at(varp);
+            // A freed candidate instance has a shadow; a non-candidate is pinned on every instance
+            const auto sit = m_shadowVarOfOrig.find(varp);
+            UASSERT_OBJ(sit != m_shadowVarOfOrig.end(), varp,
+                        "--vpi-lazy frees an instance of a variable with no shadow");
+            AstVar* const shadowVarp = sit->second;
             for (const AstVarScope* const instp : vscps)
                 if (kept(instp)) m_ctx.m_noRow.emplace(instp->scopep()->name(), shadowVarp);
         }
