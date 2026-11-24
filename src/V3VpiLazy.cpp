@@ -1322,9 +1322,9 @@ private:
             // V3Active rewrote '<=' and V3Force lowered AssignForce; only blocking/cont remain.
             UASSERT_OBJ(VN_IS(nodep, Assign) || VN_IS(nodep, AssignW), nodep,
                         "--vpi-lazy: unexpected assignment kind in a combinational block");
-            // Only --timing keeps a delay this far, and such a block never terminates: untested.
-            if (bailIf(Bail::UNSUPPORTED_STMT, VL_UNCOVERABLE(nodep->timingControlp())))
-                return;  // LCOV_EXCL_LINE
+            // A timing control is not predict-optimizable, so the gather bailed it as IMPURE
+            UASSERT_OBJ(!nodep->timingControlp(), nodep,
+                        "--vpi-lazy: timing control in a block walked for read order");
             bool partial = false;
             AstVarRef* const baserefp = lhsBaseRef(nodep->lhsp(), partial);
             if (bailIf(Bail::UNSUPPORTED_STMT, !baserefp)) return;
