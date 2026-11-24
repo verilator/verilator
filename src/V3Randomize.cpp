@@ -2124,7 +2124,7 @@ class RandomizeVisitor final : public VNVisitor {
                                  VAccess::WRITE};
         } else {
             AstMemberRef* const memberRefp = new AstMemberRef{fl, fromp->unlinkFrBack(), modeVarp};
-            memberRefp->foreach([](AstVarRef* varrefp) { varrefp->access(VAccess::WRITE); });
+            memberRefp->access(VAccess::WRITE);
             return memberRefp;
         }
     }
