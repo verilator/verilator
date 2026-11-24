@@ -4636,8 +4636,8 @@ class WidthVisitor final : public VNVisitor {
             return irangep->newAndFromInside(exprp, irangep->lhsp()->unlinkFrBack(),
                                              irangep->rhsp()->unlinkFrBack());
         } else if (itemDtp->isNonPackedArray()) {
-            const AstNodeDType* memberType = itemDtp->subDTypep()->skipRefp();
-            if (memberType->isNonPackedArray()) {
+            const AstNodeDType* const memberTypep = itemDtp->subDTypep()->skipRefp();
+            if (memberTypep->isNonPackedArray()) {
                 itemp->v3warn(E_UNSUPPORTED, "Unsupported: 'inside' on array of unpacked arrays");
                 VL_DO_DANGLING(exprp->deleteTree(), exprp);
                 return nullptr;
