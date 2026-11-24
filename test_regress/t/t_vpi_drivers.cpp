@@ -718,6 +718,11 @@ void script() {
         // A member of a rebuilt memory's element
         check("t.hla_c[1].lo", get("t.hla_c[1].lo"), ~d & 0xf);
         reject("t.hla_c[1].lo", get("t.hla_c[1].lo") ^ 0x5);
+        // Members of an unpacked struct, one rebuilt and one stored at its own offset
+        reject("t.dus.b", get("t.dus.b") ^ 0x5);
+        const uint32_t fusA = get("t.fus.a");
+        accept("t.fus.b", 0xa5);
+        check("t.fus.a", get("t.fus.a"), fusA);
         in("clk", 0);
     });
     step([] { dumpRows(); });

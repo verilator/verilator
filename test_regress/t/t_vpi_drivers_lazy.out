@@ -32,6 +32,7 @@ vpi_chk_error: vpi_put_value: Parsing failed for 'A123' as value vpiDecStrVal fo
 reject 't.hl_c.hi'
 vpi_chk_error: vpi_put_value: Ignoring vpi_put_value to vpiParameter 't.INTF_QTY'
 reject 't.hla_c[1].lo'
+reject 't.dus.b'
 TOP.clk 0 W
 TOP.d 3c W
 TOP.en 0 W
