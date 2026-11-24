@@ -160,9 +160,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // Single VlScopeTableEntry[] table for all scopes, built in getSymCtorStmts()
     std::string m_scopeTableName;
     std::vector<std::string> m_scopeTableRows;
-    size_t m_nLazyReconVars = 0;  // __Vm_lazyReconstructDatap entries, one per --vpi-lazy row
-    // VlLazyReconEntry[] tables, one per distinct row run; shared likewise
-    NamedTables m_lazyReconFnTables;
+    size_t m_nLazyRematVars = 0;  // __Vm_lazyRematDatap entries, one per --vpi-lazy row
+    // VlLazyRematEntry[] tables, one per distinct row run; shared likewise
+    NamedTables m_lazyRematFnTables;
     std::string m_ifaceRefTableName;
     std::vector<std::string> m_ifaceRefTableRows;
     std::vector<std::string> m_hierTableRows;  // VlHierTableEntry rows, see buildHierTableRows()
@@ -332,7 +332,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
     // A --vpi-lazy shadow's row and its packed members' rows hold no current value of their own
     static std::string lazyRematFlags(const AstVar* varp) {
-        return varp->isLazyReconstructShadow() ? "|VLVF_PUB_RD|VLVF_LAZY_REMAT" : "";
+        return varp->isLazyRematShadow() ? "|VLVF_PUB_RD|VLVF_LAZY_REMAT" : "";
     }
     static std::string memberVlEnumDir(const AstScope* const scopep, const AstVar* const varp,
                                        const AstNodeDType* const dtypep) {
@@ -418,9 +418,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
 
     // Empty for a stored copy
-    static std::string lazyRefreshName(const AstScope* scopep, const AstVar* varp) {
+    static std::string lazyRematName(const AstScope* scopep, const AstVar* varp) {
         if (const AstVar* const srcp = varp->lazyCopySrcp()) varp = srcp;
-        const std::string name = V3VpiLazy::refreshFuncName(scopep, varp);
+        const std::string name = V3VpiLazy::rematFuncName(scopep, varp);
         return name.empty() ? name : VIdProtect::protect(name);
     }
 
@@ -435,7 +435,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                       const AstScope* const scopep,
                                       const std::string& modClassName, int lazyIdx,
                                       const VarDims& dims, std::string& rowOut) {
-        const bool isLazy = varp->isLazyReconstructShadow();
+        const bool isLazy = varp->isLazyRematShadow();
         if (!isLazy && varp->isForceable()) return TableEntryKind::FORCEABLE_RESIDUAL;
 
         const std::string vlEnumType = varp->vlEnumType();
@@ -449,7 +449,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         // under --protect-ids, whereas protect() would always hash it.
         const std::string member = rowStorageName(varp);
         const std::string flags = vlEnumDirOf(scopep, varp) + lazyRematFlags(varp);
-        // A shadow row is read-only unless its VlLazyReconEntry says otherwise, and
+        // A shadow row is read-only unless its VlLazyRematEntry says otherwise, and
         // VLVF_LAZY_COMB here would make lazyDescSlot() ignore lazyIdx
         UASSERT_OBJ(!isLazy || !varp->isSigExternallyRWPublic(), varp,
                     "--vpi-lazy shadow row carries a write policy");
@@ -818,10 +818,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 const AstVar* const varp = mvPair.second;
                 if (modp != smodp || modp->verilatorLib()) continue;
 
-                if (varp->isLazyReconstructHelper()) continue;
+                if (varp->isLazyRematHelper()) continue;
                 if (!V3VpiLazy::hasRow(scopep, varp)) continue;
                 const std::string vpiVarName
-                    = varp->isLazyReconstructShadow() ? varp->origName() : varp->name();
+                    = varp->isLazyRematShadow() ? varp->origName() : varp->name();
                 addScopeVarEntry(scopep, modp, vpiVarName, varp->name(), varp);
             }
         }
@@ -1030,7 +1030,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         iterateChildrenConst(nodep);
         // Record if public, ignoring locals and types VPI cannot represent
         if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()
-             || nodep->isSigVpiLazyRetained() || nodep->isLazyReconstructShadow())
+             || nodep->isSigVpiLazyRetained() || nodep->isLazyRematShadow())
             && !m_cfuncp && !nodep->vlEnumType().empty()) {
             m_modVars.emplace_back(m_modp, nodep);
         }
@@ -1201,9 +1201,9 @@ void EmitCSyms::emitSymHdr() {
         puts("VerilatedHierarchy __Vhier;\n");
     }
 
-    if (m_nLazyReconVars) {
+    if (m_nLazyRematVars) {
         puts("\n");
-        puts("VerilatedVarLazyDatap __Vm_lazyReconstructDatap[" + std::to_string(m_nLazyReconVars)
+        puts("VerilatedVarLazyDatap __Vm_lazyRematDatap[" + std::to_string(m_nLazyRematVars)
              + "];\n");
     }
 
@@ -1255,14 +1255,14 @@ void EmitCSyms::emitSymHdr() {
     }
     puts("};\n");
 
-    // Address-taken reconstruct functions need split-TU declarations.
-    if (m_nLazyReconVars) {
+    // Address-taken rematerialize functions need split-TU declarations.
+    if (m_nLazyRematVars) {
         std::set<std::string> emitted;
         for (const auto& itpair : m_scopeVars) {
             const ScopeVarData& svd = itpair.second;
             const AstVar* const varp = svd.m_varp;
-            if (!varp->isLazyReconstructShadow()) continue;
-            const std::string funcName = lazyRefreshName(svd.m_scopep, varp);
+            if (!varp->isLazyRematShadow()) continue;
+            const std::string funcName = lazyRematName(svd.m_scopep, varp);
             if (funcName.empty()) continue;
             const std::string modClassName = EmitCUtil::prefixNameProtect(svd.m_modp);
             const std::string sym = modClassName + "__" + funcName;
@@ -1307,7 +1307,7 @@ void EmitCSyms::emitSymImpPreamble() {
 
 bool EmitCSyms::emitVarTableExterns() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()
-        && m_lazyReconFnTables.empty() && m_combMaskRows.empty())
+        && m_lazyRematFnTables.empty() && m_combMaskRows.empty())
         return false;
     for (const auto& kv : m_varTables) {
         puts("extern const VlVarTableEntry " + kv.first + "[];\n");
@@ -1324,8 +1324,8 @@ bool EmitCSyms::emitVarTableExterns() {
     if (!m_hierTableRows.empty()) {
         puts("extern const VlHierTableEntry " + hierTableName() + "[];\n");
     }
-    for (const auto& kv : m_lazyReconFnTables) {
-        puts("extern const VlLazyReconEntry " + kv.first + "[];\n");
+    for (const auto& kv : m_lazyRematFnTables) {
+        puts("extern const VlLazyRematEntry " + kv.first + "[];\n");
     }
     if (!m_combMaskRows.empty()) {
         puts("extern const VlLazyCombMask " + combMaskTableName() + "[];\n");
@@ -1335,7 +1335,7 @@ bool EmitCSyms::emitVarTableExterns() {
 
 void EmitCSyms::emitVarTables() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()
-        && m_lazyReconFnTables.empty() && m_combMaskRows.empty())
+        && m_lazyRematFnTables.empty() && m_combMaskRows.empty())
         return;
     puts("\n// VPI VARIABLE/SCOPE TABLES\n");
     putOffsetofPragmaPush();
@@ -1392,8 +1392,8 @@ void EmitCSyms::emitVarTables() {
         }
         puts("};\n");
     }
-    for (const auto& kv : m_lazyReconFnTables) {
-        puts("extern const VlLazyReconEntry " + kv.first + "[] = {\n");
+    for (const auto& kv : m_lazyRematFnTables) {
+        puts("extern const VlLazyRematEntry " + kv.first + "[] = {\n");
         for (const std::string& ent : kv.second) {
             ofp()->putsNoTracking("    ");
             ofp()->putsNoTracking(ent);
@@ -1670,7 +1670,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
     // still share a table when their rows are identical.
     if (!m_scopeVars.empty()) {
         stmts.add("// Setup public variables");
-        std::unordered_map<std::string, std::string> reconTableByRows;
+        std::unordered_map<std::string, std::string> rematTableByRows;
         size_t lazyBaseRunning = 0;
 
         auto it = m_scopeVars.cbegin();
@@ -1682,7 +1682,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
 
             std::vector<std::string> rows;
             std::vector<std::string> residual;
-            std::vector<std::string> reconFns;
+            std::vector<std::string> rematFns;
             int lazyRel = 0;
             m_paramRows.clear();
             m_paramPtrs.clear();
@@ -1694,7 +1694,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                         "VPI scope '" << scopeName << "' spans multiple C++ instances");
                 const AstVar* const varp = svd.m_varp;
                 const VarDims dims = dimsFor(svd);
-                const bool isLazy = varp->isLazyReconstructShadow();
+                const bool isLazy = varp->isLazyRematShadow();
 
                 // Actual force-control declarations fold into the base variable's insert.
                 if (svd.m_isForceControl) continue;
@@ -1713,7 +1713,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                     rows.emplace_back(row);
                     if (isLazy) {
                         ++lazyRel;
-                        const std::string funcName = lazyRefreshName(scopep, varp);
+                        const std::string funcName = lazyRematName(scopep, varp);
                         const std::string fn
                             = funcName.empty() ? "nullptr" : "&" + modClassName + "__" + funcName;
                         std::string src;  // Empty for a cone
@@ -1730,7 +1730,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                             tail = std::to_string(combMaskIdx(scopep, varp))
                                    + ", VLVF_PUB_RW|VLVF_LAZY_COMB";
                         }
-                        reconFns.emplace_back("{" + fn + ", " + tail + "}");
+                        rematFns.emplace_back("{" + fn + ", " + tail + "}");
                     }
                     // A member takes its lazy and write policy from this row, see
                     // VerilatedVpioVar::storageVarp()
@@ -1784,10 +1784,10 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                                    + instName(instScopep) + ")";
                 if (lazyRel > 0) {
                     const std::string fnsName
-                        = sharedTableName(m_lazyReconFnTables, reconTableByRows,
-                                          modClassName + "__VlazyReconFns", std::move(reconFns));
-                    call += ", &vlSymsp->__Vm_lazyReconstructDatap["
-                            + std::to_string(lazyBaseRunning) + "], " + fnsName;
+                        = sharedTableName(m_lazyRematFnTables, rematTableByRows,
+                                          modClassName + "__VlazyRematFns", std::move(rematFns));
+                    call += ", &vlSymsp->__Vm_lazyRematDatap[" + std::to_string(lazyBaseRunning)
+                            + "], " + fnsName;
                 }
                 call += ");";
                 stmts.add(call);
@@ -1805,7 +1805,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
             for (const std::string& r : residual) stmts.add(r);
             lazyBaseRunning += lazyRel;
         }
-        m_nLazyReconVars = lazyBaseRunning;
+        m_nLazyRematVars = lazyBaseRunning;
         if (!m_combMaskRows.empty()) {
             stmts.add("vlSymsp->__Vm_lazy.combMasksp = " + combMaskTableName() + ";");
         }
@@ -1975,7 +1975,7 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
                     puts("os << __Vm_lazy.epoch;\n");
                     puts("os << __Vm_lazy.written;\n");
                     puts("os << __Vm_lazy.evalBegun;\n");
-                    // A save from within a read's rebuild must see the puts in place
+                    // A save from within a read's rematerialization must see the puts in place
                     puts("const bool __Vm_lazyUndoWasIn = __Vm_lazy.undoIn;\n");
                     puts("if (VL_UNLIKELY(__Vm_lazyUndoWasIn)) __Vm_lazy.undoSwap(false);\n");
                 }

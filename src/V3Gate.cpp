@@ -754,9 +754,9 @@ class GateInline final {
             for (V3GraphEdge* const edgep : vVtxp->outEdges().unlinkable()) {
                 GateLogicVertex* const dstVtxp = edgep->top()->as<GateLogicVertex>();
 
-                // One reconstruct function serves every instance.
+                // One rematerialize function serves every instance.
                 if (const AstCFunc* const cfuncp = VN_CAST(dstVtxp->nodep(), CFunc)) {
-                    if (cfuncp->vpiLazyReconstruct()) continue;
+                    if (cfuncp->vpiLazyRemat()) continue;
                 }
 
                 // Do not inline anything other than buffers and inverters into

@@ -4478,20 +4478,20 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
     return &(m_varsp->find(namep)->second);
 }
 
-void VerilatedVarLazyDatap::init(const VlLazyReconEntry& recon, void* instp, uint32_t offset) {
-    refreshp = recon.refreshp;
+void VerilatedVarLazyDatap::init(const VlLazyRematEntry& remat, void* instp, uint32_t offset) {
+    rematFuncp = remat.rematFuncp;
     selfp = instp;
     stamp = 0;  // The epoch starts at 2, so the row reads as stale
     storageOffset = offset;
-    srcOffset = recon.srcByteOffset;
+    srcOffset = remat.srcByteOffset;
 }
 
 void VerilatedScope::varInsertFromRow(const VlVarTableEntry& e, void* datap, bool isParam,
-                                      const VlLazyReconEntry* reconp) VL_MT_UNSAFE {
-    const uint32_t reconFlags = reconp ? reconp->vlflags : 0;
-    const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags | reconFlags);
+                                      const VlLazyRematEntry* rematp) VL_MT_UNSAFE {
+    const uint32_t rematFlags = rematp ? rematp->vlflags : 0;
+    const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags | rematFlags);
     const int32_t combMask
-        = (reconFlags & VLVF_LAZY_COMB) ? reconp->combMaskIdx() : e.lazyCombMask();
+        = (rematFlags & VLVF_LAZY_COMB) ? rematp->combMaskIdx() : e.lazyCombMask();
     VerilatedVar var{e.namep, datap,     e.vltype,
                      vlflags, e.udims,   e.pdims,
                      isParam, e.entSize, e.memberBitOffset(),
@@ -4518,7 +4518,7 @@ void VerilatedScope::varInsertFromRow(const VlVarTableEntry& e, void* datap, boo
 
 void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
                                          VerilatedVarLazyDatap* lazyBasep,
-                                         const VlLazyReconEntry* lazyReconsp) VL_MT_UNSAFE {
+                                         const VlLazyRematEntry* lazyRematsp) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
     // A packed member row's basep is its parent's storage
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
@@ -4532,9 +4532,9 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, 
         }
         // Fits: the emitted Syms static_asserts its size, which spans every instance, fits 31 bits
         VerilatedVarLazyDatap& desc = lazyBasep[descSlot];
-        desc.init(lazyReconsp[descSlot], base, static_cast<uint32_t>(e.byteOffset));
+        desc.init(lazyRematsp[descSlot], base, static_cast<uint32_t>(e.byteOffset));
         m_symsp->lazyp()->undoOn = true;
-        varInsertFromRow(e, &desc, false, &lazyReconsp[descSlot]);
+        varInsertFromRow(e, &desc, false, &lazyRematsp[descSlot]);
     }
 }
 

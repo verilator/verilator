@@ -507,7 +507,7 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
 
 // A --vpi-lazy shadow resets as the signal it stands for would, so reads before eval() match.
 static string resetName(const AstVar* varp) {
-    return varp->isLazyReconstructShadow() ? varp->origName() : varp->name();
+    return varp->isLazyRematShadow() ? varp->origName() : varp->name();
 }
 
 string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
@@ -609,7 +609,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                || varp->isFuncLocal()  // Randomization too slow
                || (basicp && basicp->isZeroInit())
                || (v3Global.opt.underlineZero() && !name.empty() && name[0] == '_')
-               || (varp->isTemp() && !varp->isXTemp() && !varp->isLazyReconstructShadow())
+               || (varp->isTemp() && !varp->isXTemp() && !varp->isLazyRematShadow())
                || (varp->isXTemp()
                        ? (v3Global.opt.xAssign() != "unique")
                        : (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0")));

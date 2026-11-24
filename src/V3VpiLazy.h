@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Reconstruct optimizer-eliminated VPI signals
+// DESCRIPTION: Verilator: Rematerialize optimizer-eliminated VPI signals
 //
 // Code available from: https://verilator.org
 //
@@ -45,15 +45,16 @@ public:
     // A PARTIAL combOf() instance's runs, ordered by element then bit.
     static const std::vector<CombRun>& combRuns(const AstScope* scopep,
                                                 const AstVar* varp) VL_MT_DISABLED;
-    // Func a reconstructed row in 'scopep' calls to refresh 'shadowVarp', empty for a stored copy.
-    static std::string refreshFuncName(const AstScope* scopep,
-                                       const AstVar* shadowVarp) VL_MT_DISABLED;
+    // Func a rematerialized row in 'scopep' calls to rematerialize 'shadowVarp', empty for a
+    // stored copy.
+    static std::string rematFuncName(const AstScope* scopep,
+                                     const AstVar* shadowVarp) VL_MT_DISABLED;
     // False where 'varp' has no instance in 'scopep': it is kept apart from its other instances.
     static bool hasRow(const AstScope* scopep, const AstVar* varp) VL_MT_DISABLED;
     // Mark candidates' combinationally driven bits after V3Active, ahead of V3Decompose and
     // V3BitBlast; prepare() re-marks them.
     static void classifyComb(AstNetlist* nodep) VL_MT_DISABLED;
-    // Preserve reconstructable lazy signals before optimization.
+    // Preserve rematerializable lazy signals before optimization.
     static void prepare(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
@@ -71,8 +72,9 @@ public:
         std::vector<V3VpiLazy::CombRun> m_runs;  // Its masked bits, if PARTIAL
     };
     std::map<VarKey, InstComb> m_instComb;
-    // Refresh func name of a shadow's row in a scope other than its group's; see rowStub()
-    std::map<VarKey, std::string> m_rowRefresh;
+    // Rematerialization func name of a shadow's row in a scope other than its group's; see
+    // rowStub()
+    std::map<VarKey, std::string> m_rowRemat;
     // A split variable's or its shadow's instances held by the other; see splitKeptInstances()
     std::set<VarKey> m_noRow;
 

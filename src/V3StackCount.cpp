@@ -156,7 +156,7 @@ private:
         m_tracingCall = false;
         if (nodep->recursive()) return;
         // Called from VPI reads, never from eval
-        if (nodep->vpiLazyReconstruct()) return;
+        if (nodep->vpiLazyRemat()) return;
         if (!nodep->user2()) {  // Short circuit
             VL_RESTORER(m_ignoreRemaining);
             VL_RESTORER(m_stackSize);

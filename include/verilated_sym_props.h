@@ -186,7 +186,7 @@ public:
     bool isLazyRemat() const { return ((m_vlflags & VLVF_LAZY_REMAT) != 0); }
     /// --vpi-lazy: kept as storage, so writable, less any isLazyPutMasked() bits
     bool isLazyRetained() const { return ((m_vlflags & VLVF_LAZY_RETAINED) != 0); }
-    /// --vpi-lazy: reconstructed or combinationally driven, so a put may not change it, or with
+    /// --vpi-lazy: rematerialized or combinationally driven, so a put may not change it, or with
     /// isPublicRW(), its masked bits
     bool isLazyPutMasked() const {
         return ((m_vlflags & (VLVF_LAZY_COMB | VLVF_LAZY_REMAT)) != 0);
@@ -351,8 +351,8 @@ private:
         VL_DEBUG_IFDEF(assert(isLazyRemat()););
         return static_cast<VerilatedVarLazyDatap*>(m_datap);
     }
-    // Reconstruct a --vpi-lazy row; only when isLazyRemat()
-    inline void datapRefresh(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE;
+    // Rematerialize a --vpi-lazy row; only when isLazyRemat()
+    inline void datapRemat(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE;
     friend class VerilatedVpioVarBase;
     friend class VerilatedVpioVar;
 };
@@ -393,8 +393,8 @@ inline VerilatedVar::VerilatedVar(
     , m_lazyCombMask{-1} {}
 inline VerilatedVar::~VerilatedVar() = default;
 inline VerilatedVar::VerilatedVar(VerilatedVar&&) = default;
-// Not MT safe: runs generated reconstruction code and writes the model's shadow storage
-void VerilatedVar::datapRefresh(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE {
+// Not MT safe: runs generated rematerialization code and writes the model's shadow storage
+void VerilatedVar::datapRemat(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE {
     VL_DEBUG_IFDEF(assert(isLazyRemat()););
     VerilatedLazyState* const lazyp = symsp->lazyp();
     // Until the first eval() a shadow holds the reset value its --public-flat-rw signal would
@@ -402,7 +402,7 @@ void VerilatedVar::datapRefresh(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE {
     VerilatedVarLazyDatap* const descp = lazyDatap();
     uint8_t* const basep = static_cast<uint8_t*>(descp->selfp);
     if (!isLazyCopy()) {
-        (descp->refreshp)(descp->selfp);
+        (descp->rematFuncp)(descp->selfp);
     } else if (lazyp->stale(descp->stamp)) {
         std::memcpy(basep + descp->storageOffset, basep + descp->srcOffset, totalSize());
     }

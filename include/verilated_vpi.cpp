@@ -217,7 +217,7 @@ static VerilatedSyms* vl_vpi_lazy_syms(const VerilatedScope* scopep) VL_MT_UNSAF
     return symsp;
 }
 
-// Swaps back an undo log a read's rebuild swapped in, on every return path
+// Swaps back an undo log a read's rematerialization swapped in, on every return path
 struct VlLazyUndoRestore final {
     VerilatedSyms* const symsp;  // Model whose undo log the read may have swapped in
     ~VlLazyUndoRestore() VL_MT_UNSAFE_ONE {
@@ -435,8 +435,8 @@ protected:
     std::vector<int32_t> m_index;  // Index into each unpacked dimension
 
 public:
-    // Storage address without reconstructing: a handle's value is rebuilt when it is read, not
-    // when the handle is made, so a handle taken before the first eval() is harmless
+    // Storage address without rematerializing: a handle's value is rematerialized when it is read,
+    // not when the handle is made, so a handle taken before the first eval() is harmless
     static void* storagep(const VerilatedVar* varp) {
         // A member's row points into its parent's storage; only the parent has a descriptor
         if (VL_LIKELY(!varp->isLazyRemat()) || varp->isMember()) return varp->rawDatap();
@@ -589,7 +589,7 @@ public:
 
         const std::string localName = _vl_vpi_member_local_name(memberVarp->name());
 
-        // m_varDatap, not readDatap(): the member handle's value is reconstructed when it is
+        // m_varDatap, not readDatap(): the member handle's value is rematerialized when it is
         // read, and this offset is the same whether or not the shadow holds fresh data
         return new VerilatedVpioVar{memberVarp, scopep(),
                                     static_cast<uint8_t*>(m_varDatap) + offset, localName,
@@ -624,18 +624,18 @@ public:
     // The value as last materialized or stored, without re-resolving a --vpi-lazy row
     void* shadowDatap() const { return m_varDatap; }
     void* readDatap() const override VL_MT_UNSAFE_ONE {
-        // Refresh, but return m_varDatap rather than the refreshed base: an element handle
-        // (vpiMemoryWord) carries its offset into the shadow here
+        // Rematerialize, but return m_varDatap rather than the rematerialized base: an element
+        // handle (vpiMemoryWord) carries its offset into the shadow here
         if (VL_UNLIKELY(m_storageVarp->isLazyRemat())) {
             const VlLazyUndoRestore restore{vl_vpi_lazy_syms(m_scopep)};
-            m_storageVarp->datapRefresh(restore.symsp);
+            m_storageVarp->datapRemat(restore.symsp);
         }
         return m_varDatap;
     }
     void createPrevDatap() {
         if (VL_UNLIKELY(!m_prevDatap)) {
             m_prevDatap = new uint8_t[entSize()];
-            // readDatap(), not m_varDatap: the baseline must not be a stale reconstruction
+            // readDatap(), not m_varDatap: the baseline must not be a stale rematerialization
             std::memcpy(prevDatap(), readDatap(), entSize());
         }
     }
@@ -1419,8 +1419,8 @@ public:
         }
     }
     static void updatePrev(const VerilatedVpioVar* const varop) {
-        // The value valueDiffersFromPrev() delivered, still in the shadow it refreshed. It only
-        // compares this handle's bits, so copying all is fine
+        // The value valueDiffersFromPrev() delivered, still in the shadow it rematerialized. It
+        // only compares this handle's bits, so copying all is fine
         std::memcpy(varop->prevDatap(), varop->shadowDatap(), varop->entSize());
     }
     static bool callValueCbs() VL_MT_UNSAFE_ONE {
@@ -3505,12 +3505,13 @@ static void vl_vpi_note_write(const VerilatedVpioVar* vop) {
 }
 
 // --vpi-lazy undo log: a put reaches dependants only at the next eval, so a read swaps the bytes
-// it overwrote back in around a rebuild, and memos stay valid, as under --public-flat-rw.
+// it overwrote back in around a rematerialization, and memos stay valid, as under
+// --public-flat-rw.
 
 // The log, if a put of 'size' bytes (or a string) at 'datap' needs an entry, else nullptr
 static std::vector<VlLazyUndo>* vl_vpi_undo_logp(VerilatedSyms* symsp, const void* datap,
                                                  size_t size, bool isStr) {
-    // Mid-eval the eval itself consumes the put; before the first eval nothing is rebuilt
+    // Mid-eval the eval itself consumes the put; before the first eval nothing is rematerialized
     VerilatedLazyState* const lazyp = symsp->lazyp();
     if (!lazyp || !lazyp->undoOn || (lazyp->epoch & 1) || lazyp->beforeFirstEval()) return nullptr;
     std::vector<VlLazyUndo>& log = lazyp->undo;
@@ -3991,7 +3992,7 @@ static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSig
             return nullptr;
         }  // LCOV_EXCL_STOP
 
-        // A reconstruction reads a forceable signal's controls too
+        // A rematerialization reads a forceable signal's controls too
         for (const VerilatedVpioVar* const vop :
              {baseSignalVop, forceEnableSignalVop, forceValueSignalVop, forceReadSignalVop}) {
             if (vop) vl_vpi_undo_log(vop);
@@ -4290,7 +4291,8 @@ static bool vl_vpi_lazy_comb_put(const VerilatedVpioVar* vop, uint8_t* putp, siz
     vl_vpi_lazy_comb_merge(varp, symsp, beforep, putp, (putp - storep) / entSize, nElems);
     if (std::memcmp(putp, beforep, bytes) == 0) return false;
     vl_vpi_note_write(vop);
-    // No design read reaches a shadow's undriven bits, and an undo would revert its rebuild
+    // No design read reaches a shadow's undriven bits, and an undo would revert its
+    // rematerialization
     std::vector<VlLazyUndo>* const logp
         = varp->isLazyRemat() ? nullptr : vl_vpi_undo_logp(symsp, putp, bytes, false);
     if (logp) logp->push_back({putp, false, std::move(before)});
@@ -4305,7 +4307,7 @@ static vpiHandle vl_vpi_put_value_lazy_comb(vpiHandle object, const VerilatedVpi
     if (mode == vpiForceFlag || mode == vpiReleaseFlag || mode == vpiInertialDelay)
         return vpi_put_value(object, vop, valuep, flags);
     vpiHandle resultp = nullptr;
-    // Rebuilt first, so the masked bits merged back are current
+    // Rematerialized first, so the masked bits merged back are current
     if (vl_vpi_lazy_comb_put(vop, static_cast<uint8_t*>(vop->readDatap()), 1,
                              [&] { resultp = vpi_put_value(object, vop, valuep, vpiNoDelay); }))
         VerilatedVpiImp::evalNeeded(true);
@@ -4959,7 +4961,7 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         lo = 0;
         nElems = size;
     }
-    // Rebuilt first, so the masked bits merged back are current
+    // Rematerialized first, so the masked bits merged back are current
     uint8_t* const putp = static_cast<uint8_t*>(vop->readDatap()) + lo * varp->entSize();
     if (VL_UNLIKELY(varp->isLazyPutMasked())) {
         vl_vpi_lazy_comb_put(vop, putp, nElems,

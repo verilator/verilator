@@ -2586,11 +2586,11 @@ public:
         NONE = 0,
         CANDIDATE,  // VPI-visible from V3LinkParse until prepare() reassigns it
         RETAINED,  // Storage kept for VPI, not otherwise public
-        PINNED,  // Storage kept only as a reconstruction source; no VPI row
-        SHADOW,  // Cold storage holding a reconstructed signal's value
+        PINNED,  // Storage kept only as a rematerialization source; no VPI row
+        SHADOW,  // Cold storage holding a rematerialized signal's value
         SHADOW_HELPER,  // Shadow of a non-VPI source; only its copies get VPI rows
         SHADOW_TEMP,  // Cold storage for a group variable with no VPI descriptor slot of its own
-        STAMP  // Cold per-instance reconstruction freshness stamps
+        STAMP  // Cold per-instance rematerialization freshness stamps
     };
     enum en m_e;
     const char* ascii() const {

@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Reconstruct optimizer-eliminated VPI signals
+// DESCRIPTION: Verilator: Rematerialize optimizer-eliminated VPI signals
 //
 // Code available from: https://verilator.org
 //
@@ -20,14 +20,14 @@
 // optimization. prepare() runs before DFG and V3Gate and gives each candidate
 // one of three roles:
 //
-//   reconstructed - no storage; a cold function recomputes it on read
-//   copied        - a cold shadow of its own, refreshed by memcpy from its source
-//   retained      - ordinary storage, as under --public-flat-rw
+//   rematerialized - no storage; a cold function recomputes it on read
+//   copied         - a cold shadow of its own, rematerialized by memcpy from its source
+//   retained       - ordinary storage, as under --public-flat-rw
 //
 // Whatever the first two do not claim is retained, so the VPI-visible set is
 // never smaller than --public-flat-rw's (the completeness floor).
 //
-// UNIT OF RECONSTRUCTION
+// UNIT OF REMATERIALIZATION
 //
 // A "group" is one combinational block, or continuous assigns writing disjoint
 // constant parts of one variable. Its targets are the candidates it solely
@@ -43,7 +43,7 @@
 // still reads u's last-eval value until the next eval, as --public-flat-rw does.
 //
 // One function serves every instance of a module, so it reads variables, not
-// instance-specific drivers (AstCFunc::vpiLazyReconstruct). A group writing
+// instance-specific drivers (AstCFunc::vpiLazyRemat). A group writing
 // outside its own scope, and a shared group reading such a one, is anchored
 // instead: one function per instance. A variable's instances may then differ in
 // role, and the claimed ones move to an unflagged twin (splitKeptInstances).
@@ -59,8 +59,8 @@
 // and each row takes its own class.
 //
 // At run time a read compares its group's stamp against the model epoch, which
-// eval() bumps, so a cone is rebuilt at most once per eval step. A put logs the
-// bytes it overwrites, swapped back in around a rebuild until the next eval.
+// eval() bumps, so a cone is rematerialized at most once per eval step. A put logs the
+// bytes it overwrites, swapped back in around a rematerialization until the next eval.
 //
 // Determinism: pointer-keyed maps are never iterated where order reaches output.
 //
@@ -92,11 +92,11 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-static constexpr const char* RECONSTRUCT_FUNC_NAME = "__Vlazy_reconstruct";
-static constexpr const char* SHADOW_PREFIX = "__Vlazyrecon__";
+static constexpr const char* REMAT_FUNC_NAME = "__Vlazy_remat";
+static constexpr const char* SHADOW_PREFIX = "__Vlazyremat__";
 static constexpr const char* EPOCH_NAME = "__Vlazyepoch";
-static constexpr const char* RECONSTRUCT_BODY_FUNC_NAME = "__Vlazy_reconstruct_body";
-static constexpr const char* RECONSTRUCT_INST_FUNC_NAME = "__Vlazy_reconstruct_inst";
+static constexpr const char* REMAT_BODY_FUNC_NAME = "__Vlazy_remat_body";
+static constexpr const char* REMAT_INST_FUNC_NAME = "__Vlazy_remat_inst";
 
 //######################################################################
 
@@ -134,7 +134,7 @@ bool storagePinnedElsewhere(const AstVar* varp) {
     return varp->isReadByDpi() || varp->isWrittenByDpi();
 }
 
-bool reconstructableKind(const AstVar* varp) {
+bool rematerializableKind(const AstVar* varp) {
     if (storagePinnedElsewhere(varp)) return false;
     AstNodeDType* leafp = varp->dtypeSkipRefp();
     while (AstUnpackArrayDType* const adtypep = VN_CAST(leafp, UnpackArrayDType)) {
@@ -163,7 +163,7 @@ struct CombBlock final {
 
 class GroupVertex;
 
-// See UNIT OF RECONSTRUCTION above.
+// See UNIT OF REMATERIALIZATION above.
 struct Group final {
     AstScope* m_scopep = nullptr;  // Scope that authored the statements, unless anchored elsewhere
     std::vector<const CombBlock*> m_blockps;  // Its blocks, encounter order
@@ -171,7 +171,8 @@ struct Group final {
     std::vector<AstVarScope*> m_temps;  // Other variables it writes, encounter order
     std::unordered_set<AstVarScope*> m_members;  // targets and temps, for lookup
     std::vector<AstVarScope*> m_zeroInitps;  // Partial assembly: zero these shadows first
-    AstVarScope* m_copyFromp = nullptr;  // Converted: refresh by copying this variable instead
+    AstVarScope* m_copyFromp
+        = nullptr;  // Converted: rematerialize by copying this variable instead
     // m_targets[0]->varp(), cross-instance group identity; m_targets[0] itself if anchored
     // elsewhere
     const AstNode* m_keyp = nullptr;
@@ -780,7 +781,7 @@ class VpiLazyPreparer final {
     // Copy sources promoted from temp to target; per AstVar, so every instance forms one shape
     std::unordered_set<const AstVar*> m_helperCandVars;
     std::unordered_set<const AstVarScope*> m_helperTargets;  // Committed helper targets
-    int m_helperCount = 0;  // Helper targets reconstructed, per instance
+    int m_helperCount = 0;  // Helper targets rematerialized, per instance
     std::vector<Group*> m_copyGroups;  // Copies of a variable that holds storage
     std::vector<Group*> m_foldedCopies;  // Copies of another cone's target, sharing its shadow
     int m_foldedCount = 0;  // Folded copy rows, per instance, for stats
@@ -790,16 +791,16 @@ class VpiLazyPreparer final {
 
     V3Graph m_depGraph;  // u -> v where v reads a variable u defines; vertices are GroupVertex
 
-    std::vector<Group*> m_ordered;  // Topological order of reconstructed survivor groups
+    std::vector<Group*> m_ordered;  // Topological order of rematerialized survivor groups
     std::vector<AstCFunc*> m_splitFuncps;  // Entry and body funcs, emission order
 
     FileLine* m_funcFlp = nullptr;  // Of every node emitted, the top scope's
-    int m_reconstructed = 0;  // Reconstructed signals (per instance)
-    uint32_t m_boundaryStorage = 0;  // Pinned only to feed a reconstruct function
-    // Why each retained signal missed reconstruction.
+    int m_rematerialized = 0;  // Rematerialized signals (per instance)
+    uint32_t m_boundaryStorage = 0;  // Pinned only to feed a rematerialize function
+    // Why each retained signal missed rematerialization.
     enum class Bail : uint8_t {
         MULTIDRIVEN,  // Written by more than one group, or outside any group
-        DTYPE,  // Kind reconstruction cannot express (unpacked aggregate)
+        DTYPE,  // Kind rematerialization cannot express (unpacked aggregate)
         PARTIAL_MIXED_WRITE,  // Partial-write target also has a full/comb/impure/var-lsb write
         PARTIAL_OVERLAP,  // Partial writes overlap, so no unambiguous assembly
         // Partial writes leave undriven bits that a read other than VPI's may reach
@@ -807,7 +808,7 @@ class VpiLazyPreparer final {
         // Some bits of a group var are read before a write of them on every path
         READ_BEFORE_WRITE,
         LATCH,  // A target is not written on every path through the block
-        IMPURE,  // The block has a side effect reconstruction must not repeat
+        IMPURE,  // The block has a side effect rematerialization must not repeat
         UNSUPPORTED_STMT,  // A statement kind the ordered walk does not model
         UNSUPPORTED_LVALUE,  // A continuous write whose shape a shadow cannot mirror
         COMB_CYCLE,  // Member of a group cycle that does not merge into one provable group
@@ -849,7 +850,7 @@ class VpiLazyPreparer final {
     // Per group key, so shared by every instance of its module.
     struct KeyInfo final {
         int m_gid = -1;  // Design-global id naming the emitted artifacts (gidOf)
-        AstCFunc* m_funcp = nullptr;  // Reconstruct func shared by every instance
+        AstCFunc* m_funcp = nullptr;  // Rematerialize func shared by every instance
         int m_epochSlot = -1;  // Index into the module's stamp array (assignEpochSlots)
     };
     std::unordered_map<const AstNode*, KeyInfo> m_keyInfo;  // Group::m_keyp -> its KeyInfo
@@ -882,7 +883,7 @@ public:
         topoOrderSurvivors();
         copyStoredSources();
         foldTrivialCopyGroups();
-        emitReconstructions();
+        emitRemats();
         retainCompletenessFloor();
         reportStats();
     }
@@ -995,7 +996,8 @@ private:
         // Writes into one other, single-instance scope, but for the writer's own temps, anchor the
         // group there: its one func reads the writer's variables absolute. Any other write outside
         // the writer, or a read outside one with several instances, anchors it in the top scope,
-        // which addresses them all absolute, and a row elsewhere refreshes through a rowStub().
+        // which addresses them all absolute, and a row elsewhere rematerializes through a
+        // rowStub().
         const AstScope* const writerp = scopep;
         const auto foreign = [&](const AstVarScope* vscp) { return vscp->scopep() != writerp; };
         const auto it = std::find_if(written.begin(), written.end(), foreign);
@@ -1039,7 +1041,7 @@ private:
                     m_helperTargets.insert(w);
                     continue;
                 }
-            } else if (!reconstructableKind(varp)) {
+            } else if (!rematerializableKind(varp)) {
                 retainTarget(w, Bail::DTYPE);
             } else {
                 targets.push_back(w);
@@ -1074,7 +1076,7 @@ private:
 
     // A parameter is a static member, which a row cannot address by offset.
     static bool canCopyFrom(const AstVarScope* dstp, const AstVarScope* srcp) {
-        return dstp->scopep() == srcp->scopep() && reconstructableKind(dstp->varp())
+        return dstp->scopep() == srcp->scopep() && rematerializableKind(dstp->varp())
                && !srcp->varp()->isParam() && sameLayout(dstp, srcp);
     }
 
@@ -1096,7 +1098,7 @@ private:
                 const AstVar* const varp = r->varp();
                 if (varp->isSigVpiLazyCandidate()) continue;
                 if (b.m_writeCount.count(r)) continue;
-                if (reconstructableKind(varp)) m_helperCandVars.insert(varp);
+                if (rematerializableKind(varp)) m_helperCandVars.insert(varp);
             }
         }
     }
@@ -1194,7 +1196,7 @@ private:
                           const std::unordered_set<const AstVar*>& gapRead) {
         AstVar* const varp = basep->varp();
         if (!candidate(basep) && !m_helperCandVars.count(varp)) return;
-        if (retainIf(basep, Bail::DTYPE, !reconstructableKind(varp))) return;
+        if (retainIf(basep, Bail::DTYPE, !rematerializableKind(varp))) return;
         // A full / procedural / impure / variable-range write exists too.
         if (retainIf(basep, Bail::PARTIAL_MIXED_WRITE,
                      static_cast<int>(parts.size()) != writeCountOf(basep)
@@ -1238,7 +1240,7 @@ private:
 
     // METHODS - Group analysis
 
-    // One ordered walk over a group's statements: see UNIT OF RECONSTRUCTION above. Per bit, so
+    // One ordered walk over a group's statements: see UNIT OF REMATERIALIZATION above. Per bit, so
     // `a[1] = f(a[0])` reads only what it already wrote.
     class VpiLazyReadOrderVisitor final : public VNVisitorConst {
         using ArmDefs = std::vector<std::pair<AstVarScope*, CombFootprint>>;
@@ -1544,7 +1546,7 @@ private:
         return cutp;
     }
 
-    // A group downstream of a cycle still reconstructs cold, so only SCC members are retained.
+    // A group downstream of a cycle still rematerializes cold, so only SCC members are retained.
     // An SCC that does not merge loses one group, retained, and what remains is retried.
     void splitCyclesRetainCores() {
         while (true) {
@@ -1729,27 +1731,27 @@ private:
         return gid;
     }
 
-    std::string reconFuncName(const Group* g) {
-        return std::string{RECONSTRUCT_FUNC_NAME} + "__" + std::to_string(gidOf(g));
+    std::string rematFuncName(const Group* g) {
+        return std::string{REMAT_FUNC_NAME} + "__" + std::to_string(gidOf(g));
     }
 
-    std::string reconBodyFuncName(const Group* g) {
-        return std::string{RECONSTRUCT_BODY_FUNC_NAME} + "__" + std::to_string(gidOf(g));
+    std::string rematBodyFuncName(const Group* g) {
+        return std::string{REMAT_BODY_FUNC_NAME} + "__" + std::to_string(gidOf(g));
     }
 
-    // tableFacing: called through VlLazyReconEntry::refreshp, so takes self untyped. Not
+    // tableFacing: called through VlLazyRematEntry::rematFuncp, so takes self untyped. Not
     // isStatic, which V3Descope would read as no self, pinning one instance into a shared func.
-    AstCFunc* newReconFunc(AstScope* scopep, const std::string& name, bool tableFacing) const {
+    AstCFunc* newRematFunc(AstScope* scopep, const std::string& name, bool tableFacing) const {
         AstCFunc* const funcp = new AstCFunc{m_funcFlp, name, scopep, ""};
         funcp->isStatic(false);
         funcp->isLoose(true);
         if (tableFacing) funcp->voidSelf(true);
         funcp->slow(true);
-        // Every recon func is reached only from the syms VlLazyReconEntry tables or another recon
+        // Every remat func is reached only from the syms VlLazyRematEntry tables or another remat
         // func, which no pass sees as eval-reachable.
         funcp->entryPoint(true);
         // One func serves every instance: V3Gate/V3Dfg must not substitute instance expressions.
-        funcp->vpiLazyReconstruct(true);
+        funcp->vpiLazyRemat(true);
         funcp->declPrivate(false);
         scopep->addBlocksp(funcp);
         return funcp;
@@ -1759,9 +1761,8 @@ private:
     AstCFunc* funcOf(const Group* g) { return m_keyInfo[g->m_keyp].m_funcp; }
 
     AstCFunc* newCallStub(AstScope* scopep, const Group* g) {
-        AstCFunc* const stubp = newReconFunc(
-            scopep, std::string{RECONSTRUCT_INST_FUNC_NAME} + "__" + std::to_string(gidOf(g)),
-            true);
+        AstCFunc* const stubp = newRematFunc(
+            scopep, std::string{REMAT_INST_FUNC_NAME} + "__" + std::to_string(gidOf(g)), true);
         AstCCall* const callp = new AstCCall{m_funcFlp, funcOf(g)};
         callp->dtypeSetVoid();
         stubp->addStmtsp(callp->makeStmt());
@@ -1782,7 +1783,7 @@ private:
         return stubp;
     }
 
-    // A row is refreshed with its own instance's self pointer, so a row outside an anchored
+    // A row is rematerialized with its own instance's self pointer, so a row outside an anchored
     // group's scope calls a stub of its own module, which calls the func absolute.
     AstCFunc* rowStub(AstScope* scopep, const Group* g) {
         AstCFunc*& stubp = m_rowStubOf[{scopep->modp(), g}];
@@ -1846,7 +1847,7 @@ private:
         if (isNew) {
             shadowVarp->trace(false);
             // A VPI-facing shadow stays a member; V3Localize may take a temp
-            if (!shadowVarp->isLazyReconstructTemp()) shadowVarp->sigPublic(true);
+            if (!shadowVarp->isLazyRematTemp()) shadowVarp->sigPublic(true);
             origp->scopep()->modp()->addStmtsp(shadowVarp);
             m_shadowVarOfOrig.emplace(origp->varp(), shadowVarp);
         }
@@ -1954,14 +1955,14 @@ private:
     }
 
     // Redirects a group's body to shadows; no re-typing, a shadow keeps its dtype. Pre-order, so
-    // the cone operands are refreshed in the order the body first reads them.
+    // the cone operands are rematerialized in the order the body first reads them.
     class VpiLazyConeRewireVisitor final : public VNVisitor {
         VpiLazyPreparer& m_prep;  // Owns the shadows and group maps
         Group* const m_groupp;  // Group whose cloned body is rewired
         std::unordered_set<Group*> m_seenOps;  // m_coneOps, for lookup
 
     public:
-        std::vector<Group*> m_coneOps;  // Reconstructed operand groups, first-read order
+        std::vector<Group*> m_coneOps;  // Rematerialized operand groups, first-read order
 
     private:
         static void redirect(AstVarRef* refp, AstVarScope* vscp) {
@@ -1982,7 +1983,7 @@ private:
             }
             Group* const ugp = m_prep.liveGroupOf(u);
             if (ugp && ugp != m_groupp) {
-                // Operand is reconstructed too: read its shadow, calling its func to freshen.
+                // Operand is rematerialized too: read its shadow, calling its func to freshen.
                 UASSERT_OBJ(m_prep.funcOf(ugp), m_groupp->m_keyp,
                             "--vpi-lazy cone operand ordered after its consumer");
                 redirect(nodep, m_prep.shadowForMember(u));
@@ -2003,7 +2004,7 @@ private:
     };
 
     // Added to the tree at once, so remapped clones' dtypep() links survive V3Dead's dtype GC.
-    void emitReconstructions() {
+    void emitRemats() {
         m_funcFlp = m_topScopep->fileline();
         assignEpochSlots();
         // Every instance needs its own shadow VarScope for its descriptor.
@@ -2012,17 +2013,17 @@ private:
         }
         for (Group* const g : m_ordered) {
             KeyInfo& key = m_keyInfo[g->m_keyp];
-            if (!key.m_funcp) emitReconFunc(g, key);  // Later instances share it
+            if (!key.m_funcp) emitRematFunc(g, key);  // Later instances share it
         }
         emitCopyRows(m_copyGroups, false);
         emitCopyRows(m_foldedCopies, true);
     }
 
-    void emitReconFunc(Group* g, KeyInfo& key) {
-        AstCFunc* const funcp = newReconFunc(g->m_scopep, reconFuncName(g), true);
+    void emitRematFunc(Group* g, KeyInfo& key) {
+        AstCFunc* const funcp = newRematFunc(g->m_scopep, rematFuncName(g), true);
         key.m_funcp = funcp;
         m_splitFuncps.push_back(funcp);
-        bindRowRefresh(g, funcp);
+        bindRowRemat(g, funcp);
         AstNodeStmt* const bodyp = cloneBody(g);
         const VpiLazyConeRewireVisitor rewire{*this, g, bodyp};
         AstIf* const guardp = newEpochGuard(g, key.m_epochSlot);
@@ -2035,7 +2036,7 @@ private:
                 guardp->addThensp(stmtp);
             }
         };
-        // Refresh the operand cone; topo order guarantees each operand's func exists.
+        // Rematerialize the operand cone; topo order guarantees each operand's func exists.
         for (const Group* const ugp : rewire.m_coneOps) {
             AstCCall* const callp = new AstCCall{m_funcFlp, instanceCallee(ugp)};
             callp->dtypeSetVoid();
@@ -2046,18 +2047,18 @@ private:
         moveRowsToShadows(g);
     }
 
-    // What V3EmitCSyms routes a row's refreshp to, here and on any fold of this shadow
-    void bindRowRefresh(const Group* g, AstCFunc* funcp) {
+    // What V3EmitCSyms routes a row's rematFuncp to, here and on any fold of this shadow
+    void bindRowRemat(const Group* g, AstCFunc* funcp) {
         for (AstVarScope* const t : g->m_targets) {
             const auto tit = m_shadowOf.find(t);
             UASSERT_OBJ(tit != m_shadowOf.end(), t->varp(),
-                        "--vpi-lazy reconstruct target has no shadow");
+                        "--vpi-lazy rematerialize target has no shadow");
             AstVar* const shadowVarp = tit->second->varp();
             if (t->scopep() == g->m_scopep) {
-                shadowVarp->lazyReconFuncp(funcp);
+                shadowVarp->lazyRematFuncp(funcp);
             } else {
-                m_ctx.m_rowRefresh.emplace(instKeyOf(t->scopep(), shadowVarp),
-                                           rowStub(t->scopep(), g)->name());
+                m_ctx.m_rowRemat.emplace(instKeyOf(t->scopep(), shadowVarp),
+                                         rowStub(t->scopep(), g)->name());
             }
         }
     }
@@ -2075,7 +2076,7 @@ private:
         int nodes = 0;
         for (const AstNode* sp = bodyp; sp; sp = sp->nextp()) nodes += sp->nodeCount();
         if (nodes < splitAt / 4) return nullptr;
-        AstCFunc* const bodyFuncp = newReconFunc(g->m_scopep, reconBodyFuncName(g), false);
+        AstCFunc* const bodyFuncp = newRematFunc(g->m_scopep, rematBodyFuncName(g), false);
         m_splitFuncps.push_back(bodyFuncp);
         AstCCall* const bodyCallp = new AstCCall{m_funcFlp, bodyFuncp};
         bodyCallp->dtypeSetVoid();
@@ -2109,7 +2110,7 @@ private:
                 continue;
             }
             if (m_gapVars.count(t->varp())) moveMaskToShadow(t);
-            m_reconstructed += keyInstances(g);
+            m_rematerialized += keyInstances(g);
         }
     }
 
@@ -2136,9 +2137,9 @@ private:
                             "--vpi-lazy folded copy source has no shadow");
                 srcVarp = sit->second->varp();
                 UASSERT_OBJ(
-                    srcVarp->lazyReconFuncp()
-                        || m_ctx.m_rowRefresh.count(instKeyOf(g->m_copyFromp->scopep(), srcVarp)),
-                    srcVarp, "--vpi-lazy folded copy source has no reconstruct func");
+                    srcVarp->lazyRematFuncp()
+                        || m_ctx.m_rowRemat.count(instKeyOf(g->m_copyFromp->scopep(), srcVarp)),
+                    srcVarp, "--vpi-lazy folded copy source has no rematerialize func");
                 ++m_foldedCount;
             } else {
                 pinBoundary(g->m_copyFromp, false);  // As the cone this row replaced would have
@@ -2150,12 +2151,12 @@ private:
                         shadowVarp, "--vpi-lazy copy instances disagree on their source");
             shadowVarp->lazyCopySrcp(srcVarp);
             if (shadowVarp->isLazyShadowAlias()) shadowVarp->noReset(true);  // No member to reset
-            ++m_reconstructed;  // Each instance is its own group
+            ++m_rematerialized;  // Each instance is its own group
         }
     }
 
     // A still-flagged VarScope is a residual: retain it, keeping the VPI set a superset of
-    // --public-flat-rw's. Kind exclusions govern what may be reconstructed, not what may be
+    // --public-flat-rw's. Kind exclusions govern what may be rematerialized, not what may be
     // retained: else V3Gate substitutes the driver away and the row reads zero forever.
     void retainCompletenessFloor() {
         for (AstVarScope* const vscp : m_gather.m_vscOrder) {
@@ -2236,7 +2237,7 @@ private:
     const char* floorReason(AstVarScope* vscp) {
         const AstVar* const varp = vscp->varp();
         if (varp->isIO()) return hasCombDriver(vscp) ? "port (comb-driven)" : "port (other)";
-        if (!reconstructableKind(varp)) return "dtype";
+        if (!rematerializableKind(varp)) return "dtype";
         const int writes = writeCountOf(vscp);
         if (writes == 0) return "undriven";
         UASSERT_OBJ(!hasCombDriver(vscp), vscp, "--vpi-lazy comb residual no classifier claimed");
@@ -2244,19 +2245,19 @@ private:
     }
 
     void reportStats() {
-        const size_t reconstructedMembers = m_shadowVarOfOrig.size();
+        const size_t rematerializedMembers = m_shadowVarOfOrig.size();
         const int floorRetained = m_bailCount[static_cast<size_t>(Bail::COMPLETENESS_FLOOR)];
         const int fallback
             = std::accumulate(m_bailCount.begin(), m_bailCount.end(), 0) - floorRetained;
-        UINFO(3, "vpi-lazy: reconstructed="
-                     << m_reconstructed << " groups=" << m_ordered.size()
-                     << " members=" << reconstructedMembers << " fallback=" << fallback
+        UINFO(3, "vpi-lazy: rematerialized="
+                     << m_rematerialized << " groups=" << m_ordered.size()
+                     << " members=" << rematerializedMembers << " fallback=" << fallback
                      << " copyGroups=" << m_copyCount << " foldedCopies=" << m_foldedCount
                      << " helpers=" << m_helperCount << " floorRetained=" << floorRetained);
         if (v3Global.opt.stats()) {
-            V3Stats::addStat("VPI, lazy reconstructed", m_reconstructed);
+            V3Stats::addStat("VPI, lazy rematerialized", m_rematerialized);
             V3Stats::addStat("VPI, lazy groups", m_ordered.size());
-            V3Stats::addStat("VPI, lazy reconstructed members", reconstructedMembers);
+            V3Stats::addStat("VPI, lazy rematerialized members", rematerializedMembers);
             V3Stats::addStat("VPI, lazy fallback retained", fallback);
             V3Stats::addStat("VPI, lazy boundary storage pinned", m_boundaryStorage);
             V3Stats::addStat("VPI, lazy copy descriptors", m_copyCount);
@@ -2292,7 +2293,7 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
         splitFuncps = preparer.splitFuncps();
     }
 
-    // Descriptors now pin what VPI and the reconstruct cones need stored. Any other untraced
+    // Descriptors now pin what VPI and the rematerialize cones need stored. Any other untraced
     // one is dropped, so it does not keep its variable through V3DfgOptimizer and V3Gate.
     nodep->topScopep()->rtmdp()->foreach([](AstRtmdVar* sigp) {
         if (!sigp->vpiLazy() || !sigp->refp()) return;
@@ -2344,11 +2345,11 @@ bool V3VpiLazy::hasRow(const AstScope* scopep, const AstVar* varp) {
     return !ctxp || !ctxp->m_noRow.count(instKeyOf(scopep, varp));
 }
 
-std::string V3VpiLazy::refreshFuncName(const AstScope* scopep, const AstVar* shadowVarp) {
+std::string V3VpiLazy::rematFuncName(const AstScope* scopep, const AstVar* shadowVarp) {
     const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
     UASSERT_OBJ(ctxp, shadowVarp, "--vpi-lazy row without a context");
-    const auto it = ctxp->m_rowRefresh.find(instKeyOf(scopep, shadowVarp));
-    if (it != ctxp->m_rowRefresh.end()) return it->second;
-    const AstCFunc* const funcp = shadowVarp->lazyReconFuncp();
+    const auto it = ctxp->m_rowRemat.find(instKeyOf(scopep, shadowVarp));
+    if (it != ctxp->m_rowRemat.end()) return it->second;
+    const AstCFunc* const funcp = shadowVarp->lazyRematFuncp();
     return funcp ? funcp->name() : "";
 }

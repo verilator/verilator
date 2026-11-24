@@ -604,7 +604,7 @@ class AstCFunc final : public AstNode {
                          // so adding/removing loose functions doesn't recompile everything.
     bool m_isVirtual : 1;  // Virtual function
     bool m_entryPoint : 1;  // User may call into this top level function
-    bool m_vpiLazyReconstruct : 1;  // Shared --vpi-lazy reconstruct cone
+    bool m_vpiLazyRemat : 1;  // Shared --vpi-lazy rematerialize cone
     bool m_vpiLazyInstStub : 1;  // --vpi-lazy call into another instance's cone, pre-Descope
     bool m_dpiPure : 1;  // Pure DPI function
     bool m_dpiContext : 1;  // Declared as 'context' DPI import/export function
@@ -640,7 +640,7 @@ public:
         m_isVirtual = false;
         m_needsVlProcess = false;
         m_entryPoint = false;
-        m_vpiLazyReconstruct = false;
+        m_vpiLazyRemat = false;
         m_vpiLazyInstStub = false;
         m_dpiPure = false;
         m_dpiContext = false;
@@ -663,8 +663,7 @@ public:
     bool sameNode(const AstNode* samep) const override {
         const AstCFunc* const asamep = VN_DBG_AS(samep, CFunc);
         return ((rtnTypeVoid() == asamep->rtnTypeVoid()) && (argTypes() == asamep->argTypes())
-                && isLoose() == asamep->isLoose()
-                && vpiLazyReconstruct() == asamep->vpiLazyReconstruct()
+                && isLoose() == asamep->isLoose() && vpiLazyRemat() == asamep->vpiLazyRemat()
                 && vpiLazyInstStub() == asamep->vpiLazyInstStub()
                 && voidSelf() == asamep->voidSelf()
                 && (!(dpiImportPrototype() || dpiExportImpl()) || name() == asamep->name()));
@@ -712,8 +711,8 @@ public:
     void setNeedsVlProcess() { m_needsVlProcess = true; }
     bool entryPoint() const { return m_entryPoint; }
     void entryPoint(bool flag) { m_entryPoint = flag; }
-    bool vpiLazyReconstruct() const { return m_vpiLazyReconstruct; }
-    void vpiLazyReconstruct(bool flag) { m_vpiLazyReconstruct = flag; }
+    bool vpiLazyRemat() const { return m_vpiLazyRemat; }
+    void vpiLazyRemat(bool flag) { m_vpiLazyRemat = flag; }
     bool vpiLazyInstStub() const { return m_vpiLazyInstStub; }
     void vpiLazyInstStub(bool flag) { m_vpiLazyInstStub = flag; }
     bool dpiPure() const { return m_dpiPure; }
@@ -2435,8 +2434,8 @@ class AstVar final : public AstNode {
     bool m_sigUserRWPublic : 1;  // User C code accesses this signal, read-write
     // Source storage for a copied shadow
     // @astgen ptr := m_lazyCopySrcp : Optional[AstVar]
-    // Reconstruct function for a shadow
-    // @astgen ptr := m_lazyReconFuncp : Optional[AstCFunc]
+    // Rematerialize function for a shadow
+    // @astgen ptr := m_lazyRematFuncp : Optional[AstCFunc]
     bool m_lazyShadowNet : 1;  // Shadow of a net; as a MODULETEMP it is not isNet()
     bool m_usedParam : 1;  // Parameter is referenced (on link; later signals not setup)
     bool m_usedLoopIdx : 1;  // Variable subject of for unrolling
@@ -2706,7 +2705,7 @@ public:
         if (flag) sigUserRdPublic(true);
     }
     void lazyCopySrcp(AstVar* varp) { m_lazyCopySrcp = varp; }
-    void lazyReconFuncp(AstCFunc* funcp) { m_lazyReconFuncp = funcp; }
+    void lazyRematFuncp(AstCFunc* funcp) { m_lazyRematFuncp = funcp; }
     void lazyShadowNet(bool flag) { m_lazyShadowNet = flag; }
     void vpiLazyRole(VVpiLazyRole role) { m_vpiLazyRole = role; }
     void vpiLazyComb(VVpiLazyComb comb) { m_vpiLazyComb = comb; }
@@ -2880,22 +2879,20 @@ public:
         return isSigUserRWPublic() || isSigVpiLazyCandidate() || isSigVpiLazyRetained();
     }
     AstVar* lazyCopySrcp() const { return m_lazyCopySrcp; }
-    AstCFunc* lazyReconFuncp() const { return m_lazyReconFuncp; }
-    bool isLazyReconstructShadow() const {
+    AstCFunc* lazyRematFuncp() const { return m_lazyRematFuncp; }
+    bool isLazyRematShadow() const {
         return m_vpiLazyRole == VVpiLazyRole::SHADOW
                || m_vpiLazyRole == VVpiLazyRole::SHADOW_HELPER;
     }
-    bool isLazyReconstructHelper() const { return m_vpiLazyRole == VVpiLazyRole::SHADOW_HELPER; }
+    bool isLazyRematHelper() const { return m_vpiLazyRole == VVpiLazyRole::SHADOW_HELPER; }
     // A fold row: its VPI row is the source cone's shadow, so it has no C++ member of its own
     bool isLazyShadowAlias() const {
-        return isLazyReconstructShadow() && m_lazyCopySrcp
-               && m_lazyCopySrcp->isLazyReconstructShadow();
+        return isLazyRematShadow() && m_lazyCopySrcp && m_lazyCopySrcp->isLazyRematShadow();
     }
-    bool isLazyReconstructTemp() const { return m_vpiLazyRole == VVpiLazyRole::SHADOW_TEMP; }
-    // Only reconstruction touches it, so it is never on the eval path
+    bool isLazyRematTemp() const { return m_vpiLazyRole == VVpiLazyRole::SHADOW_TEMP; }
+    // Only rematerialization touches it, so it is never on the eval path
     bool isLazyColdStorage() const {
-        return isLazyReconstructShadow() || isLazyReconstructTemp()
-               || m_vpiLazyRole == VVpiLazyRole::STAMP;
+        return isLazyRematShadow() || isLazyRematTemp() || m_vpiLazyRole == VVpiLazyRole::STAMP;
     }
     bool isLazyShadowNet() const { return m_lazyShadowNet; }
     bool isTrace() const { return m_trace; }

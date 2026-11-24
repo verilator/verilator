@@ -23,8 +23,8 @@ test.compile(make_top_shell=False,
                  "-CFLAGS -DT_VPI_DRIVERS_LAZY -CFLAGS -DVL_DEBUG=1", test.pli_filename
              ])
 
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 191)
-test.file_grep(test.stats, r'VPI, lazy reconstructed members\s+(\d+)', 255)
+test.file_grep(test.stats, r'VPI, lazy rematerialized\s+(\d+)', 191)
+test.file_grep(test.stats, r'VPI, lazy rematerialized members\s+(\d+)', 255)
 test.file_grep(test.stats, r'VPI, lazy groups\s+(\d+)', 154)
 test.file_grep(test.stats, r'VPI, lazy copy descriptors\s+(\d+)', 30)
 test.file_grep(test.stats, r'VPI, lazy fallback retained\s+(\d+)', 38)

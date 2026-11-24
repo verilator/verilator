@@ -293,8 +293,8 @@ public:
         // this->lifeDump();
     }
     void externalCall() {
-        // User code may get or put a --vpi-lazy signal, or read one rebuilt from storage that
-        // is pinned only later: no known value or removable store survives the call
+        // User code may get or put a --vpi-lazy signal, or read one rematerialized from storage
+        // that is pinned only later: no known value or removable store survives the call
         if (!v3Global.opt.vpiLazy()) return;
         for (LifeBlock* blockp = this; blockp; blockp = blockp->m_aboveLifep) {
             for (auto& itr : blockp->m_map) itr.second.complexAssign();

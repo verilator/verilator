@@ -171,16 +171,17 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_LAZY_REMAT = (1 << 21),  // --vpi-lazy: rematerialized row; no storage, may be read-only
     // --vpi-lazy: a candidate kept as storage, so writable, less any VLVF_LAZY_COMB-masked bits
     VLVF_LAZY_RETAINED = (1 << 22),
-    VLVF_LAZY_COPY = (1 << 23),  // --vpi-lazy: refreshed by memcpy from srcOffset, not a cone
+    VLVF_LAZY_COPY = (1 << 23),  // --vpi-lazy: rematerialized by memcpy from srcOffset, not a cone
     // --vpi-lazy: combinationally driven, so read-only, or with VLVF_PUB_RW, its masked bits
     VLVF_LAZY_COMB = (1 << 24)
 };
 
-struct VlLazyReconEntry;
+struct VlLazyRematEntry;
 
-/// --vpi-lazy descriptor, a reconstructed row's VerilatedVar::m_datap.
+/// --vpi-lazy descriptor, a rematerialized row's VerilatedVar::m_datap.
 struct VerilatedVarLazyDatap final {
-    void (*refreshp)(void* selfp);  ///< Rebuilds the shadow if stale; unused for a copy row
+    void (*rematFuncp)(
+        void* selfp);  ///< Rematerializes the shadow if stale; unused for a copy row
     void* selfp;  ///< The row's module instance
     /// Copy rows only: VerilatedLazyState::epoch when last copied; cones keep theirs in the
     /// module's stamp array
@@ -188,16 +189,16 @@ struct VerilatedVarLazyDatap final {
     uint32_t storageOffset;  ///< Shadow's byte offset in selfp
     uint32_t srcOffset;  ///< Copy rows' source byte offset in selfp; unused for cones
 
-    /// Set up for 'recon''s row whose shadow is 'offset' bytes into instance 'instp'
-    void init(const VlLazyReconEntry& recon, void* instp, uint32_t offset);
+    /// Set up for 'remat''s row whose shadow is 'offset' bytes into instance 'instp'
+    void init(const VlLazyRematEntry& remat, void* instp, uint32_t offset);
 };
 
 // ILP32 lays the same members out in 24 bytes, so this is a cap, not an equality
 static_assert(sizeof(VerilatedVarLazyDatap) <= 32, "VerilatedVarLazyDatap unexpectedly grew");
 
-/// One --vpi-lazy descriptor's refresh method, indexed by VlVarTableEntry::lazyDescSlot()
-struct VlLazyReconEntry final {
-    void (*refreshp)(void* selfp);  ///< See VerilatedVarLazyDatap::refreshp
+/// One --vpi-lazy descriptor's rematerialize method, indexed by VlVarTableEntry::lazyDescSlot()
+struct VlLazyRematEntry final {
+    void (*rematFuncp)(void* selfp);  ///< See VerilatedVarLazyDatap::rematFuncp
     /// A copy's source; with VLVF_LAZY_COMB, a cone's VlLazyCombMask index
     uint32_t srcByteOffset;
     uint32_t vlflags;  ///< VLVF_LAZY_* flags added to the row's own
@@ -1028,7 +1029,7 @@ struct VerilatedLazyState final {
     /// An eval() has begun, in this model or the one saved. Unlike the model's m_didInit, set
     /// before the time 0 settle, and reachable from VerilatedSyms.
     bool evalBegun = false;
-    bool undoOn = false;  ///< Has a reconstructed row, so puts log
+    bool undoOn = false;  ///< Has a rematerialized row, so puts log
     bool undoIn = false;  ///< The undo log is swapped in
     std::vector<VlLazyUndo> undo;  ///< See vl_vpi_undo_log() in verilated_vpi.cpp
     /// Called from the generated evalBegin()
@@ -1056,7 +1057,7 @@ struct VerilatedLazyState final {
     bool stale(uint64_t& stamp) VL_MT_UNSAFE_ONE {
         if (stamp == epoch) return false;
         stamp = epoch;
-        // A read's first rebuild swaps the undo log in, and the read swaps it back
+        // A read's first rematerialization swaps the undo log in, and the read swaps it back
         if (VL_UNLIKELY(!undo.empty() && !undoIn && !(epoch & 1))) undoSwap(true);
         return true;
     }
@@ -1142,7 +1143,7 @@ private:
     const Type m_type;  // Type of the scope
 
     void varInsertFromRow(const VlVarTableEntry& e, void* datap, bool isParam,
-                          const VlLazyReconEntry* reconp = nullptr) VL_MT_UNSAFE;
+                          const VlLazyRematEntry* rematp = nullptr) VL_MT_UNSAFE;
 
 public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedScope(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
@@ -1160,11 +1161,11 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      void* forceReadSignalDatap, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims, ...) VL_MT_UNSAFE;
-    // lazyBasep/lazyReconsp are null when the table has no lazy rows; both keyed by
+    // lazyBasep/lazyRematsp are null when the table has no lazy rows; both keyed by
     // VlVarTableEntry::lazyDescSlot()
     void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
                              VerilatedVarLazyDatap* lazyBasep = nullptr,
-                             const VlLazyReconEntry* lazyReconsp = nullptr) VL_MT_UNSAFE;
+                             const VlLazyRematEntry* lazyRematsp = nullptr) VL_MT_UNSAFE;
     void paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,
                                const void* const* paramPtrsp) VL_MT_UNSAFE;
     void ifaceRefInsert(const VerilatedIfaceRef* ifaceRefp) VL_MT_UNSAFE;

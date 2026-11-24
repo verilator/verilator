@@ -888,7 +888,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isCoroutine()) str << " [CORO]";
     if (needsVlProcess()) str << " [NPRC]";
     if (entryPoint()) str << " [ENTRY]";
-    if (vpiLazyReconstruct()) str << " [VPILAZYRECON]";
+    if (vpiLazyRemat()) str << " [VPILAZYREMAT]";
     if (vpiLazyInstStub()) str << " [VPILAZYSTUB]";
     if (noLife()) str << " [NOLIFE]";
     if (voidSelf()) str << " [VOIDSELF]";
@@ -914,7 +914,7 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonBoolFuncIf(str, isCoroutine);
     dumpJsonBoolFuncIf(str, needsVlProcess);
-    dumpJsonBoolFuncIf(str, vpiLazyReconstruct);
+    dumpJsonBoolFuncIf(str, vpiLazyRemat);
     dumpJsonBoolFuncIf(str, vpiLazyInstStub);
     dumpJsonBoolFuncIf(str, noLife);
     dumpJsonBoolFuncIf(str, voidSelf);
@@ -4809,7 +4809,7 @@ void AstVar::dump(std::ostream& str) const {
     if (vpiLazyComb() != VVpiLazyComb::NONE) str << " [VPICOMB=" << vpiLazyComb() << "]";
     if (isLazyShadowNet()) str << " [VPISHADOWNET]";
     if (lazyCopySrcp()) str << " [VPICOPY=" << lazyCopySrcp()->name() << "]";
-    if (lazyReconFuncp()) str << " [VPIRECON=" << lazyReconFuncp()->name() << "]";
+    if (lazyRematFuncp()) str << " [VPIREMAT=" << lazyRematFuncp()->name() << "]";
     if (keepPort()) str << " [KEEPPORT]";
     if (isReadByDpi()) str << " [DPIRD]";
     if (isWrittenByDpi()) str << " [DPIWR]";
