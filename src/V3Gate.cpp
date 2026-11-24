@@ -819,6 +819,7 @@ class GateInline final {
                 ++m_statRefs;
             }
 
+            // If removed all usage
             if (vVtxp->outEmpty()) {
                 // Remove Variable vertex
                 VL_DO_DANGLING(vVtxp->unlinkDelete(&m_graph), vVtxp);
