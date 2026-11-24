@@ -14,9 +14,8 @@ test.scenarios('vlt')
 test.top_filename = "t/t_vpi_drivers.v"
 test.pli_filename = "t/t_vpi_drivers.cpp"
 
-# --vpi-lazy implies --vpi. The split options spread the rebuilds over many functions and files;
-# --stats covers the --vpi-lazy statistics. VL_DEBUG, as Makefile_obj sets for non---binary tests, runs the
-# runtime's debug assertions.
+# --vpi-lazy implies --vpi. The split options spread the generated code over many functions and
+# files. VL_DEBUG, as Makefile_obj sets for non---binary tests, runs the runtime's debug assertions.
 test.compile(make_top_shell=False,
              verilator_flags2=[
                  "--binary --vpi-lazy --no-l2name --stats --output-split 200"
@@ -24,6 +23,15 @@ test.compile(make_top_shell=False,
                  "-CFLAGS -DT_VPI_DRIVERS_LAZY -CFLAGS -DVL_DEBUG=1",
                  test.pli_filename
              ])
+
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 191)
+test.file_grep(test.stats, r'VPI, lazy reconstructed members\s+(\d+)', 255)
+test.file_grep(test.stats, r'VPI, lazy groups\s+(\d+)', 154)
+test.file_grep(test.stats, r'VPI, lazy copy descriptors\s+(\d+)', 30)
+test.file_grep(test.stats, r'VPI, lazy fallback retained\s+(\d+)', 38)
+test.file_grep(test.stats, r'VPI, lazy floor retained\s+(\d+)', 50)
+test.file_grep(test.stats, r'VPI, lazy comb read-only\s+(\d+)', 184)
+test.file_grep(test.stats, r'VPI, lazy comb masked\s+(\d+)', 16)
 
 test.execute(all_run_flags=["+verilator+rand+reset+1"], expect_filename=test.golden_filename)
 
