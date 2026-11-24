@@ -223,7 +223,7 @@ static string dtypeNameConst(const V3Number& num, const AstNodeDType* dtypep, bo
     }
     // Enumerations as the name of the item with the value
     if (const AstEnumDType* const enump = VN_CAST(dtypep, EnumDType)) {
-        for (const AstEnumItem* const itemp : enump->itemspList()) {
+        for (const AstEnumItem* const itemp : enump->originalOrThisDTypep()->itemspList()) {
             const AstConst* const constp = VN_CAST(itemp->valuep(), Const);
             if (constp && !constp->num().isAnyXZ() && value.isCaseEq(constp->num())) {
                 return dtypeNameIdent(itemp->name());
@@ -1480,11 +1480,11 @@ const char* AstConsStruct::broken() const {
     BROKEN_RTN(memberp);
     return nullptr;
 }
-AstNodeExpr* AstConsStruct::memberValuep(const string& name) const {
+AstNodeExpr* AstConsStruct::memberValuep(const AstMemberDType* memberp) const {
     for (AstConsStructItem* const itemp : itemspList()) {
-        if (itemp->memberp()->name() == name) return itemp->valuep();
+        if (itemp->memberp() == memberp) return itemp->valuep();
     }
-    v3fatalSrc("Structure value without member '" << name << "'");
+    v3fatalSrc("Structure value without member '" << memberp->name() << "'");
     return nullptr;
 }
 void AstConsStructItem::dump(std::ostream& str) const {
@@ -1861,6 +1861,9 @@ void AstEnumDType::dump(std::ostream& str) const {
     Super::dump(str);
     str << " enum";
     if (!m_typedefName.empty()) str << " typedefName=" << m_typedefName;
+    if (AstEnumDType* const enumDTypep = originalDTypep()) {
+        str << " originalDTypep=" << nodeAddr(enumDTypep);
+    }
 }
 void AstEnumDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "enum", true);
@@ -2223,6 +2226,7 @@ void AstMemberDType::dump(std::ostream& str) const {
     if (isConstrainedRand()) str << " [CSRAND]";
     if (rand().isRandomizable()) str << " [" << rand() << "]";
     if (lsb()) str << " lsb=" << lsb();
+    str << " index=" << index();
     if (name() != "") str << " name=" << name();
     if (tag() != "") str << " tag=" << tag();
 }
@@ -2230,6 +2234,7 @@ void AstMemberDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isConstrainedRand);
     if (rand().isRandomizable()) dumpJsonStr(str, "rand", rand().ascii());
     if (lsb() != 0) dumpJsonStr(str, "lsb", std::to_string(lsb()));
+    dumpJsonNumFunc(str, index);
     dumpJsonStrFunc(str, name);
     dumpJsonStrFunc(str, tag);
     dumpJsonGen(str);
@@ -2917,7 +2922,7 @@ bool AstNodeDType::isLiteralType() const VL_MT_STABLE {
 }
 bool AstNodeDType::isNonPackedArray() const {
     return VN_IS(this, UnpackArrayDType) || VN_IS(this, DynArrayDType) || VN_IS(this, QueueDType)
-           || VN_IS(this, AssocArrayDType);
+           || VN_IS(this, AssocArrayDType) || VN_IS(this, WildcardArrayDType);
 }
 bool AstNodeDType::isStreamableFixedAggregate() const {
     const AstNodeDType* const dtypep = skipRefp();
@@ -2987,6 +2992,15 @@ bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
     if (nodep == samep) return true;
     if (nodep->type() != samep->type()) return false;
     return nodep->similarDTypeNode(samep);
+}
+const AstNodeDType* AstNodeDType::skipDerivedDTypep() const {
+    if (const AstEnumDType* const edtypep = VN_CAST(this, EnumDType)) {
+        return edtypep->originalOrThisDTypep();
+    }
+    if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(this, NodeUOrStructDType)) {
+        return sdtypep->originalOrThisDTypep();
+    }
+    return this;
 }
 const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
                                                bool assertOn) const VL_MT_STABLE {
@@ -3472,6 +3486,14 @@ bool AstNodeTriop::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
     return m_purity.get();
 }
+const char* AstNodeUOrStructDType::broken() const {
+    int index = 0;
+    for (const AstMemberDType* const itemp : memberspList()) {
+        BROKEN_RTN(itemp->parentp() != this);
+        BROKEN_RTN(itemp->index() != index++);
+    }
+    return nullptr;
+}
 string AstNodeUOrStructDType::dpiName() const {
     // C has no scopes, so the name the typedef declaring it gives, without the scope
     return m_typedefName.substr(m_typedefName.find_last_of(".:") + 1);
@@ -3489,6 +3511,9 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     if (subDTypep()) str << " refDTypep=" << nodeAddr(subDTypep());
     if (!m_typedefName.empty()) str << " typedefName=" << m_typedefName;
+    if (AstNodeUOrStructDType* const uOrStructDtypep = originalDTypep()) {
+        str << " originalDTypep=" << nodeAddr(uOrStructDtypep);
+    }
 }
 void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, packed);
@@ -3662,6 +3687,9 @@ void AstPin::dump(std::ostream& str) const {
     if (modVarp()) {
         str << " -> ";
         modVarp()->dump(str);
+    } else if (modPTypep()) {
+        str << " -> ";
+        modPTypep()->dump(str);
     } else {
         str << " ->UNLINKED";
     }
@@ -3718,10 +3746,12 @@ void AstPropSpec::dump(std::ostream& str) const {
     if (propStrength() != VPropStrength::DEFAULT) {
         str << " [" << VString::upcase(propStrength().ascii()) << "]";
     }
+    if (fromInstanceChain()) str << " [CHAIN]";
 }
 void AstPropSpec::dumpJson(std::ostream& str) const {
     if (propStrength() != VPropStrength::DEFAULT)
         dumpJsonStr(str, "strength", propStrength().ascii());
+    dumpJsonBoolFuncIf(str, fromInstanceChain);
     dumpJsonGen(str);
 }
 void AstPull::dump(std::ostream& str) const {

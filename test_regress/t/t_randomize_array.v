@@ -125,14 +125,20 @@ class unconstrained_struct_with_array_test;
   typedef struct {rand bit [7:0] byte_array[4];} struct_with_array_t;
 
   rand struct_with_array_t struct_with_array;
+  rand struct_with_array_t struct_with_array_assoc[string];
+  rand struct_with_array_t struct_with_array_wild[*];
 
   function new();
     struct_with_array = '{'{default: 'h0}};
+    struct_with_array_assoc["key"] = '{'{default: 'h0}};
+    struct_with_array_wild["key"] = '{'{default: 'h0}};
   endfunction
 
   function void check_randomization();
     foreach (struct_with_array.byte_array[i]) begin
       `check_rand(this, struct_with_array.byte_array[i])
+      `check_rand(this, struct_with_array_assoc["key"].byte_array[i])
+      `check_rand(this, struct_with_array_wild["key"].byte_array[i])
     end
   endfunction
 

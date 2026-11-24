@@ -277,7 +277,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeModule* const genModp = VN_AS(genVarp->user2p(), NodeModule);
         const int width = enumDtp->width();
         std::string constraint = "(__Vbv (or";
-        for (AstEnumItem* const itemp : enumDtp->itemspList()) {
+        for (AstEnumItem* const itemp : enumDtp->originalOrThisDTypep()->itemspList()) {
             const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
             constraint += " (= " + smtName + " (_ bv" + cvtToStr(vconstp->toUInt()) + " "
                           + cvtToStr(width) + "))";
@@ -305,24 +305,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
     }
 
-    // Mark the one directly-referenced member; it must reach the solver even when it
-    // carries no rand qualifier (the constraint refers to it).
-    void markConstrainedRandMember(AstStructDType* const structp, const std::string& name) {
-        AstMemberDType* const memberp
-            = VN_CAST(m_memberMap.findMember(structp, name), MemberDType);
-        UASSERT_OBJ(memberp, structp, "Constraint references unknown struct member " << name);
-        memberp->markConstrainedRand(true);
-    }
-
     // True when the aggregate is reached through rand-qualified struct members only
     bool isRandQualifiedPath(const AstNodeExpr* nodep) {
         while (nodep) {
             if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
-                if (AstStructDType* const structp
-                    = VN_CAST(selp->fromp()->dtypep()->skipRefp(), StructDType)) {
-                    const AstMemberDType* const memberp
-                        = VN_CAST(m_memberMap.findMember(structp, selp->name()), MemberDType);
-                    if (memberp && !memberp->rand().isRandomizable()) return false;
+                if (VN_IS(selp->memberp()->parentp(), StructDType)
+                    && !selp->memberp()->rand().isRandomizable()) {
+                    return false;
                 }
                 nodep = selp->fromp();
             } else if (const AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
@@ -1746,10 +1735,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeExpr* const origp = outermost ? nodep->cloneTree(false) : nullptr;
         VL_RESTORER(m_structSel);
         m_structSel = true;
-        if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), StructDType)) {
+        AstNodeUOrStructDType* const structp = nodep->memberp()->parentp();
+        if (VN_IS(structp, StructDType)) {
             AstNodeExpr* const fromp = nodep->fromp();
-            AstStructDType* const structp = VN_AS(fromp->dtypep()->skipRefp(), StructDType);
-            markConstrainedRandMember(structp, nodep->name());
+            // The directly-referenced member must reach the solver even when it carries no rand
+            // qualifier (the constraint refers to it)
+            nodep->memberp()->markConstrainedRand(true);
             if (isRandQualifiedPath(fromp)) {
                 markStructConstrainedRandRecurse(fromp->dtypep());
             } else {
@@ -1761,9 +1752,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeExpr* const fromp = VN_IS(nodep->fromp(), ArraySel)
                                            ? VN_AS(nodep->fromp(), ArraySel)->fromp()
                                            : VN_AS(nodep->fromp(), CMethodHard)->fromp();
-            AstStructDType* const structp
-                = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType);
-            markConstrainedRandMember(structp, nodep->name());
             if (isRandQualifiedPath(fromp)) {
                 markStructConstrainedRandRecurse(fromp->dtypep()->skipRefp()->subDTypep());
             } else {
@@ -2134,7 +2122,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         } else if (thenp) {
             newp = new AstLogIf{fl, nodep->condp()->unlinkFrBack(), thenp};
         } else if (elsep) {
-            newp = new AstLogIf{fl, new AstNot{fl, nodep->condp()->unlinkFrBack()}, elsep};
+            AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
+            AstNodeExpr* const notp = new AstLogNot{fl, condp};
+            notp->user1(condp->user1());  // Solver-dependent exactly when the condition is.
+            newp = new AstLogIf{fl, notp, elsep};
         }
         if (newp) {
             newp->dtypeSetBit();  // Result is boolean (prevents bare-var != 0 wrapping)
@@ -2159,13 +2150,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (!nodep->bodyp()) {
             nodep->unlinkFrBack();
         } else if (m_wantSingle) {
-            AstNodeExpr* const itemp = editSingle(fl, nodep->bodyp());
-            AstVar* const textVarp = newTextVarp(nodep);
-            AstNodeStmt* const bodyp
-                = prependDistPreamble(nodep, newTermAppendp(fl, textVarp, itemp));
-            nodep->replaceWith(newTextBuildp(
-                fl, textVarp, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
-                newTextApplyp(fl, textVarp, "bvand", "#b1")));
+            if (AstNodeExpr* const itemp = editSingle(fl, nodep->bodyp())) {
+                AstVar* const textVarp = newTextVarp(nodep);
+                AstNodeStmt* const bodyp
+                    = prependDistPreamble(nodep, newTermAppendp(fl, textVarp, itemp));
+                nodep->replaceWith(newTextBuildp(
+                    fl, textVarp, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
+                    newTextApplyp(fl, textVarp, "bvand", "#b1")));
+            } else {
+                nodep->unlinkFrBack();  // The body folded to nothing, e.g. only empty sets.
+            }
         } else {
             VL_RESTORER(m_foreachBodyp);
             VL_RESTORER_COPY(m_foreachIdxVars);
@@ -3713,7 +3707,6 @@ class SolverSmtLowering final : public V3SolverLowering {
         for (AstNodeConstraintItem* const itemp : VNList<AstNodeConstraintItem>{constrItemsp}) {
             // dist can appear inside an if/else or foreach constraint.
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
-                UASSERT_OBJ(cifp->thensp(), cifp, "constraint if without a then body");
                 lowerDistConstraints(taskp, cifp->thensp(), randModeVarp, foreachp);
                 if (cifp->elsesp()) {
                     lowerDistConstraints(taskp, cifp->elsesp(), randModeVarp, foreachp);
@@ -3721,7 +3714,6 @@ class SolverSmtLowering final : public V3SolverLowering {
                 continue;
             }
             if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
-                UASSERT_OBJ(cfep->bodyp(), cfep, "constraint foreach without a body");
                 lowerDistConstraints(taskp, cfep->bodyp(), randModeVarp, cfep);
                 continue;
             }
@@ -4497,15 +4489,7 @@ public:
                 varRefp->classOrPackagep(arrClassp);
                 methodp->addPinsp(varRefp);
 
-                uint32_t dimension = 0;
-                if (VN_IS(arrVarp->dtypep(), UnpackArrayDType)
-                    || VN_IS(arrVarp->dtypep(), DynArrayDType)
-                    || VN_IS(arrVarp->dtypep(), QueueDType)
-                    || VN_IS(arrVarp->dtypep(), AssocArrayDType)) {
-                    const std::pair<uint32_t, uint32_t> dims
-                        = arrVarp->dtypep()->dimensions(/*includeBasic=*/true);
-                    dimension = dims.second;
-                }
+                const uint32_t dimension = arrVarp->dtypep()->dimensions(false).second;
 
                 const size_t width = SmtUtil::arrayElementDTypep(arrVarp->dtypep())->width();
                 methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, width});

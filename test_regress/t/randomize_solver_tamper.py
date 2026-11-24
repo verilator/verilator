@@ -11,9 +11,10 @@
 #
 # Input arguments from environment variables:
 # TAMPER: bad_base | bad_digits | bad_index | bad_value | bare_hash | binary
-#         | core_junk | crlf | die_at | die_status_at | diversity_model
-#         | dup_model | err_assume | err_core | err_multiline | err_once
-#         | err_phase | err_reply | err_trunc | err_unbal | err_unbal_cont
+#         | core_junk | crlf | csa_unsupported | die_at | die_status_at | diversity_model
+#         | dup_model | err_assume | err_cell | err_core | err_extra | err_marker
+#         | err_multiline | err_mute | err_once | err_phase | err_reply | err_trunc | err_unbal
+#         | err_unbal_cont
 #         | garbage_assume | garbage_at | garbage_model | garbage_status
 #         | high_digit | indent | low_digit | model_trunc | multiline | mute_at
 #         | no_digits | none | octal | oor_assume | phase_model | phase_trunc
@@ -27,13 +28,23 @@
 #   binary           - replace the Nth model reply with binary values
 #   core_junk        - prepend garbage to the core reply and close the pipe
 #   crlf             - end every line with CRLF
+#   csa_unsupported  - answer every check-sat-assuming with unsupported
 #   die_at           - kill the solver at the Nth model reply and exit, closing every pipe end
 #   die_status_at    - kill the solver at the Nth status line and exit, closing every pipe end
 #   diversity_model  - replace the Nth array model reply with one holding an unusable value
 #   dup_model        - replace the Nth model reply with one answering a variable twice
 #   err_assume       - replace the first unsat-assumptions reply with (error ...)
+#   err_cell         - as err_extra, at the Nth status of the unigen2 sampler's first cell
+#                      enumeration, counted from the first push scope opened after the
+#                      estimate's last scope, the first one to find a solution and run out;
+#                      it never acts when the estimate ends on a large space with no such scope
 #   err_core         - replace the first unsat-core reply with (error ...)
+#   err_extra        - send an (error ...) line ahead of the Nth status, as for a rejected
+#                      earlier command; echo the runtime's marker quoted, as SMT-LIB 2.6 does
+#   err_marker       - answer the Nth status with (error ...), then send a multiline (error ...)
+#                      holding a line that is only the runtime's marker ahead of the next status
 #   err_multiline    - answer the Nth status with an (error ...) split over two lines
+#   err_mute         - answer the Nth status with (error ...), then close the reply pipe as mute_at
 #   err_once         - answer the Nth status with one (error ...) line
 #   err_phase        - replace the first phase value reply with (error ...)
 #   err_reply        - replace the Nth S-expression reply with (error ...)
@@ -77,20 +88,24 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
+import types
 
 mode = os.environ.get("TAMPER", "none")
 at = int(os.environ.get("TAMPER_AT", "3"))
 once = os.environ.get("TAMPER_ONCE", "")
 
 # Modes acting on the TAMPER_AT'th status line rather than the Nth model reply
-STATUS_MODES = ("die_status_at", "err_multiline", "err_once", "err_trunc", "err_unbal",
-                "err_unbal_cont", "garbage_status", "unknown_once", "unknown_twice",
-                "unsupported_once")
+STATUS_MODES = ("die_status_at", "err_extra", "err_marker", "err_multiline", "err_mute",
+                "err_once", "err_trunc", "err_unbal", "err_unbal_cont", "garbage_status",
+                "unknown_once", "unknown_twice", "unsupported_once")
 # Modes acting on the TAMPER_AT'th S-expression reply of any kind
 REPLY_MODES = ("err_reply", )
 # Modes acting on an array model reply, which arrives as (select ...) terms
 SELECT_MODES = ("bad_index", "diversity_model")
+# Modes acting on a status found from the push scopes of the commands
+CELL_MODES = ("err_cell", )
 # Modes acting on the status the solver sends after answering unsat
 RECHECK_MODES = ("unsat_recheck", )
 # phase_model acts on the final phased model; the others on any phase value reply
@@ -100,7 +115,11 @@ ASSUME_MODES = ("err_assume", "garbage_assume", "oor_assume", "stale_assume")
 # Modes acting on an unsat-core reply, which lists __Vcons<N> names
 CORE_MODES = ("core_junk", "err_core")
 # Modes rewriting every line, so they never consume the index
-STREAM_MODES = ("crlf", "indent", "multiline", "success")
+STREAM_MODES = ("crlf", "csa_unsupported", "indent", "multiline", "success")
+# Modes that change commands on their way to the solver
+INPUT_MODES = ("csa_unsupported", "err_cell")
+# Echoed in place of a command, to mark where in the replies its answer belongs
+TAMPER_MARK = "vl_tamper"
 
 
 def real_solver():
@@ -112,7 +131,38 @@ def real_solver():
     sys.exit("randomize_solver_tamper.py: no SMT solver found")
 
 
-proc = subprocess.Popen(real_solver(), stdin=sys.stdin, stdout=subprocess.PIPE, text=True)
+proc = subprocess.Popen(real_solver(),
+                        stdin=subprocess.PIPE if mode in INPUT_MODES else sys.stdin,
+                        stdout=subprocess.PIPE,
+                        text=True)
+
+# err_cell: count is the push, pop and reset commands sent so far, pushed is
+# whether the last of them was a push, and cell_after the scope the estimate
+# ended in, once known
+scopes = types.SimpleNamespace(count=0, pushed=False, cell_after=None)
+
+
+def feed():
+    """Pass the runtime's commands on, counting push, pop and reset for err_cell
+    and replacing check-sat-assuming with a marker echo for csa_unsupported"""
+    for cmd in sys.stdin:
+        text = cmd.lstrip()
+        if mode == "csa_unsupported" and text.startswith("(check-sat-assuming"):
+            cmd = '(echo "' + TAMPER_MARK + '")\n'
+        # The runtime reads each status before it sends the next push, pop or reset,
+        # so a status is read while the count is still that of its check-sat
+        if text.startswith(("(push", "(pop", "(reset)")):
+            scopes.count += 1
+            scopes.pushed = text.startswith("(push")
+        if text.startswith("(reset)"):
+            scopes.cell_after = None
+        proc.stdin.write(cmd)
+        proc.stdin.flush()
+    proc.stdin.close()
+
+
+if mode in INPUT_MODES:
+    threading.Thread(target=feed, daemon=True).start()
 
 
 def emit(text):
@@ -162,6 +212,17 @@ def read_full(first):
     return chunks
 
 
+def mute():
+    """Close the reply pipe but keep running until the runtime gives up on this solver"""
+    os.close(1)
+    proc.kill()
+    proc.wait()
+    parent = os.getppid()
+    while os.getppid() == parent:
+        time.sleep(0.05)
+    sys.exit(0)
+
+
 def swallow(first):
     """Drop the rest of a real S-expression reply that was replaced"""
     read_full(first)
@@ -170,11 +231,19 @@ def swallow(first):
 replies = 0
 seen_unsat = False
 done = bool(once) and os.path.exists(once)
+marker_next = False  # err_marker: the next status follows an error holding the marker
+sat_scope = None  # err_cell: the scope of the last sat
 depth = 0  # Paren depth of the reply being forwarded, so wrapped ones stay intact
 inside = False  # Inside an SMT string literal, where parens do not nest
 
 for line in proc.stdout:
     line = line.rstrip("\n")
+    if mode == "csa_unsupported" and line in (TAMPER_MARK, '"' + TAMPER_MARK + '"'):
+        emit("unsupported")
+        continue
+    # z3 prints an echoed string bare; SMT-LIB 2.6 section 4.2.9 keeps its quotes
+    if mode in ("err_cell", "err_extra") and line == "vl_resync":
+        line = '"vl_resync"'
     at_reply_start = depth == 0
     depth, inside = scan_depth(line, depth, inside)
     is_status = line in ("sat", "unsat", "unknown")
@@ -185,6 +254,13 @@ for line in proc.stdout:
         counted = at_reply_start and line.startswith("(")
     elif mode in SELECT_MODES:
         counted = at_reply_start and line.startswith("(((select")
+    elif mode in CELL_MODES:
+        counted = (is_status and scopes.pushed and scopes.cell_after is not None
+                   and scopes.count > scopes.cell_after)
+        if is_status and scopes.pushed and scopes.cell_after is None:
+            if line == "unsat" and sat_scope == scopes.count:
+                scopes.cell_after = scopes.count
+            sat_scope = scopes.count if line == "sat" else None
     elif mode in RECHECK_MODES:
         counted = is_status and seen_unsat
     elif mode in PHASE_MODES:
@@ -199,6 +275,11 @@ for line in proc.stdout:
         seen_unsat = True
     if counted:
         replies += 1
+    if marker_next and is_status:
+        marker_next = False
+        emit('(error "injected command rejected, then')
+        emit("vl_resync")
+        emit('in its text")')
     acting = counted and replies >= at and not done and mode not in STREAM_MODES
     if not acting:
         forward(line, at_reply_start)
@@ -258,6 +339,14 @@ for line in proc.stdout:
         emit('(error "injected core error")')
         swallow(line)
         continue
+    if mode in ("err_cell", "err_extra"):
+        emit('(error "injected earlier command rejected")')
+        forward(line, at_reply_start)
+        continue
+    if mode == "err_marker":
+        emit('(error "injected command rejected")')
+        marker_next = True
+        continue
     if mode == "err_multiline":
         emit('(error "injected')
         emit('multiline error")')
@@ -265,6 +354,9 @@ for line in proc.stdout:
     if mode == "err_once":
         emit('(error "injected command rejected")')
         continue
+    if mode == "err_mute":
+        emit('(error "injected command rejected")')
+        mute()
     # The first phase value reply always precedes the final phased model
     if mode == "err_phase":
         emit('(error "injected phase value error")')
@@ -387,10 +479,4 @@ for line in proc.stdout:
         proc.wait()
         sys.exit(0)
     if mode == "mute_at":
-        os.close(1)
-        proc.kill()
-        proc.wait()
-        parent = os.getppid()
-        while os.getppid() == parent:
-            time.sleep(0.05)
-        sys.exit(0)
+        mute()

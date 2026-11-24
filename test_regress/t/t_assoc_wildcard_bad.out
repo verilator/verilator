@@ -1,82 +1,101 @@
-%Error: t/t_assoc_wildcard_bad.v:23:11: The 1 arguments passed to .num method does not match its requiring 0 arguments
+%Error: t/t_assoc_wildcard_bad.v:34:11: The 1 arguments passed to .num method does not match its requiring 0 arguments
                                       : ... note: In instance 't'
-   23 |     v = a.num("badarg");
+   34 |     v = a.num("badarg");
       |           ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assoc_wildcard_bad.v:24:11: The 1 arguments passed to .size method does not match its requiring 0 arguments
+%Error: t/t_assoc_wildcard_bad.v:35:11: The 1 arguments passed to .size method does not match its requiring 0 arguments
                                       : ... note: In instance 't'
-   24 |     v = a.size("badarg");
+   35 |     v = a.size("badarg");
       |           ^~~~
-%Error: t/t_assoc_wildcard_bad.v:25:11: The 0 arguments passed to .exists method does not match its requiring 1 arguments
+%Error: t/t_assoc_wildcard_bad.v:36:11: The 0 arguments passed to .exists method does not match its requiring 1 arguments
                                       : ... note: In instance 't'
-   25 |     v = a.exists();   
+   36 |     v = a.exists();   
       |           ^~~~~~
-%Error: t/t_assoc_wildcard_bad.v:26:11: The 2 arguments passed to .exists method does not match its requiring 1 arguments
+%Error: t/t_assoc_wildcard_bad.v:37:11: The 2 arguments passed to .exists method does not match its requiring 1 arguments
                                       : ... note: In instance 't'
-   26 |     v = a.exists(k, "bad2");
+   37 |     v = a.exists(k, "bad2");
       |           ^~~~~~
-%Error: t/t_assoc_wildcard_bad.v:27:7: The 2 arguments passed to .delete method does not match its requiring 0 to 1 arguments
+%Error: t/t_assoc_wildcard_bad.v:38:7: The 2 arguments passed to .delete method does not match its requiring 0 to 1 arguments
                                      : ... note: In instance 't'
-   27 |     a.delete(k, "bad2");
+   38 |     a.delete(k, "bad2");
       |       ^~~~~~
-%Error: t/t_assoc_wildcard_bad.v:29:7: Array method 'sort' not legal on associative arrays
+%Error: t/t_assoc_wildcard_bad.v:40:7: Array method 'sort' not legal on associative arrays
                                      : ... note: In instance 't'
-   29 |     a.sort;   
+   40 |     a.sort;   
       |       ^~~~
-%Error: t/t_assoc_wildcard_bad.v:30:7: Array method 'rsort' not legal on associative arrays
+%Error: t/t_assoc_wildcard_bad.v:41:7: Array method 'rsort' not legal on associative arrays
                                      : ... note: In instance 't'
-   30 |     a.rsort;   
+   41 |     a.rsort;   
       |       ^~~~~
-%Error: t/t_assoc_wildcard_bad.v:31:7: Array method 'reverse' not legal on associative arrays
+%Error: t/t_assoc_wildcard_bad.v:42:7: Array method 'reverse' not legal on associative arrays
                                      : ... note: In instance 't'
-   31 |     a.reverse;   
+   42 |     a.reverse;   
       |       ^~~~~~~
-%Error: t/t_assoc_wildcard_bad.v:32:7: Array method 'shuffle' not legal on associative arrays
+%Error: t/t_assoc_wildcard_bad.v:43:7: Array method 'shuffle' not legal on associative arrays
                                      : ... note: In instance 't'
-   32 |     a.shuffle;   
+   43 |     a.shuffle;   
       |       ^~~~~~~
-%Error: t/t_assoc_wildcard_bad.v:34:7: Array method 'first' not legal on wildcard associative arrays
+%Error: t/t_assoc_wildcard_bad.v:45:7: Array method 'first' not legal on wildcard associative arrays
                                      : ... note: In instance 't'
-   34 |     a.first;   
+   45 |     a.first;   
       |       ^~~~~
-%Error: t/t_assoc_wildcard_bad.v:35:7: Array method 'last' not legal on wildcard associative arrays
+%Error: t/t_assoc_wildcard_bad.v:46:7: Array method 'last' not legal on wildcard associative arrays
                                      : ... note: In instance 't'
-   35 |     a.last;   
+   46 |     a.last;   
       |       ^~~~
-%Error: t/t_assoc_wildcard_bad.v:36:7: Array method 'next' not legal on wildcard associative arrays
+%Error: t/t_assoc_wildcard_bad.v:47:7: Array method 'next' not legal on wildcard associative arrays
                                      : ... note: In instance 't'
-   36 |     a.next;   
+   47 |     a.next;   
       |       ^~~~
-%Error: t/t_assoc_wildcard_bad.v:37:7: Array method 'prev' not legal on wildcard associative arrays
+%Error: t/t_assoc_wildcard_bad.v:48:7: Array method 'prev' not legal on wildcard associative arrays
                                      : ... note: In instance 't'
-   37 |     a.prev;   
+   48 |     a.prev;   
       |       ^~~~
-%Error: t/t_assoc_wildcard_bad.v:38:7: Array method 'unique_index' not legal on wildcard associative arrays
+%Error: t/t_assoc_wildcard_bad.v:49:7: Array method 'unique_index' not legal on wildcard associative arrays
                                      : ... note: In instance 't'
-   38 |     a.unique_index;   
+   49 |     a.unique_index;   
       |       ^~~~~~~~~~~~
-%Error: t/t_assoc_wildcard_bad.v:39:7: Array method 'find_index' not legal on wildcard associative arrays
+%Error: t/t_assoc_wildcard_bad.v:50:7: Array method 'find_index' not legal on wildcard associative arrays
                                      : ... note: In instance 't'
-   39 |     a.find_index;   
+   50 |     a.find_index;   
       |       ^~~~~~~~~~
-%Error: t/t_assoc_wildcard_bad.v:40:7: Array method 'find_first_index' not legal on wildcard associative arrays
+%Error: t/t_assoc_wildcard_bad.v:51:7: Array method 'find_first_index' not legal on wildcard associative arrays
                                      : ... note: In instance 't'
-   40 |     a.find_first_index;   
+   51 |     a.find_first_index;   
       |       ^~~~~~~~~~~~~~~~
-%Error: t/t_assoc_wildcard_bad.v:41:7: Array method 'find_last_index' not legal on wildcard associative arrays
+%Error: t/t_assoc_wildcard_bad.v:52:7: Array method 'find_last_index' not legal on wildcard associative arrays
                                      : ... note: In instance 't'
-   41 |     a.find_last_index;   
+   52 |     a.find_last_index;   
       |       ^~~~~~~~~~~~~~~
-%Error: t/t_assoc_wildcard_bad.v:43:6: Wildcard index must be integral (IEEE 1800-2023 7.8.1)
+%Error: t/t_assoc_wildcard_bad.v:54:6: Wildcard index must be integral (IEEE 1800-2023 7.8.1)
                                      : ... note: In instance 't'
-   43 |     a[x] = "bad";
+   54 |     a[x] = "bad";
       |      ^
-%Error: t/t_assoc_wildcard_bad.v:43:7: Cannot convert 'class' handle to a string:'class Cls'
+%Error: t/t_assoc_wildcard_bad.v:54:7: Cannot convert 'class' handle to a string:'class Cls'
                                      : ... note: In instance 't'
-   43 |     a[x] = "bad";
+   54 |     a[x] = "bad";
       |       ^
-%Error: t/t_assoc_wildcard_bad.v:45:7: Unknown wildcard associative array method 'bad_not_defined'
+%Error: t/t_assoc_wildcard_bad.v:56:7: Unknown wildcard associative array method 'bad_not_defined'
                                      : ... note: In instance 't'
-   45 |     a.bad_not_defined();
+   56 |     a.bad_not_defined();
       |       ^~~~~~~~~~~~~~~
+%Error: t/t_assoc_wildcard_bad.v:58:19: Function Argument expects 'int', got 'int$[*]'
+                                      : ... note: In instance 't'
+   58 |     r = takes_int(w);   
+      |                   ^
+%Error: t/t_assoc_wildcard_bad.v:59:13: Unpacked array concatenation item is neither an element nor an array of elements of its target (IEEE 1800-2023 10.10)
+                                      : ... Element data type: 'int'
+                                      : ... Item data type: 'class Cls$[*]'
+   59 |     q = {q, cw};   
+      |             ^~
+%Error: t/t_assoc_wildcard_bad.v:60:8: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                     : ... note: In instance 't'
+                                     : ... Left-hand data type: 'int$[0:1]$[*]'
+                                     : ... Right-hand data type: 'int$[0:2]$[*]'
+   60 |     n2 = n3;   
+      |        ^
+%Error: t/t_assoc_wildcard_bad.v:61:11: Inside operator not specified on associative arrays (IEEE 1800-2023 11.4.13)
+                                      : ... note: In instance 't'
+   61 |     b = 1 inside {w};   
+      |           ^~~~~~
 %Error: Exiting due to

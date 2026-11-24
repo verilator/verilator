@@ -21,6 +21,18 @@ module t (
   class Derived extends Base;
   endclass
 
+  class QueueMembers;
+    int q[int][$];
+    int w[*][$];
+    int d[][$];
+    int qq[$][$];
+    int f[2][$];
+  endclass
+
+  class QueueMembersNested;
+    QueueMembers inner;
+  endclass
+
   integer cyc = 0;
 
   integer i;
@@ -385,6 +397,69 @@ module t (
       w4 = '{"a": c4 + 4'd2, default: c4 + 4'd3};
       `checkh(w4["a"], 4'h1);
       `checkh(w4["z"], 4'h2);
+    end
+
+    begin  // Queue methods on associative-array elements of a class member
+      QueueMembers m;
+      m = new;
+      `checkh(m.q[9].size(), 0);
+      `checkh(m.q.exists(9), 0);
+      m.q[4].push_back(21);
+      m.q[4].push_front(12);
+      `checkh(m.q.num(), 1);
+      `checkh(m.q[4].pop_back(), 21);
+      `checkh(m.q[4][0], 12);
+      m.q[4].delete();
+      `checkh(m.q.exists(4), 1);
+      m.w["k"].push_back(3);
+      `checkh(m.w["k"][0], 3);
+      m.d = new[2];
+      m.d[1].push_back(5);
+      m.d[1].insert(0, 4);
+      `checkh(m.d[0].size(), 0);
+      `checkh(m.d[1].pop_front(), 4);
+      `checkh(m.d[1][0], 5);
+      m.qq.push_back('{});
+      m.qq[0].push_back(7);
+      m.qq[0].push_front(6);
+      `checkh(m.qq[0].pop_back(), 7);
+      `checkp(m.qq, "'{'{'h6}}");
+      m.f[1].push_back(9);
+      m.f[1].push_front(8);
+      `checkh(m.f[1].pop_back(), 9);
+      `checkp(m.f, "'{'{}, '{'h8}}");
+    end
+
+    begin  // Queue methods on associative-array elements of a nested class member
+      QueueMembersNested n;
+      n = new;
+      n.inner = new;
+      `checkh(n.inner.q[9].size(), 0);
+      `checkh(n.inner.q.exists(9), 0);
+      n.inner.q[4].push_back(21);
+      n.inner.q[4].push_front(12);
+      `checkh(n.inner.q.num(), 1);
+      `checkh(n.inner.q[4].pop_back(), 21);
+      `checkh(n.inner.q[4][0], 12);
+      n.inner.q[4].delete();
+      `checkh(n.inner.q.exists(4), 1);
+      n.inner.w["k"].push_back(3);
+      `checkh(n.inner.w["k"][0], 3);
+      n.inner.d = new[2];
+      n.inner.d[1].push_back(5);
+      n.inner.d[1].insert(0, 4);
+      `checkh(n.inner.d[0].size(), 0);
+      `checkh(n.inner.d[1].pop_front(), 4);
+      `checkh(n.inner.d[1][0], 5);
+      n.inner.qq.push_back('{});
+      n.inner.qq[0].push_back(7);
+      n.inner.qq[0].push_front(6);
+      `checkh(n.inner.qq[0].pop_back(), 7);
+      `checkp(n.inner.qq, "'{'{'h6}}");
+      n.inner.f[1].push_back(9);
+      n.inner.f[1].push_front(8);
+      `checkh(n.inner.f[1].pop_back(), 9);
+      `checkp(n.inner.f, "'{'{}, '{'h8}}");
     end
 
     $write("*-* All Finished *-*\n");

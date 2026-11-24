@@ -29,6 +29,7 @@ module t (
   int hit_cover_throughout = 0;
   int hit_chained_ring_multiplicity = 0;
   int hit_fixed_ring_multiplicity = 0;
+  int hit_guarded_fixed_ring_multiplicity = 0;
   int hit_range_ring_multiplicity = 0;
   int hit_unbounded_ring_multiplicity = 0;
   int hit_consrep_1 = 0;
@@ -77,6 +78,10 @@ module t (
   // Two prefix matches enter the same fixed-delay ring slot.
   cover sequence (((cyc <= 1) [* 1: 2]) ##0 ((cyc == 1) ##2 (cyc == 3)))
     hit_fixed_ring_multiplicity++;
+
+  // Of those two prefix matches, only the one starting at cycle 1 satisfies the guard.
+  cover sequence ((cyc >= 1) throughout (((cyc <= 1) [* 1: 2]) ##0 ((cyc == 1) ##2 (cyc == 3))))
+    hit_guarded_fixed_ring_multiplicity++;
 
   // The same multiplicity occupies each endpoint of a consecutive-repetition range ring.
   cover sequence (((cyc <= 1) [* 1: 2]) ##0 ((cyc >= 1) [* 1: 3])) hit_range_ring_multiplicity++;
@@ -137,6 +142,7 @@ module t (
     `checkd(hit_cover_throughout, 3);
     `checkd(hit_chained_ring_multiplicity, 4);
     `checkd(hit_fixed_ring_multiplicity, 2);
+    `checkd(hit_guarded_fixed_ring_multiplicity, 1);
     `checkd(hit_range_ring_multiplicity, 6);
     `checkd(hit_unbounded_ring_multiplicity, 2);
     // a[*1:1] == a[*1] (IEEE 1800-2023 16.9.2)

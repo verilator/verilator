@@ -11,23 +11,17 @@
 
 typedef int int_arr_t[];
 
-class A;
-  rand int x;
-endclass
-
 class Cls;
+  rand int x;
   rand int_arr_t arr[];
   task body();
     int ok;
-    A a;
-    a = new;
     arr = new[2];
     arr[1] = new[2];
-    arr[1][1] = 123;
     repeat (40) begin
-      ok = a.randomize() with {x == arr[1][1];};
+      ok = this.randomize() with {x == local::arr[1][1];};
       `checkd(ok, 1);
-      `checkd(a.x, arr[1][1]);
+      `checkd(x, arr[1][1]);
     end
   endtask
 endclass

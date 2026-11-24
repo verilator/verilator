@@ -1141,6 +1141,21 @@ int _mon_check_unpacked_struct_members() {
         CHECK_RESULT(escapedMembers.count("plain_after"), 1);
     }
 
+    // Struct/union members are reached through vpiMember, not as variables of the module
+    {
+        TestVpiHandle vh210 = VPI_HANDLE("");
+        CHECK_RESULT_NZ(vh210);
+        TestVpiHandle vh211 = vpi_iterate(vpiReg, vh210);
+        CHECK_RESULT_NZ(vh211);
+        while (TestVpiHandle var = vpi_scan(vh211)) {
+            // Strip the scope, which is "TOP" for Verilator's toplevel ports
+            const std::string fullName = vpi_get_str(vpiFullName, var);
+            CHECK_RESULT_CSTR(fullName.substr(fullName.find('.') + 1).c_str(),
+                              vpi_get_str(vpiName, var));
+        }
+        vh211.freed();  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
+    }
+
     return 0;
 }
 

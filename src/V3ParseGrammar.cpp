@@ -295,6 +295,20 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     return nodep;
 }
 
+void V3ParseGrammar::addMember(FileLine* fileline, const string& name, AstNodeRange* arrayp,
+                               AstNode* valuep) {
+    // Members are appended as parsed, so the index is the number of members so far
+    const int index = m_memParentp->nMembers();
+    // May make new members with same type, so clone
+    AstNodeDType* const dtypep
+        = createArray(m_memDTypep ? m_memDTypep->cloneTree(true) : nullptr, arrayp, false);
+    AstMemberDType* const memberp = new AstMemberDType{
+        fileline, m_memParentp, index, name, VFlagChildDType{}, dtypep, valuep};
+    memberp->rand(m_memRand);
+    PARSEP->tagNodep(memberp);
+    m_memParentp->addMembersp(memberp);
+}
+
 string V3ParseGrammar::unquoteString(FileLine* fileline, const std::string& text) {
     string errMsg;
     string res = VString::unquoteSVString(text, errMsg);

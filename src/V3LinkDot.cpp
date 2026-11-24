@@ -3764,6 +3764,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
     bool randTargetUnresolved() const {
         return m_statep->forPrimary() && m_currentWithp && m_randMethodCallp && !m_randSymp;
     }
+    // Is 'nodep', found in a class, read through an object (member variable or method)?
+    static bool isObjectMember(const AstNode* nodep) {
+        if (const AstVar* const varp = VN_CAST(nodep, Var)) return !varp->isParam();
+        return VN_IS(nodep, NodeFTask);
+    }
     // Is 'funcp' of 'classp' virtual, directly or by overriding a virtual method of a base
     // class (IEEE 1800-2023 8.20)
     bool isVirtualMethod(const AstNodeFTask* funcp, const AstClass* classp) const {
@@ -4754,14 +4759,21 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VSymEnt* foundp;
             string baddot;
             VSymEnt* okSymp = nullptr;
+            VSymEnt* lookupSymp = m_ds.m_dotSymp;
             // Restricted 'with (id_list)': only id_list names bind into target class.
             if (m_randSymp
                 && (!m_currentWithp || m_currentWithp->nameResolvesToTarget(nodep->name()))) {
                 foundp = m_randSymp->findIdFlat(nodep->name());
+                if (foundp && m_currentWithp && m_currentWithp->restricted()) {
+                    m_restrictedNamesUsed.insert(nodep->name());
+                }
+                if (foundp && m_currentWithp && first && !isObjectMember(foundp->nodep())) {
+                    // Parameter, type or enum item of the target class: not read through the
+                    // object, so look it up as usual, but starting in that class
+                    lookupSymp = m_randSymp;
+                    foundp = nullptr;
+                }
                 if (foundp) {
-                    if (m_currentWithp && m_currentWithp->restricted()) {
-                        m_restrictedNamesUsed.insert(nodep->name());
-                    }
                     if (!start) m_ds.m_dotPos = DP_MEMBER;
                     if (!m_currentWithp) {
                         UASSERT_OBJ(m_randMethodCallp, nodep, "Expected to be under randomize()");
@@ -4788,12 +4800,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             }
             if (allowScope) {
-                foundp = m_statep->findDotted(nodep->fileline(), m_ds.m_dotSymp, nodep->name(),
-                                              baddot, okSymp, first);  // Maybe nullptr
+                foundp = m_statep->findDotted(nodep->fileline(), lookupSymp, nodep->name(), baddot,
+                                              okSymp, first);  // Maybe nullptr
             } else if (first) {
-                foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
+                foundp = lookupSymp->findIdFallback(nodep->name());
             } else {
-                foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
+                foundp = lookupSymp->findIdFlat(nodep->name());
             }
             // In a generate block, an implicit net is local to the block, even if an enclosing
             // scope declares the name later (IEEE 1800-2023 6.10)
@@ -5067,15 +5079,24 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // We drop __BRA__??__KET__ as cells don't have that naming yet
                     AstVar* const ifaceRefVarp
                         = findIfaceTopVarp(nodep, parentEntp, cellp->name());
-                    //
+                    // Nested cell (e.g. 'o.l.mp'): reference ifaceRefVarp via the prefix
+                    // Modports only legal under `interface` so can just look back one dot
+                    const size_t cellPos = m_ds.m_dotText.rfind('.');
+                    const string cellScope
+                        = cellPos == string::npos ? "" : m_ds.m_dotText.substr(0, cellPos);
                     ok = true;
                     m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
                     m_ds.m_dotSymp = foundp;
                     m_ds.m_dotPos = DP_SCOPE;
                     UINFO(9, indent() << "modport -> iface varref " << foundp->nodep());
                     // We lose the modport name here, so we cannot detect mismatched modports.
-                    AstNodeExpr* newp
-                        = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                    AstNodeExpr* newp;
+                    if (cellScope.empty()) {
+                        newp = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                    } else {
+                        newp = new AstVarXRef{nodep->fileline(), ifaceRefVarp, cellScope,
+                                              VAccess::READ};
+                    }
 
                     AstCellArrayRef* const cellarrayrefp
                         = VN_CAST(m_ds.m_unlinkedScopep, CellArrayRef);
@@ -5091,6 +5112,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         newp->user3(true);  // Don't process again
                         VL_DO_DANGLING(pushDeletep(cellarrayrefp->unlinkFrBack()), cellarrayrefp);
                         m_ds.m_unlinkedScopep = nullptr;
+                    } else if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep
+                               && lastStates.m_dotPos == DP_FINAL) {
+                        newp = new AstUnlinkedRef{nodep->fileline(), newp, newp->name(),
+                                                  m_ds.m_unlinkedScopep->unlinkFrBack()};
+                        m_ds.m_unlinkedScopep = nullptr;
+                        m_ds.m_unresolvedCell = false;
                     }
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -5647,6 +5674,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             // the caller.
                             m_ds.m_unresolvedClass = true;
                         } else {
+                            // Import inherited members in case the class was not visited yet.
+                            if (!m_statep->forPrimary()) classExtendImport(classDtp->classp());
                             m_randSymp = m_statep->getNodeSym(classDtp->classp());
                         }
                     }
@@ -5694,7 +5723,24 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (m_ds.m_dotPos != DP_MEMBER || nodep->name() != "randomize") {
             // Visit arguments at the beginning.
             // They may be visitted even if the current node can't be linked now.
-            symIterateChildren(nodep, m_curSymp);
+            const bool thisRandWith = nodep->name() == "randomize" && nodep->withp()
+                                      && VN_IS(m_modp, Class)
+                                      && (!m_ds.m_dotp || isDotThisReference(m_ds.m_dotp));
+            VL_RESTORER_COPY(m_ds);
+            VL_RESTORER(m_randSymp);
+            m_ds.init(m_curSymp);
+            // Only the with section should be visited with m_randSymp set
+            iterateAndNextNull(nodep->argsp());
+            iterateNull(nodep->scopeNamep());
+            if (thisRandWith) {
+                // Inherited members of a parameterized base are only visible post-V3Param
+                if (m_statep->forPrimary() && m_insideClassExtParam) {
+                    m_ds.m_unresolvedClass = true;
+                } else {
+                    m_randSymp = m_statep->getNodeSym(m_modp);
+                }
+            }
+            iterateNull(nodep->withp());
         }
 
         if (m_ds.m_super) {
