@@ -94,8 +94,4 @@
                                      : ... Right-hand data type: 'int$[0:2]$[*]'
    60 |     n2 = n3;   
       |        ^
-%Error: t/t_assoc_wildcard_bad.v:61:11: Inside operator not specified on associative arrays (IEEE 1800-2023 11.4.13)
-                                      : ... note: In instance 't'
-   61 |     b = 1 inside {w};   
-      |           ^~~~~~
 %Error: Exiting due to
