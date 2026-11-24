@@ -150,7 +150,7 @@ struct PartExtent final {
     int m_width = 0;  // Bits written from m_lsb
 };
 
-// One combinational block as LazyGatherVisitor found it, before DFG and V3Gate.
+// One combinational block as VpiLazyGatherVisitor found it, before DFG and V3Gate.
 struct CombBlock final {
     AstAlways* m_alwaysp = nullptr;  // The combo block
     AstScope* m_scopep = nullptr;  // Scope that authored the block
@@ -347,7 +347,7 @@ bool fullyDefined(CombFootprint& fp, const AstVar* varp) {
 
 // Walk before DFG and V3Gate: write counts, refs and read bits per VarScope, and per-block
 // write info.
-class LazyGatherVisitor final : public VNVisitor {
+class VpiLazyGatherVisitor final : public VNVisitorConst {
     // NODE STATE
     //  AstVarScope::user1()  -> bool. Already in the current block's m_reads
 public:
@@ -391,7 +391,7 @@ private:
                 m_readBits[vscp].setWhole();
             if (m_blockp && !vscp->user1SetOnce()) m_blockp->m_reads.push_back(vscp);
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visitSel(AstNodeExpr* nodep) {
         checkPure(nodep);
@@ -407,20 +407,20 @@ private:
                 addBits(m_readBits[refp->varScopep()], elem, ext.m_lsb, ext.m_width);
             }
         }
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstSel* nodep) override { visitSel(nodep); }
     void visit(AstArraySel* nodep) override { visitSel(nodep); }
     void visit(AstActive* nodep) override {
         if (!nodep->hasCombo()) {
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
             return;
         }
         // Same descent as the global counts, keeping the sole-driver equality exact.
         for (AstNode* stmtp = nodep->procsp(); stmtp; stmtp = stmtp->nextp()) {
             AstAlways* const alwaysp = VN_CAST(stmtp, Always);
             if (!alwaysp) {  // e.g. AstCoverToggle under --coverage: not a lazy driver
-                iterate(stmtp);
+                iterateConst(stmtp);
                 continue;
             }
             // V3Active moved the sensitivity to the AstActive, so the body is all there is
@@ -432,7 +432,7 @@ private:
                 VL_RESTORER(m_blockp);
                 m_blockp = &block;
                 AstNode::user1ClearTree();
-                iterateChildren(alwaysp);
+                iterateChildrenConst(alwaysp);
             }
             if (block.m_targets.empty()) continue;
             if (alwaysp->keyword() == VAlwaysKwd::CONT_ASSIGN) {
@@ -445,23 +445,23 @@ private:
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         m_scopep = nodep;
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstVarScope* nodep) override {
         m_vscpsOf[nodep->varp()].push_back(nodep);
         m_vscOrder.push_back(nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
     void visit(AstNode* nodep) override {
         checkPure(nodep);
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
     }
 
 public:
     // CONSTRUCTORS
-    explicit LazyGatherVisitor(AstNetlist* nodep) {
+    explicit VpiLazyGatherVisitor(AstNetlist* nodep) {
         const VNUser1InUse user1InUse;
-        iterate(nodep);
+        iterateConst(nodep);
     }
 };
 
@@ -559,7 +559,7 @@ void unionDefined(DefinedBits& dst, DefinedBits&& src) {
 // Finds the bits every path through a block assigns. Arms only add, so
 // (D | then) & (D | else) == D | (then & else): each arm is walked from empty.
 // Both arms of a constant 'if' are walked, so a V3Const-folded branch reads the same.
-class LazyLatchVisitor final : public VNVisitorConst {
+class VpiLazyLatchVisitor final : public VNVisitorConst {
 public:
     DefinedBits m_defined;  // Bits assigned on every path so far
     // Full-width and constant-select assigns reached through ifs alone, the only writes
@@ -611,10 +611,10 @@ private:
     void visit(AstNode*) override {}  // Writes under any other statement stay unmodeled
 
 public:
-    explicit LazyLatchVisitor(AstNode* stmtsp) { iterateAndNextConstNull(stmtsp); }
+    explicit VpiLazyLatchVisitor(AstNode* stmtsp) { iterateAndNextConstNull(stmtsp); }
 };
 
-// See WRITABILITY above. Fed every combinational block and variable instance, then finished.
+// See WRITABILITY above. Fed the gather's combinational blocks and variable instances, then finished.
 class CombClassifier final {
     // STATE
     V3VpiLazyContext& m_ctx;  // Takes the PARTIAL variables' runs
@@ -625,7 +625,7 @@ class CombClassifier final {
     std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_vscpsOf;
 
     // A block's writes of candidates, and the extent of each partial assign's lhs
-    class LazyCombWriteVisitor final : public VNVisitorConst {
+    class VpiLazyCombWriteVisitor final : public VNVisitorConst {
     public:
         std::vector<const AstVarRef*> m_refs;  // Candidate write refs, tree order
         std::unordered_map<const AstVarRef*, PartExtent> m_exts;  // Partial lhs ref -> extent
@@ -644,7 +644,7 @@ class CombClassifier final {
         void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
     public:
-        explicit LazyCombWriteVisitor(AstAlways* alwaysp) { iterateConst(alwaysp); }
+        explicit VpiLazyCombWriteVisitor(AstAlways* alwaysp) { iterateConst(alwaysp); }
     };
 
     // Explicit public_flat_rw, forceable and top-level input signals keep flat-rw semantics.
@@ -729,8 +729,8 @@ class CombClassifier final {
     void addBlock(AstAlways* alwaysp) {
         const VAlwaysKwd kwd = alwaysp->keyword();
         if (kwd == VAlwaysKwd::ALWAYS_LATCH) return;
-        const LazyLatchVisitor latch{kwd == VAlwaysKwd::CONT_ASSIGN ? nullptr : alwaysp->stmtsp()};
-        const LazyCombWriteVisitor writes{alwaysp};
+        const VpiLazyLatchVisitor latch{kwd == VAlwaysKwd::CONT_ASSIGN ? nullptr : alwaysp->stmtsp()};
+        const VpiLazyCombWriteVisitor writes{alwaysp};
         std::unordered_set<const AstVarScope*> unprovable;
         for (const AstVarRef* const refp : writes.m_refs)
             if (!latch.m_modeled.count(refp)) unprovable.insert(refp->varScopep());
@@ -753,15 +753,10 @@ public:
     int m_combWhole = 0;  // Read-only variables, per instance
     int m_combPartial = 0;  // Masked variables, per instance
 
-    CombClassifier(AstNetlist* nodep, V3VpiLazyContext& ctx)
+    CombClassifier(V3VpiLazyContext& ctx, const VpiLazyGatherVisitor& gather)
         : m_ctx{ctx} {
-        nodep->foreach([this](AstVarScope* vscp) { addVarScope(vscp); });
-        nodep->foreach([this](const AstActive* activep) {
-            if (!activep->hasCombo()) return;
-            for (AstNode* stmtp = activep->procsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (AstAlways* const alwaysp = VN_CAST(stmtp, Always)) addBlock(alwaysp);
-            }
-        });
+        for (AstVarScope* const vscp : gather.m_vscOrder) addVarScope(vscp);
+        for (const CombBlock& block : gather.m_combBlocks) addBlock(block.m_alwaysp);
         for (AstVar* const varp : m_combFootOrder) finishCombFootprint(varp, m_vscpsOf.at(varp));
     }
 };
@@ -770,7 +765,7 @@ class VpiLazyPreparer final {
     // STATE
     AstScope* const m_topScopep;  // Scope of the top module, which anchors cross-scope groups
     V3VpiLazyContext& m_ctx;  // Classification shared with V3EmitCSyms
-    LazyGatherVisitor m_gather;  // The one netlist walk's findings
+    VpiLazyGatherVisitor m_gather;  // The one netlist walk's findings
     const CombClassifier m_comb;  // See WRITABILITY above
 
     std::vector<std::unique_ptr<Group>> m_groups;  // Formation order (deterministic)
@@ -871,7 +866,7 @@ public:
         : m_topScopep{topScopep}
         , m_ctx{ctx}
         , m_gather{nodep}
-        , m_comb{nodep, ctx} {}
+        , m_comb{ctx, m_gather} {}
 
     const std::vector<AstCFunc*>& splitFuncps() const { return m_splitFuncps; }
 
@@ -1244,7 +1239,7 @@ private:
 
     // One ordered walk over a group's statements: see UNIT OF RECONSTRUCTION above. Per bit, so
     // `a[1] = f(a[0])` reads only what it already wrote.
-    class LazyReadOrderVisitor final : public VNVisitorConst {
+    class VpiLazyReadOrderVisitor final : public VNVisitorConst {
         using ArmDefs = std::vector<std::pair<AstVarScope*, CombFootprint>>;
 
         const Group* const m_groupp;  // Group whose statements are walked
@@ -1386,7 +1381,7 @@ private:
         }
 
     public:
-        LazyReadOrderVisitor(const Group* groupp, DefinedBits& definedr, Bail& whyr)
+        VpiLazyReadOrderVisitor(const Group* groupp, DefinedBits& definedr, Bail& whyr)
             : m_groupp{groupp}
             , m_definedr{definedr}
             , m_whyr{whyr} {
@@ -1410,7 +1405,7 @@ private:
         for (const CombBlock* const bp : g->m_blockps)
             if (bailIf(whyr, Bail::IMPURE, bp->m_impure)) return false;
         DefinedBits defined;
-        LazyReadOrderVisitor walk{g, defined, whyr};
+        VpiLazyReadOrderVisitor walk{g, defined, whyr};
         if (!walk.m_ok) return false;
         for (AstVarScope* const t : g->m_targets) {
             // Not written on every path
@@ -1961,7 +1956,7 @@ private:
 
     // Redirects a group's body to shadows; no re-typing, a shadow keeps its dtype. Pre-order, so
     // the cone operands are refreshed in the order the body first reads them.
-    class LazyConeRewireVisitor final : public VNVisitor {
+    class VpiLazyConeRewireVisitor final : public VNVisitor {
         VpiLazyPreparer& m_prep;  // Owns the shadows and group maps
         Group* const m_groupp;  // Group whose cloned body is rewired
         std::unordered_set<Group*> m_seenOps;  // m_coneOps, for lookup
@@ -2000,7 +1995,7 @@ private:
         void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     public:
-        LazyConeRewireVisitor(VpiLazyPreparer& prep, Group* groupp, AstNode* bodyp)
+        VpiLazyConeRewireVisitor(VpiLazyPreparer& prep, Group* groupp, AstNode* bodyp)
             : m_prep{prep}
             , m_groupp{groupp} {
             // The body is a detached list, and iterateAndNext needs its head to have a back
@@ -2030,7 +2025,7 @@ private:
         m_splitFuncps.push_back(funcp);
         bindRowRefresh(g, funcp);
         AstNodeStmt* const bodyp = cloneBody(g);
-        const LazyConeRewireVisitor rewire{*this, g, bodyp};
+        const VpiLazyConeRewireVisitor rewire{*this, g, bodyp};
         AstIf* const guardp = newEpochGuard(g, key.m_epochSlot);
         funcp->addStmtsp(guardp);
         AstCFunc* const bodyFuncp = splitBodyFunc(g, guardp, bodyp);
@@ -2331,7 +2326,8 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
 void V3VpiLazy::classifyComb(AstNetlist* nodep) {
     // Only the marks are kept: V3Decompose and V3BitBlast add variables, so prepare() reclassifies
     V3VpiLazyContext ctx;
-    const CombClassifier comb{nodep, ctx};
+    const VpiLazyGatherVisitor gather{nodep};
+    const CombClassifier comb{ctx, gather};
 }
 
 VVpiLazyComb V3VpiLazy::combOf(const AstScope* scopep, const AstVar* varp) {
