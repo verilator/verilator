@@ -50,8 +50,7 @@
 // assignment of 'd' is difficult due to the presence of loops (the whole
 // eval_nba is inside a loop), virtual methods and other dynamic executions.
 // For the NBA shadow variables, we can compute this safely as their use
-// is understood as we schedule their first and last assignments specially,
-// and AstLoop back-edges inside eval_nba are handled by outermost loop IDs.
+// is understood as we schedule their first and last assignments specially.
 //
 // Constraint 2 could be relaxed to "no write of 'q' before the only read of
 // 'd', however we only have one write of 'q', created in V3Delayed, so
@@ -94,8 +93,8 @@ class LifePostDlyVisitor final : public VNVisitorConst {
         T_Node* m_nodep;  // The AstNode being recorded
         const AstExecGraph* m_egraphp;  // AstExecTraph location is under, if any
         const ExecMTask* m_mtaskp;  // The ExecMTask location is under, if any
-        uint32_t m_seqNum;  // Location counter
-        uint32_t m_loopId;  // Outermost enclosing AstLoop instance ID, or 0 if not in a loop
+        const uint32_t m_seqNum;  // Location counter
+        const uint32_t m_loopId;  // Outermost enclosing AstLoop instance ID, or 0 if not in a loop
 
     public:
         Location(T_Node* nodep, const AstExecGraph* egp, const ExecMTask* mtaskp, uint32_t seqNum,
@@ -114,7 +113,6 @@ class LifePostDlyVisitor final : public VNVisitorConst {
         // loop (where a back-edge may run a later iteration of 'this' after 'that').
         template <typename U_Node>
         bool operator<(const Location<U_Node>& that) const {
-            // If both share an enclosing loop, a later iteration of 'this' can run after 'that'
             if (m_loopId && m_loopId == that.m_loopId) return false;
             // If they are in different mtasks under the same graph, check for a path in the graph
             if (m_egraphp && m_egraphp == that.m_egraphp && m_mtaskp != that.m_mtaskp) {

@@ -11,7 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile()
+test.compile(verilator_flags2=["--stats"])
+
+if test.vlt_all:
+    test.file_grep(test.stats, r'Optimizations, Lifetime postassign deletions\s+(\d+)',
+                   13 if test.vltmt else 14)
 
 test.execute()
 
