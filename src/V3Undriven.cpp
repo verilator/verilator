@@ -690,7 +690,18 @@ class UndrivenVisitor final : public VNVisitorConst {
     void visit(AstSel* nodep) override {
         AstNodeVarRef* const varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
         AstConst* const constp = VN_CAST(nodep->lsbp(), Const);
-        if (varrefp && constp && !constp->num().isFourState()) {
+        const bool constSel = varrefp && constp && !constp->num().isFourState();
+        // A select of the whole vector has the whole vector as its longest static
+        // prefix (IEEE 1800-2023 11.5.3), so treat it as a whole-variable access.
+        // Aggregate selects come from member accesses and stay per-bit.
+        const bool wholeSel = constSel && constp->toUInt() == 0
+                              && nodep->width() == varrefp->varp()->width()
+                              && !VN_IS(nodep->fromp()->dtypep()->skipRefp(), NodeUOrStructDType);
+        if (wholeSel) {
+            iterateConst(nodep->fromp());
+            return;
+        }
+        if (constSel) {
             for (int usr = 1; usr < (m_alwaysCombp ? 3 : 2); ++usr) {
                 UndrivenVarEntry* const entryp = getEntryp(varrefp->varp(), usr);
                 const int lsb = constp->toUInt();

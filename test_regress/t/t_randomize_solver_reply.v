@@ -62,6 +62,13 @@ class Pinned;
   }
 endclass
 
+// A space large enough that every call must give a new value
+class Wide;
+  rand bit [14:0] w;
+  rand bit [16:0] v;
+  constraint wc {w != v[14:0];}
+endclass
+
 module t;
   // t_randomize_solver_reply runs the +MODE=pins rows alone, so the replies their
   // TAMPER_AT counts start at the first Pinned call
@@ -79,6 +86,21 @@ module t;
     $write("NPASS=%0d\n", npass);
   endtask
 
+  // Every call gives a new value, also when the solver does not support assumption rounds
+  task automatic wide_rounds;
+    automatic Wide wd = new;
+    automatic int rc;
+    automatic bit [31:0] last;
+    wd.srandom(29);
+    for (int i = 0; i < 20; ++i) begin
+      rc = wd.randomize();
+      `checkd(rc, 1);
+      `checkd(wd.w != wd.v[14:0], 1);
+      if (i > 0) `checkd({wd.w, wd.v} != last, 1);
+      last = {wd.w, wd.v};
+    end
+  endtask
+
   initial begin : checks
     automatic Packet p = new;
     automatic Softy s = new;
@@ -92,6 +114,12 @@ module t;
       $write("*-* All Finished *-*\n");
       $finish;
       // $finish ends the run only after this process stops, so leave before the checks
+      disable checks;
+    end
+    if ($test$plusargs("MODE=wide")) begin
+      wide_rounds();
+      $write("*-* All Finished *-*\n");
+      $finish;
       disable checks;
     end
     for (int i = 0; i < 4; ++i) begin

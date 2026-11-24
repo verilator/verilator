@@ -481,6 +481,7 @@ private:
     bool m_fLocalize;    // main switch: -fno-localize: convert temps to local variables
     bool m_fMergeCond;   // main switch: -fno-merge-cond: merge conditionals
     bool m_fMergeCondMotion = true; // main switch: -fno-merge-cond-motion: perform code motion
+    bool m_fOutline = true;  // main switch: -fno-outline: outline parts of large functions
     bool m_fReloop;      // main switch: -fno-reloop: reform loops
     bool m_fReorder;     // main switch: -fno-reorder: reorder assignments in blocks
     bool m_fSlice = true;  // main switch: -fno-slice: array assignment slicing
@@ -839,6 +840,7 @@ public:
     bool fLocalize() const { return m_fLocalize; }
     bool fMergeCond() const { return m_fMergeCond; }
     bool fMergeCondMotion() const { return m_fMergeCondMotion; }
+    bool fOutline() const { return m_fOutline; }
     bool fReloop() const { return m_fReloop; }
     bool fReorder() const { return m_fReorder; }
     bool fSlice() const { return m_fSlice; }

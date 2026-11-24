@@ -12,7 +12,14 @@
 
 module t (
     input clk,
-    input a
+    input a,
+    input req,
+    input [2:0] op,
+    input ack
 );
   assert property (@(posedge clk) `S4);
+  // Each opcode is acknowledged after its own latency
+  assert property (@(posedge clk) req |-> (op == 3'd0) ##1 ack or (op == 3'd1) ##2 ack
+      or (op == 3'd2) ##[1:2] ack or (op == 3'd3) ##[2:4] ack or (op == 3'd4) ##1 ack [*2]
+      or (op == 3'd5) ##1 !ack ##1 ack or (op == 3'd6) ##[1:3] ack or (op == 3'd7) ##4 ack);
 endmodule

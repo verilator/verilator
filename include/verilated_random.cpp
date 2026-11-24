@@ -167,18 +167,16 @@ public:
 
     // Kill and reap a solver that is still running, so no child is left behind
     void terminate() {
+        if (!m_pidExited && m_pid) {
 #ifdef _VL_SOLVER_PIPE_UNIX
-        if (!m_pidExited) {
             ::kill(m_pid, SIGKILL);
             waitpid(m_pid, &m_pidStatus, 0);
-        }
 #elif defined(_VL_SOLVER_PIPE_WIN)
-        if (!m_pidExited && m_pid) {
             TerminateProcess(m_pid, EXIT_FAILURE);
             WaitForSingleObject(m_pid, INFINITE);
             CloseHandle(m_pid);
-        }
 #endif
+        }
         m_pidExited = true;
         m_pid = 0;  // Reaped pid, or null HANDLE
         closeFds();
@@ -578,6 +576,7 @@ class VlSolverSession final {
     State m_state VL_GUARDED_BY(m_mutex) = State::UNSTARTED;
     int m_consecFails VL_GUARDED_BY(m_mutex) = 0;  // Failed transactions in a row
     bool m_dirty VL_GUARDED_BY(m_mutex) = false;  // Transaction left the pipe out of step
+    bool m_stale VL_GUARDED_BY(m_mutex) = false;  // Replies of later commands may be queued
     std::string m_program VL_GUARDED_BY(m_mutex);  // Storage backing m_argv
     std::vector<const char*> m_argv VL_GUARDED_BY(m_mutex);  // Solver argv
     bool m_warnedRestart VL_GUARDED_BY(m_mutex) = false;
@@ -587,9 +586,15 @@ public:
     // The pipe may hold bytes of an abandoned reply, so replace the solver
     void abandon() VL_REQUIRES(m_mutex) { m_dirty = true; }
 
-    // A status the runtime cannot use fails the call, but the reply itself was
-    // complete, so the solver is left alone
-    VlSolverStatus readStatus() VL_REQUIRES(m_mutex) { return ::readStatus(m_proc); }
+    // Read a check-sat status; once one fails, so does every later read until resync()
+    VlSolverStatus readStatus() VL_REQUIRES(m_mutex) {
+        // The failed read may have taken an error answering an earlier command of the batch
+        // (SMT-LIB 2.6 section 4.1.2), so later replies cannot be matched to their commands
+        if (m_stale) return VlSolverStatus::FAIL;
+        const VlSolverStatus status = ::readStatus(m_proc);
+        m_stale = status == VlSolverStatus::FAIL;
+        return status;
+    }
     // An unreadable reply means text of it may still be queued, so it is not
     // safe to read anything more from this solver
     bool readSExpr(std::string& outr) VL_REQUIRES(m_mutex) {
@@ -619,6 +624,7 @@ public:
 
     // End a transaction; a solver left out of step or dead is replaced next time
     void end() VL_REQUIRES(m_mutex) {
+        if (m_stale && !m_dirty) resync();
         bool healthy = !m_dirty && !m_proc.fail();
         if (healthy) {
             m_proc << "(reset)\n";
@@ -633,9 +639,22 @@ public:
             ++m_consecFails;
         }
         m_dirty = false;
+        m_stale = false;
     }
 
 private:
+    // Skip queued replies up to an echoed marker; a solver that went away stays out of step
+    void resync() VL_REQUIRES(m_mutex) {
+        m_proc << "(echo \"vl_resync\")\n";
+        std::string line;
+        // SMT-LIB 2.6 section 4.2.9 echoes the string with its quotes, z3 without them
+        while (readLine(m_proc, line) && line != "vl_resync" && line != "\"vl_resync\"") {
+            // A queued error is read whole, as its text may hold a line like the marker
+            if (isSolverError(line)) finishErrorReply(m_proc, line);
+        }
+        if (!m_proc.fail()) m_stale = false;
+    }
+
     // A solver that will not start is not started again
     void spawn() VL_REQUIRES(m_mutex) {
         if (m_argv.empty()) {
@@ -1180,8 +1199,8 @@ bool VlRandomizer::unigen2(VlRNG& rngr, VlSolverSession& sess,
             m_ug2.lastSuccessI = -1;  // new params, so the old hint no longer applies
         }
 
-        // generateSamples() always finds a candidate in practice
-        if (VL_UNCOVERABLE(!generateSamples(sess, rngr))) return false;
+        // A failed enumeration, as after a solver error, falls back to the plain solve
+        if (!generateSamples(sess, rngr)) return false;
     }
 
     // Cached or just refilled - there is a witness to write into the variables
@@ -1241,6 +1260,8 @@ int VlRandomizer::bsat(VlSolverSession& sess, size_t bound, std::vector<Witness>
             solver << "(check-sat-assuming (__Vd" << assumeNum << "))\n";
             ++assumeNum;
             status = sess.readStatus();
+            // The solver may not support assumptions; get back in step for the plain check
+            if (status == VlSolverStatus::FAIL) sess.resync();
         }
         if (status != VlSolverStatus::SAT) {
             solver << "(check-sat)\n";
@@ -1401,7 +1422,7 @@ bool VlRandomizer::generateSamples(VlSolverSession& sess, VlRNG& rngr) VL_REQUIR
     }
 
     std::vector<Witness> witnesses;  // Reused across candidates; bsat() clears it
-    for (int t = 0; t < 3; ++t) {  // LCOV_EXCL_BR_LINE - Always finds a candidate in practice
+    for (int t = 0; t < 3; ++t) {
         const int i = candidates[t];
         if (i < 0) continue;  // hashBits below 2 leaves fewer than three counts to try
 
@@ -1429,8 +1450,8 @@ bool VlRandomizer::generateSamples(VlSolverSession& sess, VlRNG& rngr) VL_REQUIR
         }
         solver << "(pop 1)\n";
     }
-    m_ug2.lastSuccessI = -1;  // LCOV_EXCL_LINE
-    return false;  // LCOV_EXCL_LINE
+    m_ug2.lastSuccessI = -1;
+    return false;
 }
 
 void VlRandomizer::solveDiversity(VlRNG& rngr, VlSolverSession& sess) VL_REQUIRES(sess.m_mutex) {
@@ -1967,9 +1988,14 @@ bool VlRandomizer::solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
     randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN, &layerVars);
     os << ")\n";
     os << "(check-sat)\n";
-    if (sess.readStatus() == VlSolverStatus::SAT) {
+    const VlSolverStatus status = sess.readStatus();
+    if (status == VlSolverStatus::SAT) {
         emitGetValueCmd();
         (void)readPhaseValues(sess, solvedValuesr);
+    } else if (status == VlSolverStatus::FAIL) {
+        // Only the diversity commands can be unanswered, and the next phase starts with a
+        // (reset), so get back in step here and keep the baseline values
+        sess.resync();
     }
     return true;
 }

@@ -2802,6 +2802,11 @@ driver.py Non-Scenario Arguments
    Similar to ``--driver-clean``, but keeps output required by
    ``make test-snap`` / ``make test-diff``.
 
+.. option:: --driver-rand
+
+   Run tests in random order within the same ``test.priority()``, rather
+   than the default of name-sorted order.
+
 .. option:: --dump-tree
 
    Same as ``verilator --dump-tree``: Enable Verilator writing .tree debug

@@ -322,8 +322,9 @@ class TimingSuspendableVisitor final : public VNVisitor {
         if (nodep->needsVlProcess()) addFlags(nodep, T_FORCES_PROC | T_NEEDS_PROC);
         DepVtx* const sVxp = getSuspendDepVtx(nodep);
         DepVtx* const pVxp = getNeedsProcDepVtx(nodep);
-        if (nodep->dpiImportWrapper() || nodep->dpiExportImpl()) {
-            // Assume C/C++ can call any export.
+        if ((nodep->dpiImportWrapper() && nodep->dpiContext()) || nodep->dpiExportImpl()) {
+            // C/C++ code of a context import may call any export; non-context
+            // imports cannot call exports (IEEE 1800-2023 35.5.3).
             AstNetlist* const netlistp = v3Global.rootp();
             addFlags(nodep, T_NEEDS_PROC);
             DepVtx* const dpiVxp = getNeedsProcDepVtx(netlistp);
@@ -1336,6 +1337,8 @@ class TimingControlVisitor final : public VNVisitor {
                 delayp->lhsp(
                     new AstCond{flp, new AstEq{flp, rhs1p->cloneTree(false), new AstConst{flp, 0}},
                                 fallDelayp, lhsp});
+                // Both values are now in ticks, so visit(AstDelay) must not scale them again
+                delayp->timeunit(v3Global.rootp()->timeprecision());
             }
         }
         AstAssign* const assignp = new AstAssign{nodep->fileline(), lhs1p, rhs1p, controlp};
@@ -1448,12 +1451,14 @@ class TimingControlVisitor final : public VNVisitor {
         } else if (needDynamicTrigger(condp)) {
             // No point in making a sentree, just use the expression as sensitivity
             // Put the event control in an if so we only wait if the condition isn't met already
+            AstNodeExpr* const senCondp = condp->cloneTree(false);
+            UASSERT_OBJ(m_senExprBuilderp, nodep, "No SenExprBuilder for this scope");
+            AstNodeExpr* const initialCondp = m_senExprBuilderp->guardExpr(condp);
             auto* const ifp = new AstIf{
-                flp, new AstLogNot{flp, condp},
-                new AstEventControl{flp,
-                                    new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_TRUE,
-                                                                       condp->cloneTree(false)}},
-                                    flushp}};
+                flp, new AstLogNot{flp, initialCondp},
+                new AstEventControl{
+                    flp, new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_TRUE, senCondp}},
+                    flushp}};
             if (stmtsp) AstNode::addNext<AstNode, AstNode>(ifp, stmtsp);
             nodep->replaceWith(ifp);
         } else {
