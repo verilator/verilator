@@ -1270,11 +1270,6 @@ void EmitCSyms::emitSymHdr() {
         }
     }
 
-    if (v3Global.opt.vpiLazy()) {
-        puts("\n");
-        emitVarTableExterns();
-    }
-
     ofp()->putsEndGuard();
     closeOutputFile();
 }
@@ -1307,7 +1302,7 @@ void EmitCSyms::emitSymImpPreamble() {
 
     // So split ctor sub-functions in other translation units can reference
     // the VPI variable tables defined below.
-    if (!v3Global.opt.vpiLazy() && emitVarTableExterns()) puts("\n");
+    if (emitVarTableExterns()) puts("\n");
 }
 
 bool EmitCSyms::emitVarTableExterns() {
