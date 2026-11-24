@@ -108,8 +108,7 @@ AstAssignW* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& n
 
 AstRange* V3ParseGrammar::scrubRangeMulti(AstNodeRange* nrangep) {
     // Remove any UnsizedRange's from list; preserves multi-dim chain via nextp().
-    for (AstNodeRange *nodep = nrangep, *nextp; nodep; nodep = nextp) {
-        nextp = VN_AS(nodep->nextp(), NodeRange);
+    for (AstNodeRange* const nodep : VNList<AstNodeRange>{nrangep}) {
         if (!VN_IS(nodep, Range)) {
             nodep->v3error(
                 "Unsupported or syntax error: Unsized range in instance or other declaration");
@@ -144,6 +143,15 @@ AstNodePreSel* V3ParseGrammar::scrubSel(AstNodeExpr* fromp, AstNodePreSel* selp)
     subSelFromp->replaceWith(fromp);
     VL_DO_DANGLING(subSelFromp->deleteTree(), subSelFromp);
     return selp;
+}
+
+AstWithParse* V3ParseGrammar::scrubWithParse(AstNodeExpr* funcrefp,
+                                             AstWithParse* withParsep) VL_MT_DISABLED {
+    // WITHPARSE(PARSEHOLDER, ...) -> WITHPARSE(funcrefp, ...)
+    AstNode* holderp = withParsep->funcrefp();
+    holderp->replaceWith(funcrefp);
+    VL_DO_DANGLING(holderp->deleteTree(), holderp);
+    return withParsep;
 }
 
 AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nrangep,
@@ -191,7 +199,7 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
 }
 
 AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
-                                       AstNodeRange* arrayp, AstNode* attrsp) {
+                                       AstNodeRange* arrayp, AstAttrOf* attrsp) {
     UINFO(5, "  creVar " << name << "  decl=" << GRAMMARP->m_varDecl << "  io="
                          << GRAMMARP->m_varIO << "  dt=" << (GRAMMARP->m_varDTypep ? "set" : ""));
     if (GRAMMARP->m_varIO == VDirection::NONE  // In non-ANSI port list
@@ -285,6 +293,20 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     GRAMMARP->m_varAttrp = nodep;
     PARSEP->tagNodep(GRAMMARP->m_varAttrp);
     return nodep;
+}
+
+void V3ParseGrammar::addMember(FileLine* fileline, const string& name, AstNodeRange* arrayp,
+                               AstNode* valuep) {
+    // Members are appended as parsed, so the index is the number of members so far
+    const int index = m_memParentp->nMembers();
+    // May make new members with same type, so clone
+    AstNodeDType* const dtypep
+        = createArray(m_memDTypep ? m_memDTypep->cloneTree(true) : nullptr, arrayp, false);
+    AstMemberDType* const memberp = new AstMemberDType{
+        fileline, m_memParentp, index, name, VFlagChildDType{}, dtypep, valuep};
+    memberp->rand(m_memRand);
+    PARSEP->tagNodep(memberp);
+    m_memParentp->addMembersp(memberp);
 }
 
 string V3ParseGrammar::unquoteString(FileLine* fileline, const std::string& text) {

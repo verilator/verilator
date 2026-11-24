@@ -113,7 +113,8 @@ verilator_coverage Arguments
 
    The <count> threshold defaults to 10.
 
-   This option should be used together with :option:`--annotate`.
+   This option should be used together with :option:`--annotate` or
+   :option:`--write-info`.
 
 
 .. option:: --annotate-points
@@ -217,3 +218,12 @@ verilator_coverage Arguments
    verilator_coverage format has. It can be used with :command:`genhtml` to
    generate an HTML report. :command:`genhtml --branch-coverage` will also
    display the branch coverage, analogous to :option:`--annotate-points`.
+   As the .info file has no function coverage, version 2.5 and later of
+   :command:`lcov` and :command:`genhtml` may report an error unless run
+   with ``--no-function-coverage``.
+
+   The ``LH`` and ``BRH`` totals of lines and branches hit count only those
+   with at least :option:`--annotate-min` hits, so use ``--annotate-min 1``
+   to count every line and branch that was hit. :command:`lcov` and
+   :command:`genhtml` recompute these totals from the individual line and
+   branch records, so their reports are not affected.

@@ -25,11 +25,9 @@ module t;
     logic [1023:0] y;
   } wide_struct_t;
 
-  typedef struct {
-    int b;
-  } unpacked_t;
+  typedef struct {int b;} unpacked_t;
 
-  myif m();
+  myif m ();
 
   initial begin
     integer file_handle;

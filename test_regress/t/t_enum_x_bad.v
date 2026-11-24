@@ -7,6 +7,7 @@
 module t;
 
   enum bit [1:0] {BADX = 2'b1x} BAD1;
+  enum bit {BADX_EXPR = ~1'bx} BAD_EXPR;
 
   enum logic [3:0] {
     e0 = 4'b1xx1,

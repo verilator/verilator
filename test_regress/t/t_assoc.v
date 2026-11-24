@@ -21,6 +21,18 @@ module t (
   class Derived extends Base;
   endclass
 
+  class QueueMembers;
+    int q[int][$];
+    int w[*][$];
+    int d[][$];
+    int qq[$][$];
+    int f[2][$];
+  endclass
+
+  class QueueMembersNested;
+    QueueMembers inner;
+  endclass
+
   integer cyc = 0;
 
   integer i;
@@ -217,6 +229,7 @@ module t (
       int by_enum[color_t];
       bit [3:0][7:0] equivalent_type;
       bit [31:0] index_select[2];
+      bit [31:0] index_select3[3];
       Base base_handle;
       Derived derived_handle;
       string string_key;
@@ -230,6 +243,20 @@ module t (
       i = by_data.last(index_select[cyc+1]);
       `checkh(i, 1);
       `checkh(index_select[1], 9);
+      i = by_data.last(index_select3[cyc+1]);  // Bounds checked, as not a power of 2
+      `checkh(i, 1);
+      `checkh(index_select3[1], 9);
+      // Index 3 is out of bounds of index_select3[3], so last() does not write it
+      i = by_data.last(index_select3[cyc+3]);
+      `checkh(i, 1);
+      `checkp(index_select3, "'{'h0, 'h9, 'h0}");
+      // Each next() reads the default index 0, not the key that the previous one wrote
+      by_data[0] = 3;
+      repeat (3) begin
+        i = by_data.next(index_select3[cyc+3]);
+        `checkh(i, 1);
+      end
+      `checkp(index_select3, "'{'h0, 'h9, 'h0}");
       derived_handle = new;
       by_class[derived_handle] = 1;
       i = by_class.first(base_handle);
@@ -370,6 +397,69 @@ module t (
       w4 = '{"a": c4 + 4'd2, default: c4 + 4'd3};
       `checkh(w4["a"], 4'h1);
       `checkh(w4["z"], 4'h2);
+    end
+
+    begin  // Queue methods on associative-array elements of a class member
+      QueueMembers m;
+      m = new;
+      `checkh(m.q[9].size(), 0);
+      `checkh(m.q.exists(9), 0);
+      m.q[4].push_back(21);
+      m.q[4].push_front(12);
+      `checkh(m.q.num(), 1);
+      `checkh(m.q[4].pop_back(), 21);
+      `checkh(m.q[4][0], 12);
+      m.q[4].delete();
+      `checkh(m.q.exists(4), 1);
+      m.w["k"].push_back(3);
+      `checkh(m.w["k"][0], 3);
+      m.d = new[2];
+      m.d[1].push_back(5);
+      m.d[1].insert(0, 4);
+      `checkh(m.d[0].size(), 0);
+      `checkh(m.d[1].pop_front(), 4);
+      `checkh(m.d[1][0], 5);
+      m.qq.push_back('{});
+      m.qq[0].push_back(7);
+      m.qq[0].push_front(6);
+      `checkh(m.qq[0].pop_back(), 7);
+      `checkp(m.qq, "'{'{'h6}}");
+      m.f[1].push_back(9);
+      m.f[1].push_front(8);
+      `checkh(m.f[1].pop_back(), 9);
+      `checkp(m.f, "'{'{}, '{'h8}}");
+    end
+
+    begin  // Queue methods on associative-array elements of a nested class member
+      QueueMembersNested n;
+      n = new;
+      n.inner = new;
+      `checkh(n.inner.q[9].size(), 0);
+      `checkh(n.inner.q.exists(9), 0);
+      n.inner.q[4].push_back(21);
+      n.inner.q[4].push_front(12);
+      `checkh(n.inner.q.num(), 1);
+      `checkh(n.inner.q[4].pop_back(), 21);
+      `checkh(n.inner.q[4][0], 12);
+      n.inner.q[4].delete();
+      `checkh(n.inner.q.exists(4), 1);
+      n.inner.w["k"].push_back(3);
+      `checkh(n.inner.w["k"][0], 3);
+      n.inner.d = new[2];
+      n.inner.d[1].push_back(5);
+      n.inner.d[1].insert(0, 4);
+      `checkh(n.inner.d[0].size(), 0);
+      `checkh(n.inner.d[1].pop_front(), 4);
+      `checkh(n.inner.d[1][0], 5);
+      n.inner.qq.push_back('{});
+      n.inner.qq[0].push_back(7);
+      n.inner.qq[0].push_front(6);
+      `checkh(n.inner.qq[0].pop_back(), 7);
+      `checkp(n.inner.qq, "'{'{'h6}}");
+      n.inner.f[1].push_back(9);
+      n.inner.f[1].push_front(8);
+      `checkh(n.inner.f[1].pop_back(), 9);
+      `checkp(n.inner.f, "'{'{}, '{'h8}}");
     end
 
     $write("*-* All Finished *-*\n");

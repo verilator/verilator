@@ -1,0 +1,62 @@
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:38:19: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   38 |     plic_enable = {default: '1};
+      |                   ^
+                 ... For warning description see https://verilator.org/warn/NONSTD?v=latest
+                 ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:40:19: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   40 |     plic_enable = {default: '0};
+      |                   ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:50:24: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   50 |     automatic ab_t v = {b: crc[14:0], a: crc[22:16]};
+      |                        ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:52:9: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                 : ... Suggest use equivalent '{...}
+   52 |     v = {b: crc[44:30], default: '1};
+      |         ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:58:39: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   58 |     automatic logic [14:0] des[3:1] = {3: crc[14:0], default: crc[29:15]};
+      |                                       ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:59:39: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   59 |     automatic logic [14:0] asc[1:3] = {3: crc[14:0], default: crc[29:15]};
+      |                                       ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:60:33: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   60 |     automatic logic [8:0] vec = {0: crc[0], 8: crc[1], default: 1'b0};
+      |                                 ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:74:24: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   74 |     automatic is_t v = {int: crc[31:0], default: crc[38:32]};
+      |                        ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:82:13: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   82 |     v = {1: {a: crc[6:0], default: '0}, 0: '{b: {default: crc[7]}, a: crc[14:8]}};
+      |             ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:82:49: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   82 |     v = {1: {a: crc[6:0], default: '0}, 0: '{b: {default: crc[7]}, a: crc[14:8]}};
+      |                                                 ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:82:9: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                 : ... Suggest use equivalent '{...}
+   82 |     v = {1: {a: crc[6:0], default: '0}, 0: '{b: {default: crc[7]}, a: crc[14:8]}};
+      |         ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:88:23: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   88 |   localparam ab_t P = {a: 7'h5, b: 15'h1234};
+      |                       ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:90:14: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   90 |   assign w = {a: crc[6:0], b: P.b};
+      |              ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:92:12: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   92 |     return {a: i.b[6:0], b: {8'h0, i.a}};
+      |            ^
+%Warning-NONSTD: t/t_pattern_no_apostrophe.v:95:29: Non-standard assignment pattern without leading apostrophe (IEEE 1800-2023 10.9)
+                                                  : ... Suggest use equivalent '{...}
+   95 |     automatic ab_t s = swap({a: crc[6:0], b: crc[21:7]});
+      |                             ^

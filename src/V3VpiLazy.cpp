@@ -483,7 +483,7 @@ private:
             return;
         }
         // Same descent as the global counts, keeping the sole-driver equality exact.
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* stmtp = nodep->procsp(); stmtp; stmtp = stmtp->nextp()) {
             AstAlways* const alwaysp = VN_CAST(stmtp, Always);
             if (!alwaysp) {  // e.g. AstCoverToggle under --coverage: not a lazy driver
                 iterate(stmtp);
@@ -536,7 +536,7 @@ public:
 int constTruth(const AstNodeExpr* condp) {
     if (const AstVarRef* const refp = VN_CAST(condp, VarRef)) {
         const AstConst* const valuep = VN_CAST(refp->varp()->valuep(), Const);
-        if (refp->varp()->isParam() && valuep) condp = valuep;
+        if ((refp->varp()->isParam() || refp->varp()->constPoolEntry()) && valuep) condp = valuep;
     }
     if (const AstConst* const constp = VN_CAST(condp, Const)) return constp->isZero() ? 0 : 1;
     if (condp->width() != 1) return -1;
@@ -658,10 +658,10 @@ private:
             }
         }
     }
-    void visit(AstNodeIf* nodep) override {
+    void visit(AstIf* nodep) override {
         // An else-if chain is folded from its last 'else' up, iteratively
-        std::vector<AstNodeIf*> chain{nodep};
-        while (AstNodeIf* const nextp = VN_CAST(chain.back()->elsesp(), NodeIf)) {
+        std::vector<AstIf*> chain{nodep};
+        while (AstIf* const nextp = VN_CAST(chain.back()->elsesp(), If)) {
             if (nextp->nextp()) break;
             chain.push_back(nextp);
         }
@@ -1493,7 +1493,7 @@ private:
         }
         void visit(AstSel* nodep) override { visitSel(nodep); }
         void visit(AstArraySel* nodep) override { visitSel(nodep); }
-        void visit(AstNodeIf* nodep) override {
+        void visit(AstIf* nodep) override {
             if (!m_ok) return;
             scanReads(nodep->condp());
             const ArmDefs thenDefs = walkArm(nodep->thensp());
@@ -2048,11 +2048,12 @@ private:
     }
 
     // An AstAssignW must never sit under a CFunc, so continuous assigns are cloned as blocking.
-    static AstNode* cloneBody(const Group* g) {
-        AstNode* bodyp = nullptr;
+    static AstNodeStmt* cloneBody(const Group* g) {
+        AstNodeStmt* bodyp = nullptr;
         for (const CombBlock* const bp : g->m_blockps) {
-            for (AstNode* stmtp = bp->m_alwaysp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                AstNode* clonep;
+            for (AstNodeStmt* stmtp = bp->m_alwaysp->stmtsp(); stmtp;
+                 stmtp = VN_AS(stmtp->nextp(), NodeStmt)) {
+                AstNodeStmt* clonep;
                 if (const AstAssignW* const awp = VN_CAST(stmtp, AssignW)) {
                     clonep = new AstAssign{awp->fileline(), awp->lhsp()->cloneTree(false),
                                            awp->rhsp()->cloneTree(false)};
@@ -2161,12 +2162,12 @@ private:
         key.m_funcp = funcp;
         m_splitFuncps.push_back(funcp);
         bindRowRefresh(g, funcp);
-        AstNode* const bodyp = cloneBody(g);
+        AstNodeStmt* const bodyp = cloneBody(g);
         const LazyConeRewireVisitor rewire{*this, g, bodyp};
         AstIf* const guardp = newEpochGuard(g, key.m_epochSlot);
         funcp->addStmtsp(guardp);
         AstCFunc* const bodyFuncp = splitBodyFunc(g, guardp, bodyp);
-        const auto addBodyStmt = [&](AstNode* stmtp) {
+        const auto addBodyStmt = [&](AstNodeStmt* stmtp) {
             if (bodyFuncp) {
                 bodyFuncp->addStmtsp(stmtp);
             } else {

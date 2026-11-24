@@ -12,8 +12,8 @@ module t (
 );
 
   // Property body already has its own @(posedge clk2); caller wraps another
-  // @(posedge clk). Triggers "Clock event before property call and in its body"
-  // unsupported path in inlineNamedProperty.
+  // @(posedge clk). A clock event both before the instance and in its body is
+  // unsupported.
   property p;
     @(posedge clk2) a ##1 b;
   endproperty

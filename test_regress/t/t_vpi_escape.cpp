@@ -19,7 +19,7 @@
 #include "verilated_vcd_c.h"
 #include "verilated_vpi.h"
 
-#include "Vt_vpi_escape.h"
+#include VM_PREFIX_INCLUDE
 #include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 

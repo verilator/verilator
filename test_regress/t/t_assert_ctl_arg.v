@@ -10,9 +10,24 @@
 `define DISPLAY_FAIL(file, line) \
   $display("Failed '%m' at %s:%g", file, line)
 
+`define RUN_OBSERVED_DEFERRED_IMMEDIATE(file, line) \
+  $display("Testing assert_observed_deferred_immediate at %s:%g", file, line); \
+  assert_observed_deferred_immediate_`__LINE__: assert #0 (0); \
+  assert_observed_deferred_immediate_else_`__LINE__: assert #0 (0) else `DISPLAY_FAIL(file, line); \
+  assert_observed_deferred_immediate_stmt_`__LINE__: assert #0 (0) `DISPLAY_PASS(file, line); \
+  assert_observed_deferred_immediate_stmt_else_`__LINE__: assert #0 (0) `DISPLAY_PASS(file, line); else `DISPLAY_FAIL(file, line); \
+ \
+  $display("Testing assume_observed_deferred_immediate at %s:%g", file, line); \
+  assume_observed_deferred_immediate_`__LINE__: assume #0 (0); \
+  assume_observed_deferred_immediate_else_`__LINE__: assume #0 (0) else `DISPLAY_FAIL(file, line); \
+  assume_observed_deferred_immediate_stmt_`__LINE__: assume #0 (0) `DISPLAY_PASS(file, line); \
+  assume_observed_deferred_immediate_stmt_else_`__LINE__: assume #0 (0) `DISPLAY_PASS(file, line); else `DISPLAY_FAIL(file, line);
+
 `define RUN_ALL_ASSERTS \
   $display("==========\nRunning all asserts at: %s:%g\n==========", `__FILE__, `__LINE__); \
-  run_all_asserts(`__FILE__, `__LINE__); \
+  run_simple_immediate(`__FILE__, `__LINE__); \
+  `RUN_OBSERVED_DEFERRED_IMMEDIATE(`__FILE__, `__LINE__) \
+  run_final_deferred_immediate(`__FILE__, `__LINE__); \
   cover_simple_immediate_`__LINE__: cover(1); \
   cover_simple_immediate_stmt_`__LINE__: cover(1) `DISPLAY_PASS(`__FILE__, `__LINE__); \
   cover_observed_deferred_immediate_`__LINE__: cover #0 (1); \
@@ -20,6 +35,8 @@
   cover_final_deferred_immediate_`__LINE__: cover final (1); \
   cover_final_deferred_immediate_stmt_`__LINE__: cover final (1) `DISPLAY_PASS(`__FILE__, `__LINE__); \
 
+// Keep unrelated diagnostic and coverage locations stable.
+`line 23 "t/t_assert_ctl_arg.v" 0
 module t (
    input clk
 );
@@ -125,12 +142,7 @@ module t (
   end
 endmodule
 
-task run_all_asserts(string file, integer line);
-  run_simple_immediate(file, line);
-  run_observed_deferred_immediate(file, line);
-  run_final_deferred_immediate(file, line);
-endtask
-
+`line 134 "t/t_assert_ctl_arg.v" 0
 task run_simple_immediate(string file, integer line);
   $display("Testing assert_simple_immediate at %s:%g", file, line);
   assert_simple_immediate: assert(0);
@@ -145,20 +157,7 @@ task run_simple_immediate(string file, integer line);
   assume_simple_immediate_stmt_else: assume(0) `DISPLAY_PASS(file, line); else `DISPLAY_FAIL(file, line);
 endtask
 
-task run_observed_deferred_immediate(string file, integer line);
-  $display("Testing assert_observed_deferred_immediate at %s:%g", file, line);
-  assert_observed_deferred_immediate: assert #0 (0);
-  assert_observed_deferred_immediate_else: assert #0 (0) else `DISPLAY_FAIL(file, line);
-  assert_observed_deferred_immediate_stmt: assert #0 (0) `DISPLAY_PASS(file, line);
-  assert_observed_deferred_immediate_stmt_else: assert #0 (0) `DISPLAY_PASS(file, line); else `DISPLAY_FAIL(file, line);
-
-  $display("Testing assume_observed_deferred_immediate at %s:%g", file, line);
-  assume_observed_deferred_immediate: assume #0 (0);
-  assume_observed_deferred_immediate_else: assume #0 (0) else `DISPLAY_FAIL(file, line);
-  assume_observed_deferred_immediate_stmt: assume #0 (0) `DISPLAY_PASS(file, line);
-  assume_observed_deferred_immediate_stmt_else: assume #0 (0) `DISPLAY_PASS(file, line); else `DISPLAY_FAIL(file, line);
-endtask
-
+`line 162 "t/t_assert_ctl_arg.v" 0
 task run_final_deferred_immediate(string file, integer line);
   $display("Testing assert_final_deferred_immediate at %s:%g", file, line);
   assert_final_deferred_immediate: assert final (0);

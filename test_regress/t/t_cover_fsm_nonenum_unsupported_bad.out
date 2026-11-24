@@ -36,4 +36,8 @@
                                                                  : ... note: In instance 't'
   214 |         2'h0: nonconst_ternary_target_state <= start ? 2'h1 : {1'b0, start};
       |                                                      ^
+%Warning-COVERIGN: t/t_cover_fsm_nonenum_unsupported_bad.v:258:60: Ignoring unsupported: FSM coverage on non-enum state variable 'duplicate_guarded_target_state' with multiple labels for the same value 0: IDLE and RESET
+                                                                 : ... note: In instance 't'
+  258 |         BUSY: if (start) duplicate_guarded_target_state <= RESET;
+      |                                                            ^~~~~
 %Error: Exiting due to

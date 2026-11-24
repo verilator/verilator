@@ -7,3 +7,7 @@
 `verilator_config
 
 lint_off -rule EOFNEWLINE --file "*.v" -match "Missing newline at end of file*"
+// DECLFILENAME on line 2 is suppressed in a file whose last line has no newline.
+lint_off -rule DECLFILENAME --file "*/t_lint_eofnewline_bad.v" -lines 2
+lint_off -rule BADVLTPRAGMA --file "*/t_lint_eofnewline_vlt_sub.v"
+lint_off -rule DECLFILENAME --file "*/t_lint_eofnewline_vlt_sub.v"

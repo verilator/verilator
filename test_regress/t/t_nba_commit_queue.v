@@ -325,4 +325,82 @@ module t(clk);
     for (int i = 0 ; i < 128; ++i) `checkh(array10[i], ~i);
   end
 
+  // Case 11: unpacked struct, whole and member updates
+  typedef struct {
+    int i;
+    string s;
+  } elem11_t;
+  typedef elem11_t array11_t[10];
+  array11_t array11;
+  `at_posedge_clk_on_cycle(0) begin
+    for (int i = 0 ; i < 10; ++i) array11[i] = '{0, "squid"};
+    for (int i = 0 ; i < 10; ++i) `checkh(array11[i].i, 0);
+  end
+  `at_posedge_clk_on_cycle(1) begin
+    for (int i = 0 ; i < 10; ++i) `checks(array11[i].s, "squid");
+    for (int i = 0 ; i < 10; ++i) array11[i] <= '{i, "octopus"};
+    for (int i = 0 ; i < 10; ++i) `checks(array11[i].s, "squid");
+  end
+  `at_posedge_clk_on_cycle(2) begin
+    for (int i = 0 ; i < 10; ++i) `checkh(array11[i].i, i);
+    for (int i = 0 ; i < 10; ++i) `checks(array11[i].s, "octopus");
+    for (int i = 1 ; i < 9; ++i) array11[i].s <= "cuttlefish";
+    for (int i = 0 ; i < 10; ++i) `checks(array11[i].s, "octopus");
+  end
+  `at_posedge_clk_on_cycle(3) begin
+    for (int i = 0 ; i < 10; ++i) `checkh(array11[i].i, i);
+    `checks(array11[0].s, "octopus");
+    for (int i = 1 ; i < 9; ++i) `checks(array11[i].s, "cuttlefish");
+    `checks(array11[9].s, "octopus");
+  end
+
+  // Case 12: class handles
+  class Cls12;
+    int x;
+    function new(int x);
+      this.x = x;
+    endfunction
+  endclass
+  typedef Cls12 array12_t[10];
+  array12_t array12;
+  Cls12 obj12a = new(1);
+  Cls12 obj12b = new(2);
+  `at_posedge_clk_on_cycle(1) begin
+    for (int i = 0 ; i < 10; ++i) `checkh(array12[i] == null, 1'b1);
+    for (int i = 0 ; i < 10; ++i) array12[i] <= obj12a;
+    for (int i = 0 ; i < 10; ++i) `checkh(array12[i] == null, 1'b1);
+  end
+  `at_posedge_clk_on_cycle(2) begin
+    for (int i = 0 ; i < 10; ++i) `checkh(array12[i].x, 1);
+    for (int i = 5 ; i < 10; ++i) array12[i] <= obj12b;
+    for (int i = 0 ; i < 10; ++i) `checkh(array12[i].x, 1);
+  end
+  `at_posedge_clk_on_cycle(3) begin
+    for (int i = 0 ; i < 10; ++i) `checkh(array12[i].x, i < 5 ? 1 : 2);
+    for (int i = 0 ; i < 10; ++i) array12[i] <= null;
+    for (int i = 0 ; i < 10; ++i) `checkh(array12[i].x, i < 5 ? 1 : 2);
+  end
+  `at_posedge_clk_on_cycle(4) begin
+    for (int i = 0 ; i < 10; ++i) `checkh(array12[i] == null, 1'b1);
+  end
+
+  // Case 13: unpacked struct, not in a loop
+  elem11_t array13[2];
+  `at_posedge_clk_on_cycle(1) begin
+    `checkh(array13[1].i, 0);
+    array13[1] <= '{1, "nautilus"};
+    `checkh(array13[1].i, 0);
+  end
+  `at_posedge_clk_on_cycle(2) begin
+    `checkh(array13[1].i, 1);
+    `checks(array13[1].s, "nautilus");
+    array13[cyc[0]].s <= "argonaut";
+    `checks(array13[0].s, "");
+  end
+  `at_posedge_clk_on_cycle(3) begin
+    `checkh(array13[1].i, 1);
+    `checks(array13[0].s, "argonaut");
+    `checkh(array13[0].i, 0);
+  end
+
 endmodule

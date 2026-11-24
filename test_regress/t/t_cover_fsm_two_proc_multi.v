@@ -383,6 +383,140 @@ module fsm_seqmix_off (
   end
 endmodule
 
+module fsm_if_chain_guard (
+    input logic clk,
+    input logic rst,
+    input logic sel
+);
+  localparam logic [1:0] S0 = 2'd0;
+  localparam logic [1:0] S1 = 2'd1;
+  localparam logic [1:0] S2 = 2'd2;
+
+  logic [1:0] state_q;
+  logic [1:0] state_d;
+
+  // Input guards inside the state branches of an if/else-if chain
+  always_comb begin
+    if (state_q == S0) begin
+      if (sel) state_d = S1;
+      else state_d = S2;
+    end
+    else if (state_q == S1) state_d = sel ? S2 : S0;
+    else state_d = S0;
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
+module fsm_if_chain_guard_noelse_off (
+    input logic clk,
+    input logic rst,
+    input logic sel
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+
+  // A nested guard without else is not a supported chain branch
+  always_comb begin
+    state_d = state_q;
+    if (state_q == S0) begin
+      if (sel) state_d = S1;
+    end
+    else if (state_q == S1) state_d = S2;
+    else state_d = S0;
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
+module fsm_case_guarded (
+    input logic clk,
+    input logic rst,
+    input logic a,
+    input logic b
+);
+  typedef enum logic [1:0] {
+    S0,
+    S1,
+    S2,
+    S3
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+
+  // Every transition is guarded with no final else, so the default holds the state
+  always_comb begin
+    state_d = state_q;
+    case (state_q)
+      S0: if (a) state_d = S1;
+      S1:
+      if (b) state_d = S2;
+      else if (a) state_d = S0;
+      S2: if (!a) state_d = S3;
+      S3: begin
+        if (a) begin
+          if (b) state_d = S0;
+        end
+      end
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
+module fsm_case_guarded_chain (
+    input logic clk,
+    input logic rst,
+    input logic a,
+    input logic b
+);
+  typedef enum logic [1:0] {
+    S0,
+    S1,
+    S2
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+
+  // S1 assigns on every path, which without coverage folds to a nested '?:',
+  // so it is skipped in all forms.  S2 assigns nothing, so it has no transition.
+  always_comb begin
+    state_d = state_q;
+    case (state_q)
+      S0: if (a) state_d = S1;
+      S1:
+      if (a) state_d = S2;
+      else if (b) state_d = S0;
+      else state_d = S1;
+      S2: if (b) begin
+      end
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
 module t (
     input clk
 );
@@ -428,6 +562,16 @@ module t (
       .rst(rst),
       .sel(sel)
   );
+  fsm_if_chain_guard if_chain_guard_u (
+      .clk(clk),
+      .rst(rst),
+      .sel(cyc[1])
+  );
+  fsm_if_chain_guard_noelse_off if_chain_guard_noelse_off_u (
+      .clk(clk),
+      .rst(rst),
+      .sel(sel)
+  );
   fsm_plain_always plain_always_u (
       .clk(clk),
       .rst(rst),
@@ -446,6 +590,18 @@ module t (
   fsm_seqmix_off seqmix_off_u (
       .clk(clk),
       .rst(rst)
+  );
+  fsm_case_guarded case_guarded_u (
+      .clk(clk),
+      .rst(rst),
+      .a(cyc[0] | cyc[1]),
+      .b(cyc < 7)
+  );
+  fsm_case_guarded_chain case_guarded_chain_u (
+      .clk(clk),
+      .rst(rst),
+      .a(cyc[0]),
+      .b(cyc[1])
   );
 
   initial begin

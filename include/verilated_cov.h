@@ -33,7 +33,36 @@
 #include <sstream>
 #include <string>
 
+//=============================================================================
+// $coverage_control values; negative coverage types are extensions.
+// Must match VSvCov in src/V3PreShell.h.
+
+#define VL_SV_COV_START 0
+#define VL_SV_COV_STOP 1
+#define VL_SV_COV_RESET 2
+#define VL_SV_COV_CHECK 3
+#define VL_SV_COV_MODULE 10
+#define VL_SV_COV_HIER 11
+#define VL_SV_COV_ASSERTION 20
+#define VL_SV_COV_FSM_STATE 21
+#define VL_SV_COV_STATEMENT 22
+#define VL_SV_COV_TOGGLE 23
+#define VL_SV_COV_LINE (-102)
+#define VL_SV_COV_BRANCH (-104)
+#define VL_SV_COV_CONDITION (-105)
+#define VL_SV_COV_EXPRESSION (-106)
+#define VL_SV_COV_EXPR (-106)
+#define VL_SV_COV_FSM_TRANS (-107)
+#define VL_SV_COV_ALL (-110)
+#define VL_SV_COV_OVERFLOW (-2)
+#define VL_SV_COV_ERROR (-1)
+#define VL_SV_COV_NOCOV 0
+#define VL_SV_COV_OK 1
+#define VL_SV_COV_PARTIAL 2
+
 class VerilatedCovImp;
+
+using VerilatedCovWeightFunc = int32_t (*)(const void*);
 
 //=============================================================================
 /// Insert an item for coverage analysis.
@@ -96,7 +125,7 @@ inline void VL_COV_TOGGLE_CHG_ST_W(const int width, uint32_t* covp, WDataInP new
     for (int i = 0; i < VL_WORDS_I(width); ++i) {
         const EData chgData = newData[i] ^ oldData[i];
         if (chgData) {
-            for (int j = 0; j < width - i * VL_EDATASIZE; ++j) {
+            for (int j = 0; j < std::min(VL_EDATASIZE, width - i * VL_EDATASIZE); ++j) {
                 *(covp + (i * VL_EDATASIZE + j) * 2 + ((newData[i] >> j) & 1))
                     += (chgData >> j) & 1;
             }
@@ -129,7 +158,7 @@ inline void VL_COV_TOGGLE_CHG_MT_W(const int width, std::atomic<uint32_t>* covp,
     for (int i = 0; i < VL_WORDS_I(width); ++i) {
         const EData chgData = newData[i] ^ oldData[i];
         if (chgData) {
-            for (int j = 0; j < width - i * VL_EDATASIZE; ++j) {
+            for (int j = 0; j < std::min(VL_EDATASIZE, width - i * VL_EDATASIZE); ++j) {
                 if (VL_BITISSET_E(chgData, j)) {
                     (covp + (i * VL_EDATASIZE + j) * 2 + ((newData[i] >> j) & 1))
                         ->fetch_add(1, std::memory_order_relaxed);
@@ -175,6 +204,8 @@ public:
     // _insert1: Remember item pointer with count.  (Not const, as may add zeroing function)
     void _inserti(uint32_t* itemp) VL_MT_SAFE;
     void _inserti(uint64_t* itemp) VL_MT_SAFE;
+    void _inserti(uint32_t* itemp, const void* weightObjectp,
+                  VerilatedCovWeightFunc weightFuncp) VL_MT_SAFE;
     // _insert2: Set default filename and line number
     void _insertf(const char* filename, int lineno) VL_MT_SAFE;
     // _insert3: Set parameters
@@ -218,6 +249,16 @@ protected:
     // Internal: access to implementation class
     VerilatedCovImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedCovImp*>(this); }
 };
+
+// $coverage_control
+inline int VL_COVERAGE_CONTROL(VerilatedCovContext* covp, int control, int coverageType,
+                               int scope) VL_MT_SAFE {
+    if (control == VL_SV_COV_RESET && coverageType == VL_SV_COV_ALL && scope == VL_SV_COV_HIER) {
+        covp->zero();
+        return VL_SV_COV_OK;
+    }
+    return VL_SV_COV_ERROR;
+}
 
 //=============================================================================
 //  VerilatedCov

@@ -64,7 +64,7 @@ V3ParseImp::~V3ParseImp() {
 //######################################################################
 // Parser utility methods
 
-void V3ParseImp::importIfInStd(FileLine* fileline, const string& id, bool doImport) {
+void V3ParseImp::importIfInStd(FileLine* fileline, const string& id) {
     // Keywords that auto-import to require use of verilated_std.vh.
     // OK if overly sensitive; will over-import and keep std:: around
     // longer than migt otherwise.
@@ -78,16 +78,14 @@ void V3ParseImp::importIfInStd(FileLine* fileline, const string& id, bool doImpo
         = v3Global.rootp()->stdPackagep()) {  // else e.g. --no-std-package
         UINFO(9, "import and keep std:: for " << fileline);
         v3Global.setUsesStdPackage();
-        if (doImport) {
-            AstPackageImport* const impp = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
-            unitPackage(stdpkgp->fileline())->addStmtsp(impp);
-            for (AstNode* const itemp : v3Global.rootp()->stdPackagep()->stmtspList()) {
-                if (itemp->name() == "process") {
-                    v3Global.rootp()->stdPackageProcessp(VN_AS(itemp, Class));
-                    UASSERT_OBJ(v3Global.rootp()->stdPackageProcessp(), v3Global.rootp(),
-                                "'std' package class should be found");
-                    break;
-                }
+        AstPackageImport* const impp = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
+        unitPackage(stdpkgp->fileline())->addStmtsp(impp);
+        for (AstNode* const itemp : v3Global.rootp()->stdPackagep()->stmtspList()) {
+            if (itemp->name() == "process") {
+                v3Global.rootp()->stdPackageProcessp(VN_AS(itemp, Class));
+                UASSERT_OBJ(v3Global.rootp()->stdPackageProcessp(), v3Global.rootp(),
+                            "'std' package class should be found");
+                break;
             }
         }
     }
@@ -105,9 +103,8 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
         return new AstConst{flp, AstConst::BitTrue{}};
     }
 
-    for (AstCaseItem *nextp, *itemp = itemsp; itemp; itemp = nextp) {
-        nextp = VN_AS(itemp->nextp(), CaseItem);
-        AstNodeExpr* const propp = VN_AS(itemp->stmtsp()->unlinkFrBack(), NodeExpr);
+    for (AstCaseItem* const itemp : VNList<AstCaseItem>{itemsp}) {
+        AstNodeExpr* const propp = VN_AS(itemp->stmtsp(), StmtExpr)->exprp()->unlinkFrBack();
 
         if (itemp->isDefault()) {
             if (defaultPropp) {
@@ -663,6 +660,13 @@ size_t V3ParseImp::tokenPipeScanParens(size_t depth) {
     return depth;
 }
 
+bool V3ParseImp::tokenPipeScanEmptyConstraintSet(const size_t depth) {
+    // Return if the '{' at depth is followed by '}', so it is an empty constraint_set rather
+    // than an empty queue starting the next expression, as in 'if (a) {} -b < 2;'.
+    UASSERT(tokenPeekp(depth)->token == '{', "Start with '{'");
+    return tokenPeekp(depth + 1)->token == '}';
+}
+
 size_t V3ParseImp::tokenPipeScanEqNew(size_t depth) {
     // Search around IEEE class_new to see if is expression
     // Return location of following token, or input if not found
@@ -747,9 +751,13 @@ void V3ParseImp::tokenPipeline() {
         || token == ':'  //
         || token == '='  //
         || token == yCONST__LEX  //
+        || token == yELSE  //
+        || token == yFOREACH  //
         || token == yGLOBAL__LEX  //
+        || token == yIF  //
         || token == yLOCAL__LEX  //
         || token == yNEW__LEX  //
+        || token == yP_MINUSGT  //
         || token == ySTATIC__LEX  //
         || token == yTAGGED__LEX  //
         || token == yTYPE__LEX  //
@@ -780,6 +788,25 @@ void V3ParseImp::tokenPipeline() {
                 token = yCONST__REF;
             } else {
                 token = yCONST__ETC;
+            }
+        } else if (token == yELSE || token == yP_MINUSGT) {
+            if (nexttok == '{') {
+                VL_RESTORER(yylval);  // Remember value, as about to read ahead
+                if (tokenPipeScanEmptyConstraintSet(0)) {
+                    m_tokensAhead.at(0).token = yP_CURLY__EMPTY;
+                } else {
+                    m_tokensAhead.at(0).token = '{';
+                }
+            }
+        } else if (token == yFOREACH || token == yIF) {
+            VL_RESTORER(yylval);  // Remember value, as about to read ahead
+            const size_t depth = tokenPipeScanParens(0);
+            if (tokenPeekp(depth)->token == '{') {
+                if (tokenPipeScanEmptyConstraintSet(depth)) {
+                    m_tokensAhead.at(depth).token = yP_CURLY__EMPTY;
+                } else {
+                    m_tokensAhead.at(depth).token = '{';
+                }
             }
         } else if (token == yGLOBAL__LEX) {
             if (nexttok == yCLOCKING) {
@@ -889,9 +916,9 @@ void V3ParseImp::tokenPipelineSym() {
     // Note above sometimes converts yGLOBAL to a yaID__LEX
     tokenPipeline();  // sets yylval
     int token = yylval.token;
-    if (token == yRANDOMIZE) importIfInStd(yylval.fl, "randomize", false);
+    if (token == yRANDOMIZE) importIfInStd(yylval.fl, "randomize");
     if (token == yaID__ETC || token == yaID__CC || token == yaID__LEX || token == yaID__aTYPE) {
-        importIfInStd(yylval.fl, *(yylval.strp), true);
+        importIfInStd(yylval.fl, *(yylval.strp));
         if (token == yaID__LEX) {
             if (VString::startsWith(*(yylval.strp), "PATHPULSE__024")) {
                 token = yaID__PATHPULSE;

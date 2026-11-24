@@ -81,11 +81,10 @@ static const char* _vl_vpi_find_unescaped_dot(const char* posp) {
     return nullptr;
 }
 
-// The row owning a packed struct/union member's storage: the nearest ancestor not itself a
-// packed member
+// The row owning a struct/union member's storage: the nearest ancestor not itself a member
 static const VerilatedVar* _vl_vpi_storage_varp(const VerilatedVar* varp,
                                                 const VerilatedScope* scopep) {
-    while (varp->isPackedMember()) {
+    while (varp->isMember()) {
         const char* const namep = varp->name();
         const char* lastp = nullptr;
         for (const char* posp = namep; (posp = _vl_vpi_find_unescaped_dot(posp)); ++posp)
@@ -439,8 +438,8 @@ public:
     // Storage address without reconstructing: a handle's value is rebuilt when it is read, not
     // when the handle is made, so a handle taken before the first eval() is harmless
     static void* storagep(const VerilatedVar* varp) {
-        // A packed member's row points into its parent's storage; only the parent has a descriptor
-        if (VL_LIKELY(!varp->isLazyRemat()) || varp->isPackedMember()) return varp->rawDatap();
+        // A member's row points into its parent's storage; only the parent has a descriptor
+        if (VL_LIKELY(!varp->isLazyRemat()) || varp->isMember()) return varp->rawDatap();
         const VerilatedVarLazyDatap* const lazyDatap = varp->lazyDatap();
         return static_cast<uint8_t*>(lazyDatap->selfp) + lazyDatap->storageOffset;
     }
@@ -684,8 +683,8 @@ public:
                 return nullptr;
             }
             if (m_onlyParams && !m_it->second.isParam()) continue;
-            // Packed struct/union members are reached through their parent, see vpiMember
-            if (m_it->second.isPackedMember()) continue;
+            // Struct/union members are reached through their parent, see vpiMember
+            if (m_it->second.isMember()) continue;
             if (VL_UNLIKELY(m_topscopep)) {
                 if (const VerilatedVar* topvarp = m_topscopep->varFind(m_it->second.name())) {
                     if (topvarp->isParam()) {

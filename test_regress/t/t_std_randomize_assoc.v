@@ -20,21 +20,21 @@ module t_std_randomize_assoc;
   initial begin
     int randomize_result;
 
-    // Test 1: std::randomize with int-keyed associative array (no constraints)
+    // Test: std::randomize with int-keyed associative array (no constraints)
     assoc_int[0] = 0;
     assoc_int[1] = 0;
     assoc_int[2] = 0;
     randomize_result = std::randomize(assoc_int);
     `checkd(randomize_result, 1);
 
-    // Test 2: std::randomize with string-keyed associative array
+    // Test: std::randomize with string-keyed associative array
     assoc_byte["a"] = 0;
     assoc_byte["b"] = 0;
     assoc_byte["c"] = 0;
     randomize_result = std::randomize(assoc_byte);
     `checkd(randomize_result, 1);
 
-    // Test 3: Multiple randomizations produce different values
+    // Test: Multiple randomizations produce different values
     begin
       automatic int non_zero = 0;
       repeat (5) begin

@@ -11,7 +11,7 @@ module t (
   int cyc = 0;
   logic valid;
 
-  // --- Scenario 1: |=> with conditional antecedent ---
+  // --- Scenario: |=> with conditional antecedent ---
   // Captures cyc when valid is true, checks cyc == prev+1 next cycle.
   property p_nonoverlap;
     int prev;
@@ -20,7 +20,7 @@ module t (
   endproperty
   assert property (p_nonoverlap);
 
-  // --- Scenario 2: |-> overlapped with match item ---
+  // --- Scenario: |-> overlapped with match item ---
   // Captures cyc on same cycle, checks equality immediately.
   property p_overlap;
     int snap;
@@ -29,7 +29,7 @@ module t (
   endproperty
   assert property (p_overlap);
 
-  // --- Scenario 3: same property referenced twice (isolation test) ---
+  // --- Scenario: same property referenced twice (isolation test) ---
   // Each instance must get its own __Vpropvar variable.
   int counter_x = 0;
   int counter_y = 1000;
@@ -42,7 +42,7 @@ module t (
   assert property (p_track(counter_x));
   assert property (p_track(counter_y));
 
-  // --- Scenario 4: |-> match item with $urandom (side-effect test) ---
+  // --- Scenario: |-> match item with $urandom (side-effect test) ---
   // snap = $urandom() must evaluate once; snap == snap is always true.
   int overlap_fail = 0;
   property p_overlap_sideeffect;
@@ -53,7 +53,7 @@ module t (
   assert property (p_overlap_sideeffect)
   else overlap_fail++;
 
-  // --- Scenario 5: |=> match item with $urandom (side-effect test) ---
+  // --- Scenario: |=> match item with $urandom (side-effect test) ---
   int nonoverlap_fail = 0;
   property p_nonoverlap_sideeffect;
     int snap;
@@ -63,7 +63,7 @@ module t (
   assert property (p_nonoverlap_sideeffect)
   else nonoverlap_fail++;
 
-  // --- Scenario 6: local variable with initializer ---
+  // --- Scenario: local variable with initializer ---
   // V3LinkParse wraps the init into AstInitialStaticStmt for property locals
   // (automatic is only used for task/function-scope). Exercises the
   // InitialStaticStmt branch of the property-body stepping loop.
@@ -72,6 +72,18 @@ module t (
     @(posedge clk) valid ##1 (cyc > x);
   endproperty
   cover property (p_init_local);
+
+  // --- Scenario: local variable assigned in a sequence instance ---
+  // A local variable passed as an entire actual argument to an untyped formal may be
+  // assigned in the instance (IEEE 1800-2023 16.10)
+  sequence s_capture(lv);
+    (valid, lv = cyc[0]);
+  endsequence
+  property p_capture;
+    bit prev;
+    @(posedge clk) s_capture(prev) |=> (cyc[0] != prev);
+  endproperty
+  assert property (p_capture);
 
   always @(posedge clk) begin
     cyc <= cyc + 1;

@@ -68,8 +68,6 @@ t.ct_c 3c r
 t.dlp_c 3f r
 t.dlp_t 40 W
 t.dus ? ?
-t.dus.a 42 r
-t.dus.b bd r
 t.dus_c 42 r
 t.fa 00123456789abcd3c W
 t.fb 00123456789abcd3c r
@@ -81,8 +79,6 @@ t.frc_al 5a W
 t.frc_cb 18 W
 t.frc_cn 19 r
 t.fus ? ?
-t.fus.a 3c W
-t.fus.b ff W
 t.fy0.a 3c r
 t.fy0.clk 0 r
 t.fy0.cyc_p fc r

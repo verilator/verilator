@@ -102,10 +102,6 @@ class ReloopAnalysis final : public VNVisitorConst {
         }
         iterateChildrenConst(nodep);
     }
-    void visit(AstTraceDecl*) override {
-        // Pointed to by AstTraceInc, and sameNode ignores what it declares
-        m_ok = false;
-    }
     void visit(AstNode* nodep) override {
         if (enter(nodep)) iterateChildrenConst(nodep);
     }
@@ -237,14 +233,13 @@ class ReloopVisitor final : public VNVisitor {
         }
         FileLine* const flp = firstp->fileline();
         // Create the loop variable
-        AstVar* const itp
-            = new AstVar{flp, VVarType::STMTTEMP, "__Vilp" + std::to_string(++m_nTemps),
-                         VFlagLogicPacked{}, 32};
+        AstVar* const itp = new AstVar{
+            flp, VVarType::STMTTEMP, "__Vilp" + std::to_string(++m_nTemps), VFlagBitPacked{}, 32};
         m_cfuncp->addVarsp(itp);
         // Replace the constants with the loop variable
         replaceConsts(itp);
         // Create the loop initializer
-        AstNode* const initp
+        AstNodeStmt* const initp
             = new AstAssign{flp, new AstVarRef{flp, itp, VAccess::WRITE}, new AstConst{flp, 0U}};
         firstp->replaceWith(initp);
         // Create the loop
@@ -252,7 +247,7 @@ class ReloopVisitor final : public VNVisitor {
         initp->addNextHere(loopp);
         // Add the loop body
         loopp->addStmtsp(firstp);
-        AstNode* const incp = new AstAssign{
+        AstNodeStmt* const incp = new AstAssign{
             flp, new AstVarRef{flp, itp, VAccess::WRITE},
             new AstAdd{flp, new AstConst{flp, 1U}, new AstVarRef{flp, itp, VAccess::READ}}};
         loopp->addStmtsp(incp);
@@ -320,6 +315,9 @@ class ReloopVisitor final : public VNVisitor {
     //--------------------
     void visit(AstVar*) override {}  // Accelerate
     void visit(AstNodeExpr*) override {}  // Accelerate
+    void visit(AstNodeRtmdDataType*) override {}  // Accelerate
+    void visit(AstRtmdVarType*) override {}  // Accelerate
+    void visit(AstNodeRtmdItem*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

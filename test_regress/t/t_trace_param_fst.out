@@ -12,7 +12,7 @@ $end
   $var wire 1 ! i_clk $end
   $var wire 3 " i_d [2:0] $end
   $var wire 3 # o_q [2:0] $end
-  $scope module my_module_types $end
+  $scope package my_module_types $end
    $var parameter 32 $ MY_PARAM [31:0] $end
    $var parameter 32 % MY_PARAM2 [31:0] $end
   $upscope $end

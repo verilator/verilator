@@ -124,10 +124,9 @@
 
 #include "V3Decompose.h"
 
-#include "V3AstUserAllocator.h"
-#include "V3MemberMap.h"
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
+#include "V3VNUserAllocator.h"
 
 #include <algorithm>
 #include <memory>
@@ -202,15 +201,17 @@ public:
     // The state of the pass, shared by the steps
     class State final {
         // NODE STATE
+        //  AstVarScope::user3()        -> bool: original variable that must be kept
+        const VNUser3InUse m_user3InUse;
         //  AstNodeDType::user4()       -> Components of the type, via dtypeComponents
         //  AstVarScope::user4()        -> Place: the original variable, via places
         const VNUser4InUse m_user4InUse;
 
     public:
         // The components of the aggregate types, see DecomposeBase::dtypeComponents
-        AstUser4Allocator<AstNodeDType, std::vector<Component>> dtypeComponents;
+        VNUser4Allocator<AstNodeDType, std::vector<Component>> dtypeComponents;
         // The Places of the original variables, see DecomposeRecord::placeOf
-        AstUser4Allocator<AstVarScope, Place> places;
+        VNUser4Allocator<AstVarScope, Place> places;
         std::vector<Place*> rootps;  // The original Places, in creation order
         std::vector<std::vector<Select>> chains;  // Select chains addressing components
         std::vector<Assignment> assignments;  // Assignments to expand if a side is split
@@ -384,13 +385,10 @@ protected:
 class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
     // NODE STATE
     //  AstVar::user1()             -> int: bit 0: eligible, bit 1: evaluated, see isEligible
-    //  AstStructDType::user1()     -> bool: members annotated with their indices
-    //  AstMemberDType::user1()     -> uint64_t: component index of the member
     //  AstNodeExpr::user1u()       -> Place*: the one an assignment side addresses exactly
     const VNUser1InUse m_user1InUse;
 
     // STATE
-    VMemberMap m_memberMap;  // Struct members by name
     AstNodeAssign* m_assignp = nullptr;  // The visited assignment iff splittable
 
     // METHODS
@@ -423,7 +421,7 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
                 // Eligible if no refusal reason returned
                 return !reasonp;
             }();
-            varp->user1(2 | eligible);
+            varp->user1(2 | (eligible ? 1 : 0));
         }
         // Return the cached result
         return varp->user1() & 1;
@@ -482,15 +480,10 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
         if (AstStructSel* const selp = VN_CAST(exprp, StructSel)) {
             if (Place* const fromp = resolveChain(selp->fromp(), chain)) {
                 if (!isUnpacked(fromp->dtypep)) return nullptr;
-                AstStructDType* const structp = VN_AS(fromp->dtypep->skipRefp(), StructDType);
-                // Annotate member indices of the struct on first encounter
-                if (!structp->user1SetOnce()) {
-                    const std::vector<Component>& compsr = dtypeComponents(structp);
-                    for (size_t i = 0; i < compsr.size(); ++i) compsr[i].memberp->user1(i);
-                }
-                const AstNode* const memberp = m_memberMap.findMember(structp, selp->name());
-                UASSERT_OBJ(memberp, selp, "Struct member not found: " << selp->name());
-                Place* const childp = componentOf(fromp, memberp->user1());
+                // As for packed structs, component 0 is the last declared member
+                const AstMemberDType* const memberp = selp->memberp();
+                const int idx = memberp->parentp()->nMembers() - 1 - memberp->index();
+                Place* const childp = componentOf(fromp, idx);
                 fromp->wantsSplit = true;
                 chain.push_back({selp, childp, 0});
                 return childp;
@@ -648,7 +641,11 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
         // whole of the Place it references, mark as such.
         if (Place* const placep = placeOf(nodep)) referencedWhole(nodep, placep);
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstRtmdVar* nodep) override {
+        // Ignore reference for splitting, but need to reconstruct the variable
+        if (nodep->refp()) nodep->vscp()->user3(true);
+    }
+    void visit(AstMemberRef* nodep) override {
         iterateChildrenConst(nodep);
         AstVar* const varp = nodep->varp();
         if (!isEligible(varp)) return;
@@ -681,7 +678,7 @@ class DecomposeDecision final : public DecomposeBase {
     // STATE
     std::vector<Place*> m_worklist;  // Places to consider splitting
     // The component AstVars of the AstVars, see the node state
-    AstUser1Allocator<AstVar, std::vector<AstVar*>> m_splitVarps;
+    VNUser1Allocator<AstVar, std::vector<AstVar*>> m_splitVarps;
     VDouble0 m_statSplitUnpackedOrig;  // Original AstVars of unpacked type split
     VDouble0 m_statSplitPackedOrig;  // Original AstVars of packed type split
     VDouble0 m_statSplitUnpackedComp;  // Component AstVars of unpacked type split
@@ -926,9 +923,7 @@ class DecomposeRewrite final : public VNDeleter, public DecomposeBase {
             return new AstArraySel{flp, fromp, i};
         }
         // Otherwise must be an unpacked struct, so a StructSel
-        AstStructSel* const selp = new AstStructSel{flp, fromp, comp.memberp->name()};
-        selp->dtypep(comp.dtypep);
-        return selp;
+        return new AstStructSel{flp, fromp, comp.memberp};
     }
 
     // Leaf terms of a Concat/Replicate tree, in LSB order, or the expression itself if neither
@@ -1358,7 +1353,7 @@ class DecomposeRewrite final : public VNDeleter, public DecomposeBase {
             AstNodeExpr* const rhsp = new AstVarRef{flp, childp->vscp, VAccess::READ};
             AstNodeExpr* const lhsRefp = new AstVarRef{flp, vscp, VAccess::WRITE};
             AstNodeExpr* const lhsp = newSelect(lhsRefp, placep->dtypep, i);
-            activep->addStmtsp(new AstAlways{new AstAssignW{flp, lhsp, rhsp}});
+            activep->addProcsp(new AstAlways{new AstAssignW{flp, lhsp, rhsp}});
         }
     }
 
@@ -1374,10 +1369,9 @@ class DecomposeRewrite final : public VNDeleter, public DecomposeBase {
         for (Place* const placep : m_state.rootps) {
             if (!placep->split) continue;
             const AstVarScope* const vscp = placep->vscp;
-            // Traced ones, and --vpi-lazy read-only ones, whose VPI row reads the whole variable
-            if (!(vscp->varp()->isTrace() && vscp->isTrace())
-                && !vscp->varp()->isVpiLazyCombWhole())
-                continue;
+            // Descriptor-read ones, and --vpi-lazy read-only ones, whose VPI row reads the whole
+            // variable
+            if (!vscp->user3() && !vscp->varp()->isVpiLazyCombWhole()) continue;
             AstActive* const activep = comboActive(vscp->scopep());
             driveFromComponents(placep, activep);
         }

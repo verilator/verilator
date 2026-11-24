@@ -32,29 +32,29 @@ module t (
   int count_pass6 = 0;
   int count_fail6 = 0;
 
-  // Test 1: a[=2] |-> b (overlapping implication, 2 non-consecutive occurrences)
+  // Test: a[=2] |-> b (overlapping implication, 2 non-consecutive occurrences)
   assert property (@(posedge clk) a [= 2] |-> b)
   else count_fail1 <= count_fail1 + 1;
 
-  // Test 2: a[=1] |-> c (single occurrence, overlapping)
+  // Test: a[=1] |-> c (single occurrence, overlapping)
   assert property (@(posedge clk) a [= 1] |-> c)
   else count_fail2 <= count_fail2 + 1;
 
-  // Test 3: a[=3] |=> d (3 occurrences, non-overlapping implication)
+  // Test: a[=3] |=> d (3 occurrences, non-overlapping implication)
   assert property (@(posedge clk) a [= 3] |=> d)
   else count_fail3 <= count_fail3 + 1;
 
-  // Test 4: standalone nonconsec rep (no implication)
+  // Test: standalone nonconsec rep (no implication)
   assert property (@(posedge clk) b [= 2])
   else count_fail4 <= count_fail4 + 1;
 
-  // Test 5: nonconsec rep as consequent of an overlapping implication (#8612).
+  // Test: nonconsec rep as consequent of an overlapping implication (#8612).
   // The antecedent holds every cycle, so no attempt is vacuous. Passes use a
   // blocking increment, as several attempts can pass on the same edge.
   assert property (@(posedge clk) cyc >= 0 |-> b [= 2]) count_pass5++;
   else count_fail5 <= count_fail5 + 1;
 
-  // Test 6: nonconsec rep as consequent of a non-overlapping implication
+  // Test: nonconsec rep as consequent of a non-overlapping implication
   assert property (@(posedge clk) cyc >= 0 |=> d [= 2]) count_pass6++;
   else count_fail6 <= count_fail6 + 1;
 

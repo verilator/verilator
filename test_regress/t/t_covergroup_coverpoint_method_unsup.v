@@ -26,7 +26,6 @@ module t;
     r = cg_i.cp_a.get_coverage();
     cg_i.cp_a.start();
     cg_i.x.stop();
-    cg_i.cp_b.option.weight = 2;
     $display("%0d", cg_i.x.type_option.weight);
     r = cg_i.x.get_inst_coverage(covered, total);
   end

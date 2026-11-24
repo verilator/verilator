@@ -20,11 +20,11 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3AstUserAllocator.h"
 #include "V3Graph.h"
 #include "V3OrderGraph.h"
 #include "V3OrderInternal.h"
 #include "V3Sched.h"
+#include "V3VNUserAllocator.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -73,7 +73,7 @@ public:
 // OrderBuildVisitor builds the ordering graph of the entire netlist, and
 // removes any nodes that are no longer required once the graph is built
 
-class OrderGraphBuilder final : public VNVisitor {
+class OrderGraphBuilder final : public VNVisitorConst {
     // TYPES
     enum VarUsage : uint8_t { VU_CON = 0x1, VU_GEN = 0x2 };
     enum VarAccess : uint8_t { VA_READ = 0x1, VA_WRITE = 0x2 };
@@ -82,34 +82,27 @@ class OrderGraphBuilder final : public VNVisitor {
     // NODE STATE
     //  AstVarScope::user1    -> OrderUser instance for variable (via m_orderUser)
     //  AstVarScope::user2    -> VarUsage within logic blocks
-    //  AstVarScope::user3    -> bool: Hybrid sensitivity
     //  AstVarScope::user4    -> VarAccess within logic blocks
     const VNUser1InUse user1InUse;
     const VNUser2InUse user2InUse;
-    const VNUser3InUse user3InUse;
     const VNUser4InUse user4InUse;
-    AstUser1Allocator<AstVarScope, OrderUser> m_orderUser;
+    VNUser1Allocator<AstVarScope, OrderUser> m_orderUser;
 
     // STATE
     OrderGraph* const m_graphp;  // The ordering graph built by this visitor
     OrderLogicVertex* m_logicVxp = nullptr;  // Current logic block being analyzed
     std::vector<AstVarScope*> m_accessedVscps;  // Variables accessed by the current logic block
 
-    // Current AstScope being processed
-    AstScope* m_scopep = nullptr;
-    // Domain of the triggers of the current AstActive being processed
-    const OrderDomain* m_activeDomainp = nullptr;
+    // The process being analyzed
+    const V3Sched::Process* m_processp = nullptr;
     // Sensitivity list for clocked logic, nullptr for combinational and hybrid logic
     const OrderDomain* m_domainp = nullptr;
     // Sensitivity list for hybrid logic, nullptr for everything else
     const OrderDomain* m_hybridp = nullptr;
 
-    bool m_inClocked = false;  // Underneath clocked AstActive
+    bool m_inClocked = false;  // Processing clocked logic
     bool m_inPre = false;  // Underneath AlwaysPre
     bool m_inPost = false;  // Underneath AstAlwaysPost
-    std::function<bool(const AstVarScope*)> m_readTriggersCombLogic;
-    // Variables whose force read edges are ignored
-    V3Sched::util::VarScopeSet m_forceReadEdgeIgnores;
     const bool m_parallel;  // Ordering for multi-threaded execution (record variable accesses)
 
     // What covergroup reference formal arguments are bound to at construction
@@ -119,18 +112,16 @@ class OrderGraphBuilder final : public VNVisitor {
 
     // METHODS
 
-    void iterateLogic(AstNode* nodep) {
+    void iterateLogic(AstNodeProcedure* nodep) {
         UASSERT_OBJ(!m_logicVxp, nodep, "Should not nest");
         // Reset VarUsage and VarAccess
         AstNode::user2ClearTree();
         AstNode::user4ClearTree();
-        m_forceReadEdgeIgnores.clear();
-        if (!m_inClocked)
-            V3Sched::util::collectForceReadEdgeIgnores(nodep, m_forceReadEdgeIgnores);
         // Create LogicVertex for this logic node
-        m_logicVxp = new OrderLogicVertex{m_graphp, m_scopep, m_domainp, m_hybridp, nodep};
+        m_logicVxp
+            = new OrderLogicVertex{m_graphp, m_processp->m_scopep, m_domainp, m_hybridp, nodep};
         // Gather variable dependencies based on usage
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
         if (m_parallel) {
             // Emit one access record for each variable this logic block accessed
             for (AstVarScope* const vscp : m_accessedVscps) {
@@ -144,7 +135,6 @@ class OrderGraphBuilder final : public VNVisitor {
         }
         // Finished with this logic
         m_logicVxp = nullptr;
-        m_forceReadEdgeIgnores.clear();
     }
 
     OrderVarVertex* getVarVertex(AstVarScope* varscp, VarVertexType type) {
@@ -152,49 +142,9 @@ class OrderGraphBuilder final : public VNVisitor {
     }
 
     // VISITORS
-    void visit(AstActive* nodep) override {
-        UASSERT_OBJ(!nodep->senTreeStorep(), nodep,
-                    "AstSenTrees should have been made global in V3ActiveTop");
-        UASSERT_OBJ(m_scopep, nodep, "AstActive not under AstScope");
-        UASSERT_OBJ(!m_logicVxp, nodep, "AstActive under logic");
-        UASSERT_OBJ(!m_inClocked && !m_domainp && !m_hybridp, nodep, "Should not nest");
-
-        VL_RESTORER(m_domainp);
-        VL_RESTORER(m_hybridp);
-        VL_RESTORER(m_inClocked);
-
-        const AstSenTree* const senTreep = nodep->sentreep();
-
-        m_inClocked = senTreep->hasClocked();
-
-        // Note: We don't need to analyze the sensitivity list, as currently all sensitivity
-        // lists simply reference an entry in a trigger vector, which are all set external to
-        // the code being ordered.
-
-        // Combinational and hybrid logic will have it's domain assigned based on the driver
-        // domains. For clocked logic, we already know its domain. Hybrid logic also includes
-        // additional sensitivities.
-        if (senTreep->hasHybrid()) {
-            m_hybridp = m_activeDomainp;
-            // Mark AstVarScopes that are explicit sensitivities
-            AstNode::user3ClearTree();
-            senTreep->foreach([](const AstVarRef* refp) {  //
-                refp->varScopep()->user3(true);
-            });
-            m_readTriggersCombLogic = [](const AstVarScope* vscp) { return !vscp->user3(); };
-        } else {
-            if (!senTreep->hasCombo()) m_domainp = m_activeDomainp;
-            // Always triggers
-            m_readTriggersCombLogic = [](const AstVarScope*) { return true; };
-        }
-
-        // Analyze logic underneath
-        iterateChildren(nodep);
-    }
     void visit(AstNodeVarRef* nodep) override {
         // As we explicitly not visit (see ignored nodes below) any subtree that is not relevant
         // for ordering, we should be able to assert this:
-        UASSERT_OBJ(m_scopep, nodep, "AstVarRef not under scope");
         UASSERT_OBJ(m_logicVxp, nodep, "AstVarRef not under logic");
         AstVarScope* const varscp = nodep->varScopep();
         UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
@@ -242,24 +192,12 @@ class OrderGraphBuilder final : public VNVisitor {
         bool con = false;
         if (!prevCon && access.isReadOrRW()) {
             con = true;
-            if ((prevGen || gen) && !m_inClocked) {
-                // Dangerous assumption:
-                // If a variable is consumed in the same combinational process that produced it
-                // earlier, consider it something like:
-                //      foo = 1
-                //      foo = foo + 1
-                // and still optimize. Note this will break though:
-                //      if (sometimes) foo = 1
-                //      foo = foo + 1
-                // TODO: Do this properly with liveness analysis (i.e.: if live, it's consumed)
-                //       Note however that this construct is not nicely synthesizable (yields
-                //       latch?).
-                con = false;
-            }
             if (!m_inClocked) {
-                // Ignored reads and references from within covergroups do not
-                // add to the combinational sensitivity of the block
-                if (m_forceReadEdgeIgnores.count(varscp) || m_cgRefBoundps) con = false;
+                // Only its implicit sensitivities trigger combinational logic
+                if (!m_processp->m_implicitSen.count(varscp)) con = false;
+                // References from within covergroups do not add to the combinational
+                // sensitivity of the block
+                if (m_cgRefBoundps) con = false;
             }
         }
 
@@ -311,19 +249,15 @@ class OrderGraphBuilder final : public VNVisitor {
             // Add edges
             if (m_inPost) {
                 // Combinational logic
-                if (!varscp->varp()->ignorePostRead() && m_readTriggersCombLogic(varscp)) {
-                    // Ignore explicit sensitivities
+                if (!varscp->varp()->ignorePostRead()) {
                     OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
                     // Add edge from consumed VarStdVertex -> to consuming LogicVertex
                     m_graphp->addHardEdge(varVxp, m_logicVxp, WEIGHT_MEDIUM);
                 }
             } else if (!m_inClocked) {  // Combinational logic
-                if (m_readTriggersCombLogic(varscp)) {
-                    // Ignore explicit sensitivities
-                    OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
-                    // Add edge from consumed VarStdVertex -> to consuming LogicVertex
-                    m_graphp->addHardEdge(varVxp, m_logicVxp, WEIGHT_MEDIUM);
-                }
+                OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
+                // Add edge from consumed VarStdVertex -> to consuming LogicVertex
+                m_graphp->addHardEdge(varVxp, m_logicVxp, WEIGHT_MEDIUM);
             } else if (m_inPre) {
                 // AstAlwaysPre logic
                 // Add edge from consumed VarPreVertex -> to consuming LogicVertex
@@ -344,10 +278,22 @@ class OrderGraphBuilder final : public VNVisitor {
             }
         }
     }
+    // A call enqueuing an NBA in the function called accesses the global queue of NBAs (see
+    // V3Delayed), ordering it before its commit, and serializing it with the others
+    void accountEnqueuingCall(AstNodeCCall* nodep) {
+        if (!nodep->mayEnqueueGlobalNBA()) return;
+        accountVarAccess(v3Global.rootp()->nbaQueuep(), VAccess::READWRITE, nodep);
+    }
+
+    void visit(AstNodeCCall* nodep) override {
+        iterateChildrenConst(nodep);
+        accountEnqueuingCall(nodep);
+    }
     // A covergroup sample() is not inlined and may read design signals through cross-scope
     // references held by the covergroup. This attributes those references to the calling block.
     void visit(AstCMethodCall* nodep) override {
-        iterateChildren(nodep);
+        iterateChildrenConst(nodep);
+        accountEnqueuingCall(nodep);
         AstCFunc* const funcp = nodep->funcp();
         if (!funcp->isCovergroupSample()) return;
         // Since sample is a built-in, we never expect recursion.
@@ -362,7 +308,7 @@ class OrderGraphBuilder final : public VNVisitor {
             instp = fromRefp->varScopep();
         }
         m_cgRefBoundps = &m_cgRefBindings.forSample(instp, VN_AS(funcp->scopep()->modp(), Class));
-        iterateChildren(funcp);
+        iterateChildrenConst(funcp);
     }
 
     //--- Logic akin to SystemVerilog Processes (AstNodeProcedure)
@@ -401,8 +347,17 @@ class OrderGraphBuilder final : public VNVisitor {
     }  // LCOV_EXCL_STOP
 
     //--- Verilator concoctions
-    void visit(AstCoverToggle* nodep) override {  //
-        iterateLogic(nodep);
+    void visit(AstNbaCommit* nodep) override {
+        UASSERT_OBJ(m_inPost, nodep, "AstNbaCommit should be in AstAlwaysPost");
+        // Commit the NBAs enqueued by clocked logic in the same pass, with the other NBAs. Like
+        // any clocked reader, that logic is ordered before the post vertex of the queue. The
+        // writes of the queue are ignored so V3SchedPartition does not pull every referencing
+        // block into the 'act' region, so add the edge writing it would have here.
+        OrderVarVertex* const postVxp
+            = getVarVertex(nodep->queuep()->varScopep(), VarVertexType::POST);
+        m_graphp->addHardEdge(postVxp, m_logicVxp, WEIGHT_POST);
+        // Record edges for the variables that the commit might update
+        iterateAndNextConstNull(nodep->targetsp());
     }
 
     //--- Ignored nodes
@@ -419,23 +374,39 @@ class OrderGraphBuilder final : public VNVisitor {
     }
 
     //---
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
     // CONSTRUCTOR
-    OrderGraphBuilder(const std::vector<V3Sched::LogicByScope*>& coll,
+    OrderGraphBuilder(const std::vector<V3Sched::ProcessList*>& coll,
                       const V3Sched::TriggerKit& trigKit, AstVarScope* trigVscp,
                       const V3Sched::CovergroupRefBindings& cgRefBindings, bool parallel)
         : m_graphp{new OrderGraph{trigKit, trigVscp}}
         , m_parallel{parallel}
         , m_cgRefBindings{cgRefBindings} {
         // Build the graph
-        for (const V3Sched::LogicByScope* const lbsp : coll) {
-            for (const auto& entry : *lbsp) {
-                m_scopep = entry.m_scopep;
-                m_activeDomainp = m_graphp->domainp(entry.m_triggers);
-                iterate(entry.m_activep);
-                m_scopep = nullptr;
-                m_activeDomainp = nullptr;
+        for (const V3Sched::ProcessList* const procListp : coll) {
+            for (const V3Sched::Process& process : *procListp) {
+                VL_RESTORER(m_processp);
+                VL_RESTORER(m_domainp);
+                VL_RESTORER(m_hybridp);
+                VL_RESTORER(m_inClocked);
+
+                const AstSenTree* const senTreep = process.m_senTreep;
+
+                m_processp = &process;
+                m_inClocked = senTreep->hasClocked();
+
+                // Combinational and hybrid logic will have it's domain assigned based on the
+                // driver domains. For clocked logic, we already know its domain. Hybrid logic also
+                // includes additional sensitivities.
+                if (senTreep->hasHybrid()) {
+                    m_hybridp = m_graphp->domainp(procListp->triggers(senTreep));
+                } else if (!senTreep->hasCombo()) {
+                    m_domainp = m_graphp->domainp(procListp->triggers(senTreep));
+                }
+
+                // Analyze the logic
+                iterateConst(process.m_procp);
             }
         }
     }
@@ -444,7 +415,7 @@ class OrderGraphBuilder final : public VNVisitor {
 public:
     // Process the netlist and return the constructed ordering graph. It's 'process' because
     // this visitor does change the tree (removes some nodes related to DPI export trigger).
-    static std::unique_ptr<OrderGraph> apply(const std::vector<V3Sched::LogicByScope*>& coll,
+    static std::unique_ptr<OrderGraph> apply(const std::vector<V3Sched::ProcessList*>& coll,
                                              const V3Sched::TriggerKit& trigKit,
                                              AstVarScope* trigVscp,
                                              const V3Sched::CovergroupRefBindings& cgRefBindings,
@@ -457,7 +428,7 @@ public:
 std::unique_ptr<OrderGraph>
 V3Order::buildOrderGraph(const V3Sched::TriggerKit& trigKit,  //
                          AstVarScope* trigVscp,  //
-                         const std::vector<V3Sched::LogicByScope*>& coll,  //
+                         const std::vector<V3Sched::ProcessList*>& coll,  //
                          const V3Sched::CovergroupRefBindings& cgRefBindings,  //
                          bool parallel) {
     return OrderGraphBuilder::apply(coll, trigKit, trigVscp, cgRefBindings, parallel);

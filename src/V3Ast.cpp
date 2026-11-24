@@ -18,6 +18,7 @@
 
 #include "V3Broken.h"
 #include "V3File.h"
+#include "V3LanguageWords.h"
 
 #include <iomanip>
 #include <memory>
@@ -28,26 +29,31 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //======================================================================
 // Statics
 
-uint64_t VIsCached::s_cachedCntGbl = 1;
+// No alignas here; there are section tricks to, but all have ugly side
+// effects; worse case we'll end up on two cache lines.
 
-uint64_t AstNode::s_editCntLast = 0;
-uint64_t AstNode::s_editCntGbl = 0;  // Hot cache line
-
+// {  Hot cache line
+// These must all initialize to zero to stay in same single hot cache-line linker section
+// Check: nm -n ../bin/verilator_bin | grep -E "s_cachedCntGbl|s_editCntGbl|s_opCount|s_userCntGbl"
+uint64_t VIsCached::s_cachedCntGbl = 0;  // Warm
+uint64_t AstNode::s_editCntGbl = 0;  // Hot, leave adjacent
+std::atomic<uint64_t> V3Global::s_opCount;  // Hot, leave adjacent
 // To allow for fast clearing of all user pointers, we keep a "timestamp"
 // along with each userp, and thus by bumping this count we can make it look
 // as if we iterated across the entire tree to set all the userp's to null.
-int AstNode::s_cloneCntGbl = 0;
-uint32_t VNUser1InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t VNUser2InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t VNUser3InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
-uint32_t VNUser4InUse::s_userCntGbl = 0;  // Hot cache line, leave adjacent
+uint32_t VNUser1InUse::s_userCntGbl = 0;  // Hot, leave adjacent
+uint32_t VNUser2InUse::s_userCntGbl = 0;  // Hot, leave adjacent
+uint32_t VNUser3InUse::s_userCntGbl = 0;  // Hot, leave adjacent
+uint32_t VNUser4InUse::s_userCntGbl = 0;  // Hot, leave adjacent
+int AstNode::s_cloneCntGbl = 0;  // Warm - only as have space
+int AstNodeDType::s_uniqueNum = 0;  // Warm - only as have space
+// }  Hot cache line
 
+uint64_t AstNode::s_editCntLast = 0;  // Cold, only for dumping
 bool VNUser1InUse::s_userBusy = false;
 bool VNUser2InUse::s_userBusy = false;
 bool VNUser3InUse::s_userBusy = false;
 bool VNUser4InUse::s_userBusy = false;
-
-int AstNodeDType::s_uniqueNum = 0;
 
 //======================================================================
 // VCMethod information
@@ -212,18 +218,6 @@ string AstNode::nameNoArray(const string& namein) {
     return namein.substr(0, namein.find("__BRA__"));
 }
 
-string AstNode::vcdName(const string& namein) {
-    // VCD tracing expects space to separate hierarchy
-    // Dots are reserved for dots the user put in the name
-    // We earlier hashed all symbols, dehash them so user sees real name
-    string pretty{VName::dehash(namein)};
-    string::size_type pos;
-    while ((pos = pretty.find("__DOT__")) != string::npos) pretty.replace(pos, 7, " ");
-    while ((pos = pretty.find('.')) != string::npos) pretty.replace(pos, 1, " ");
-    // Now convert escaped special characters, etc
-    return prettyName(pretty);
-}
-
 string AstNode::prettyName(const string& namein) VL_PURE {
     // This function is somewhat hot, so we short-circuit some compares
     string pretty;
@@ -291,15 +285,24 @@ string AstNode::prettyName(const string& namein) VL_PURE {
     return pretty;
 }
 
-string AstNode::vpiName(const string& namein) {
-    // This is slightly different from prettyName, in that when we encounter escaped characters,
-    // we change that identifier to an escaped identifier, wrapping it with '\' and ' '
-    // as specified in LRM 23.6
-    const size_t offset = VString::startsWith(namein, "__SYM__") ? 7 : 0;
+// Unlike prettyName(), an identifier containing escaped characters becomes an escaped identifier,
+// wrapped with '\' and ' ' (IEEE 1800-2023 23.6). For Verilog source, keywords are also escaped.
+static string escapedName(const string& namein, bool verilog) {
+    // Verilog keeps the prefix V3Name adds to C++ keywords, like prettyName() does, as
+    // wrappers read back by Verilator rely on it
+    const size_t offset = !verilog && VString::startsWith(namein, "__SYM__") ? 7 : 0;
     string pretty;
     pretty.reserve(namein.length());
     bool inEscapedIdent = false;
     int lastIdent = 0;
+    const auto escapeLastIdent = [&]() {
+        if (inEscapedIdent
+            || (verilog && V3LanguageWords::isVerilogKeyword(pretty.substr(lastIdent)))) {
+            pretty += " ";
+            pretty.insert(lastIdent, "\\");
+        }
+        inEscapedIdent = false;
+    };
 
     for (const char* pos = namein.c_str() + offset; *pos;) {
         char specialChar = 0;
@@ -319,6 +322,28 @@ string AstNode::vpiName(const string& namein) {
             } else if (0 == std::strncmp(pos, "__PVT__", 7)) {
                 pos += 7;
                 continue;
+            } else if (verilog && 0 == std::strncmp(pos, "__LIB__", 7)) {
+                // Library prefix of a module in multiple libraries, dropped as by prettyName()
+                pretty.clear();
+                lastIdent = 0;
+                inEscapedIdent = false;
+                pos += 7;
+                continue;
+            } else if (verilog && 0 == std::strncmp(pos, "__Viftop", 8)) {
+                pos += 8;
+                continue;
+            } else if (verilog && 0 == std::strncmp(pos, "__Vpkg", 6)) {
+                pos += 6;
+                continue;
+            } else if (verilog && 0 == std::strncmp(pos, "__03A__03A", 10)) {
+                // V3Class's package scope "::", never spelled by an encoded user name. A '$unit'
+                // before it is the compilation-unit package (IEEE 1800-2023 3.12.1).
+                if (pretty.compare(lastIdent, string::npos, "$unit") == 0) inEscapedIdent = false;
+                escapeLastIdent();
+                pretty += "::";
+                lastIdent = pretty.length();
+                pos += 10;
+                continue;
             } else if (0 == std::strncmp(pos, "__0", 3) && std::isxdigit(pos[3])
                        && std::isxdigit(pos[4])) {
                 char value = 0;
@@ -328,8 +353,13 @@ string AstNode::vpiName(const string& namein) {
                 value
                     += (std::isdigit(pos[4]) ? (pos[4] - '0') : (std::tolower(pos[4]) - 'a' + 10));
 
-                // __ doesn't always imply escaped ident
-                if (value != '_') inEscapedIdent = true;
+                // __ doesn't always imply escaped ident, nor does a '$' after the first
+                // character in Verilog (IEEE 1800-2023 5.6)
+                if (value != '_'
+                    && !(verilog && value == '$'
+                         && pretty.length() > static_cast<size_t>(lastIdent))) {
+                    inEscapedIdent = true;
+                }
 
                 pretty += value;
                 pos += 5;
@@ -341,11 +371,7 @@ string AstNode::vpiName(const string& namein) {
         }
 
         if (specialChar) {
-            if (inEscapedIdent && (specialChar == '[' || specialChar == '.')) {
-                pretty += " ";
-                pretty.insert(lastIdent, "\\");
-                inEscapedIdent = false;
-            }
+            if (specialChar == '[' || specialChar == '.') escapeLastIdent();
 
             pretty += specialChar;
 
@@ -358,16 +384,20 @@ string AstNode::vpiName(const string& namein) {
             ++pos;
         }
     }
-    if (inEscapedIdent) {
-        pretty += " ";
-        pretty.insert(lastIdent, "\\");
-    }
+    escapeLastIdent();
     if (pretty[0] == 'T' && pretty.substr(0, 4) == "TOP.") pretty.replace(0, 4, "");
     if (pretty[0] == 'T' && pretty.substr(0, 5) == "TOP->") pretty.replace(0, 5, "");
     return pretty;
 }
 
-string AstNode::prettyTypeName() const {
+string AstNode::vpiName(const string& namein) { return escapedName(namein, false); }
+
+string AstNode::verilogIdent(const string& namein) { return escapedName(namein, true); }
+
+string AstNode::prettyTypeNameQ() const {
+    if (const AstCMethodHard* const methodp = VN_CAST(this, CMethodHard)) {
+        return "'"s + methodp->method().prettyName() + "'";
+    }
     if (name() == "") return typeName();
     return std::string{typeName()} + " '" + prettyNameMsg() + "'";
 }
@@ -1138,6 +1168,7 @@ void AstNode::iterateAndNext(VNVisitor& v) {
         // edits"); Optimization note: Doing PREFETCH_RW on m_iterpp is a net even
         // cppcheck-suppress nullPointer
         niterp->m_iterpp = &niterp;
+        V3Global::opCountInc();
         niterp->accept(v);
         // accept may do a replaceNode and change niterp on us...
         // niterp maybe nullptr, so need cast if printing
@@ -1158,6 +1189,7 @@ void AstNode::iterateListBackwardsConst(VNVisitorConst& v) {
     while (nodep->m_nextp) nodep = nodep->m_nextp;
     while (nodep) {
         // Edits not supported: nodep->m_iterpp = &nodep;
+        V3Global::opCountInc();
         nodep->accept(v);
         if (nodep->backp()->m_nextp == nodep) {
             nodep = nodep->backp();
@@ -1180,6 +1212,7 @@ void AstNode::iterateAndNextConst(VNVisitorConst& v) {
     do {
         AstNode* const nnextp = nodep->m_nextp;
         ASTNODE_PREFETCH(nnextp);
+        V3Global::opCountInc();
         nodep->accept(v);
         nodep = nnextp;
     } while (nodep);
@@ -1193,16 +1226,18 @@ AstNode* AstNode::iterateSubtreeReturnEdits(VNVisitor& v) {
     // To solve this, this function returns the pointer to the replacement node,
     // which in many cases is just the same node that was passed in.
     AstNode* nodep = this;  // Note "this" may point to bogus point later in this function
+    V3Global::opCountInc();
     if (VN_IS(nodep, Netlist)) {
         // Calling on top level; we know the netlist won't get replaced
         nodep->accept(v);
     } else if (!nodep->backp()) {
         // Calling on standalone tree; insert a shim node so we can keep
         // track, then delete it on completion
-        AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep, false};
+        AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false};
+        tempp->addDeclsp(nodep);
         // nodep to null as may be replaced
-        VL_DO_DANGLING(tempp->stmtsp()->accept(v), nodep);
-        nodep = tempp->stmtsp()->unlinkFrBackWithNext();
+        VL_DO_DANGLING(tempp->declsp()->accept(v), nodep);
+        nodep = tempp->declsp()->unlinkFrBackWithNext();
         VL_DO_DANGLING(tempp->deleteTree(), tempp);
     } else {
         // Use back to determine who's pointing at us (IE assume new node
@@ -1645,6 +1680,45 @@ void AstNode::dtypeChgWidth(int width, int widthMin) {
     UASSERT_OBJ(dtypep(), this, "No dtype when changing width");
     dtypeChgWidthSigned(width, widthMin, dtypep()->numeric());
 }
+AstNodeDType* AstNode::findStatesCounterpart(const bool isFourstate) const {
+    UASSERT_OBJ(dtypep(), this, "No dtype when changing logic");
+    if (isFourstate == dtypep()->isFourstate()) return dtypep();
+    if (const AstBasicDType* const basicp = VN_CAST(dtypep()->skipRefToEnump(), BasicDType)) {
+        UASSERT_OBJ(basicp->isIntegralOrPacked(), this,
+                    "Can't change logic type of not integral type");
+        switch (basicp->keyword()) {
+        case VBasicDTypeKwd::BIT:
+        case VBasicDTypeKwd::BYTE:
+        case VBasicDTypeKwd::LONGINT:
+        case VBasicDTypeKwd::SHORTINT:
+        case VBasicDTypeKwd::INT:
+        case VBasicDTypeKwd::UINT32:
+        case VBasicDTypeKwd::UINT64:
+        case VBasicDTypeKwd::LOGIC2STATE: {
+            if (basicp->isRanged()) {
+                return findLogicRangeDType(basicp->declRange(), basicp->widthMin(),
+                                           basicp->numeric());
+            }
+            return findLogicDType(basicp->width(), basicp->widthMin(), basicp->numeric());
+        }
+        case VBasicDTypeKwd::TIME2STATE: return findTimeDType();
+        case VBasicDTypeKwd::TIME: return findTime2StateDType();
+        case VBasicDTypeKwd::INTEGER2STATE: return findIntegerDType();
+        case VBasicDTypeKwd::INTEGER: return findInteger2StateDType();
+        case VBasicDTypeKwd::LOGIC: {
+            if (basicp->isRanged()) {
+                return findLogic2StateRangeDType(basicp->declRange(), basicp->widthMin(),
+                                                 basicp->numeric());
+            }
+            return findLogic2StateDType(basicp->width(), basicp->widthMin(), basicp->numeric());
+        }
+        default: v3fatalSrc("Cannot change logic of not integral type"); return nullptr;
+        }
+    }
+    v3fatalSrc("Can't change logic of not basic type");  // Maybe it is an enum or a struct? - then
+                                                         // it have to be changed manually
+    return nullptr;
+}
 
 void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
     UASSERT_OBJ(dtypep(), this, "No dtype when changing width");
@@ -1658,6 +1732,10 @@ void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
     const AstNodeDType* const dtypep = enumDTypep->skipRefp();
     // This cannot be asserted yet, because V3Clean tends to change width of everything
     // UASSERT_OBJ(!dtypep->isCompound(), this, "Cannot change width of compound dtype.");
+    if (dtypep->mimicsFourstate()) {
+        dtypeSetLogic2StateUnsized(width, widthMin, numeric);
+        return;
+    }
     dtypeSetBitOrLogicUnsized(width, widthMin, numeric, dtypep->isFourstate());
 }
 
@@ -1677,6 +1755,11 @@ AstNodeDType* AstNode::findLogicDType(int width, int widthMin, VSigning numeric)
 AstNodeDType* AstNode::findLogic2StateDType(int width, int widthMin, VSigning numeric) const {
     return v3Global.rootp()->typeTablep()->findLogicBitDType(
         fileline(), VBasicDTypeKwd::LOGIC2STATE, width, widthMin, numeric);
+}
+AstNodeDType* AstNode::findLogic2StateRangeDType(const VNumRange& range, int widthMin,
+                                                 VSigning numeric) const {
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(
+        fileline(), VBasicDTypeKwd::LOGIC2STATE, range, widthMin, numeric);
 }
 AstNodeDType* AstNode::findLogicRangeDType(const VNumRange& range, int widthMin,
                                            VSigning numeric) const {
@@ -1726,8 +1809,8 @@ static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {
 static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
                                     const AstNode* fromConstp, const bool checkIfaceArgCompat) {
     const VCastable castable = VCastable::UNSUPPORTED;
-    toDtp = toDtp->skipRefToEnump();
-    fromDtp = fromDtp->skipRefToEnump();
+    toDtp = toDtp->skipRefToEnump(true);
+    fromDtp = fromDtp->skipRefToEnump(true);
     if (toDtp->matchingDType(fromDtp)) return VCastable::MATCHING;
     if (toDtp->similarDType(fromDtp)) return VCastable::SAMEISH;
     // UNSUP unpacked struct/unions (treated like BasicDType)
@@ -1757,10 +1840,13 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
     } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromDtp, ClassRefDType)) {
         const AstClass* const toClassp = VN_AS(toDtp, ClassRefDType)->classp();
         const AstClass* const fromClassp = VN_AS(fromDtp, ClassRefDType)->classp();
-        const bool downcast = AstClass::isClassExtendedFrom(toClassp, fromClassp);
-        const bool upcast = AstClass::isClassExtendedFrom(fromClassp, toClassp);
+        const bool downcast = AstClass::isClassDerivedFrom(toClassp, fromClassp);
+        const bool upcast = AstClass::isClassDerivedFrom(fromClassp, toClassp);
         if (upcast) return VCastable::COMPATIBLE;
-        if (downcast) return VCastable::DYNAMIC_CLASS;
+        // IEEE 1800-2023 8.16: The object may be of a class derived from both types
+        if (downcast || toClassp->isInterfaceClass() || fromClassp->isInterfaceClass()) {
+            return VCastable::DYNAMIC_CLASS;
+        }
         return VCastable::INCOMPATIBLE;
     } else if (const AstIfaceRefDType* const toIfp
                = VN_CAST(checkIfaceArgCompat ? toDtp->elemDTypep(true) : toDtp, IfaceRefDType)) {
@@ -1842,7 +1928,16 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
     {
         const VCastable castable = computeCastable(node1p->dtypep(), node2p->dtypep(), node2p);
         if (castable.isSameish() || castable.isCompatible()) return node1p->dtypep();
-        if (castable == VCastable::DYNAMIC_CLASS) return node2p->dtypep();
+        if (castable == VCastable::DYNAMIC_CLASS) {
+            // Only a downcast has node2's type as the common type
+            const AstClassRefDType* const refp
+                = VN_CAST(node1p->dtypep()->skipRefp(), ClassRefDType);
+            const AstClassRefDType* const baserefp
+                = VN_CAST(node2p->dtypep()->skipRefp(), ClassRefDType);
+            if (refp && baserefp
+                && AstClass::isClassDerivedFrom(refp->classp(), baserefp->classp()))
+                return node2p->dtypep();
+        }
     }
 
     AstClassRefDType* classDtypep1 = VN_CAST(node1p->dtypep()->skipRefp(), ClassRefDType);

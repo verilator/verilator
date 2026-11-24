@@ -7,7 +7,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Generated header
-#include "Vt_public_clk.h"
+#include VM_PREFIX_INCLUDE
 #include "Vt_public_clk___024root.h"
 // General headers
 #include "verilated.h"

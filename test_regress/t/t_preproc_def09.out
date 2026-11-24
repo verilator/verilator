@@ -63,8 +63,8 @@
 `line 55 "t/t_preproc_def09.v" 0
  
  
-'"==)" "((((" () ';
-'"==)" "((((" () ';
+'"==)" "((((" ()';
+'"==)" "((((" ()';
 
 `line 60 "t/t_preproc_def09.v" 0
  
@@ -84,5 +84,28 @@ HERE-72 - Line71
 
 `line 74 "t/t_preproc_def09.v" 0
  
+ 
+ 
+ 
+'error(default_value)'
+'error(default_value)'
+'warning(non_default_value)'
+'warning(non_default_value)'
+'error(no_value)'
+'error(no_value)'
 
-`line 76 "t/t_preproc_def09.v" 0
+`line 85 "t/t_preproc_def09.v" 0
+ 
+'DEFAULT_value'
+'DEFAULT_value'
+
+`line 89 "t/t_preproc_def09.v" 0
+ 
+ 
+'" two words "'
+'" two words "'
+
+`line 94 "t/t_preproc_def09.v" 0
+ 
+
+`line 96 "t/t_preproc_def09.v" 0

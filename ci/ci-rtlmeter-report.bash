@@ -98,7 +98,7 @@ NOTIFICATION_DIR=$TMP_DIR/notification
 mkdir -p $NOTIFICATION_DIR
 
 cat > ${NOTIFICATION_DIR}/body.txt <<NOTIFICATION_TEMPLATE
-Performance metrics for PR workflow [#$RUN_NUM]($RUN_URL), comparing:
+PR [rtlmeter report ${RUN_ID}](${REPORT_URL}) from [PR workflow #$RUN_NUM]($RUN_URL), comparing:
 - target branch commit [${REF_SHA:0:9}](https://github.com/${PAGES_OWNER}/${PAGES_NAME}/commit/${REF_SHA}) (A)
 - with PR merge commit [${RUN_SHA:0:9}](https://github.com/${PAGES_OWNER}/${PAGES_NAME}/commit/${RUN_SHA}) (B)
 
@@ -109,11 +109,7 @@ $(cat $TMP_DIR/summary.txt)
   </pre>
 </details>
 
-The reported numbers are the geometric means of the ratios of the metrics over all cases,
-less than 1 is a regression, greater than 1 is an improvement.
-The jobs run on variable and noisy runners, so some variance is expected between runs.
-
-Detailed report: [${RUN_ID}](${REPORT_URL})
+The reported numbers are the geometric means of the ratios of the metrics over all cases, less than 1 is a regression, greater than 1 is an improvement. The jobs run on variable and noisy runners, so some variance is expected between runs.
 NOTIFICATION_TEMPLATE
 
 echo "Workflow [#$RUN_NUM]($RUN_URL) report: [${RUN_ID}](${REPORT_URL})" > ${NOTIFICATION_DIR}/hist.txt

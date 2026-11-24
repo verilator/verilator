@@ -181,6 +181,11 @@ class HasherVisitor final : public VNVisitorConst {
             iterateConstNull(nodep->classp());
         });
     }
+    void visit(AstClosurePoolDType* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
+            iterateConstNull(nodep->subDTypep());
+        });
+    }
     void visit(AstIfaceRefDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
             iterateConstNull(nodep->cellp());
@@ -249,7 +254,12 @@ class HasherVisitor final : public VNVisitorConst {
             m_hash += nodep->dotted();
         });
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
+            m_hash += nodep->name();
+        });
+    }
+    void visit(AstSchemaRef* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
             m_hash += nodep->name();
         });
@@ -281,6 +291,11 @@ class HasherVisitor final : public VNVisitorConst {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, []() {});
     }
     void visit(AstNodeCCall* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
+            iterateConstNull(nodep->funcp());
+        });
+    }
+    void visit(AstNbaEnqueue* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
             iterateConstNull(nodep->funcp());
         });
@@ -324,11 +339,6 @@ class HasherVisitor final : public VNVisitorConst {
     }
     void visit(AstJumpGo* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, false, []() {});
-    }
-    void visit(AstTraceInc* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
-            iterateConstNull(nodep->declp());
-        });
     }
     void visit(AstNodeCoverOrAssert* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
@@ -554,6 +564,69 @@ class HasherVisitor final : public VNVisitorConst {
     }
     void visit(AstWith* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
+    }
+
+    // RTMD nodes do not hash their dtypep, as struct types hash by uniqueNum,
+    // which would prevent sharing descriptors of cloned structs
+    void visit(AstRtmdEnumItem* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {
+            m_hash += nodep->name();
+            m_hash += nodep->value();
+        });
+    }
+    void visit(AstRtmdMember* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {
+            m_hash += nodep->name();
+            m_hash += nodep->lsb();
+            iterateConstNull(nodep->rtmddtp());
+        });
+    }
+    void visit(AstRtmdVarType* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {
+            m_hash += nodep->kind();
+            m_hash += nodep->direction();
+            iterateConstNull(nodep->rtmddtp());
+        });
+    }
+    void visit(AstRtmdDTAtom* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {
+            m_hash += nodep->keyword();
+            m_hash += nodep->isSigned();
+        });
+    }
+    void visit(AstRtmdDTEnum* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {
+            m_hash += nodep->name();
+            iterateConstNull(nodep->rtmddtp());
+        });
+    }
+    void visit(AstRtmdDTPackedArray* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {
+            m_hash += nodep->left();
+            m_hash += nodep->right();
+            m_hash += nodep->isSigned();
+            iterateConstNull(nodep->elemRtmddtp());
+        });
+    }
+    void visit(AstRtmdDTPackedStruct* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
+            m_hash += nodep->isSigned();
+        });
+    }
+    void visit(AstRtmdDTPackedUnion* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
+            m_hash += nodep->isSigned();
+        });
+    }
+    void visit(AstRtmdDTUnpackedArray* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {
+            m_hash += nodep->left();
+            m_hash += nodep->right();
+            iterateConstNull(nodep->elemRtmddtp());
+        });
+    }
+    void visit(AstRtmdDTUnpackedStruct* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, []() {});
     }
 
 public:

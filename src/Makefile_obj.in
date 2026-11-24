@@ -225,6 +225,7 @@ RAW_OBJS_PCH_ASTMT = \
   V3EmitCImp.o \
   V3EmitCInlines.o \
   V3EmitCPch.o \
+  V3EmitCRtmd.o \
   V3EmitV.o \
   V3File.o \
   V3FuncOpt.o \
@@ -240,6 +241,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Active.o \
   V3ActiveTop.o \
   V3Assert.o \
+  V3AssertElab.o \
   V3AssertNfa.o \
   V3AssertPre.o \
   V3Begin.o \
@@ -247,15 +249,15 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Branch.o \
   V3CCtors.o \
   V3CUse.o \
+  V3CallTargets.o \
   V3Case.o \
   V3Cast.o \
   V3Cfg.o \
   V3CfgBuilder.o \
   V3CfgLiveVariables.o \
   V3Class.o \
-  V3ClassGraph.o \
   V3Clean.o \
-  V3Clock.o \
+  V3Coalesce.o \
   V3Combine.o \
   V3Common.o \
   V3Const__gen.o \
@@ -327,6 +329,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3OrderParallel.o \
   V3OrderProcessDomains.o \
   V3OrderSerial.o \
+  V3Outline.o \
   V3Param.o \
   V3PatternStats.o \
   V3Premit.o \
@@ -335,6 +338,8 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Randomize.o \
   V3Reloop.o \
   V3Reorder.o \
+  V3Rtmd.o \
+  V3RtmdScoped.o \
   V3Sampled.o \
   V3Sched.o \
   V3SchedAcyclic.o \
@@ -348,6 +353,8 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3SchedVirtIface.o \
   V3Scope.o \
   V3Slice.o \
+  V3SolverBackend.o \
+  V3SolverSmt.o \
   V3Split.o \
   V3StackCount.o \
   V3Subst.o \
@@ -355,7 +362,6 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Task.o \
   V3Timing.o \
   V3Trace.o \
-  V3TraceDecl.o \
   V3Tristate.o \
   V3Udp.o \
   V3Undriven.o \
@@ -378,6 +384,7 @@ NON_STANDALONE_HEADERS = \
   V3AstNodeDType.h \
   V3AstNodeExpr.h \
   V3AstNodeOther.h \
+  V3AstNodeRtmd.h \
   V3AstNodeStmt.h \
   V3DebugBisect.h \
   V3DfgVertices.h \
@@ -388,6 +395,7 @@ AST_DEFS := \
   V3AstNodeDType.h \
   V3AstNodeExpr.h \
   V3AstNodeOther.h \
+  V3AstNodeRtmd.h \
   V3AstNodeStmt.h \
 
 DFG_DEFS := \

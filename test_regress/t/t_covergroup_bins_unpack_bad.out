@@ -1,0 +1,46 @@
+%Error: t/t_covergroup_bins_unpack_bad.v:29:39: Bin set expression must evaluate to a non-associative array, not 'bit' (IEEE 1800-2023 19.5.1.2).
+                                              : ... note: In instance 't'
+   29 |       bins brace_lhs[] = {4'd1, 4'd2} == 8'h12;
+      |                                       ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_bins_unpack_bad.v:30:31: Bin set expression must evaluate to a non-associative array, not 'int' (IEEE 1800-2023 19.5.1.2).
+                                              : ... note: In instance 't'
+   30 |       bins root_increment[] = ++index;
+      |                               ^~
+%Error: t/t_covergroup_bins_unpack_bad.v:31:40: Bin set expression must evaluate to a non-associative array, not 'bit' (IEEE 1800-2023 19.5.1.2).
+                                              : ... note: In instance 't'
+   31 |       bins brace_lhs_single[] = {4'd1} == 4'h1;
+      |                                        ^~
+%Error: t/t_covergroup_bins_unpack_bad.v:32:52: Bin set expression must evaluate to a non-associative array, not 'bit' (IEEE 1800-2023 19.5.1.2).
+                                              : ... note: In instance 't'
+   32 |       bins brace_lhs_triple[] = {4'd1, 4'd2, 4'd3} == 12'h123;
+      |                                                    ^~
+%Error: t/t_covergroup_bins_unpack_bad.v:33:28: Bin set expression must evaluate to a non-associative array, not 'int$[int]' (IEEE 1800-2023 19.5.1.2).
+                                              : ... note: In instance 't'
+   33 |       bins associative[] = associative_values;
+      |                            ^~~~~~~~~~~~~~~~~~
+%Error: t/t_covergroup_bins_unpack_bad.v:34:37: Bin set expression must evaluate to a non-associative array, not 'int$[*]' (IEEE 1800-2023 19.5.1.2).
+                                              : ... note: In instance 't'
+   34 |       bins wildcard_associative[] = wildcard_values;
+      |                                     ^~~~~~~~~~~~~~~
+%Error: t/t_covergroup_bins_unpack_bad.v:35:24: Bin set expression element type 'string' is not assignment compatible with coverpoint type 'bit' (IEEE 1800-2023 19.5.1.2).
+                                              : ... note: In instance 't'
+   35 |       bins strings[] = string_values;
+      |                        ^~~~~~~~~~~~~
+%Error: t/t_covergroup_bins_unpack_bad.v:36:23: Bin set expression element type 'int$[0:2]' is not assignment compatible with coverpoint type 'bit' (IEEE 1800-2023 19.5.1.2).
+                                              : ... note: In instance 't'
+   36 |       bins nested[] = nested_values;
+      |                       ^~~~~~~~~~~~~
+%Error: t/t_covergroup_bins_unpack_bad.v:37:24: Bin set expression element type 'chandle' is not assignment compatible with coverpoint type 'bit' (IEEE 1800-2023 19.5.1.2).
+                                              : ... note: In instance 't'
+   37 |       bins handles[] = handle_values;
+      |                        ^~~~~~~~~~~~~
+%Error: t/t_covergroup_bins_unpack_bad.v:38:24: Bin set expression element type 'class value_t' is not assignment compatible with coverpoint type 'bit' (IEEE 1800-2023 19.5.1.2).
+                                              : ... note: In instance 't'
+   38 |       bins classes[] = class_values;
+      |                        ^~~~~~~~~~~~
+%Error: t/t_covergroup_bins_unpack_bad.v:44:25: Bin set expression element type 'int' is not assignment compatible with coverpoint type 'enum t.enum_t' (IEEE 1800-2023 19.5.1.2).
+                                              : ... note: In instance 't'
+   44 |       bins integers[] = integer_values;
+      |                         ^~~~~~~~~~~~~~
+%Error: Exiting due to

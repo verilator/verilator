@@ -14,7 +14,7 @@
 #include "verilated.h"
 #include "verilated_vpi.h"
 
-#include "Vt_vpi_put_value_array.h"
+#include VM_PREFIX_INCLUDE
 
 #endif
 

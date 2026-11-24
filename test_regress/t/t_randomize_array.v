@@ -125,14 +125,20 @@ class unconstrained_struct_with_array_test;
   typedef struct {rand bit [7:0] byte_array[4];} struct_with_array_t;
 
   rand struct_with_array_t struct_with_array;
+  rand struct_with_array_t struct_with_array_assoc[string];
+  rand struct_with_array_t struct_with_array_wild[*];
 
   function new();
     struct_with_array = '{'{default: 'h0}};
+    struct_with_array_assoc["key"] = '{'{default: 'h0}};
+    struct_with_array_wild["key"] = '{'{default: 'h0}};
   endfunction
 
   function void check_randomization();
     foreach (struct_with_array.byte_array[i]) begin
       `check_rand(this, struct_with_array.byte_array[i])
+      `check_rand(this, struct_with_array_assoc["key"].byte_array[i])
+      `check_rand(this, struct_with_array_wild["key"].byte_array[i])
     end
   endfunction
 
@@ -240,25 +246,25 @@ module t_randomize_array;
   unconstrained_queue_test queue_class;
 
   initial begin
-    // Test 1: Packed Array Unconstrained Constrained Test
+    // Test: Packed Array Unconstrained Constrained Test
     packed_class = new();
     repeat (2) begin
       packed_class.check_randomization();
     end
 
-    // Test 2: Unpacked Array Unconstrained Constrained Test
+    // Test: Unpacked Array Unconstrained Constrained Test
     unpacked_class = new();
     repeat (2) begin
       unpacked_class.check_randomization();
     end
 
-    // Test 3: Dynamic Array Unconstrained Constrained Test
+    // Test: Dynamic Array Unconstrained Constrained Test
     dynamic_class = new();
     repeat (2) begin
       dynamic_class.check_randomization();
     end
 
-    // Test 4: Struct Containing Array Test
+    // Test: Struct Containing Array Test
     struct_with_array_class = new();
     repeat (2) begin
       struct_with_array_class.check_randomization();
@@ -269,13 +275,13 @@ module t_randomize_array;
       struct_array_class.check_randomization();
     end
 
-    // Test 5: Associative Array Unconstrained Test
+    // Test: Associative Array Unconstrained Test
     associative_array_class = new();
     repeat (2) begin
       associative_array_class.check_randomization();
     end
 
-    // Test 6: Queue Unconstrained Test
+    // Test: Queue Unconstrained Test
     queue_class = new();
     repeat (2) begin
       queue_class.check_randomization();

@@ -159,6 +159,21 @@ class Driver;
     `checkd(orig.value0, 1);  // original object untouched
   endtask
 
+  task automatic set_int_after_delay(output int value);
+    fork
+      begin : iso
+        fork
+          begin
+            #1;
+            value = 91;
+          end
+          #10;
+        join_any
+        disable fork;
+      end : iso
+    join
+  endtask
+
   task automatic run_non_class;
     int value;
 
@@ -167,6 +182,13 @@ class Driver;
     join
 
     `checkd(value, 90);
+  endtask
+
+  // Delayed output write by a child killed before the enclosing join ends
+  task automatic run_output_delay_killed;
+    int value;
+    set_int_after_delay(value);
+    `checkd(value, 91);
   endtask
 endclass
 
@@ -180,6 +202,7 @@ module t;
     driver.run_array_element();
     driver.run_read_only();
     driver.run_non_class();
+    driver.run_output_delay_killed();
 
     $write("*-* All Finished *-*\n");
     $finish;

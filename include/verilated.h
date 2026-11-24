@@ -54,7 +54,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <deque>
-#include <functional>
 #include <limits>
 #include <map>
 #include <memory>
@@ -107,13 +106,13 @@ struct VlIfaceRefTableEntry;
 template <typename, typename>
 class VerilatedTrace;
 class VerilatedTraceBaseC;
-class VerilatedTraceConfig;
 class VerilatedVar;
 class VerilatedVarNameMap;
 class VerilatedVcd;
 class VerilatedVcdC;
 class VerilatedVcdSc;
 class VlCovRegistry;
+class VlRtmd;
 
 //=========================================================================
 // Basic types
@@ -165,8 +164,8 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_NET = (1 << 15),  // Net object
     VLVF_PACKED_AGG = (1 << 16),  // Element type is a packed struct or union
     VLVF_PACKED_UNION = (1 << 17),  // With VLVF_PACKED_AGG, element type is a packed union
-    VLVF_PACKED_MEMBER = (1 << 18),  // Is a packed struct/union member, see VlVarTableEntry
-    VLVF_PACKED_NEEDS_INDEX = (1 << 19),  // With VLVF_PACKED_MEMBER, an ancestor is an array of
+    VLVF_MEMBER = (1 << 18),  // Is a struct/union member, reached through its parent
+    VLVF_PACKED_NEEDS_INDEX = (1 << 19),  // With VLVF_MEMBER, an ancestor is an array of
                                           // packed structs/unions, so needs an element index
     VLVF_DYNAMIC = (1 << 20),  // Unpacked dimension 1 is of a dynamic array or queue
     VLVF_LAZY_REMAT = (1 << 21),  // --vpi-lazy: rematerialized row; no storage, may be read-only
@@ -241,20 +240,20 @@ struct VlVarTableEntry final {
     VerilatedVarType vltype;
     uint8_t udims;
     uint8_t pdims;
-    // Only --vpi-lazy and packed member rows set these. Read 'aux' through the accessors
+    // Only --vpi-lazy and member rows set these. Read 'aux' through the accessors
     // below: the row is 40 bytes, so a field per meaning would make it 48.
     int32_t aux = -1;
     uint32_t entSize = 0;  // Element size in bytes, or 0 to derive from vltype
 
-    // A packed struct/union member, see VLVF_PACKED_MEMBER
-    bool isPackedMember() const { return vlflags & VLVF_PACKED_MEMBER; }
+    // A struct/union member, see VLVF_MEMBER
+    bool isMember() const { return vlflags & VLVF_MEMBER; }
     bool isLazyComb() const { return vlflags & VLVF_LAZY_COMB; }
     // Bit offset of a packed member within its parent's element 0
-    uint32_t memberBitOffset() const { return isPackedMember() ? static_cast<uint32_t>(aux) : 0; }
+    uint32_t memberBitOffset() const { return isMember() ? static_cast<uint32_t>(aux) : 0; }
     // Model-wide VlLazyCombMask index of a VLVF_LAZY_COMB row, else -1
     int32_t lazyCombMask() const { return isLazyComb() ? aux : -1; }
     // Module-relative --vpi-lazy descriptor slot, else -1
-    int32_t lazyDescSlot() const { return isPackedMember() || isLazyComb() ? -1 : aux; }
+    int32_t lazyDescSlot() const { return isMember() || isLazyComb() ? -1 : aux; }
 };
 static_assert(sizeof(VlVarTableEntry) <= 40, "VlVarTableEntry unexpectedly grew");
 
@@ -391,33 +390,38 @@ public:
 #endif
 };
 
-// Internals: VlFileLineDebug stores a SystemVerilog source code location. Used in
-// VlCoroutineHandle for debugging purposes, and to locate covergroup weight errors.
+// Internals: VlFileLine and VlFileLineDebug store a SystemVerilog source code location.
+// VlFileLineDebug is used in VlCoroutineHandle for debugging purposes, and to locate covergroup
+// weight errors.
 
-class VlFileLineDebug final {
+class VlFileLine final {
     // MEMBERS
-#ifdef VL_DEBUG
-    const char* m_filename = nullptr;  // Filename from sources, nullptr for unlnown
+    const char* m_filename = nullptr;  // Filename from sources, nullptr for unknown
     int m_lineno = 0;  // Line number from sources
-#endif
 
 public:
     // CONSTRUCTORS
-    VlFileLineDebug() = default;
-    VlFileLineDebug(const char* filename, int lineno)
-#ifdef VL_DEBUG
+    VlFileLine() = default;
+    VlFileLine(const char* filename, int lineno)
         : m_filename{filename}
-        , m_lineno{lineno}
-#endif
-    {
-    }
+        , m_lineno{lineno} {}
 
     // METHODS
-#ifdef VL_DEBUG
     const char* filename() const { return m_filename; }
     int lineno() const { return m_lineno; }
-#endif
+    void filename(const char* filename) { m_filename = filename; }
+    void lineno(int lineno) { m_lineno = lineno; }
 };
+
+#ifdef VL_DEBUG
+using VlFileLineDebug = VlFileLine;
+#else
+class VlFileLineDebug final {
+public:
+    VlFileLineDebug() = default;
+    VlFileLineDebug(const char*, int) {}
+};
+#endif
 
 class VlExecutionProfilerBase;
 
@@ -431,12 +435,15 @@ class VerilatedModel VL_NOT_FINAL {
     VL_UNCOPYABLE(VerilatedModel);
 
     VerilatedContext& m_context;  // The VerilatedContext this model is instantiated under
+    uint32_t m_id = ~0U;  // Unique id of the model in its context
 
 protected:
+    const VlRtmd* m_rtmdp = nullptr;  // The run time model descriptors, iff generated
     bool m_didInit = false;  // Time 0 initialization has run
+    bool m_didDump = false;  // Traced since the last evaluation
 
     explicit VerilatedModel(VerilatedContext& context);
-    virtual ~VerilatedModel() = default;
+    virtual ~VerilatedModel();
 
 public:
     /// Returns the VerilatedContext this model is instantiated under
@@ -448,15 +455,18 @@ public:
     virtual const char* modelName() const = 0;
     /// Returns the thread level parallelism, this model was Verilated with. Always 1 or higher.
     virtual unsigned threads() const = 0;
+    // Orders models in the order they were added to their context
+    bool operator<(const VerilatedModel& other) const { return m_id < other.m_id; }
+
+    // Public, but for internal use only. Rtmd of this model, if any
+    const VlRtmd* rtmd() const { return m_rtmdp; }
 
 private:
     // The following are for use by Verilator internals only
     template <typename, typename>
     friend class VerilatedTrace;
+    friend class VerilatedContext;
     friend class VerilatedEvalLoop;
-
-    // Run-time trace configuration requested by this model
-    virtual std::unique_ptr<VerilatedTraceConfig> traceConfig() const;
 
     // Entry points called by VerilatedEvalLoop
     virtual void evalBegin() = 0;
@@ -606,10 +616,6 @@ private:
     static constexpr uint64_t TIME_UNSET = ~0ULL;
 
 protected:
-    // TYPES
-    using traceBaseModelCb_t
-        = std::function<void(VerilatedTraceBaseC*, int, int)>;  // Type of traceBaseModel callbacks
-
     // MEMBERS
     // Slow path variables
     mutable VerilatedMutex m_mutex;  // Mutex for most s_s/s_ns members
@@ -680,11 +686,16 @@ protected:
         bool m_warnUnsatConstr = true;  // Warn on unsatisfied constraints
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
-        std::vector<traceBaseModelCb_t> m_traceBaseModelCbs;  // Callbacks to traceRegisterModel
         int m_stdoutFD;  // Duplicated stdout file descriptor
         int m_stderrFD;  // Duplicated stderr file descriptor
         int m_logFD;  // Log file descriptor
     } m_ns;
+
+    /// Callback typedef for addEndContextCb
+    using VoidPCb = void (*)(void*);
+    mutable VerilatedMutex m_endContextMutex;  // Protect m_endContextCbs
+    std::vector<std::pair<VoidPCb, void*>> m_endContextCbs
+        VL_GUARDED_BY(m_endContextMutex);  // Callbacks to run when context is destroyed
 
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
     // no need to be save-restored (serialized) the
@@ -935,8 +946,17 @@ public:
         return reinterpret_cast<const VerilatedContextImp*>(this);
     }
 
+    /// Add callback to run once when the context is destroyed, after final blocks and any
+    /// coverage write
+    void addEndContextCb(void (*cb)(void*), void* datap) VL_MT_SAFE_EXCLUDES(m_endContextMutex);
+
     // Internal: Model and thread setup
-    void addModel(const VerilatedModel* modelp);
+    void addModel(VerilatedModel* modelp);
+    // Internal: Remove a model being destroyed
+    void removeModel(const VerilatedModel* modelp);
+    // Internal: Retrieve all models in the context, indexed by their hierarchical path
+    std::map<std::string, VerilatedModel*> models() const VL_MT_SAFE;
+
     // Get the thread pool, creating it if needed. 'modelThreads' is the parallelism of the model
     // being constructed, so that the context can grow to the number of threads it requires.
     VerilatedVirtualBase* threadPoolp(unsigned modelThreads = 1);
@@ -992,9 +1012,6 @@ public:
     // Internal: Serialization setup
     static constexpr size_t serialized1Size() VL_PURE { return sizeof(m_s); }
     void* serialized1Ptr() VL_MT_UNSAFE { return &m_s; }
-
-    // Internal: trace registration
-    void traceBaseModelCbAdd(traceBaseModelCb_t cb) VL_MT_SAFE;
 
     // Internal: Check magic number
     static void checkMagic(const VerilatedContext* contextp);
@@ -1143,7 +1160,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      VerilatedVarType vltype, int vlflags,
                                      void* forceReadSignalDatap, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
-                                     int udims, int pdims...) VL_MT_UNSAFE;
+                                     int udims, int pdims, ...) VL_MT_UNSAFE;
     // lazyBasep/lazyReconsp are null when the table has no lazy rows; both keyed by
     // VlVarTableEntry::lazyDescSlot()
     void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
@@ -1261,6 +1278,7 @@ class Verilated final {
     } t_s;
 
     friend struct VerilatedInitializer;
+    friend class VlDpiCall;  // Copies t_s between threads on DPI thread handoff
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(Verilated);
@@ -1434,12 +1452,12 @@ public:
                                const char* delimiter = ".") VL_MT_SAFE;
 
     // Internal: Throw signal assertion
-    static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;
-    static void overWidthError(const char* signame) VL_ATTR_NORETURN VL_MT_SAFE;
+    [[noreturn]] static void nullPointerError(const char* filename, int linenum) VL_MT_SAFE;
+    [[noreturn]] static void overWidthError(const char* signame) VL_MT_SAFE;
     static void queueBoundError(size_t maxSize, size_t attemptedSize) VL_MT_SAFE;
-    static void scTimePrecisionError(int sc_prec, int vl_prec) VL_ATTR_NORETURN VL_MT_SAFE;
-    static void scTraceBeforeElaborationError() VL_ATTR_NORETURN VL_MT_SAFE;
-    static void sizeMismatchError() VL_ATTR_NORETURN VL_MT_SAFE;
+    [[noreturn]] static void scTimePrecisionError(int sc_prec, int vl_prec) VL_MT_SAFE;
+    [[noreturn]] static void scTraceBeforeElaborationError() VL_MT_SAFE;
+    [[noreturn]] static void sizeMismatchError() VL_MT_SAFE;
     static void stackCheck(QData needSize) VL_MT_UNSAFE;
 
     // Internal: Load a VPI shared library (+verilator+vpi+<lib>[:<bootstrap>])

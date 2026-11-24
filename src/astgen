@@ -978,6 +978,10 @@ def write_ast_impl(filename):
         def emitBlock(pattern, **fmt):
             fh.write(pattern.format(**fmt))
 
+        def emitStmts(pattern, **fmt):
+            # Emit template as statements in a function body
+            fh.write(textwrap.indent(textwrap.dedent(pattern), "    ").format(**fmt))
+
         for node in AstNodeList:
             if node.name == "Node":
                 continue
@@ -1011,18 +1015,37 @@ def write_ast_impl(filename):
                 op = node.getOp(i)
                 if op is None:
                     continue
-                name, _, _, legals = op
-                legals = legals.split('|')
-                if legals and legals != ["Node"]:
-                    emitBlock("    BROKEN_RTN({name}() && !(", name=name)
-                    eor = ""
-                    for legal in legals:
-                        emitBlock("{eor}privateTypeTest<Ast{legal}>({name}())",
-                                  eor=eor,
-                                  name=name,
-                                  legal=legal)
-                        eor = " || "
-                    emitBlock("));\n")
+                _, monad, _, legals = op
+                isLegal = " || ".join("privateTypeTest<Ast{legal}>(nodep)".format(legal=legal)
+                                      for legal in legals.split('|'))
+                if monad == "List":
+                    emitStmts('''\
+                        for (const AstNode* nodep = op{i}p(); nodep; nodep = nodep->nextp()) {{
+                            BROKEN_RTN(!({isLegal}));
+                        }}
+                        ''',
+                              i=i,
+                              isLegal=isLegal)
+                elif monad == "Optional":
+                    emitStmts('''\
+                        if (const AstNode* const nodep = op{i}p()) {{
+                            BROKEN_RTN(!({isLegal}));
+                            BROKEN_RTN(nodep->nextp());
+                        }}
+                        ''',
+                              i=i,
+                              isLegal=isLegal)
+                else:
+                    emitStmts('''\
+                        {{
+                            const AstNode* const nodep = op{i}p();
+                            BROKEN_RTN(!nodep);
+                            BROKEN_RTN(!({isLegal}));
+                            BROKEN_RTN(nodep->nextp());
+                        }}
+                        ''',
+                              i=i,
+                              isLegal=isLegal)
             # Node's broken rules can be specialized by declaring broken()
             emitBlock("    return Ast{t}::broken();\n", t=node.name)
             emitBlock("}}\n")
@@ -1038,7 +1061,7 @@ def write_ast_impl(filename):
                 legals = legals.split('|')
                 if legals and legals != ["Node"]:
                     # 'this' is a parent, where oldp replacing newp as op1p, must follow op1p's rules
-                    # Could also be on a list, we don't check for speed reasons and as V3Broken doesn't
+                    # Could also be on a list, we don't check for speed reasons
                     emitBlock("    if (oldp == op{i}p() && !(", i=i)
                     eor = ""
                     for legal in legals:

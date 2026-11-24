@@ -15,7 +15,7 @@ test.compile(verilator_flags2=["--binary", "-unroll-count 1", "--stats"])
 
 test.execute()
 
-test.file_grep(test.stats, r'NBA, variables using ValueQueueWhole scheme\s+(\d+)', 2)
-test.file_grep(test.stats, r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 0)
+test.file_grep(test.stats, r'NBA, variables using GenericLocal scheme\s+(\d+)', 0)
+test.file_grep(test.stats, r'NBA, variables using GenericGlobal scheme\s+(\d+)', 2)
 
 test.passes()

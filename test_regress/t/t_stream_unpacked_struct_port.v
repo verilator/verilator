@@ -72,6 +72,45 @@ module t (
       .dout({<<8{arr_l}})
   );
 
+  // Constant function and system function indices remain valid inside output streams.
+  function automatic int constant_index();
+    return 1;
+  endfunction
+  logic [14:1] selected_r;
+  logic [14:1] selected_l;
+  producer #(
+      .W(14)
+  ) u_selected_r (
+      .din(crc[13:0]),
+      .dout({>>{selected_r[14:8], selected_r[constant_index() +: 7]}})
+  );
+  // Nest the right stream inside the left stream to check recursive destinations.
+  producer #(
+      .W(14)
+  ) u_selected_l (
+      .din(crc[13:0]),
+      .dout({<<7{{>>{selected_l[14:8], selected_l[$clog2(2) +: 7]}}}})
+  );
+
+  // Inputs may select packed bits dynamically. Unpacked variable output indices may
+  // also vary, and selections within those indices are reads, not destinations.
+  wire [31:0] row = 1 + int'(crc[17:16]) % 3;
+  wire [31:0] input_base = 7 * int'(crc[15:14]);
+  logic [6:0] variable_pad [3:1];
+  producer #(
+      .W(7)
+  ) u_variable (
+      .din({<<{crc[input_base +: 7]}}),
+      .dout({>>{variable_pad[1 + int'(crc[17:16]) % 3]}})
+  );
+  logic [2:1] constant_bit_pad;
+  producer #(
+      .W(1)
+  ) u_constant_bit (
+      .din({<<{crc[crc[5:0]]}}),
+      .dout({>>{constant_bit_pad[constant_index()]}})
+  );
+
   // Reference: plain packed port + separate streaming unpack assign.
   wire [OW-1:0] pack_r;
   wire [OW-1:0] pack_l;
@@ -104,6 +143,13 @@ module t (
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
     if (cyc > 1) begin
+      `checkh(selected_r, crc[13:0]);
+      `checkh(selected_l[14:8], crc[6:0]);
+      `checkh(selected_l[7:1], crc[13:7]);
+      `checkh(constant_bit_pad[1], crc[crc[5:0]]);
+      for (int i = 0; i < 7; ++i) begin
+        `checkh(variable_pad[row][6-i], crc[input_base+i]);
+      end
       // The target has a real driver (not folded to 0) and round-trips.
       `checkh(out_r_bits, src);
       `checkh(out_l_bits, src);

@@ -366,7 +366,7 @@ AstVarScope* TriggerKit::newTrigVec(const std::string& name) const {
 
 uint32_t TriggerKit::extraTriggerIndex(uint32_t index) const {
     UASSERT(index <= m_nExtraWords * WORD_SIZE, "Invalid external trigger index");
-    return index + m_nSenseWords * WORD_SIZE;
+    return index + nSenses();
 }
 
 std::set<uint32_t> TriggerKit::triggerIndices(const AstSenTree* senTreep, bool pre) const {
@@ -397,7 +397,7 @@ AstNodeStmt* TriggerKit::newExtraTriggerAssignment(AstVarScope* vscp, uint32_t i
 void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const {
     FileLine* const flp = vscp->fileline();
     // Set the trigger bit, then clear the input variable
-    AstNode* const setp = newExtraTriggerAssignment(vscp, index);
+    AstNodeStmt* const setp = newExtraTriggerAssignment(vscp, index);
     setp->addNext(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
                                 new AstConst{flp, AstConst::BitFalse{}}});
     m_compVecp->prependStmtsp(setp);
@@ -407,7 +407,7 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) co
 // Creates: trigger[bit] = (vscp != prev); prev = vscp;
 void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc* initFuncp,
                                                  AstVarScope* instVscp, uint32_t index) const {
-    index += m_nSenseWords * WORD_SIZE;
+    index += nSenses();
     const uint32_t wordIndex = index / WORD_SIZE;
     const uint32_t bitIndex = index % WORD_SIZE;
 
@@ -462,7 +462,7 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
     }
 
     // Build post-update: prev = inst
-    AstNode* updp;
+    AstNodeStmt* updp;
     if (VN_IS(dtypep, UnpackArrayDType)) {
         AstCMethodHard* const cmhp = new AstCMethodHard{
             flp, wrPrev(prevVscp), VCMethod::UNPACKED_ASSIGN, rdInst(instVscp)};
@@ -476,7 +476,7 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
     AstVarRef* const refp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
     AstNodeExpr* const wordp = new AstArraySel{flp, refp, static_cast<int>(wordIndex)};
     AstNodeExpr* const trigLhsp = new AstSel{flp, wordp, static_cast<int>(bitIndex), 1};
-    AstNode* const setp = new AstAssign{flp, trigLhsp, neqp};
+    AstNodeStmt* const setp = new AstAssign{flp, trigLhsp, neqp};
 
     // Chain: set trigger bit -> update prev
     setp->addNext(updp);
@@ -697,11 +697,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
             AstNodeExpr* const wordp = new AstArraySel{flp, wr(kit.m_vscp), wrdIndex};
             AstNodeExpr* const lhsp = new AstSel{flp, wordp, bitIndex, 1};
             AstNodeExpr* const rhsp = new AstConst{flp, AstConst::BitTrue{}};
-            if (useAcc) {
-                initFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
-            } else {
-                initialTrigsp = AstNode::addNext(initialTrigsp, new AstAssign{flp, lhsp, rhsp});
-            }
+            initialTrigsp = AstNode::addNext(initialTrigsp, new AstAssign{flp, lhsp, rhsp});
         }
 
         // Add a debug statement for this trigger
@@ -819,7 +815,7 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
     // Every awaited SenTree
     std::vector<BeforeTrig> m_beforeTrigs;
     // Map containing vectors of SenItems that share the same prevValue variable
-    std::unordered_map<VNRef<AstNode>, std::vector<AstSenItem*>> m_senExprToSenItem;
+    std::unordered_map<VNRef<AstNode>, std::vector<const AstSenItem*>> m_senExprToSenItem;
 
     // METHODS
     // Returns node which is used for grouping SenItems in `m_senExprToSenItem`
@@ -831,19 +827,18 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
     // Populates `m_senExprToSenItem` with every group of SenItems that share the same prevValue
     // variable. Groups that contain only one type of an edge are omitted.
     void fillSenExprToSenItem() {
-        for (const BeforeTrig& beforeTrig : m_beforeTrigs) {
-            for (AstSenItem* const senItemp : beforeTrig.m_senTreep->sensespList()) {
-                const VEdgeType edge = senItemp->edgeType();
-                if (edge.anEdge() || edge == VEdgeType::ET_CHANGED
-                    || edge == VEdgeType::ET_HYBRID) {
-                    m_senExprToSenItem[*getSenHashNode(senItemp)].push_back(senItemp);
-                }
+        for (uint32_t i = 0; i < m_trigKit.nSenses(); ++i) {
+            const AstSenItem* const senItemp = m_trigKit.trigIdx2SenItem()[i];
+            if (!senItemp) continue;  // Word-alignment padding.
+            const VEdgeType edge = senItemp->edgeType();
+            if (edge.anEdge() || edge == VEdgeType::ET_CHANGED || edge == VEdgeType::ET_HYBRID) {
+                m_senExprToSenItem[*getSenHashNode(senItemp)].push_back(senItemp);
             }
         }
 
         std::vector<VNRef<AstNode>> toRemove;
         for (const auto& senExprToSenTree : m_senExprToSenItem) {
-            std::vector<AstSenItem*> senItemps = senExprToSenTree.second;
+            const std::vector<const AstSenItem*>& senItemps = senExprToSenTree.second;
             toRemove.push_back(senExprToSenTree.first);
             for (size_t i = 1; i < senItemps.size(); ++i) {
                 if (senItemps[i]->edgeType() != senItemps[i - 1]->edgeType()) {
@@ -988,7 +983,7 @@ public:
                     emplaceAt(m_senExprBuilder.build(itemp).first, idx);
                     auto iter = m_senExprToSenItem.find(*getSenHashNode(itemp));
                     if (iter != m_senExprToSenItem.end()) {
-                        for (AstSenItem* const additionalItemp : iter->second) {
+                        for (const AstSenItem* const additionalItemp : iter->second) {
                             const size_t idx = m_trigKit.senItem2TrigIdx(additionalItemp);
                             emplaceAt(m_senExprBuilder.build(additionalItemp).first, idx);
                         }

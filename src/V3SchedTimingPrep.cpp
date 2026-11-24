@@ -15,7 +15,7 @@
 //*************************************************************************
 //
 // Prepares the TimingKit used by V3Sched.cpp to integrate static scheduling
-// with timing features. Creates the actives resuming the timing schedulers,
+// with timing features. Creates the processes resuming the timing schedulers,
 // and computes the variables written by suspendable processes, together with
 // their external domains: the sentrees the writing processes can resume on.
 // These are computed over the call graph of the code executed by suspendable
@@ -29,7 +29,7 @@
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Ast.h"
-#include "V3ClassGraph.h"
+#include "V3CallTargets.h"
 #include "V3Graph.h"
 #include "V3Sched.h"
 #include "V3Stats.h"
@@ -41,21 +41,21 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 namespace V3Sched {
 
 //============================================================================
-// Creates the actives resuming the timing schedulers
+// Creates the processes resuming the timing schedulers
 
-class ResumeActiveBuilder final {
+class ResumeProcessBuilder final {
     // NODE STATE
     //  AstSenTree::user1()  -> bool.  Set true if the sentree has been visited.
     const VNUser1InUse m_inuser1;
 
     // STATE
     AstScope* const m_scopeTopp;  // Scope at the top
-    LogicByScope m_lbs;  // Timing resume actives
+    ProcessList m_procList;  // Timing resume processes
     AstNodeStmt* m_postUpdatesp = nullptr;  // Post updates for the trigger eval function
 
     // METHODS
-    // Create an active with a timing scheduler resume() call
-    void createResumeActive(AstCAwait* const awaitp) {
+    // Create a process with a timing scheduler resume() call
+    void createResumeProcess(AstCAwait* const awaitp) {
         AstCMethodHard* const methodp = VN_AS(awaitp->exprp(), CMethodHard);
         AstVarScope* const schedp = VN_AS(methodp->fromp(), VarRef)->varScopep();
         AstSenTree* const sentreep = awaitp->sentreep();
@@ -75,26 +75,26 @@ class ResumeActiveBuilder final {
             UASSERT_OBJ(!m_postUpdatesp, awaitp, "Multiple dynamic trigger schedulers");
             m_postUpdatesp = postp->makeStmt();
         }
-        // Put it in an active
-        AstActive* const activep = new AstActive{flp, "_timing", sentreep};
-        activep->addStmtsp(resumep->makeStmt());
-        m_lbs.add(m_scopeTopp, activep);
+        // Put it in a process
+        AstAlways* const procp
+            = new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, resumep->makeStmt()};
+        m_procList.add({m_scopeTopp, sentreep, procp, {}});
     }
 
     // CONSTRUCTORS
-    explicit ResumeActiveBuilder(AstNetlist* netlistp)
+    explicit ResumeProcessBuilder(AstNetlist* netlistp)
         : m_scopeTopp{netlistp->topScopep()->scopep()} {
         netlistp->foreach([&](AstCAwait* awaitp) {
             AstSenTree* const sentreep = awaitp->sentreep();
-            if (sentreep && !sentreep->user1SetOnce()) createResumeActive(awaitp);
+            if (sentreep && !sentreep->user1SetOnce()) createResumeProcess(awaitp);
         });
     }
 
 public:
-    // Returns the resume actives and the post updates for the trigger eval function
-    static std::pair<LogicByScope, AstNodeStmt*> apply(AstNetlist* netlistp) {
-        ResumeActiveBuilder builder{netlistp};
-        return {std::move(builder.m_lbs), builder.m_postUpdatesp};
+    // Returns the resume processes and the post updates for the trigger eval function
+    static std::pair<ProcessList, AstNodeStmt*> apply(AstNetlist* netlistp) {
+        ResumeProcessBuilder builder{netlistp};
+        return {std::move(builder.m_procList), builder.m_postUpdatesp};
     }
 };
 
@@ -123,8 +123,8 @@ class ExternalDomainsVisitor final : public VNVisitorConst {
     const VNUser1InUse m_inuser1;
 
     // STATE
-    // Class graph to get possibly called functions from a virtual call
-    std::unique_ptr<V3ClassGraph> m_classGraphp;
+    // To get the functions a virtual call may call
+    std::unique_ptr<V3CallTargets> m_callTargetsp;
     V3Graph m_graph;  // The call graph used for analysis
     Vertex* m_vtxp = nullptr;  // Vertex of the current body, if suspendable code
     std::vector<AstCFunc*> m_funcps;  // Functions not yet recorded when visited
@@ -266,11 +266,8 @@ class ExternalDomainsVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
         if (!m_vtxp) return;  // Not in suspendable code
         // Add edges to all functions that may be called, including through virtual calls
-        const std::unordered_set<AstCFunc*>& cfuncps = m_classGraphp->getCallPossibleCFuncs(nodep);
-        if (cfuncps.empty()) {
-            addEdge(recordBody(nodep->funcp()));
-        } else {
-            for (AstCFunc* const cfuncp : cfuncps) addEdge(recordBody(cfuncp));
+        for (AstCFunc* const cfuncp : m_callTargetsp->getTargets(nodep)) {
+            addEdge(recordBody(cfuncp));
         }
     }
     void visit(AstNodeVarRef* nodep) override {
@@ -286,7 +283,7 @@ class ExternalDomainsVisitor final : public VNVisitorConst {
 
     // CONSTRUCTORS
     explicit ExternalDomainsVisitor(AstNetlist* nodep)
-        : m_classGraphp{V3ClassGraph::build(nodep)} {
+        : m_callTargetsp{V3CallTargets::build()} {
         // Record the bodies of suspendable processes, coroutines, and forks
         iterateConst(nodep);
         // Regular functions not called by any of the above are walked only to find their forks
@@ -311,7 +308,7 @@ public:
 
 TimingKit prepareTiming(AstNetlist* const netlistp) {
     if (!v3Global.usesTiming()) return {};
-    std::pair<LogicByScope, AstNodeStmt*> resumes = ResumeActiveBuilder::apply(netlistp);
+    std::pair<ProcessList, AstNodeStmt*> resumes = ResumeProcessBuilder::apply(netlistp);
     std::map<const AstVarScope*, std::set<AstSenTree*>> externalDomains
         = ExternalDomainsVisitor::apply(netlistp);
     return {std::move(resumes.first), resumes.second, std::move(externalDomains)};

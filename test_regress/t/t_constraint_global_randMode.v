@@ -64,7 +64,7 @@ module t_constraint_global_randMode;
     Base b;
     reg_r r;
 
-    // Test 1: Member class with randmode
+    // Test: Member class with randmode
     d = new;
     b = d;
     b.v.disable_val();
@@ -73,7 +73,7 @@ module t_constraint_global_randMode;
     if (bit'(b.randomize())) $stop;
     if (b.v.value != 11) $stop;
 
-    // Test 2: Member class without randmode
+    // Test: Member class without randmode
     r = new;
     if (!r.randomize()) $stop;
     /* verilator lint_on WIDTHTRUNC */

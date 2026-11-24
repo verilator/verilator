@@ -8,7 +8,7 @@
 
 #include <verilated.h>
 
-#include "Vt_param_public.h"
+#include VM_PREFIX_INCLUDE
 #include "Vt_param_public_p.h"
 #include "Vt_param_public_t.h"
 

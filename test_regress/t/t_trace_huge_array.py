@@ -11,12 +11,9 @@ import vltest_bootstrap
 
 test.scenarios("vlt_all")
 
-test.compile(v_flags2=[
-    "--trace-vcd --trace-max-width 0 --trace-max-array 0 --output-split-ctrace 10 --trace-structs"
-])
-trace_files = glob.glob(test.obj_dir + "/*Trace*.cpp")
-if len(trace_files) < 10:
-    test.error("Too few trace files")
+test.compile(v_flags2=["--trace-vcd --trace-max-width 0 --trace-max-array 0 --trace-structs"])
+# The descriptors of an array do not grow with its size, so the hierarchy table is a single chunk
+test.glob_one(test.obj_dir + "/" + test.vm_prefix + "__RtmdHierTable__[0-9]*.cpp")
 
 test.execute()
 

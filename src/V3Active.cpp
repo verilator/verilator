@@ -332,7 +332,6 @@ class ActiveLatchCheckVisitor final : public VNVisitorConst {
             m_graph.addAssignment(nodep);
         }
     }
-    // This visitor only walks procedural always blocks, so AstNodeIf nodes here are always AstIf.
     void visit(AstIf* nodep) override {
         if (nodep->isBoundsCheck()) {
             iterateChildrenConst(nodep);
@@ -385,7 +384,7 @@ public:
 
 class ActiveDlyVisitor final : public VNVisitor {
 public:
-    enum CheckType : uint8_t { CT_COMB, CT_FINAL };
+    enum CheckType : uint8_t { CT_COMB, CT_LATCH, CT_FINAL };
 
 private:
     // MEMBERS
@@ -394,12 +393,18 @@ private:
     // METHODS
     void warnNonBlocking(AstNode* nodep, const char* what, const char* nbOp, const char* bOp) {
         const bool inFinal = m_check == CT_FINAL;
-        nodep->v3warnCode(inFinal ? V3ErrorCode::FINALDLY : V3ErrorCode::COMBDLY,
-                          "Non-blocking "
-                              << what << " '" << nbOp << "' in "
-                              << (inFinal ? "final block" : "combinational logic") << '\n'
-                              << nodep->warnMore() << "... This will be executed as a blocking "
-                              << what << " '" << bOp << "'!");
+        const bool inLatch = m_check == CT_LATCH;
+        nodep->v3warnCode(inFinal   ? V3ErrorCode::FINALDLY
+                          : inLatch ? V3ErrorCode::LATCHDLY
+                                    : V3ErrorCode::COMBDLY,
+                          "Non-blocking " << what << " '" << nbOp << "' in "
+                                          << (inFinal   ? "final block"
+                                              : inLatch ? "always_latch"
+                                                        : "combinational logic")
+                                          << '\n'
+                                          << nodep->warnMore()
+                                          << "... This will be executed as a blocking " << what
+                                          << " '" << bOp << "'!");
     }
 
     // VISITORS
@@ -456,22 +461,14 @@ class ActiveVisitor final : public VNVisitor {
 
     // METHODS
     template <typename T>
-    void moveUnderSpecial(AstNode* nodep) {
+    void moveUnderSpecial(AstNodeProcedure* nodep) {
         AstActive* const wantactivep = m_namer.getSpecialActive<T>(nodep->fileline());
         nodep->unlinkFrBack();
-        wantactivep->addStmtsp(nodep);
+        wantactivep->addProcsp(nodep);
     }
 
-    void visitAlways(AstNode* nodep, AstSenTree* oldsentreep, VAlwaysKwd kwd) {
+    void visitAlways(AstNodeProcedure* nodep, AstSenTree* oldsentreep, VAlwaysKwd kwd) {
         // Move always to appropriate ACTIVE based on its sense list
-        if (oldsentreep && oldsentreep->sensesp() && oldsentreep->sensesp()->isNever()) {
-            // Never executing.  Kill it.
-            UASSERT_OBJ(!oldsentreep->sensesp()->nextp(), nodep,
-                        "Never senitem should be alone, else the never should be eliminated.");
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            return;
-        }
-
         {
             const VNUser1InUse user1InUse;
 
@@ -503,10 +500,13 @@ class ActiveVisitor final : public VNVisitor {
 
         // Move node to new active
         nodep->unlinkFrBack();
-        wantactivep->addStmtsp(nodep);
+        wantactivep->addProcsp(nodep);
 
         // Warn and convert any delayed assignments
-        if (!m_clockedProcess) ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMB};
+        if (!m_clockedProcess) {
+            ActiveDlyVisitor{nodep, kwd == VAlwaysKwd::ALWAYS_LATCH ? ActiveDlyVisitor::CT_LATCH
+                                                                    : ActiveDlyVisitor::CT_COMB};
+        }
 
         // Delete sensitivity list
         if (oldsentreep) VL_DO_DANGLING(oldsentreep->deleteTree(), oldsentreep);
@@ -553,13 +553,13 @@ class ActiveVisitor final : public VNVisitor {
         const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_FINAL};
         moveUnderSpecial<AstSenItem::Final>(nodep);
     }
-    void visit(AstCoverToggle* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
     void visit(AstAlways* nodep) override {
         if (!nodep->stmtsp()) {  // Empty always. Remove it now.
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
+        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN
+            || nodep->keyword() == VAlwaysKwd::COVER_TOGGLE) {
             moveUnderSpecial<AstSenItem::Combo>(nodep);
             if (m_vpiLazy) V3VpiLazy::combBlock(nodep);
             return;
@@ -573,7 +573,7 @@ class ActiveVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->stmtsp(), nodep, "Should not be empty");
         // Make a new active for it, needs to be the only item under the active for V3Sched
         AstActive* const activep = m_namer.makeSpecialActive<AstSenItem::Combo>(nodep->fileline());
-        activep->addStmtsp(nodep->unlinkFrBack());
+        activep->addProcsp(nodep->unlinkFrBack());
     }
     void visit(AstAlwaysObserved* nodep) override {
         UASSERT_OBJ(nodep->sentreep(), nodep, "Should have a sentree");
@@ -582,7 +582,7 @@ class ActiveVisitor final : public VNVisitor {
         sentreep->unlinkFrBack();
         // Make a new active for it, needs to be the only item under the active for V3Sched
         AstActive* const activep = m_namer.makeActive(nodep->fileline(), sentreep);
-        activep->addStmtsp(nodep->unlinkFrBack());
+        activep->addProcsp(nodep->unlinkFrBack());
     }
     void visit(AstAlwaysReactive* nodep) override {
         UASSERT_OBJ(nodep->sentreep(), nodep, "Should have a sentree");
@@ -591,7 +591,7 @@ class ActiveVisitor final : public VNVisitor {
         sentreep->unlinkFrBack();
         // Make a new active for it, needs to be the only item under the active for V3Sched
         AstActive* const activep = m_namer.makeActive(nodep->fileline(), sentreep);
-        activep->addStmtsp(nodep->unlinkFrBack());
+        activep->addProcsp(nodep->unlinkFrBack());
     }
     void visit(AstCFunc* nodep) override { visitSenItems(nodep); }
     void visit(AstSenItem* nodep) override {
@@ -730,10 +730,10 @@ class CovergroupEventBindVisitor final : public VNVisitor {
     void visit(AstVarRef* nodep) override {
         if (!m_memberps.count(nodep->varp())) return;
         FileLine* const fl = nodep->fileline();
-        AstMemberSel* const selp
-            = new AstMemberSel{fl, new AstVarRef{fl, m_instancep, VAccess::READ}, nodep->varp()};
-        selp->access(nodep->access());
-        nodep->replaceWith(selp);
+        AstMemberRef* const memberRefp
+            = new AstMemberRef{fl, new AstVarRef{fl, m_instancep, VAccess::READ}, nodep->varp()};
+        memberRefp->access(nodep->access());
+        nodep->replaceWith(memberRefp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
@@ -812,7 +812,7 @@ class CovergroupInjectVisitor final : public VNVisitor {
 
         // Wrap the sample() call in an AstAlways so SchedPartition handles it
         // via visit(AstNodeProcedure*) like any other clocked always block.
-        activep->addStmtsp(
+        activep->addProcsp(
             new AstAlways{fl, VAlwaysKwd::ALWAYS_FF, nullptr, cmethodCallp->makeStmt()});
     }
 

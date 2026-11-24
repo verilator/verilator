@@ -13,7 +13,7 @@
       |     ^~~
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Error: t/t_param_noval_bad.v:10:5: Non-genvar used in generate for: 'j'
+%Error: t/t_param_noval_bad.v:10:5: Non-genvar used in generate for: 'j' (IEEE 1800-2023 27.4)
                                   : ... note: In instance 't'
    10 |     for (j=0; P; j++)
       |     ^~~

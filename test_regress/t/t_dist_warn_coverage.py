@@ -74,7 +74,6 @@ for s in [
         'Parameter type variable isn\'t a type: Param',
         'Pattern replication value of 0 is not legal.',
         'Signals inside functions/tasks cannot be marked forceable',
-        'Slice size cannot be zero.',
         'Symbol matching',
         'Thread scheduler is unable to provide requested',
         'Unsized numbers/parameters not allowed in streams.',

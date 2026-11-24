@@ -1,0 +1,10 @@
+%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_sva_bad.v:10:11: Signal flopped as both synchronous and async: 'rst2'
+                       t/t_lint_syncasyncnet_sva_bad.v:34:13: ... Location of async usage
+   34 |     o2 <= (~rst2) ? 1'b0 : d;
+      |             ^~~~
+                       t/t_lint_syncasyncnet_sva_bad.v:39:72: ... Location of sync usage
+   39 |   assert property(@(posedge clk) rst2); always_ff @(posedge clk) o3 <= rst2 ? d : 1'b0;
+      |                                                                        ^~~~
+                       ... For warning description see https://verilator.org/warn/SYNCASYNCNET?v=latest
+                       ... Use "/* verilator lint_off SYNCASYNCNET */" and lint_on around source to disable this message.
+%Error: Exiting due to

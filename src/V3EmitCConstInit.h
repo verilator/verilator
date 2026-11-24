@@ -69,7 +69,7 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
             puts(",\n");
         }
         puts("{");
-        for (T_Item* itemp = itemsp; itemp; itemp = AstNode::as<T_Item>(itemp->nextp())) {
+        for (T_Item* const itemp : VNList<T_Item>{itemsp}) {
             if (itemp != itemsp) puts(",");
             puts("\n{");
             emitValue(itemp->keyp());
@@ -85,12 +85,12 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
     template <typename T_Item>
     void emitUnkeyedConsItems(T_Item* itemsp, uint32_t tabMod) {
         if (!itemsp) return;
-        for (T_Item* itemp = itemsp; itemp; itemp = AstNode::as<T_Item>(itemp->nextp())) {
+        for (T_Item* const itemp : VNList<T_Item>{itemsp}) {
             if (!VN_IS(itemp->valuep(), Const)) tabMod = 1;
         }
         puts("\n");
         uint64_t n = 0;
-        for (T_Item* itemp = itemsp; itemp; itemp = AstNode::as<T_Item>(itemp->nextp())) {
+        for (T_Item* const itemp : VNList<T_Item>{itemsp}) {
             if (n) puts((n % tabMod) ? ", " : ",\n");
             emitValue(itemp->valuep());
             ++n;
@@ -186,7 +186,8 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
             ofp()->putsNoTracking("}");
             return;
         }
-        nodep->v3fatalSrc("Unknown node type in emitInitializerBody: " << nodep->prettyTypeName());
+        nodep->v3fatalSrc(
+            "Unknown node type in emitInitializerBody: " << nodep->prettyTypeNameQ());
     }
 
     // Emit the braced initializer for the given value '{...}'

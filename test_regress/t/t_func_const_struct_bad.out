@@ -21,13 +21,6 @@
            params = '{a:'h7, b:'h8}
    33 |   localparam U15 = f_uadd('{a: 7, b: 8});
       |                    ^~~~~~
-%Error: t/t_func_const_struct_bad.v:34:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_queue'
-                                         : ... note: In instance 't'
-        t/t_func_const_struct_bad.v:65:5: ... Location of non-constant VARREF 's': Assigned variable has unsupported data type
-        t/t_func_const_struct_bad.v:34:19: ... Called from 'f_queue()' with parameters:
-           a = ?32?h1
-   34 |   localparam Q1 = f_queue(1);
-      |                   ^~~~~~~
 %Error: t/t_func_const_struct_bad.v:35:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_union'
                                          : ... note: In instance 't'
         t/t_func_const_struct_bad.v:72:5: ... Location of non-constant VARREF 'u': Assigned variable has unsupported data type

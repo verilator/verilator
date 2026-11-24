@@ -122,7 +122,9 @@ or "`ifdef`"'s may break other tools.
 
    The SYSTEMVERILOG, SV_COV_START, and related standard predefined macros
    are defined by default when :vlopt:`--language <--language>` is
-   "1800-\*".
+   "1800-\*". So are SV_COV_LINE, SV_COV_BRANCH, SV_COV_CONDITION,
+   SV_COV_EXPRESSION, SV_COV_EXPR, SV_COV_FSM_TRANS, and SV_COV_ALL,
+   extensions for the coverage type of :code:`$coverage_control`.
 
 .. option:: `VERILATOR
 
@@ -235,6 +237,20 @@ or "`ifdef`"'s may break other tools.
 
    Returns the timeunit of the current module as an integer. This extension
    is experimental and may be removed without deprecation.
+
+.. option:: //&32;coverage&32;off
+
+   Same as :option:`/*verilator&32;coverage_off*/`, as other tools accept.
+   One word may come before ``coverage``, such as ``pragma`` or
+   ``verilator``. A comment with any other text is an ordinary comment.
+
+.. option:: //&32;coverage&32;on
+
+   Same as :option:`/*verilator&32;coverage_on*/`, as other tools accept.
+   One word may come before ``coverage``, as for
+   :option:`//&32;coverage&32;off`.
+
+   .. t_dist_docs_style restart_sort
 
 .. option:: /*verilator&32;clock_enable*/
 
@@ -707,6 +723,14 @@ conservative extractor.
    Attached after a variable or structure member to indicate opaque (to
    Verilator) text that should be passed through to the XML output as a tag,
    for use by downstream applications.
+
+.. option:: /*verilator&32;threads_group*/
+
+   Specifies that each instance of the module is partitioned as a group with
+   :vlopt:`--threads`. This metacomment must be between
+   ``module module_name(...);`` and ``endmodule``.
+
+   Same as :option:`threads_group` control file option.
 
 .. option:: /*verilator&32;timing_off*/
 

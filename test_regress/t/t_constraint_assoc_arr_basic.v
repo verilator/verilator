@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2024 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 class constrained_associative_array_basic;
 
   rand int int_index_arr[int];
@@ -60,6 +65,7 @@ class constrained_1d_associative_array;
   rand int bit_index_arr[bit [5:0]];
   rand int logic_index_arr[logic [3:0]];
   rand int bit_index_arr_1[bit [55:0]];
+  rand int wide_index_arr[bit [99:0]];  // Keys with zero 32-bit words
 
   // Constraints
   constraint associative_array_constraints {
@@ -71,6 +77,8 @@ class constrained_1d_associative_array;
     byte_index_arr[8'd255] == 50;
     bit_index_arr[6'd30] - bit_index_arr_1[56'd66] == 3;
     logic_index_arr[4'b0011] == 70;
+    wide_index_arr[100'h8_0000_0000_0000_0000_0000_0000] == 80;
+    wide_index_arr[100'h1_0000_0000] == 90;
   }
 
   function new();
@@ -82,6 +90,7 @@ class constrained_1d_associative_array;
     bit_index_arr = '{6'd30: 0};
     bit_index_arr_1 = '{56'd66: 0};
     logic_index_arr = '{4'd3: 0};
+    wide_index_arr = '{100'h8_0000_0000_0000_0000_0000_0000: 0, 100'h1_0000_0000: 0};
   endfunction
 
   function void self_check();
@@ -93,6 +102,8 @@ class constrained_1d_associative_array;
     if (byte_index_arr[8'd255] != 50) $stop;
     if (bit_index_arr[6'd30] - bit_index_arr_1[56'd66] != 3) $stop;
     if (logic_index_arr[4'd3] != 70) $stop;
+    `checkd(wide_index_arr[100'h8_0000_0000_0000_0000_0000_0000], 80);
+    `checkd(wide_index_arr[100'h1_0000_0000], 90);
   endfunction
 
   function void debug_display();
@@ -178,6 +189,47 @@ class AssocArray64bitMoreTest;
 
 endclass
 
+// Struct elements with keys having a zero 32-bit word
+typedef struct {rand int x;} elem_t;
+class StructWideKeyTest;
+  rand elem_t a[bit [62:0]];
+
+  function new();
+    a[63'h1_0000_0010] = '{x: 0};
+    a[63'h110] = '{x: 0};
+  endfunction
+
+  constraint c {
+    a[63'h1_0000_0010].x == 5;
+    a[63'h110].x == 7;
+  }
+
+  function void self_check();
+    `checkd(a[63'h1_0000_0010].x, 5);
+    `checkd(a[63'h110].x, 7);
+  endfunction
+endclass
+
+// VlWide struct keys with a zero middle word, distinct from the integral-key path.
+class StructWide95KeyTest;
+  rand elem_t a[bit [94:0]];
+
+  function new();
+    a[95'h1_0000_0000_0000_0010] = '{x: 0};
+    a[95'h110] = '{x: 0};
+  endfunction
+
+  constraint c {
+    a[95'h1_0000_0000_0000_0010].x == 9;
+    a[95'h110].x == 11;
+  }
+
+  function void self_check();
+    `checkd(a[95'h1_0000_0000_0000_0010].x, 9);
+    `checkd(a[95'h110].x, 11);
+  endfunction
+endclass
+
 module t_constraint_assoc_arr_basic;
 
   constrained_associative_array_basic my_array;
@@ -188,6 +240,25 @@ module t_constraint_assoc_arr_basic;
   int success;
 
   initial begin
+    // Check the VlWide struct path before the other key representations.
+    begin
+      StructWide95KeyTest wide_obj;
+      StructWide95KeyTest wide_copy_obj;
+      wide_obj = new();
+      success = wide_obj.randomize();
+      `checkd(success, 1);
+      wide_obj.self_check();
+
+      wide_copy_obj = new wide_obj;
+      wide_copy_obj.a[95'h1_0000_0000_0000_0010].x = 0;
+      wide_copy_obj.a[95'h110].x = 0;
+      wide_obj.self_check();
+      success = wide_copy_obj.randomize();
+      `checkd(success, 1);
+      wide_copy_obj.self_check();
+      wide_obj.self_check();
+    end
+
     my_array = new();
     success = my_array.randomize();
     if (success == 0) $stop;
@@ -207,6 +278,25 @@ module t_constraint_assoc_arr_basic;
     repeat (2) begin
       success = test_obj.randomize();
       if (success != 1) $stop;
+    end
+
+    begin
+      StructWideKeyTest struct_obj;
+      StructWideKeyTest copy_obj;
+      struct_obj = new();
+      success = struct_obj.randomize();
+      `checkd(success, 1);
+      struct_obj.self_check();
+
+      // Shallow copying calls __VupdateRandVars to rebind the copied fields.
+      copy_obj = new struct_obj;
+      copy_obj.a[63'h1_0000_0010].x = 0;
+      copy_obj.a[63'h110].x = 0;
+      struct_obj.self_check();
+      success = copy_obj.randomize();
+      `checkd(success, 1);
+      copy_obj.self_check();
+      struct_obj.self_check();
     end
 
     // my_1d_array.debug_display();

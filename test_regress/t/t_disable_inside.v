@@ -107,6 +107,23 @@ module t;
   end
 
   initial begin
+    static int n = 0;
+    fork : fork_blk5
+      while (n < 3) begin  // The branch is the loop, not a block
+        n = n + 1;
+        disable fork_blk5;  // Leaves the loop too
+        $stop;
+      end
+      #1 $stop;
+    join_none
+    #2;
+    if (n != 1) begin
+      $display(n);
+      $stop;
+    end
+  end
+
+  initial begin
     #10;
     $write("*-* All Finished *-*\n");
     $finish;

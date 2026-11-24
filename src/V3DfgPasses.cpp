@@ -431,7 +431,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 
         // Initialize 'tab' and 'pre' variables statically
         AstInitialStatic* const initp = new AstInitialStatic{flp, nullptr};
-        staticActivep->addStmtsp(initp);
+        staticActivep->addProcsp(initp);
         {  // pre = 0
             initp->addStmtsp(new AstAssign{
                 flp,  //
@@ -448,7 +448,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 
         // Build the decoder logic
         AstAlways* const logicp = new AstAlways{flp, VAlwaysKwd::ALWAYS_COMB, nullptr, nullptr};
-        combActivep->addStmtsp(logicp);
+        combActivep->addProcsp(logicp);
         {  // tab[pre] = 0;
             logicp->addStmtsp(new AstAssign{
                 flp,  //

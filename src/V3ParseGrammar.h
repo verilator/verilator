@@ -27,10 +27,11 @@ class V3ParseGrammar final {
 public:
     AstVar* m_varAttrp = nullptr;  // Current variable for attribute adding
     AstRange* m_gateRangep = nullptr;  // Current range for gate declarations
-    AstNode* m_scopedSigAttrp = nullptr;  // Pointer to default signal attribute
+    AstAttrOf* m_scopedSigAttrp = nullptr;  // Pointer to default signal attribute
     AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
     AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
+    AstNodeUOrStructDType* m_memParentp = nullptr;  // Struct/union of next member declaration
     VRandAttr m_memRand;  // 'rand'/'randc' qualifier for next member declaration
     AstDelay* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
     AstStrengthSpec* m_netStrengthp = nullptr;  // Pointer to strength for next net declaration
@@ -77,10 +78,13 @@ public:
     AstRange* scrubRange(AstNodeRange* nrangep) VL_MT_DISABLED;
     AstRange* scrubRangeMulti(AstNodeRange* nrangep) VL_MT_DISABLED;
     AstNodePreSel* scrubSel(AstNodeExpr* fromp, AstNodePreSel* selp) VL_MT_DISABLED;
+    AstWithParse* scrubWithParse(AstNodeExpr* funcrefp, AstWithParse* withParsep) VL_MT_DISABLED;
     AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* nrangep,
                               bool isPacked) VL_MT_DISABLED;
     AstVar* createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp,
-                           AstNode* attrsp) VL_MT_DISABLED;
+                           AstAttrOf* attrsp) VL_MT_DISABLED;
+    void addMember(FileLine* fileline, const string& name, AstNodeRange* arrayp,
+                   AstNode* valuep) VL_MT_DISABLED;
     AstAssignW* createSupplyExpr(FileLine* fileline, const string& name, int value) VL_MT_DISABLED;
     std::string textQuoted(FileLine* fileline, const std::string& text) {
         return singletonp()->unquoteString(fileline, text);
@@ -112,6 +116,18 @@ public:
         }
         return exprp;
     }
+    static AstNodeExpr* createConcat(AstNodeExpr* itemsp) {
+        AstNodeExpr* concatp = itemsp;
+        AstNodeExpr* nextp = VN_AS(itemsp->nextp(), NodeExpr);
+        if (nextp) nextp->unlinkFrBackWithNext();
+        while (nextp) {
+            AstNodeExpr* const itemp = nextp;
+            nextp = VN_AS(itemp->nextp(), NodeExpr);
+            if (nextp) nextp->unlinkFrBackWithNext();
+            concatp = new AstConcat{itemp->fileline(), concatp, itemp};
+        }
+        return new AstReplicate{concatp->fileline(), concatp, 1};
+    }
     AstDisplay* createDisplayError(FileLine* fileline) {
         AstDisplay* nodep = new AstDisplay{fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr};
         AstNode::addNext<AstNode, AstNode>(nodep, new AstStop{fileline, false});
@@ -138,6 +154,15 @@ public:
         VL_DO_DANGLING(sizep->deleteTree(), sizep);
         return true;
     }
+    // Report a default bin declared 'ignore_bins', or a default sequence one, which is not allowed
+    static void coverBinIgnoredDefault(FileLine* fl, const string& name) {
+        fl->v3error("Default bin " << AstNode::prettyNameQ(name)
+                                   << " is declared 'ignore_bins', but a default bin cannot be "
+                                      "explicitly ignored (IEEE 1800-2023 19.5).\n"
+                                   << fl->warnMore()
+                                   << "... Suggest removing it, as values in no bins do not "
+                                      "affect coverage");
+    }
     AstNodeExpr* createGatePin(AstNodeExpr* exprp) {
         AstRange* const rangep = m_gateRangep;
         if (!rangep) return exprp;
@@ -162,8 +187,8 @@ public:
         V3ParseImp::parsep()->tagNodep(nodep);
         return nodep;
     }
-    AstNode* createTypedef(FileLine* fl, const string& name, AstNode* attrsp, AstNodeDType* basep,
-                           AstNodeRange* rangep) {
+    AstNode* createTypedef(FileLine* fl, const string& name, AstAttrOf* attrsp,
+                           AstNodeDType* basep, AstNodeRange* rangep) {
         AstTypedef* const nodep = new AstTypedef{fl, name, attrsp, VFlagChildDType{},
                                                  singletonp()->createArray(basep, rangep, false)};
         V3ParseImp::parsep()->tagNodep(nodep);
@@ -260,7 +285,7 @@ public:
         return itemsp;
     }
 
-    void setScopedSigAttr(AstNode* attrsp) {
+    void setScopedSigAttr(AstAttrOf* attrsp) {
         if (m_scopedSigAttrp) {  // clearing set attribute
             UASSERT_OBJ(!m_scopedSigAttrp->backp(), m_scopedSigAttrp, "Should not link directly");
             VL_DO_DANGLING(m_scopedSigAttrp->deleteTree(), m_scopedSigAttrp);
@@ -272,12 +297,12 @@ public:
         setScopedSigAttr(new AstAttrOf{V3ParseImp::parsep()->lexFileline(), vattrT});
     }
 
-    AstNode* cloneScopedSigAttr() const {
+    AstAttrOf* cloneScopedSigAttr() const {
         return m_scopedSigAttrp ? m_scopedSigAttrp->cloneTree(true) : nullptr;
     }
 
     void createGenericIface(AstNode* const nodep, AstNodeRange* const rangep,
-                            AstNode* sigAttrListp, FileLine* const modportFileline = nullptr,
+                            AstAttrOf* sigAttrListp, FileLine* const modportFileline = nullptr,
                             const string& modportstrp = "") {
         m_varDecl = VVarType::GPARAM;
         m_varIO = VDirection::NONE;
@@ -298,15 +323,13 @@ public:
         m_varDecl = VVarType::VAR;
     }
 
-    // Wrap all statements in the given list in an AstBegin (except those already an AstBegin)
-    static AstBegin* wrapInBegin(AstNodeStmt* stmtsp) {
-        AstBegin* resp = nullptr;
+    // Wrap each statement in the given list in an AstForkItem
+    static AstForkItem* wrapInForkItems(AstNodeStmt* stmtsp) {
+        AstForkItem* resp = nullptr;
         for (AstNodeStmt *nodep = stmtsp, *nextp; nodep; nodep = nextp) {
             nextp = VN_AS(nodep->nextp(), NodeStmt);
             if (nextp) nextp->unlinkFrBackWithNext();
-            AstBegin* beginp = VN_CAST(nodep, Begin);
-            if (!beginp) beginp = new AstBegin{nodep->fileline(), "", nodep, true};
-            resp = AstNode::addNext(resp, beginp);
+            resp = AstNode::addNext(resp, new AstForkItem{nodep->fileline(), nodep});
         }
         return resp;
     }

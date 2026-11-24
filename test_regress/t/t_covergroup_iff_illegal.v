@@ -18,6 +18,7 @@ module t;
       illegal_bins scalar = {5} iff (bin_enable);
       illegal_bins values[] = {0, 1} iff (bin_enable);
       wildcard illegal_bins wild = {3'b11?} iff (bin_enable);
+      illegal_bins others = default iff (bin_enable);
     }
   endgroup
 

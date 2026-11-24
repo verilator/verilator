@@ -27,10 +27,34 @@ module t;
   sub b_1 ();
   always begin
     // Having this @posedge here makes this a 'suspendable' process, causing
-    // the use of the FlagUnique scheme
+    // the use of the GenericGlobal scheme
     @(posedge clk);
     b_0.x[3:0] <= ~x[3:0];
     b_1.x[7:0] <= ~x;
+  end
+
+  // Whole and struct member updates in a 'suspendable' process
+  sub f_0 ();
+  sub f_1 ();
+  always begin
+    @(posedge clk);
+    f_0.x <= {2'd0, ~x};
+    f_1.s.a <= 32'(~x);
+  end
+
+  // Struct member and struct array element updates in a 'suspendable' process, the struct also
+  // written by a blocking assignment
+  sub g_0 ();
+  sub g_1 ();
+  int k = 0;
+  always begin
+    @(posedge clk);
+    g_0.s.a <= 32'(~x);
+    g_1.z[k].a <= 32'(~x);
+  end
+  initial begin
+    #1;
+    g_0.s.b = 1;
   end
 
   sub c_0 ();
@@ -67,6 +91,11 @@ module t;
     `checkh(a_1.x[7:0], 8'h33);
     `checkh(b_0.x[3:0], 4'h3);
     `checkh(b_1.x[7:0], 8'h33);
+    `checkh(f_0.x, 10'h33);
+    `checkh(f_1.s.a, 32'hffffff33);
+    `checkh(g_0.s.a, 32'hffffff33);
+    `checkh(g_0.s.b, 1);
+    `checkh(g_1.z[0].a, 32'hffffff33);
     `checkh(c_0.x[3:0], 4'h3);
     `checkh(c_0.x[9:8], 2'h1);
     `checkh(c_1.x[7:0], 8'h33);
@@ -86,6 +115,10 @@ module t;
     `checkh(a_1.x[7:0], 8'haa);
     `checkh(b_0.x[3:0], 4'ha);
     `checkh(b_1.x[7:0], 8'haa);
+    `checkh(f_0.x, 10'haa);
+    `checkh(f_1.s.a, 32'hffffffaa);
+    `checkh(g_0.s.a, 32'hffffffaa);
+    `checkh(g_1.z[0].a, 32'hffffffaa);
     `checkh(c_0.x[3:0], 4'ha);
     `checkh(c_0.x[9:8], 2'h1);
     `checkh(c_1.x[7:0], 8'haa);
@@ -104,6 +137,12 @@ module t;
 endmodule
 
 module sub;
+  typedef struct {
+    int a;
+    int b;
+  } s_t;
   logic [9:0] x;
   logic [9:0] y[99];
+  s_t s;
+  s_t z[2];
 endmodule

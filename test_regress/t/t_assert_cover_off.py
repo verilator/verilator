@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_assert_cover.v"
 
-test.compile(v_flags2=[])
+test.compile(verilator_flags2=['--timing'])
 
 test.execute()
 

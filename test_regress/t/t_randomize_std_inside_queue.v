@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
+// SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 // verilog_format: off
@@ -13,6 +14,7 @@ class Cls;
   int x;
   int int_q[$];
   int dyn[];
+  int arr[2];
 
   function new();
     x = 0;
@@ -42,6 +44,15 @@ class Cls;
     `checkd(dyn[2], 23);
     if (!(x inside {dyn})) `stop;
   endtask
+
+  task rand_elem_with_sibling();
+    int ok;
+    arr[1] = 5;
+    ok = std::randomize(arr[0]) with {arr[0] > arr[1]; arr[0] < 10;};
+    `checkd(ok, 1);
+    `checkd(arr[1], 5);
+    if (!(arr[0] > 5 && arr[0] < 10)) `stop;
+  endtask
 endclass
 
 module t;
@@ -51,6 +62,7 @@ module t;
     obj = new();
     repeat (20) obj.rand_with_queue();
     repeat (20) obj.rand_with_dyn();
+    repeat (20) obj.rand_elem_with_sibling();
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -28,6 +28,7 @@ module t;
   // verilator lint_off CMPCONST
   // verilator lint_off COLONPLUS
   // verilator lint_off COMBDLY
+  // verilator lint_off COMBDLYCALL
   // verilator lint_off CONSTRAINTIGN
   // verilator lint_off CONTASSREG
   // verilator lint_off COVERIGN
@@ -59,6 +60,7 @@ module t;
   // verilator lint_off INSECURE
   // verilator lint_off INSIDETRUE
   // verilator lint_off LATCH
+  // verilator lint_off LATCHDLY
   // verilator lint_off LITENDIAN
   // verilator lint_off MINTYPMAXDLY
   // verilator lint_off MISINDENT

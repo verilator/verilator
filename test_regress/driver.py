@@ -17,6 +17,7 @@ try:
     import pty
 except ImportError:
     pty = None
+import random
 import re
 try:
     import resource
@@ -27,6 +28,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 
 from functools import lru_cache  # Eventually use python 3.9's cache
@@ -162,6 +164,7 @@ class Capabilities:
     _cached_cmake_version = None
     _cached_cxx_version = None
     _cached_have_coroutines = None
+    _cached_have_cxx_module_scan = None
     _cached_have_dev_asan = None
     _cached_have_dev_gcov = None
     _cached_have_gdb = None
@@ -198,6 +201,25 @@ class Capabilities:
             Capabilities._cached_have_coroutines = bool(
                 Capabilities._verilator_get_supported('COROUTINES'))
         return Capabilities._cached_have_coroutines
+
+    @staticproperty
+    def have_cxx_module_scan() -> bool:  # pylint: disable=no-method-argument
+        if Capabilities._cached_have_cxx_module_scan is None:
+            if 'clang' in Capabilities.cxx_version.lower():
+                Capabilities._cached_have_cxx_module_scan = (shutil.which('clang-scan-deps')
+                                                             is not None)
+            else:
+                cxx = os.environ.get('CXX', 'c++')
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    with open(tmpdir + '/empty.cpp', 'w', encoding='utf8'):
+                        pass
+                    VtOs.run_capture('cd ' + tmpdir + ' && ' + cxx + ' -std=c++23 -fmodules -MM'
+                                     ' -fdeps-format=p1689r5 -fdeps-file=empty.deps.json'
+                                     ' -fdeps-target=empty.o -fsyntax-only empty.cpp',
+                                     check=False)
+                    Capabilities._cached_have_cxx_module_scan = os.path.exists(tmpdir +
+                                                                               '/empty.deps.json')
+        return bool(Capabilities._cached_have_cxx_module_scan)
 
     @staticproperty
     def have_dev_asan() -> bool:  # pylint: disable=no-method-argument
@@ -1217,6 +1239,8 @@ class VlTest:
             verilator_flags += ["-CFLAGS -ggdb -LDFLAGS -ggdb"]
         if self.tsan:
             verilator_flags += ["-CFLAGS -fsanitize=thread -CFLAGS -g -LDFLAGS -fsanitize=thread"]
+        if not re.search(r'-unlimited-stack', checkflags):
+            verilator_flags += ["--no-unlimited-stack"]  # Speed up bin/verilator harness
         verilator_flags += ["--x-assign unique"]  # More likely to be buggy
 
         if param['vltmt']:
@@ -1225,7 +1249,6 @@ class VlTest:
             verilator_flags += ["--threads", str(param['threads'])]
         if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["--exe"]
-        if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["../" + self.main_filename]
 
         cmdargs = [
@@ -1866,6 +1889,10 @@ class VlTest:
         return Capabilities.have_coroutines
 
     @property
+    def have_cxx_module_scan(self) -> bool:
+        return Capabilities.have_cxx_module_scan
+
+    @property
     def have_dbg(self) -> bool:
         return Capabilities.have_gdb or Capabilities.have_lldb
 
@@ -2063,7 +2090,9 @@ class VlTest:
             else:  # Future: support numeric exit code?
                 self.error("fails=" + str(fails) + " is not legal value")
         if fails and not status:
-            self.error("Exec of " + self._error_cmd_simplify(cmd) + " ok, but expected to fail")
+            if fails != 'ignore':
+                self.error("Exec of " + self._error_cmd_simplify(cmd) +
+                           " ok, but expected to fail")
         if self.errors or self._skips:
             return False
 
@@ -2749,6 +2778,57 @@ class VlTest:
                         self.error(self.top_filename + ":" + str(flineno) +
                                    ": Unknown CHECK request: " + line)
 
+    def op_count_read(self, filename: str) -> dict:
+        """Read operation counts from given __stats filename, return dict for op_count_ok."""
+        op_dict = {}
+        with open(filename, 'r', encoding="utf8") as fh:
+            for m in re.finditer(r'Stage, Operation count, (\S+)\s+([0-9.]+)', fh.read()):
+                m_v = float(m.group(2))
+                op_dict[m.group(1)] = m_v
+        if not op_dict:
+            self.error_keep_going("Operation counts not found in " + filename)
+        op_dict['_FILENAME'] = filename  # Hack to avoid making structure
+        return op_dict
+
+    def op_count_ok(self, op_dict_a: dict, op_dict_b: dict, min_ratio: float, max_ratio: float,
+                    key_re: str) -> None:
+        """Given two outputs from op_count_read, return scale factor or 0.0 if no data.
+        If given min_ratio > got_ratio > given max_ratio, give an error.
+        Only use keys matching key_re matches for collecting results."""
+        worse_ratio = 0.0
+        worse_key = None
+        for k in sorted(op_dict_a.keys()):
+            if k == '_FILENAME':
+                continue
+            a_v = op_dict_a[k]
+            b_v = op_dict_b[k]
+            if not a_v or not b_v:
+                continue
+            ratio = b_v / a_v
+            if ratio > max_ratio:
+                print(f"- op_count_ok note ratio {ratio:0.3f} in stage '{k}'" +
+                      f" counts {a_v:0.3f}:{b_v:0.3f}")
+            # Ignore equals as means didn't change anything or e.g. no debug turned on
+            if a_v == b_v:
+                continue
+            if worse_ratio < ratio and re.search(key_re, k):
+                worse_ratio = ratio
+                worse_key = k
+
+        filename_a = op_dict_a['_FILENAME']
+        filename_b = op_dict_b['_FILENAME']
+        if not worse_key:
+            self.error_keep_going(
+                f"Operation counts didn't differ between {filename_a} {filename_b}")
+            self.error_keep_going("Perhaps verilator wasn't run with --debug?")
+            return
+        print(f"- op_count_ok got ratio of {worse_ratio:.3f}" +
+              f" at stage {worse_key} in {filename_a} {filename_b}")
+        if worse_ratio < min_ratio or worse_ratio > max_ratio:
+            self.error_keep_going(
+                f"Operation count scaled incorrectly with design size at stage '{worse_key}', " +
+                f"got ratio {worse_ratio:.3f} expected {min_ratio:.3f}..{max_ratio:.3f}")
+
     @staticproperty
     def cfg_with_ccache() -> bool:  # pylint: disable=no-method-argument
         if VlTest._cached_cfg_with_ccache is None:
@@ -2822,6 +2902,9 @@ class VlTest:
         for filename in filenames:
             msg += filename + "\n"
         self.error(msg)
+
+    def file_cache_clear(self) -> None:
+        self._file_contents_cache = {}
 
     def file_contents(self, filename: str) -> str:
         if filename not in self._file_contents_cache:
@@ -3022,7 +3105,9 @@ def run_them() -> None:
     test_data = {}
     for test_py in Arg_Tests:
         test_data[test_py] = VlTest._prefilter_scenario(test_py)
-    for test_py in sorted(Arg_Tests, key=lambda key: test_data[key]['priority'], reverse=True):
+        test_data[test_py]['order_key'] = (-test_data[test_py]['priority'],
+                                           random.random() if Args.driver_rand else test_py)
+    for test_py in sorted(Arg_Tests, key=lambda key: test_data[key]['order_key']):
         for scenario in sorted(set(Args.scenarios)):
             run_it = False
             for allscarg in All_Scenarios[scenario]:
@@ -3115,10 +3200,15 @@ if __name__ == '__main__':
     parser.add_argument('--benchmark', action='store', help='enable benchmarking')
     parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
     # --debugi: see _parameter()
-    parser.add_argument('--driver-clean', action='store_true', help='clean after test passes')
+    parser.add_argument('--driver-clean',
+                        action=argparse.BooleanOptionalAction,
+                        help='clean after test passes, default set when running multiple tests')
     parser.add_argument('--driver-prune',
                         action='store_true',
                         help='clean after test passes, but keep files for test-snap/test-diff')
+    parser.add_argument('--driver-rand',
+                        action='store_true',
+                        help='run tests in random order within the same priority')
     parser.add_argument('--fail-max',
                         action='store',
                         default=None,
@@ -3234,9 +3324,14 @@ if __name__ == '__main__':
         Capabilities.warmup_cache()
         # Without this tests such as t_debug_sigsegv_bt_bad.py will occasionally
         # block on input and cause a SIGSTOP, then a "fg" was needed to resume testing.
-        print("== Many jobs; redirecting STDIN", file=sys.stderr)
-        #
+        jmsg = "== Many jobs"
+        jmsg += ": redirecting STDIN"
         sys.stdin = open("/dev/null", 'r', encoding="utf8")  # pylint: disable=consider-using-with
+        if Args.driver_clean is None and not Args.driver_prune:
+            jmsg += "; implying --driver-clean"
+            Args.driver_clean = True
+        #
+        print(jmsg, file=sys.stderr)
     else:
         # Speed up single-test makes
         Args.driver_build_jobs_n = calc_jobs()

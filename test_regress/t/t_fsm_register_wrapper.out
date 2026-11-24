@@ -263,7 +263,15 @@
           always_comb begin
             state_d = state_q;
             if (state_q == S0) begin
-              state_d = start ? S1 : S0;
+%000002       state_d = start ? S1 : S0;
+        // [FSM coverage]
+%000001        // [fsm_arc t.ifchain_u.state_q::S0->S1]
+%000000        // [fsm_arc t.ifchain_u.state_q::S1->S0]
+%000001        // [fsm_arc t.ifchain_u.state_q::S1->S2]
+%000001        // [fsm_arc t.ifchain_u.state_q::S2->S0]
+%000002        // [fsm_state t.ifchain_u.state_q::S0]
+%000001        // [fsm_state t.ifchain_u.state_q::S1]
+%000001        // [fsm_state t.ifchain_u.state_q::S2]
             end
             else if (state_q == S1) begin
               state_d = S2;

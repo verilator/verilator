@@ -28,7 +28,7 @@ class AstCFunc;
 class AstVarScope;
 
 namespace V3Sched {
-class LogicByScope;
+class ProcessList;
 class CovergroupRefBindings;
 class TriggerKit;
 };  // namespace V3Sched
@@ -40,7 +40,7 @@ namespace V3Order {
 // Callable to add the indices of extra external triggers of a variable to the given set
 using ExternalTriggersProvider = std::function<void(const AstVarScope*, std::set<uint32_t>&)>;
 
-AstCFunc* order(const std::vector<V3Sched::LogicByScope*>& logic,  //
+AstCFunc* order(const std::vector<V3Sched::ProcessList*>& logic,  //
                 const V3Sched::TriggerKit& trigKit,  //
                 AstVarScope* trigVscp,  //
                 const V3Sched::CovergroupRefBindings& cgRefBindings,  //

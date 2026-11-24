@@ -458,6 +458,9 @@ string FileLine::source() const VL_MT_SAFE {
     }  // LCOV_EXCL_STOP
     return m_contentp->getLine(m_contentLineno);
 }
+string FileLine::sourceNextLine() const VL_MT_SAFE {
+    return m_contentp ? m_contentp->getLine(m_contentLineno + 1) : "";
+}
 string FileLine::sourcePrefix(int toColumn) const VL_MT_SAFE {
     const std::string src = source();
     if (toColumn > static_cast<int>(src.length())) toColumn = static_cast<int>(src.length());

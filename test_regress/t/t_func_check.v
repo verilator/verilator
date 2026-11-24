@@ -62,8 +62,6 @@ module chk (
 
   wire noxs = ((expr ^ expr) == 1'b0);
 
-  // TODO: this test is dodgy, noxs can be proven constant, so this block
-  //          should never relly trigger...
   reg hasx;
   always @(noxs) begin
     if (noxs) begin

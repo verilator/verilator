@@ -37,7 +37,6 @@ class VerilatedSaifSc final : VerilatedScTraceBase, public VerilatedSaifC {
 
 public:
     VerilatedSaifSc() {
-        spTrace()->set_time_unit(VerilatedScTraceBase::getScTimeUnit());
         spTrace()->set_time_resolution(VerilatedScTraceBase::getScTimeResolution());
     }
 

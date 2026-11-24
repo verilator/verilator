@@ -192,7 +192,7 @@ class UnrollOneVisitor final : VNVisitor {
     void emit(AstNode* stmtsp) {
         m_stmtsp = AstNode::addNextNull(m_stmtsp, stmtsp);
         if (m_state == State::FAILED) return;
-        for (const AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* const stmtp : VNList<AstNode>{stmtsp}) {
             UASSERT_OBJ(m_state != State::TERMINATED, stmtp, "Statements after JumpGo");
             // A JumpGo always redirects to the end of an enclosing JumpBlock, so it must go
             // outside the loop. The loop terminates.
@@ -211,7 +211,7 @@ class UnrollOneVisitor final : VNVisitor {
     // Returns false if the loop terminated (or we gave up)
     bool unrollOneIteration(AstNode* stmtsp) {
         // Process one body statement at a time
-        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : VNList<AstNode>{stmtsp}) {
             // Clone and process one body statement, the visitors 'emit' the results
             iterate(stmtp->cloneTree(false));
             if (m_state != State::UNROLL) return false;
@@ -240,7 +240,7 @@ class UnrollOneVisitor final : VNVisitor {
         V3Number next{&value, value.width()};
         for (size_t i = 0; i <= limit; ++i) {
             VN_AS(testp->condp(), NodeBiop)->numberOperate(cond, boundp->num(), value);
-            if (!cond.isNeqZero()) return false;
+            if (!cond.isTrue()) return false;
             next.opAdd(value, one);
             value = next;
         }
@@ -367,7 +367,7 @@ class UnrollOneVisitor final : VNVisitor {
             if (condp->isZero()) {
                 // Loop terminates
                 m_state = State::TERMINATED;
-            } else if (condp->isNeqZero()) {
+            } else if (condp->isTrue()) {
                 // Loop continues
             } else {
                 // Loop condition unknown - cannot unroll
@@ -386,9 +386,11 @@ class UnrollOneVisitor final : VNVisitor {
             AstConst* const valp = VN_CAST(V3Const::constifyEdit(nodep->rhsp()), Const);
             if (lhsp && valp && !lhsp->varp()->isForced() && !lhsp->varp()->isSigUserRWPublic()) {
                 m_bindings.set(lhsp->varScopep(), valp);
-            } else {
-                // Otherwise just like a generic statement
-                process(nodep->lhsp());
+            } else if (process(nodep->lhsp())) {
+                // Fold the substituted index of a selected bit range
+                if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
+                    V3Const::constifyEdit(selp->lsbp());
+                }
             }
         }
         emit(nodep);
@@ -397,7 +399,7 @@ class UnrollOneVisitor final : VNVisitor {
         if (process(nodep->condp())) {
             // If condition is constant, process the statements of the relevant branch instead
             if (AstConst* const condp = VN_CAST(V3Const::constifyEdit(nodep->condp()), Const)) {
-                AstNode* stmtp = condp->isNeqZero() ? nodep->thensp() : nodep->elsesp();
+                AstNode* stmtp = condp->isTrue() ? nodep->thensp() : nodep->elsesp();
                 while (stmtp && m_state == State::UNROLL) {
                     AstNode* const nextp = stmtp->nextp();
                     iterate(stmtp->unlinkFrBack());

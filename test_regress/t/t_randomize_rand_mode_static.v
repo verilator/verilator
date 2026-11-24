@@ -99,11 +99,11 @@ module t;
     s1 = new;
     s2 = new;
 
-    // ---- Test 1: getter on static rand var (initial state is enabled)
+    // ---- Test: getter on static rand var (initial state is enabled)
     `checkd(s1.sx.rand_mode(), 1);
     `checkd(s2.sx.rand_mode(), 1);
 
-    // ---- Test 2: randomize() with all rand_modes enabled satisfies constraints
+    // ---- Test: randomize() with all rand_modes enabled satisfies constraints
     repeat (20) begin
       rok = s1.randomize();
       `checkd(rok, 1);
@@ -111,7 +111,7 @@ module t;
       `check_range(s1.dy, 101, 199);
     end
 
-    // ---- Test 3: per-member set on a static rand var is shared across instances
+    // ---- Test: per-member set on a static rand var is shared across instances
     s1.sx.rand_mode(0);
     `checkd(s1.sx.rand_mode(), 0);
     `checkd(s2.sx.rand_mode(), 0);
@@ -120,7 +120,7 @@ module t;
     `checkd(s1.dy.rand_mode(), 1);
     `checkd(s2.dy.rand_mode(), 1);
 
-    // ---- Test 4: solver respects rand_mode(0) on static rand var.
+    // ---- Test: solver respects rand_mode(0) on static rand var.
     // sx is currently a valid value from Test 2; with rand_mode disabled it
     // must stay at that value across multiple randomize() calls.
     saved_sx = Simple::sx;
@@ -142,7 +142,7 @@ module t;
       `check_range(s1.dy, 101, 199);
     end
 
-    // ---- Test 5: class-level obj.rand_mode(0) flushes both per-instance
+    // ---- Test: class-level obj.rand_mode(0) flushes both per-instance
     // and static arrays. Disable everything on s1.
     s1.rand_mode(0);
     `checkd(s1.sx.rand_mode(), 0);
@@ -168,7 +168,7 @@ module t;
     `checkd(s1.dy.rand_mode(), 1);
     `checkd(s2.sx.rand_mode(), 1);
 
-    // ---- Test 6: inheritance - static rand var declared in base class,
+    // ---- Test: inheritance - static rand var declared in base class,
     // accessed via a derived-class instance.
     d1 = new;
     d2 = new;
@@ -197,7 +197,7 @@ module t;
       if (d1.base_dy == 0) $stop;
     end
 
-    // ---- Test 7: class-level rand_mode(N) on a class with ONLY static rand members.
+    // ---- Test: class-level rand_mode(N) on a class with ONLY static rand members.
     so1 = new;
     so2 = new;
     `checkd(so1.sa.rand_mode(), 1);
@@ -211,7 +211,7 @@ module t;
     `checkd(so1.sa.rand_mode(), 1);
     `checkd(so1.sb.rand_mode(), 1);
 
-    // ---- Test 8: inline obj.randomize(static_var) save/restore.
+    // ---- Test: inline obj.randomize(static_var) save/restore.
     // The inline form must route through the static rand_mode array, not
     // the per-instance one (whose index space is different / smaller).
     s1.sx.rand_mode(1);
@@ -226,7 +226,7 @@ module t;
     `checkd(s1.sx.rand_mode(), 1);
     `checkd(s2.sx.rand_mode(), 1);  // shared - also 1
 
-    // ---- Test 9: Base AND Derived each declare own static rand var.
+    // ---- Test: Base AND Derived each declare own static rand var.
     // Derived's static array must be sized to fit BOTH base_s and der_s
     // even though super.new() runs Base's init first.
     ds1 = new;
@@ -258,7 +258,7 @@ module t;
     bs1 = new;
     `checkd(bs1.base_s.rand_mode(), 0);  // still disabled
 
-    // ---- Test 10: two static rand vars in Base; Derived must accumulate inherited indices.
+    // ---- Test: two static rand vars in Base; Derived must accumulate inherited indices.
     dt1 = new;
     `checkd(dt1.base2_a.rand_mode(), 1);
     `checkd(dt1.base2_b.rand_mode(), 1);
@@ -278,7 +278,7 @@ module t;
       if (BaseTwo::base2_a == 0) $stop;  // still randomizing
     end
 
-    // ---- Test 11: inline randomize-with on class with static rand and no class-level constraints.
+    // ---- Test: inline randomize-with on class with static rand and no class-level constraints.
     snc1 = new;
     snc1.snc_s.rand_mode(1);  // ensure static rand-mode array exists
     repeat (10) begin

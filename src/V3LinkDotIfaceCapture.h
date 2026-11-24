@@ -26,7 +26,6 @@
 #include <deque>
 #include <functional>
 #include <string>
-#include <unordered_set>
 
 class VSymEnt;
 
@@ -61,7 +60,7 @@ class V3LinkDotIfaceCapture final {
                     VIfaceCaptureTag::Kind kind, const string& cellPath,
                     const string& ownerModName);
     static int resolveCapturedRefs();
-    static void verifyNoDeadRefs(const std::unordered_set<const AstNode*>& liveNodes);
+    static void verifyNoDeadRefs();
 
 public:
     static bool enabled() { return s_enabled; }
@@ -82,7 +81,7 @@ public:
     // Walk a dot-separated cell path (e.g. "cca_io.tlb_io") starting from
     // startModp, returning the module at the end of the path.  Returns
     // nullptr if any component cannot be resolved.
-    static AstNodeModule* followCellPath(AstNodeModule* startModp, const string& cellPath);
+    static AstNodeModule* followCellPath(const AstNodeModule* startModp, const string& cellPath);
 
     static void captureTypedefContext(AstRefDType* refp, const char* stageLabel, int dotPos,
                                       const std::string& dotText, VSymEnt* dotSymp,

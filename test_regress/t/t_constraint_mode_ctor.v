@@ -26,17 +26,17 @@ module t;
     automatic ConstraintModeInCtor obj = new;
     automatic int i;
 
-    // Test 1: constraint_mode(0) in constructor should disable constraint
+    // Test: constraint_mode(0) in constructor should disable constraint
     for (i = 0; i < 20; i++) begin
       void'(obj.randomize());
       if (obj.value >= 50) $stop;
     end
 
-    // Test 2: Query constraint_mode state set in constructor
+    // Test: Query constraint_mode state set in constructor
     if (obj.low_range_c.constraint_mode != 1) $stop;
     if (obj.high_range_c.constraint_mode != 0) $stop;
 
-    // Test 3: Switch constraints at runtime
+    // Test: Switch constraints at runtime
     obj.low_range_c.constraint_mode(0);
     obj.high_range_c.constraint_mode(1);
     for (i = 0; i < 20; i++) begin

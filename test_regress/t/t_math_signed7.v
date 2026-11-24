@@ -39,9 +39,23 @@ module t (
         alu_lts = $signed(in_op1) < $signed(in_op2);
         `checkh(alu_ltu, 1'b0);
         `checkh(alu_lts, 1'b1);
-        $write("*-* All Finished *-*\n");
-        $finish;
       end
     end
   endgenerate
+
+  // Issue #9170, extended 1-bit compare must stay unsigned under ~
+  int cyc = 0;
+  logic [31:0] w;
+  logic [31:0] x;
+  wire q = {31'b0, &w} < ~{31'b0, (x < w)};
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    w <= cyc[0] ? 32'hffffffff : 32'h0;
+    x <= 0;
+    if (cyc > 2) `checkh(q, 1'b1);
+    if (cyc == 99) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
+  end
 endmodule

@@ -25,7 +25,7 @@
 // The following nodes have package pointers and are cleaned up here:
 // AstRefDType, AstEnumItemRef, AstNodeVarRef, AstNodeFTask
 // These have packagep but will not exist at this stage
-// AstPackageImport, AstDot, AstClassOrPackageRef
+// AstPackageImport, AstDot, AstClassOrPackageRef, AstSchemaRef
 //
 // Note on packagep: After the V3Scope/V3LinkDotScoped stage, package links
 // are no longer used, but their presence prevents us from removing empty
@@ -416,6 +416,12 @@ class DeadVisitor final : public VNVisitor {
             }
         }
     }
+    void visit(AstSchemaRef* nodep) override {
+        if (!m_sideEffect && !nodep->isPure()) m_sideEffect = true;
+        iterateChildren(nodep);
+        checkAll(nodep);
+        if (nodep->classOrPackagep()) nodep->classOrPackagep()->user1Inc();
+    }
     void visit(AstModportFTaskRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
@@ -485,7 +491,7 @@ class DeadVisitor final : public VNVisitor {
         }
         checkAll(nodep);
     }
-    void visit(AstMemberSel* nodep) override {
+    void visit(AstMemberRef* nodep) override {
         iterateChildren(nodep);
         if (nodep->varp()) nodep->varp()->user1Inc();
         if (nodep->fromp()->dtypep()) nodep->fromp()->dtypep()->user1Inc();  // classref
@@ -695,6 +701,7 @@ class DeadVisitor final : public VNVisitor {
     }
     bool mightElimVar(const AstVar* nodep) const {
         if (nodep->isSigPublic()) return false;  // Can't elim publics!
+        if (nodep == v3Global.rootp()->activityp()) return false;  // Read by the runtime
         if (nodep->isVpiLazyStorageKept()) return false;
         if (nodep->isPrimaryIO() || nodep->isClassMember() || nodep->sensIfacep()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;
@@ -704,16 +711,15 @@ class DeadVisitor final : public VNVisitor {
     void deadCheckScope() {
         for (bool retry = true; retry;) {
             retry = false;
-            for (std::vector<AstScope*>::iterator it = m_scopesp.begin(); it != m_scopesp.end();
-                 ++it) {
-                AstScope* const scp = *it;
+            for (auto& itr : m_scopesp) {
+                AstScope* const scp = itr;
                 if (!scp) continue;
                 if (scp->user1() == 0) {
                     UINFO(4, "  Dead AstScope " << scp);
                     scp->aboveScopep()->user1Inc(-1);
                     if (scp->dtypep()) scp->dtypep()->user1Inc(-1);
                     deleting(scp);
-                    *it = nullptr;
+                    itr = nullptr;
                     retry = true;
                 }
             }
@@ -768,26 +774,24 @@ class DeadVisitor final : public VNVisitor {
         }
         for (bool retry = true; retry;) {
             retry = false;
-            for (std::vector<AstVar*>::iterator it = m_varsp.begin(); it != m_varsp.end(); ++it) {
-                AstVar* const varp = *it;
+            for (auto& itr : m_varsp) {
+                AstVar* const varp = itr;
                 if (!varp) continue;
                 if (varp->user1() == 0) {
                     UINFO(4, "  Dead " << varp);
                     if (varp->dtypep()) varp->dtypep()->user1Inc(-1);
                     deleting(varp);
-                    *it = nullptr;
+                    itr = nullptr;
                     retry = true;
                 }
             }
         }
-        for (std::vector<AstNode*>::iterator it = m_dtypeElimsp.begin(); it != m_dtypeElimsp.end();
-             ++it) {
-            if ((*it)->user1() == 0) {
+        for (auto itr : m_dtypeElimsp) {
+            if (itr->user1() == 0) {
                 // It's possible that there if a reference to each individual member, but
                 // not to the dtype itself.  Check and don't remove the parent dtype if
                 // members are still alive.
-                if (const AstNodeUOrStructDType* const classp
-                    = VN_CAST((*it), NodeUOrStructDType)) {
+                if (const AstNodeUOrStructDType* const classp = VN_CAST(itr, NodeUOrStructDType)) {
                     bool cont = true;
                     for (AstMemberDType* const memberp : classp->memberspList()) {
                         if (memberp->user1() != 0) {
@@ -797,7 +801,7 @@ class DeadVisitor final : public VNVisitor {
                     }
                     if (!cont) continue;
                 }
-                deleting(*it);
+                deleting(itr);
             }
         }
     }

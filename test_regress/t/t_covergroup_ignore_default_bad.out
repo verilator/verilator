@@ -1,0 +1,18 @@
+%Error: t/t_covergroup_ignore_default_bad.v:13:19: Default bin 'others' is declared 'ignore_bins', but a default bin cannot be explicitly ignored (IEEE 1800-2023 19.5).
+                                                 : ... Suggest removing it, as values in no bins do not affect coverage
+   13 |       ignore_bins others = default;   
+      |                   ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_ignore_default_bad.v:17:19: Default bin 'others' is declared 'ignore_bins', but a default bin cannot be explicitly ignored (IEEE 1800-2023 19.5).
+                                                 : ... Suggest removing it, as values in no bins do not affect coverage
+   17 |       ignore_bins others[] = default iff (gate);   
+      |                   ^~~~~~
+%Error: t/t_covergroup_ignore_default_bad.v:21:19: Default bin 'others' is declared 'ignore_bins', but a default bin cannot be explicitly ignored (IEEE 1800-2023 19.5).
+                                                 : ... Suggest removing it, as values in no bins do not affect coverage
+   21 |       ignore_bins others = default sequence;   
+      |                   ^~~~~~
+%Error: t/t_covergroup_ignore_default_bad.v:25:19: Default bin 'others' is declared 'ignore_bins', but a default bin cannot be explicitly ignored (IEEE 1800-2023 19.5).
+                                                 : ... Suggest removing it, as values in no bins do not affect coverage
+   25 |       ignore_bins others = default sequence iff (gate);   
+      |                   ^~~~~~
+%Error: Exiting due to

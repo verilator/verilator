@@ -49,7 +49,7 @@ ______________________________________________________________________
   possible: `AstVar* const varp`; non-pointers never use the `p` suffix.
 - Do not use `auto` except for iterators or genuinely unwieldy types.
 - Use pre-increment (`++i`) unless you specifically need post-increment's old value.
-- Brace-initialize node and struct construction: `new AstIf{fl, condp, thenp, elsep}`.
+- Use brace-initialize node and struct construction: `new AstIf{fl, condp, thenp, elsep}`.
 - Never use C-style casts; instead use `static_cast<T>` for non-AST types and
   `VN_AS`/`VN_CAST` for AST downcasts.
 - `static constexpr` for compile-time constants, not `#define` or file-scope const.
@@ -62,6 +62,7 @@ ______________________________________________________________________
 - Start every new `.cpp` with a top-of-file comment explaining the algorithm.
 - Comments are capitalized sentences written for an unknown future reader, without
   "I"/"we"/"our"; remove commented-out code -- version control preserves history.
+- Never mention old behavior or how the code used to work.
 - No `using namespace`; prefix non-namespaced symbols with `VL`/`Vl`.
 - Prefer semantic predicates over enum comparisons: `varp->isClassMember()`, not
   `varp->varType() == VVarType::MEMBER`.
@@ -75,6 +76,11 @@ ______________________________________________________________________
   After V3Scope and before V3Descope, create them with `V3SharedTmps` (in a given
   scope, sharing the `AstVar` between scopes of a module) or
   `AstTopScope::createTemp` (in the top scope).
+- Name visitor classes `<Stage><What>Visitor` (`LinkUpwardModVisitor`), give each
+  a banner comment above the class.
+- Use braces on every `else` branch and on any multi-line loop body.
+- Use range-for (or `VNList<AstPin>{...}`) over iterator loops.
+- Use `while (true)` over `for (;;)`.
 - Use `VL_*` bit/word macros from `verilatedos.h` (`VL_WORDS_I`, `VL_MASK_I`); do
   not include `<cstdint>` directly.
 - Replace magic numbers with named `static constexpr` constants.
@@ -118,6 +124,10 @@ ______________________________________________________________________
   better for runtime, and handles diverse node types better. Prefer named
   accessors over `op1p()`..`op4p()`, and verify traversal order is preserved
   when converting manual iteration.
+
+- Be cautious of code that matches on specific AST shapes -- it may break
+  as nodes change. Modify existing or add a new Visitor class that tracks
+  context on descent.
 
 - Prefer `AstForeach` over generating unrolled loop bodies -- constant-size code
   instead of O(N); wrap the body in `AstBegin` for scope isolation.
@@ -183,6 +193,8 @@ ______________________________________________________________________
 - State what was attempted and what was found: "Instance attempts to connect to
   'PARAM' as a parameter, but it is a variable". Add a `warnMore()` suggestion
   where possible.
+- Do not split "(IEEE ...)" comments between multiple lines, move where the
+  quotes break between different lines to avoid this.
 - Name warning codes object-first and short (`ASCRANGE`, not `RANGEASC`); rename
   via `renamedTo()` so old suppressions keep working.
 - Set warning suppression on `AstVar`, not `AstVarRef` -- VarRefs get recreated
@@ -196,12 +208,12 @@ ______________________________________________________________________
 
 - O(n^2) is never acceptable -- build maps for batch lookups; any quadratic loop
   needs explicit justification in a comment.
-- Prefer `std::map` for per-module structures (many small instances); use
-  `unordered_map` only for one-per-netlist data, and never let `unordered_*`
-  iteration order reach generated output.
+- Prefer `std::unordered_map` over `std::map`, `std::unordered_set` over `std::set`.
 - Prefer `emplace` over `insert` and check the returned `.second` instead of a
   separate `find()`. `reserve()` strings and vectors when the size is estimable.
-- Add no new static or global mutable data -- statics are being eliminated for
+- Beware of `std::map` keyed by a pointer without a sorting function, as iteration
+  order might make the output vary based on memory layout. See e.g. `AstVarScopeComparator`.
+- Add minimal new static or global mutable data -- statics are being eliminated for
   future parallelism.
 - Use Verilator's fixed-width data types for model data (`CData`/`SData`/`IData`/
   `QData`/`VlWide`), not `size_t`. Process wide data word-by-word

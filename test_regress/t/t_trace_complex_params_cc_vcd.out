@@ -41,11 +41,36 @@ $timescale 1ps $end
    $scope module a_module_instantiation_with_a_very_long_name_that_once_its_signals_get_concatenated_and_inlined_will_almost_certainly_result_in_them_getting_hashed $end
     $var wire 32 H PARAM [31:0] $end
    $upscope $end
+   $scope module genblk1 $end
+    $scope module p_if $end
+     $var wire 32 I PARAM [31:0] $end
+    $upscope $end
+   $upscope $end
+   $scope module genblk2 $end
+    $scope module p_case $end
+     $var wire 32 J PARAM [31:0] $end
+    $upscope $end
+   $upscope $end
+   $scope module genblk3 $end
+    $scope module p_else_if $end
+     $var wire 32 K PARAM [31:0] $end
+    $upscope $end
+   $upscope $end
+   $scope module genblk4[0] $end
+    $scope module p_for $end
+     $var wire 32 L PARAM [31:0] $end
+    $upscope $end
+   $upscope $end
+   $scope module genblk4[1] $end
+    $scope module p_for $end
+     $var wire 32 M PARAM [31:0] $end
+    $upscope $end
+   $upscope $end
    $scope module p2 $end
-    $var wire 32 I PARAM [31:0] $end
+    $var wire 32 N PARAM [31:0] $end
    $upscope $end
    $scope module p3 $end
-    $var wire 32 J PARAM [31:0] $end
+    $var wire 32 O PARAM [31:0] $end
    $upscope $end
   $upscope $end
  $upscope $end
@@ -87,8 +112,13 @@ b0 E
 b0 F
 0G
 b100 H
-b10 I
-b11 J
+b101 I
+b110 J
+b111 K
+b1000 L
+b1001 M
+b10 N
+b11 O
 #10
 b1 #
 b11 $

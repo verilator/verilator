@@ -9,7 +9,9 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 // verilog_format: on
 
-module t;
+module t (
+    input clk
+);
 
   parameter int sliceddn[4:-3] = '{'h100, 'h101, 'h102, 'h103, 'h104, 'h105, 'h106, 'h107};
   parameter int slicedup[-3:4] = '{'h100, 'h101, 'h102, 'h103, 'h104, 'h105, 'h106, 'h107};
@@ -53,8 +55,32 @@ module t;
     `checkh(twoup[1], 'h104);
     `checkh(twoup[0], 'h103);
 
-    $write("*-* All Finished *-*\n");
-    $finish;
+  end
+
+  int nbaup[0:3];
+  int nbadn[6:1];
+  int nbasrc[3:0];
+  int cyc = 0;
+  always @(posedge clk) begin
+    cyc <= cyc + 1;
+    if (cyc == 0) begin
+      nbaup = '{1, 2, 3, 4};
+      nbadn[4:1] = nbaup;  // Reversed direction
+      `checkh(nbadn[4], 'h1);
+      `checkh(nbadn[1], 'h4);
+      nbadn[6:5] <= nbaup[2:3];
+    end
+    if (cyc == 1) begin
+      `checkh(nbadn[6], 'h3);
+      `checkh(nbadn[5], 'h4);
+      nbasrc[3:2] <= nbadn[6:5];
+    end
+    if (cyc == 2) begin
+      `checkh(nbasrc[3], 'h3);
+      `checkh(nbasrc[2], 'h4);
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
   end
 
 endmodule

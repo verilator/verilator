@@ -232,7 +232,9 @@ class LinkCellsVisitor final : public VNVisitor {
 
     // Below state needs to be preserved between each module call.
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstPackage* m_pkgp = nullptr;  // Package being visited, which is or contains m_modp
     AstVar* m_varp = nullptr;  // Current variable
+    bool m_fromBind = false;  // Visiting cells inserted by a bind directive
     VSymGraph m_mods;  // Symbol table of all module names
     std::unordered_map<string, AstPackage*> m_packages;  // Packages table
     std::unordered_set<string> m_autoLoaded;  // Names already searched for on disk
@@ -406,7 +408,7 @@ class LinkCellsVisitor final : public VNVisitor {
     }
 
     void assignParamNumbers(AstPin* const firstPinp) {
-        for (AstPin* pinp = firstPinp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+        for (AstPin* const pinp : VNList<AstPin>{firstPinp}) {
             pinp->param(true);
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
@@ -484,10 +486,12 @@ class LinkCellsVisitor final : public VNVisitor {
         // Module: Pick up modnames, so we can resolve cells later
         VL_RESTORER(m_modDepth);
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_pkgp);
         {
             // For nested modules/classes, child below parent
             if (m_modp) newEdge(vertex(m_modp), vertex(nodep), 1, false);
             m_modp = nodep;
+            if (AstPackage* const pkgp = VN_CAST(nodep, Package)) m_pkgp = pkgp;
             // Need vertex to levelize even if no edges
             vertex(m_modp);
             ++m_modDepth;
@@ -586,7 +590,10 @@ class LinkCellsVisitor final : public VNVisitor {
                 return;
             }
         }
-        newEdge(vertex(m_modp), vertex(nodep->packagep()), 1, false);
+        // Except within the package itself (e.g. a file included into the package imports it)
+        if (nodep->packagep() != m_pkgp) {
+            newEdge(vertex(m_modp), vertex(nodep->packagep()), 1, false);
+        }
     }
 
     void visit(AstBind* nodep) override {
@@ -596,12 +603,23 @@ class LinkCellsVisitor final : public VNVisitor {
         // this move to post param, which would mean we do not auto-read modules
         // and means we cannot compute module levels until later.
         UINFO(4, "Link Bind: " << nodep);
-        AstNodeModule* const modp = resolveModule(nodep, nodep->name(), m_modp->libname());
+        AstParseRef* const targetp = VN_CAST(nodep->targetp(), ParseRef);
+        if (!targetp) {
+            nodep->targetp()->v3warn(E_UNSUPPORTED,
+                                     "Unsupported: bind with dotted bind_target_scope");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        const std::string name = targetp->name();
+
+        AstNodeModule* const modp = resolveModule(nodep, name, m_modp->libname());
         if (modp && !modp->verilatorLib()) {
             AstNode* const cellsp = nodep->cellsp()->unlinkFrBackWithNext();
             // Module may have already linked, so need to pick up these new cells
             VL_RESTORER(m_modp);
+            VL_RESTORER(m_fromBind);
             m_modp = modp;
+            m_fromBind = true;
             // Important that this adds to end, as next iterate assumes does all cells
             modp->addStmtsp(cellsp);
             iterateAndNextNull(cellsp);
@@ -627,6 +645,8 @@ class LinkCellsVisitor final : public VNVisitor {
             }
         }
         nodep->user1p(m_modp);
+        // Only set, as recursive module clones are revisited outside the bind
+        if (m_fromBind) nodep->fromBind(true);
         //
         if (!nodep->modp() || cloned) {
             UINFO(4, "Link Cell: " << nodep);
@@ -804,9 +824,7 @@ class LinkCellsVisitor final : public VNVisitor {
                 if (nodep->rangep()) {
                     // Multi-dim arrays wrap one UnpackArrayDType per range, innermost first.
                     std::vector<AstRange*> rangesp;
-                    for (AstRange* rp = nodep->rangep(); rp; rp = VN_CAST(rp->nextp(), Range)) {
-                        rangesp.push_back(rp);
-                    }
+                    for (AstRange* const rp : nodep->rangepList()) rangesp.push_back(rp);
                     AstNodeDType* dtp = idtypep;
                     for (auto it = rangesp.rbegin(); it != rangesp.rend(); ++it) {
                         dtp = new AstUnpackArrayDType{nodep->fileline(), VFlagChildDType{}, dtp,
@@ -893,8 +911,7 @@ class LinkCellsVisitor final : public VNVisitor {
         UASSERT((hierIt != hierBlocks.end()) == !!v3Global.opt.hierChild(),
                 "information of the top module must exist if --hierarchical-child is set");
         // Look at the new modules, and store pointers to their names
-        for (AstNodeModule *nextp, *nodep = firstp; nodep; nodep = nextp) {
-            nextp = VN_AS(nodep->nextp(), NodeModule);
+        for (AstNodeModule* const nodep : VNList<AstNodeModule>{firstp}) {
             ++m_statModsScanned;
             if (AstPackage* const pkgp = VN_CAST(nodep, Package)) {
                 // Packages have their own global name space (IEEE 1800-2023 3.13)

@@ -99,8 +99,8 @@ module t (
   // Reading them is allowed
   int nok[2];
   always @(posedge clk) begin
-    nok[nst.da[0] != 0] <= nst.da[1];  // OK
-    nok[naa[0][0] != 0] <= 1;  // OK
+    nok[nst.da[0]!=0] <= nst.da[1];  // OK
+    nok[naa[0][0]!=0] <= 1;  // OK
   end
 
   // Continuous assignments

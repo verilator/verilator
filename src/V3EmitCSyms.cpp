@@ -19,6 +19,7 @@
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
 #include "V3ExecGraph.h"
+#include "V3Hash.h"
 #include "V3LanguageWords.h"
 #include "V3StackCount.h"
 #include "V3Stats.h"
@@ -94,6 +95,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const AstVar* const m_varp;  // Public variable
         const AstNodeModule* const m_modp;  // Module containing the variable
         const AstScope* const m_scopep;  // Scope containing the variable
+        bool m_isForceControl = false;  // Registered as part of a forceable variable
         ScopeVarData(const std::string& scopeName, const std::string& varBasePretty,
                      const AstVar* varp, const AstNodeModule* modp, const AstScope* scopep)
             : m_scopeName{scopeName}
@@ -105,6 +107,15 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     using ScopeNames = std::map<const std::string, ScopeData>;
     using ScopeModPair = std::pair<const AstScope*, AstNodeModule*>;
     using ModVarPair = std::pair<const AstNodeModule*, const AstVar*>;
+    using ScopedVar = std::pair<const AstScope*, const AstVar*>;
+    struct ScopedVarHash final {
+        std::size_t operator()(const ScopedVar& pair) const {
+            V3Hash hash;
+            hash += pair.first;
+            hash += pair.second;
+            return hash.value();
+        }
+    };
 
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current function
@@ -115,6 +126,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     std::vector<ModVarPair> m_modVars;  // Each public {mod,var}
     std::map<const std::string, ScopeFuncData> m_scopeFuncs;  // Each {scope,dpi-export-func}
     std::map<const std::string, ScopeVarData> m_scopeVars;  // Each {scope,public-var}
+    std::unordered_map<ScopedVar, ScopeVarData*, ScopedVarHash>
+        m_scopeVarsByVar;  // Registered variable identities
     ScopeNames m_scopeNames;  // Each unique AstScopeName. Dpi scopes added later
     ScopeNames m_dpiScopeNames;  // Each unique AstScopeName for DPI export
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
@@ -294,21 +307,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return vlEnumType == "VLVT_STRUCT" || vlEnumType == "VLVT_UNION";
     }
 
-    static std::pair<bool, std::string> isForceControlSignal(const AstVar* const signalVarp) {
-        // __VforceRd should not show up here because it is never public, but just in case it does,
-        // it should be skipped because forceableVarInsert creates its VerilatedVar.
-        for (const std::string forceControlSuffix : {"__VforceEn", "__VforceVal", "__VforceRd"}) {
-            const std::size_t suffixPos = signalVarp->name().find(forceControlSuffix);
-            const bool suffixFound = suffixPos != std::string::npos;
-            const bool suffixIsAtEnd
-                = suffixPos + forceControlSuffix.length() == signalVarp->name().length();
-            if (!(suffixFound && suffixIsAtEnd)) continue;
-            const std::string baseSignalName = signalVarp->name().substr(0, suffixPos);
-            return std::pair<bool, std::string>{true, baseSignalName};
-        }
-        return std::pair<bool, std::string>{false, ""};
-    }
-
     static void appendVarProperties(std::string& stmt, const std::string& vlEnumType,
                                     const std::string& vlEnumDir, const int udim, const int pdim,
                                     const std::string& bounds, const std::string& entSize = "") {
@@ -338,7 +336,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
     static std::string memberVlEnumDir(const AstScope* const scopep, const AstVar* const varp,
                                        const AstNodeDType* const dtypep) {
-        std::string out = '(' + vlEnumDirOf(scopep, varp, /*forMember=*/true);
+        std::string out = '(' + vlEnumDirOf(scopep, varp, /*forMember=*/true) + "|VLVF_MEMBER";
         const AstNodeDType* const skipDTypep = dtypep->skipRefp();
         if (skipDTypep->isSigned()) out += "|VLVF_SIGNED";
         if (const AstBasicDType* const basicp = skipDTypep->basicp()) {
@@ -346,11 +344,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         }
         out += skipDTypep->vlEnumPackedAgg();
         return out + ')';
-    }
-
-    // Name of the instance member for the given scope
-    static std::string instName(const AstScope* scopep) {
-        return "vlInst." + VIdProtect::protectIf(scopep->nameDotless(), scopep->protect());
     }
 
     // A string parameter's VPI data is its runtime .c_str()
@@ -441,9 +434,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                       const std::string& modClassName, int lazyIdx,
                                       const VarDims& dims, std::string& rowOut) {
         const bool isLazy = varp->isLazyReconstructShadow();
-        if (!isLazy && varp->isForceable() && forceControlSignalsAreValid(scopep, varp)) {
-            return TableEntryKind::FORCEABLE_RESIDUAL;
-        }
+        if (!isLazy && varp->isForceable()) return TableEntryKind::FORCEABLE_RESIDUAL;
 
         const std::string vlEnumType = varp->vlEnumType();
         if (!isLazy && needsEmittedEntSize(vlEnumType))
@@ -600,9 +591,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         }
     }
 
-    // Packed struct/union members have no storage of their own; each is a VLVF_PACKED_MEMBER row,
-    // a bit slice of the parent's storage, with the parent's storage type and entSize, and its bit
-    // offset within the parent's element 0. VPI adds any packed/unpacked index offset.
+    // Packed struct/union members have no storage of their own; each is a row that is a bit slice
+    // of the parent's storage, with the parent's storage type and entSize, and its bit offset
+    // within the parent's element 0. VPI adds any packed/unpacked index offset.
     // 'needsIndex' if an ancestor is an array, so the members are only valid after an index.
     void addPackedMemberRows(std::vector<std::string>& rows, const ScopeVarData& svd,
                              const AstScope* const scopep, const std::string& byteOffset,
@@ -619,7 +610,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             UASSERT_OBJ(dims.udim == 0, itemp, "Unpacked dimension in packed struct/union");
             std::string flags
                 = memberVlEnumDir(scopep, svd.m_varp, itemDTypep) + lazyRematFlags(svd.m_varp);
-            flags += "|VLVF_PACKED_MEMBER";
             if (needsIndex) flags += "|VLVF_PACKED_NEEDS_INDEX";
             rows.emplace_back("{\"" + V3OutFormatter::quoteNameControls(prettyName) + "\", "
                               + byteOffset + ", " + tableRowProps(itemp, vlEnumType, flags, dims)
@@ -698,34 +688,21 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += ", ";
         stmt += varp->vlEnumDir();  // VLVD_IN etc
         stmt += ", &(";
-        stmt += varExpr + "__VforceRd";
+        // The read helper is a separate member with its own path and protected name.
+        stmt += "vlSymsp->" + instName(scopep) + "." + varName(varp->forceRdVarp());
         stmt += "), \"" + V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty))
                 + "__VforceRd" + '"';
         stmt += ", {";
 
-        for (const std::string forceControlSuffix : {"__VforceEn", "__VforceVal"}) {
-            const std::string enableSignalKey
-                = getKeyName(scopep, varp->name() + forceControlSuffix);
-            const std::map<const std::string, ScopeVarData>::const_iterator itpair
-                = m_scopeVars.find(enableSignalKey);
-
-            if (itpair == m_scopeVars.end()) {
-                varp->v3fatalSrc("Signal "
-                                 << varp->prettyNameQ()
-                                 << " is marked forceable, but the force control signal '"
-                                 << varp->name() << forceControlSuffix
-                                 << "' can not be found in m_scopeVars with key '"
-                                 << enableSignalKey << "'.");
-            }
-
-            const ScopeVarData& svd = itpair->second;
-            const AstScope* const scopep = svd.m_scopep;
-            const AstVar* const varp = svd.m_varp;
-            const VarDims dims = dimsFor(svd);
-            stmt
-                += insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, boundsString(dims));
-            if (forceControlSuffix == "__VforceEn") stmt += ",";
-        }
+        const ScopeVarData& enable = forceControlScopeVar(scopep, varp, varp->forceEnVarp());
+        const VarDims enableDims = dimsFor(enable);
+        stmt += insertVarStatement(enable, enable.m_scopep, enable.m_varp, enableDims.udim,
+                                   enableDims.pdim, boundsString(enableDims));
+        stmt += ",";
+        const ScopeVarData& value = forceControlScopeVar(scopep, varp, varp->forceValVarp());
+        const VarDims valueDims = dimsFor(value);
+        stmt += insertVarStatement(value, value.m_scopep, value.m_varp, valueDims.udim,
+                                   valueDims.pdim, boundsString(valueDims));
 
         stmt += "}";
         stmt += ", ";
@@ -737,85 +714,33 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return stmt;
     }
 
-    static std::string getKeyName(const AstScope* const scopep, const std::string& signal_name) {
-        // Copies the process from `addScopeVarEntry` which created the keys in the first place, in
-        // order
-        // signal can be found.
-        std::string whole = scopep->name() + "__DOT__" + signal_name;
-        std::string scpName;
-        if (VString::startsWith(whole, "__DOT__TOP")) whole.replace(0, 10, "");
-        const std::string::size_type dpos = whole.rfind("__DOT__");
-        if (dpos != std::string::npos) { scpName = whole.substr(0, dpos); }
-        const std::string scpSym = scopeSymString(VName::dehash(scpName));
-        return scpSym + " " + signal_name;
+    ScopeVarData& forceControlScopeVar(const AstScope* const scopep, const AstVar* const varp,
+                                       const AstVar* const controlVarp) const {
+        const auto it = m_scopeVarsByVar.find(ScopedVar{scopep, controlVarp});
+        UASSERT_OBJ(it != m_scopeVarsByVar.end(), varp,
+                    "Forceable variable has no registered force control signal.");
+        return *it->second;
     }
 
-    bool baseSignalIsValid(const AstScope* const scopep, const AstVar* const controlSignalVarp,
-                           const std::string& baseSignalName) const {
-        const std::string baseSignalKey = getKeyName(scopep, baseSignalName);
-        const std::map<const std::string, ScopeVarData>::const_iterator baseSignalIt
-            = m_scopeVars.find(baseSignalKey);
-        if (baseSignalIt == m_scopeVars.end()) {
-            // This means that the signal is forceable, but not public, so only the force control
-            // signals show up in the m_scopeVars, but not the base signal itself.
-            // Expect this branch not to be hit, because `baseSignalIsPublic` is checked before
-            // this, so this function will not get called in that case.
-            return false;
-        } else {
-            const AstVar* const baseSignalVarp = baseSignalIt->second.m_varp;
-            if (m_scopeVars.count(baseSignalName) > 1) {
-                baseSignalVarp->v3fatalSrc(
-                    "Found Signal " << baseSignalName
-                                    << ", but also found at least one other signal with name"
-                                    << baseSignalName << " occurring in the same scope.");
-                return false;
-            }
-            if (!baseSignalVarp->isForceable()) {
-                controlSignalVarp->v3fatalSrc(
-                    "Found signal " << controlSignalVarp->prettyNameQ()
-                                    << " which is a force control signal, but the base signal "
-                                    << baseSignalVarp->prettyNameQ()
-                                    << " is not marked as forceable.");
-                return false;
+    void collectForceControls() {
+        if (!v3Global.hasForceableSignals()) return;
+        for (auto& entry : m_scopeVars) {
+            ScopeVarData& svd = entry.second;
+            const bool inserted
+                = m_scopeVarsByVar.emplace(ScopedVar{svd.m_scopep, svd.m_varp}, &svd).second;
+            UASSERT_OBJ(inserted, svd.m_varp,
+                        "Registered variable has multiple entries in the same scope.");
+        }
+        for (const auto& entry : m_scopeVars) {
+            const ScopeVarData& svd = entry.second;
+            const AstVar* const varp = svd.m_varp;
+            if (!varp->isForceable()) continue;
+            UASSERT_OBJ(varp->forceRdVarp() && varp->forceEnVarp() && varp->forceValVarp(), varp,
+                        "Forceable variable has incomplete force helper links.");
+            for (const AstVar* const controlVarp : {varp->forceEnVarp(), varp->forceValVarp()}) {
+                forceControlScopeVar(svd.m_scopep, varp, controlVarp).m_isForceControl = true;
             }
         }
-        return true;
-    }
-
-    // m_scopeVars holds only public and --vpi-lazy retained variables, and shadows under
-    // their own names
-    bool baseSignalIsPublic(const AstScope* const scopep,
-                            const std::string& baseSignalName) const {
-        return m_scopeVars.count(getKeyName(scopep, baseSignalName));
-    }
-
-    bool forceControlSignalsAreValid(const AstScope* const scopep,
-                                     const AstVar* const baseSignalVarp) const {
-        constexpr std::array<const char*, 2> forceControlSuffixes = {"__VforceEn", "__VforceVal"};
-        return std::all_of(
-            forceControlSuffixes.begin(), forceControlSuffixes.end(),
-            [scopep, baseSignalVarp, this](const std::string& forceControlSuffix) {
-                const std::string controlSignalName = baseSignalVarp->name() + forceControlSuffix;
-                const std::string controlSignalKey = getKeyName(scopep, controlSignalName);
-                const std::size_t controlSignalCount = m_scopeVars.count(controlSignalKey);
-                if (controlSignalCount == 0) {
-                    baseSignalVarp->v3fatalSrc("Signal "
-                                               << baseSignalVarp->prettyNameQ()
-                                               << " is marked forceable, but the control signal '"
-                                               << controlSignalName
-                                               << "' can not be found in m_scopeVars with key '"
-                                               << controlSignalKey << "'.");
-                    return false;
-                }
-                if (controlSignalCount > 1) {
-                    baseSignalVarp->v3fatalSrc("The control signal '"
-                                               << controlSignalName << "' for forceable signal "
-                                               << baseSignalVarp->prettyNameQ()
-                                               << " occurs several times within the same scope.");
-                    return false;
-                }
-                return true;
-            });
     }
 
     /// (scp, m_vpiScopeCandidates, m_scopeNames) -> m_scopeNames
@@ -918,8 +843,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
         for (AstIntfRef* const intfRefp : cellp->intfRefspList()) {
             const std::string refName = AstNode::vpiName(intfRefp->name());
-            // Assume only references under the same parent scope reference the
-            // same interface. Same limitation as the trace path in V3TraceDecl.
+            // Assume only references under the same parent scope reference the same interface.
+            // TODO: This is not actually correct. An interface can propagate upwards and
+            //       sideways when passed to a port via a downward hierarchical reference,
+            //       which we will miss here.
             if (!VString::startsWith(refName, parentPath)) continue;
             m_ifaceRefs.emplace_back(nodep, scopeSymString(intfRefp->parentName()), refName,
                                      AstNode::vpiName(intfRefp->baseName()),
@@ -986,6 +913,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         // Collect list of scopes
         iterateChildrenConst(nodep);
         varsExpand();
+        collectForceControls();
 
         if (v3Global.opt.vpi()) buildVpiHierarchy();
 
@@ -1149,8 +1077,15 @@ void EmitCSyms::emitSymHdr() {
     ofp()->putsIntTopInclude();
     puts("#include \"verilated.h\"\n");
     if (v3Global.needTraceDumper()) {
-        for (const string& base : v3Global.opt.traceSourceLangs())
-            puts("#include \"" + base + ".h\"\n");
+        // $dump* writes the trace format the model is built with
+        const std::string fileSuffix = optSystemC() ? "_sc" : "_c";
+        const std::string classSuffix = optSystemC() ? "Sc" : "C";
+        for (const std::string& format : {"Fst"s, "Saif"s, "Vcd"s}) {
+            puts("#if VM_TRACE_" + VString::upcase(format) + "\n");
+            puts("#include \"verilated_" + VString::downcase(format) + fileSuffix + ".h\"\n");
+            puts("using __VDumper = Verilated" + format + classSuffix + ";\n");
+            puts("#endif\n");
+        }
     }
     if (v3Global.opt.usesProfiler()) puts("#include \"verilated_profiler.h\"\n");
 
@@ -1200,15 +1135,8 @@ void EmitCSyms::emitSymHdr() {
         // should call a global dumpperp
         puts("bool __Vm_dumping = false;  // Dumping is active\n");
         puts("VerilatedMutex __Vm_dumperMutex;  // Protect __Vm_dumperp\n");
-        puts(v3Global.opt.traceClassLang()
-             + "* __Vm_dumperp VL_GUARDED_BY(__Vm_dumperMutex) = nullptr;"
-               "  /// Trace class for $dump*\n");
-    }
-    if (v3Global.opt.trace()) {
-        puts("bool __Vm_activity = false;"
-             "  ///< Used by trace routines to determine change occurred\n");
-        puts("uint32_t __Vm_baseCode = 0;"
-             "  ///< Used by trace routines when tracing multiple models\n");
+        puts("__VDumper* __Vm_dumperp VL_GUARDED_BY(__Vm_dumperMutex) = nullptr;"
+             "  // Trace class for $dump*\n");
     }
     if (v3Global.hasEvents()) {
         if (v3Global.assignsEvents()) {
@@ -1414,12 +1342,7 @@ void EmitCSyms::emitVarTables() {
         && m_lazyReconFnTables.empty() && m_combMaskRows.empty())
         return;
     puts("\n// VPI VARIABLE/SCOPE TABLES\n");
-    // offsetof on the (non-standard-layout) generated module/Syms classes is well
-    // defined on all supported compilers but warns; suppress just here.
-    puts("#if defined(__GNUC__)\n");
-    puts("# pragma GCC diagnostic push\n");
-    puts("# pragma GCC diagnostic ignored \"-Winvalid-offsetof\"\n");
-    puts("#endif\n");
+    putOffsetofPragmaPush();
     if (!m_varDims.empty()) {
         puts("static const int32_t " + varDimsTableName() + "[] = {\n");
         for (size_t i = 0; i < m_varDims.size(); i += 2) {
@@ -1498,9 +1421,7 @@ void EmitCSyms::emitVarTables() {
         }
         puts("};\n");
     }
-    puts("#if defined(__GNUC__)\n");
-    puts("# pragma GCC diagnostic pop\n");
-    puts("#endif\n");
+    putOffsetofPragmaPop();
     if (v3Global.opt.vpi() || !m_ifaceRefTableRows.empty()) {
         // Every module is a Syms member, so this bounds all 32 bit Syms offsets: hierarchy,
         // interface reference and --vpi-lazy descriptor.
@@ -1640,6 +1561,10 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
     }
 
     if (v3Global.opt.coverage()) {
+        if (v3Global.opt.coveragePerInstance()) {
+            // So the option applies whichever main writes coverage
+            stmts.add("vlSymsp->_vm_contextp__->coveragep()->forcePerInstance(true);");
+        }
         stmts.add("// Setup each module's pointer back to symbol table (for public functions)");
         for (const ScopeModPair& i : m_scopes) {
             const AstScope* const scopep = i.first;
@@ -1776,14 +1701,8 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                 const VarDims dims = dimsFor(svd);
                 const bool isLazy = varp->isLazyReconstructShadow();
 
-                // Force-control signals fold into the base signal's forceable insert.
-                if (!isLazy) {
-                    const std::pair<bool, std::string> fc = isForceControlSignal(varp);
-                    if (fc.first && baseSignalIsPublic(scopep, fc.second)
-                        && baseSignalIsValid(scopep, varp, fc.second)) {
-                        continue;
-                    }
-                }
+                // Actual force-control declarations fold into the base variable's insert.
+                if (svd.m_isForceControl) continue;
 
                 int maskIdx = -1;
                 if (!isLazy && V3VpiLazy::combOf(scopep, varp) == VVpiLazyComb::PARTIAL) {
@@ -2026,7 +1945,7 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
         puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
         puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
         puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
-        puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
+        puts("__Vm_dumperp = new __VDumper();\n");
         puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
         puts("const std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
         puts("__Vm_dumperp->open(dumpfile.c_str());\n");
@@ -2048,7 +1967,6 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
             const std::string op = de ? ">>" : "<<";
             puts("\nvoid " + symClassName() + "::" + funcname + "(" + classname + "& os) {\n");
             puts("// Internal state\n");
-            if (v3Global.opt.trace()) puts("os" + op + "__Vm_activity;\n");
             puts("os " + op + " __Vm_didInit;\n");
             if (v3Global.opt.vpiLazy()) {
                 if (de) {
@@ -2108,10 +2026,8 @@ void EmitCSyms::emitDpiHdr() {
     // Unpacked structures passed as C structures (IEEE 1800-2023 H.7.8)
     std::set<std::string> structNames;
     for (const AstCFunc* const nodep : m_dpis) {
-        for (const AstNode* const argp : nodep->argspList()) {
-            if (const AstVar* const portp = VN_CAST(argp, Var)) {
-                emitDpiStruct(portp->dtypep(), structNames);
-            }
+        for (const AstVar* const portp : nodep->argspList()) {
+            emitDpiStruct(portp->dtypep(), structNames);
         }
     }
     if (!structNames.empty()) puts("\n");
@@ -2207,13 +2123,11 @@ void EmitCSyms::emitDpiImp() {
         puts("// DPI export" + sourceLoc + "\n");
         putns(nodep, "return " + topClassName() + "::" + name + "(");
         std::string comma;
-        for (const AstNode* const stmtp : nodep->argspList()) {
-            if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
-                if (portp->isIO() && !portp->isFuncReturn()) {
-                    puts(comma);
-                    comma = ", ";
-                    putns(portp, portp->name());
-                }
+        for (const AstVar* const portp : nodep->argspList()) {
+            if (portp->isIO() && !portp->isFuncReturn()) {
+                puts(comma);
+                comma = ", ";
+                putns(portp, portp->name());
             }
         }
         puts(");\n");

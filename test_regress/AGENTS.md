@@ -53,19 +53,32 @@ ______________________________________________________________________
   `.py` drivers carry the standard driver header -- distribution tests check
   headers on every committed file.
 - Use `--binary` instead of `--exe --main --timing` -- it implies the others.
-- Error tests use `test.compile(fails=True, expect_filename=test.golden_filename)`
-  (or `test.lint(...)`) and must not call `test.execute()`.
+- Error tests use `test.lint(fails=True, expect_filename=test.golden_filename)`
+  and must not call `test.execute()`.
+- Error tests should use `test.lint(fails=True, ...` instead of `test.compile(fails=True, ...)`.
+- Make multiple `.py` driver files instead of calling `test.compile` multiple
+  times in the same `.py`, unless there is lots of setup needed.
 - Use `.out` golden files with `expect_filename` instead of inline `expect`
   regex strings -- goldens are diffable and maintainable.
+- Avoid grep of generated C++ or solver logs; prefer to check behavior from
+  the Verilog so the test is not sensitive to internal changes.
 - Use `test.glob_one()`/`test.glob_some()` and `test.timeout()` instead of raw
   `glob.glob()` and manual `time.time()` measurements.
+- Use `test.name` or another appropriate `test.` variable (e.g
+  `test.obj_dir`, `test.pli_filename`) instead of hardcoding the test name in the .py.
 - Coverage tests run `verilator_coverage` and verify individual bins and points,
   not just aggregate percentages.
+- Tests of optimization (`t_opt_*`) should have stats that are grep-checked in the .py.
 - Assert optimization stats with exact expected counts:
   `test.file_grep(test.stats, r'Optimizations, ...\s+(\d+)', N)`.
 - Add a `_protect_ids` variant when a feature emits user identifiers or filenames.
 - Use conservative thread counts (2 or fewer) in multithreaded tests.
-- Avoid `-Wno-` warning disables, instead disable using `verilator lint_off`/`verilator lint_on` around the appropriate lines in the `.v`.
+- Do not use `-O0`; disable only the needed optimization with `-fno-<opt>`.
+- Avoid `-Wno-` warning disables unless saves making multiple .v files,
+  instead disable using `verilator lint_off`/`verilator lint_on` around the
+  appropriate lines in the `.v`.
+- Match neighboring drivers: a blank line after the license header in every new
+  file, a blank line before each `test.run` and `test.passes`, and `test.name`.
 
 ## Golden .out files
 
@@ -124,8 +137,8 @@ ______________________________________________________________________
   the language forces a declaration elsewhere (ports, module-level items), keep
   it as close as it can be rather than contorting the test.
 - Use the `checkh`/`checkd`/`checks` assertion macros, not manual
-  `if`/`$display`/`$stop` sequences. Note `checkh` prints with `%p`, which renders
-  integers as hex -- use `checkd` for integer comparisons.
+  `if`/`$display`/`$stop` sequences. Accept `checkd` or `checkh` as nearly
+  interchangable for small numbers; use `checkh` for large hex values.
 - Use the `` `stop `` macro rather than direct `$stop`.
 - Drive logic with runtime-varying inputs (counters, CRC/LFSR registers) so
   constant folding cannot pre-evaluate the logic under test; check behavior across
@@ -142,3 +155,8 @@ ______________________________________________________________________
   typedef-wrapped variants.
 - Assert non-blocking-assignment results in the cycle immediately after they take
   effect, before later overwrites, using indices that change post-NBA.
+- Do not number tests e.g. `Test 1: ` just use `Test: `, to make it easier
+  to resolve conflicts and later add tests in the middle.
+- Comments in tests describe expected behavior, never how the implementation works.
+- For array features cover fixed, dynamic (`[]`), queue (`[$]`), and associative
+  (`[int]`) forms.

@@ -80,14 +80,27 @@ class UdpVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstUdpTable* nodep) override {
+        // The grammar accepts 'table' in any module, as it shares rules with primitives
+        if (!m_primp) {
+            nodep->v3error("UDP table used outside primitive (IEEE 1800-2023 29.3)");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        if (m_outputVars.empty()) {
+            m_primp->v3error("No output port for UDP table, there must be one output port"
+                             " (IEEE 1800-2023 29.3)");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
         FileLine* const fl = nodep->fileline();
         if (m_outputVars.size() != 1) {
             m_outputVars.back()->v3error(
-                m_outputVars.size()
-                << " output ports for UDP table, there must be one output port");
+                m_outputVars.size() << " output ports for UDP table, there must be one output port"
+                                       " (IEEE 1800-2023 29.3.1)");
         }
-        if (!m_isFirstOutput && m_outputVars.size()) {
-            m_inputVars[0]->v3error("First UDP port must be the output port");
+        if (!m_isFirstOutput) {
+            m_inputVars[0]->v3error(
+                "First UDP port must be the output port (IEEE 1800-2023 29.3.1)");
         }
         m_oFieldVarp = m_outputVars[0];
 
@@ -101,11 +114,12 @@ class UdpVisitor final : public VNVisitor {
     void visit(AstUdpTableLine* nodep) override {
         FileLine* const fl = nodep->fileline();
         if (!nodep->udpIsCombo() && !m_oFieldVarp->isBitLogic()) {
-            m_oFieldVarp->v3error("For sequential UDP, the output must be of 'reg' data type");
+            m_oFieldVarp->v3error("For sequential UDP, the output must be of 'reg' data type"
+                                  " (IEEE 1800-2023 29.3.2)");
         }
         if (nodep->udpIsCombo() && m_oFieldVarp->isBitLogic()) {
-            m_oFieldVarp->v3error(
-                "For combinational UDP, the output must not be a 'reg' data type");
+            m_oFieldVarp->v3error("For combinational UDP, the output must not be a 'reg' data type"
+                                  " (IEEE 1800-2023 29.3.2)");
         }
         AstNode* iNodep = nodep->iFieldsp();
         AstNode* oNodep = nodep->oFieldsp();
