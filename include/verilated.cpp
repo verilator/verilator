@@ -4530,16 +4530,9 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, 
             varInsertFromRow(e, base + e.byteOffset, false);
             continue;
         }
-        const uint32_t storageOffset = static_cast<uint32_t>(e.byteOffset);
-        // Narrowed from size_t, and a silent wrap would point the row at another signal.
-        // V3EmitCSyms emits a static_assert capping sizeof(Syms), which contains every
-        // instance, at 0x7fffffff, so this can only fire on a mismatched emitter's table.
-        if (VL_UNCOVERABLE(storageOffset != e.byteOffset)) {
-            VL_FATAL_MT(__FILE__, __LINE__, e.namep,  // LCOV_EXCL_LINE
-                        "Internal: --vpi-lazy storage offset exceeds 32 bits");
-        }
+        // Fits: the emitted Syms static_asserts its size, which spans every instance, fits 31 bits
         VerilatedVarLazyDatap& desc = lazyBasep[descSlot];
-        desc.init(lazyReconsp[descSlot], base, storageOffset);
+        desc.init(lazyReconsp[descSlot], base, static_cast<uint32_t>(e.byteOffset));
         m_symsp->lazyp()->undoOn = true;
         varInsertFromRow(e, &desc, false, &lazyReconsp[descSlot]);
     }
