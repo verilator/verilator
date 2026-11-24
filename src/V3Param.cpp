@@ -1016,7 +1016,8 @@ class ParamProcessor final {
             iterateChildren(nodep);
         }
 
-        void relinkPins(const AstNode* const parentp, VNList<AstPin> list, bool relinkRoot = false) {
+        void relinkPins(const AstNode* const parentp, VNList<AstPin> list,
+                        bool relinkRoot = false) {
             if (parentp && (relinkRoot || parentp != m_rootp) && parentp->clonep()) {
                 for (AstPin* const pinp : list) {
                     UINFO(10, "[PinRelinkVisitor] Relinking: " << pinp);
