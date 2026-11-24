@@ -84,8 +84,6 @@ t (vpiModule) t  vpiDefName=t
         *undefined*:
         a (vpiReg) t.us_comb.a 
         b (vpiReg) t.us_comb.b 
-    a (vpiReg) t.us_comb.a 
-    b (vpiReg) t.us_comb.b 
     v_comb (vpiReg) t.v_comb 
     vec (vpiReg) t.vec 
     w (vpiReg) t.w 

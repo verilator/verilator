@@ -124,7 +124,6 @@
 
 #include "V3Decompose.h"
 
-#include "V3MemberMap.h"
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
 #include "V3VNUserAllocator.h"
@@ -386,13 +385,10 @@ protected:
 class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
     // NODE STATE
     //  AstVar::user1()             -> int: bit 0: eligible, bit 1: evaluated, see isEligible
-    //  AstStructDType::user1()     -> bool: members annotated with their indices
-    //  AstMemberDType::user1()     -> uint64_t: component index of the member
     //  AstNodeExpr::user1u()       -> Place*: the one an assignment side addresses exactly
     const VNUser1InUse m_user1InUse;
 
     // STATE
-    VMemberMap m_memberMap;  // Struct members by name
     AstNodeAssign* m_assignp = nullptr;  // The visited assignment iff splittable
 
     // METHODS
@@ -484,15 +480,10 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
         if (AstStructSel* const selp = VN_CAST(exprp, StructSel)) {
             if (Place* const fromp = resolveChain(selp->fromp(), chain)) {
                 if (!isUnpacked(fromp->dtypep)) return nullptr;
-                AstStructDType* const structp = VN_AS(fromp->dtypep->skipRefp(), StructDType);
-                // Annotate member indices of the struct on first encounter
-                if (!structp->user1SetOnce()) {
-                    const std::vector<Component>& compsr = dtypeComponents(structp);
-                    for (size_t i = 0; i < compsr.size(); ++i) compsr[i].memberp->user1(i);
-                }
-                const AstNode* const memberp = m_memberMap.findMember(structp, selp->name());
-                UASSERT_OBJ(memberp, selp, "Struct member not found: " << selp->name());
-                Place* const childp = componentOf(fromp, memberp->user1());
+                // As for packed structs, component 0 is the last declared member
+                const AstMemberDType* const memberp = selp->memberp();
+                const int idx = memberp->parentp()->nMembers() - 1 - memberp->index();
+                Place* const childp = componentOf(fromp, idx);
                 fromp->wantsSplit = true;
                 chain.push_back({selp, childp, 0});
                 return childp;
@@ -932,9 +923,7 @@ class DecomposeRewrite final : public VNDeleter, public DecomposeBase {
             return new AstArraySel{flp, fromp, i};
         }
         // Otherwise must be an unpacked struct, so a StructSel
-        AstStructSel* const selp = new AstStructSel{flp, fromp, comp.memberp->name()};
-        selp->dtypep(comp.dtypep);
-        return selp;
+        return new AstStructSel{flp, fromp, comp.memberp};
     }
 
     // Leaf terms of a Concat/Replicate tree, in LSB order, or the expression itself if neither

@@ -277,7 +277,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeModule* const genModp = VN_AS(genVarp->user2p(), NodeModule);
         const int width = enumDtp->width();
         std::string constraint = "(__Vbv (or";
-        for (AstEnumItem* const itemp : enumDtp->itemspList()) {
+        for (AstEnumItem* const itemp : enumDtp->originalOrThisDTypep()->itemspList()) {
             const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
             constraint += " (= " + smtName + " (_ bv" + cvtToStr(vconstp->toUInt()) + " "
                           + cvtToStr(width) + "))";
@@ -305,24 +305,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
     }
 
-    // Mark the one directly-referenced member; it must reach the solver even when it
-    // carries no rand qualifier (the constraint refers to it).
-    void markConstrainedRandMember(AstStructDType* const structp, const std::string& name) {
-        AstMemberDType* const memberp
-            = VN_CAST(m_memberMap.findMember(structp, name), MemberDType);
-        UASSERT_OBJ(memberp, structp, "Constraint references unknown struct member " << name);
-        memberp->markConstrainedRand(true);
-    }
-
     // True when the aggregate is reached through rand-qualified struct members only
     bool isRandQualifiedPath(const AstNodeExpr* nodep) {
         while (nodep) {
             if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
-                if (AstStructDType* const structp
-                    = VN_CAST(selp->fromp()->dtypep()->skipRefp(), StructDType)) {
-                    const AstMemberDType* const memberp
-                        = VN_CAST(m_memberMap.findMember(structp, selp->name()), MemberDType);
-                    if (memberp && !memberp->rand().isRandomizable()) return false;
+                if (VN_IS(selp->memberp()->parentp(), StructDType)
+                    && !selp->memberp()->rand().isRandomizable()) {
+                    return false;
                 }
                 nodep = selp->fromp();
             } else if (const AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
@@ -651,6 +640,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             selp = new AstArraySel{fl, arrayp, idxp};
         else if (VN_IS(arrDtp, AssocArrayDType))
             selp = new AstAssocSel{fl, arrayp, idxp};
+        else if (VN_IS(arrDtp, WildcardArrayDType))
+            selp = new AstWildcardSel{fl, arrayp, idxp};
         UASSERT_OBJ(selp, arrayp, "Selecting from non-array?");
         selp->dtypep(arrDtp->subDTypep());
         return selp;
@@ -1746,10 +1737,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeExpr* const origp = outermost ? nodep->cloneTree(false) : nullptr;
         VL_RESTORER(m_structSel);
         m_structSel = true;
-        if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), StructDType)) {
+        AstNodeUOrStructDType* const structp = nodep->memberp()->parentp();
+        if (VN_IS(structp, StructDType)) {
             AstNodeExpr* const fromp = nodep->fromp();
-            AstStructDType* const structp = VN_AS(fromp->dtypep()->skipRefp(), StructDType);
-            markConstrainedRandMember(structp, nodep->name());
+            // The directly-referenced member must reach the solver even when it carries no rand
+            // qualifier (the constraint refers to it)
+            nodep->memberp()->markConstrainedRand(true);
             if (isRandQualifiedPath(fromp)) {
                 markStructConstrainedRandRecurse(fromp->dtypep());
             } else {
@@ -1761,9 +1754,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeExpr* const fromp = VN_IS(nodep->fromp(), ArraySel)
                                            ? VN_AS(nodep->fromp(), ArraySel)->fromp()
                                            : VN_AS(nodep->fromp(), CMethodHard)->fromp();
-            AstStructDType* const structp
-                = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType);
-            markConstrainedRandMember(structp, nodep->name());
             if (isRandQualifiedPath(fromp)) {
                 markStructConstrainedRandRecurse(fromp->dtypep()->skipRefp()->subDTypep());
             } else {
@@ -2926,8 +2916,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (nodep->method() == VCMethod::ARRAY_INSIDE) {
             const bool randArr = nodep->fromp()->user1();
 
-            AstVar* const newVarp
-                = new AstVar{fl, VVarType::BLOCKTEMP, "__Vinside", nodep->findIntDType()};
+            const AstNodeDType* const arrDtp = nodep->fromp()->dtypep()->skipRefp();
+            AstNodeDType* idxDtp;
+            if (const AstAssocArrayDType* const adtp = VN_CAST(arrDtp, AssocArrayDType)) {
+                idxDtp = adtp->keyDTypep();
+            } else if (VN_IS(arrDtp, WildcardArrayDType)) {
+                idxDtp = nodep->findStringDType();
+            } else {
+                idxDtp = nodep->findIntDType();
+            }
+            AstVar* const newVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vinside", idxDtp};
             AstNodeExpr* const idxRefp = new AstVarRef{nodep->fileline(), newVarp, VAccess::READ};
             AstForeachHeader* const headerp
                 = new AstForeachHeader{fl, nodep->fromp()->cloneTreePure(false), newVarp};

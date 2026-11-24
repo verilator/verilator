@@ -70,16 +70,40 @@ class axi_wrap_test extends axi_base_test;
 endclass
 
 
+// Test case 3: rand member inherited from the base class
+class sub_cfg;
+  rand bit g;
+  constraint c {g == 1;}
+endclass
+
+class base_cfg;
+  rand sub_cfg s;
+  function new();
+    s = new;
+  endfunction
+endclass
+
+class derived_cfg extends base_cfg;
+endclass
+
+
 module t_constraint_global_nested_member;
   initial begin
     tb_test tb;
     axi_wrap_test axi_t;
+    derived_cfg d;
 
     tb = new;
     tb.run_phase(0);
 
     axi_t = new();
     axi_t.build_phase();
+
+    d = new;
+    repeat (20) begin
+      if (d.randomize() != 1) $stop;
+      if (d.s.g != 1) $stop;
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;

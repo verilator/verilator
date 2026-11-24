@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_inside_nested_unpacked_unsup.v:13:19: Unsupported: 'inside' on array of unpacked arrays
+                                                            : ... note: In instance 't'
+   13 |     r = 1 inside {u};
+      |                   ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_inside_nested_unpacked_unsup.v:14:19: Unsupported: 'inside' on array of unpacked arrays
+                                                            : ... note: In instance 't'
+   14 |     r = 1 inside {w};
+      |                   ^
+%Error: Exiting due to
