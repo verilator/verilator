@@ -434,7 +434,8 @@ static std::vector<ChainStep> accessChainSteps(const AstVar* rootVarp,
 // over it agree with `steps` as far as they go (a non-constant index agrees with any index)
 static bool reachesLeaf(const AstNodeVarRef* refp, const std::vector<ChainStep>& steps) {
     const AstNode* curp = refp;
-    for (const ChainStep& step : steps) {
+    for (size_t si = 0; si < steps.size(); ++si) {
+        const ChainStep& step = steps[si];
         const AstNode* const parentp = curp->backp();
         switch (step.kind) {
         case ChainStep::ARRAYSEL: {
@@ -574,7 +575,8 @@ class HookInsertTargetFinder final {
         entry.found = true;
     }
     void addAssign(AstNodeAssign* assignp, const string& varName) {
-        for (auto& entry : m_targetp->entries) {
+        for (size_t ei = 0; ei < m_targetp->entries.size(); ++ei) {
+            HookInsertEntry& entry = m_targetp->entries[ei];
             if (varName == entry.varTarget) {
                 entry.assignps.push_back(assignp);
                 return;
@@ -582,7 +584,8 @@ class HookInsertTargetFinder final {
         }
     }
     void addReadRef(AstNodeVarRef* readRefp, const string& varName) {
-        for (auto& entry : m_targetp->entries) {
+        for (size_t ei = 0; ei < m_targetp->entries.size(); ++ei) {
+            HookInsertEntry& entry = m_targetp->entries[ei];
             if (varName == entry.varTarget) {
                 entry.readRefps.push_back(readRefp);
                 return;
@@ -851,7 +854,8 @@ class HookInsertTargetFinder final {
             modp->foreach([&](AstNode* nodep) {
                 AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef);
                 if (!refp) return;
-                for (auto& entry : m_targetp->entries) {
+                for (size_t ei = 0; ei < m_targetp->entries.size(); ++ei) {
+                    HookInsertEntry& entry = m_targetp->entries[ei];
                     if (!entry.origVarp || refp->varp() != entry.origVarp) continue;
                     if (refp->access().isRW()) {
                         refp->v3warn(E_UNSUPPORTED,
@@ -1054,7 +1058,8 @@ class HookInsertTargetFinder final {
     }
     AstNodeDType* resolveLeafDTypep(AstVar* varp, const DpiHookAccessPath& path) {
         AstNodeDType* dtypep = varp->dtypep()->skipRefp();
-        for (const DpiHookStep& step : path) {
+        for (size_t pi = 0; pi < path.size(); ++pi) {
+            const DpiHookStep& step = path[pi];
             if (step.isIndex) {
                 AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType);
                 if (!adtypep) {

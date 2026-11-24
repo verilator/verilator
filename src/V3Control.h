@@ -35,9 +35,6 @@ struct DpiHookStep final {
     bool isIndex = false;  // true: array index; false: member name
     uint32_t index = 0;  // Array element index, when isIndex
     string member;  // Member name, when !isIndex
-    bool operator==(const DpiHookStep& other) const {
-        return isIndex == other.isIndex && index == other.index && member == other.member;
-    }
 };
 using DpiHookAccessPath = std::vector<DpiHookStep>;
 
