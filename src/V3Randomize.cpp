@@ -195,6 +195,14 @@ static bool anyOpRandDependent(const AstNode* nodep) {
            || (nodep->op4p() && nodep->op4p()->user1());
 }
 
+// For a static member of a class that is neither a base nor a derived class of classp,
+// return that class, else nullptr
+static const AstClass* foreignStaticClassp(const AstClass* classp, const AstVar* varp) {
+    if (!varp->lifetime().isStatic()) return nullptr;
+    const AstClass* const declClassp = VN_CAST(varp->aboveLoopp(), Class);
+    return declClassp && !AstClass::isClassRelated(classp, declClassp) ? declClassp : nullptr;
+}
+
 //######################################################################
 // Visitor that marks classes needing a randomize() method
 
@@ -1852,20 +1860,25 @@ class RandomizeVisitor final : public VNVisitor {
         });
     }
     // True if this class owns a global constraint: a member-select chain rooted
-    // at a rand class-typed handle reaching into a sub-object.
+    // at a rand class-typed handle reaching into a sub-object, or a random static
+    // member of another class (V3Width turns a member select of a static into a VarRef).
     bool classOwnsGlobalConstraint(const AstClass* classp) const {
-        return classp->existsMember([](const AstClass*, const AstConstraint* constrp) {
+        return classp->existsMember([&](const AstClass*, const AstConstraint* constrp) {
             bool owns = false;
-            constrp->foreach([&](const AstMemberRef* memberRefp) {
-                const AstNode* const rootp
-                    = const_cast<AstMemberRef*>(memberRefp)->baseFromp(true);
-                if (const AstVarRef* const refp = VN_CAST(rootp, VarRef)) {
-                    // Owns a sub-object constraint if the root is a class handle, or
-                    // an array/assoc/queue/unpacked array of class handles.
-                    const AstNodeDType* dtypep = refp->varp()->dtypep()->skipRefp();
-                    while (const AstNodeDType* const subp = dtypep->subDTypep())
-                        dtypep = subp->skipRefp();
-                    if (VN_IS(dtypep, ClassRefDType)) owns = true;
+            constrp->foreach([&](const AstNodeExpr* exprp) {
+                if (const AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+                    if (refp->user1() && foreignStaticClassp(classp, refp->varp())) owns = true;
+                } else if (const AstMemberRef* const memberRefp = VN_CAST(exprp, MemberRef)) {
+                    const AstNode* const rootp
+                        = const_cast<AstMemberRef*>(memberRefp)->baseFromp(true);
+                    if (const AstVarRef* const refp = VN_CAST(rootp, VarRef)) {
+                        // Owns a sub-object constraint if the root is a class handle, or
+                        // an array/assoc/queue/unpacked array of class handles.
+                        const AstNodeDType* dtypep = refp->varp()->dtypep()->skipRefp();
+                        while (const AstNodeDType* const subp = dtypep->subDTypep())
+                            dtypep = subp->skipRefp();
+                        if (VN_IS(dtypep, ClassRefDType)) owns = true;
+                    }
                 }
             });
             return owns;

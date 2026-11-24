@@ -106,6 +106,22 @@ class Owner;
   rand Simple s = new;
 endclass
 
+// Static rand var of a rand member whose class is only randomized through the holders
+class ModeCfg;
+  static rand bit [3:0] g;
+  constraint c {g > 0;}
+endclass
+
+class ModeHolder;
+  rand ModeCfg s = new;
+endclass
+
+// The holder's own static rand var must not share rand_mode with the member's
+class ModeStaticHolder;
+  rand ModeCfg s = new;
+  static rand bit [3:0] k;
+endclass
+
 module t;
   Simple s1, s2;
   Derived d1, d2;
@@ -359,6 +375,29 @@ module t;
 
     `check_rand(o1, o1.s.sx);
     `checkd(o1.s.dy, saved_dy);
+
+    // ---- Test: rand_mode of a static rand var of a rand member is honored by the holder
+    begin
+      automatic ModeHolder mh = new;
+      automatic ModeStaticHolder mk = new;
+      ModeCfg::g = 11;
+      mh.s.g.rand_mode(0);
+      repeat (20) begin
+        rok = mh.randomize();
+        `checkd(rok, 1);
+        `checkd(ModeCfg::g, 11);
+      end
+      mh.s.g.rand_mode(1);
+      ModeStaticHolder::k.rand_mode(0);
+      ModeCfg::g = 0;
+      ModeStaticHolder::k = 5;
+      repeat (20) begin
+        rok = mk.randomize();
+        `checkd(rok, 1);
+        `checkd(ModeCfg::g != 0, 1);
+        `checkd(ModeStaticHolder::k, 5);
+      end
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;
