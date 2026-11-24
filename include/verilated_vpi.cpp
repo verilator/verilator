@@ -621,8 +621,8 @@ public:
                 return nullptr;
             }
             if (m_onlyParams && !m_it->second.isParam()) continue;
-            // Packed struct/union members are reached through their parent, see vpiMember
-            if (m_it->second.isPackedMember()) continue;
+            // Struct/union members are reached through their parent, see vpiMember
+            if (m_it->second.isMember()) continue;
             if (VL_UNLIKELY(m_topscopep)) {
                 if (const VerilatedVar* topvarp = m_topscopep->varFind(m_it->second.name())) {
                     if (topvarp->isParam()) {
