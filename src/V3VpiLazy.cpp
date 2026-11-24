@@ -2211,10 +2211,6 @@ private:
                 continue;
             }
             varp->vpiLazyRole(cand ? VVpiLazyRole::RETAINED : VVpiLazyRole::PINNED);
-            // A VPI write into a writable retained signal is propagated by re-running 'settle'
-            // on the next eval.
-            if (varp->isSigVpiLazyRetained() && !varp->isVpiLazyCombWhole())
-                v3Global.setHasVpiLazyRetained();
             if (freed.empty()) continue;
             AstVar* const twinp = varp->cloneTree(false);
             twinp->name(varp->name() + "__Vlazyfreed");
