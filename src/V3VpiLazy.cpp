@@ -823,6 +823,7 @@ class VpiLazyPreparer final {
         UNSUPPORTED_STMT,  // A statement kind the ordered walk does not model
         UNSUPPORTED_LVALUE,  // A continuous write whose shape a shadow cannot mirror
         COMB_CYCLE,  // Member of a group cycle that does not merge into one provable group
+        TRACED,  // Stored for tracing anyway, so VPI reads that storage
         COMPLETENESS_FLOOR,  // No classification path claimed it; retained so VPI still sees it
         _COUNT
     };
@@ -844,6 +845,7 @@ class VpiLazyPreparer final {
                                             "unsupported statement",
                                             "unsupported lvalue",
                                             "comb cycle",
+                                            "traced",
                                             "completeness floor"};
         static_assert(sizeof(names) / sizeof(names[0]) == static_cast<size_t>(Bail::_COUNT),
                       "Bail name table out of sync with enum");
@@ -882,6 +884,7 @@ public:
     const std::vector<AstCFunc*>& splitFuncps() const { return m_splitFuncps; }
 
     void run() {
+        retainTraced();
         findHelperCandidates();
         formGroups();
         analyzeGroups();
@@ -1085,6 +1088,16 @@ private:
     static bool canCopyFrom(const AstVarScope* dstp, const AstVarScope* srcp) {
         return dstp->scopep() == srcp->scopep() && reconstructableKind(dstp->varp())
                && !srcp->varp()->isParam() && sameLayout(dstp, srcp);
+    }
+
+    // Per variable, as a group's shape is: any traced instance retains every instance
+    void retainTraced() {
+        v3Global.rootp()->topScopep()->rtmdp()->foreach([this](const AstRtmdVar* sigp) {
+            if (!sigp->traced()) return;
+            const auto it = m_gather.m_vscpsOf.find(sigp->varp());
+            if (it == m_gather.m_vscpsOf.end()) return;
+            for (AstVarScope* const vscp : it->second) retainTarget(vscp, Bail::TRACED);
+        });
     }
 
     // A group temp has no shadow, so another block reading it pins its storage; a helper target
