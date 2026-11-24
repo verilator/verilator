@@ -2350,7 +2350,9 @@ V3VpiLazyContext* V3VpiLazy::newContext() { return new V3VpiLazyContext; }
 void V3VpiLazy::deleteContext(V3VpiLazyContext* ctxp) { delete ctxp; }
 
 void V3VpiLazy::classifyComb(AstNetlist* nodep) {
-    const CombClassifier comb{nodep, nodep->createVpiLazyContext()};
+    // Only the marks are kept: V3Decompose and V3BitBlast add variables, so prepare() reclassifies
+    V3VpiLazyContext ctx;
+    const CombClassifier comb{nodep, ctx};
 }
 
 VVpiLazyComb V3VpiLazy::combOf(const AstScope* scopep, const AstVar* varp) {
