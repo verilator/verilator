@@ -13,8 +13,6 @@ test.scenarios('vlt')
 test.top_filename = "t/t_opt_bitblast_attr_bad.v"
 
 # split_var on a variable only --vpi-lazy keeps does not blame 'public'
-test.lint(fails=True,
-          verilator_flags2=["--vpi-lazy"],
-          expect_filename=test.golden_filename)
+test.lint(fails=True, verilator_flags2=["--vpi-lazy"], expect_filename=test.golden_filename)
 
 test.passes()

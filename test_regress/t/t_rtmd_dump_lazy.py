@@ -14,8 +14,9 @@ test.top_filename = "t/t_rtmd_dump.v"
 test.pli_filename = "t/t_rtmd_dump.cpp"
 
 test.compile(make_main=False,
-             verilator_flags2=["--cc", "--rtmd", "--timing", "--vpi", "--vpi-lazy", "--exe",
-                               test.pli_filename])
+             verilator_flags2=[
+                 "--cc", "--rtmd", "--timing", "--vpi", "--vpi-lazy", "--exe", test.pli_filename
+             ])
 
 test.execute(all_run_flags=["+topname=TOP"], expect_filename=test.golden_filename)
 

@@ -19,13 +19,14 @@ test.golden_filename = "t/t_vpi_drivers_lazy.out"
 # combinational logic and variables ahead of --vpi-lazy. Toggle coverage adds non-always
 # statements to scopes; --dump-tree covers the --vpi-lazy node annotations;
 # --output-split-cfuncs 0 leaves every rebuild body unsplit.
-test.compile(make_top_shell=False,
-             verilator_flags2=[
-                 "--binary --vpi-lazy --no-l2name -fno-bitblast -fno-coalesce -fno-const-before-dfg"
-                 " -fno-decompose-packed -fno-decompose-unpacked -fno-inline -fno-split"
-                 " --coverage-toggle --dump-tree --output-split-cfuncs 0",
-                 "-CFLAGS -DT_VPI_DRIVERS_LAZY -CFLAGS -DVL_DEBUG=1", test.pli_filename
-             ])
+test.compile(
+    make_top_shell=False,
+    verilator_flags2=[
+        "--binary --vpi-lazy --no-l2name -fno-bitblast -fno-coalesce -fno-const-before-dfg"
+        " -fno-decompose-packed -fno-decompose-unpacked -fno-inline -fno-split"
+        " --coverage-toggle --dump-tree --output-split-cfuncs 0",
+        "-CFLAGS -DT_VPI_DRIVERS_LAZY -CFLAGS -DVL_DEBUG=1", test.pli_filename
+    ])
 
 test.execute(all_run_flags=[
     "+verilator+rand+reset+1", "+verilator+coverage+file+" + test.coverage_filename

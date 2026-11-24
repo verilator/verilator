@@ -20,8 +20,7 @@ test.compile(make_top_shell=False,
              verilator_flags2=[
                  "--binary --vpi-lazy --no-l2name --stats --output-split 200"
                  " --output-split-cfuncs 20 --comp-limit-blocks 3 -fno-inline-cfuncs",
-                 "-CFLAGS -DT_VPI_DRIVERS_LAZY -CFLAGS -DVL_DEBUG=1",
-                 test.pli_filename
+                 "-CFLAGS -DT_VPI_DRIVERS_LAZY -CFLAGS -DVL_DEBUG=1", test.pli_filename
              ])
 
 test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 191)

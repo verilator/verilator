@@ -17,8 +17,8 @@ test.compile(make_top_shell=False,
              make_main=False,
              verilator_flags2=[
                  "--exe --vpi-lazy --savable --trace --no-l2name --top-module lz_save",
-                 "-DT_VPI_DRIVERS_SAVABLE -CFLAGS -DT_VPI_DRIVERS_SAVABLE",
-                 test.pli_filename, "t/TestVpiMain.cpp"
+                 "-DT_VPI_DRIVERS_SAVABLE -CFLAGS -DT_VPI_DRIVERS_SAVABLE", test.pli_filename,
+                 "t/TestVpiMain.cpp"
              ])
 
 # Saves the model, then restores it into itself; then a fresh process restores it

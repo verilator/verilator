@@ -221,8 +221,12 @@ module t #(
   always @* if (ON || en) pon_c = d;
   always @* if (!(!ON && en)) pand_c = d;
   always @* if (!en) pnot_c = d;
-  always @* if (!ON || !ON) por0_c = ~d; else por0_c = d;
-  always @* if (en && !ON) pand0_c = ~d; else pand0_c = d;
+  always @*
+    if (!ON || !ON) por0_c = ~d;
+    else por0_c = d;
+  always @*
+    if (en && !ON) pand0_c = ~d;
+    else pand0_c = d;
   always @* if (ON && ~(!ON)) pand1_c = d;
   always @* if (ON & en) pand2_c = d;
   /* verilator lint_on LATCH */
@@ -429,7 +433,8 @@ module t #(
     if (sel[0]) begin
       rbw_u = rbw_c;
       rbw_v = in_a;
-    end else begin
+    end
+    else begin
       rbw_u = in_a;
       rbw_v = rbw_c;
     end
@@ -475,7 +480,11 @@ module t #(
   /* verilator lint_off UNOPTFLAT */
   logic [7:0] pk_c;
   /* verilator lint_on UNOPTFLAT */
-  import "DPI-C" context function void midEvalPeek(string name, int want, int mask);
+  import "DPI-C" context function void midEvalPeek(
+    string name,
+    int want,
+    int mask
+  );
   /* verilator lint_off ALWCOMBORDER */
   always_comb begin
     pk_c[7:4] = pk_c[3:0] ^ d[7:4];
@@ -526,7 +535,8 @@ module t #(
       am_m[0] = d;
       am_m[1] = in_a;
       am_x = d;
-    end else begin
+    end
+    else begin
       am_m[1] = d;
       am_z = in_a;
     end
@@ -539,7 +549,8 @@ module t #(
       if (d[0]) begin
         ae_c = in_a;
         ae_f = d;
-      end else ae_c = 8'h0;
+      end
+      else ae_c = 8'h0;
       ae_g = in_a;
     end
   end
@@ -888,7 +899,10 @@ module lz_order (
   always_ff @(posedge clk) f <= s + 8'd1;
   // A top output's copy, which leaves f writable
   assign fo = f;
-  import "DPI-C" context function void midEvalPut(string name, int v);
+  import "DPI-C" context function void midEvalPut(
+    string name,
+    int v
+  );
   // A put between two reads of the same condition reaches the second
   logic mcnd;
   logic [7:0] mc_a, mc_b;
