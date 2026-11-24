@@ -75,6 +75,8 @@ module sub #(
   time tval;
   event ev;
   chandle ch;
+  string str;
+  string strs[2];
   // Ascending ranges are intentional, to check their indices
   // verilator lint_off ASCRANGE
   logic [1:3][4:1] pmd;

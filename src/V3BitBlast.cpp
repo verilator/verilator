@@ -431,7 +431,7 @@ class BitBlastVisitor final : public VNVisitorConst, public VNDeleter {
     }
     void visit(AstRtmdVar* nodep) override {
         // Ignore reference for splitting, but need to reconstruct the variable
-        if (nodep->refp()) nodep->vscp()->user2(true);
+        if (nodep->refp() && nodep->keepWhole()) nodep->vscp()->user2(true);
     }
     void visit(AstMemberRef* nodep) override {
         iterateChildrenConst(nodep);
@@ -468,7 +468,7 @@ class BitBlastVisitor final : public VNVisitorConst, public VNDeleter {
         for (AstVarScope* const vscp : m_vscps) {
             const VscpInfo& info = m_vscpInfos(vscp);
             if (info.fragments.empty()) continue;
-            if (!vscp->user2() && !vscp->varp()->isVpiLazyCombWhole()) continue;
+            if (!vscp->user2()) continue;
             AstActive* const activep = comboActive(vscp->scopep());
             FileLine* const flp = vscp->fileline();
             for (const Fragment& fragment : info.fragments) {

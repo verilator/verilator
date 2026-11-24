@@ -2877,10 +2877,6 @@ public:
     bool isSigVpiLazyRetained() const {
         return m_vpiLazyRole == VVpiLazyRole::RETAINED && !isIfaceRef();
     }
-    bool isVpiLazyStorageKept() const {
-        return (m_vpiLazyRole == VVpiLazyRole::RETAINED || m_vpiLazyRole == VVpiLazyRole::PINNED)
-               && !isIfaceRef();
-    }
     bool isSigExternallyRWPublic() const {
         return isSigUserRWPublic() || isSigVpiLazyCandidate() || isSigVpiLazyRetained();
     }

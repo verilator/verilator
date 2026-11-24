@@ -85,35 +85,34 @@ static string dpiMemberDecl(const AstNodeDType* dtypep, const string& name) {
            + "[SV_PACKED_DATA_NELEMS(" + cvtToStr(dtypep->width()) + ")]";
 }
 
-class DpiTypesToStringConverter VL_NOT_FINAL{public : virtual string openArray(const AstVar*)
-                                                 const {return "const svOpenArrayHandle";
-}
-virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
-    return isBit ? "svBitVecVal" : "svLogicVecVal";
-}
-virtual string primitive(const AstVar* varp) const { return dpiPrimitiveType(varp->basicp()); }
-// Unpacked structure, or unpacked array of
-virtual string unpackedStruct(const AstVar* varp) const {
-    return VN_AS(varp->dtypep()->elemDTypep(), NodeUOrStructDType)->dpiName();
-}
-string convert(const AstVar* varp) const {
-    if (varp->isDpiOpenArray()) {
-        return openArray(varp);
-    } else if (varp->basicp()) {
-        const AstNodeDType* const dtypep = varp->dtypep();
-        if (!dtypep->isDpiPrimitive()) {
-            return bitLogicVector(varp, dtypep->isDpiBitVec());
-        } else {
-            return primitive(varp);
-        }
-    } else if (varp->dtypep()->containsUnpackedStruct()) {
-        return unpackedStruct(varp);
-    } else {
-        return "UNKNOWN";
+class DpiTypesToStringConverter VL_NOT_FINAL {
+public:
+    virtual string openArray(const AstVar*) const { return "const svOpenArrayHandle"; }
+    virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
+        return isBit ? "svBitVecVal" : "svLogicVecVal";
     }
-}
-}
-;
+    virtual string primitive(const AstVar* varp) const { return dpiPrimitiveType(varp->basicp()); }
+    // Unpacked structure, or unpacked array of
+    virtual string unpackedStruct(const AstVar* varp) const {
+        return VN_AS(varp->dtypep()->elemDTypep(), NodeUOrStructDType)->dpiName();
+    }
+    string convert(const AstVar* varp) const {
+        if (varp->isDpiOpenArray()) {
+            return openArray(varp);
+        } else if (varp->basicp()) {
+            const AstNodeDType* const dtypep = varp->dtypep();
+            if (!dtypep->isDpiPrimitive()) {
+                return bitLogicVector(varp, dtypep->isDpiBitVec());
+            } else {
+                return primitive(varp);
+            }
+        } else if (varp->dtypep()->containsUnpackedStruct()) {
+            return unpackedStruct(varp);
+        } else {
+            return "UNKNOWN";
+        }
+    }
+};
 
 class AstNodeDType::CTypeRecursed final {
 public:
@@ -3975,6 +3974,9 @@ void AstRtmdVar::dump(std::ostream& str) const {
     Super::dump(str);
     str << " [actSet=" << actSetIdx() << "]";
     if (traced()) str << " [TRACED]";
+    if (vpiLazy()) str << " [VPILAZY]";
+    if (stored()) str << " [STORED]";
+    if (writable()) str << " [WRITABLE]";
     if (refScopep()) str << " [refScope=" << refScopep()->name() << "]";
     str << " -> ";
     typeDescp()->dump(str);
@@ -3982,13 +3984,18 @@ void AstRtmdVar::dump(std::ostream& str) const {
 void AstRtmdVar::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, actSetIdx);
     dumpJsonBoolFuncIf(str, traced);
+    dumpJsonBoolFuncIf(str, vpiLazy);
+    dumpJsonBoolFuncIf(str, stored);
+    dumpJsonBoolFuncIf(str, writable);
     dumpJsonGen(str);
 }
+bool AstRtmdVar::keepWhole() const { return m_traced || varp()->isVpiLazyCombWhole(); }
 bool AstRtmdVar::sameNode(const AstNode* samep) const {
     const AstRtmdVar* const asamep = VN_DBG_AS(samep, RtmdVar);
     return name() == asamep->name() && actSetIdx() == asamep->actSetIdx()
            && typeDescp() == asamep->typeDescp() && traced() == asamep->traced()
-           && refScopep() == asamep->refScopep();
+           && vpiLazy() == asamep->vpiLazy() && stored() == asamep->stored()
+           && writable() == asamep->writable() && refScopep() == asamep->refScopep();
 }
 void AstRtmdVarType::dump(std::ostream& str) const {
     Super::dump(str);

@@ -30,7 +30,6 @@
 #include "V3Graph.h"
 #include "V3Stats.h"
 #include "V3VNUserAllocator.h"
-#include "V3VpiLazy.h"
 
 #include <list>
 #include <unordered_map>
@@ -169,15 +168,6 @@ public:
                 // Public signals shouldn't be changed, pli code might be messing with them
                 vVtxp->clearReducibleAndDedupable("SigPublic");
                 vVtxp->setConsumed("SigPublic");
-            } else if (vscp->varp()->isVpiLazyStorageKept()) {
-                // Dedup would sever VPI or a reconstruct cone from the driver.
-                vVtxp->clearDedupable("SigVpiLazyKept");
-                vVtxp->setConsumed("SigVpiLazyKept");
-                // Substituting a writable signal's driver into its readers would hide a put
-                if (vscp->varp()->isSigVpiLazyRetained()
-                    && V3VpiLazy::combOf(vscp->scopep(), vscp->varp()) != VVpiLazyComb::WHOLE) {
-                    vVtxp->clearReducible("SigVpiLazyWritable");
-                }
             }
             if (vscp->varp()->keepPort()) {
                 // A kept port of a non-inlined module is read as itself by its instance
@@ -297,6 +287,12 @@ class GateBuildVisitor final : public VNVisitorConst {
         m_logicVertexp->clearReducibleAndDedupable("Rtmd");
         m_logicVertexp->setConsumed("Rtmd");
         iterateChildrenConst(nodep);
+        if (!nodep->stored()) return;
+        // Dedup would sever the runtime from the driver
+        GateVarVertex* const vVtxp = m_graphp->makeVarVertex(nodep->vscp());
+        vVtxp->clearDedupable("RtmdStored");
+        // Substituting a writable variable's driver into its readers would hide a write
+        if (nodep->writable()) vVtxp->clearReducible("RtmdWritable");
     }
     void visit(AstSenItem* nodep) override {
         VL_RESTORER(m_inSenItem);
@@ -622,8 +618,7 @@ class GateInline final {
         if (nReads > 1 && !allowMultiIn) return false;
         // Reads multiple variables, or is expensive to compute.
         // Inline if used only once, ignoring slow code, or dead code that can be deleted.
-        // A --vpi-lazy kept store is a use.
-        int n = vVtxp->varScp()->varp()->isVpiLazyStorageKept() ? 1 : 0;
+        int n = 0;
         for (V3GraphEdge& edge : vVtxp->outEdges()) {
             const GateLogicVertex* const dstVtxp = edge.top()->as<GateLogicVertex>();
             // Ignore slow code, or if the destination is not used
@@ -786,8 +781,11 @@ class GateInline final {
 
                 if (!canInline) continue;  // Cannot optimize this replacement
 
-                // A descriptor can only read another variable whole
-                if (VN_IS(dstVtxp->nodep(), RtmdVar) && !VN_IS(substp, VarRef)) continue;
+                // A descriptor can only read another variable whole, and a stored variable's
+                // descriptor must keep reading the variable itself
+                if (const AstRtmdVar* const sigp = VN_CAST(dstVtxp->nodep(), RtmdVar)) {
+                    if (sigp->stored() || !VN_IS(substp, VarRef)) continue;
+                }
 
                 UINFOTREE(9, dstVtxp->nodep(), "", "inside");
 
@@ -821,8 +819,7 @@ class GateInline final {
                 ++m_statRefs;
             }
 
-            // Retained and pinned variables keep their drivers, for VPI or a reconstruct cone.
-            if (vVtxp->outEmpty() && !vscp->varp()->isVpiLazyStorageKept()) {
+            if (vVtxp->outEmpty()) {
                 // Remove Variable vertex
                 VL_DO_DANGLING(vVtxp->unlinkDelete(&m_graph), vVtxp);
                 // Remove driving logic and vertex

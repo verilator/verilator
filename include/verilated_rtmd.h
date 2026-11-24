@@ -224,6 +224,7 @@ public:
             CHANDLE,
             EVENT,
             TIME,
+            STRING,  // Described, but never traced
         };
 
         Kind m_kind;  // Base data type

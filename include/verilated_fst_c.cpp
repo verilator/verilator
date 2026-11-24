@@ -312,7 +312,8 @@ void VerilatedFst::declareSignal(uint32_t code, const char* namep, const VlRtmdV
         case AtomKind::EVENT: fstVarType = fst::Hierarchy::VarType::VCD_EVENT; break;
         case AtomKind::TIME: fstVarType = fst::Hierarchy::VarType::VCD_TIME; break;
         case AtomKind::DOUBLE:
-        case AtomKind::LOGIC: break;
+        case AtomKind::LOGIC:
+        case AtomKind::STRING: break;
         }
         break;
     }

@@ -107,6 +107,7 @@ class RtmdTypeBuilder final {
         case VBasicDTypeKwd::CHANDLE:
         case VBasicDTypeKwd::TIME:
         case VBasicDTypeKwd::EVENT:
+        case VBasicDTypeKwd::STRING:
             // Supported in RTMD
             return new AstRtmdDTAtom{flp, kwd, dtypep->isSigned()};
 
@@ -452,6 +453,22 @@ class RtmdBuilder final : public VNVisitor {
         visitScope(nodep, VRtmdHierKind::TASK, false);
     }
 
+    static bool hasString(const AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        if (const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
+            return basicp->keyword() == VBasicDTypeKwd::STRING;
+        }
+        if (const AstNodeArrayDType* const arrayp = VN_CAST(dtypep, NodeArrayDType)) {
+            return hasString(arrayp->subDTypep());
+        }
+        if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
+            for (const AstMemberDType* const memberp : structp->memberspList()) {
+                if (hasString(memberp->subDTypep())) return true;
+            }
+        }
+        return false;
+    }
+
     // Variables
     void visit(AstVar* nodep) override {
         UASSERT_OBJ(m_levelp, nodep, "Var not under Module");
@@ -484,11 +501,14 @@ class RtmdBuilder final : public VNVisitor {
         // Build the var type descriptor
         AstRtmdVarType* const varTypep = m_typeBuilder.varType(nodep, rtmdTypep);
         // Build the variable descriptor
-        AstVarRef* const refp = nodep->isTrace()  //
+        const bool vpiLazy = v3Global.opt.vpiLazy();
+        AstVarRef* const refp = nodep->isTrace() || vpiLazy  //
                                     ? new AstVarRef{flp, nodep, VAccess::READ}
                                     : nullptr;
         AstRtmdVar* const sigp = new AstRtmdVar{flp, rtmdName(nodep), varTypep, refp};
-        sigp->traced(nodep->isTrace());
+        // Tracing reads values as bits, which a string's storage is not
+        sigp->traced(nodep->isTrace() && !hasString(nodep->dtypep()));
+        sigp->vpiLazy(vpiLazy);
         addItem(sigp, m_rootIop);
     }
 

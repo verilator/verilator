@@ -791,7 +791,7 @@ public:
             /* SHORTINT:                  */ "SHORTINT",
             /* TIME:                      */ "TIME",
             /* TIME2STATE                 */ "",  // Not described
-            /* STRING:                    */ "",
+            /* STRING:                    */ "STRING",
             /* UNTYPED:                   */ "",  // Not described
             /* SCOPEPTR:                  */ "",  // Not described
             /* CHARPTR:                   */ "",  // Not described

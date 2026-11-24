@@ -643,7 +643,7 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
     }
     void visit(AstRtmdVar* nodep) override {
         // Ignore reference for splitting, but need to reconstruct the variable
-        if (nodep->refp()) nodep->vscp()->user3(true);
+        if (nodep->refp() && nodep->keepWhole()) nodep->vscp()->user3(true);
     }
     void visit(AstMemberRef* nodep) override {
         iterateChildrenConst(nodep);
@@ -1369,9 +1369,8 @@ class DecomposeRewrite final : public VNDeleter, public DecomposeBase {
         for (Place* const placep : m_state.rootps) {
             if (!placep->split) continue;
             const AstVarScope* const vscp = placep->vscp;
-            // Descriptor-read ones, and --vpi-lazy read-only ones, whose VPI row reads the whole
-            // variable
-            if (!vscp->user3() && !vscp->varp()->isVpiLazyCombWhole()) continue;
+            // See AstRtmdVar::keepWhole
+            if (!vscp->user3()) continue;
             AstActive* const activep = comboActive(vscp->scopep());
             driveFromComponents(placep, activep);
         }

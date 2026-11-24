@@ -702,7 +702,6 @@ class DeadVisitor final : public VNVisitor {
     bool mightElimVar(const AstVar* nodep) const {
         if (nodep->isSigPublic()) return false;  // Can't elim publics!
         if (nodep == v3Global.rootp()->activityp()) return false;  // Read by the runtime
-        if (nodep->isVpiLazyStorageKept()) return false;
         if (nodep->isPrimaryIO() || nodep->isClassMember() || nodep->sensIfacep()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;
         return m_elimUserVars;  // Post-Trace can kill most anything

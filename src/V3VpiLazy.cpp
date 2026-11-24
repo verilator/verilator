@@ -440,6 +440,8 @@ private:
     }
 
     // VISITORS
+    // A descriptor reads its variable for the runtime, not for the design
+    void visit(AstRtmdVar*) override {}
     void visit(AstVarRef* nodep) override {
         checkPure(nodep);
         AstVarScope* const vscp = nodep->varScopep();
@@ -2425,6 +2427,25 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
         preparer.run();
         splitFuncps = preparer.splitFuncps();
     }
+
+    // Descriptors now pin what VPI and the reconstruct cones need stored. Any other untraced
+    // one is dropped, so it does not keep its variable through V3DfgOptimizer and V3Gate.
+    nodep->topScopep()->rtmdp()->foreach([](AstRtmdVar* sigp) {
+        if (!sigp->vpiLazy() || !sigp->refp()) return;
+        AstVarScope* const vscp = sigp->vscp();
+        AstVar* const varp = vscp->varp();
+        // splitKeptInstances() moved a freed instance to a twin variable
+        sigp->refp()->varp(varp);
+        const VVpiLazyRole role = varp->vpiLazyRole();
+        if ((role == VVpiLazyRole::RETAINED || role == VVpiLazyRole::PINNED)
+            && !varp->isIfaceRef()) {
+            sigp->stored(true);
+            sigp->writable(varp->isSigVpiLazyRetained()
+                           && V3VpiLazy::combOf(vscp->scopep(), varp) != VVpiLazyComb::WHOLE);
+        } else if (!sigp->traced()) {
+            sigp->refp()->unlinkFrBack()->deleteTree();
+        }
+    });
 
     // Per --output-split-cfuncs. splitCheck moves whole top-level statements, so an entry func's
     // epoch guard stays whole. Instance stubs are left whole for V3Descope.
