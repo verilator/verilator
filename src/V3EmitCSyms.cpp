@@ -417,9 +417,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return pr.first->second;
     }
 
-    const AstCFunc* lazyRefreshFuncp(const AstScope* scopep, const AstVar* varp) const {
+    // Empty for a stored copy
+    static std::string lazyRefreshName(const AstScope* scopep, const AstVar* varp) {
         if (const AstVar* const srcp = varp->lazyCopySrcp()) varp = srcp;
-        return V3VpiLazy::refreshFuncp(scopep, varp);
+        const std::string name = V3VpiLazy::refreshFuncName(scopep, varp);
+        return name.empty() ? name : VIdProtect::protect(name);
     }
 
     // An alias shadow's row is its source cone's storage
@@ -1261,10 +1263,10 @@ void EmitCSyms::emitSymHdr() {
             const ScopeVarData& svd = itpair.second;
             const AstVar* const varp = svd.m_varp;
             if (!varp->isLazyReconstructShadow()) continue;
-            const AstCFunc* const funcp = lazyRefreshFuncp(svd.m_scopep, varp);
-            if (!funcp) continue;
+            const std::string funcName = lazyRefreshName(svd.m_scopep, varp);
+            if (funcName.empty()) continue;
             const std::string modClassName = EmitCUtil::prefixNameProtect(svd.m_modp);
-            const std::string sym = modClassName + "__" + funcp->nameProtect();
+            const std::string sym = modClassName + "__" + funcName;
             if (emitted.insert(sym).second) puts("void " + sym + "(void*);\n");
         }
     }
@@ -1717,9 +1719,9 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                     rows.emplace_back(row);
                     if (isLazy) {
                         ++lazyRel;
-                        const AstCFunc* const funcp = lazyRefreshFuncp(scopep, varp);
+                        const std::string funcName = lazyRefreshName(scopep, varp);
                         const std::string fn
-                            = funcp ? "&" + modClassName + "__" + funcp->nameProtect() : "nullptr";
+                            = funcName.empty() ? "nullptr" : "&" + modClassName + "__" + funcName;
                         std::string src;  // Empty for a cone
                         if (varp->isLazyShadowAlias()) {
                             // Its row is the source cone's shadow, so it reads as that cone

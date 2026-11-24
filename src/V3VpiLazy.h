@@ -20,9 +20,9 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include <string>
 #include <vector>
 
-class AstCFunc;
 class AstNetlist;
 class AstScope;
 class AstVar;
@@ -47,9 +47,9 @@ public:
     // A PARTIAL combOf() instance's runs, ordered by element then bit.
     static const std::vector<CombRun>& combRuns(const AstScope* scopep,
                                                 const AstVar* varp) VL_MT_DISABLED;
-    // Func a reconstructed row in 'scopep' calls to refresh 'shadowVarp', null for a stored copy.
-    static const AstCFunc* refreshFuncp(const AstScope* scopep,
-                                        const AstVar* shadowVarp) VL_MT_DISABLED;
+    // Func a reconstructed row in 'scopep' calls to refresh 'shadowVarp', empty for a stored copy.
+    static std::string refreshFuncName(const AstScope* scopep,
+                                       const AstVar* shadowVarp) VL_MT_DISABLED;
     // False where 'varp' has no instance in 'scopep': it is kept apart from its other instances.
     static bool hasRow(const AstScope* scopep, const AstVar* varp) VL_MT_DISABLED;
     // Mark candidates' combinationally driven bits after V3Active, ahead of V3Decompose and

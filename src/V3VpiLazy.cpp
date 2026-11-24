@@ -100,31 +100,41 @@ static constexpr const char* RECONSTRUCT_INST_FUNC_NAME = "__Vlazy_reconstruct_i
 
 //######################################################################
 
+// By name, not node: a node deleted before V3EmitCSyms reads these may have its address reused.
+// V3Name has already settled the names.
+using VarKey = std::pair<std::string, std::string>;  // Module or scope name, variable name
+static VarKey varKeyOf(const AstScope* scopep, const AstVar* varp) {
+    return {scopep->modp()->name(), varp->name()};
+}
+static VarKey instKeyOf(const AstScope* scopep, const AstVar* varp) {
+    return {scopep->name(), varp->name()};
+}
+
 class V3VpiLazyContext final {
 public:
     // PARTIAL variable -> its masked bits, where every instance agrees
-    std::map<const AstVar*, std::vector<V3VpiLazy::CombRun>> m_combRuns;
+    std::map<VarKey, std::vector<V3VpiLazy::CombRun>> m_combRuns;
     // One instance of a PARTIAL variable whose instances differ.
     struct InstComb final {
         VVpiLazyComb m_comb;  // This instance's class
         std::vector<V3VpiLazy::CombRun> m_runs;  // Its masked bits, if PARTIAL
     };
-    std::map<std::pair<std::string, const AstVar*>, InstComb> m_instComb;  // By scope name
-    // Refresh func of a shadow's row in a scope other than its group's; see rowStub()
-    std::map<std::pair<std::string, const AstVar*>, const AstCFunc*> m_rowRefresh;
+    std::map<VarKey, InstComb> m_instComb;
+    // Refresh func name of a shadow's row in a scope other than its group's; see rowStub()
+    std::map<VarKey, std::string> m_rowRefresh;
     // A split variable's or its shadow's instances held by the other; see splitKeptInstances()
-    std::set<std::pair<std::string, const AstVar*>> m_noRow;
+    std::set<VarKey> m_noRow;
 
-    VVpiLazyComb combOf(const std::string& scopeName, const AstVar* varp) const {
+    VVpiLazyComb combOf(const AstScope* scopep, const AstVar* varp) const {
         if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
-        const auto it = m_instComb.find({scopeName, varp});
+        const auto it = m_instComb.find(instKeyOf(scopep, varp));
         return it == m_instComb.end() ? VVpiLazyComb{VVpiLazyComb::PARTIAL} : it->second.m_comb;
     }
-    const std::vector<V3VpiLazy::CombRun>& combRunsOf(const std::string& scopeName,
+    const std::vector<V3VpiLazy::CombRun>& combRunsOf(const AstScope* scopep,
                                                       const AstVar* varp) const {
-        const auto it = m_instComb.find({scopeName, varp});
+        const auto it = m_instComb.find(instKeyOf(scopep, varp));
         if (it != m_instComb.end()) return it->second.m_runs;
-        const auto rit = m_combRuns.find(varp);
+        const auto rit = m_combRuns.find(varKeyOf(scopep, varp));
         UASSERT_OBJ(rit != m_combRuns.end(), varp, "--vpi-lazy masked variable has no runs");
         return rit->second;
     }
@@ -710,14 +720,14 @@ class CombClassifier final {
             varp->vpiLazyComb(firstr.m_comb);
             countComb(firstr.m_comb, static_cast<int>(vscps.size()));
             if (firstr.m_comb == VVpiLazyComb::PARTIAL)
-                m_ctx.m_combRuns.emplace(varp, std::move(insts.front().m_runs));
+                m_ctx.m_combRuns.emplace(varKeyOf(vscps.front()->scopep(), varp),
+                                         std::move(insts.front().m_runs));
             return;
         }
         varp->vpiLazyComb(VVpiLazyComb::PARTIAL);
         for (size_t i = 0; i < vscps.size(); ++i) {
             countComb(insts[i].m_comb, 1);
-            m_ctx.m_instComb.emplace(std::make_pair(vscps[i]->scopep()->name(), varp),
-                                     std::move(insts[i]));
+            m_ctx.m_instComb.emplace(instKeyOf(vscps[i]->scopep(), varp), std::move(insts[i]));
         }
     }
 
@@ -980,7 +990,7 @@ private:
     }
 
     VVpiLazyComb combOf(const AstVarScope* vscp) const {
-        return m_ctx.combOf(vscp->scopep()->name(), vscp->varp());
+        return m_ctx.combOf(vscp->scopep(), vscp->varp());
     }
 
     // METHODS - Group formation
@@ -1180,7 +1190,7 @@ private:
         for (const auto& pr : m_gather.m_readBits) {
             const AstVar* const varp = pr.first->varp();
             if (!varp->isVpiLazyCombPartial() || readVars.count(varp)) continue;
-            const auto cit = m_ctx.m_combRuns.find(varp);
+            const auto cit = m_ctx.m_combRuns.find(varKeyOf(pr.first->scopep(), varp));
             if (cit == m_ctx.m_combRuns.end()) continue;  // Instances differ; formPartialGroup
             if (pr.second.m_whole) {
                 readVars.insert(varp);
@@ -1235,7 +1245,8 @@ private:
         if (combOf(basep) == VVpiLazyComb::PARTIAL) {
             // The shadow's mask is per module, so cannot hold instances' differing gaps
             if (retainIf(basep, Bail::PARTIAL_GAP,
-                         !m_ctx.m_combRuns.count(varp) || gapRead.count(varp)))
+                         !m_ctx.m_combRuns.count(varKeyOf(basep->scopep(), varp))
+                             || gapRead.count(varp)))
                 return;
             m_gapVars.insert(varp);
         }
@@ -1402,9 +1413,10 @@ private:
         }
     };
 
-    bool definesDriven(CombFootprint& fp, const AstVar* varp) const {
+    bool definesDriven(CombFootprint& fp, const AstVarScope* vscp) const {
+        const AstVar* const varp = vscp->varp();
         if (!m_gapVars.count(varp)) return fullyDefined(fp, varp);
-        const std::vector<V3VpiLazy::CombRun>& runs = m_ctx.m_combRuns.at(varp);
+        const std::vector<V3VpiLazy::CombRun>& runs = m_ctx.combRunsOf(vscp->scopep(), varp);
         return std::all_of(runs.begin(), runs.end(), [&](const V3VpiLazy::CombRun& run) {
             return bitsDefined(fp, static_cast<int32_t>(run.elem), static_cast<int>(run.lsb),
                                static_cast<int>(run.width));
@@ -1420,7 +1432,7 @@ private:
         if (!walk.m_ok) return false;
         for (AstVarScope* const t : g->m_targets) {
             // Not written on every path
-            if (bailIf(whyr, Bail::LATCH, !definesDriven(defined[t], t->varp()))) return false;
+            if (bailIf(whyr, Bail::LATCH, !definesDriven(defined[t], t))) return false;
         }
         for (AstVarScope* const u : walk.m_assembledps)
             if (!m_gapVars.count(u->varp())) g->m_zeroInitps.push_back(u);
@@ -2068,8 +2080,8 @@ private:
             if (t->scopep() == g->m_scopep) {
                 shadowVarp->lazyReconFuncp(funcp);
             } else {
-                m_ctx.m_rowRefresh.emplace(std::make_pair(t->scopep()->name(), shadowVarp),
-                                           rowStub(t->scopep(), g));
+                m_ctx.m_rowRefresh.emplace(instKeyOf(t->scopep(), shadowVarp),
+                                           rowStub(t->scopep(), g)->name());
             }
         }
     }
@@ -2131,7 +2143,8 @@ private:
         AstVar* const shadowVarp = m_shadowOf.at(t)->varp();
         if (shadowVarp->isVpiLazyCombPartial()) return;  // Another instance moved it
         shadowVarp->vpiLazyComb(VVpiLazyComb::PARTIAL);
-        m_ctx.m_combRuns.emplace(shadowVarp, m_ctx.m_combRuns.at(varp));
+        m_ctx.m_combRuns.emplace(varKeyOf(t->scopep(), shadowVarp),
+                                 m_ctx.combRunsOf(t->scopep(), varp));
     }
 
     // Copy rows: a shadow and a descriptor source, no func, no epoch slot. A copy names the
@@ -2148,7 +2161,7 @@ private:
                 srcVarp = sit->second->varp();
                 UASSERT_OBJ(
                     srcVarp->lazyReconFuncp()
-                        || m_ctx.m_rowRefresh.count({g->m_copyFromp->scopep()->name(), srcVarp}),
+                        || m_ctx.m_rowRefresh.count(instKeyOf(g->m_copyFromp->scopep(), srcVarp)),
                     srcVarp, "--vpi-lazy folded copy source has no reconstruct func");
                 ++m_foldedCount;
             } else {
@@ -2233,7 +2246,7 @@ private:
             varp->addNextHere(twinp);
             // Refs cloned since the gather read only shadows or kept instances; see pinBoundary()
             for (AstVarScope* const instp : freed) {
-                m_ctx.m_noRow.emplace(instp->scopep()->name(), varp);
+                m_ctx.m_noRow.emplace(instKeyOf(instp->scopep(), varp));
                 instp->varp(twinp);
                 for (AstVarRef* const refp : m_gather.m_refsOf[instp]) refp->varp(twinp);
             }
@@ -2243,7 +2256,7 @@ private:
                         "--vpi-lazy frees an instance of a variable with no shadow");
             AstVar* const shadowVarp = sit->second;
             for (const AstVarScope* const instp : vscps)
-                if (kept(instp)) m_ctx.m_noRow.emplace(instp->scopep()->name(), shadowVarp);
+                if (kept(instp)) m_ctx.m_noRow.emplace(instKeyOf(instp->scopep(), shadowVarp));
         }
     }
 
@@ -2344,24 +2357,26 @@ VVpiLazyComb V3VpiLazy::combOf(const AstScope* scopep, const AstVar* varp) {
     if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
     const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
     UASSERT_OBJ(ctxp, varp, "--vpi-lazy comb mask without a context");
-    return ctxp->combOf(scopep->name(), varp);
+    return ctxp->combOf(scopep, varp);
 }
 
 const std::vector<V3VpiLazy::CombRun>& V3VpiLazy::combRuns(const AstScope* scopep,
                                                            const AstVar* varp) {
     const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
     UASSERT_OBJ(ctxp, varp, "--vpi-lazy comb mask without a context");
-    return ctxp->combRunsOf(scopep->name(), varp);
+    return ctxp->combRunsOf(scopep, varp);
 }
 
 bool V3VpiLazy::hasRow(const AstScope* scopep, const AstVar* varp) {
     const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
-    return !ctxp || !ctxp->m_noRow.count({scopep->name(), varp});
+    return !ctxp || !ctxp->m_noRow.count(instKeyOf(scopep, varp));
 }
 
-const AstCFunc* V3VpiLazy::refreshFuncp(const AstScope* scopep, const AstVar* shadowVarp) {
+std::string V3VpiLazy::refreshFuncName(const AstScope* scopep, const AstVar* shadowVarp) {
     const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
     UASSERT_OBJ(ctxp, shadowVarp, "--vpi-lazy row without a context");
-    const auto it = ctxp->m_rowRefresh.find({scopep->name(), shadowVarp});
-    return it != ctxp->m_rowRefresh.end() ? it->second : shadowVarp->lazyReconFuncp();
+    const auto it = ctxp->m_rowRefresh.find(instKeyOf(scopep, shadowVarp));
+    if (it != ctxp->m_rowRefresh.end()) return it->second;
+    const AstCFunc* const funcp = shadowVarp->lazyReconFuncp();
+    return funcp ? funcp->name() : "";
 }
