@@ -5032,6 +5032,7 @@ public:
     int instrCount() const override { return widthInstrs(); }
 };
 class AstDynArraySel final : public AstNodeSel {
+    // Element of a dynamic array
 public:
     AstDynArraySel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
         : ASTGEN_SUPER_DynArraySel(fl, fromp, bitp) {
@@ -5052,6 +5053,7 @@ public:
     int instrCount() const override { return widthInstrs(); }
 };
 class AstQueueSel final : public AstNodeSel {
+    // Element of a queue
     const bool m_fromBack;  // Index counts back from the last element, as in 'q[$ - index]'
 
 public:
