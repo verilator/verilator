@@ -614,7 +614,7 @@ public:
     explicit VpiLazyLatchVisitor(AstNode* stmtsp) { iterateAndNextConstNull(stmtsp); }
 };
 
-// See WRITABILITY above. Fed the gather's combinational blocks and variable instances, then finished.
+// See WRITABILITY above. Fed the gather's combinational blocks and instances, then finished.
 class CombClassifier final {
     // STATE
     V3VpiLazyContext& m_ctx;  // Takes the PARTIAL variables' runs
@@ -729,7 +729,8 @@ class CombClassifier final {
     void addBlock(AstAlways* alwaysp) {
         const VAlwaysKwd kwd = alwaysp->keyword();
         if (kwd == VAlwaysKwd::ALWAYS_LATCH) return;
-        const VpiLazyLatchVisitor latch{kwd == VAlwaysKwd::CONT_ASSIGN ? nullptr : alwaysp->stmtsp()};
+        const VpiLazyLatchVisitor latch{kwd == VAlwaysKwd::CONT_ASSIGN ? nullptr
+                                                                       : alwaysp->stmtsp()};
         const VpiLazyCombWriteVisitor writes{alwaysp};
         std::unordered_set<const AstVarScope*> unprovable;
         for (const AstVarRef* const refp : writes.m_refs)
@@ -1675,11 +1676,8 @@ private:
         return rhsp->varScopep();
     }
 
-    // Layouts must match exactly: the descriptor refreshes by memcpy of totalSize() bytes.
-    // entSize() has no width for VLVT_REAL or VLVT_STRING, so such a row would copy nothing,
-    // and a std::string could not be raw-copied even if it did; those stay cones. 'b'
-    // reaches 'a' only through cast-free assignments, so is no real or string either, and is as
-    // wide.
+    // The descriptor copies totalSize() bytes, which is none for VLVT_REAL or VLVT_STRING, so
+    // those stay cones. 'b' reaches 'a' only by cast-free assignment, so is alike and as wide.
     static bool sameLayout(const AstVarScope* a, const AstVarScope* b) {
         const AstNodeDType* const adtp = a->varp()->dtypep()->skipRefp();
         const AstNodeDType* const bdtp = b->varp()->dtypep()->skipRefp();
@@ -1739,9 +1737,8 @@ private:
         return std::string{RECONSTRUCT_BODY_FUNC_NAME} + "__" + std::to_string(gidOf(g));
     }
 
-    // tableFacing: its address goes in a VlLazyReconEntry, whose refreshp is void(*)(void*), so
-    // it takes the self pointer untyped. Not isStatic: V3Descope reads that as "no self pointer"
-    // and would descope every reference absolutely, pinning one instance into a shared func.
+    // tableFacing: called through VlLazyReconEntry::refreshp, so takes self untyped. Not
+    // isStatic, which V3Descope would read as no self, pinning one instance into a shared func.
     AstCFunc* newReconFunc(AstScope* scopep, const std::string& name, bool tableFacing) const {
         AstCFunc* const funcp = new AstCFunc{m_funcFlp, name, scopep, ""};
         funcp->isStatic(false);

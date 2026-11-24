@@ -378,6 +378,7 @@ class EmitCImp final : public EmitCFunc {
                             // lower level subinst code does it.
                         } else if (varp->isParam()) {
                         } else if (varp->isLazyShadowAlias()) {
+                            // No member of its own: its row reads the source cone's shadow
                         } else if (VN_IS(varp->dtypep(), ClosurePoolDType)) {
                             // Closure pools are not saved, they are simply memory pools
                         } else if (varp->basicp() && varp->basicp()->isNbaGenericQueue()) {
