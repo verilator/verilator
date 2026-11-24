@@ -1430,6 +1430,7 @@ private:
     // A func shared by every instance cannot call the one instance's func that an operand group
     // anchored elsewhere has, so is anchored in the top scope too: one func per instance.
     void anchorConsumersOfAnchored() {
+        // Rounds, not a worklist: each key moves at most once, and a move rarely forces another
         for (bool changed = true; changed;) {
             changed = false;
             for (const auto& ownp : m_groups) {
@@ -1562,7 +1563,8 @@ private:
                     continue;
                 if (!mergeCycle(sccps)) killGroupsOfKey(cycleCut(sccps)->m_keyp, Bail::COMB_CYCLE);
             }
-            // Merged and killed groups leave the graph
+            // Merged and killed groups leave the graph. Rebuilt once per round, not per kill, as
+            // the round's SCCs are all handled first
             m_depGraph.clear();
             buildDependencyGraph();
         }
