@@ -14,8 +14,8 @@ test.scenarios('vlt')
 test.top_filename = "t/t_vpi_drivers.v"
 test.pli_filename = "t/t_vpi_drivers.cpp"
 
-# --vpi-lazy implies --vpi. The split options spread the generated code over many functions and
-# files. VL_DEBUG, as Makefile_obj sets for non---binary tests, runs the runtime's debug assertions.
+# What VPI reads and writes must not depend on the generated code being spread over many
+# functions and files. VL_DEBUG enables the runtime's debug assertions.
 test.compile(make_top_shell=False,
              verilator_flags2=[
                  "--binary --vpi-lazy --no-l2name --stats --output-split 200"

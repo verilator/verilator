@@ -15,10 +15,8 @@ test.top_filename = "t/t_vpi_drivers.v"
 test.pli_filename = "t/t_vpi_drivers.cpp"
 test.golden_filename = "t/t_vpi_drivers_lazy.out"
 
-# What is readable and writable must not depend on the optimizations that reshape
-# combinational logic and variables ahead of --vpi-lazy. Toggle coverage adds non-always
-# statements to scopes; --dump-tree covers the --vpi-lazy node annotations;
-# --output-split-cfuncs 0 leaves every rematerialization body unsplit.
+# What VPI reads and writes must not depend on the optimizations that reshape logic and
+# variables, on toggle coverage, or on how the generated functions are split.
 test.compile(
     make_top_shell=False,
     verilator_flags2=[
