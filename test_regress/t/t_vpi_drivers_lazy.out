@@ -1,5 +1,4 @@
 reset t.pull_b 00000000
-reset t.sfc_f__Vstatic__tmp 00000000
 mid-eval t.mid_c 0x11
 mid-eval t.mid_c 0x21
 cbValueChange t.ch1 fired 1 0x06

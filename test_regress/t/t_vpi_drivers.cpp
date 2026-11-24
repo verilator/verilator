@@ -294,12 +294,18 @@ std::string valueStr(vpiHandle handle) {
     }
 }
 
-// Every row, as a handle, in hierarchy order
+// Every module-level signal row, as a handle, in hierarchy order. A forced signal's force
+// controls and a static function's locals are VPI-visible, but are not module signals.
 void walk(vpiHandle scopep, const std::function<void(vpiHandle)>& fn) {
     for (const PLI_INT32 type : {vpiReg, vpiNet}) {
         TestVpiHandle iterp = vpi_iterate(type, scopep);
         if (!iterp) continue;
-        while (vpiHandle handle = vpi_scan(iterp)) fn(handle);
+        while (vpiHandle handle = vpi_scan(iterp)) {
+            const std::string name = vpi_get_str(vpiFullName, handle);
+            if (name.find("__Vforce") != std::string::npos) continue;
+            if (name.find("__Vstatic__") != std::string::npos) continue;
+            fn(handle);
+        }
         iterp.freed();
     }
     for (const PLI_INT32 type : {vpiModule, vpiInterface}) {
@@ -333,10 +339,6 @@ void dumpRows() {
     std::vector<std::string> lines;
     walk(nullptr, [&lines](vpiHandle handle) {
         const std::string name = fullName(handle);
-        // A forced signal's force controls are public, but are not RTL signals
-        if (name.find("__Vforce") != std::string::npos) return;
-        // --public-flat-rw also makes a static function's local public, under its mangled name
-        if (name.find("__Vstatic__") != std::string::npos) return;
         // A compiler temporary has no RTL name
         if (name.find("__") != std::string::npos) {
             std::printf("%%Error: compiler temporary is VPI-visible: %s\n", name.c_str());
