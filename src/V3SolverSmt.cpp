@@ -3063,9 +3063,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                             : static_cast<AstNode*>(hoistIfp);
                     // Replace in-tree disable-soft with a no-op boolean
                     // constraint so editSingle() folds cleanly.
-                    AstConstraintExpr* const truep
-                        = new AstConstraintExpr{fl, new AstConst{fl, AstConst::BitTrue{}}};
-                    exprp->replaceWith(truep);
+                    exprp->replaceWith(newTrueConstraint(fl, false));
                     VL_DO_DANGLING(exprp->deleteTree(), exprp);
                 }
             }
