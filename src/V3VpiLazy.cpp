@@ -160,6 +160,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -340,6 +341,10 @@ bool unsafeToReexecute(AstNode* nodep) {
 struct CombFootprint final {
     bool m_whole = false;  // Every bit; m_runsOf is then empty
     std::map<int32_t, std::vector<std::pair<int, int>>> m_runsOf;  // Else the bits, per element
+    void setWhole() {
+        m_whole = true;
+        m_runsOf.clear();
+    }
 };
 
 // A mask names bits of a table row's integral elements; any other kind is all or nothing.
@@ -409,6 +414,23 @@ bool bitsDefined(const CombFootprint& fp, int32_t elem, int lsb, int width) {
     });
 }
 
+// True if 'fp' names every bit of 'varp'; then remembered as whole, so decided once.
+bool fullyDefined(CombFootprint& fp, const AstVar* varp) {
+    if (fp.m_whole) return true;
+    std::vector<int32_t> dims;
+    int elemWidth = 0;
+    if (!combMaskable(varp, dims, elemWidth)) return false;
+    uint64_t elements = 1;
+    for (const int32_t d : dims) elements *= static_cast<uint64_t>(d);
+    if (fp.m_runsOf.size() != elements) return false;
+    for (const auto& pr : fp.m_runsOf) {
+        if (pr.second.size() != 1 || pr.second[0].first != 0 || pr.second[0].second != elemWidth)
+            return false;
+    }
+    fp.setWhole();
+    return true;
+}
+
 // Walk before DFG and V3Gate: write counts, refs and read bits per VarScope, and per-block
 // write info.
 class LazyGatherVisitor final : public VNVisitor {
@@ -418,6 +440,7 @@ public:
     // STATE
     std::unordered_map<const AstVarScope*, int> m_writeCount;  // Writes per var
     std::vector<AstVarScope*> m_writtenOrder;  // Vars with >=1 write, encounter order
+    std::unordered_set<const AstVarScope*> m_combWritten;  // Vars a combo block writes
     std::vector<CombBlock> m_combBlocks;  // Combo blocks, encounter order
     std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_vscpsOf;  // Its instances
     std::unordered_map<const AstVarScope*, std::vector<AstVarRef*>> m_refsOf;  // Its refs
@@ -444,15 +467,14 @@ private:
         m_refsOf[vscp].push_back(nodep);
         if (!nodep->access().isReadOnly()) {
             if (m_writeCount[vscp]++ == 0) m_writtenOrder.push_back(vscp);
-            if (m_blockp && m_blockp->m_writeCount[vscp]++ == 0)
+            if (m_blockp && m_blockp->m_writeCount[vscp]++ == 0) {
                 m_blockp->m_targets.push_back(vscp);
+                m_combWritten.insert(vscp);
+            }
         }
         if (!nodep->access().isWriteOnly()) {
-            if (nodep != m_selRefp && vscp->varp()->isSigVpiLazyCandidate()) {
-                CombFootprint& fp = m_readBits[vscp];
-                fp.m_whole = true;
-                fp.m_runsOf.clear();
-            }
+            if (nodep != m_selRefp && vscp->varp()->isSigVpiLazyCandidate())
+                m_readBits[vscp].setWhole();
             if (m_blockp && !vscp->user1SetOnce()) m_blockp->m_reads.push_back(vscp);
         }
         iterateChildren(nodep);
@@ -560,8 +582,7 @@ int constTruth(const AstNodeExpr* condp) {
 void unionBits(CombFootprint& dst, const CombFootprint& src) {
     if (dst.m_whole) return;
     if (src.m_whole) {
-        dst.m_whole = true;
-        dst.m_runsOf.clear();
+        dst.setWhole();
         return;
     }
     for (const auto& pr : src.m_runsOf) {
@@ -645,9 +666,7 @@ private:
         PartExtent ext;
         if (AstVarRef* const refp = VN_CAST(nodep->lhsp(), VarRef)) {
             m_modeled.insert(refp);
-            CombFootprint& fp = m_defined[refp->varScopep()];
-            fp.m_whole = true;
-            fp.m_runsOf.clear();
+            m_defined[refp->varScopep()].setWhole();
         } else if (AstVarRef* const prefp = partialLhsRef(nodep->lhsp(), ext)) {
             int32_t elem = 0;
             if (combElement(prefp->varp(), ext, elem)) {
@@ -729,63 +748,22 @@ class CombClassifier final {
     // Null 'extp': a write the footprint cannot narrow, so the whole variable.
     void addCombWrite(const AstVarScope* vscp, const PartExtent* extp) {
         CombFootprint& fp = combFootprint(vscp);
-        if (fp.m_whole) return;
         int32_t elem = 0;
-        if (!extp || !combElement(vscp->varp(), *extp, elem)) {
-            fp.m_whole = true;
-            fp.m_runsOf.clear();
-            return;
+        if (extp && combElement(vscp->varp(), *extp, elem)) {
+            addBits(fp, elem, extp->m_lsb, extp->m_width);
+        } else {
+            fp.setWhole();
         }
-        fp.m_runsOf[elem].emplace_back(extp->m_lsb, extp->m_width);
     }
 
-    void addCombBits(const AstVarScope* vscp, const CombFootprint& bits) {
-        CombFootprint& fp = combFootprint(vscp);
-        if (fp.m_whole) return;
-        if (bits.m_whole) {
-            fp.m_whole = true;
-            fp.m_runsOf.clear();
-            return;
-        }
-        for (const auto& pr : bits.m_runsOf)
-            for (const std::pair<int, int>& bitRun : pr.second)
-                fp.m_runsOf[pr.first].push_back(bitRun);
-    }
-
-    // Merged runs covering every bit of every element are the whole variable, and have none.
     static InstComb mergedFootprint(const AstVar* varp, CombFootprint& fp) {
+        if (fullyDefined(fp, varp)) return InstComb{VVpiLazyComb::WHOLE, {}};
         std::vector<V3VpiLazy::CombRun> runs;
-        if (!fp.m_whole) {
-            std::vector<int32_t> dims;
-            int elemWidth = 0;
-            combMaskable(varp, dims, elemWidth);
-            uint64_t elements = 1;
-            for (const int32_t d : dims) {
-                elements *= static_cast<uint64_t>(d);
-                if (elements > fp.m_runsOf.size()) break;
-            }
-            bool full = elements == fp.m_runsOf.size();
-            for (auto& pr : fp.m_runsOf) {
-                std::vector<std::pair<int, int>>& parts = pr.second;
-                std::sort(parts.begin(), parts.end());
-                const size_t first = runs.size();
-                for (const std::pair<int, int>& part : parts) {
-                    const uint32_t lsb = static_cast<uint32_t>(part.first);
-                    const uint32_t width = static_cast<uint32_t>(part.second);
-                    V3VpiLazy::CombRun* const lastp = runs.size() > first ? &runs.back() : nullptr;
-                    if (lastp && lsb <= lastp->lsb + lastp->width) {
-                        lastp->width = std::max(lastp->width, lsb + width - lastp->lsb);
-                    } else {
-                        runs.push_back({static_cast<uint32_t>(pr.first), lsb, width});
-                    }
-                }
-                if (runs.size() != first + 1 || runs.back().lsb != 0
-                    || runs.back().width != static_cast<uint32_t>(elemWidth))
-                    full = false;
-            }
-            fp.m_whole = full;
+        for (const auto& pr : fp.m_runsOf) {
+            for (const std::pair<int, int>& run : pr.second)
+                runs.push_back({static_cast<uint32_t>(pr.first), static_cast<uint32_t>(run.first),
+                                static_cast<uint32_t>(run.second)});
         }
-        if (fp.m_whole) return InstComb{VVpiLazyComb::WHOLE, {}};
         return InstComb{VVpiLazyComb::PARTIAL, std::move(runs)};
     }
 
@@ -853,7 +831,7 @@ class CombClassifier final {
             // Every bit defined on every path has a write, so the union of writes is these
             const auto it = latch.m_defined.find(vscp);
             if (it != latch.m_defined.end() && proven.insert(vscp).second)
-                addCombBits(vscp, it->second);
+                unionBits(combFootprint(vscp), it->second);
         }
     }
 
@@ -881,8 +859,6 @@ class VpiLazyPreparer final {
     LazyGatherVisitor m_gather;  // The one netlist walk's findings
     const CombClassifier m_comb;  // See WRITABILITY above
 
-    int m_combBailRetained = 0;  // Group-bail / non-sole-driver / cycle retains
-
     std::vector<std::unique_ptr<Group>> m_groups;  // Formation order (deterministic)
     // Group::m_keyp -> the groups sharing it, one per instance
     std::unordered_map<const AstNode*, std::vector<Group*>> m_groupsOfKey;
@@ -909,8 +885,6 @@ class VpiLazyPreparer final {
 
     FileLine* m_funcFlp = nullptr;  // Of every node emitted, the top scope's
     int m_reconstructed = 0;  // Reconstructed signals (per instance)
-    // Retained with storage (incl. group bails), seeded from the bail count pre-emission
-    int m_fallback = 0;
     uint32_t m_boundaryStorage = 0;  // Pinned only to feed a reconstruct function
     // Why each retained signal missed reconstruction.
     enum class Bail : uint8_t {
@@ -954,8 +928,6 @@ class VpiLazyPreparer final {
         return names[static_cast<size_t>(b)];
     }
     std::array<int, static_cast<size_t>(Bail::_COUNT)> m_bailCount{};
-    std::unordered_set<const AstVarScope*> m_combTargets;  // Built by hasCombDriver()
-    bool m_combTargetsBuilt = false;  // m_combTargets is empty for a design with no comb block
     // Per-module member + per-instance VarScope, else N identically-named members collide.
     std::unordered_map<AstVar*, AstVar*> m_shadowVarOfOrig;  // per-module member dedup
     std::unordered_map<AstVarScope*, AstVarScope*> m_shadowOf;  // per-instance VarScope
@@ -1046,13 +1018,8 @@ private:
         return it == m_retargetSrcOf.end() ? nullptr : it->second;
     }
 
-    bool hasCombDriver(const AstVarScope* vscp) {
-        if (!m_combTargetsBuilt) {
-            for (const CombBlock& b : m_gather.m_combBlocks)
-                for (AstVarScope* const t : b.m_targets) m_combTargets.insert(t);
-            m_combTargetsBuilt = true;
-        }
-        return m_combTargets.count(vscp) != 0;
+    bool hasCombDriver(const AstVarScope* vscp) const {
+        return m_gather.m_combWritten.count(vscp);
     }
 
     bool kept(const AstVarScope* vscp) const { return m_kept.count(vscp); }
@@ -1066,7 +1033,6 @@ private:
             return;
         if (!m_kept.insert(target).second) return;
         UINFO(9, "vpi-lazy retained: " << bailName(why) << " " << target->name());
-        ++m_combBailRetained;
         ++m_bailCount[static_cast<size_t>(why)];
     }
 
@@ -1348,25 +1314,6 @@ private:
 
     // METHODS - Group analysis
 
-    // True if 'fp' names every bit of 'varp'; then remembered as whole, so decided once.
-    static bool fullyDefined(CombFootprint& fp, const AstVar* varp) {
-        if (fp.m_whole) return true;
-        std::vector<int32_t> dims;
-        int elemWidth = 0;
-        if (!combMaskable(varp, dims, elemWidth)) return false;
-        uint64_t elements = 1;
-        for (const int32_t d : dims) elements *= static_cast<uint64_t>(d);
-        if (fp.m_runsOf.size() != elements) return false;
-        for (const auto& pr : fp.m_runsOf) {
-            if (pr.second.size() != 1 || pr.second[0].first != 0
-                || pr.second[0].second != elemWidth)
-                return false;
-        }
-        fp.m_whole = true;
-        fp.m_runsOf.clear();
-        return true;
-    }
-
     // One ordered walk over a group's statements: see UNIT OF RECONSTRUCTION above. Per bit, so
     // `a[1] = f(a[0])` reads only what it already wrote.
     class LazyReadOrderVisitor final : public VNVisitorConst {
@@ -1399,11 +1346,7 @@ private:
             if (m_undoSet.insert(vscp).second) m_undo.emplace_back(vscp, fp);
             return fp;
         }
-        void defineWhole(AstVarScope* vscp) {
-            CombFootprint& fp = changing(vscp);
-            fp.m_whole = true;
-            fp.m_runsOf.clear();
-        }
+        void defineWhole(AstVarScope* vscp) { changing(vscp).setWhole(); }
         void defineBits(AstVarScope* vscp, int32_t elem, int lsb, int width) {
             CombFootprint& fp = changing(vscp);
             if (!fp.m_whole && fp.m_runsOf.empty()
@@ -2138,7 +2081,6 @@ private:
 
     // Added to the tree at once, so remapped clones' dtypep() links survive V3Dead's dtype GC.
     void emitReconstructions() {
-        m_fallback = m_combBailRetained;
         m_funcFlp = m_topScopep->fileline();
         assignEpochSlots();
         // Every instance needs its own shadow VarScope for its descriptor.
@@ -2384,16 +2326,18 @@ private:
     void reportStats() {
         const size_t reconstructedMembers = m_shadowVarOfOrig.size();
         const int floorRetained = m_bailCount[static_cast<size_t>(Bail::COMPLETENESS_FLOOR)];
+        const int fallback
+            = std::accumulate(m_bailCount.begin(), m_bailCount.end(), 0) - floorRetained;
         UINFO(3, "vpi-lazy: reconstructed="
                      << m_reconstructed << " groups=" << m_ordered.size()
-                     << " members=" << reconstructedMembers << " fallback=" << m_fallback
+                     << " members=" << reconstructedMembers << " fallback=" << fallback
                      << " copyGroups=" << m_copyCount << " foldedCopies=" << m_foldedCount
                      << " helpers=" << m_helperCount << " floorRetained=" << floorRetained);
         if (v3Global.opt.stats()) {
             V3Stats::addStat("VPI, lazy reconstructed", m_reconstructed);
             V3Stats::addStat("VPI, lazy groups", m_ordered.size());
             V3Stats::addStat("VPI, lazy reconstructed members", reconstructedMembers);
-            V3Stats::addStat("VPI, lazy fallback retained", m_fallback);
+            V3Stats::addStat("VPI, lazy fallback retained", fallback);
             V3Stats::addStat("VPI, lazy boundary storage pinned", m_boundaryStorage);
             V3Stats::addStat("VPI, lazy copy descriptors", m_copyCount);
             V3Stats::addStat("VPI, lazy folded copy cones", m_foldedCount);
