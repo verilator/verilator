@@ -481,6 +481,18 @@ class frame_randmode_off_queue_untaken;
   endfunction
 endclass
 
+// Same, under a disjunction the solver decides: only its other side holds.
+class frame_randmode_off_queue_or;
+  rand bit [7:0] x;
+  rand bit [7:0] target[$][2];
+  rand int idx;
+  constraint c { idx == 1; x == 8'd9 || x == target[idx][1]; x != 8'hcd; x != 8'h34; }
+  function new();
+    target = '{'{8'h12, 8'h34}, '{8'hab, 8'hcd}};
+    idx = 0;
+  endfunction
+endclass
+
 // Same, under nested branches.
 class frame_randmode_off_queue_nested;
   rand bit [7:0] x;
@@ -694,6 +706,7 @@ module t;
     frame_randmode_off_randidx_lhs rmodeidx_lhs_obj;
     frame_randmode_off_queue_rows rmodeq_obj;
     frame_randmode_off_queue_untaken rmodequ_obj;
+    frame_randmode_off_queue_or rmodeqor_obj;
     frame_randmode_off_queue_nested rmodeqn_obj;
     frame_randmode_off_method rmodem_obj;
     frame_randmode_off_base rmodeoff_obj;
@@ -1073,6 +1086,12 @@ module t;
     randomize_result = rmodequ_obj.randomize();
     `checkd(randomize_result, 1);
     `checkd(rmodequ_obj.x, 8'd9);
+
+    rmodeqor_obj = new;
+    rmodeqor_obj.target.rand_mode(0);
+    randomize_result = rmodeqor_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(rmodeqor_obj.x, 8'd9);
 
     rmodeqn_obj = new;
     rmodeqn_obj.target.rand_mode(0);
