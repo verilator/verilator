@@ -1879,10 +1879,10 @@ class WidthVisitor final : public VNVisitor {
         // However a later operation may have changed the node->signed w/o changing
         // the number's sign.  So we don't: nodep->dtypeChgSigned(nodep->num().isSigned());
         if (nodep->didWidthAndSet()) return;
-        if (m_vup && m_vup->prelim() && nodep->num().isFromString()
-            && m_vup->dtypeNullSkipRefp() && m_vup->dtypeNullSkipRefp()->isString()) {
-            AstConst* const strp = new AstConst{nodep->fileline(), AstConst::String{},
-                                                nodep->num().toString()};
+        if (m_vup && m_vup->prelim() && nodep->num().isFromString() && m_vup->dtypeNullSkipRefp()
+            && m_vup->dtypeNullSkipRefp()->isString()) {
+            AstConst* const strp
+                = new AstConst{nodep->fileline(), AstConst::String{}, nodep->num().toString()};
             strp->didWidth(true);
             nodep->replaceWith(strp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
