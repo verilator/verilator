@@ -1010,6 +1010,43 @@ class SignedModIndex;
   endfunction
 endclass
 
+// A block turned off at run time must still compile when its shape is one
+// the solver cannot lower; the disabled solve then just answers the rest.
+class DisabledBlockMultidimIndex;
+  rand bit [7:0] x;
+  rand int idx;
+  bit [7:0] t[2][2];
+  constraint d { x == 8'd7; }
+  constraint c { x == t[idx][1]; }
+endclass
+
+// Same, for a member read off an unpacked-struct element.
+class DisabledBlockStructIndex;
+  rand bit [7:0] x;
+  rand int idx;
+  s_t t[4];
+  constraint d { x == 8'd7; }
+  constraint c { x == t[idx].a; }
+endclass
+
+// Same, past the solver expansion limit.
+class DisabledBlockOvercapIndex;
+  rand bit [7:0] x;
+  rand int idx;
+  bit [7:0] big[20000];
+  constraint d { x == 8'd7; }
+  constraint c { x == big[idx]; }
+endclass
+
+// Same, for an index the low-bound biasing cannot normalize.
+class DisabledBlockBiasedIndex;
+  rand byte a;
+  rand bit [7:0] x;
+  bit [7:0] pool[-10:300];
+  constraint d { x == 8'd7; }
+  constraint c { x == pool[(a >> 1) + 0]; }
+endclass
+
 
 module t;
   initial begin
@@ -1022,6 +1059,10 @@ module t;
     ArgListIndexSat arglist_obj;
     SizedConstIndexUnsat sized_u_obj;
     SignedModIndex smod_obj;
+    DisabledBlockMultidimIndex dismulti_obj;
+    DisabledBlockStructIndex disstruct_obj;
+    DisabledBlockOvercapIndex discap_obj;
+    DisabledBlockBiasedIndex disbias_obj;
     UniqueIdPoolViaMember mobj;
     UniqueIdPoolNonZeroBase nzobj;
     UniqueIdPoolDescBase descobj;
@@ -1706,6 +1747,30 @@ module t;
     randomize_result = smod_obj.randomize();
     `checkd(randomize_result, 1);
     `checkd(smod_obj.a, -7);
+
+    dismulti_obj = new;
+    dismulti_obj.c.constraint_mode(0);
+    randomize_result = dismulti_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(dismulti_obj.x, 7);
+
+    disstruct_obj = new;
+    disstruct_obj.c.constraint_mode(0);
+    randomize_result = disstruct_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(disstruct_obj.x, 7);
+
+    discap_obj = new;
+    discap_obj.c.constraint_mode(0);
+    randomize_result = discap_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(discap_obj.x, 7);
+
+    disbias_obj = new;
+    disbias_obj.c.constraint_mode(0);
+    randomize_result = disbias_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(disbias_obj.x, 7);
 
     $write("*-* All Finished *-*\n");
     $finish;

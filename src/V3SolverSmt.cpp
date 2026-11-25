@@ -157,6 +157,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                                                // classp has no randomize() (inherited members)
     AstVar* const m_genp;  // VlRandomizer variable of the class
     AstVar* m_randModeVarp;  // Relevant randmode state variable
+    // A block that run-time code may turn off keeps master's behavior on shapes this
+    // lowering cannot handle, instead of failing the compile for a solve that never runs
+    bool m_blockUsesMode = false;
     bool m_wantSingle = false;  // Whether to merge constraint expressions with LOGAND
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
     bool m_structSel = false;  // Marks when inside structSel
@@ -2296,7 +2299,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (indexIsRand) {
             AstVar* const rootVarp = resolveArraySelRootVarp(nodep, nodep->fromp());
             if (!rootVarp) return;
-            if (!rootVarp->rand().isRandomizable() && !rootVarp->isStdRandomizeArg()) {
+            if (!rootVarp->rand().isRandomizable() && !rootVarp->isStdRandomizeArg()
+                && !m_blockUsesMode) {
                 handleRandIndexIntoNonrandArray(nodep, fl);
                 return;
             }
@@ -3412,7 +3416,8 @@ public:
                                    uint32_t* uniqueConstraintIdp, V3UniqueNames& uniqueNames,
                                    AstNodeFTask* memberrefInitTaskp = nullptr,
                                    VInsertionSet<AstVar*>* sizeConstrainedArraysp = nullptr,
-                                   AstNodeFTask* prepareConstrainedArraysp = nullptr)
+                                   AstNodeFTask* prepareConstrainedArraysp = nullptr,
+                                   bool blockUsesMode = false)
         : m_classp{classp}
         , m_inlineInitBlockp{inlineInitp}
         , m_memberrefInitTaskp{memberrefInitTaskp}
@@ -3423,7 +3428,8 @@ public:
         , m_sizeConstrainedArraysp{sizeConstrainedArraysp}
         , m_prepareConstrainedArraysp{prepareConstrainedArraysp}
         , m_uniqueConstraintIdp{uniqueConstraintIdp}
-        , m_uniqueNames{uniqueNames} {
+        , m_uniqueNames{uniqueNames}
+        , m_blockUsesMode{blockUsesMode} {
         // Pre-pass before SMT lowering: extract conditional disable-soft
         // directives as runtime AstIf statements and append them to the
         // constraint-items chain so they reach the setup task body.  The SMT
@@ -4488,10 +4494,20 @@ public:
                     AstBegin* const holderp = SmtUtil::newItemsHolderp(
                         constrp->fileline(), constrp->itemsp()->unlinkFrBackWithNext());
                     taskp->addStmtsp(wrapIfConstraintMode(nodep, constrp, holderp));
-                    ConstraintExprVisitor{
-                        classp,        m_memberMap,  holderp->declsp(), nullptr,
-                        genp,          randModeVarp, m_writtenVars,     &m_uniqueConstraintId,
-                        m_uniqueNames, randomizep,   &sizeArrays,       prepareArraysTaskp};
+                    const RandomizeMode blockMode = {.asUQuad = constrp->user1()};
+                    ConstraintExprVisitor{classp,
+                                          m_memberMap,
+                                          holderp->declsp(),
+                                          nullptr,
+                                          genp,
+                                          randModeVarp,
+                                          m_writtenVars,
+                                          &m_uniqueConstraintId,
+                                          m_uniqueNames,
+                                          randomizep,
+                                          &sizeArrays,
+                                          prepareArraysTaskp,
+                                          blockMode.usesMode};
                     SmtUtil::replaceWithLowered(holderp);
                 }
             });
