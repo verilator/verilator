@@ -260,6 +260,7 @@ struct CombFootprint final {
         m_whole = true;
         m_runsOf.clear();
     }
+    bool empty() const { return !m_whole && m_runsOf.empty(); }
 };
 
 // A mask names bits of a table row's integral elements; any other kind is all or nothing.
@@ -535,84 +536,192 @@ CombFootprint intersectBits(const CombFootprint& a, const CombFootprint& b) {
 
 using DefinedBits = std::unordered_map<AstVarScope*, CombFootprint>;
 
-DefinedBits intersectDefined(const DefinedBits& a, const DefinedBits& b) {
-    const bool aSmaller = a.size() <= b.size();
-    const DefinedBits& smallr = aSmaller ? a : b;
-    const DefinedBits& larger = aSmaller ? b : a;
-    DefinedBits both;
-    for (const auto& pr : smallr) {
-        const auto it = larger.find(pr.first);
-        if (it == larger.end()) continue;
-        CombFootprint bits = intersectBits(pr.second, it->second);
-        if (bits.m_whole || !bits.m_runsOf.empty()) both.emplace(pr.first, std::move(bits));
-    }
-    return both;
-}
+// Why each retained signal missed rematerialization.
+enum class Bail : uint8_t {
+    MULTIDRIVEN,  // Written by more than one group, or outside any group
+    DTYPE,  // Kind rematerialization cannot express (unpacked aggregate)
+    PARTIAL_MIXED_WRITE,  // Partial-write target also has a full/comb/impure/var-lsb write
+    PARTIAL_OVERLAP,  // Partial writes overlap, so no unambiguous assembly
+    // Partial writes leave undriven bits that a read other than VPI's may reach
+    PARTIAL_GAP,
+    // Some bits of a group var are read before a write of them on every path
+    READ_BEFORE_WRITE,
+    LATCH,  // A target is not written on every path through the block
+    IMPURE,  // The block has a side effect rematerialization must not repeat
+    UNSUPPORTED_STMT,  // A statement kind the ordered walk does not model
+    UNSUPPORTED_LVALUE,  // A continuous write whose shape a shadow cannot mirror
+    COMB_CYCLE,  // Member of a group cycle that does not merge into one provable group
+    TRACED,  // Stored for tracing anyway, so VPI reads that storage
+    COMPLETENESS_FLOOR,  // No classification path claimed it; retained so VPI still sees it
+    _COUNT
+};
 
-void unionDefined(DefinedBits& dst, DefinedBits&& src) {
-    if (dst.empty()) {
-        dst = std::move(src);
-        return;
-    }
-    for (const auto& pr : src) unionBits(dst[pr.first], pr.second);
-}
+// One ordered walk over a group's statements: see UNIT OF REMATERIALIZATION above. Per bit, so
+// `a[1] = f(a[0])` reads only what it already wrote. Without a group it walks one block for
+// WRITABILITY above: no reads are checked, and a write it cannot model is skipped, not bailed.
+class VpiLazyReadOrderVisitor final : public VNVisitorConst {
+    using ArmDefs = std::vector<std::pair<AstVarScope*, CombFootprint>>;
 
-// Finds the bits every path through a block assigns. Arms only add, so
-// (D | then) & (D | else) == D | (then & else): each arm is walked from empty.
-// Both arms of a constant 'if' are walked, so a V3Const-folded branch reads the same.
-class VpiLazyLatchVisitor final : public VNVisitorConst {
+    const Group* const m_groupp;  // Group whose statements are walked, or nullptr
+    ArmDefs m_undo;  // Each var the current arm changed, as it was before the arm
+    std::unordered_set<const AstVarScope*> m_undoSet;  // m_undo's vars, for lookup
+    const AstVarRef* m_skipp = nullptr;  // An assignment's LHS base ref, checked apart
+    bool m_inExpr = false;  // Scanning an expression's reads, not walking statements
+
 public:
-    DefinedBits m_defined;  // Bits assigned on every path so far
-    // Full-width and constant-select assigns reached through ifs alone, the only writes
-    // it decides
+    // Var bits the prefix wrote on every path; conditionals intersect
+    DefinedBits m_defined;
+    // Writes that set m_defined; a write under a loop, jump or unmodeled statement is not one
     std::unordered_set<const AstVarRef*> m_modeled;
+    bool m_ok = true;  // No statement bailed
+    Bail m_why = Bail::UNSUPPORTED_STMT;  // Why the walk failed, its first failure only
+    std::vector<AstVarScope*> m_assembledps;  // Vars first defined in part, encounter order
 
 private:
-    DefinedBits walkArm(AstNode* stmtsp) {
-        VL_RESTORER_CLEAR(m_defined);
+    // Records the first failure; returns 'cond', so a caller bails and returns in one line
+    bool bailIf(Bail why, bool cond) {
+        if (cond && m_ok && m_groupp) {
+            m_ok = false;
+            m_why = why;
+        }
+        return cond;
+    }
+    CombFootprint& changing(AstVarScope* vscp) {
+        CombFootprint& fp = m_defined[vscp];
+        if (m_undoSet.insert(vscp).second) m_undo.emplace_back(vscp, fp);
+        return fp;
+    }
+    void defineWhole(AstVarScope* vscp) { changing(vscp).setWhole(); }
+    void defineBits(AstVarScope* vscp, int32_t elem, int lsb, int width) {
+        CombFootprint& fp = changing(vscp);
+        if (fp.empty()
+            && std::find(m_assembledps.begin(), m_assembledps.end(), vscp) == m_assembledps.end())
+            m_assembledps.push_back(vscp);
+        addBits(fp, elem, lsb, width);
+    }
+    bool member(const AstVarRef* refp) const {
+        return m_groupp->m_members.count(refp->varScopep()) != 0;
+    }
+    void scanReads(AstNode* nodep) {
+        if (!m_groupp) return;
+        VL_RESTORER(m_inExpr);
+        m_inExpr = true;
+        iterateAndNextConstNull(nodep);
+    }
+    // Walks the arm from what the prefix defined, then restores that and returns what the
+    // arm left defined of each var it changed, so an if costs its arms' writes alone.
+    ArmDefs walkArm(AstNode* stmtsp, AstNode* contsp = nullptr) {
+        VL_RESTORER_CLEAR(m_undo);
+        VL_RESTORER_CLEAR(m_undoSet);
         iterateAndNextConstNull(stmtsp);
-        DefinedBits armDefined;
-        armDefined.swap(m_defined);
-        return armDefined;
+        iterateAndNextConstNull(contsp);
+        for (std::pair<AstVarScope*, CombFootprint>& pr : m_undo)
+            std::swap(m_defined[pr.first], pr.second);
+        ArmDefs armDefs;
+        armDefs.swap(m_undo);
+        return armDefs;
+    }
+    // A constant select of a group var reads only its own bits.
+    void visitSel(AstNodeExpr* nodep) {
+        if (!m_ok) return;
+        PartExtent ext;
+        int32_t elem = 0;
+        const AstVarRef* const refp = partialLhsRef(nodep, ext);
+        if (refp && refp != m_skipp && !refp->access().isWriteOnly() && member(refp)
+            && combElement(refp->varp(), ext, elem)) {
+            bailIf(Bail::READ_BEFORE_WRITE,
+                   !bitsDefined(m_defined[refp->varScopep()], elem, ext.m_lsb, ext.m_width));
+            return;
+        }
+        iterateChildrenConst(nodep);
     }
 
     // VISITORS
     void visit(AstNodeAssign* nodep) override {
+        if (!m_ok) return;  // The first failure decides; the rest is not worth walking
+        UASSERT_OBJ(!m_inExpr, nodep,
+                    "--vpi-lazy: V3LiftExpr leaves no assignment in an expression");
+        // V3Active rewrote '<=' and V3Force lowered AssignForce; only blocking/cont remain.
+        UASSERT_OBJ(VN_IS(nodep, Assign) || VN_IS(nodep, AssignW), nodep,
+                    "--vpi-lazy: unexpected assignment kind in a combinational block");
+        // Not predict-optimizable, so the gather bailed it as IMPURE
+        UASSERT_OBJ(!m_groupp || !nodep->timingControlp(), nodep,
+                    "--vpi-lazy: timing control in a block walked for read order");
+        bool partial = false;
+        AstVarRef* const baserefp = lhsBaseRef(nodep->lhsp(), partial);
+        if (bailIf(Bail::UNSUPPORTED_STMT, !baserefp)) return;
+        AstVarScope* const basep = baserefp->varScopep();
+        // The gather counted every write under this block, so its write set is members
+        UASSERT_OBJ(!m_groupp || m_groupp->m_members.count(basep), nodep,
+                    "--vpi-lazy: group members miss a write of their own block");
+        {
+            VL_RESTORER(m_skipp);
+            m_skipp = baserefp;
+            scanReads(nodep->rhsp());
+            scanReads(nodep->lhsp());
+        }
         PartExtent ext;
-        if (AstVarRef* const refp = VN_CAST(nodep->lhsp(), VarRef)) {
-            m_modeled.insert(refp);
-            m_defined[refp->varScopep()].setWhole();
-        } else if (AstVarRef* const prefp = partialLhsRef(nodep->lhsp(), ext)) {
-            int32_t elem = 0;
-            if (combElement(prefp->varp(), ext, elem)) {
-                m_modeled.insert(prefp);
-                addBits(m_defined[prefp->varScopep()], elem, ext.m_lsb, ext.m_width);
-            }
-        }
+        int32_t elem = 0;
+        if (!partial) {
+            m_modeled.insert(baserefp);
+            defineWhole(basep);
+        } else if (partialLhsRef(nodep->lhsp(), ext) && combElement(basep->varp(), ext, elem)) {
+            m_modeled.insert(baserefp);
+            defineBits(basep, elem, ext.m_lsb, ext.m_width);
+        }  // Else no bit is provably defined; the untouched ones keep what they had
     }
+    void visit(AstVarRef* nodep) override {
+        if (!m_ok || nodep == m_skipp || nodep->access().isWriteOnly() || !member(nodep)) return;
+        bailIf(Bail::READ_BEFORE_WRITE,
+               !fullyDefined(m_defined[nodep->varScopep()], nodep->varp()));
+    }
+    void visit(AstSel* nodep) override { visitSel(nodep); }
+    void visit(AstArraySel* nodep) override { visitSel(nodep); }
     void visit(AstIf* nodep) override {
-        // An else-if chain is folded from its last 'else' up, iteratively
-        std::vector<AstIf*> chain{nodep};
-        while (AstIf* const nextp = VN_CAST(chain.back()->elsesp(), If)) {
-            if (nextp->nextp()) break;
-            chain.push_back(nextp);
+        if (!m_ok) return;
+        scanReads(nodep->condp());
+        const ArmDefs thenDefs = walkArm(nodep->thensp());
+        const ArmDefs elseDefs = walkArm(nodep->elsesp());
+        // Both arms are walked, so a V3Const-folded branch reads the same
+        const int truth = constTruth(nodep->condp());
+        if (truth >= 0) {
+            for (const auto& pr : truth ? thenDefs : elseDefs) changing(pr.first) = pr.second;
+            return;
         }
-        DefinedBits delta = walkArm(chain.back()->elsesp());
-        for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
-            DefinedBits thenDelta = walkArm((*it)->thensp());
-            const int truth = constTruth((*it)->condp());
-            if (truth == 1) {
-                delta = std::move(thenDelta);
-            } else if (truth < 0) {
-                delta = intersectDefined(thenDelta, delta);
-            }
+        std::unordered_map<const AstVarScope*, const CombFootprint*> elseOf;
+        for (const auto& pr : elseDefs) elseOf.emplace(pr.first, &pr.second);
+        for (const auto& pr : thenDefs) {
+            const auto it = elseOf.find(pr.first);
+            if (it != elseOf.end()) changing(pr.first) = intersectBits(pr.second, *it->second);
         }
-        unionDefined(m_defined, std::move(delta));
     }
-    void visit(AstNode*) override {}  // Writes under any other statement stay unmodeled
+    // May run zero times, so it defines nothing on exit.
+    void visit(AstLoop* nodep) override {
+        if (m_groupp) walkArm(nodep->stmtsp(), nodep->contsp());
+    }
+    void visit(AstLoopTest* nodep) override { scanReads(nodep->condp()); }
+    // A jump may skip the tail: define nothing
+    void visit(AstJumpBlock* nodep) override {
+        if (m_groupp) walkArm(nodep->stmtsp());
+    }
+    void visit(AstJumpGo*) override {}
+    void visit(AstComment*) override {}
+    void visit(AstNode* nodep) override {
+        // V3Table and friends may leave odd shapes
+        if (bailIf(Bail::UNSUPPORTED_STMT, !m_inExpr)) return;
+        iterateChildrenConst(nodep);
+    }
 
 public:
-    explicit VpiLazyLatchVisitor(AstNode* stmtsp) { iterateAndNextConstNull(stmtsp); }
+    explicit VpiLazyReadOrderVisitor(const Group* groupp)
+        : m_groupp{groupp} {
+        for (const CombBlock* const bp : groupp->m_blockps)
+            iterateAndNextConstNull(bp->m_alwaysp->stmtsp());
+    }
+    explicit VpiLazyReadOrderVisitor(AstNode* stmtsp)
+        : m_groupp{nullptr} {
+        iterateAndNextConstNull(stmtsp);
+    }
 };
 
 // See WRITABILITY above. Fed the gather's combinational blocks and instances, then finished.
@@ -728,14 +837,12 @@ class CombClassifier final {
     // partitioned the block. A target written any other way, as under a loop or jump, is not
     // proven: the safe direction.
     void addBlock(AstAlways* alwaysp) {
-        const VAlwaysKwd kwd = alwaysp->keyword();
-        if (kwd == VAlwaysKwd::ALWAYS_LATCH) return;
-        const VpiLazyLatchVisitor latch{kwd == VAlwaysKwd::CONT_ASSIGN ? nullptr
-                                                                       : alwaysp->stmtsp()};
+        if (alwaysp->keyword() == VAlwaysKwd::ALWAYS_LATCH) return;
+        const VpiLazyReadOrderVisitor defs{alwaysp->stmtsp()};
         const VpiLazyCombWriteVisitor writes{alwaysp};
         std::unordered_set<const AstVarScope*> unprovable;
         for (const AstVarRef* const refp : writes.m_refs)
-            if (!latch.m_modeled.count(refp)) unprovable.insert(refp->varScopep());
+            if (!defs.m_modeled.count(refp)) unprovable.insert(refp->varScopep());
         std::unordered_set<const AstVarScope*> proven;
         for (const AstVarRef* const refp : writes.m_refs) {
             AstVarScope* const vscp = refp->varScopep();
@@ -745,8 +852,8 @@ class CombClassifier final {
                 continue;
             }
             // Every bit defined on every path has a write, so the union of writes is these
-            const auto it = latch.m_defined.find(vscp);
-            if (it != latch.m_defined.end() && proven.insert(vscp).second)
+            const auto it = defs.m_defined.find(vscp);
+            if (it != defs.m_defined.end() && !it->second.empty() && proven.insert(vscp).second)
                 unionBits(combFootprint(vscp), it->second);
         }
     }
@@ -797,25 +904,6 @@ class VpiLazyPreparer final {
     FileLine* m_funcFlp = nullptr;  // Of every node emitted, the top scope's
     int m_rematerialized = 0;  // Rematerialized signals (per instance)
     uint32_t m_boundaryStorage = 0;  // Pinned only to feed a rematerialize function
-    // Why each retained signal missed rematerialization.
-    enum class Bail : uint8_t {
-        MULTIDRIVEN,  // Written by more than one group, or outside any group
-        DTYPE,  // Kind rematerialization cannot express (unpacked aggregate)
-        PARTIAL_MIXED_WRITE,  // Partial-write target also has a full/comb/impure/var-lsb write
-        PARTIAL_OVERLAP,  // Partial writes overlap, so no unambiguous assembly
-        // Partial writes leave undriven bits that a read other than VPI's may reach
-        PARTIAL_GAP,
-        // Some bits of a group var are read before a write of them on every path
-        READ_BEFORE_WRITE,
-        LATCH,  // A target is not written on every path through the block
-        IMPURE,  // The block has a side effect rematerialization must not repeat
-        UNSUPPORTED_STMT,  // A statement kind the ordered walk does not model
-        UNSUPPORTED_LVALUE,  // A continuous write whose shape a shadow cannot mirror
-        COMB_CYCLE,  // Member of a group cycle that does not merge into one provable group
-        TRACED,  // Stored for tracing anyway, so VPI reads that storage
-        COMPLETENESS_FLOOR,  // No classification path claimed it; retained so VPI still sees it
-        _COUNT
-    };
     // METHODS
     // Returns 'cond', so a caller bails and returns in one line
     static bool bailIf(Bail& whyr, Bail why, bool cond) {
@@ -1240,159 +1328,6 @@ private:
 
     // METHODS - Group analysis
 
-    // One ordered walk over a group's statements: see UNIT OF REMATERIALIZATION above. Per bit, so
-    // `a[1] = f(a[0])` reads only what it already wrote.
-    class VpiLazyReadOrderVisitor final : public VNVisitorConst {
-        using ArmDefs = std::vector<std::pair<AstVarScope*, CombFootprint>>;
-
-        const Group* const m_groupp;  // Group whose statements are walked
-        // Group var bits the prefix wrote on every path; conditionals intersect
-        DefinedBits& m_definedr;
-        Bail& m_whyr;  // Why the walk failed, its first failure only
-        ArmDefs m_undo;  // Each var the current arm changed, as it was before the arm
-        std::unordered_set<const AstVarScope*> m_undoSet;  // m_undo's vars, for lookup
-        const AstVarRef* m_skipp = nullptr;  // An assignment's LHS base ref, checked apart
-        bool m_inExpr = false;  // Scanning an expression's reads, not walking statements
-
-    public:
-        bool m_ok = true;  // No statement bailed
-        std::vector<AstVarScope*> m_assembledps;  // Vars first defined in part, encounter order
-
-    private:
-        // Records the first failure; returns 'cond', so a caller bails and returns in one line
-        bool bailIf(Bail why, bool cond) {
-            if (cond && m_ok) {
-                m_ok = false;
-                m_whyr = why;
-            }
-            return cond;
-        }
-        CombFootprint& changing(AstVarScope* vscp) {
-            CombFootprint& fp = m_definedr[vscp];
-            if (m_undoSet.insert(vscp).second) m_undo.emplace_back(vscp, fp);
-            return fp;
-        }
-        void defineWhole(AstVarScope* vscp) { changing(vscp).setWhole(); }
-        void defineBits(AstVarScope* vscp, int32_t elem, int lsb, int width) {
-            CombFootprint& fp = changing(vscp);
-            if (!fp.m_whole && fp.m_runsOf.empty()
-                && std::find(m_assembledps.begin(), m_assembledps.end(), vscp)
-                       == m_assembledps.end())
-                m_assembledps.push_back(vscp);
-            addBits(fp, elem, lsb, width);
-        }
-        bool member(const AstVarRef* refp) const {
-            return m_groupp->m_members.count(refp->varScopep()) != 0;
-        }
-        void scanReads(AstNode* nodep) {
-            VL_RESTORER(m_inExpr);
-            m_inExpr = true;
-            iterateAndNextConstNull(nodep);
-        }
-        // Walks the arm from what the prefix defined, then restores that and returns what the
-        // arm left defined of each var it changed, so an if costs its arms' writes alone.
-        ArmDefs walkArm(AstNode* stmtsp, AstNode* contsp = nullptr) {
-            VL_RESTORER_CLEAR(m_undo);
-            VL_RESTORER_CLEAR(m_undoSet);
-            iterateAndNextConstNull(stmtsp);
-            iterateAndNextConstNull(contsp);
-            for (std::pair<AstVarScope*, CombFootprint>& pr : m_undo)
-                std::swap(m_definedr[pr.first], pr.second);
-            ArmDefs armDefs;
-            armDefs.swap(m_undo);
-            return armDefs;
-        }
-        // A constant select of a group var reads only its own bits.
-        void visitSel(AstNodeExpr* nodep) {
-            if (!m_ok) return;
-            PartExtent ext;
-            int32_t elem = 0;
-            const AstVarRef* const refp = partialLhsRef(nodep, ext);
-            if (refp && refp != m_skipp && !refp->access().isWriteOnly() && member(refp)
-                && combElement(refp->varp(), ext, elem)) {
-                bailIf(Bail::READ_BEFORE_WRITE,
-                       !bitsDefined(m_definedr[refp->varScopep()], elem, ext.m_lsb, ext.m_width));
-                return;
-            }
-            iterateChildrenConst(nodep);
-        }
-
-        // VISITORS
-        void visit(AstNodeAssign* nodep) override {
-            if (!m_ok) return;  // The first failure decides; the rest is not worth walking
-            UASSERT_OBJ(!m_inExpr, nodep,
-                        "--vpi-lazy: V3LiftExpr leaves no assignment in an expression");
-            // V3Active rewrote '<=' and V3Force lowered AssignForce; only blocking/cont remain.
-            UASSERT_OBJ(VN_IS(nodep, Assign) || VN_IS(nodep, AssignW), nodep,
-                        "--vpi-lazy: unexpected assignment kind in a combinational block");
-            // A timing control is not predict-optimizable, so the gather bailed it as IMPURE
-            UASSERT_OBJ(!nodep->timingControlp(), nodep,
-                        "--vpi-lazy: timing control in a block walked for read order");
-            bool partial = false;
-            AstVarRef* const baserefp = lhsBaseRef(nodep->lhsp(), partial);
-            if (bailIf(Bail::UNSUPPORTED_STMT, !baserefp)) return;
-            AstVarScope* const basep = baserefp->varScopep();
-            // The gather counted every write under this block, so its write set is members
-            UASSERT_OBJ(m_groupp->m_members.count(basep), nodep,
-                        "--vpi-lazy: group members miss a write of their own block");
-            {
-                VL_RESTORER(m_skipp);
-                m_skipp = baserefp;
-                scanReads(nodep->rhsp());
-                scanReads(nodep->lhsp());
-            }
-            PartExtent ext;
-            int32_t elem = 0;
-            if (!partial) {
-                defineWhole(basep);
-            } else if (partialLhsRef(nodep->lhsp(), ext)
-                       && combElement(basep->varp(), ext, elem)) {
-                defineBits(basep, elem, ext.m_lsb, ext.m_width);
-            }  // Else no bit is provably defined; the untouched ones keep what they had
-        }
-        void visit(AstVarRef* nodep) override {
-            if (!m_ok || nodep == m_skipp || nodep->access().isWriteOnly() || !member(nodep))
-                return;
-            bailIf(Bail::READ_BEFORE_WRITE,
-                   !fullyDefined(m_definedr[nodep->varScopep()], nodep->varp()));
-        }
-        void visit(AstSel* nodep) override { visitSel(nodep); }
-        void visit(AstArraySel* nodep) override { visitSel(nodep); }
-        void visit(AstIf* nodep) override {
-            if (!m_ok) return;
-            scanReads(nodep->condp());
-            const ArmDefs thenDefs = walkArm(nodep->thensp());
-            const ArmDefs elseDefs = walkArm(nodep->elsesp());
-            std::unordered_map<const AstVarScope*, const CombFootprint*> elseOf;
-            for (const auto& pr : elseDefs) elseOf.emplace(pr.first, &pr.second);
-            for (const auto& pr : thenDefs) {
-                const auto it = elseOf.find(pr.first);
-                if (it != elseOf.end()) changing(pr.first) = intersectBits(pr.second, *it->second);
-            }
-        }
-        // May run zero times, so it defines nothing on exit.
-        void visit(AstLoop* nodep) override { walkArm(nodep->stmtsp(), nodep->contsp()); }
-        void visit(AstLoopTest* nodep) override { scanReads(nodep->condp()); }
-        // A jump may skip the tail: define nothing
-        void visit(AstJumpBlock* nodep) override { walkArm(nodep->stmtsp()); }
-        void visit(AstJumpGo*) override {}
-        void visit(AstComment*) override {}
-        void visit(AstNode* nodep) override {
-            // V3Table and friends may leave odd shapes
-            if (bailIf(Bail::UNSUPPORTED_STMT, !m_inExpr)) return;
-            iterateChildrenConst(nodep);
-        }
-
-    public:
-        VpiLazyReadOrderVisitor(const Group* groupp, DefinedBits& definedr, Bail& whyr)
-            : m_groupp{groupp}
-            , m_definedr{definedr}
-            , m_whyr{whyr} {
-            for (const CombBlock* const bp : groupp->m_blockps)
-                iterateAndNextConstNull(bp->m_alwaysp->stmtsp());
-        }
-    };
-
     bool definesDriven(CombFootprint& fp, const AstVarScope* vscp) const {
         const AstVar* const varp = vscp->varp();
         if (!m_gapVars.count(varp)) return fullyDefined(fp, varp);
@@ -1407,12 +1342,11 @@ private:
     bool analyzeGroup(Group* g, Bail& whyr) const {
         for (const CombBlock* const bp : g->m_blockps)
             if (bailIf(whyr, Bail::IMPURE, bp->m_impure)) return false;
-        DefinedBits defined;
-        VpiLazyReadOrderVisitor walk{g, defined, whyr};
-        if (!walk.m_ok) return false;
+        VpiLazyReadOrderVisitor walk{g};
+        if (bailIf(whyr, walk.m_why, !walk.m_ok)) return false;
         for (AstVarScope* const t : g->m_targets) {
             // Not written on every path
-            if (bailIf(whyr, Bail::LATCH, !definesDriven(defined[t], t))) return false;
+            if (bailIf(whyr, Bail::LATCH, !definesDriven(walk.m_defined[t], t))) return false;
         }
         for (AstVarScope* const u : walk.m_assembledps)
             if (!m_gapVars.count(u->varp())) g->m_zeroInitps.push_back(u);
