@@ -6971,7 +6971,7 @@ class WidthVisitor final : public VNVisitor {
         const AstStructDType* const structp = VN_CAST(elemDTypeSkipRefp, StructDType);
         const bool unpackedStruct = structp && !structp->packed();
 
-        if (!VN_IS(elemDTypeSkipRefp, UnpackArrayDType) && !unpackedStruct) {
+        if (!VN_IS(elemDTypeSkipRefp, NodeArrayDType) && !unpackedStruct) {
             VL_DO_DANGLING(pushDeletep(valuep), valuep);
             return defaultp->cloneTree(false);
         }
