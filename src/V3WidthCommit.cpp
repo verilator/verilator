@@ -57,9 +57,10 @@ class WidthCommitVisitor final : public VNVisitor {
     // STATE
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeModule* m_modp = nullptr;  // Current module
-    const char* m_contNbap = nullptr;  // In continuous- or non-blocking assignment, or trigger
+    const char* m_contNbap = nullptr;  // In continuous/NBA assignment, trigger, force or release
     bool m_inNba = false;  // In a non-blocking assignment or event trigger
     bool m_contReads = false;  // Check read continuous automatic variables
+    bool m_procCont = false;  // In a force, release or procedural continuous assignment
     bool m_dynsizedelem = false;  // Under an element of a dynamically sized variable, not itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     bool m_taskRefWarn = true;  // Allow task reference warnings
@@ -478,8 +479,10 @@ private:
         {
             VL_RESTORER(m_contNbap);
             VL_RESTORER(m_contReads);
+            VL_RESTORER(m_procCont);
             m_contNbap = "procedural continuous assignment";
             m_contReads = true;
+            m_procCont = true;
             iterateAndNextNull(nodep->lhsp());
             iterateAndNextNull(nodep->rhsp());
         }
@@ -511,6 +514,17 @@ private:
         }
         editDType(nodep);
     }
+    void visit(AstAssignForce* nodep) override {
+        iterateAndNextNull(nodep->rhsp());
+        {
+            VL_RESTORER(m_contNbap);
+            VL_RESTORER(m_procCont);
+            m_contNbap = "force statement";
+            m_procCont = true;
+            iterateAndNextNull(nodep->lhsp());
+        }
+        editDType(nodep);
+    }
     void visit(AstAssignW* nodep) override {
         iterateAndNextNull(nodep->timingControlp());
         iterateAndNextNull(nodep->rhsp());
@@ -521,6 +535,22 @@ private:
             m_contReads = false;
             iterateAndNextNull(nodep->lhsp());
         }
+        editDType(nodep);
+    }
+    void visit(AstRelease* nodep) override {
+        VL_RESTORER(m_contNbap);
+        VL_RESTORER(m_procCont);
+        m_contNbap = "release statement";
+        m_procCont = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstDeassign* nodep) override {
+        VL_RESTORER(m_contNbap);
+        VL_RESTORER(m_procCont);
+        m_contNbap = "deassign statement";
+        m_procCont = true;
+        iterateChildren(nodep);
         editDType(nodep);
     }
     void visit(AstFireEvent* nodep) override {
@@ -570,6 +600,12 @@ private:
             classEncapCheck(nodep, nodep->varp(), classrefp->classp());
         }  // else might be struct, etc
         varLifetimeCheck(nodep, nodep->varp());
+        if (m_procCont && nodep->access().isWriteOrRW()
+            && VN_IS(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType)) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << m_contNbap
+                                                         << " through a virtual interface: "
+                                                         << nodep->varp()->prettyNameQ());
+        }
     }
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
@@ -587,7 +623,8 @@ private:
     void visit(AstCMethodHard* nodep) override {
         VL_RESTORER(m_dynsizedelem);
         if (nodep->method() == VCMethod::ARRAY_AT || nodep->method() == VCMethod::ARRAY_AT_WRITE
-            || nodep->method() == VCMethod::DYN_AT_WRITE_APPEND)
+            || nodep->method() == VCMethod::DYN_AT_WRITE_APPEND
+            || (m_procCont && nodep->method().isDynElementAccess()))
             m_dynsizedelem = true;
         iterateChildren(nodep);
         editDType(nodep);

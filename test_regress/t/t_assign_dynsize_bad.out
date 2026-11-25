@@ -199,4 +199,120 @@
                                        : ... note: In instance 't'
   169 |     assign pr = paa[0][0];   
       |                    ^
+%Error: t/t_assign_dynsize_bad.v:197:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'fq'
+                                       : ... note: In instance 't'
+  197 |     force fq[1] = 7'h55;   
+      |           ^~
+%Error: t/t_assign_dynsize_bad.v:198:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'fd'
+                                       : ... note: In instance 't'
+  198 |     force fd[1] = 7'h55;   
+      |           ^~
+%Error: t/t_assign_dynsize_bad.v:199:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'fa'
+                                       : ... note: In instance 't'
+  199 |     force fa[3] = 7'h55;   
+      |           ^~
+%Error: t/t_assign_dynsize_bad.v:200:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'fw'
+                                       : ... note: In instance 't'
+  200 |     force fw[3] = 7'h55;   
+      |           ^~
+%Error: t/t_assign_dynsize_bad.v:201:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'fq'
+                                       : ... note: In instance 't'
+  201 |     force fq[1][5:3] = 3'h5;   
+      |           ^~
+%Error: t/t_assign_dynsize_bad.v:202:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'fq'
+                                       : ... note: In instance 't'
+  202 |     force fq[$] = 7'h55;   
+      |           ^~
+%Error: t/t_assign_dynsize_bad.v:203:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'fq'
+                                       : ... note: In instance 't'
+  203 |     force fq[$-1] = 7'h55;   
+      |           ^~
+%Error: t/t_assign_dynsize_bad.v:204:11: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'fqr'
+                                       : ... note: In instance 't'
+  204 |     force fqr[$][2] = 7'h55;   
+      |           ^~~
+%Error: t/t_assign_dynsize_bad.v:206:13: Dynamically-sized variable not allowed in release statement (IEEE 1800-2023 6.21): 'fq'
+                                       : ... note: In instance 't'
+  206 |     release fq[1];   
+      |             ^~
+%Error: t/t_assign_dynsize_bad.v:207:13: Dynamically-sized variable not allowed in release statement (IEEE 1800-2023 6.21): 'fq'
+                                       : ... note: In instance 't'
+  207 |     release fq[$];   
+      |             ^~
+%Error: t/t_assign_dynsize_bad.v:214:14: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'q'
+                                       : ... note: In instance 't'
+  214 |     force fs.q[1] = 7'h55;   
+      |              ^
+%Error: t/t_assign_dynsize_bad.v:215:14: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'd'
+                                       : ... note: In instance 't'
+  215 |     force fs.d[1] = 7'h55;   
+      |              ^
+%Error: t/t_assign_dynsize_bad.v:216:14: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'a'
+                                       : ... note: In instance 't'
+  216 |     force fs.a[3] = 7'h55;   
+      |              ^
+%Error: t/t_assign_dynsize_bad.v:217:14: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'w'
+                                       : ... note: In instance 't'
+  217 |     force fs.w[3] = 7'h55;   
+      |              ^
+%Error: t/t_assign_dynsize_bad.v:218:14: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'ar'
+                                       : ... note: In instance 't'
+  218 |     force fs.ar[3][2] = 7'h55;   
+      |              ^~
+%Error: t/t_assign_dynsize_bad.v:219:14: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'qr'
+                                       : ... note: In instance 't'
+  219 |     force fs.qr[$][2] = 7'h55;   
+      |              ^~
+%Error: t/t_assign_dynsize_bad.v:220:16: Dynamically-sized variable not allowed in release statement (IEEE 1800-2023 6.21): 'a'
+                                       : ... note: In instance 't'
+  220 |     release fs.a[3];   
+      |                ^
+%Error: t/t_assign_dynsize_bad.v:225:22: Dynamically-sized variable not allowed in force statement (IEEE 1800-2023 6.21): 'w'
+                                       : ... note: In instance 't'
+  225 |   initial force fifc.w[3][2] = 7'h55;   
+      |                      ^
+%Error: t/t_assign_dynsize_bad.v:232:14: Class non-static variable not allowed in force statement (IEEE 1800-2023 6.21): 'p'
+                                       : ... note: In instance 't'
+  232 |     force fc.p = 7'h55;   
+      |              ^
+%Error: t/t_assign_dynsize_bad.v:233:14: Class non-static variable not allowed in force statement (IEEE 1800-2023 6.21): 'pa'
+                                       : ... note: In instance 't'
+  233 |     force fc.pa[2] = 7'h55;   
+      |              ^~
+%Error: t/t_assign_dynsize_bad.v:234:23: Class non-static variable not allowed in force statement (IEEE 1800-2023 6.21): 'pa'
+                                       : ... note: In instance 't'
+  234 |     if (fen) force fc.pa = ff2;   
+      |                       ^~
+%Error: t/t_assign_dynsize_bad.v:235:16: Class non-static variable not allowed in release statement (IEEE 1800-2023 6.21): 'p'
+                                       : ... note: In instance 't'
+  235 |     release fc.p;   
+      |                ^
+%Error: t/t_assign_dynsize_bad.v:241:11: Automatic lifetime variable not allowed in force statement (IEEE 1800-2023 6.21): 'fav'
+                                       : ... note: In instance 't'
+  241 |     force fav = 7'h55;   
+      |           ^~~
+%Error: t/t_assign_dynsize_bad.v:248:12: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'fq'
+                                       : ... note: In instance 't'
+  248 |     assign fq[$] = 7'h55;   
+      |            ^~
+%Error: t/t_assign_dynsize_bad.v:249:18: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'fq'
+                                       : ... note: In instance 't'
+  249 |     assign fpr = fq[$];   
+      |                  ^~
+%Error: t/t_assign_dynsize_bad.v:256:14: Dynamically-sized variable not allowed in deassign statement (IEEE 1800-2023 6.21): 'fq'
+                                       : ... note: In instance 't'
+  256 |     deassign fq[1];   
+      |              ^~
+%Error: t/t_assign_dynsize_bad.v:257:17: Dynamically-sized variable not allowed in deassign statement (IEEE 1800-2023 6.21): 'a'
+                                       : ... note: In instance 't'
+  257 |     deassign fs.a[3];   
+      |                 ^
+%Error: t/t_assign_dynsize_bad.v:258:17: Class non-static variable not allowed in deassign statement (IEEE 1800-2023 6.21): 'p'
+                                       : ... note: In instance 't'
+  258 |     deassign fc.p;   
+      |                 ^
+%Error: t/t_assign_dynsize_bad.v:264:14: Automatic lifetime variable not allowed in deassign statement (IEEE 1800-2023 6.21): 'fda'
+                                       : ... note: In instance 't'
+  264 |     deassign fda;   
+      |              ^~~
 %Error: Exiting due to

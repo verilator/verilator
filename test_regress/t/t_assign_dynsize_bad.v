@@ -169,4 +169,103 @@ module t (
     assign pr = paa[0][0];  // Error
     // verilator lint_on IEEEMAYDEPRECATE
   end
+  // Force and release statements, also procedural continuous assignments (IEEE 1800-2023
+  // 10.6.2), and so also not of non-static class properties nor automatic variables
+  typedef logic [6:0] frow_t[3:2];
+  typedef struct {
+    logic [6:0] q[$];
+    logic [6:0] d[];
+    logic [6:0] a[int];
+    logic [6:0] w[*];
+    frow_t ar[int];
+    frow_t qr[$];
+    frow_t f;
+  } fdyn_t;
+  class FCls;
+    logic [6:0] p;
+    frow_t pa;
+  endclass
+
+  logic [6:0] fq[$];
+  logic [6:0] fd[];
+  logic [6:0] fa[int];
+  logic [6:0] fw[*];
+  frow_t fqr[$];
+  frow_t ff;
+  initial begin
+    force ff[2] = 7'h55;  // OK
+    force fq[1] = 7'h55;  // Error
+    force fd[1] = 7'h55;  // Error
+    force fa[3] = 7'h55;  // Error
+    force fw[3] = 7'h55;  // Error
+    force fq[1][5:3] = 3'h5;  // Error
+    force fq[$] = 7'h55;  // Error
+    force fq[$-1] = 7'h55;  // Error
+    force fqr[$][2] = 7'h55;  // Error
+    release ff[2];  // OK
+    release fq[1];  // Error
+    release fq[$];  // Error
+  end
+
+  // Also of struct members
+  fdyn_t fs;
+  initial begin
+    force fs.f[2] = 7'h55;  // OK
+    force fs.q[1] = 7'h55;  // Error
+    force fs.d[1] = 7'h55;  // Error
+    force fs.a[3] = 7'h55;  // Error
+    force fs.w[3] = 7'h55;  // Error
+    force fs.ar[3][2] = 7'h55;  // Error
+    force fs.qr[$][2] = 7'h55;  // Error
+    release fs.a[3];  // Error
+  end
+
+  // Also of interface members
+  FIfc fifc ();
+  initial force fifc.w[3][2] = 7'h55;  // Error
+
+  // Non-static class properties, also in a conditional statement
+  FCls fc;
+  frow_t ff2;
+  bit fen;
+  initial begin
+    force fc.p = 7'h55;  // Error
+    force fc.pa[2] = 7'h55;  // Error
+    if (fen) force fc.pa = ff2;  // Error
+    release fc.p;  // Error
+  end
+
+  // Automatic variables
+  initial begin
+    automatic logic [6:0] fav;
+    force fav = 7'h55;  // Error
+  end
+
+  // Also back-indexed queue elements in procedural continuous assignments
+  logic [6:0] fpr;
+  initial begin
+    // verilator lint_off IEEEMAYDEPRECATE
+    assign fq[$] = 7'h55;  // Error
+    assign fpr = fq[$];  // Error
+    // verilator lint_on IEEEMAYDEPRECATE
+  end
+
+  // Deassign statements
+  initial begin
+    // verilator lint_off IEEEMAYDEPRECATE
+    deassign fq[1];  // Error
+    deassign fs.a[3];  // Error
+    deassign fc.p;  // Error
+    // verilator lint_on IEEEMAYDEPRECATE
+  end
+  initial begin
+    automatic logic [6:0] fda;
+    // verilator lint_off IEEEMAYDEPRECATE
+    deassign fda;  // Error
+    // verilator lint_on IEEEMAYDEPRECATE
+  end
 endmodule
+
+interface FIfc;
+  logic [6:0] w[*][3:2];
+endinterface
