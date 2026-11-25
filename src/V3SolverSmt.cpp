@@ -1317,10 +1317,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNode* topNodep = nodep->backp();
             while (isSelOrMethod(topNodep->backp())) topNodep = topNodep->backp();
 
-            if (isSelOrMethod(topNodep)) {
-                structSelOrCMeth = true;
-                selectedDtypep = VN_AS(topNodep, NodeExpr)->dtypep();
-            }
+            structSelOrCMeth = true;
+            selectedDtypep = VN_AS(topNodep, NodeExpr)->dtypep();
 
             memberRefp = VN_CAST(topNodep, MemberRef);
             if (memberRefp) smtName = buildMemberPath(memberRefp);
@@ -1865,10 +1863,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         // Mark Random for structArray
         if (VN_IS(nodep->fromp(), ArraySel) || VN_IS(nodep->fromp(), DynArraySel)
-            || VN_IS(nodep->fromp(), QueueSel) || VN_IS(nodep->fromp(), CMethodHard)) {
-            AstNodeExpr* const fromp = VN_IS(nodep->fromp(), CMethodHard)
-                                           ? VN_AS(nodep->fromp(), CMethodHard)->fromp()
-                                           : VN_AS(nodep->fromp(), NodeSel)->fromp();
+            || VN_IS(nodep->fromp(), QueueSel)) {
+            AstNodeExpr* const fromp = VN_AS(nodep->fromp(), NodeSel)->fromp();
             if (isRandQualifiedPath(fromp)) {
                 markStructConstrainedRandRecurse(fromp->dtypep()->skipRefp()->subDTypep());
             } else {
@@ -2185,8 +2181,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeDType* const arrayDtp = selp->fromp()->dtypep()->skipRefp();
             AstNodeDType* const elemDtp = arrayDtp->subDTypep()->skipRefp();
             if (VN_IS(elemDtp, ClassRefDType)) {
-                AstNodeExpr* const origp
-                    = m_deferRandModeHoist ? nullptr : nodep->cloneTree(false);
+                AstNodeExpr* const origp = nodep->cloneTree(false);
                 VL_RESTORER(m_structSel);
                 m_structSel = true;
                 {
@@ -2209,7 +2204,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                if (origp && !hoistRandModeOverSelectAndMember(newp, origp)) {
+                if (!hoistRandModeOverSelectAndMember(newp, origp)) {
                     VL_DO_DANGLING(pushDeletep(origp), origp);
                 }
                 return;

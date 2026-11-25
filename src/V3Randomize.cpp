@@ -290,8 +290,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     exprp = arrselp->fromp();
                 } else if (const AstDynArraySel* const selp = VN_CAST(exprp, DynArraySel)) {
                     exprp = selp->fromp();
-                } else if (const AstQueueSel* const selp = VN_CAST(exprp, QueueSel)) {
-                    exprp = selp->fromp();
                 } else if (const AstStructSel* const strselp = VN_CAST(exprp, StructSel)) {
                     exprp = strselp->fromp();
                 } else if (const AstCMethodHard* const methodp = VN_CAST(exprp, CMethodHard)) {

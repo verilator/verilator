@@ -32,7 +32,12 @@ module t (
     o["out"] = {32'h7, 63'h1};
   endtask
 
-  // Element writes keep their effects, once
+  function automatic int bump(ref int n);
+    ++n;
+    return 0;
+  endfunction
+
+  // Element writes and reads keep their effects, once
   initial begin
     begin
       typedef int arr_t[4];
@@ -45,6 +50,21 @@ module t (
       logic [127:0] wa[*];
       wa[wa.num()][80:20] = 61'h1;
       `checkh(wa.num(), 1);
+    end
+    begin
+      int wi[*];
+      if (wi.num() == 0) wi[1] = 1;
+      else wi[1] = 2;
+      `checkh(wi[1], 1);
+    end
+    begin
+      int wi[*];
+      int n;
+      int x;
+      wi[0] = 5;
+      n = 0;
+      x = wi[bump(n)] * 0;
+      `checkh(n, 1);
     end
   end
 

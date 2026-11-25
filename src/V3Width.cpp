@@ -1596,7 +1596,6 @@ class WidthVisitor final : public VNVisitor {
                 = VN_AS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
             int frommsb = adtypep->hi();
             int fromlsb = adtypep->lo();
-            if (fromlsb > frommsb) std::swap(frommsb, fromlsb);
             // However, if the lsb<0 we may go negative, so need more bits!
             if (fromlsb < 0) frommsb += -fromlsb;
             nodep->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
