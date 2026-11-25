@@ -304,6 +304,16 @@ class ConstraintExprVisitor final : public VNVisitor {
             classp = extendsp->classp();
         }
     }
+    // Reference to the static rand_mode array of a static variable's own class, if any
+    AstVarRef* newStaticRandModeRefp(const AstVar* varp) const {
+        AstClass* const classp = VN_CAST(varp->user2p(), Class);
+        AstVar* const modeVarp = varp->lifetime().isStatic() && classp
+                                     ? findStaticRandModeVarMember(classp)
+                                     : nullptr;
+        if (!modeVarp) return nullptr;
+        return new AstVarRef{varp->fileline(), VN_AS(modeVarp->user2p(), NodeModule), modeVarp,
+                             VAccess::READ};
+    }
 
     // True when the aggregate is reached through rand-qualified struct members only
     bool isRandQualifiedPath(const AstNodeExpr* nodep) {
@@ -817,15 +827,22 @@ class ConstraintExprVisitor final : public VNVisitor {
     void setRandMode(AstVar* const varp, AstMemberRef* const memberRefp,
                      const std::string& smtName, const RandomizeMode& randMode,
                      AstBegin* const initp) {
-        AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
-        AstVar* const subRandModeVarp = RandModeVars::randModeVarp(varClassp);
-        if (subRandModeVarp) {
-            AstNodeExpr* const parentAccessp = memberRefp->fromp()->cloneTree(false);
-            AstMemberRef* const randModeRefp
-                = new AstMemberRef{varp->fileline(), parentAccessp, subRandModeVarp};
-            randModeRefp->dtypep(subRandModeVarp->dtypep());
+        // A static's rand_mode is held by its class, a member's by its object
+        AstNodeExpr* randModeArrayp = newStaticRandModeRefp(varp);
+        if (!randModeArrayp) {
+            UASSERT_OBJ(!varp->lifetime().isStatic(), varp, "No static rand_mode array");
+            AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
+            if (AstVar* const subRandModeVarp = RandModeVars::randModeVarp(varClassp)) {
+                AstNodeExpr* const parentAccessp = memberRefp->fromp()->cloneTree(false);
+                AstMemberRef* const randModeRefp
+                    = new AstMemberRef{varp->fileline(), parentAccessp, subRandModeVarp};
+                randModeRefp->dtypep(subRandModeVarp->dtypep());
+                randModeArrayp = randModeRefp;
+            }
+        }
+        if (randModeArrayp) {
             AstCMethodHard* const atp
-                = new AstCMethodHard{varp->fileline(), randModeRefp, VCMethod::ARRAY_AT,
+                = new AstCMethodHard{varp->fileline(), randModeArrayp, VCMethod::ARRAY_AT,
                                      new AstConst{varp->fileline(), randMode.index}};
             atp->dtypeSetUInt32();
             // rand_mode ON: clear disabled state
@@ -885,11 +902,19 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         return VN_AS(varp->user2p(), NodeModule);
     }
+    // A static member of a class neither base nor derived of this class, e.g. of a rand
+    // sub-object, so not of this object
+    bool isForeignStatic(const AstVar* varp) const {
+        const AstClass* const declClassp = VN_CAST(varp->user2p(), Class);
+        return m_classp && varp->lifetime().isStatic() && declClassp
+               && !AstClass::isClassRelated(m_classp, declClassp);
+    }
 
     AstBegin* getInitp(AstVar* const varp, const bool memberrefOrStructSel,
                        AstNodeModule* const classp) const {
         if (m_inlineInitBlockp) return m_inlineInitBlockp;
-        varp->user3(true);
+        // Only this class's solver handles a foreign static; its own class still randomizes it
+        if (!isForeignStatic(varp)) varp->user3(true);
         if (memberrefOrStructSel) {
             if (AstNodeFTask* const taskp
                 = VN_AS(m_memberMap.findMember(classp, "randomize"), NodeFTask)) {
@@ -1045,10 +1070,10 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
     void createSolverVarHandle(AstVar* const varp, const bool structSelOrCMeth,
-                               const bool isGlobalConstrained, const RandomizeMode randMode,
-                               AstMemberRef* const memberRefp, const std::string& smtName,
-                               AstNodeModule* const classOrPackagep, AstNodeModule* const classp,
-                               AstBegin* const initp) {
+                               const bool isGlobalConstrained, const bool foreignStatic,
+                               const RandomizeMode randMode, AstMemberRef* const memberRefp,
+                               const std::string& smtName, AstNodeModule* const classOrPackagep,
+                               AstNodeModule* const classp, AstBegin* const initp) {
         uint32_t unpackedDims = 0;
         if (varp->dtypeSkipRefp()->isNonPackedArray()) {
             unpackedDims = varp->dtypep()->dimensions(false).second;
@@ -1080,14 +1105,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         methodp->addPinsp(varnamep);
         methodp->addPinsp(
             new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, unpackedDims});
-        if (randMode.usesMode && !(isGlobalConstrained && memberRefp)) {
+        // The rand_mode of a globalConstrained sub-object member or of a foreign
+        // static is not in this generator's rand_mode arrays
+        const bool foreignMode = (isGlobalConstrained && memberRefp) || foreignStatic;
+        if (randMode.usesMode && !foreignMode) {
             methodp->addPinsp(
                 new AstConst{varp->fileline(), AstConst::Unsized64{}, randMode.index});
         }
-        // For globalConstrained sub-object members with rand_mode:
-        // Always call write_var (keeps variable in solver for constraint
-        // evaluation), but toggle disabled state so the solver skips
-        // write-back when rand_mode is off.
+        // A foreignMode variable with rand_mode is always registered (keeps it in the
+        // solver for constraint evaluation), with its disabled state toggled so the
+        // solver skips write-back when rand_mode is off.
         initp->addStmtsp(methodp->makeStmt());
         if (varp->lifetime().isStatic() && randMode.usesMode) {
             AstCMethodHard* const markp = new AstCMethodHard{
@@ -1102,7 +1129,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             markp->dtypeSetVoid();
             initp->addStmtsp(markp->makeStmt());
         }
-        if (isGlobalConstrained && memberRefp && randMode.usesMode) {
+        if (foreignMode && randMode.usesMode) {
             setRandMode(varp, memberRefp, smtName, randMode, initp);
         }
         // If randc, also emit markRandc() for cyclic tracking
@@ -1128,16 +1155,8 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         // Static rand vars route through the var's owning class's static array
         // (may differ from m_classp when the rand var lives in a sub-object).
-        AstNodeExpr* randModeAccessp;
-        const bool varIsStatic = varp->lifetime().isStatic();
-        AstClass* const varOwningClassp = varIsStatic ? VN_CAST(varp->user2p(), Class) : nullptr;
-        AstVar* const ownerStaticRandModeVarp
-            = varOwningClassp ? findStaticRandModeVarMember(varOwningClassp) : nullptr;
-        if (ownerStaticRandModeVarp) {
-            randModeAccessp = new AstVarRef{varp->fileline(),
-                                            VN_AS(ownerStaticRandModeVarp->user2p(), NodeModule),
-                                            ownerStaticRandModeVarp, VAccess::READ};
-        } else if (memberRefp) {
+        AstNodeExpr* randModeAccessp = newStaticRandModeRefp(varp);
+        if (!randModeAccessp && memberRefp) {
             AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
             AstVar* const effectiveRandModeVarp = RandModeVars::randModeVarp(varClassp);
             if (effectiveRandModeVarp) {
@@ -1154,7 +1173,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                     = new AstVarRef{varp->fileline(), VN_AS(m_randModeVarp->user2p(), NodeModule),
                                     m_randModeVarp, VAccess::READ};
             }
-        } else {
+        } else if (!randModeAccessp) {
             UASSERT_OBJ(m_randModeVarp, nodep, "No m_randModeVarp");
             randModeAccessp
                 = new AstVarRef{varp->fileline(), VN_AS(m_randModeVarp->user2p(), NodeModule),
@@ -1247,7 +1266,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         AstNodeModule* const classOrPackagep = nodep->classOrPackagep();
         const RandomizeMode randMode = {.asUQuad = varp->user1()};
-        if (!randMode.usesMode && editFormat(nodep)) return;
+        const bool foreignStatic = !memberRefp && isForeignStatic(varp);
+        // Unless reached through rand class handles, a foreign static is a state variable
+        // even when its rand_mode is used
+        if ((!randMode.usesMode || foreignStatic) && editFormat(nodep)) return;
 
         AstEnumDType* enumDtp = VN_CAST(nodep->dtypep()->skipRefToEnump(), EnumDType);
         if (enumDtp
@@ -1274,18 +1296,19 @@ class ConstraintExprVisitor final : public VNVisitor {
         relinker.relink(exprp);
 
         // Global / inline / class-level member-select refs key on the full path
-        // (so same-type sub-objects c1.x, c2.x stay distinct); a plain class-level
-        // variable keys on user3(). Inline 'with' dedups per function (own solver).
-        const bool alreadyWritten = m_inlineInitBlockp    ? m_inlineWrittenVars.count(smtName) > 0
-                                    : isGlobalConstrained ? m_writtenVars.count(smtName) > 0
-                                    : memberRefp          ? m_writtenVars.count(smtName) > 0
-                                                          : varp->user3();
+        // (so same-type sub-objects c1.x, c2.x stay distinct), and a foreign static
+        // is registered in each class using it; a plain class-level variable keys
+        // on user3(). Inline 'with' dedups per function (own solver).
+        const bool perClass = isGlobalConstrained || memberRefp || foreignStatic;
+        const bool alreadyWritten = m_inlineInitBlockp ? m_inlineWrittenVars.count(smtName) > 0
+                                    : perClass         ? m_writtenVars.count(smtName) > 0
+                                                       : varp->user3();
         const bool shouldWriteVar = !alreadyWritten;
         if (shouldWriteVar) {
             // Track this variable path as written
             if (m_inlineInitBlockp)
                 m_inlineWrittenVars.insert(smtName);
-            else if (isGlobalConstrained || memberRefp)
+            else if (perClass)
                 m_writtenVars.insert(smtName);
             // For global constraints, delete nodep after processing
             if (isGlobalConstrained && !nodep->backp()) VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -1305,8 +1328,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                 }
             }
 
-            AstNodeModule* const classp = getLeftmostVarModulep(memberRefp, varp);
-            AstBegin* const initp = getInitp(varp, memberRefp || structSelOrCMeth, classp);
+            // A foreign static is registered in this class's randomize(), where its rand_mode,
+            // held by its own class, is applied on each call
+            AstNodeModule* const classp
+                = foreignStatic ? m_classp : getLeftmostVarModulep(memberRefp, varp);
+            AstBegin* const initp
+                = getInitp(varp, memberRefp || structSelOrCMeth || foreignStatic, classp);
             if (m_nestedAccessp) {
                 AstStmtExpr* const writeVarStmtp = m_nestedAccessp->makeWriteVarStmt(varp, m_genp);
                 addRegistrationStmt(writeVarStmtp, initp);
@@ -1319,8 +1346,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                 createSolverArrayHandle(varp, elemClassRefDtp, classOrPackagep,
                                         isUnpackedClassRefArray, smtName);
             } else {
-                createSolverVarHandle(varp, structSelOrCMeth, isGlobalConstrained, randMode,
-                                      memberRefp, smtName, classOrPackagep, classp, initp);
+                createSolverVarHandle(varp, structSelOrCMeth, isGlobalConstrained, foreignStatic,
+                                      randMode, memberRefp, smtName, classOrPackagep, classp,
+                                      initp);
             }
         } else {
             // Variable already written, clean up cloned memberRefp if any
@@ -1771,9 +1799,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstSFormatF* const fromFmtp = VN_CAST(nodep->fromp(), SFormatF);
         if (!fromFmtp) return;
         AstSFormatF* newp = nullptr;
-        if (fromFmtp->name() == "%s.%s") {
-            newp = new AstSFormatF{fl, "%s.%s." + nodep->name(), false,
+        if (fromFmtp->name().rfind("%s.%s", 0) == 0) {
+            // Array element name, possibly already extended by an outer struct member
+            newp = new AstSFormatF{fl, fromFmtp->name() + "." + nodep->name(), false,
                                    fromFmtp->exprsp()->cloneTreePure(true)};
+            if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0)
+                newp->exprsp()->nextp()->name("%x");  //  for #x%x to %x
         } else {
             newp = new AstSFormatF{fl, fromFmtp->name() + "." + nodep->name(), false, nullptr};
         }

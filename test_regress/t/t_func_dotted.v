@@ -15,6 +15,7 @@ module t (/*AUTOARG*/
 
   // verilator lint_off MULTIDRIVEN
 
+  input clk;
   ma ma0 ();
 
   initial t.ma0.u_b[0].f(1);
@@ -23,7 +24,6 @@ module t (/*AUTOARG*/
   global_mod #(32'hf00d) global_cell ();
   global_mod #(32'hf22d) global_cell2 ();
 
-  input clk;
   integer cyc=1;
 
   function [31:0] getName;  input fake;  getName = "t   "; endfunction

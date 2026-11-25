@@ -32,6 +32,8 @@ module t (
   wire cond3 = &crc[2:0];
 
   reg shuf_q[63:0];
+  reg shuf_g[63:0];
+  wire shuf_w[63:0];
 
   always @(posedge clk) begin
     reg bits[63:0];
@@ -157,7 +159,6 @@ module t (
   end
 
   // Generated always
-  reg shuf_g[63:0];
   generate
     for (genvar i = 0; i < 64; i = i + 1)
     always @(posedge clk) begin
@@ -166,7 +167,6 @@ module t (
   endgenerate
 
   // Generated assign
-  wire shuf_w[63:0];
   generate
     for (genvar i = 0; i < 64; i = i + 1) assign shuf_w[i] = cyc[2] ? crc[i] : crc[63-i];
   endgenerate

@@ -1172,6 +1172,9 @@ bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* ba
     if (!refClassp->extendsp()) return false;
     return isClassExtendedFrom(refClassp->extendsp()->classp(), baseClassp);
 }
+bool AstClass::isClassRelated(const AstClass* ap, const AstClass* bp) {
+    return isClassExtendedFrom(ap, bp) || isClassExtendedFrom(bp, ap);
+}
 AstClass* AstClassExtends::classOrNullp() const {
     const AstNodeDType* const dtp = dtypep() ? dtypep() : childDTypep();
     const AstClassRefDType* const refp = VN_CAST(dtp, ClassRefDType);

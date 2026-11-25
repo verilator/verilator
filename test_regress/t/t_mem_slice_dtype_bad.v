@@ -15,6 +15,7 @@ module t (
   //bug795
   way_cnt_t completed_cnt[31:0][1:0];
   way_cnt_t completed_cnt_dp[1:0];
+  logic [4:0] id;
 
   assign completed_cnt_dp = completed_cnt[id];
 
@@ -23,7 +24,6 @@ module t (
   end
 
   // bug796
-  logic [4:0] id;
   logic [39:0] way_mask;
   logic [39:0] addr[31:0][1:0];
   always_ff @(posedge clk) begin

@@ -116,6 +116,27 @@ module t;
     p.rand_mode(0);
     p.verify(0, 0);
 
+    begin
+      // Indices in the receiver are only read
+      Packet pa[2];
+      int idxu[2];
+      int idxa[string];
+      int idxw[*];
+      int idxd[];
+      int idxq[$];
+      pa[0] = new;
+      pa[idxu[1]].m_one.rand_mode(0);
+      pa[idxa["k"]].m_one.rand_mode(0);
+      pa[idxw["k"]].m_one.rand_mode(0);
+      pa[idxd[0]].m_one.rand_mode(0);
+      pa[idxq[0]].m_one.rand_mode(0);
+      `checkh(pa[0].m_one.rand_mode(), 0);
+      `checkh(idxa.size(), 0);
+      `checkh(idxw.size(), 0);
+      `checkh(idxd.size(), 0);
+      `checkh(idxq.size(), 0);
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

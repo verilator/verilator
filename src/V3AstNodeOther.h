@@ -3456,6 +3456,9 @@ public:
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
+    // Return true if the classes are the same, or one is an extension of the other (SLOW)
+    // Accepts nullptrs
+    static bool isClassRelated(const AstClass* ap, const AstClass* bp);
     uint32_t declTokenNum() const override { return m_declTokenNum; }
     void declTokenNumSetMin(uint32_t tokenNum) override {
         m_declTokenNum = std::min(m_declTokenNum, tokenNum);

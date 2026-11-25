@@ -35,9 +35,9 @@
 module t;
   typedef logic [`TEST_BITS-1:0] sig_t;
   sig_t D, Q;
+  logic clk = 0;
   always @(posedge clk) Q <= D;
 
-  logic clk = 0;
   always #(`TEST_CLK_PERIOD / 2) clk = ~clk;
 
   always @(posedge clk) `WRITE_VERBOSE(("[%0t] posedge clk\n", $time));
