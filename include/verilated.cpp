@@ -4264,7 +4264,6 @@ void VerilatedEvalLoop::didNotConverge(const char* namep,
 }
 
 void VerilatedEvalLoop::settle() {
-    VL_DEBUG_IF(VL_DBG_MSGF("+ Settle\n"););
     uint32_t stlIterCount = 0;
     do {
         checkConvergence(++stlIterCount, "Settle", &VerilatedModel::dumpTriggersStl);
