@@ -3883,8 +3883,9 @@ void vpi_get_value(vpiHandle object, p_vpi_value valuep) {
 
 // The put itself, less the --vpi-lazy comb mask; overloads the entry point so its messages'
 // __func__ name it. 'baseSignalVop' is VerilatedVpioVar::castp(object), made once by the caller
+// A 'trial' put only stores: it is not noted, logged for undo or made to need an eval
 static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSignalVop,
-                               p_vpi_value valuep, PLI_INT32 flags) {
+                               p_vpi_value valuep, PLI_INT32 flags, bool trial = false) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_put_value %p %p\n", object, valuep););
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
@@ -3949,10 +3950,12 @@ static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSig
         }
         // A malformed decimal string writes nothing, so must not re-settle: noted once parsed
         // below. A force has by then already set its enable bits.
-        if (forceFlag == vpiForceFlag || forceFlag == vpiReleaseFlag
-            || valuep->format != vpiDecStrVal)
-            vl_vpi_note_write(baseSignalVop);
-        VerilatedVpiImp::evalNeeded(true);
+        if (!trial) {
+            if (forceFlag == vpiForceFlag || forceFlag == vpiReleaseFlag
+                || valuep->format != vpiDecStrVal)
+                vl_vpi_note_write(baseSignalVop);
+            VerilatedVpiImp::evalNeeded(true);
+        }
         const int varBits = baseSignalVop->bitSize();
 
         const auto forceControlSignals
@@ -3995,7 +3998,7 @@ static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSig
         // A rematerialization reads a forceable signal's controls too
         for (const VerilatedVpioVar* const vop :
              {baseSignalVop, forceEnableSignalVop, forceValueSignalVop, forceReadSignalVop}) {
-            if (vop) vl_vpi_undo_log(vop);
+            if (vop && !trial) vl_vpi_undo_log(vop);
         }
 
         const VerilatedVpioVar* const valueVop
@@ -4165,7 +4168,7 @@ static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSig
                               valueVop->fullname());
                 return nullptr;
             }
-            vl_vpi_note_write(baseSignalVop);
+            if (!trial) vl_vpi_note_write(baseSignalVop);
             if (success > 1) {
                 VL_VPI_WARNING_(
                     __FILE__, __LINE__, "%s: Trailing garbage '%s' in '%s' as value %s for '%s'",
@@ -4253,27 +4256,8 @@ static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSig
     return nullptr;
 }
 
-// Leaves the put state as it found it, so a put is noted only once known to change a bit
-class VlLazyTrialPut final {
-    VerilatedLazyState* const m_lazyp;  // Model state the trial put must leave unchanged
-    const bool m_evalWas = VerilatedVpiImp::evalNeeded();  // Restored on destruction
-    const bool m_writtenWas = m_lazyp->written;  // Likewise
-    const bool m_undoWas = m_lazyp->undoOn;  // Likewise
-
-public:
-    explicit VlLazyTrialPut(VerilatedLazyState* lazyp)
-        : m_lazyp{lazyp} {
-        m_lazyp->undoOn = false;
-    }
-    ~VlLazyTrialPut() {
-        m_lazyp->undoOn = m_undoWas;
-        VerilatedVpiImp::evalNeeded(m_evalWas);
-        m_lazyp->written = m_writtenWas;
-    }
-};
-
-// A --vpi-lazy put keeps the masked bits: 'put' writes the 'nElems' elements at 'putp', which
-// then take back their masked bits. True if that changed any bit.
+// A --vpi-lazy put keeps the masked bits: 'put' only stores the 'nElems' elements at 'putp',
+// which then take back their masked bits. True if that changed any bit, and only then noted.
 template <typename T_Put>
 static bool vl_vpi_lazy_comb_put(const VerilatedVpioVar* vop, uint8_t* putp, size_t nElems,
                                  T_Put put) {
@@ -4282,10 +4266,7 @@ static bool vl_vpi_lazy_comb_put(const VerilatedVpioVar* vop, uint8_t* putp, siz
     const size_t entSize = varp->entSize();
     const size_t bytes = nElems * entSize;
     std::string before(reinterpret_cast<char*>(putp), bytes);
-    {
-        const VlLazyTrialPut trialPut{symsp->lazyp()};
-        put();
-    }
+    put();
     const uint8_t* const beforep = reinterpret_cast<const uint8_t*>(before.data());
     const uint8_t* const storep = static_cast<uint8_t*>(VerilatedVpioVar::storagep(varp));
     vl_vpi_lazy_comb_merge(varp, symsp, beforep, putp, (putp - storep) / entSize, nElems);
@@ -4308,8 +4289,9 @@ static vpiHandle vl_vpi_put_value_lazy_comb(vpiHandle object, const VerilatedVpi
         return vpi_put_value(object, vop, valuep, flags);
     vpiHandle resultp = nullptr;
     // Rematerialized first, so the masked bits merged back are current
-    if (vl_vpi_lazy_comb_put(vop, static_cast<uint8_t*>(vop->readDatap()), 1,
-                             [&] { resultp = vpi_put_value(object, vop, valuep, vpiNoDelay); }))
+    if (vl_vpi_lazy_comb_put(vop, static_cast<uint8_t*>(vop->readDatap()), 1, [&] {
+            resultp = vpi_put_value(object, vop, valuep, vpiNoDelay, true);
+        }))
         VerilatedVpiImp::evalNeeded(true);
     return resultp;
 }
