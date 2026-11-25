@@ -42,9 +42,31 @@ class RandDynIndexCastTest;
   }
 endclass
 
+typedef struct {
+  bit [3:0] tag;
+} InnerStruct;
+
+typedef struct {
+  InnerStruct inner;
+} MiddleStruct;
+
+typedef struct {
+  MiddleStruct mid;
+} OuterStruct;
+
+// Doubly-nested struct field in a rand array (issue #8961)
+class RandNestedStructIndexTest;
+  int idx = 2;
+  rand MiddleStruct arr[4];
+  rand OuterStruct deep[4];
+  constraint c { arr[idx].inner.tag == 4'h5; }
+  constraint c_deep { deep[idx + 1].mid.inner.tag == 4'h6; }
+endclass
+
 module t;
   initial begin
     int randomize_result;
+    RandNestedStructIndexTest sobj;
     static RandArrayIndexTest obj = new();
     RandDynIndexCastTest cobj;
     repeat (20) begin
@@ -59,6 +81,13 @@ module t;
       `checkd(randomize_result, 1);
       `checkd(cobj.dyn_value, cobj.dyn[cobj.idx]);
       `checkd(cobj.q_value, cobj.q[cobj.idx]);
+    end
+    sobj = new();
+    repeat (20) begin
+      randomize_result = sobj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(sobj.arr[sobj.idx].inner.tag, 4'h5);
+      `checkd(sobj.deep[sobj.idx + 1].mid.inner.tag, 4'h6);
     end
     $write("*-* All Finished *-*\n");
     $finish;

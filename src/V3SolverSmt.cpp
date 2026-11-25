@@ -1795,14 +1795,15 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         FileLine* const fl = nodep->fileline();
         AstSFormatF* newp = nullptr;
-        if (VN_AS(nodep->fromp(), SFormatF)->name() == "%s.%s") {
-            newp = new AstSFormatF{fl, "%s.%s." + nodep->name(), false,
-                                   VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
+        const AstSFormatF* const frompFmtp = VN_AS(nodep->fromp(), SFormatF);
+        if (frompFmtp->name().rfind("%s.%s", 0) == 0) {
+            // Array element name, possibly already extended by an outer struct member
+            newp = new AstSFormatF{fl, frompFmtp->name() + "." + nodep->name(), false,
+                                   frompFmtp->exprsp()->cloneTreePure(true)};
             if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0)
                 newp->exprsp()->nextp()->name("%x");  //  for #x%x to %x
         } else {
-            newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
-                                   nullptr};
+            newp = new AstSFormatF{fl, frompFmtp->name() + "." + nodep->name(), false, nullptr};
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
