@@ -157,9 +157,6 @@ class ConstraintExprVisitor final : public VNVisitor {
                                                // classp has no randomize() (inherited members)
     AstVar* const m_genp;  // VlRandomizer variable of the class
     AstVar* m_randModeVarp;  // Relevant randmode state variable
-    // A block that run-time code may turn off keeps master's behavior on shapes this
-    // lowering cannot handle, instead of failing the compile for a solve that never runs
-    bool m_blockUsesMode = false;
     bool m_wantSingle = false;  // Whether to merge constraint expressions with LOGAND
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
     bool m_structSel = false;  // Marks when inside structSel
@@ -174,6 +171,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstNodeFTask* m_prepareConstrainedArraysp = nullptr;  // Grow arrays for indexed struct access
     uint32_t* m_uniqueConstraintIdp = nullptr;  // Current ID of unique call
     V3UniqueNames& m_uniqueNames;  // Unique names of temporaries, and of blocks holding them
+    bool m_blockUsesMode = false;  // May be turned off; unsupported shapes take master's path
     std::vector<AstVar*> m_rangeConstrainedEnums;  // Enums that are already range-constrained
     // First expression found under an inside index
     AstNode* m_firstExpressionInsideIndexp = nullptr;
@@ -2191,7 +2189,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         normalizeBiasedIndexInner(idxp, true, true, 32, 32);
         return !biasedIndexHasBadExtend(idxp);
     }
-    void handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl) {
+    bool handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl) {
         const bool nestedElement
             = VN_IS(nodep->fromp(), NodeSel) || VN_IS(nodep->fromp(), CMethodHard);
         const AstUnpackArrayDType* const arrDtp
@@ -2209,11 +2207,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                                       && (!structDtp || structDtp->packed())  // LCOV_EXCL_BR_LINE
                                       && !VN_IS(subp, ClassRefDType);  // LCOV_EXCL_BR_LINE
         if (!arrIsSupported1D) {
+            if (m_blockUsesMode) return false;
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: rand-dependent index into this array shape in "
                           "constraint (multidimensional, queue, dynamic, or associative array, "
                           "or a struct/class-typed element)");
-            return;
+            return true;
         }
         // Each cloned element would read those indices at their stale pre-solve values.
         const bool fromIndexIsRand = nodep->fromp()->exists([](const AstNodeSel* selp) {
@@ -2223,25 +2222,33 @@ class ConstraintExprVisitor final : public VNVisitor {
                    && (!methodp->pinsp() || refsRandVar(methodp->pinsp()));
         });
         if (fromIndexIsRand) {
+            if (m_blockUsesMode) return false;
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Randomized index in complex expression");
-            return;
+            return true;
         }
         // Cap the expansion so a large table fails fast instead of hanging the compile.
         static constexpr int MAX_RAND_INDEX_ELEMENTS = 16384;
         const int elements = arrDtp->elementsConst();
         if (elements > MAX_RAND_INDEX_ELEMENTS) {
+            if (m_blockUsesMode) return false;
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: rand-dependent index into non-rand array of "
                               + cvtToStr(elements) + " elements exceeds the "
                               + cvtToStr(MAX_RAND_INDEX_ELEMENTS)
                               + "-element solver expansion limit");
-            return;
+            return true;
         }
 
+        if (arrDtp->lo() != 0 && m_blockUsesMode) {
+            AstNodeExpr* const probep = nodep->bitp()->cloneTree(false);
+            const bool probeOk = normalizeBiasedIndex(probep);
+            VL_DO_DANGLING(probep->deleteTree(), probep);
+            if (!probeOk) return false;
+        }
         if (arrDtp->lo() != 0 && !normalizeBiasedIndex(nodep->bitp())) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Complex index expression into non-rand "
                                          "array");
-            return;
+            return true;
         }
         AstNodeExpr* idxp = nodep->bitp()->unlinkFrBack();
         if (arrDtp->lo() != 0) propagateUser1InlineRecurse(idxp);
@@ -2260,6 +2267,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->replaceWith(muxp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         iterate(muxp);
+        return true;
     }
     void renameArrayExpr(AstSFormatF* const newp) const {
         if (m_structSel) {
@@ -2299,10 +2307,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (indexIsRand) {
             AstVar* const rootVarp = resolveArraySelRootVarp(nodep, nodep->fromp());
             if (!rootVarp) return;
-            if (!rootVarp->rand().isRandomizable() && !rootVarp->isStdRandomizeArg()
-                && !m_blockUsesMode) {
-                handleRandIndexIntoNonrandArray(nodep, fl);
-                return;
+            if (!rootVarp->rand().isRandomizable() && !rootVarp->isStdRandomizeArg()) {
+                if (handleRandIndexIntoNonrandArray(nodep, fl)) return;
             }
             // Index depends on rand variable -- keep as SMT symbol.
             // Array index sort is 32-bit, so zero-extend narrower indices.

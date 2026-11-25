@@ -1047,6 +1047,47 @@ class DisabledBlockBiasedIndex;
   constraint c { x == pool[(a >> 1) + 0]; }
 endclass
 
+// Same, for an array reached through another random index.
+class DisabledBlockRandFromIndex;
+  rand bit [7:0] x;
+  rand int idx;
+  rand int k;
+  Holder hs[2];
+  constraint d { x == 8'd7; }
+  constraint c { k inside {[0:1]}; idx inside {[0:15]}; hs[k].used[idx] == 1'b1; }
+  function new();
+    hs[0] = new;
+    hs[1] = new;
+  endfunction
+endclass
+
+// The same block left on: a supported shape still lowers.
+class GatedSupportedIndex;
+  rand bit [7:0] x;
+  rand bit [7:0] v;
+  bit [7:0] tab[4];
+  rand int r;
+  constraint d { x == 8'd7; }
+  constraint c { r inside {[0:3]}; v == tab[r]; }
+  function new();
+    tab = '{8'h10, 8'h20, 8'h30, 8'h40};
+  endfunction
+endclass
+
+// Same, over a non-zero-based range, so the bias check runs on a copy.
+class GatedSupportedNonZeroBase;
+  rand bit [7:0] x;
+  rand bit v;
+  bit pool[1:16];
+  rand int id;
+  constraint d { x == 8'd7; }
+  constraint c { id inside {[1:16]}; v == pool[id]; }
+  function new();
+    foreach (pool[i]) pool[i] = 0;
+    pool[5] = 1;
+  endfunction
+endclass
+
 
 module t;
   initial begin
@@ -1063,6 +1104,9 @@ module t;
     DisabledBlockStructIndex disstruct_obj;
     DisabledBlockOvercapIndex discap_obj;
     DisabledBlockBiasedIndex disbias_obj;
+    DisabledBlockRandFromIndex disfrom_obj;
+    GatedSupportedIndex gatesup_obj;
+    GatedSupportedNonZeroBase gatesupnz_obj;
     UniqueIdPoolViaMember mobj;
     UniqueIdPoolNonZeroBase nzobj;
     UniqueIdPoolDescBase descobj;
@@ -1771,6 +1815,32 @@ module t;
     randomize_result = disbias_obj.randomize();
     `checkd(randomize_result, 1);
     `checkd(disbias_obj.x, 7);
+
+    disfrom_obj = new;
+    disfrom_obj.c.constraint_mode(0);
+    randomize_result = disfrom_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(disfrom_obj.x, 7);
+
+    gatesup_obj = new;
+    gatesup_obj.c.constraint_mode(1);
+    randomize_result = gatesup_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(gatesup_obj.v, gatesup_obj.tab[gatesup_obj.r]);
+    gatesup_obj.c.constraint_mode(0);
+    randomize_result = gatesup_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(gatesup_obj.x, 7);
+
+    gatesupnz_obj = new;
+    gatesupnz_obj.c.constraint_mode(1);
+    randomize_result = gatesupnz_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(gatesupnz_obj.v, gatesupnz_obj.pool[gatesupnz_obj.id]);
+    gatesupnz_obj.c.constraint_mode(0);
+    randomize_result = gatesupnz_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(gatesupnz_obj.x, 7);
 
     $write("*-* All Finished *-*\n");
     $finish;
