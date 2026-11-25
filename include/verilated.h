@@ -527,9 +527,8 @@ public:
         m_profilerp = profilerp;
         m_profTopLevel = topLevel;
     }
-    /// Re-settle a --vpi-lazy write into a retained signal; called from the generated
-    /// evalBegin()
-    void lazySettle();
+    /// Iterate the 'Settle' region until it converges; also re-settles a --vpi-lazy write
+    void settle();
 
 private:
     // Evaluate a time step, recording --prof-exec sections iff 'Profiling'.

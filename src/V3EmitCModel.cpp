@@ -540,7 +540,7 @@ class EmitCModel final : public EmitCFunc {
             putsDecoration(nullptr, "// Re-settle a pending lazy VPI write\n");
             puts("if (VL_UNLIKELY(vlSymsp->__Vm_lazy.written)) {\n");
             puts("vlSymsp->__Vm_lazy.written = false;\n");
-            puts("if (m_didInit) m_evalLoop.lazySettle();\n");
+            puts("if (m_didInit) m_evalLoop.settle();\n");
             puts("}\n");
         }
         puts("}\n");
