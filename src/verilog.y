@@ -3372,7 +3372,8 @@ instPinItListE<pinp>:           // IEEE: list_of_port_connections
 
 instParamItem<pinp>:            // IEEE: named_parameter_assignment + empty
         //                      // Note empty is not allowed in parameter lists
-                yP_DOTSTAR                              { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
+                yP_DOTSTAR
+                        { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
         |       '.' idAny '(' ')'
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, nullptr};
                           $$->svDotName(true); }

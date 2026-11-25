@@ -14,6 +14,7 @@ test.scenarios("vlt")
 test.compile(verilator_flags2=["--binary", "--stats"])
 
 test.file_grep(test.stats, r'Timing, suspendable DPI exports\s+(\d+)', 3)
+test.file_grep(test.stats, r'Timing, suspendable processes\s+(\d+)', 1)
 
 test.execute()
 

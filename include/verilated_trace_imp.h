@@ -20,6 +20,9 @@
 // clang-format off
 
 #ifndef VL_CPPCHECK
+// Calling .h files must define before including this:
+//  VL_SUB_T as the sub-class e.g. VerilatedVcd
+//  VL_BUF_T as the buffer class e.g. VerilatedVcdBuffer
 #if !defined(VL_SUB_T) || !defined(VL_BUF_T)
 # error "This file should be included in trace format implementations"
 #endif

@@ -46,13 +46,21 @@
                                                : ... note: In instance 't'
    40 |   initial if (THREE) $stop;
       |           ^~
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:49:16: Operator ADD expects 32 bits on the LHS, but LHS's VARREF 'lhs' generates 6 bits.
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:43:26: Operator ADD expects 32 bits on the LHS, but LHS's CONST '6'h2d' generates 6 bits.
                                                 : ... note: In instance 't'
-   49 |     return lhs + rhs;
+   43 |   int cast_value = 6'd45 + 5'd25;
+      |                          ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:43:26: Operator ADD expects 32 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   43 |   int cast_value = 6'd45 + 5'd25;
+      |                          ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:50:16: Operator ADD expects 32 bits on the LHS, but LHS's VARREF 'lhs' generates 6 bits.
+                                                : ... note: In instance 't'
+   50 |     return lhs + rhs;
       |                ^
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:49:16: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'rhs' generates 5 bits.
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:50:16: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'rhs' generates 5 bits.
                                                 : ... note: In instance 't'
-   49 |     return lhs + rhs;
+   50 |     return lhs + rhs;
       |                ^
 %Warning-WIDTHEXPAND: t/t_lint_width_bad.v:52:46: Operator ADD expects 32 bits on the LHS, but LHS's CONST '6'h2d' generates 6 bits.
                                                 : ... note: In instance 't'
@@ -62,14 +70,6 @@
                                                 : ... note: In instance 't'
    52 |   typedef enum int { CAST_ENUM_VALUE = 6'd45 + 5'd25 } cast_enum_t;
       |                                              ^
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:51:26: Operator ADD expects 32 bits on the LHS, but LHS's CONST '6'h2d' generates 6 bits.
-                                                : ... note: In instance 't'
-   51 |   int cast_value = 6'd45 + 5'd25;
-      |                          ^
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:51:26: Operator ADD expects 32 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
-                                                : ... note: In instance 't'
-   51 |   int cast_value = 6'd45 + 5'd25;
-      |                          ^
 %Warning-WIDTHEXPAND: t/t_lint_width_bad.v:56:32: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
                                                 : ... note: In instance 't'
    56 |     $display("%f", real'(6'd45 == 5'd25));

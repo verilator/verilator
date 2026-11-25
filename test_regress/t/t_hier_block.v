@@ -252,10 +252,10 @@ module sub3 #(
 
   TYPE [7:0] ff;
   always_ff @(posedge clk) ff <= in + P0;
-  always_ff @(posedge clk) if (out4 != out4_2) $stop;
-
   wire [7:0] out4;
   wire [7:0] out4_2;
+  always_ff @(posedge clk) if (out4 != out4_2) $stop;
+
   assign out = out4;
   /* verilator lint_off REALCVT */
   sub4 #(.P0(1.6), .P1(3.1), .P3(4.1)) i_sub4_0(.clk(clk), .in(ff), .out(out4));  // incr 2

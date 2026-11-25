@@ -4686,8 +4686,13 @@ class WidthVisitor final : public VNVisitor {
             // Similar logic in V3Case
             return irangep->newAndFromInside(exprp, irangep->lhsp()->unlinkFrBack(),
                                              irangep->rhsp()->unlinkFrBack());
-        } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
-                   || VN_IS(itemDtp, QueueDType)) {
+        } else if (itemDtp->isNonPackedArray()) {
+            const AstNodeDType* const memberTypep = itemDtp->subDTypep()->skipRefp();
+            if (memberTypep->isNonPackedArray()) {
+                itemp->v3warn(E_UNSUPPORTED, "Unsupported: 'inside' on array of unpacked arrays");
+                VL_DO_DANGLING(exprp->deleteTree(), exprp);
+                return nullptr;
+            }
             // Unsupported in parameters
             AstNodeExpr* const inewp = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(),
                                                           VCMethod::ARRAY_INSIDE, exprp};
@@ -4695,11 +4700,6 @@ class WidthVisitor final : public VNVisitor {
             inewp->dtypeSetBit();
             inewp->didWidth(true);
             return inewp;
-        } else if (VN_IS(itemDtp, AssocArrayDType) || VN_IS(itemDtp, WildcardArrayDType)) {
-            nodep->v3error("Inside operator not specified on associative arrays "
-                           "(IEEE 1800-2023 11.4.13)");
-            VL_DO_DANGLING(exprp->deleteTree(), exprp);
-            return nullptr;
         }
         return AstEqWild::newTyped(itemp->fileline(), exprp, itemp->unlinkFrBack());
     }
@@ -6971,7 +6971,7 @@ class WidthVisitor final : public VNVisitor {
         const AstStructDType* const structp = VN_CAST(elemDTypeSkipRefp, StructDType);
         const bool unpackedStruct = structp && !structp->packed();
 
-        if (!VN_IS(elemDTypeSkipRefp, UnpackArrayDType) && !unpackedStruct) {
+        if (!VN_IS(elemDTypeSkipRefp, NodeArrayDType) && !unpackedStruct) {
             VL_DO_DANGLING(pushDeletep(valuep), valuep);
             return defaultp->cloneTree(false);
         }

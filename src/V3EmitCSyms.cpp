@@ -318,7 +318,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
     static std::string memberVlEnumDir(const AstVar* const varp,
                                        const AstNodeDType* const dtypep) {
-        std::string out = '(' + varp->vlEnumDir(/*forMember=*/true);
+        std::string out = '(' + varp->vlEnumDir(/*forMember=*/true) + "|VLVF_MEMBER";
         const AstNodeDType* const skipDTypep = dtypep->skipRefp();
         if (skipDTypep->isSigned()) out += "|VLVF_SIGNED";
         if (const AstBasicDType* const basicp = skipDTypep->basicp()) {
@@ -536,9 +536,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         }
     }
 
-    // Packed struct/union members have no storage of their own; each is a VLVF_PACKED_MEMBER row,
-    // a bit slice of the parent's storage, with the parent's storage type and entSize, and its bit
-    // offset within the parent's element 0. VPI adds any packed/unpacked index offset.
+    // Packed struct/union members have no storage of their own; each is a row that is a bit slice
+    // of the parent's storage, with the parent's storage type and entSize, and its bit offset
+    // within the parent's element 0. VPI adds any packed/unpacked index offset.
     // 'needsIndex' if an ancestor is an array, so the members are only valid after an index.
     void addPackedMemberRows(std::vector<std::string>& rows, const ScopeVarData& svd,
                              const std::string& byteOffset, const std::string& prettyPrefix,
@@ -554,7 +554,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const VarDims dims = getVarDims(itemDTypep);
             UASSERT_OBJ(dims.udim == 0, itemp, "Unpacked dimension in packed struct/union");
             std::string flags = memberVlEnumDir(svd.m_varp, itemDTypep);
-            flags += "|VLVF_PACKED_MEMBER";
             if (needsIndex) flags += "|VLVF_PACKED_NEEDS_INDEX";
             rows.emplace_back("{\"" + V3OutFormatter::quoteNameControls(prettyName) + "\", "
                               + byteOffset + ", " + tableRowProps(itemp, vlEnumType, flags, dims)

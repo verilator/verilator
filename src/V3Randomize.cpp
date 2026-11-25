@@ -195,6 +195,35 @@ static bool anyOpRandDependent(const AstNode* nodep) {
            || (nodep->op4p() && nodep->op4p()->user1());
 }
 
+// For a static member of a class that is neither a base nor a derived class of classp,
+// return that class, else nullptr
+static const AstClass* foreignStaticClassp(const AstClass* classp, const AstVar* varp) {
+    if (!varp->lifetime().isStatic()) return nullptr;
+    const AstClass* const declClassp = VN_CAST(varp->aboveLoopp(), Class);
+    return declClassp && !AstClass::isClassRelated(classp, declClassp) ? declClassp : nullptr;
+}
+
+// Class of a class handle, or of an array/assoc/queue of class handles, else nullptr
+static const AstClass* handleClassp(const AstVar* varp) {
+    const AstNodeDType* dtypep = varp->dtypep()->skipRefp();
+    while (const AstNodeDType* const subp = dtypep->subDTypep()) dtypep = subp->skipRefp();
+    const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType);
+    return classRefp ? classRefp->classp() : nullptr;
+}
+
+// True if classp reaches declClassp's members through rand class handles
+static bool reachesThroughRandHandle(const AstClass* classp, const AstClass* declClassp,
+                                     ActiveSet& visited) {
+    return classp->existsMember([&](const AstClass*, const AstVar* varp) {
+        if (!varp->rand().isRandomizable()) return false;
+        const AstClass* const memberClassp = handleClassp(varp);
+        if (!memberClassp) return false;
+        if (AstClass::isClassExtendedFrom(memberClassp, declClassp)) return true;
+        return visited.insert(memberClassp).second
+               && reachesThroughRandHandle(memberClassp, declClassp, visited);
+    });
+}
+
 //######################################################################
 // Visitor that marks classes needing a randomize() method
 
@@ -216,6 +245,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     using BaseToDerivedMap = std::unordered_map<const AstClass*, DerivedSet>;
 
     BaseToDerivedMap m_baseToDerivedMap;  // Mapping from base classes to classes that extend them
+    BaseToDerivedMap m_allDerivedMap;  // As m_baseToDerivedMap, but complete before traversal
     AstClass* m_classp = nullptr;  // Current class
     AstNode* m_constraintExprGenp = nullptr;  // Current constraint or constraint if expression
     AstNodeModule* m_modp;  // Current module
@@ -224,6 +254,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     bool m_inStdWith = false;  // True when inside a 'with {}' clause
     std::set<AstNodeVarRef*> m_staticRefs;  // References to static variables under `with` clauses
     AstWith* m_withp = nullptr;  // Current 'with' constraint node
+    const AstClass* m_constraintClassp = nullptr;  // Class of the current class constraint
 
     // METHODS
     // Mark all rand variables in IS_RANDOMIZED_GLOBAL classes as globalConstrained
@@ -264,6 +295,27 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
         }
         return false;
+    }
+    // True if classp, or a class derived from it, reaches declClassp through rand handles
+    bool hierarchyReaches(const AstClass* classp, const AstClass* declClassp,
+                          ActiveSet& visited) const {
+        if (reachesThroughRandHandle(classp, declClassp, visited)) return true;
+        const auto it = m_allDerivedMap.find(classp);
+        if (it == m_allDerivedMap.end()) return false;
+        for (const AstClass* const derivedp : it->second) {
+            if (hierarchyReaches(derivedp, declClassp, visited)) return true;
+        }
+        return false;
+    }
+    // True for a static rand member of another class that neither the class of the current
+    // constraint nor one derived from it reaches through rand class handles: a state
+    // variable of the constraint (IEEE 1800-2023 18.4)
+    bool isStateStatic(const AstVar* varp) const {
+        if (!m_constraintClassp) return false;
+        const AstClass* const declClassp = foreignStaticClassp(m_constraintClassp, varp);
+        if (!declClassp) return false;
+        ActiveSet visited;
+        return !hierarchyReaches(m_constraintClassp, declClassp, visited);
     }
     void markMembers(const AstClass* nodep) {
         for (const AstClass* classp = nodep; classp;
@@ -377,7 +429,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
         std::vector<AstFuncRef*> funcRefps;
         cloneConstrp->foreach([&](AstNodeExpr* exprp) {
             if (AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
-                if (!varRefp->varp()->isClassMember()) return;
+                if (!varRefp->varp()->isClassMember() || varRefp->varp()->lifetime().isStatic())
+                    return;
                 AstNodeExpr* const chainp = buildMemberRefChain(rootVarRefp, newPath);
                 AstMemberRef* const finalRefp
                     = new AstMemberRef{varRefp->fileline(), chainp, varRefp->varp()};
@@ -408,7 +461,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
         // Add constraint directly to the target class
         targetClassp->addMembersp(cloneConstrp);
-        // Immediately iterate to set user1 marks
+        // Immediately iterate to set user1 marks, as a constraint of the target class
+        VL_RESTORER(m_classp);
+        m_classp = targetClassp;
         iterateConst(cloneConstrp);
     }
 
@@ -501,6 +556,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
             const AstClass* const basep = nodep->extendsp()->classp();
             m_baseToDerivedMap[basep].insert(nodep);
         }
+    }
+    void visit(AstConstraint* nodep) override {
+        VL_RESTORER(m_constraintClassp);
+        m_constraintClassp = m_classp;
+        iterateChildrenConst(nodep);
     }
     void visit(AstNodeStmt* nodep) override {
         VL_RESTORER(m_stmtp);
@@ -661,7 +721,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             if (!classp->user1()) classp->user1(IS_RANDOMIZED);
             markMembers(classp);
             // Clone constraints from all IS_RANDOMIZED_GLOBAL members
-            classp->foreachMember([&](AstClass* const, AstVar* const memberVarp) {
+            classp->foreachMember([&](AstClass* const containingClassp, AstVar* const memberVarp) {
                 if (!memberVarp->rand().isRandomizable()) return;
                 const AstNodeDType* const dtypep = memberVarp->dtypep()->skipRefp();
                 const AstClassRefDType* const classRefp = VN_CAST(dtypep, ClassRefDType);
@@ -670,8 +730,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 if (memberClassp->user1() != IS_RANDOMIZED_GLOBAL) return;
                 memberVarp->globalConstrained(true);
                 // Clone constraints from this IS_RANDOMIZED_GLOBAL member class
-                AstVarRef* rootVarRefp
-                    = new AstVarRef{nodep->fileline(), classp, memberVarp, VAccess::READ};
+                AstVarRef* rootVarRefp = new AstVarRef{nodep->fileline(), containingClassp,
+                                                       memberVarp, VAccess::READ};
                 std::vector<AstVar*> emptyPath;
                 memberClassp->foreachMember([&](AstClass* const, AstConstraint* const constrp) {
                     processNestedConstraint(constrp, rootVarRefp, emptyPath, classp);
@@ -754,7 +814,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
         if (nodep->varp()->lifetime().isStatic()) m_staticRefs.emplace(nodep);
 
         // Mark as randomizable if: rand-declared, or listed in std::randomize() args
-        if (nodep->varp()->rand().isRandomizable() && !(m_inStdWith && m_stdRandCallp)) {
+        if (nodep->varp()->rand().isRandomizable() && !(m_inStdWith && m_stdRandCallp)
+            && !isStateStatic(nodep->varp())) {
             nodep->user1(true);
         } else if (isVarInStdRandomizeArgs(nodep->varp())) {
             nodep->user1(true);
@@ -834,6 +895,12 @@ class RandomizeMarkVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit RandomizeMarkVisitor(AstNode* nodep) {
+        // Derived classes are needed while marking constraints, so record them first
+        nodep->foreach([&](AstClass* classp) {
+            if (const AstClassExtends* const extendsp = classp->extendsp()) {
+                m_allDerivedMap[extendsp->classp()].insert(classp);
+            }
+        });
         iterateConst(nodep);
         markAllDerived();
         setPackageRefs();
@@ -1646,8 +1713,10 @@ class RandomizeVisitor final : public VNVisitor {
             tempDTypep = tempDTypep->virtRefDTypep();
         }
 
-        AstForeachHeader* const headerp
-            = new AstForeachHeader{fl, exprp->cloneTree(false), randLoopIndxp};
+        // Iterating only reads the array, the elements are written through tempElementp
+        AstNodeExpr* const arrayp = exprp->cloneTree(false);
+        arrayp->foreach([](AstVarRef* refp) { refp->access(VAccess::READ); });
+        AstForeachHeader* const headerp = new AstForeachHeader{fl, arrayp, randLoopIndxp};
         AstNodeStmt* const randStmtsp = newRandStmtsp(fl, tempElementp, nullptr, outputVarp);
         // TODO: we should just not clone in 'newRandStmtsp' if not necessary
         if (!tempElementp->backp()) VL_DO_DANGLING(pushDeletep(tempElementp), tempElementp);
@@ -1849,20 +1918,21 @@ class RandomizeVisitor final : public VNVisitor {
         });
     }
     // True if this class owns a global constraint: a member-select chain rooted
-    // at a rand class-typed handle reaching into a sub-object.
+    // at a rand class-typed handle reaching into a sub-object, or a random static
+    // member of another class (V3Width turns a member select of a static into a VarRef).
     bool classOwnsGlobalConstraint(const AstClass* classp) const {
-        return classp->existsMember([](const AstClass*, const AstConstraint* constrp) {
+        return classp->existsMember([&](const AstClass*, const AstConstraint* constrp) {
             bool owns = false;
-            constrp->foreach([&](const AstMemberRef* memberRefp) {
-                const AstNode* const rootp
-                    = const_cast<AstMemberRef*>(memberRefp)->baseFromp(true);
-                if (const AstVarRef* const refp = VN_CAST(rootp, VarRef)) {
+            constrp->foreach([&](const AstNodeExpr* exprp) {
+                if (const AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+                    if (refp->user1() && foreignStaticClassp(classp, refp->varp())) owns = true;
+                } else if (const AstMemberRef* const memberRefp = VN_CAST(exprp, MemberRef)) {
+                    const AstNode* const rootp
+                        = const_cast<AstMemberRef*>(memberRefp)->baseFromp(true);
                     // Owns a sub-object constraint if the root is a class handle, or
                     // an array/assoc/queue/unpacked array of class handles.
-                    const AstNodeDType* dtypep = refp->varp()->dtypep()->skipRefp();
-                    while (const AstNodeDType* const subp = dtypep->subDTypep())
-                        dtypep = subp->skipRefp();
-                    if (VN_IS(dtypep, ClassRefDType)) owns = true;
+                    const AstVarRef* const refp = VN_CAST(rootp, VarRef);
+                    if (refp && handleClassp(refp->varp())) owns = true;
                 }
             });
             return owns;
@@ -2122,7 +2192,7 @@ class RandomizeVisitor final : public VNVisitor {
                                  VAccess::WRITE};
         } else {
             AstMemberRef* const memberRefp = new AstMemberRef{fl, fromp->unlinkFrBack(), modeVarp};
-            memberRefp->foreach([](AstVarRef* varrefp) { varrefp->access(VAccess::WRITE); });
+            memberRefp->access(VAccess::WRITE);
             return memberRefp;
         }
     }

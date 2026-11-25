@@ -42,6 +42,31 @@ class Foo;
     // a dynamic scope
     $display("Incremented arg_v: %0d", ++arg_v);
     if (arg_v != 1) $stop;
+
+    begin
+      // Writes to elements of captured dynamically sized arrays
+      int aa[int];
+      int wa[*];
+      int da[];
+      int q[$];
+      da = new[2];
+      q.push_back(0);
+      fork
+        #10 begin
+          aa[3] = 5;
+          wa["x"] = 6;
+          da[1] = 7;
+          q[0] = 8;
+          q[1] = 9;
+          if (aa[3] != 5) $stop;
+          if (wa["x"] != 6) $stop;
+          if (da[1] != 7) $stop;
+          if (q[0] != 8) $stop;
+          if (q.size() != 2) $stop;
+          if (q[1] != 9) $stop;
+        end
+      join_none
+    end
   endtask
 endclass
 

@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
+  int cnt;
+
   initial begin
     int value;
 
@@ -75,7 +77,6 @@ module t;
     return v;
   endfunction
 
-  int cnt;
   function int cnt_value(int v);
     ++cnt;
     return v;
