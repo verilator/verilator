@@ -1669,12 +1669,14 @@ class TaskVisitor final : public VNVisitor {
                     return nullptr;
                 }
                 if (dpiRtnAsArg(portp)) {
-                    portp->v3warn(NONSTD, "DPI function returning type "
-                                              << portp->dtypep()->prettyDTypeNameQ(true)
-                                              << " is non-standard (IEEE 1800-2023 35.5.5)\n"
-                                              << portp->warnMore()
-                                              << "... The C function returns void and takes the"
-                                                 " result as its first, output argument");
+                    portp->v3warn(
+                        NONSTD,
+                        "DPI function returning type "
+                            << portp->dtypep()->prettyDTypeNameQ(true)
+                            << " of > 32 bits or 4-state non-standard (IEEE 1800-2023 35.5.5)\n"
+                            << portp->warnMore()
+                            << "... The C function returns void and takes the"
+                               " result as its first, output argument");
                 }
             } else if (nodep->taskPublic()) {
                 if (portp->isWide()) {

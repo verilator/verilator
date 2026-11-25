@@ -250,6 +250,32 @@ or "`ifdef`"'s may break other tools.
    One word may come before ``coverage``, as for
    :option:`//&32;coverage&32;off`.
 
+.. option:: import&32;"DPI-C"&32;function, export&32;"DPI-C"&32;function
+
+   Per IEEE 1800-2023 35.5.5, the result of a DPI function is restricted to
+   small types, so it cannot be a 2-state vector wider than 32 bits, or a
+   4-state vector other than a single ``logic``. Verilator extends this,
+   and accepts such a result for imported and exported DPI functions with a
+   :option:`NONSTD` warning. The C function then returns void, and takes
+   the result as its first argument, like an output argument of the same
+   type. For example, this import:
+
+   .. code-block:: sv
+
+      module t;
+        /* verilator lint_off NONSTD */
+        import "DPI-C" function logic [99:0] wide(input logic [99:0] in);
+        /* verilator lint_on NONSTD */
+      endmodule
+
+   has this C prototype:
+
+   .. code-block:: C++
+
+      void wide(svLogicVecVal* result, const svLogicVecVal* in);
+
+   Other simulators may not accept such a function.
+
    .. t_dist_docs_style restart_sort
 
 .. option:: /*verilator&32;clock_enable*/
