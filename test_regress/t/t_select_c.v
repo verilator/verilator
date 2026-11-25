@@ -12,13 +12,13 @@ module t;
   wire w413;
   wire w509;
 
+  wire [11:0] w258 = 3'h3 || w274;
   assign w104 = !w509;
   assign w201 = w258 > 12'hab7;
   assign w204 = 7'h7f <= w104;
-  wire [11:0] w258 = 3'h3 || w274;
+  wire [21:5] out21 = w204;
   assign w538 = w412 ? out21 : w201;
   wire [16:0] w539 = w413 ? w538 : 17'h00570;
-  wire [21:5] out21 = w204;
   assign out51 = w539[0];
 
   initial begin
