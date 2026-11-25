@@ -22,7 +22,7 @@ module t;
   //this will not compile without -fno-life
   initial begin
     byte byte_pkt[$];
-    byte got_pkt;
+    int got_pkt;
     //---------------------- STREAM WITH INTERFACE -------------------
     //using this forces verilator to a AstSel Node into a Stream Node
     #0 //make sure we dont optimize it all away in v3life

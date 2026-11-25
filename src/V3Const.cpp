@@ -2848,6 +2848,15 @@ class ConstVisitor final : public VNVisitor {
                     return true;
                 }
             }
+            const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+            if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
+                // The leftmost bits of a dynamically sized source (IEEE 1800-2023 11.4.14.3)
+                const int width = dstDTypep->widthStream();
+                srcp = new AstCvtArrayToPacked{
+                    srcp->fileline(), srcp,
+                    srcp->findBitOrLogicDType(width, width, VSigning::UNSIGNED,
+                                              srcDTypep->subDTypep()->isFourstate())};
+            }
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
             if (VN_IS(dstDTypep, UnpackArrayDType)) {
@@ -2870,15 +2879,11 @@ class ConstVisitor final : public VNVisitor {
                     // Source narrower than destination: left-justify by shifting left.
                     // The right stream operator packs left-to-right, so remaining
                     // LSBs are zero-filled (IEEE 1800-2023 11.4.14.3).
-                    if (!VN_IS(srcp->dtypep()->skipRefp(), QueueDType)) {
-                        AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dWidth};
-                        srcp = new AstShiftL{
-                            srcp->fileline(), extendp,
-                            new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
-                            dWidth};
-                    } else {  // if it is a queue we dont need do do a shiftL
-                        srcp = new AstExtend{srcp->fileline(), srcp};
-                    }
+                    AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dWidth};
+                    srcp = new AstShiftL{
+                        srcp->fileline(), extendp,
+                        new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
+                        dWidth};
                 }
             }
             nodep->lhsp(dstp);
@@ -2901,7 +2906,9 @@ class ConstVisitor final : public VNVisitor {
                 srcp = packedp;
             } else if ((VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
                         || VN_IS(srcDTypep, UnpackArrayDType))) {
-                if (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType)) {
+                const bool dynamicDst
+                    = VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType);
+                if (dynamicDst || !VN_IS(srcDTypep, UnpackArrayDType)) {
                     int blockSize = 1;
                     if (const AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
                         blockSize = constp->toSInt();
@@ -2924,14 +2931,21 @@ class ConstVisitor final : public VNVisitor {
                     if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
                         srcElementBits = elemDtp->width();
                     }
+                    // A dynamically sized source is reversed before packing it left-justified,
+                    // as its width is not known
+                    AstNodeDType* const arrayDTypep
+                        = dynamicDst ? dstDTypep : srcp->dtypep()->skipRefp();
                     int dstElementBits = 0;
-                    if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                    if (const AstNodeDType* const elemDtp = arrayDTypep->subDTypep()) {
                         dstElementBits = elemDtp->width();
                     }
                     streamp->unlinkFrBack();
                     srcp = new AstCvtArrayToArray{
-                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep,     true,
+                        srcp->fileline(), srcp->unlinkFrBack(), arrayDTypep,   true,
                         blockSize,        dstElementBits,       srcElementBits};
+                    if (!dynamicDst) {
+                        srcp = new AstCvtArrayToPacked{srcp->fileline(), srcp, dstDTypep};
+                    }
                     nodep->rhsp(srcp);
                     VL_DO_DANGLING(pushDeletep(streamp), streamp);
                 } else {
