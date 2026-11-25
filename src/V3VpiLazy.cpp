@@ -168,6 +168,9 @@ struct CombBlock final {
     std::vector<AstVarScope*> m_targets;  // Written vars, encounter order
     std::unordered_map<const AstVarScope*, int> m_writeCount;  // Writes within this block
     std::vector<AstVarScope*> m_reads;  // Vars it reads, first-occurrence pre-order
+    std::vector<const AstVarRef*> m_writeRefs;  // Its write refs, tree order
+    // Constant-select assigns' lhs base ref -> the bits it writes
+    std::unordered_map<const AstVarRef*, PartExtent> m_writeExts;
     bool m_impure = false;  // Some node in it is unsafeToReexecute
 };
 
@@ -207,52 +210,35 @@ struct PartWrite final {
     PartExtent m_ext;  // The bits it writes
 };
 
-// Base and footprint of a constant-selected partial write (`base[3][c +: w] = rhs;`), else null.
-AstVarRef* partialLhsRef(AstNodeExpr* lhsp, PartExtent& extr) {
-    AstNodeExpr* nodep = lhsp;
-    bool anySel = false;
-    // Nested, as V3Const has not flattened them under -fno-const-before-dfg
-    while (AstSel* const selp = VN_CAST(nodep, Sel)) {
-        if (!VN_IS(selp->lsbp(), Const)) return nullptr;
-        extr.m_lsb += selp->lsbConst();
-        if (!anySel) extr.m_width = selp->widthConst();
-        nodep = selp->fromp();
-        anySel = true;
-    }
-    while (AstArraySel* const aselp = VN_CAST(nodep, ArraySel)) {
-        const AstConst* const idxp = VN_CAST(aselp->bitp(), Const);
-        if (!idxp) return nullptr;
-        extr.m_idxs.push_back(static_cast<int32_t>(idxp->toSInt()));
-        nodep = aselp->fromp();
-        anySel = true;
-    }
-    if (!anySel) return nullptr;
-    AstVarRef* const refp = VN_CAST(nodep, VarRef);
-    if (!refp) return nullptr;
-    if (!extr.m_width) extr.m_width = lhsp->dtypep()->skipRefp()->width();
-    return refp;
-}
-
-AstVarScope* partialLhs(AstNodeExpr* lhsp, PartExtent& extr) {
-    const AstVarRef* const refp = partialLhsRef(lhsp, extr);
-    return refp ? refp->varScopep() : nullptr;
-}
-
-// 'partialr' if a select leaves untouched bits, which are then read. Null if not a select chain.
-AstVarRef* lhsBaseRef(AstNodeExpr* lhsp, bool& partialr) {
-    partialr = false;
-    for (AstNodeExpr* nodep = lhsp;;) {
-        if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) return refp;
-        if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
-            partialr = true;
+// Base of a select chain (`base[i][c +: w]`), else null. 'extr' gets the bits it selects if
+// they are constant: Sels, nested under -fno-const-before-dfg, over constant ArraySels.
+AstVarRef* selBaseRef(AstNodeExpr* exprp, PartExtent& extr) {
+    PartExtent ext;
+    bool constant = true;  // Selects so far are constant, and no Sel is under an ArraySel
+    AstNodeExpr* nodep = exprp;
+    while (true) {
+        if (AstSel* const selp = VN_CAST(nodep, Sel)) {
+            constant = constant && ext.m_idxs.empty() && VN_IS(selp->lsbp(), Const);
+            if (constant) {
+                ext.m_lsb += selp->lsbConst();
+                if (!ext.m_width) ext.m_width = selp->widthConst();
+            }
             nodep = selp->fromp();
-        } else if (const AstArraySel* const aselp = VN_CAST(nodep, ArraySel)) {
-            partialr = true;
+        } else if (AstArraySel* const aselp = VN_CAST(nodep, ArraySel)) {
+            const AstConst* const idxp = VN_CAST(aselp->bitp(), Const);
+            constant = constant && idxp;
+            if (constant) ext.m_idxs.push_back(static_cast<int32_t>(idxp->toSInt()));
             nodep = aselp->fromp();
         } else {
-            return nullptr;
+            break;
         }
     }
+    AstVarRef* const refp = VN_CAST(nodep, VarRef);
+    if (refp && constant && nodep != exprp) {
+        if (!ext.m_width) ext.m_width = exprp->dtypep()->skipRefp()->width();
+        extr = std::move(ext);
+    }
+    return refp;
 }
 
 // Calls are exempt: isPredictOptimizable() is false for every AstNodeCCall only as V3Simulate
@@ -287,6 +273,7 @@ bool combMaskable(const AstVar* varp, std::vector<int32_t>& dimsr, int& elemWidt
 
 // Row-major, as the storage is laid out; false unless the select names bits of one element.
 bool combElement(const AstVar* varp, const PartExtent& ext, int32_t& elemr) {
+    if (!ext.m_width) return false;  // Not a constant select
     std::vector<int32_t> dims;
     int elemWidth = 0;
     if (!combMaskable(varp, dims, elemWidth)) return false;
@@ -393,6 +380,7 @@ private:
         m_refsOf[vscp].push_back(nodep);
         if (!nodep->access().isReadOnly()) {
             if (m_writeCount[vscp]++ == 0) m_writtenOrder.push_back(vscp);
+            if (m_blockp) m_blockp->m_writeRefs.push_back(nodep);
             if (m_blockp && m_blockp->m_writeCount[vscp]++ == 0) {
                 m_blockp->m_targets.push_back(vscp);
                 m_combWritten.insert(vscp);
@@ -408,7 +396,7 @@ private:
     void visitSel(AstNodeExpr* nodep) {
         checkPure(nodep);
         PartExtent ext;
-        const AstVarRef* const refp = partialLhsRef(nodep, ext);
+        const AstVarRef* const refp = selBaseRef(nodep, ext);
         VL_RESTORER(m_selRefp);
         // An inner select of the same chain reads no less than this one
         if (refp && refp != m_selRefp && refp->access().isReadOnly()
@@ -423,6 +411,16 @@ private:
     }
     void visit(AstSel* nodep) override { visitSel(nodep); }
     void visit(AstArraySel* nodep) override { visitSel(nodep); }
+    void visit(AstNodeAssign* nodep) override {
+        PartExtent ext;
+        if (m_blockp) {
+            if (const AstVarRef* const refp = selBaseRef(nodep->lhsp(), ext)) {
+                if (ext.m_width) m_blockp->m_writeExts.emplace(refp, std::move(ext));
+            }
+        }
+        checkPure(nodep);
+        iterateChildrenConst(nodep);
+    }
     void visit(AstActive* nodep) override {
         if (!nodep->hasCombo()) {
             iterateChildrenConst(nodep);
@@ -636,7 +634,7 @@ private:
         if (!m_ok) return;
         PartExtent ext;
         int32_t elem = 0;
-        const AstVarRef* const refp = partialLhsRef(nodep, ext);
+        const AstVarRef* const refp = selBaseRef(nodep, ext);
         if (refp && refp != m_skipp && !refp->access().isWriteOnly() && member(refp)
             && combElement(refp->varp(), ext, elem)) {
             bailIf(Bail::READ_BEFORE_WRITE,
@@ -657,8 +655,8 @@ private:
         // Not predict-optimizable, so the gather bailed it as IMPURE
         UASSERT_OBJ(!m_groupp || !nodep->timingControlp(), nodep,
                     "--vpi-lazy: timing control in a block walked for read order");
-        bool partial = false;
-        AstVarRef* const baserefp = lhsBaseRef(nodep->lhsp(), partial);
+        PartExtent ext;
+        AstVarRef* const baserefp = selBaseRef(nodep->lhsp(), ext);
         if (bailIf(Bail::UNSUPPORTED_STMT, !baserefp)) return;
         AstVarScope* const basep = baserefp->varScopep();
         // The gather counted every write under this block, so its write set is members
@@ -670,12 +668,11 @@ private:
             scanReads(nodep->rhsp());
             scanReads(nodep->lhsp());
         }
-        PartExtent ext;
         int32_t elem = 0;
-        if (!partial) {
+        if (baserefp == nodep->lhsp()) {
             m_modeled.insert(baserefp);
             defineWhole(basep);
-        } else if (partialLhsRef(nodep->lhsp(), ext) && combElement(basep->varp(), ext, elem)) {
+        } else if (combElement(basep->varp(), ext, elem)) {
             m_modeled.insert(baserefp);
             defineBits(basep, elem, ext.m_lsb, ext.m_width);
         }  // Else no bit is provably defined; the untouched ones keep what they had
@@ -743,29 +740,6 @@ class CombClassifier final {
     std::vector<AstVar*> m_combFootOrder;  // m_combFootVars, encounter order
     // Each candidate variable's instances
     std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_vscpsOf;
-
-    // A block's writes of candidates, and the extent of each partial assign's lhs
-    class VpiLazyCombWriteVisitor final : public VNVisitorConst {
-    public:
-        std::vector<const AstVarRef*> m_refs;  // Candidate write refs, tree order
-        std::unordered_map<const AstVarRef*, PartExtent> m_exts;  // Partial lhs ref -> extent
-
-    private:
-        void visit(AstNodeAssign* nodep) override {
-            PartExtent ext;
-            if (const AstVarRef* const refp = partialLhsRef(nodep->lhsp(), ext))
-                m_exts.emplace(refp, std::move(ext));
-            iterateChildrenConst(nodep);
-        }
-        void visit(AstVarRef* nodep) override {
-            if (!nodep->access().isReadOnly() && combCandidate(nodep->varp()))
-                m_refs.push_back(nodep);
-        }
-        void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
-
-    public:
-        explicit VpiLazyCombWriteVisitor(AstAlways* alwaysp) { iterateConst(alwaysp); }
-    };
 
     // Explicit public_flat_rw, forceable and top-level input signals keep flat-rw semantics.
     static bool combCandidate(const AstVar* varp) {
@@ -846,19 +820,19 @@ class CombClassifier final {
     // Purity and read order do not matter here, so the answer does not depend on how V3Split
     // partitioned the block. A target written any other way, as under a loop or jump, is not
     // proven: the safe direction.
-    void addBlock(AstAlways* alwaysp) {
-        if (alwaysp->keyword() == VAlwaysKwd::ALWAYS_LATCH) return;
-        const VpiLazyReadOrderVisitor defs{alwaysp->stmtsp()};
-        const VpiLazyCombWriteVisitor writes{alwaysp};
+    void addBlock(const CombBlock& block) {
+        if (block.m_alwaysp->keyword() == VAlwaysKwd::ALWAYS_LATCH) return;
+        const VpiLazyReadOrderVisitor defs{block.m_alwaysp->stmtsp()};
         std::unordered_set<const AstVarScope*> unprovable;
-        for (const AstVarRef* const refp : writes.m_refs)
+        for (const AstVarRef* const refp : block.m_writeRefs)
             if (!defs.m_modeled.count(refp)) unprovable.insert(refp->varScopep());
         std::unordered_set<const AstVarScope*> proven;
-        for (const AstVarRef* const refp : writes.m_refs) {
+        for (const AstVarRef* const refp : block.m_writeRefs) {
+            if (!combCandidate(refp->varp())) continue;
             AstVarScope* const vscp = refp->varScopep();
             if (unprovable.count(vscp)) {
-                const auto it = writes.m_exts.find(refp);
-                addCombWrite(vscp, it == writes.m_exts.end() ? nullptr : &it->second);
+                const auto it = block.m_writeExts.find(refp);
+                addCombWrite(vscp, it == block.m_writeExts.end() ? nullptr : &it->second);
                 continue;
             }
             // Every bit defined on every path has a write, so the union of writes is these
@@ -875,7 +849,7 @@ public:
     CombClassifier(V3VpiLazyContext& ctx, const VpiLazyGatherVisitor& gather)
         : m_ctx{ctx} {
         for (AstVarScope* const vscp : gather.m_vscOrder) addVarScope(vscp);
-        for (const CombBlock& block : gather.m_combBlocks) addBlock(block.m_alwaysp);
+        for (const CombBlock& block : gather.m_combBlocks) addBlock(block);
         for (AstVar* const varp : m_combFootOrder) finishCombFootprint(varp, m_vscpsOf.at(varp));
     }
 };
@@ -1075,7 +1049,8 @@ private:
     static AstVarScope* partialWriteBase(const CombBlock& b, PartExtent& extr) {
         if (!b.m_assignwp) return nullptr;
         if (!b.m_assignwp->rhsp()->isPure()) return nullptr;
-        return partialLhs(b.m_assignwp->lhsp(), extr);
+        AstVarRef* const refp = selBaseRef(b.m_assignwp->lhsp(), extr);
+        return refp && extr.m_width ? refp->varScopep() : nullptr;
     }
 
     // A write from another scope is one instance's own; the module's own code is every one's.
