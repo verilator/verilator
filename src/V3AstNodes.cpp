@@ -2367,6 +2367,7 @@ AstNodeBiop* AstNeq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp
 }
 AstNetlist::AstNetlist()
     : ASTGEN_SUPER_Netlist(new FileLine{FileLine::builtInFilename()})
+    , m_vpiLazyContextp{std::make_shared<V3VpiLazyContext>()}
     , m_typeTablep{new AstTypeTable{fileline()}}
     , m_constPoolPkgp{new AstPackage{fileline(), "__Vconstpool", "work"}}
     , m_dollarUnitPkgp{new AstPackage{fileline(), AstNode::encodeName("$unit"), "work"}} {
@@ -2436,10 +2437,6 @@ void AstNetlist::createTopScope(AstScope* scopep) {
     UASSERT_OBJ(!m_topScopep, scopep, "TopScope already exits");
     m_topScopep = new AstTopScope{scopep->modp()->fileline(), scopep};
     scopep->modp()->addStmtsp(v3Global.rootp()->topScopep());
-}
-V3VpiLazyContext& AstNetlist::createVpiLazyContext() {
-    m_vpiLazyContextp = std::make_shared<V3VpiLazyContext>();
-    return *m_vpiLazyContextp;
 }
 void AstNetlist::deleteContents() {
     // Delete all netlist memory.  Only for use by Verilator.cpp

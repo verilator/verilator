@@ -2619,7 +2619,7 @@ public:
     enum en : uint8_t {
         NONE = 0,  // Every bit holds its value without a driver
         WHOLE,  // Read-only
-        PARTIAL  // Only the bits V3VpiLazy::combRuns() names
+        PARTIAL  // Only the bits V3VpiLazyContext::combRunsOf() names
     };
     enum en m_e;
     const char* ascii() const {

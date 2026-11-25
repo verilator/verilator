@@ -1676,8 +1676,8 @@ public:
     AstNodeModule* topModulep() const VL_MT_STABLE {  // Top module in hierarchy
         return modulesp();  // First one in the list, for now
     }
-    V3VpiLazyContext* vpiLazyContextp() const { return m_vpiLazyContextp.get(); }
-    V3VpiLazyContext& createVpiLazyContext();
+    // Empty without --vpi-lazy, which answers as for a variable it never classified
+    V3VpiLazyContext& vpiLazyContext() const { return *m_vpiLazyContextp; }
     AstTypeTable* typeTablep() { return m_typeTablep; }
     string astConstOrigParamName(const AstConst* nodep) const;
     void astConstOrigParamName(const AstConst* nodep, const string& name);

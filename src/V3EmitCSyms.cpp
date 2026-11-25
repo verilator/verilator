@@ -328,7 +328,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // --vpi-lazy writability is per instance
     static std::string vlEnumDirOf(const AstScope* scopep, const AstVar* varp,
                                    bool forMember = false) {
-        return varp->vlEnumDir(V3VpiLazy::combOf(scopep, varp), forMember);
+        return varp->vlEnumDir(v3Global.rootp()->vpiLazyContext().combOf(scopep, varp), forMember);
     }
     // A --vpi-lazy shadow's row and its packed members' rows hold no current value of their own
     static std::string lazyRematFlags(const AstVar* varp) {
@@ -402,7 +402,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     };
 
     int combMaskIdx(const AstScope* scopep, const AstVar* varp) {
-        const std::vector<V3VpiLazy::CombRun>& runs = V3VpiLazy::combRuns(scopep, varp);
+        const std::vector<V3VpiLazy::CombRun>& runs
+            = v3Global.rootp()->vpiLazyContext().combRunsOf(scopep, varp);
         const auto pr = m_combMaskIdx.emplace(&runs, static_cast<int>(m_combMaskRows.size()));
         if (pr.second) {
             m_combMaskRows.emplace_back("{&" + combRunTableName() + "["
@@ -420,7 +421,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // Empty for a stored copy
     static std::string lazyRematName(const AstScope* scopep, const AstVar* varp) {
         if (const AstVar* const srcp = varp->lazyCopySrcp()) varp = srcp;
-        const std::string name = V3VpiLazy::rematFuncName(scopep, varp);
+        const std::string name = v3Global.rootp()->vpiLazyContext().rematFuncName(scopep, varp);
         return name.empty() ? name : VIdProtect::protect(name);
     }
 
@@ -819,7 +820,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 if (modp != smodp || modp->verilatorLib()) continue;
 
                 if (varp->isLazyRematHelper()) continue;
-                if (!V3VpiLazy::hasRow(scopep, varp)) continue;
+                if (!v3Global.rootp()->vpiLazyContext().hasRow(scopep, varp)) continue;
                 const std::string vpiVarName
                     = varp->isLazyRematShadow() ? varp->origName() : varp->name();
                 addScopeVarEntry(scopep, modp, vpiVarName, varp->name(), varp);
@@ -1695,12 +1696,13 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                 const AstVar* const varp = svd.m_varp;
                 const VarDims dims = dimsFor(svd);
                 const bool isLazy = varp->isLazyRematShadow();
+                const V3VpiLazyContext& lazyCtx = v3Global.rootp()->vpiLazyContext();
 
                 // Actual force-control declarations fold into the base variable's insert.
                 if (svd.m_isForceControl) continue;
 
                 int maskIdx = -1;
-                if (!isLazy && V3VpiLazy::combOf(scopep, varp) == VVpiLazyComb::PARTIAL) {
+                if (!isLazy && lazyCtx.combOf(scopep, varp) == VVpiLazyComb::PARTIAL) {
                     maskIdx = combMaskIdx(scopep, varp);
                 }
                 std::string row;
@@ -1725,7 +1727,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                         }
                         std::string tail = src.empty() ? "0, 0" : src + ", VLVF_LAZY_COPY";
                         // A cone has no copy source, so the offset names its mask instead
-                        if (V3VpiLazy::combOf(scopep, varp) == VVpiLazyComb::PARTIAL) {
+                        if (lazyCtx.combOf(scopep, varp) == VVpiLazyComb::PARTIAL) {
                             UASSERT_OBJ(src.empty(), varp, "--vpi-lazy masked copy row");
                             tail = std::to_string(combMaskIdx(scopep, varp))
                                    + ", VLVF_PUB_RW|VLVF_LAZY_COMB";

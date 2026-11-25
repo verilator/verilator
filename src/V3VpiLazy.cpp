@@ -121,6 +121,16 @@ const std::vector<V3VpiLazy::CombRun>& V3VpiLazyContext::combRunsOf(const AstSco
     UASSERT_OBJ(rit != m_combRuns.end(), varp, "--vpi-lazy masked variable has no runs");
     return rit->second;
 }
+bool V3VpiLazyContext::hasRow(const AstScope* scopep, const AstVar* varp) const {
+    return !m_noRow.count(instKeyOf(scopep, varp));
+}
+std::string V3VpiLazyContext::rematFuncName(const AstScope* scopep,
+                                            const AstVar* shadowVarp) const {
+    const auto it = m_rowRemat.find(instKeyOf(scopep, shadowVarp));
+    if (it != m_rowRemat.end()) return it->second;
+    const AstCFunc* const funcp = shadowVarp->lazyRematFuncp();
+    return funcp ? funcp->name() : "";
+}
 
 //######################################################################
 
@@ -2219,7 +2229,7 @@ private:
 
 void V3VpiLazy::prepare(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    V3VpiLazyContext& ctx = nodep->createVpiLazyContext();
+    V3VpiLazyContext& ctx = nodep->vpiLazyContext();
     std::vector<AstCFunc*> splitFuncps;
     {
         VpiLazyPreparer preparer{nodep, nodep->topScopep()->scopep(), ctx};
@@ -2229,7 +2239,7 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
 
     // Descriptors now pin what VPI and the rematerialize cones need stored. Any other untraced
     // one is dropped, so it does not keep its variable through V3DfgOptimizer and V3Gate.
-    nodep->topScopep()->rtmdp()->foreach([](AstRtmdVar* sigp) {
+    nodep->topScopep()->rtmdp()->foreach([&ctx](AstRtmdVar* sigp) {
         if (!sigp->vpiLazy() || !sigp->refp()) return;
         AstVarScope* const vscp = sigp->vscp();
         AstVar* const varp = vscp->varp();
@@ -2240,7 +2250,7 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
             && !varp->isIfaceRef()) {
             sigp->stored(true);
             sigp->writable(varp->isSigVpiLazyRetained()
-                           && V3VpiLazy::combOf(vscp->scopep(), varp) != VVpiLazyComb::WHOLE);
+                           && ctx.combOf(vscp->scopep(), varp) != VVpiLazyComb::WHOLE);
         } else if (!sigp->traced()) {
             sigp->refp()->unlinkFrBack()->deleteTree();
         }
@@ -2258,32 +2268,4 @@ void V3VpiLazy::classifyComb(AstNetlist* nodep) {
     V3VpiLazyContext ctx;
     const VpiLazyGatherVisitor gather{nodep};
     const CombClassifier comb{ctx, gather};
-}
-
-VVpiLazyComb V3VpiLazy::combOf(const AstScope* scopep, const AstVar* varp) {
-    if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
-    const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
-    UASSERT_OBJ(ctxp, varp, "--vpi-lazy comb mask without a context");
-    return ctxp->combOf(scopep, varp);
-}
-
-const std::vector<V3VpiLazy::CombRun>& V3VpiLazy::combRuns(const AstScope* scopep,
-                                                           const AstVar* varp) {
-    const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
-    UASSERT_OBJ(ctxp, varp, "--vpi-lazy comb mask without a context");
-    return ctxp->combRunsOf(scopep, varp);
-}
-
-bool V3VpiLazy::hasRow(const AstScope* scopep, const AstVar* varp) {
-    const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
-    return !ctxp || !ctxp->m_noRow.count(instKeyOf(scopep, varp));
-}
-
-std::string V3VpiLazy::rematFuncName(const AstScope* scopep, const AstVar* shadowVarp) {
-    const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
-    UASSERT_OBJ(ctxp, shadowVarp, "--vpi-lazy row without a context");
-    const auto it = ctxp->m_rowRemat.find(instKeyOf(scopep, shadowVarp));
-    if (it != ctxp->m_rowRemat.end()) return it->second;
-    const AstCFunc* const funcp = shadowVarp->lazyRematFuncp();
-    return funcp ? funcp->name() : "";
 }

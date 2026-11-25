@@ -40,17 +40,6 @@ public:
             return elem == other.elem && lsb == other.lsb && width == other.width;
         }
     };
-    // One instance's class: a PARTIAL variable's instances may differ.
-    static VVpiLazyComb combOf(const AstScope* scopep, const AstVar* varp) VL_MT_DISABLED;
-    // A PARTIAL combOf() instance's runs, ordered by element then bit.
-    static const std::vector<CombRun>& combRuns(const AstScope* scopep,
-                                                const AstVar* varp) VL_MT_DISABLED;
-    // Func a rematerialized row in 'scopep' calls to rematerialize 'shadowVarp', empty for a
-    // stored copy.
-    static std::string rematFuncName(const AstScope* scopep,
-                                     const AstVar* shadowVarp) VL_MT_DISABLED;
-    // False where 'varp' has no instance in 'scopep': it is kept apart from its other instances.
-    static bool hasRow(const AstScope* scopep, const AstVar* varp) VL_MT_DISABLED;
     // Mark candidates' combinationally driven bits after V3Active, ahead of V3Decompose and
     // V3BitBlast; prepare() re-marks them.
     static void classifyComb(AstNetlist* nodep) VL_MT_DISABLED;
@@ -78,9 +67,16 @@ public:
     // A split variable's or its shadow's instances held by the other; see splitKeptInstances()
     std::set<VarKey> m_noRow;
 
+    // One instance's class: a PARTIAL variable's instances may differ.
     VVpiLazyComb combOf(const AstScope* scopep, const AstVar* varp) const;
+    // A PARTIAL combOf() instance's runs, ordered by element then bit.
     const std::vector<V3VpiLazy::CombRun>& combRunsOf(const AstScope* scopep,
                                                       const AstVar* varp) const;
+    // False where 'varp' has no instance in 'scopep': it is kept apart from its other instances.
+    bool hasRow(const AstScope* scopep, const AstVar* varp) const;
+    // Func a rematerialized row in 'scopep' calls to rematerialize 'shadowVarp', empty for a
+    // stored copy.
+    std::string rematFuncName(const AstScope* scopep, const AstVar* shadowVarp) const;
 };
 
 #endif  // Guard
