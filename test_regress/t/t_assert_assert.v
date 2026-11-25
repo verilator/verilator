@@ -13,14 +13,16 @@ module t (
     input clk
 );
 
-  int cyc = 0;
+  int cyc;
 
-  reg [2:0] value = 0;
+  reg [2:0] value;
 
-  int cnt_tt = 0;
-  int cnt_tf = 0;
-  int cnt_ft = 0;
-  int cnt_ff = 0;
+  int cnt_tt;
+  int cnt_tf;
+  int cnt_ft;
+  int cnt_ff;
+  int else_counts[5];
+  int concurrent_else_counts[2];
 
   function automatic bit count_call(ref int calls);
     ++calls;
@@ -46,6 +48,27 @@ module t (
       else
         assert (count_call(when_false));
 
+      if (i[0])
+        assert #0 (1);
+      else
+        ++else_counts[0];
+      if (i[0])
+        assert final (1);
+      else
+        ++else_counts[1];
+      if (i[0])
+        assume (1);
+      else
+        ++else_counts[2];
+      if (i[0])
+        assume #0 (1);
+      else
+        ++else_counts[3];
+      if (i[0])
+        assume final (1);
+      else
+        ++else_counts[4];
+
       // An assertion can have a failure action alone, or both success and failure actions.
       assert (i[0]) else ++fail_only;
       if (i[1])
@@ -56,6 +79,7 @@ module t (
     // verilog_format: on
     `checkd(when_true, 2);
     `checkd(when_false, 2);
+    foreach (else_counts[i]) `checkd(else_counts[i], 2);
     `checkd(fail_only, 2);
     `checkd(passed, 1);
     `checkd(failed, 1);
@@ -74,6 +98,16 @@ module t (
   // Test loop
   always @(posedge clk) begin
     cyc <= cyc + 1;
+    // verilog_format: off
+    if (cyc[0])
+      assert property (1);
+    else
+      ++concurrent_else_counts[0];
+    if (cyc[0])
+      assume property (1);
+    else
+      ++concurrent_else_counts[1];
+    // verilog_format: on
     if (cyc == 10) begin
       assert (cyc == 10);  // For debug to compare with other asserts
       value <= 0;
@@ -86,6 +120,7 @@ module t (
       value <= cyc[2:0];
     end
     else if (cyc == 99) begin
+      foreach (concurrent_else_counts[i]) `checkd(concurrent_else_counts[i], 50);
       `checkd(cnt_tt, 10);
       `checkd(cnt_tf, 10);
       `checkd(cnt_ft, 19);
