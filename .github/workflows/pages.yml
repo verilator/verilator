@@ -69,15 +69,25 @@ jobs:
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5
         with:
           path: pages
-      # GitHub's Pages backend intermittently fails a deployment mid-sync, retry
+          # Per attempt, as an earlier attempt's artifact stays in the run
+          name: github-pages-${{ github.run_attempt }}
+      # GitHub's Pages backend intermittently fails a deployment mid-sync, and a
+      # new artifact can take a while to be listed, retry after a wait
       - name: Deploy to GitHub Pages
         id: deploy-1
         continue-on-error: true
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+      - name: Wait before retry
+        if: steps.deploy-1.outcome == 'failure'
+        run: sleep 60
       - name: Deploy to GitHub Pages (retry)
         id: deploy-2
         if: steps.deploy-1.outcome == 'failure'
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
       - name: Comment on PR
         if: ${{ github.repository == 'verilator/verilator' }}
         env:
