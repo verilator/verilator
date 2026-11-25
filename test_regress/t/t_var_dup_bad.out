@@ -83,34 +83,34 @@
         t/t_var_dup_bad.v:55:12: ... Location of original declaration
    55 |     output bad_mixport
       |            ^~~~~~~~~~~
-%Error: t/t_var_dup_bad.v:40:8: Can't find definition of variable: 'bad_duport'
+%Error: t/t_var_dup_bad.v:40:14: Can't find definition of variable: 'bad_duport'
    40 |   sub0 sub0 (.*);
-      |        ^~~~
-%Error: t/t_var_dup_bad.v:40:8: Duplicate pin connection: 'bad_duport'
+      |              ^~
+%Error: t/t_var_dup_bad.v:40:14: Duplicate pin connection: 'bad_duport'
    40 |   sub0 sub0 (.*);
-      |        ^~~~
-        t/t_var_dup_bad.v:40:8: ... Location of original pin connection
+      |              ^~
+        t/t_var_dup_bad.v:40:14: ... Location of original pin connection
    40 |   sub0 sub0 (.*);
-      |        ^~~~
-%Error: t/t_var_dup_bad.v:41:8: Can't find definition of variable: 'bad_mixport'
-                              : ... Suggested alternative: 'bad_duport'
+      |              ^~
+%Error: t/t_var_dup_bad.v:41:14: Can't find definition of variable: 'bad_mixport'
+                               : ... Suggested alternative: 'bad_duport'
    41 |   sub1 sub1 (.*);
-      |        ^~~~
-%Error: t/t_var_dup_bad.v:41:8: Duplicate pin connection: 'bad_mixport'
+      |              ^~
+%Error: t/t_var_dup_bad.v:41:14: Duplicate pin connection: 'bad_mixport'
    41 |   sub1 sub1 (.*);
-      |        ^~~~
-        t/t_var_dup_bad.v:41:8: ... Location of original pin connection
+      |              ^~
+        t/t_var_dup_bad.v:41:14: ... Location of original pin connection
    41 |   sub1 sub1 (.*);
-      |        ^~~~
-%Error: t/t_var_dup_bad.v:42:8: Can't find definition of variable: 'bad_reout_port'
-                              : ... Suggested alternative: 'bad_duport'
+      |              ^~
+%Error: t/t_var_dup_bad.v:42:14: Can't find definition of variable: 'bad_reout_port'
+                               : ... Suggested alternative: 'bad_duport'
    42 |   sub2 sub2 (.*);
-      |        ^~~~
-%Error: t/t_var_dup_bad.v:43:8: Can't find definition of variable: 'bad_rewire'
+      |              ^~
+%Error: t/t_var_dup_bad.v:43:14: Can't find definition of variable: 'bad_rewire'
    43 |   sub3 sub3 (.*);
-      |        ^~~~
-%Error: t/t_var_dup_bad.v:43:8: Can't find definition of variable: 'bad_rereg'
-                              : ... Suggested alternative: 'bad_rewire'
+      |              ^~
+%Error: t/t_var_dup_bad.v:43:14: Can't find definition of variable: 'bad_rereg'
+                               : ... Suggested alternative: 'bad_rewire'
    43 |   sub3 sub3 (.*);
-      |        ^~~~
+      |              ^~
 %Error: Exiting due to

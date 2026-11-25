@@ -704,13 +704,14 @@ class LinkCellsVisitor final : public VNVisitor {
             pushDeletep(nodep->paramsp()->unlinkFrBackWithNext());
         }
         // Convert .* to list of pins
-        bool pinStar = false;
+        FileLine* pinStarFlp = nullptr;
         bool pinDotName = false;
         for (AstPin* const pinp : nodep->pinspList()) {
             if (pinp->svDotName()) pinDotName = true;
             if (pinp->dotStar()) {
-                if (pinStar) pinp->v3error("Duplicate .* in an instance (IEEE 1800-2023 23.3.2)");
-                pinStar = true;
+                if (pinStarFlp)
+                    pinp->v3error("Duplicate .* in an instance (IEEE 1800-2023 23.3.2)");
+                pinStarFlp = pinp->fileline();
                 // Done with this fake pin
                 VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
             }
@@ -725,7 +726,7 @@ class LinkCellsVisitor final : public VNVisitor {
             // Note what pins exist
             std::unordered_set<string> ports;  // Symbol table of all connected port names
             for (AstPin* const pinp : nodep->pinspList()) {
-                if ((pinStar || pinDotName) && pinp->name().substr(0, 11) == "__pinNumber") {
+                if ((pinStarFlp || pinDotName) && pinp->name().substr(0, 11) == "__pinNumber") {
                     pinp->v3error("Mixing positional and .*/named instantiation connection"
                                   " (IEEE 1800-2023 23.3.2)");
                 }
@@ -748,13 +749,12 @@ class LinkCellsVisitor final : public VNVisitor {
 
                     if (ports.find(portp->name()) == ports.end()
                         && ports.find("__pinNumber" + cvtToStr(portp->pinNum())) == ports.end()) {
-                        if (pinStar) {
+                        if (pinStarFlp) {
                             UINFO(9, "    need .* PORT  " << portp);
                             // Create any not already connected
-                            AstPin* const newp
-                                = new AstPin{nodep->fileline(), 0, portp->name(),
-                                             new AstParseRef{nodep->fileline(), portp->name(),
-                                                             nullptr, nullptr}};
+                            AstPin* const newp = new AstPin{
+                                pinStarFlp, 0, portp->name(),
+                                new AstParseRef{pinStarFlp, portp->name(), nullptr, nullptr}};
                             newp->svDotName(true);
                             newp->svImplicit(true);
                             nodep->addPinsp(newp);
