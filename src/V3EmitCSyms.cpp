@@ -436,11 +436,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                       const AstScope* const scopep,
                                       const std::string& modClassName, int lazyIdx,
                                       const VarDims& dims, std::string& rowOut) {
-        const bool isLazy = varp->isLazyRematShadow();
-        if (!isLazy && varp->isForceable()) return TableEntryKind::FORCEABLE_RESIDUAL;
+        if (varp->isForceable()) return TableEntryKind::FORCEABLE_RESIDUAL;
 
         const std::string vlEnumType = varp->vlEnumType();
-        if (!isLazy && needsEmittedEntSize(vlEnumType))
+        if (needsEmittedEntSize(vlEnumType))
             return TableEntryKind::PLAIN_RESIDUAL;  // struct/union whole
         if (isScalarStringParam(varp)) return TableEntryKind::PLAIN_RESIDUAL;
 
@@ -452,7 +451,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const std::string flags = vlEnumDirOf(scopep, varp) + lazyRematFlags(varp);
         // A shadow row is read-only unless its VlLazyRematEntry says otherwise, and
         // VLVF_LAZY_COMB here would make lazyDescSlot() ignore lazyIdx
-        UASSERT_OBJ(!isLazy || !varp->isSigExternallyRWPublic(), varp,
+        UASSERT_OBJ(!varp->isLazyRematShadow() || !varp->isSigExternallyRWPublic(), varp,
                     "--vpi-lazy shadow row carries a write policy");
         std::string row = "{\"" + name + "\", ";
         if (varp->isParam()) {
