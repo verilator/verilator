@@ -114,6 +114,29 @@ interface bus_if #(
   modport mp(input d);
 endinterface
 
+interface bus_wrap_if #(
+    parameter int X = 1
+) (
+    bus_if b
+);
+  int wb;
+  assign wb = $bits(b.d) + X;
+endinterface
+
+module bus_sink (
+    bus_if b
+);
+  int bits;
+  assign bits = $bits(b.d);
+endmodule
+
+module bus_mp_sink (
+    bus_if.mp b
+);
+  int val;
+  assign val = int'(b.d);
+endmodule
+
 module probe;
   int s_bits = $bits(u_core.s);
   int bus_bits = $bits(bus.d);
@@ -145,6 +168,9 @@ module mid #(
   function automatic int bump(input int i);
     return i + 11;
   endfunction
+
+  // Connected before the alternatives are declared
+  bus_wrap_if #(.X(100)) u_wrap (.b(g.bus));
 
   if (R == 1) begin : g
     leaf #(.V(1)) u_a (.cyc);
@@ -195,6 +221,10 @@ module mid #(
   // Applies to whichever alternative is elaborated
   defparam g.u_core.D = 50 + R;
 
+  bus_sink u_sink (.b(g.bus));
+  bus_mp_sink u_mp_sink (.b(g.bus.mp));
+  bus_mp_sink u_arr_sink (.b(g.bus_arr[1]));
+
   localparam int BUS_W = R == 1 ? 7 : R == 2 ? 15 : 9;
   virtual bus_if #(.W(BUS_W)) vif;
   virtual bus_if #(.W(BUS_W)).mp vmp;
@@ -204,6 +234,19 @@ module mid #(
     bus_if #(.W(BUS_W + i)) lbus (.cyc);
   end
   virtual bus_if #(.W(BUS_W + 1)) vlp;
+  bus_sink u_lp_sink (.b(lp[1].lbus));
+
+  // Same enclosing module, so only the generate block tells the upward references apart
+  if (1) begin : ua
+    core_a u_core ();
+    bus_if #(.W(3)) bus (.cyc);
+    probe u_p ();
+  end
+  if (1) begin : ub
+    core_b u_core ();
+    bus_if #(.W(4)) bus (.cyc);
+    probe u_p ();
+  end
   initial begin
     vif = g.bus;
     vmp = g.bus.mp;
@@ -278,6 +321,8 @@ module t;
   defparam u_r0.g.u_core.E = 97;
 
   Holder #(15) holder_r2;
+
+  bus_sink u_r2_sink (.b(u_r2.g.bus));
 
   if (R1 == 1) begin : g_chk1
     function automatic int get();
@@ -360,6 +405,21 @@ module t;
       `checkd(u_r1.g.lp[1].u_p.s_bits, 32);
       `checkd($bits(u_r2.vlp.d), 16);
       `checkd(int'(u_r2.vlp.d), cyc % (1 << 16));
+      `checkd(u_r2.u_lp_sink.bits, 16);
+      `checkd(u_r1.ua.u_p.s_bits, 32);
+      `checkd(u_r1.ub.u_p.s_bits, 8);
+      `checkd(u_r1.ua.u_p.bus_bits, 3);
+      `checkd(u_r1.ub.u_p.bus_bits, 4);
+      `checkd(u_r1.u_sink.bits, 7);
+      `checkd(u_r2.u_sink.bits, 15);
+      `checkd(u_r0.u_sink.bits, 9);
+      `checkd(u_r1.u_wrap.wb, 107);
+      `checkd(u_r2.u_wrap.wb, 115);
+      `checkd(u_r0.u_wrap.wb, 109);
+      `checkd(u_r1.u_mp_sink.val, cyc % (1 << 7));
+      `checkd(u_r2.u_mp_sink.val, cyc % (1 << 15));
+      `checkd(u_r0.u_arr_sink.val, cyc % (1 << 9));
+      `checkd(u_r2_sink.bits, 15);
     end
     $write("*-* All Finished *-*\n");
     $finish;
