@@ -157,6 +157,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                                // classp has no randomize() (inherited members)
     AstVar* const m_genp;  // VlRandomizer variable of the class
     AstVar* m_randModeVarp;  // Relevant randmode state variable
+    bool m_blockUsesMode = false;  // May be turned off; unsupported shapes take master's path
     bool m_wantSingle = false;  // Whether to merge constraint expressions with LOGAND
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
     bool m_structSel = false;  // Marks when inside structSel
@@ -1893,6 +1894,16 @@ class ConstraintExprVisitor final : public VNVisitor {
                                    && arrayDTypeSupported(lhsDtp);
         if (isArrayShaped && (!lhsIsRand || !rhsIsRand || directionMismatch || bothRandFixed)) {
             FileLine* const fl = nodep->fileline();
+            const bool compareSupported
+                = arrayDTypeSupported(lhsDtp) && arrayLeafComparable(lhsDtp) && lhsRootVarp
+                  && rhsRootVarp && selChainCloneSafe(nodep->lhsp())
+                  && selChainCloneSafe(nodep->rhsp())
+                  && !((!lhsIsRand && selChainHasRandIndex(nodep->lhsp()))
+                       || (!rhsIsRand && selChainHasRandIndex(nodep->rhsp())));
+            if (m_blockUsesMode && !compareSupported) {
+                editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+                return;
+            }
             if (!arrayDTypeSupported(lhsDtp)) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: array comparison in constraint on an array "
@@ -3530,7 +3541,8 @@ public:
                                    uint32_t* uniqueConstraintIdp, V3UniqueNames& uniqueNames,
                                    AstNodeFTask* memberrefInitTaskp = nullptr,
                                    VInsertionSet<AstVar*>* sizeConstrainedArraysp = nullptr,
-                                   AstNodeFTask* prepareConstrainedArraysp = nullptr)
+                                   AstNodeFTask* prepareConstrainedArraysp = nullptr,
+                                   bool blockUsesMode = false)
         : m_classp{classp}
         , m_inlineInitBlockp{inlineInitp}
         , m_memberrefInitTaskp{memberrefInitTaskp}
@@ -3541,7 +3553,8 @@ public:
         , m_sizeConstrainedArraysp{sizeConstrainedArraysp}
         , m_prepareConstrainedArraysp{prepareConstrainedArraysp}
         , m_uniqueConstraintIdp{uniqueConstraintIdp}
-        , m_uniqueNames{uniqueNames} {
+        , m_uniqueNames{uniqueNames}
+        , m_blockUsesMode{blockUsesMode} {
         // Pre-pass before SMT lowering: extract conditional disable-soft
         // directives as runtime AstIf statements and append them to the
         // constraint-items chain so they reach the setup task body.  The SMT
@@ -4606,10 +4619,20 @@ public:
                     AstBegin* const holderp = SmtUtil::newItemsHolderp(
                         constrp->fileline(), constrp->itemsp()->unlinkFrBackWithNext());
                     taskp->addStmtsp(wrapIfConstraintMode(nodep, constrp, holderp));
-                    ConstraintExprVisitor{
-                        classp,        m_memberMap,  holderp->declsp(), nullptr,
-                        genp,          randModeVarp, m_writtenVars,     &m_uniqueConstraintId,
-                        m_uniqueNames, randomizep,   &sizeArrays,       prepareArraysTaskp};
+                    const RandomizeMode blockMode = {.asUQuad = constrp->user1()};
+                    ConstraintExprVisitor{classp,
+                                          m_memberMap,
+                                          holderp->declsp(),
+                                          nullptr,
+                                          genp,
+                                          randModeVarp,
+                                          m_writtenVars,
+                                          &m_uniqueConstraintId,
+                                          m_uniqueNames,
+                                          randomizep,
+                                          &sizeArrays,
+                                          prepareArraysTaskp,
+                                          blockMode.usesMode};
                     SmtUtil::replaceWithLowered(holderp);
                 }
             });
