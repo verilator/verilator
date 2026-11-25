@@ -1928,6 +1928,15 @@ class WidthVisitor final : public VNVisitor {
         // However a later operation may have changed the node->signed w/o changing
         // the number's sign.  So we don't: nodep->dtypeChgSigned(nodep->num().isSigned());
         if (nodep->didWidthAndSet()) return;
+        if (m_vup && m_vup->prelim() && nodep->num().isFromString() && m_vup->dtypeNullSkipRefp()
+            && m_vup->dtypeNullSkipRefp()->isString()) {
+            AstConst* const strp
+                = new AstConst{nodep->fileline(), AstConst::String{}, nodep->num().toString()};
+            strp->didWidth(true);
+            nodep->replaceWith(strp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         if (m_vup && m_vup->prelim()) {
             if (VN_IS(nodep->dtypep()->skipRefToEnump(), EnumDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), StructDType)
@@ -3598,12 +3607,28 @@ class WidthVisitor final : public VNVisitor {
                     && VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
                     userIterateAndNext(nodep->fromp(), WidthVP{nodep->dtypep(), PRELIM}.p());
                 } else {
-                    userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM, STREAM_USE_CAST}.p());
+                    AstNodeDType* const fromDtp
+                        = isByteArrayDType(nodep->dtypep()->skipRefp(), false)
+                              ? nodep->findStringDType()
+                              : nullptr;
+                    userIterateAndNext(nodep->fromp(),
+                                       WidthVP{fromDtp, PRELIM, STREAM_USE_CAST}.p());
                 }
             }
             UINFOTREE(9, nodep, "", "CastDit");
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
             AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
+            // Packed values cast to byte arrays use the existing packed-to-array lowering.
+            if (isByteArrayDType(toDtp, false) && fromDtp->isIntegralOrPacked()
+                && !VN_IS(nodep->fromp(), NodeStream)) {
+                AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+                AstNodeExpr* const newp
+                    = new AstCvtPackedToArray{nodep->fileline(), fromp, nodep->dtypep()};
+                newp->didWidth(true);
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
             const auto castable = AstNode::computeCastable(toDtp, fromDtp, nodep->fromp());
             // An equivalent array is assignment compatible, so cast as assigned
             // (IEEE 1800-2023 6.24.1), but otherwise casting an unpacked array or struct is a
@@ -9566,6 +9591,12 @@ class WidthVisitor final : public VNVisitor {
                     ftaskp->setNeedsVlProcess();
                     v3Global.setUsesTiming();
                 }
+                // Mark std::process::kill()
+                AstNodeFTask* const ftaskp
+                    = VN_AS(m_memberMap.findMember(nodep, "kill"), NodeFTask);
+                UASSERT_OBJ(ftaskp, nodep, "Missing std::process::kill()");
+                ftaskp->setNeedsVlProcess();
+                ftaskp->isProcessKill(true);
             }
         }
 

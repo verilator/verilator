@@ -1151,7 +1151,8 @@ class TaskVisitor final : public VNVisitor {
         const std::string cname = AstNode::prettyName(nodep->cname());
         checkLegalCIdentifier(nodep, cname);
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
-        const std::string rtnType = rtnvarp ? rtnvarp->dpiArgType(true, true) : "";
+        const bool rtnAsArg = dpiRtnAsArg(rtnvarp);
+        const std::string rtnType = rtnvarp && !rtnAsArg ? rtnvarp->dpiArgType(true, true) : "";
         // The function we are building
         AstCFunc* const funcp = new AstCFunc{flp, cname, m_scopep, rtnType};
         funcp->dpiExportDispatcher(true);
@@ -1163,10 +1164,12 @@ class TaskVisitor final : public VNVisitor {
         funcp->cname(cname);
         // Add DPI Export to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
+        if (rtnAsArg) funcp->addArgsp(newDpiRtnArgp(rtnvarp));
         makePortList(nodep, funcp);
 
         // Aborted imports must not re-enter SystemVerilog while unwinding.
-        const std::string abortedRtn = rtnvarp ? "std::decay_t<" + rtnType + ">{}" : "void()";
+        const std::string abortedRtn
+            = rtnvarp && !rtnAsArg ? "std::decay_t<" + rtnType + ">{}" : "void()";
         funcp->addStmtsp(new AstIf{flp, new AstCExpr{flp, "VerilatedDpi::exportAborted()", 1},
                                    new AstCReturn{flp, new AstCExpr{flp, abortedRtn}}, nullptr});
 
@@ -1255,7 +1258,9 @@ class TaskVisitor final : public VNVisitor {
         // Convert output/inout arguments back to internal type
         if (outCvtsp) funcp->addStmtsp(outCvtsp);
         // Convert return value
-        if (rtnvarp) {
+        if (rtnAsArg) {
+            funcp->addStmtsp(createAssignInternalToDpi(rtnvarp, true, tmpSuffixp, ""));
+        } else if (rtnvarp) {
             funcp->addStmtsp(createDpiTemp(rtnvarp, ""));
             funcp->addStmtsp(createAssignInternalToDpi(rtnvarp, false, tmpSuffixp, ""));
             const std::string index = rtnvarp->dtypep()->isDpiPrimitive() ? "" : "[0]";
@@ -1269,9 +1274,9 @@ class TaskVisitor final : public VNVisitor {
         const string name = AstNode::prettyName(nodep->cname());
         checkLegalCIdentifier(nodep, name);
         // Tasks (but not void functions) return a boolean 'int' indicating disabled
-        const string rtnType = rtnvarp            ? rtnvarp->dpiArgType(true, true)
-                               : nodep->dpiTask() ? "int"
-                                                  : "";
+        const string rtnType = rtnvarp && !dpiRtnAsArg(rtnvarp) ? rtnvarp->dpiArgType(true, true)
+                               : nodep->dpiTask()               ? "int"
+                                                                : "";
         AstCFunc* const funcp = new AstCFunc{nodep->fileline(), name, m_scopep, rtnType};
         funcp->dpiContext(nodep->dpiContext());
         funcp->dpiImportPrototype(true);
@@ -1288,6 +1293,7 @@ class TaskVisitor final : public VNVisitor {
         // Add DPI Import to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
         funcp->dpiCDecl(nodep->dpiCDecl());
+        if (dpiRtnAsArg(rtnvarp)) funcp->addArgsp(newDpiRtnArgp(rtnvarp));
         makePortList(nodep, funcp);
         return funcp;
     }
@@ -1344,6 +1350,19 @@ class TaskVisitor final : public VNVisitor {
                 }
             }
         }
+    }
+
+    // Whether DPI function result 'rtnvarp' is of a type IEEE 1800-2023 35.5.5 does not allow,
+    // so the C function returns void and takes the result as its first, output argument
+    static bool dpiRtnAsArg(AstVar* rtnvarp) {
+        if (!rtnvarp || rtnvarp->dtypep()->isDpiPrimitive()) return false;
+        return (rtnvarp->dtypep()->isDpiBitVec() && rtnvarp->width() > 32)
+               || rtnvarp->dtypep()->isDpiLogicVec();
+    }
+    static AstVar* newDpiRtnArgp(AstVar* rtnvarp) {
+        AstVar* const argp = rtnvarp->cloneTree(false);
+        argp->funcReturn(false);
+        return argp;
     }
 
     // Check DPI can pass the types of the arguments of 'nodep', else report. Those of an open
@@ -1557,6 +1576,13 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
+        // A result of a type DPI does not allow is passed as the first argument
+        const bool rtnAsArg = rtnvscp && dpiRtnAsArg(rtnvscp->varp());
+        if (rtnAsArg) {
+            cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
+            args = rtnvscp->varp()->name() + tmpSuffixp + (args.empty() ? "" : ", ") + args;
+        }
+
         // Store context, if needed
         if (nodep->dpiContext()) {
             const string stmt = "Verilated::dpiContext(__Vscopep, __Vfilenamep, __Vlineno);";
@@ -1575,7 +1601,7 @@ class TaskVisitor final : public VNVisitor {
         callImportp->addPinsp(new AstAddrOfCFunc{nodep->fileline(), dpiFuncp});
         if (!args.empty()) callImportp->addPinsp(new AstCExpr{nodep->fileline(), args});
 
-        if (rtnvscp) {
+        if (rtnvscp && !rtnAsArg) {
             UASSERT_OBJ(nodep->verilogFunction(), nodep,
                         "Only functions should have return values");
             // If it has a return value, capture it
@@ -1642,17 +1668,15 @@ class TaskVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return nullptr;
                 }
-                if (!portp->dtypep()->isDpiPrimitive()) {
-                    if (portp->dtypep()->isDpiBitVec() && portp->width() > 32) {
-                        portp->v3error("DPI function may not return a > 32 bits wide type "
-                                       "other than basic types.\n"
-                                       + portp->warnMore()
-                                       + "... Suggest make it an output argument instead?");
-                    }
-                    if (portp->dtypep()->isDpiLogicVec()) {
-                        portp->v3error("DPI function may not return a 4-state type "
-                                       "other than a single 'logic' (IEEE 1800-2023 35.5.5)");
-                    }
+                if (dpiRtnAsArg(portp)) {
+                    portp->v3warn(
+                        NONSTD,
+                        "DPI function returning type "
+                            << portp->dtypep()->prettyDTypeNameQ(true)
+                            << " of > 32 bits or 4-state non-standard (IEEE 1800-2023 35.5.5)\n"
+                            << portp->warnMore()
+                            << "... The C function returns void and takes the"
+                               " result as its first, output argument");
                 }
             } else if (nodep->taskPublic()) {
                 if (portp->isWide()) {
@@ -1857,6 +1881,9 @@ class TaskVisitor final : public VNVisitor {
 
         // Mark the fact that this function allocates std::process
         if (nodep->needsVlProcess()) cfuncp->setNeedsVlProcess();
+
+        // Mark the fact that this function is std::process::kill()
+        if (nodep->isProcessKill()) cfuncp->isProcessKill(true);
 
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
