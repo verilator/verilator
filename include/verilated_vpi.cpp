@@ -3904,13 +3904,6 @@ static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSig
                                     baseSignalVop->readDatap()););
 
         if (VL_UNLIKELY(!baseSignalVop->storageVarp()->isPublicRW())) {
-            if (baseSignalVop->storageVarp()->isLazyPutMasked()) {
-                VL_VPI_ERROR_(__FILE__, __LINE__,
-                              "vpi_put_value was used on signal combinationally driven under"
-                              " --vpi-lazy, use a public_flat_rw attribute to write '%s'",
-                              baseSignalVop->fullname());
-                return nullptr;
-            }
             VL_VPI_ERROR_(__FILE__, __LINE__,
                           "vpi_put_value was used on signal marked read-only,"
                           " use public_flat_rw instead for '%s'",
@@ -4904,13 +4897,6 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
 
     const VerilatedVar* const varp = vop->storageVarp();
     if (VL_UNLIKELY(!varp->isPublicRW())) {
-        if (varp->isLazyPutMasked()) {
-            VL_VPI_ERROR_(__FILE__, __LINE__,
-                          "Ignoring vpi_put_value_array to signal combinationally driven under"
-                          " --vpi-lazy, use a public_flat_rw attribute to write '%s'",
-                          vop->fullname());
-            return;
-        }
         VL_VPI_ERROR_(__FILE__, __LINE__,
                       "Ignoring vpi_put_value_array to signal marked read-only,"
                       " use public_flat_rw instead: '%s'",

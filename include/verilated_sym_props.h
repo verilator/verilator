@@ -186,8 +186,7 @@ public:
     bool isLazyRemat() const { return ((m_vlflags & VLVF_LAZY_REMAT) != 0); }
     /// --vpi-lazy: kept as storage, so writable, less any isLazyPutMasked() bits
     bool isLazyRetained() const { return ((m_vlflags & VLVF_LAZY_RETAINED) != 0); }
-    /// --vpi-lazy: rematerialized or combinationally driven, so a put may not change it, or with
-    /// isPublicRW(), its masked bits
+    /// --vpi-lazy: with isPublicRW(), a put may not change its combinationally driven bits
     bool isLazyPutMasked() const {
         return ((m_vlflags & (VLVF_LAZY_COMB | VLVF_LAZY_REMAT)) != 0);
     }

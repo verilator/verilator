@@ -5008,16 +5008,13 @@ string AstVar::vlEnumDir(VVpiLazyComb comb, bool forMember) const {
         out = "VLVD_NODIR";
     }
     //
-    if (isSigExternallyRWPublic() && comb == VVpiLazyComb::WHOLE) {
-        out += "|VLVF_PUB_RD";
-        // A member row's aux is its bit offset; puts check the parent's row
-        if (!forMember) out += "|VLVF_LAZY_COMB";
-    } else if (isSigExternallyRWPublic()) {
+    if (isSigExternallyRWPublic() && comb != VVpiLazyComb::WHOLE) {
         out += "|VLVF_PUB_RW";
         // All emission paths use this write gate.
         if (isSigVpiLazyRetained()) out += "|VLVF_LAZY_RETAINED";
+        // A member row's aux is its bit offset; puts check the parent's row
         if (comb == VVpiLazyComb::PARTIAL && !forMember) out += "|VLVF_LAZY_COMB";
-    } else if (isSigUserRdPublic()) {
+    } else if (isSigExternallyRWPublic() || isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
     }
     if (isForceable() && !forMember) out += "|VLVF_FORCEABLE";
