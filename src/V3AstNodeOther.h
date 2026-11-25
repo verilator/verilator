@@ -153,6 +153,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_virtual : 1;  // Virtual method in class
     bool m_needsVlProcess : 1;  // Needs access to VlProcess of the caller
     bool m_isCovergroupSample : 1;  // Covergroup sample() method
+    bool m_isProcessKill : 1;  // std::process::kill() method
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     VLifetime m_lifetime;  // Default lifetime of local vars
     VIsCached m_purity;  // Pure state
@@ -186,7 +187,8 @@ protected:
         , m_verilogTask{false}
         , m_virtual{false}
         , m_needsVlProcess{false}
-        , m_isCovergroupSample{false} {
+        , m_isCovergroupSample{false}
+        , m_isProcessKill{false} {
         cname(name);  // Might be overridden by dpi import/export
     }
     void fvarp(AstVar* varp) { m_fvarp = varp; }
@@ -266,6 +268,8 @@ public:
     void setNeedsVlProcess() { m_needsVlProcess = true; }
     bool isCovergroupSample() const { return m_isCovergroupSample; }
     void isCovergroupSample(bool flag) { m_isCovergroupSample = flag; }
+    bool isProcessKill() const { return m_isProcessKill; }
+    void isProcessKill(bool flag) { m_isProcessKill = flag; }
     void baseOverride(const VBaseOverride& flag) { m_baseOverride = flag; }
     VBaseOverride baseOverride() const { return m_baseOverride; }
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
@@ -616,6 +620,7 @@ class AstCFunc final : public AstNode {
     bool m_noLife : 1;  // Disable V3Life on this function - has multiple calls, and reads Syms
                         // state
     bool m_isCovergroupSample : 1;  // Automatic covergroup sample() function
+    bool m_isProcessKill : 1;  // std::process::kill() method
     bool m_voidSelf : 1;  // Loose method taking its 'self' pointer as 'void* vlVoidSelf'
     int m_cost;  // Function call cost
 public:
@@ -648,6 +653,7 @@ public:
         m_unlikely = false;
         m_noLife = false;
         m_isCovergroupSample = false;
+        m_isProcessKill = false;
         m_voidSelf = false;
         m_cost = v3Global.opt.instrCountDpi();  // As proxy for unknown general DPI cost
     }
@@ -732,6 +738,8 @@ public:
     bool voidSelf() const { return m_voidSelf; }
     void voidSelf(bool flag) { m_voidSelf = flag; }
     void cost(int cost) { m_cost = cost; }
+    bool isProcessKill() const { return m_isProcessKill; }
+    void isProcessKill(bool flag) { m_isProcessKill = flag; }
     // Special methods
     bool emptyBody() const {
         return !keepIfEmpty() && !argsp() && !varsp() && !stmtsp() && !scopeNamep() && !isVirtual()
@@ -3456,6 +3464,9 @@ public:
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
+    // Return true if the classes are the same, or one is an extension of the other (SLOW)
+    // Accepts nullptrs
+    static bool isClassRelated(const AstClass* ap, const AstClass* bp);
     uint32_t declTokenNum() const override { return m_declTokenNum; }
     void declTokenNumSetMin(uint32_t tokenNum) override {
         m_declTokenNum = std::min(m_declTokenNum, tokenNum);

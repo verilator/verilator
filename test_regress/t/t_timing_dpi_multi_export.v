@@ -27,6 +27,16 @@ module t;
       $display("No delay\n");
   endtask
 
+  export "DPI-C" function export_self;
+  function void export_self();
+    automatic process p = process::self();
+  endfunction
+
+  // Non-context import cannot call exports, so it does not suspend
+  import "DPI-C" function real sin(input real x);
+  real r;
+  always @(posedge clk) r = sin(1.0);
+
   initial begin
     #1 clk = 1;
     $finish;

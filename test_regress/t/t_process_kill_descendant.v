@@ -16,8 +16,10 @@ module t;
   bit via_delay, via_event, via_wait, via_join, via_grandchild;
   bit orphan_ran;
   bit self_child_ran, self_resumed;
+  bit child_after_ancestor_kill;
   process parent;
   process finished;
+  process ancestor;
 
   always #5 clk = ~clk;
 
@@ -69,6 +71,21 @@ module t;
       end
     join_none
 
+    // A child killing its ancestor must also terminate itself
+    fork
+      begin
+        ancestor = process::self();
+        fork
+          begin
+            #2;
+            ancestor.kill();
+            child_after_ancestor_kill = 1'b1;
+          end
+        join_none
+        wait (0);
+      end
+    join_none
+
     #1;  // Let the processes start and suspend
     `checkd(parent.status(), process::WAITING);
     parent.kill();
@@ -90,6 +107,8 @@ module t;
     `checkd(orphan_ran, 1'b0);
     `checkd(self_child_ran, 1'b0);
     `checkd(self_resumed, 1'b0);
+    `checkd(child_after_ancestor_kill, 1'b0);
+    `checkd(ancestor.status(), process::KILLED);
     $write("*-* All Finished *-*\n");
     $finish;
   end

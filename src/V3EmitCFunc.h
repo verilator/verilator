@@ -401,6 +401,9 @@ public:
         for (const AstClassExtends* const extp : classp->extendspList()) {
             if (extp->classp()->isInterfaceClass()) continue;
             if (extp->classp()->useVirtualPublic()) continue;
+            const AstCFunc* const ctorp
+                = VN_CAST(m_memberMap.findMember(extp->classp(), "new"), CFunc);
+            if (ctorp && ctorp->isCoroutine()) puts("co_await ");
             puts(EmitCUtil::prefixNameProtect(extp->classp()));
             puts("::init");
             if (constructorNeedsProcess(extp->classp())) {
@@ -572,6 +575,19 @@ public:
         }
     }
 
+    void visit(AstCvtArrayToString* nodep) override {
+        const bool unpacked = VN_IS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+        putns(nodep, unpacked ? "VL_CVT_UNPACK_TO_N(" : "VL_CVT_Q_TO_N(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(")");
+    }
+    void visit(AstCvtStringToQueue* nodep) override {
+        putns(nodep, "VL_CVT_N_TO_Q<");
+        puts(nodep->dtypep()->cType("", false, false));
+        puts(">(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(")");
+    }
     void visit(AstCvtUnpackToQueue* nodep) override {
         const AstUnpackArrayDType* const arrayp
             = VN_AS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
@@ -759,6 +775,7 @@ public:
                    && !VN_IS(nodep->rhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), ConsArray)  //
                    && !VN_IS(nodep->rhsp(), AssocSel)  //
+                   && !VN_IS(nodep->rhsp(), WildcardSel)  //
                    && !VN_IS(nodep->rhsp(), MemberRef)  //
                    && !VN_IS(nodep->rhsp(), StructSel)  //
                    && !VN_IS(nodep->rhsp(), ArraySel)  //
@@ -861,6 +878,10 @@ public:
         emitCCallArgs(nodep, "", m_cfuncp->needsVlProcess());
     }
     void visit(AstCAwait* nodep) override {
+        if (nodep->resultp()) {
+            iterateConst(nodep->resultp());
+            puts(" = ");
+        }
         putns(nodep, "co_await ");
         iterateConst(nodep->exprp());
         puts(";\n");
@@ -900,8 +921,9 @@ public:
             putConstructorSubinit(VN_AS(m_cfuncp->scopep()->modp(), Class), nodep);
             return;
         }
-        // assignment case;
-        putns(nodep, "VL_NEW(" + EmitCUtil::prefixNameProtect(nodep->dtypep()) + ", "
+        const bool isCoroutine = nodep->funcp()->isCoroutine();
+        const string className = EmitCUtil::prefixNameProtect(nodep->dtypep());
+        putns(nodep, (isCoroutine ? "VL_NEW_ASYNC(" : "VL_NEW(") + className + ", "
                          + optionalProcArg(nodep->dtypep()) + "vlSymsp");
         putCommaIterateNext(nodep->argsp(), true);
         puts(")");

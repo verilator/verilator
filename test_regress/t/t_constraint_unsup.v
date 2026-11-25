@@ -9,11 +9,18 @@ class Packet;
   constraint cons { x + 1.0 > 0.0; }
 endclass
 
+class Wildcard;
+  rand int w[*];
+  constraint c { w[3] == 5; }
+endclass
+
 module t;
   Packet p;
-
+  Wildcard w;
   initial begin
     p = new;
+    w = new;
     void'(p.randomize());
+    void'(w.randomize());
   end
 endmodule

@@ -84,6 +84,8 @@ ______________________________________________________________________
 
 - Never hand-write or hand-edit `.out` goldens -- regenerate with
   `HARNESS_UPDATE_GOLDEN=1`.
+- Never use a `.tree` file as a `.out` golden, it will result in too many
+  differences as the internals change.
 - When a feature lands, remove its now-supported entries from `t_*_unsup.v` /
   `t_*_bad.v` in the same change and regenerate the goldens -- stale entries no
   longer error and reviewers will flag them.

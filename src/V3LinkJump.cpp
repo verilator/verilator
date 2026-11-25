@@ -382,14 +382,11 @@ class LinkJumpVisitor final : public VNVisitor {
         // with calling `kill()` on each element of the queue.
         FileLine* const fl = nodep->fileline();
         AstFork* const targetp = VN_AS(nodep->targetp(), Fork);
-        if (m_ftaskp) {
-            if (!m_ftaskp->exists(
-                    [targetp](const AstNodeBlock* blockp) -> bool { return blockp == targetp; })) {
-                // Disabling a fork, which is within the same task, is not a problem
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");
-            }
+        // Functions cannot call the process::killQueue task.
+        if (m_ftaskp && m_ftaskp->verilogFunction()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from function");
+            return;
         }
-
         AstVar* const processQueuep = getOrCreateForkDisableQueuep(targetp, fl);
         AstStmtExpr* const killStmtp = insertKillStmtp(nodep, processQueuep);
 

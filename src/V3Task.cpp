@@ -1065,10 +1065,9 @@ class TaskVisitor final : public VNVisitor {
                                          arrayp->subDTypep(), toDpi));
             }
         } else if (dtypep->containsUnpackedStruct()) {
-            for (const AstMemberDType* const itemp : VN_AS(dtypep, StructDType)->memberspList()) {
+            for (AstMemberDType* const itemp : VN_AS(dtypep, StructDType)->memberspList()) {
                 AstStructSel* const selp
-                    = new AstStructSel{flp, internalp->cloneTree(false), itemp->name()};
-                selp->dtypeFrom(itemp->dtypep());
+                    = new AstStructSel{flp, internalp->cloneTree(false), itemp};
                 stmtsp = AstNode::addNext(stmtsp,
                                           createDpiCvt(selp, suffixed("." + itemp->prettyName()),
                                                        itemp->subDTypep(), toDpi));
@@ -1858,6 +1857,9 @@ class TaskVisitor final : public VNVisitor {
 
         // Mark the fact that this function allocates std::process
         if (nodep->needsVlProcess()) cfuncp->setNeedsVlProcess();
+
+        // Mark the fact that this function is std::process::kill()
+        if (nodep->isProcessKill()) cfuncp->isProcessKill(true);
 
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
