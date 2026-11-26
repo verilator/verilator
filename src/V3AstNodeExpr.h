@@ -2258,7 +2258,8 @@ public:
     bool cleanOut() const override { return false; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() override { return !seedp(); }
+    // Each evaluation draws a new value, changing the random state
+    bool isPure() override { return false; }
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
@@ -2282,6 +2283,7 @@ public:
                         : "VL_RANDOM_RNG_%nq(__Vm_rng)";
     }
     bool cleanOut() const override { return false; }
+    bool isPure() override { return false; }  // Changes the random state of its object
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isSystemFunc() const override { return true; }

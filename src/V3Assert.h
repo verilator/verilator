@@ -38,6 +38,8 @@ public:
     static void checkSvaCycleDelay(AstDelay* nodep, AstNode* errp) VL_MT_DISABLED;
     // True if the expression references a formal argument of a sequence or property
     static bool refsSvaFormal(const AstNode* nodep) VL_MT_DISABLED;
+    // Copy an expression that is sampled again, warning of side effects other than random draws
+    static AstNodeExpr* cloneSampled(AstNodeExpr* exprp) VL_MT_DISABLED;
 };
 
 class V3Assert final {

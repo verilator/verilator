@@ -440,10 +440,7 @@ class SplitVisitor final : public VNVisitor {
         }
 
         // All impure statements must be grouped together.
-        if (!nodep->isPure()
-            // Random is like impure here, as do not want to replicate RNG calls
-            // TODO: Have a isPureForCloning or similar
-            || VN_IS(nodep, Rand) || VN_IS(nodep, RandRNG)) {
+        if (!nodep->isPure()) {
             if (!m_impureVtxp) m_impureVtxp = new SplitImpureVertex{m_graphp, nodep};
             // One edge is enough to find the weakly connected components, but
             // it must point at the impure vertex, so it is an out edge (input

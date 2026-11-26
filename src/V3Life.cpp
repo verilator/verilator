@@ -510,6 +510,14 @@ class LifeVisitor final : public VNVisitor {
         m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         iterateChildren(nodep);
     }
+    void visit(AstRand* nodep) override {
+        m_sideEffect = true;  // Changes the random state
+        iterateChildren(nodep);
+    }
+    void visit(AstRandRNG* nodep) override {
+        m_sideEffect = true;  // Changes the random state
+        iterateChildren(nodep);
+    }
 
     void visit(AstVar*) override {}  // Don't want varrefs under it
     void visit(AstNode* nodep) override {

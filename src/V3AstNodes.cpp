@@ -3359,7 +3359,7 @@ bool AstNodeFTaskRef::getPurityRecurse() const {
     if (!taskp) return false;
     // First compute the purity of arguments
     for (AstArg* const argp : this->argspList()) {
-        if (!argp->isPure()) return false;
+        if (argp->exprp() && !argp->exprp()->isPure()) return false;
         // Writing the caller's variable through an output argument is an effect of the call,
         // though not of the subroutine, whose written variable is its own automatic local
         if (argp->exprp() && argp->exprp()->isLValue()) return false;

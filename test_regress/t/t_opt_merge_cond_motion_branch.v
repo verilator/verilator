@@ -17,6 +17,20 @@ module t;
       if (abort) $display("unreachable");
     end
     if (fail) $error("block disable FAILED");
+    begin
+      // Conditions drawing random values differ, so are not merged
+      int a;
+      int b;
+      int differ;
+      repeat (64) begin
+        if ($random % 2 != 0) a = 1;
+        else a = 2;
+        if ($random % 2 != 0) b = 1;
+        else b = 2;
+        if (a != b) ++differ;
+      end
+      if (differ == 0) $error("random conditions merged");
+    end
     $write("*-* All Finished *-*\n");
     $finish(0);
   end

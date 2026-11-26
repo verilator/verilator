@@ -54,6 +54,32 @@ module t (
   endproperty
   assert property (p_nested_in_body);
 
+  // A value with side effects used in the cycle it is assigned, and in a later cycle, is
+  // unsupported
+  property p_side_effect;
+    int snap;
+    @(posedge clk) (valid,
+    snap = $urandom()
+    ) |-> (snap[0] == 1'b1) ##1 (snap[0] == 1'b0);
+  endproperty
+  assert property (p_side_effect);
+
+  // Likewise a function writing an output argument
+  int out_v;
+  function automatic int setter(output int x);
+    x = 1;
+    return 0;
+  endfunction
+  assert property (@(posedge clk) $past(setter(out_v)) == 0);
+
+  // A value from a seeded $random writes its seed when sampled
+  int seed = 0;
+  property p_seeded;
+    int snap;
+    @(posedge clk) (valid, snap = $random(seed)) |=> (snap != 0);
+  endproperty
+  assert property (p_seeded);
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     valid <= (cyc == 2);

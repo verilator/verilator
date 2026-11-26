@@ -177,6 +177,22 @@ bool V3AssertCommon::refsSvaFormal(const AstNode* nodep) {
     });
 }
 
+AstNodeExpr* V3AssertCommon::cloneSampled(AstNodeExpr* exprp) {
+    // Warn of side effects as a copy does, but taking unseeded random draws as pure, as sampling
+    // again may draw another value (IEEE 1800-2023 16.6)
+    AstNodeExpr* const clonep = V3Const::cloneWithoutDraws(exprp, true);
+    // The copy has the same nodes in the same order, so warn on the matching original node
+    std::vector<AstNode*> origps;
+    exprp->foreach([&](AstNode* nodep) { origps.push_back(nodep); });
+    size_t i = 0;
+    clonep->foreach([&](AstNode* nodep) {
+        if (!nodep->isPure()) origps.at(i)->purityCheck();
+        ++i;
+    });
+    VL_DO_DANGLING(clonep->deleteTree(), clonep);
+    return exprp->cloneTree(false);
+}
+
 //######################################################################
 // AssertDeFutureVisitor
 // If any AstFuture, then move all non-future varrefs to be one cycle behind,
@@ -753,12 +769,16 @@ class AssertVisitor final : public VNVisitor {
         return alwayspr;
     }
 
+    // Copy a default sampled value, whose side effects cloneSampled already checked
+    static AstNodeExpr* cloneDefault(AstNodeExpr* initp) {
+        return initp ? initp->cloneTree(false) : nullptr;
+    }
+
     AstNodeExpr* getPastValue(AstNodeExpr* exprp, AstNodeExpr* initp, AstSenTree* senTreep,
                               uint32_t ticks) {
         UASSERT_OBJ(ticks > 0, exprp, "Delay must be > 0");
         FileLine* const flp = exprp->fileline();
-        AstAlways* const alwaysp
-            = getDelayedAlways(exprp, initp ? initp->cloneTreePure(false) : nullptr, senTreep);
+        AstAlways* const alwaysp = getDelayedAlways(exprp, cloneDefault(initp), senTreep);
         AstNodeExpr* const resultp = pastValueRef(alwaysp, flp, ticks, initp);
         if (initp) VL_DO_DANGLING(pushDeletep(initp), initp);
         return resultp;
@@ -776,8 +796,7 @@ class AssertVisitor final : public VNVisitor {
             name.resize(name.size() - 1);
             name += std::to_string(delayedr.size() + 1);
             AstNodeExpr* const prevp = new AstVarRef{varFlp, delayedr.back(), VAccess::READ};
-            AstVar* const varp = createDelayedVar(name, alwaysp, prevp,
-                                                  initp ? initp->cloneTreePure(false) : nullptr);
+            AstVar* const varp = createDelayedVar(name, alwaysp, prevp, cloneDefault(initp));
             // Add it to delayed variable vector
             delayedr.emplace_back(varp);
         }
@@ -1387,7 +1406,7 @@ class AssertVisitor final : public VNVisitor {
     //========== Past
     void visit(AstPast* nodep) override {
         if (!nodep->propertyTiming()) {
-            nodep->initp(nodep->exprp()->cloneTreePure(false));
+            nodep->initp(V3AssertCommon::cloneSampled(nodep->exprp()));
             { DefaultSampledValueVisitor{nodep->initp()}; }
         }
         AstNodeExpr* const initp = nodep->initp() ? nodep->initp()->unlinkFrBack() : nullptr;
@@ -1406,8 +1425,7 @@ class AssertVisitor final : public VNVisitor {
         if (VN_IS(m_procedurep, Final) || m_ftaskp) {
             // A sampling-tick finish reads one stage deeper (IEEE 1800-2023 16.9.3).
             FileLine* const flp = nodep->fileline();
-            AstAlways* const alwaysp
-                = getDelayedAlways(exprp, initp ? initp->cloneTreePure(false) : nullptr, senTreep);
+            AstAlways* const alwaysp = getDelayedAlways(exprp, cloneDefault(initp), senTreep);
             AstNodeExpr* const betweenTicksp = pastValueRef(alwaysp, flp, ticks, initp);
             AstNodeExpr* const onTickp = pastValueRef(alwaysp, flp, ticks + 1, initp);
             if (initp) VL_DO_DANGLING(pushDeletep(initp), initp);

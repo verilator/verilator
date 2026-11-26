@@ -151,4 +151,19 @@
                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
    24 |   cover property (a);
       |   ^~~~~
+%Error: t/t_assert_unclocked_bad.v:27:32: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                        : ... note: In instance 't'
+                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   27 |     (a, snap = $urandom()) |=> snap == 1;
+      |                                ^~~~
+%Error: t/t_assert_unclocked_bad.v:27:28: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                        : ... note: In instance 't'
+                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   27 |     (a, snap = $urandom()) |=> snap == 1;
+      |                            ^~~
+%Error: t/t_assert_unclocked_bad.v:29:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   29 |   assert property (p_local);
+      |   ^~~~~~
 %Error: Exiting due to

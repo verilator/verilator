@@ -2928,6 +2928,9 @@ class AssertNfaVisitor final : public VNVisitor {
     AstDefaultDisable* m_defaultDisablep = nullptr;  // Default disable iff
     SvaNfaLowering* m_loweringp = nullptr;  // NFA-to-hardware lowering engine
     AstSenTree* m_sampledValueClockp = nullptr;  // Inherited clock during scoped attachment
+    AstSenItem* m_matchItemSensesp = nullptr;  // Clock of the property being substituted
+    bool m_matchItemFailed = false;  // Substitution reported an unsupported use
+    AstSenItem* m_alwaysSensesp = nullptr;  // Sensitivity of the enclosing always
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
     V3UniqueNames m_failCountNames{"__VnfaRemainingFailCount"};  // Fail replay counter names
 
@@ -3189,18 +3192,44 @@ class AssertNfaVisitor final : public VNVisitor {
                                 const std::unordered_map<const AstVar*, AstNodeExpr*>& matchMap) {
         const auto it = matchMap.find(refp->varp());
         if (it == matchMap.end()) return;
-        AstNodeExpr* newp = it->second->cloneTreePure(false);
-        if (K > 0) {
-            AstConst* const ticksp = new AstConst{refp->fileline(), AstConst::WidthedValue{}, 32,
-                                                  static_cast<uint32_t>(K)};
-            AstPast* const pastp = new AstPast{refp->fileline(), newp, ticksp, nullptr,
-                                               /* propertyTiming */ true};
-            pastp->dtypeFrom(newp);
-            newp = pastp;
+        AstNodeExpr* const valuep = it->second;
+        FileLine* const flp = refp->fileline();
+        AstNodeExpr* newp;
+        if (K == 0) {
+            // Copies of a value with side effects in this and later cycles would differ
+            if (!valuep->isPure()) {
+                refp->v3warn(E_UNSUPPORTED, "Unsupported: property local variable assigned a"
+                                            " value with side effects, used in the cycle it is"
+                                            " assigned (IEEE 1800-2023 16.10).");
+                m_matchItemFailed = true;
+            }
+            newp = V3AssertCommon::cloneSampled(valuep);
+        } else if (m_matchItemSensesp) {
+            // Read a variable assigned the $past value, so copies of the consequent do not copy
+            // the value; V3Assert samples all identical $past values once a clock
+            AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, m_propTempNames.get(valuep),
+                                            valuep->dtypep()};
+            m_modp->addStmtsp(varp);
+            AstPast* const pastp = new AstPast{
+                flp, V3AssertCommon::cloneSampled(valuep),
+                new AstConst{flp, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(K)},
+                new AstSenTree{flp, m_matchItemSensesp->cloneTree(true)},
+                /* propertyTiming */ true};
+            pastp->dtypeFrom(valuep);
+            m_modp->addStmtsp(newAssertAlways(
+                flp, VAlwaysKwd::ALWAYS_COMB, nullptr,
+                new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, pastp}));
+            newp = new AstVarRef{flp, varp, VAccess::READ};
+        } else {
+            // No clock, reported later
+            newp = new AstPast{
+                flp, V3AssertCommon::cloneSampled(valuep),
+                new AstConst{flp, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(K)}, nullptr,
+                /* propertyTiming */ true};
+            newp->dtypeFrom(valuep);
         }
         refp->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(refp), refp);
-        return;
     }
 
     // Recursively walk a consequent. Returns cycle length consumed and
@@ -3256,8 +3285,13 @@ class AssertNfaVisitor final : public VNVisitor {
     // is replaced with `$past(rhs_expr, K)` where K = (overlapped ? 0 : 1)
     // plus any accumulated `##N` delay. Returns true if E_UNSUPPORTED was
     // emitted; caller must replace the body with BitFalse and bail.
-    bool liftMatchItemSubstitutions(PropertyParts& parts, AstNodeExpr* seqBodyp) {
+    bool liftMatchItemSubstitutions(PropertyParts& parts, AstNodeExpr* seqBodyp,
+                                    AstSenItem* sensesp) {
         if (!parts.hasImplication) return false;
+        VL_RESTORER(m_matchItemSensesp);
+        VL_RESTORER(m_matchItemFailed);
+        m_matchItemSensesp = sensesp;
+        m_matchItemFailed = false;
         AstExprStmt* const exprStmtp = VN_CAST(parts.triggerExprp, ExprStmt);
         if (!exprStmtp) return false;
         // IEEE 1800-2023 16.10 BNF requires `(expr, match_item {, match_item})`
@@ -3274,7 +3308,7 @@ class AssertNfaVisitor final : public VNVisitor {
         // Match-item substitution / strip mutates ancestor purity. Release
         // builds don't auto-clear caches on edits, so refresh here.
         VIsCached::clearCacheTree();
-        if (length < 0) return true;
+        if (length < 0 || m_matchItemFailed) return true;
         AstNodeExpr* const antBoolp = exprStmtp->resultp()->unlinkFrBack();
         exprStmtp->replaceWith(antBoolp);
         VL_DO_DANGLING(pushDeletep(exprStmtp), exprStmtp);
@@ -3338,9 +3372,16 @@ class AssertNfaVisitor final : public VNVisitor {
         const char* const propertyControlp
             = unsupportedPropertyControl(assertp, seqBodyp, negated);
 
+        // Inherit module defaults (IEEE 14.12, 16.15) when assertion has none.
+        if (!propp->sensesp() && m_defaultClockingp) {
+            propp->addSensesp(m_defaultClockingp->sentreep()->sensesp()->cloneTree(true));
+        }
+
         // Substitute property-local match-item refs in consequent with
         // $past(rhs, K) before NFA build (IEEE 1800-2023 16.10).
-        if (liftMatchItemSubstitutions(parts, seqBodyp)) {
+        // A procedural assertion takes its clock from the always (IEEE 1800-2023 16.14.6)
+        if (liftMatchItemSubstitutions(parts, seqBodyp,
+                                       propp->sensesp() ? propp->sensesp() : m_alwaysSensesp)) {
             AstPropSpec* const psp = VN_CAST(assertp->propp(), PropSpec);
             UASSERT_OBJ(psp, assertp, "Concurrent assertion must have PropSpec");
             replaceBodyOnBuildError(assertp->fileline(), psp, /*errorEmitted=*/true);
@@ -3353,10 +3394,6 @@ class AssertNfaVisitor final : public VNVisitor {
         // disable iff, no assertion control
         const bool isSeqEvent = coverp && coverp->isSeqEvent();
         const bool countMatches = countsMatches(assertp);
-        // Inherit module defaults (IEEE 14.12, 16.15) when assertion has none.
-        if (!propp->sensesp() && m_defaultClockingp) {
-            propp->addSensesp(m_defaultClockingp->sentreep()->sensesp()->cloneTree(true));
-        }
         if (!propp->disablep() && m_defaultDisablep && !isSeqEvent) {
             propp->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
         }
@@ -3463,6 +3500,11 @@ class AssertNfaVisitor final : public VNVisitor {
     void visit(AstPast* nodep) override { visitSampledValue(nodep); }
     void visit(AstRose* nodep) override { visitSampledValue(nodep); }
     void visit(AstStable* nodep) override { visitSampledValue(nodep); }
+    void visit(AstAlways* nodep) override {
+        VL_RESTORER(m_alwaysSensesp);
+        m_alwaysSensesp = nodep->sentreep() ? nodep->sentreep()->sensesp() : nullptr;
+        iterateChildren(nodep);
+    }
     void visit(AstAssert* nodep) override { processAssertion(nodep); }
     void visit(AstCover* nodep) override { processAssertion(nodep); }
     void visit(AstRestrict* nodep) override {

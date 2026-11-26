@@ -296,8 +296,11 @@ class LiftExprVisitor final : public VNVisitor {
     void visit(AstNodeAssign* nodep) override {
         if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_doNotLiftp);
-        // Do not lift the RHS if this is already a simple assignment to a variable
-        m_doNotLiftp = VN_IS(nodep->lhsp(), NodeVarRef) ? nodep->rhsp() : nullptr;
+        // Do not lift the RHS if this is already a simple assignment to a variable. A force
+        // copies its value into several places, so lift an impure value, other than a call
+        // whose arguments the forced value follows.
+        const bool liftForce = VN_IS(nodep, AssignForce) && !VN_IS(nodep->rhsp(), NodeFTaskRef);
+        m_doNotLiftp = VN_IS(nodep->lhsp(), NodeVarRef) && !liftForce ? nodep->rhsp() : nullptr;
         if (AstNode* const newStmtps = lift(nodep->rhsp())) {
             nodep->addHereThisAsNext(newStmtps);
         }

@@ -28,6 +28,15 @@ module t;
   class Cls;
     logic b = 1'b1;
   endclass
+  function automatic logic [7:0] add(logic [7:0] a, logic [7:0] b);
+    return a + b;
+  endfunction
+
+  function automatic int bump(int x);
+    ++cnt;
+    return x;
+  endfunction
+
   function automatic Cls fc();
     Cls c = new;
     ++cnt;
@@ -86,6 +95,58 @@ module t;
     r = fc().b && 1'b0;
     `checkd(r, 1'b0);
     `checkd(cnt, 15);
+`ifdef VERILATOR
+    begin
+      // An operand whose only side effects are unseeded $random draws is discarded, deviating
+      // from IEEE 1800-2023 11.3.5 for performance; a $urandom operand is evaluated, and so is
+      // a function called with a $random argument
+      int i;
+      int cnt0;
+      int unsigned r1;
+      int unsigned r2;
+      int unsigned r3;
+      int unsigned got;
+      void'($urandom(5));
+      r1 = $urandom;
+      r2 = $urandom;
+      r3 = $urandom;
+      void'($urandom(5));
+      i = $random & 0;
+      got = $urandom;
+      `checkd(i, 0);
+      `checkd(got, r1);
+      void'($urandom(5));
+      i = $urandom & 0;
+      got = $urandom;
+      `checkd(i, 0);
+      `checkd(got, r2);
+      void'($urandom(5));
+      i = ($random ^ 5) & 0;
+      got = $urandom;
+      `checkd(i, 0);
+      `checkd(got, r1);
+      void'($urandom(5));
+      i = ($random ^ $urandom) & 0;
+      got = $urandom;
+      `checkd(i, 0);
+      `checkd(got, r3);
+      void'($urandom(5));
+      cnt0 = cnt;
+      i = bump($random) & 0;
+      got = $urandom;
+      `checkd(i, 0);
+      `checkd(cnt, cnt0 + 1);
+      `checkd(got, r2);
+    end
+`endif
+    begin
+      // A function called with an argument with side effects
+      int cnt0;
+      cnt0 = cnt;
+      u = add(f(), 8'd3) * 8'd0;
+      `checkd(u, 8'd0);
+      `checkd(cnt, cnt0 + 1);
+    end
     $write("*-* All Finished *-*\n");
     $finish;
   end

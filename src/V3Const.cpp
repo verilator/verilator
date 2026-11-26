@@ -79,6 +79,17 @@ static int countTrailingZeroes(uint64_t val) {
 #endif
 }
 
+// Whether the only side effects of an expression are unseeded $random draws
+static bool onlyRandomDraws(AstNodeExpr* nodep) {
+    const auto isDraw = [](const AstRand* randp) { return !randp->seedp() && !randp->urandom(); };
+    if (const AstRand* const randp = VN_CAST(nodep, Rand)) return isDraw(randp);
+    if (!nodep->exists(isDraw)) return false;
+    AstNodeExpr* const clonep = V3Const::cloneWithoutDraws(nodep, false);
+    const bool pure = clonep->isPure();
+    VL_DO_DANGLING(clonep->deleteTree(), clonep);
+    return pure;
+}
+
 // Allocates a unique id for each AstNode it is applied to, held in user4.
 class VNIdAllocator final {
     // NODE STATE
@@ -1985,7 +1996,11 @@ class ConstVisitor final : public VNVisitor {
     // Replace 'nodep' with constant 'val', keeping the side effects of impure operands as
     // statements of an AstExprStmt
     void replaceValChkPure(AstNodeBiop* nodep, uint32_t val) {
-        if (nodep->lhsp()->isPure() && nodep->rhsp()->isPure()) {
+        // Discard an operand whose only side effects are unseeded $random draws, an
+        // optimization deviating from IEEE 1800-2023 11.3.5
+        const auto keep
+            = [](AstNodeExpr* const opp) { return !opp->isPure() && !onlyRandomDraws(opp); };
+        if (!keep(nodep->lhsp()) && !keep(nodep->rhsp())) {
             VL_DO_DANGLING(replaceNum(nodep, val), nodep);
             return;
         }
@@ -1995,7 +2010,7 @@ class ConstVisitor final : public VNVisitor {
         stmtFlp->warnOff(V3ErrorCode::IGNOREDRETURN, true);
         AstNodeStmt* stmtsp = nullptr;
         for (AstNodeExpr* const opp : {nodep->lhsp(), nodep->rhsp()}) {
-            if (!opp->isPure()) {
+            if (keep(opp)) {
                 stmtsp = AstNode::addNext(stmtsp, new AstStmtExpr{stmtFlp, opp->unlinkFrBack()});
             }
         }
@@ -4845,6 +4860,20 @@ uint32_t ConstVisitor::s_globalPassNum = 0;
 
 //######################################################################
 // Const class functions
+
+AstNodeExpr* V3Const::cloneWithoutDraws(AstNodeExpr* nodep, bool urandom) {
+    // A node's purity cannot tell its own side effects from those of a draw beneath it
+    AstNot* const holderp = new AstNot{nodep->fileline(), nodep->cloneTree(false)};
+    std::vector<AstRand*> drawps;
+    holderp->lhsp()->foreach([&](AstRand* randp) {
+        if (!randp->seedp() && (urandom || !randp->urandom())) drawps.push_back(randp);
+    });
+    for (AstRand* const drawp : drawps) drawp->replaceWith(new AstConst{drawp->fileline(), 0U});
+    for (AstRand* drawp : drawps) VL_DO_DANGLING(drawp->deleteTree(), drawp);
+    AstNodeExpr* const clonep = holderp->lhsp()->unlinkFrBack();
+    VL_DO_DANGLING(holderp->deleteTree(), holderp);
+    return clonep;
+}
 
 void V3Const::collectFixedAggregateTerms(VNDeleter& deleter, AstNodeExpr* const fromp,
                                          std::vector<AstNodeExpr*>& termps, const bool packReal,
