@@ -157,7 +157,6 @@ class ConstraintExprVisitor final : public VNVisitor {
                                                // classp has no randomize() (inherited members)
     AstVar* const m_genp;  // VlRandomizer variable of the class
     AstVar* m_randModeVarp;  // Relevant randmode state variable
-    bool m_blockUsesMode = false;  // May be turned off; unsupported shapes take master's path
     bool m_wantSingle = false;  // Whether to merge constraint expressions with LOGAND
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
     bool m_structSel = false;  // Marks when inside structSel
@@ -175,6 +174,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstNodeFTask* m_prepareConstrainedArraysp = nullptr;  // Grow arrays for indexed struct access
     uint32_t* m_uniqueConstraintIdp = nullptr;  // Current ID of unique call
     V3UniqueNames& m_uniqueNames;  // Unique names of temporaries, and of blocks holding them
+    bool m_blockUsesMode = false;  // May be turned off; unsupported shapes take master's path
     std::vector<AstVar*> m_rangeConstrainedEnums;  // Enums that are already range-constrained
     // First expression found under an inside index
     AstNode* m_firstExpressionInsideIndexp = nullptr;
