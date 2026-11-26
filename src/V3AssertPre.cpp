@@ -945,8 +945,17 @@ private:
         sizep->dtypep(refp->findBasicDType(VBasicDTypeKwd::UINT32));
         return sizep;
     }
-    void visit(AstSEventually* nodep) override {
+    void visit(AstEventually* nodep) override {
+        if (nodep->exprp()->isMultiCycleSva()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: property/sequence operator inside "
+                                             << nodep->verilogKwd());
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         UASSERT(v3Global.rootp()->stdPackagep(), "Should be imported");
+        UASSERT_OBJ(!nodep->loBoundp(), nodep,
+                    "Ranged eventually should be removed by V3AssertNfa");
 
         AstSenTree* const sentreep = newSenTree(nodep);
         if (!sentreep->sensesp()) {

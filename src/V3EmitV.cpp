@@ -1539,6 +1539,18 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateConst(nodep->exprp());
         puts("\n");
     }
+    void visit(AstEventually* nodep) override {
+        puts(nodep->verilogKwd());
+        if (nodep->loBoundp()) {
+            puts(" [");
+            iterateConst(nodep->loBoundp());
+            puts(":");
+            iterateConst(nodep->hiBoundp());
+            puts("]");
+        }
+        putbs(" ");
+        iterateConst(nodep->exprp());
+    }
     void visit(AstPropAlways* nodep) override {
         puts(nodep->isStrong() ? "s_always" : "always");
         if (!VN_IS(nodep->loBoundp(), Unbounded) || !VN_IS(nodep->hiBoundp(), Unbounded)) {

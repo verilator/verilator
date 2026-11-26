@@ -1551,6 +1551,31 @@ public:
     AstNodeModule* classOrPackagep() const { return m_classOrPackagep; }
     void classOrPackagep(AstNodeModule* nodep) { m_classOrPackagep = nodep; }
 };
+class AstEventually final : public AstNodeExpr {
+    // eventually property expression (IEEE 1800-2023 16.12.13)
+    // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := loBoundp : Optional[AstNodeExpr]
+    // @astgen op3 := hiBoundp : Optional[AstNodeExpr]
+    const bool m_isStrong = false;  // s_ prefix
+public:
+    AstEventually(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* loBoundp, AstNodeExpr* hiBoundp,
+                  bool isStrong)
+        : ASTGEN_SUPER_Eventually(fl)
+        , m_isStrong{isStrong} {
+        this->exprp(exprp);
+        this->loBoundp(loBoundp);
+        this->hiBoundp(hiBoundp);
+        dtypeSetBit();
+    }
+    ASTGEN_MEMBERS_AstEventually;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    bool isStrong() const { return m_isStrong; }
+    string verilogKwd() const override { return isStrong() ? "s_eventually" : "eventually"; }
+};
 class AstExprStmt final : public AstNodeExpr {
     // Perform a statement, often assignment inside an expression node,
     // the parent gets passed the 'resultp()'.
@@ -2393,20 +2418,6 @@ public:
     }
     bool unbounded() const { return m_unbounded; }
     bool isMultiCycleSva() const override { return true; }
-};
-class AstSEventually final : public AstNodeExpr {
-    // s_eventually
-    // @astgen op1 := exprp : AstNodeExpr
-public:
-    explicit AstSEventually(FileLine* fl, AstNodeExpr* exprp)
-        : ASTGEN_SUPER_SEventually(fl) {
-        this->exprp(exprp);
-        dtypeSetBit();
-    }
-    ASTGEN_MEMBERS_AstSEventually;
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
 };
 class AstSExpr final : public AstNodeExpr {
     // Sequence expression

@@ -1,0 +1,66 @@
+%Error: t/t_property_eventually_elab_bad.v:29:40: Expecting expression to be constant, but variable isn't const: 'n'
+                                                : ... note: In instance 't'
+   29 |   assert property (@(posedge clk) p_lo(n));
+      |                                        ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_property_eventually_elab_bad.v:30:40: Expecting expression to be constant, but variable isn't const: 'n'
+                                                : ... note: In instance 't'
+   30 |   assert property (@(posedge clk) p_hi(n));
+      |                                        ^
+%Error: t/t_property_eventually_elab_bad.v:31:40: eventually range low bound must be non-negative (IEEE 1800-2023 16.12.13)
+                                                : ... note: In instance 't'
+   31 |   assert property (@(posedge clk) p_lo(-1));
+      |                                        ^
+%Error: t/t_property_eventually_elab_bad.v:32:48: eventually range high bound must be >= low bound (IEEE 1800-2023 16.12.13)
+                                                : ... note: In instance 't'
+   32 |   assert property (@(posedge clk) p_forward(2, 1));
+      |                                                ^
+%Error: t/t_property_eventually_elab_bad.v:18:5: The range for a weak eventually must be bounded (IEEE 1800-2023 16.12.13)
+                                               : ... note: In instance 't'
+   18 |     eventually[0: hi] 1'b1;
+      |     ^~~~~~~~~~
+%Error: t/t_property_eventually_elab_bad.v:34:40: eventually range low bound must be integral (IEEE 1800-2023 16.12.13)
+                                                : ... note: In instance 't'
+   34 |   assert property (@(posedge clk) p_lo(OPAQUE));
+      |                                        ^~~~~~
+%Error: t/t_property_eventually_elab_bad.v:35:40: eventually range high bound must be integral (IEEE 1800-2023 16.12.13)
+                                                : ... note: In instance 't'
+   35 |   assert property (@(posedge clk) p_hi(OPAQUE));
+      |                                        ^~~~~~
+%Error: t/t_property_eventually_elab_bad.v:40:44: Expecting expression to be constant, but variable isn't const: 'n'
+                                                : ... note: In instance 't'
+   40 |   assert property (@(posedge clk) p_strong(n, $));
+      |                                            ^
+%Error: t/t_property_eventually_elab_bad.v:41:47: Expecting expression to be constant, but variable isn't const: 'n'
+                                                : ... note: In instance 't'
+   41 |   assert property (@(posedge clk) p_strong(0, n));
+      |                                               ^
+%Error: t/t_property_eventually_elab_bad.v:42:47: s_eventually range high bound must be >= low bound (IEEE 1800-2023 16.12.13)
+                                                : ... note: In instance 't'
+   42 |   assert property (@(posedge clk) p_strong(3, 2));
+      |                                               ^
+%Error: t/t_property_eventually_elab_bad.v:44:26: s_eventually range low bound must be integral (IEEE 1800-2023 16.12.13)
+                                                : ... note: In instance 't'
+   44 |   localparam UNBOUNDED = $;
+      |                          ^
+%Error: t/t_property_eventually_elab_bad.v:47:26: eventually range high bound must be integral (IEEE 1800-2023 16.12.13)
+                                                : ... note: In instance 't'
+   47 |   localparam int HI[2] = '{1, 2};
+      |                          ^~
+%Error: t/t_property_eventually_elab_bad.v:52:46: eventually range low bound cannot contain X or Z (IEEE 1800-2023 16.12.13)
+                                                : ... note: In instance 't'
+   52 |   assert property (@(posedge clk) eventually[X_BOUND:2] clk);
+      |                                              ^~~~~~~
+%Error: t/t_property_eventually_elab_bad.v:53:50: s_eventually range high bound cannot contain X or Z (IEEE 1800-2023 16.12.13)
+                                                : ... note: In instance 't'
+   53 |   assert property (@(posedge clk) s_eventually[0:Z_BOUND] clk);
+      |                                                  ^~~~~~~
+%Error: t/t_property_eventually_elab_bad.v:54:40: eventually range high bound cannot contain X or Z (IEEE 1800-2023 16.12.13)
+                                                : ... note: In instance 't'
+   54 |   assert property (@(posedge clk) p_hi(X_BOUND));
+      |                                        ^~~~~~~
+%Error: t/t_property_eventually_elab_bad.v:55:44: s_eventually range low bound cannot contain X or Z (IEEE 1800-2023 16.12.13)
+                                                : ... note: In instance 't'
+   55 |   assert property (@(posedge clk) p_strong(Z_BOUND, $));
+      |                                            ^~~~~~~
+%Error: Exiting due to
