@@ -61,7 +61,7 @@ for fmt in ('vcd', 'fst'):
             assert set().union(*parts) == set(range(len(nodes)))
             membership.write_text(''.join(','.join(map(str, sorted(p))) + '\n' for p in parts),
                                   encoding="utf8")
-            runtime = ['--repcut', '--repcut-partitioner', partitioner(test, membership)]
+            runtime = ['-frepcut', '--repcut-partitioner', partitioner(test, membership)]
         test.compile(make_main=False,
                      verilator_make_gmake=False,
                      threads=threads,

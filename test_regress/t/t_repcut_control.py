@@ -259,7 +259,7 @@ def check_chunk_boundaries():  # pylint: disable=too-many-locals
 for repcut, dfg, localize, threads in ((False, True, True, 2), (True, True, True, 2),
                                        (True, False, True, 2), (True, True, False, 2),
                                        (True, True, True, 1), (True, False, True, 1)):
-    mode_flags = ['--repcut', '--repcut-partitioner',
+    mode_flags = ['-frepcut', '--repcut-partitioner',
                   partitioner(test, membership)] if repcut else []
     if repcut:
         mode_flags += ['--dump-tree-json', '--stats', '--debug-self-test']

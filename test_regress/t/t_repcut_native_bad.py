@@ -24,7 +24,8 @@ partitioner = directory / 'partitioner.py'
 for case, body in (('missing', None), ('exit', 'raise SystemExit(7)'), ('stale', 'pass'),
                    ('malformed', "out.write_text('bogus\\n')"),
                    ('count', "out.write_text(','.join(map(str, range(nodes))) + '\\n')"),
-                   ('removed', None), ('removed_decoder', None), ('locked', None)):
+                   ('removed', None), ('removed_decoder', None), ('removed_alias', None),
+                   ('removed_no_alias', None), ('locked', None)):
     # A failed/no-output invocation must never import a previous successful plan.
     membership.write_text('stale output must not survive\n', encoding="utf8")
     executable = str(directory / 'missing-partitioner')
@@ -39,14 +40,18 @@ nodes = int(Path(args['--graph_file']).read_text().splitlines()[0].split()[1])
                                encoding="utf8")
         partitioner.chmod(0o755)
         executable = str(partitioner.resolve())
-    flags = ['--repcut', '--repcut-partitioner', executable, '--no-skip-identical']
+    flags = ['-frepcut', '--repcut-partitioner', executable, '--no-skip-identical']
     if case == 'locked':
-        flags = ['--repcut', '--no-skip-identical']
+        flags = ['-frepcut', '--no-skip-identical']
         (work / '.lock').write_text('held by regression\n', encoding='utf8')
     if case == 'removed':
         flags = ['--repcut-partitions', 'unused.csv']
     elif case == 'removed_decoder':
         flags = ['--repcut-private-decoders']
+    elif case == 'removed_alias':
+        flags = ['--repcut']
+    elif case == 'removed_no_alias':
+        flags = ['--no-repcut']
     else:
         for suffix in ('.plan.tsv', '.owners.tsv', '.chunks.tsv', '.cuts.tsv'):
             Path(str(base) + suffix).write_text('stale accepted plan', encoding="utf8")

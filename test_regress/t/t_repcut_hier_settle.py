@@ -16,7 +16,7 @@ test.verilator_flags += ['--repcut-dump-graph']
 test.top_filename = "t/t_threads_group.v"
 test.compile(threads=2,
              verilator_flags2=[
-                 '--repcut', '--hierarchical', '+define+TEST_VLT', '+define+TEST_HIERARCHICAL',
+                 '-frepcut', '--hierarchical', '+define+TEST_VLT', '+define+TEST_HIERARCHICAL',
                  '--repcut-partitioner',
                  round_robin_partitioner(test)
              ])

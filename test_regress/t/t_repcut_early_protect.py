@@ -43,7 +43,7 @@ for suffix in ('.storage.tsv', '.domains.tsv', '.bindings.tsv'):
     assert '__Vxrand' not in contents
 test.compile(verilator_make_gmake=False,
              verilator_flags2=[
-                 '--repcut', '--no-skip-identical', '--protect-ids', '--protect-key', 'SECRET_KEY',
+                 '-frepcut', '--no-skip-identical', '--protect-ids', '--protect-key', 'SECRET_KEY',
                  '+define+REPCUT_MEMORY_ODD'
              ])
 for suffix in ('.plan.tsv', '.owners.tsv'):

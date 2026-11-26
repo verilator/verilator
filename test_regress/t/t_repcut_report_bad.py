@@ -21,7 +21,7 @@ for fallback in (False, True):
     flags = ['--no-skip-identical', '-fno-dfg']
     if fallback:
         flags += ['-DREPCUT_EFFECT_FALLBACK', '--output-split-cfuncs', '32']
-    flags += ['--repcut']
+    flags += ['-frepcut']
 
     cases = [('graph', '*.graph', []), ('plan', '*.plan.tsv', []), ('chunks', '*.chunks.tsv', []),
              ('cuts', '*.cuts.tsv', []), ('publish', '*.publication.tsv', []),

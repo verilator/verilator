@@ -572,7 +572,6 @@ detailed descriptions of these arguments.
     --quiet-stats               Don't print statistics
     --relative-includes         Resolve includes relative to current file
     --reloop-limit <value>      Minimum iterations for forming loops
-    --repcut                    Alias for -frepcut
     --repcut-partitioner <exe>  Select the external RepCut partitioner
     --repcut-seed <value>       Set the partitioning seed (default: 42)
     --replication-limit <value> Replication concatenation limit (default: 8k)

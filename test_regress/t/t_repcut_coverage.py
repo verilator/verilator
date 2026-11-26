@@ -26,7 +26,7 @@ test.compile(make_top_shell=False,
              make_main=False,
              threads=threads,
              verilator_flags2=[
-                 '--repcut', '--assert', '--timing', '--coverage-user', '-fno-inline', '--exe',
+                 '-frepcut', '--assert', '--timing', '--coverage-user', '-fno-inline', '--exe',
                  str(driver.resolve()), '-CFLAGS', '-I' + str(Path('t').resolve())
              ])
 test.execute(all_run_flags=['+verilator+error+limit+100'])

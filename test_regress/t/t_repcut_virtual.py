@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 test.top_filename = 't/t_scheduling_virt_iface_nonvirt_write.v'
-test.compile(threads=2 if test.vltmt else 1, verilator_flags2=['--binary', '--repcut'])
+test.compile(threads=2 if test.vltmt else 1, verilator_flags2=['--binary', '-frepcut'])
 test.execute()
 test.passes()

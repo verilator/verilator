@@ -64,7 +64,7 @@ for threads, negative, protect, initial_edge, placement in variants:
                  verilator_make_gmake=False,
                  threads=threads,
                  verilator_flags2=flags + [
-                     '--repcut', '--repcut-partitioner',
+                     '-frepcut', '--repcut-partitioner',
                      partitioner(test, membership), '--exe',
                      str(Path(test.pli_filename).resolve()), '-CFLAGS', '-DREPCUT_NEGEDGE=' +
                      str(int(negative)), '-CFLAGS', '-DREPCUT_INITIAL_EDGE=' +

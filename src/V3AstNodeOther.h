@@ -626,6 +626,7 @@ class AstCFunc final : public AstNode {
     bool m_unlikely : 1;  // Unlikely to get called (though still optimize unlike slow())
     bool m_isRepCut : 1;  // Already lowered RepCut evaluation/publication phase
     bool m_repcutNativeBatch : 1;  // Native compute kernel safe to batch behind triggers
+    bool m_repcutBatchRoot : 1;  // Combined native dispatch whose callees expose dependencies
     bool m_repcutLocalPublish : 1;  // Closed worker wrapper, ends with private scalar publication
     bool m_repcutDependencyArgs : 1;  // Arguments describe dependencies, not runtime parameters
     bool m_noInline : 1;  // Preserve a compilation boundary through Verilator and C++ inlining
@@ -667,6 +668,7 @@ public:
         m_unlikely = false;
         m_isRepCut = false;
         m_repcutNativeBatch = false;
+        m_repcutBatchRoot = false;
         m_repcutLocalPublish = false;
         m_repcutDependencyArgs = false;
         m_noInline = false;
@@ -686,6 +688,7 @@ public:
         return ((rtnTypeVoid() == asamep->rtnTypeVoid()) && isRepCut() == asamep->isRepCut()
                 && noInline() == asamep->noInline()
                 && repcutNativeBatch() == asamep->repcutNativeBatch()
+                && repcutBatchRoot() == asamep->repcutBatchRoot()
                 && repcutSharedOrder() == asamep->repcutSharedOrder()
                 && repcutLocalPublish() == asamep->repcutLocalPublish()
                 && repcutDependencyArgs() == asamep->repcutDependencyArgs()
@@ -760,6 +763,8 @@ public:
     void isRepCut(bool flag) { m_isRepCut = flag; }
     bool repcutNativeBatch() const { return m_repcutNativeBatch; }
     void repcutNativeBatch(bool flag) { m_repcutNativeBatch = flag; }
+    bool repcutBatchRoot() const { return m_repcutBatchRoot; }
+    void repcutBatchRoot(bool flag) { m_repcutBatchRoot = flag; }
     uint32_t repcutSharedOrder() const { return m_repcutSharedOrder; }
     void repcutSharedOrder(uint32_t order) { m_repcutSharedOrder = order; }
     bool repcutLocalPublish() const { return m_repcutLocalPublish; }

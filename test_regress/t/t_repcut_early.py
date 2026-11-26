@@ -183,7 +183,7 @@ membership.write_text(''.join(','.join(map(str, sorted(p, reverse=True))) + ',\n
 test.compile(verilator_make_gmake=False,
              threads=2,
              verilator_flags2=[
-                 '--repcut', '--repcut-partitioner',
+                 '-frepcut', '--repcut-partitioner',
                  partitioner(test, membership), '--no-skip-identical'
              ])
 plan = list(
@@ -218,7 +218,7 @@ for part, members in enumerate(partitions):
                                                  if nodes[i]['kind'] == 'OUTPUT' else str(part))
         assert owners[i]['publication_owner'] == 'native'
 # A fresh partitioner result must replace the previous ownership plan.
-flags = ['--repcut', '--repcut-partitioner', partitioner(test, membership), '--no-skip-identical']
+flags = ['-frepcut', '--repcut-partitioner', partitioner(test, membership), '--no-skip-identical']
 membership.write_text(''.join(','.join(map(str, sorted(p))) + ',\n' for p in reversed(partitions)),
                       encoding="utf8")
 test.compile(verilator_make_gmake=False, threads=2, verilator_flags2=flags)

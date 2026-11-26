@@ -12,5 +12,5 @@ import runpy
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.verilator_flags += ['--repcut']
+test.verilator_flags += ['-frepcut']
 runpy.run_path("t/t_opt_inline_scale.py", globals())

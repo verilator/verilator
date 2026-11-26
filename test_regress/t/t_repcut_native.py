@@ -96,7 +96,7 @@ for case in ('stock', 'stock_vpi', 'serial', 'parallel', 'protected', 'trace', '
                               encoding="utf8")
     if not mode.startswith('stock'):
         # PGO changes costs after partitioning; return the same membership.
-        runtime = ['--repcut', '--repcut-partitioner', partitioner(test, membership)]
+        runtime = ['-frepcut', '--repcut-partitioner', partitioner(test, membership)]
     test.compile(make_main=False,
                  verilator_make_gmake=False,
                  threads=threads,

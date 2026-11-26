@@ -175,7 +175,7 @@ public:
         // Fixed models keep their assigned workers polling. Registration wakes a
         // sleeping worker under the same mutex as the condition-variable wait.
         // Queue users still make progress between fixed invocations.
-        for (;;) {
+        while (true) {
             unsigned spins = 0;
             while (m_fixedUsers.load(std::memory_order_relaxed)) {
                 if (fixedWork(workp)) return;

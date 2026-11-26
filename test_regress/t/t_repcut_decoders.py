@@ -62,7 +62,7 @@ for mode in ('stock', 'stock_graph', 'default', 'serial', 'fallback', 'protected
         membership = Path(test.obj_dir) / 'membership.csv'
         membership.write_text(''.join(','.join(map(str, sorted(p))) + '\n' for p in parts),
                               encoding="utf8")
-        runtime = ['--repcut', '--repcut-partitioner', partitioner(test, membership)]
+        runtime = ['-frepcut', '--repcut-partitioner', partitioner(test, membership)]
     test.compile(threads=threads,
                  context_threads=threads,
                  trace=mode == 'trace',

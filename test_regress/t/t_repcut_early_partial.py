@@ -165,7 +165,7 @@ membership.write_text(''.join(','.join(map(str, sorted(p, reverse=True))) + ',\n
 test.compile(verilator_make_gmake=False,
              threads=2,
              verilator_flags2=[
-                 '--repcut', '--repcut-partitioner',
+                 '-frepcut', '--repcut-partitioner',
                  partitioner(test, membership), '--no-skip-identical', '+define+REPCUT_MEMORY'
              ])
 owners = {

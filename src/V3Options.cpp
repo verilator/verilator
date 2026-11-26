@@ -1818,7 +1818,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_reloopLimit = std::atoi(valp);
         if (m_reloopLimit < 2) fl->v3error("--reloop-limit must be >= 2: " << valp);
     });
-    DECL_OPTION("-repcut", OnOff, &m_repcut);
     DECL_OPTION("-repcut-dump-graph", OnOff, &m_repcutDumpGraph).notForRerun().undocumented();
     DECL_OPTION("-repcut-partitioner", CbVal, [this, &optdir](const char* valp) {
         m_repcutPartitioner = parseFileArg(optdir, valp);

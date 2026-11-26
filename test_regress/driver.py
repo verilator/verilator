@@ -1827,8 +1827,8 @@ class VlTest:
             flags = self._checkflags(vars(self)) + ' '.join(self.driver_verilator_flags)
         # bin/verilator appends these after the command-line flags.
         flags += ' ' + os.environ.get('VERILATOR_TEST_FLAGS', '')
-        options = re.findall(r'(?:^|\s)--?(f(?:no-)?repcut|(?:no-)?repcut)(?=\s|$)', flags)
-        return not options or options[-1] in ('frepcut', 'repcut')
+        options = re.findall(r'(?:^|\s)--?(f(?:no-)?repcut)(?=\s|$)', flags)
+        return not options or options[-1] == 'frepcut'
 
     @property
     def get_default_vltmt_threads(self) -> int:

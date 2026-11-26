@@ -62,7 +62,7 @@ membership = (child / 'native-membership.csv').resolve()
 membership.write_text(''.join(','.join(map(str, sorted(part))) + '\n' for part in parts),
                       encoding="utf8")
 test.run(logfile=str(child / 'native-compile.log'),
-         cmd=command + ['--repcut', '--repcut-partitioner',
+         cmd=command + ['-frepcut', '--repcut-partitioner',
                         partitioner(test, membership)],
          verilator_run=True)
 test.run(logfile=test.obj_dir + '/mixed-build.log',

@@ -17,5 +17,5 @@ test.scenarios('vlt_all')
 test.verilator_flags += ['--repcut-dump-graph']
 test.top_filename = "t/t_property_nfa_stop_error_limit_crossing.v"
 test.golden_filename = "t/t_property_nfa_stop_error_limit_crossing.out"
-test.verilator_flags += ['--repcut', '--repcut-partitioner', round_robin_partitioner(test)]
+test.verilator_flags += ['-frepcut', '--repcut-partitioner', round_robin_partitioner(test)]
 runpy.run_path("t/t_property_nfa_stop_error_limit_crossing.py", globals())

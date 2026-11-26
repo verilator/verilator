@@ -16,7 +16,7 @@ test.verilator_flags += ['--repcut-dump-graph']
 test.top_filename = "t/t_inst_dff.v"
 test.compile(threads=2,
              verilator_flags2=[
-                 '--repcut', '--stats', '--repcut-partitioner',
+                 '-frepcut', '--stats', '--repcut-partitioner',
                  round_robin_partitioner(test)
              ])
 test.execute()

@@ -81,7 +81,7 @@ for case, threads, limit, extra in [('native', 1, 256, []), ('small', 1, 32, [])
                  verilator_make_gmake=False,
                  threads=threads,
                  verilator_flags2=flags + [
-                     '--repcut', '--repcut-partitioner',
+                     '-frepcut', '--repcut-partitioner',
                      partitioner(test, membership), '--exe',
                      str(Path(test.pli_filename).resolve())
                  ])

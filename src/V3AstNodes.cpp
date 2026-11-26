@@ -898,6 +898,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (entryPoint()) str << " [ENTRY]";
     if (isRepCut()) str << " [REPCUT]";
     if (repcutNativeBatch()) str << " [REPCUTBATCH]";
+    if (repcutBatchRoot()) str << " [REPCUTBATCHROOT]";
     if (repcutSharedOrder()) str << " repcutSharedOrder=" << repcutSharedOrder();
     if (repcutLocalPublish()) str << " [REPCUTLOCALPUBLISH]";
     if (repcutDependencyArgs()) str << " [REPCUTDEPS]";
@@ -929,6 +930,7 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isProcessKill);
     dumpJsonBoolFuncIf(str, isRepCut);
     dumpJsonBoolFuncIf(str, repcutNativeBatch);
+    dumpJsonBoolFuncIf(str, repcutBatchRoot);
     dumpJsonNumFunc(str, repcutSharedOrder);
     dumpJsonBoolFuncIf(str, repcutLocalPublish);
     dumpJsonBoolFuncIf(str, repcutDependencyArgs);

@@ -55,7 +55,7 @@ membership.write_text(''.join(','.join(map(str, sorted(part))) + '\n' for part i
 test.compile(make_main=False,
              threads=threads,
              verilator_flags2=flags + [
-                 '--repcut', '--repcut-partitioner',
+                 '-frepcut', '--repcut-partitioner',
                  partitioner(test, membership), '--exe', test.pli_filename
              ])
 test.file_grep(test.stats, r'RepCut native, replaced procedures\s+(\d+)', 4)

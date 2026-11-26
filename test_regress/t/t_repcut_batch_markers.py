@@ -16,9 +16,12 @@ test.verilator_flags += ['--repcut-dump-graph']
 test.top_filename = "t/t_inst_first.v"
 test.compile(threads=2,
              verilator_flags2=[
-                 '--repcut', '--stats', '--repcut-partitioner',
+                 '-frepcut', '--stats', '--dumpi-tree', '3', '--dumpi-tree-json', '3',
+                 '--no-json-ids', '--repcut-partitioner',
                  round_robin_partitioner(test)
              ])
 test.execute()
 test.file_grep(test.stats, r'RepCut native batch, domains\s+(\d+)', 2)
+test.file_grep(test.glob_one(test.obj_dir + '/*_sched.tree'), r'\[REPCUTBATCHROOT\]')
+test.file_grep(test.glob_one(test.obj_dir + '/*_sched.tree.json'), r'"repcutBatchRoot":\s*true')
 test.passes()

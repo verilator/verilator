@@ -238,6 +238,7 @@ class NativeBatch final {
         batchp->dontCombine(true);
         batchp->noInline(true);
         batchp->isRepCut(true);
+        batchp->repcutBatchRoot(true);
         batchp->repcutDependencyArgs(true);
         AstCCall* const batchCallp = new AstCCall{flp, batchp};
         batchCallp->dtypeSetVoid();

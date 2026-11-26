@@ -1798,7 +1798,7 @@ Summary:
    statement, by moving parts of them into separate functions.
 
    Defaults to the value of :vlopt:`--output-split`, unless explicitly
-   specified. With :vlopt:`--repcut`, defaults
+   specified. With :vlopt:`-frepcut`, defaults
    to 4,000 independently of :vlopt:`--output-split`.
 
 .. option:: --output-split-ctrace <statements>
@@ -2106,11 +2106,6 @@ Summary:
    transformation. The default limit is 40. A smaller number may slightly
    improve C++ compilation time on designs where these sequences are
    common; however, the effect on model performance requires benchmarking.
-
-.. option:: --repcut
-
-   Alias for :vlopt:`-frepcut`. ``--no-repcut`` is an alias for
-   :vlopt:`-fno-repcut`.
 
 .. option:: --repcut-partitioner <executable>
 

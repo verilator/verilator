@@ -69,14 +69,14 @@ assert {test.vm_prefix, 'VTest'} <= models.keys(), models
 
 test.compile(threads=threads,
              verilator_flags2=flags +
-             ['--repcut', '--repcut-partitioner',
+             ['-frepcut', '--repcut-partitioner',
               partitioner(test, plans / '%p.csv')])
 test.execute()
 test.file_grep(test.obj_dir + '/VTest/VTest__stats.txt',
                r'RepCut native, replaced procedures\s+(\d+)', 4)
 if threads > 1:
     profile = (Path(test.obj_dir) / 'profile.vlt').resolve()
-    runtime = ['--repcut', '--repcut-partitioner', partitioner(test, plans / '%p.csv')]
+    runtime = ['-frepcut', '--repcut-partitioner', partitioner(test, plans / '%p.csv')]
     test.compile(threads=threads, verilator_flags2=flags + runtime + ['--prof-pgo'])
     test.execute(all_run_flags=['+verilator+prof+vlt+file+' + str(profile)])
     assert re.search(r'profile_data -model "VTest" -mtask "[^"]+" -cost 64\'d[1-9]',

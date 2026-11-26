@@ -14,7 +14,7 @@ test.scenarios('vlt_all')
 # Internal graph and lowering reports are opt-in.
 test.verilator_flags += ['--repcut-dump-graph']
 test.compile(verilator_flags2=[
-    '--repcut', '--assert', '--timing', '--repcut-partitioner',
+    '-frepcut', '--assert', '--timing', '--repcut-partitioner',
     round_robin_partitioner(test)
 ])
 test.execute(fails=True,

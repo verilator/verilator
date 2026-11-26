@@ -13,5 +13,5 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 test.top_filename = "t/t_lib_prot.v"
-test.verilator_flags += ['--repcut']
+test.verilator_flags += ['-frepcut']
 runpy.run_path("t/t_lib_prot.py", globals())

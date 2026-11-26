@@ -82,8 +82,8 @@ calls.unlink(missing_ok=True)
 os.environ['PATH'] = str(tool_dir.resolve()) + os.pathsep + saved_path
 try:
     for threads in (1, 2):
-        for case in ('stock', 'disabled', 'dormant', 'default', 'automatic', 'enabled', 'override',
-                     'reenable', 'f_override', 'f_reenable', 'seed_default', 'diagnostics'):
+        for case in ('stock', 'dormant', 'default', 'enabled', 'override', 'reenable',
+                     'seed_default', 'diagnostics'):
             # Remove only generated model sources so stale split files cannot
             # affect the equality check or the next model build.
             for pattern in (test.vm_prefix + '*.cpp', test.vm_prefix + '*.h'):
@@ -100,12 +100,8 @@ try:
             extra = []
             if case == 'stock':
                 extra = ['-fno-repcut']
-            elif case == 'disabled':
-                extra = ['--no-repcut']
             elif case == 'dormant':
                 extra = ['-fno-repcut', '--repcut-partitioner', 'missing-partitioner']
-            elif case == 'automatic':
-                extra = ['--repcut']
             elif case == 'diagnostics':
                 extra = ['--repcut-dump-graph']
             elif case == 'seed_default':
@@ -113,15 +109,10 @@ try:
             elif case == 'enabled':
                 extra = ['-frepcut']
             elif case == 'override':
-                extra = ['--repcut', '-fno-repcut', '--repcut-partitioner', 'missing-partitioner']
+                extra = ['-frepcut', '-fno-repcut', '--repcut-partitioner', 'missing-partitioner']
             elif case == 'reenable':
-                extra = ['-fno-repcut', '--repcut']
-            elif case == 'f_override':
-                extra = ['-frepcut', '--no-repcut']
-            elif case == 'f_reenable':
-                extra = ['--no-repcut', '-frepcut']
-            enabled = case in ('default', 'automatic', 'enabled', 'reenable', 'f_reenable',
-                               'seed_default', 'diagnostics')
+                extra = ['-fno-repcut', '-frepcut']
+            enabled = case in ('default', 'enabled', 'reenable', 'seed_default', 'diagnostics')
             test.compile(make_main=False, threads=threads, verilator_flags2=flags + extra)
             assert test.repcut == enabled, (threads, case)
             tables = list(directory.glob('*.tsv'))
@@ -222,7 +213,7 @@ try:
                      verilator_make_gmake=False,
                      threads=4,
                      verilator_flags2=[
-                         '--repcut', '--repcut-partitioner', 'missing-partitioner',
+                         '-frepcut', '--repcut-partitioner', 'missing-partitioner',
                          '--no-skip-identical'
                      ])
         generated = Path(str(base) + '.partition') / 'rcp_output.txt'
@@ -235,7 +226,7 @@ try:
                      threads=2,
                      verilator_flags2=[
                          '--' + mode, '--Mdir',
-                         str(output), '--repcut', '--repcut-partitioner', 'missing-partitioner',
+                         str(output), '-frepcut', '--repcut-partitioner', 'missing-partitioner',
                          '--no-skip-identical'
                      ])
         assert not list(output.glob('*__repcut*')), mode

@@ -17,7 +17,7 @@ test.compile(make_top_shell=False,
              make_main=False,
              threads=2,
              verilator_flags2=[
-                 '--repcut', '--exe',
+                 '-frepcut', '--exe',
                  str(Path(test.pli_filename).resolve()), '-CFLAGS', '-DVL_THREADS_SERIAL_COST=0'
              ])
 test.execute(fails=True, expect_filename=test.golden_filename)

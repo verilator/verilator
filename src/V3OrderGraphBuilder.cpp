@@ -26,6 +26,8 @@
 #include "V3Sched.h"
 #include "V3VNUserAllocator.h"
 
+#include <unordered_set>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -103,7 +105,7 @@ class OrderGraphBuilder final : public VNVisitorConst {
     bool m_inClocked = false;  // Processing clocked logic
     bool m_inPre = false;  // Underneath AlwaysPre
     bool m_inPost = false;  // Underneath AstAlwaysPost
-    std::set<const AstCFunc*> m_repcutFuncps;  // Closed RepCut bodies walked for this logic
+    std::unordered_set<const AstCFunc*> m_repcutFuncps;  // Closed bodies walked for this logic
     bool m_inBatch = false;  // Underneath a combined RepCut batch call
     const bool m_parallel;  // Ordering for multi-threaded execution (record variable accesses)
 
@@ -293,13 +295,13 @@ class OrderGraphBuilder final : public VNVisitorConst {
         accountEnqueuingCall(nodep);
         // Combined RepCut batch functions and their ExecGraph/partition bodies
         // are not inlined, so their accesses are invisible to the orderer. Walk
-        // the closed callees only for the batching experiment; the default
-        // per-domain path keeps its selective dependency arguments.
+        // the closed callees of a combined dispatch. Per-domain calls retain
+        // their selective dependency arguments.
         const AstCFunc* const funcp = nodep->funcp();
-        const bool batchRoot = funcp->name().rfind("__Vrepcut_batch", 0) == 0;
+        const bool batchRoot = funcp->repcutBatchRoot();
         if (!m_inBatch && !batchRoot) return;
         if (!funcp->isRepCut()) return;
-        if (!m_repcutFuncps.insert(funcp).second) return;
+        if (!m_repcutFuncps.emplace(funcp).second) return;
         VL_RESTORER(m_inBatch);
         if (batchRoot) m_inBatch = true;
         iterateChildrenConst(const_cast<AstCFunc*>(funcp));

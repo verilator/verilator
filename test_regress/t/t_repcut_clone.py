@@ -48,7 +48,7 @@ for mode, threads in (('stock', 2), ('repcut', 1), ('repcut', 2), ('repcut', 4),
         membership = Path(test.obj_dir) / 'membership.csv'
         membership.write_text(''.join(','.join(map(str, sorted(part))) + '\n' for part in parts),
                               encoding="utf8")
-        flags += ['--repcut', '--repcut-partitioner', partitioner(test, membership)]
+        flags += ['-frepcut', '--repcut-partitioner', partitioner(test, membership)]
     else:
         flags += ['-fno-repcut']
     test.compile(make_top_shell=False,
