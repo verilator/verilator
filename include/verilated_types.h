@@ -50,6 +50,8 @@ template <typename T_Value, std::size_t N_Depth>
 class VlUnpacked;
 template <typename T_Value, std::size_t N_Depth>
 class VlUnpackedSliceRef;
+template <std::size_t N_Words>
+struct VlWide;
 
 //=========================================================================
 // Debug functions
@@ -74,6 +76,96 @@ class VlUnpackedSliceRef;
 #endif
 
 //===================================================================
+/// Verilog four-state packed bit containers.
+
+#define _FOURSTATE_DATA_IMPL(ThisType, T) \
+    using stored_type = T; \
+    stored_type m_aval; /* aval of four-state value */ \
+    stored_type m_bval; /* bval of four-state value */ \
+    const stored_type& aval() const VL_MT_SAFE { return m_aval; } \
+    const stored_type& bval() const VL_MT_SAFE { return m_bval; } \
+    stored_type& aval_mut() VL_MT_SAFE { return m_aval; } \
+    stored_type& bval_mut() VL_MT_SAFE { return m_bval; } \
+    /* Operators used ONLY FOR BIT MASKING - these are not standard compliant bitwise operators \
+     */ \
+    ThisType operator&(const T other) const { \
+        return {static_cast<T>(m_aval & other), static_cast<T>(m_bval & other)}; \
+    } \
+    ThisType operator|(const ThisType other) const { \
+        return {static_cast<T>(m_aval | other.m_aval), static_cast<T>(m_bval | other.m_bval)}; \
+    }
+
+struct C4Data final {
+    _FOURSTATE_DATA_IMPL(C4Data, CData)
+};
+static_assert(sizeof(C4Data) == sizeof(CData) * 2,
+              "One four-state bit is stored in two two-state ones");
+struct S4Data final {
+    _FOURSTATE_DATA_IMPL(S4Data, SData)
+};
+static_assert(sizeof(S4Data) == sizeof(SData) * 2,
+              "One four-state bit is stored in two two-state ones");
+struct I4Data final {
+    _FOURSTATE_DATA_IMPL(I4Data, IData)
+};
+static_assert(sizeof(I4Data) == sizeof(IData) * 2,
+              "One four-state bit is stored in two two-state ones");
+struct Q4Data final {
+    _FOURSTATE_DATA_IMPL(Q4Data, QData)
+};
+static_assert(sizeof(Q4Data) == sizeof(QData) * 2,
+              "One four-state bit is stored in two two-state ones");
+struct E4Data final {
+    _FOURSTATE_DATA_IMPL(E4Data, EData)
+    void operator=(const I4Data other) {
+        m_aval = static_cast<stored_type>(other.m_aval);
+        m_bval = static_cast<stored_type>(other.m_bval);
+    }
+    operator I4Data() const { return I4Data{m_aval, m_bval}; }
+};
+static_assert(sizeof(E4Data) == sizeof(EData) * 2,
+              "One four-state bit is stored in two two-state ones");
+#undef _FOURSTATE_DATA_IMPL
+
+template <typename>
+struct VlIsFourstate : public std::false_type {};
+template <>
+struct VlIsFourstate<C4Data> : public std::true_type {};
+template <>
+struct VlIsFourstate<S4Data> : public std::true_type {};
+template <>
+struct VlIsFourstate<I4Data> : public std::true_type {};
+template <>
+struct VlIsFourstate<Q4Data> : public std::true_type {};
+template <>
+struct VlIsFourstate<E4Data> : public std::true_type {};
+
+template <typename T>
+struct TwostateCounterpart final {
+    using TwostateType = T;
+};
+template <>
+struct TwostateCounterpart<C4Data> final {
+    using TwostateType = CData;
+};
+template <>
+struct TwostateCounterpart<S4Data> final {
+    using TwostateType = SData;
+};
+template <>
+struct TwostateCounterpart<I4Data> final {
+    using TwostateType = IData;
+};
+template <>
+struct TwostateCounterpart<Q4Data> final {
+    using TwostateType = QData;
+};
+template <>
+struct TwostateCounterpart<E4Data> final {
+    using TwostateType = EData;
+};
+
+//===================================================================
 /// Verilog wide packed bit container.
 /// Similar to std::array<EData, N>, but lighter weight, only methods needed
 /// by Verilator, to help compile time.
@@ -85,6 +177,125 @@ class VlUnpackedSliceRef;
 /// bits are needed to hold the 95 bits. The MSB (bit 96) must always be
 /// zero in memory, but during intermediate operations in the Verilated
 /// internals is unpredictable.
+
+// Read-Write VlWide handle
+template <std::size_t stride = 1>
+class WDataOutP final {
+    EData* m_datap;  // The backing store - non const as the handle is assignable
+
+    // Use WDataInP::external() to create a handle from a raw pointer
+    explicit WDataOutP(EData* datap) VL_PURE : m_datap{datap} {}
+
+public:
+    static constexpr size_t values_stride = stride;
+
+    // FACTORY METHODS
+    // Create a handle from a raw pointer - only to be used in verilated*.h
+    static WDataOutP external(EData* datap) VL_PURE { return WDataOutP{datap}; }
+
+    // CONSTRUCTORS
+    template <std::size_t N_Words, std::size_t Stride = stride,
+              typename std::enable_if<Stride == 1, int>::type = 0>
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataOutP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
+    WDataOutP(const WDataOutP<stride>& other) VL_PURE = default;
+    WDataOutP(WDataOutP<stride>&& other) VL_PURE = default;
+    WDataOutP& operator=(const WDataOutP<stride>& other) VL_PURE = default;
+
+    // METHODS
+    EData* datap() const VL_PURE { return m_datap; }
+    operator bool() const VL_PURE { return m_datap; }
+    EData& operator[](size_t index) const VL_PURE { return m_datap[index * stride]; }
+    WDataOutP operator+(size_t index) const VL_PURE { return WDataOutP(m_datap + index * stride); }
+    WDataOutP operator+(int index) const VL_PURE { return WDataOutP(m_datap + index * stride); }
+};
+static_assert(sizeof(WDataOutP<>) == sizeof(EData*), "WDataOutP should be a single pointer");
+
+// Read-Only VlWide handle
+template <std::size_t stride = 1>
+class WDataInP final {
+    const EData* m_datap;  // The backing store - non const as the handle is assignable
+
+    // Use WDataInP::external() to create a handle from a raw pointer
+    explicit WDataInP(const EData* datap) VL_PURE : m_datap{datap} {}
+
+public:
+    static constexpr size_t values_stride = stride;
+
+    // FACTORY METHODS
+    // Create a handle from a raw pointer - only to be used in verilated*.h
+    static WDataInP external(const EData* datap) VL_PURE { return WDataInP{datap}; }
+
+    // Initialize with 'nullptr'
+    explicit WDataInP(std::nullptr_t) VL_PURE : m_datap{nullptr} {}
+    template <std::size_t N_Words, std::size_t Stride = stride,
+              typename std::enable_if<Stride == 1, int>::type = 0>
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataInP(const VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataInP(WDataOutP<stride> other) VL_PURE : m_datap{other.datap()} {}
+    WDataInP(const WDataInP& other) VL_PURE = default;
+    WDataInP(WDataInP&& other) VL_PURE = default;
+    WDataInP& operator=(const WDataInP& other) VL_PURE = default;
+    template <std::size_t N_Words>
+    WDataInP& operator=(const VlWide<N_Words>& vlWide) VL_PURE {
+        static_assert(stride == 1, "VlWide uses contiguous word storage");
+        m_datap = vlWide.data();
+        return *this;
+    }
+    WDataInP& operator=(WDataOutP<stride> other) VL_PURE {
+        m_datap = other.datap();
+        return *this;
+    }
+
+    // METHODS
+    const EData* datap() const VL_PURE { return m_datap; }
+    operator bool() const VL_PURE { return m_datap; }
+    const EData& operator[](size_t index) const VL_PURE { return m_datap[index * stride]; }
+    WDataInP operator+(size_t index) const VL_PURE { return WDataInP(m_datap + index * stride); }
+    WDataInP operator+(int index) const VL_PURE { return WDataInP(m_datap + index * stride); }
+};
+static_assert(sizeof(WDataInP<>) == sizeof(EData*), "WDataInP should be a single pointer");
+
+class WDataOutPAny final {
+    EData* const m_datap;  // The backing store
+    const std::size_t m_stride;  // Stride to a next word
+
+public:
+    template <std::size_t Stride>
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataOutPAny(WDataOutP<Stride> data) VL_PURE : m_datap{data.datap()},
+                                                                  m_stride{Stride} {}
+    template <std::size_t N_Words>
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataOutPAny(VlWide<N_Words>& data) VL_PURE : m_datap{data.data()},
+                                                                 m_stride{1} {}
+
+    EData& operator[](size_t index) const VL_PURE { return m_datap[index * m_stride]; }
+};
+
+class WDataInPAny final {
+    const EData* const m_datap;  // The backing store
+    const std::size_t m_stride;  // Stride to a next word
+
+public:
+    explicit WDataInPAny(std::nullptr_t) VL_PURE : m_datap{nullptr}, m_stride{1} {}
+    template <std::size_t N_Words>
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataInPAny(const VlWide<N_Words>& data) VL_PURE : m_datap{data.data()},
+                                                                      m_stride{1} {}
+    template <std::size_t Stride>
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataInPAny(WDataInP<Stride> data) VL_PURE : m_datap{data.datap()},
+                                                                m_stride{Stride} {}
+    template <std::size_t Stride>
+    // cppcheck-suppress noExplicitConstructor
+    /* implicit */ WDataInPAny(WDataOutP<Stride> data) VL_PURE : m_datap{data.datap()},
+                                                                 m_stride{Stride} {}
+
+    operator bool() const VL_PURE { return m_datap; }
+    const EData& operator[](size_t index) const VL_PURE { return m_datap[index * m_stride]; }
+};
 
 template <std::size_t N_Words>
 struct VlWide final {
@@ -107,24 +318,24 @@ struct VlWide final {
     EData& operator[](size_t index) VL_MT_SAFE { return m_storage[index]; }
     const EData& operator[](size_t index) const VL_MT_SAFE { return m_storage[index]; }
     VlWide<N_Words>& operator&=(const VlWide& rhs) {
-        VL_AND_W(N_Words, *this, *this, rhs);
+        VL_AND_W(N_Words, aval_mut(), aval(), rhs.aval());
         return *this;
     }
     VlWide<N_Words>& operator|=(const VlWide& rhs) {
-        VL_OR_W(N_Words, *this, *this, rhs);
+        VL_OR_W(N_Words, aval_mut(), aval(), rhs.aval());
         return *this;
     }
     VlWide<N_Words>& operator^=(const VlWide& rhs) {
-        VL_XOR_W(N_Words, *this, *this, rhs);
+        VL_XOR_W(N_Words, aval_mut(), aval(), rhs.aval());
         return *this;
     }
     VlWide<N_Words>& operator+=(const VlWide& rhs) {
-        VL_ADD_W(N_Words, *this, *this, rhs);
+        VL_ADD_W(N_Words, aval_mut(), aval(), rhs.aval());
         return *this;
     }
     VlWide<N_Words>& operator*=(const VlWide& rhs) {
         VlWide<N_Words> out{};
-        VL_MUL_W(N_Words, out, *this, rhs);
+        VL_MUL_W(N_Words, out.aval_mut(), aval(), rhs.aval());
         for (size_t i = 0; i < N_Words; ++i) m_storage[i] = out.m_storage[i];
         return *this;
     }
@@ -136,6 +347,9 @@ struct VlWide final {
     EData* data() VL_MT_SAFE { return &m_storage[0]; }
     const EData* data() const VL_MT_SAFE { return &m_storage[0]; }
     inline bool operator<(const VlWide<N_Words>& rhs) const VL_PURE;
+
+    WDataInP<> aval() const VL_PURE { return WDataInP<>::external(data()); }
+    WDataOutP<> aval_mut() VL_PURE { return WDataOutP<>::external(data()); }
 };
 
 // Type trait to check if a type is VlWide
@@ -154,96 +368,94 @@ struct VlIsVlWide<VlWide<N_Words>> : public std::true_type {};
 // it is necessary to implement the runtime functions. They are still only
 // a single pointer underneath, so they will be passed in registers.
 
-// Read-Write VlWide handle
-class WDataOutP final {
-    EData* m_datap;  // The backing store - non const as the handle is assignable
-
-    // Use WDataOutP::external() to create a handle from a raw pointer
-    explicit WDataOutP(EData* datap) VL_PURE : m_datap{datap} {}
-
-public:
-    // FACTORY METHODS
-    // Create a handle from a raw pointer - only to be used in verilated*.h
-    static WDataOutP external(EData* datap) VL_PURE { return WDataOutP{datap}; }
-
-    // CONSTRUCTORS
-    // Implicit conversion from 'VlWide'
-    template <std::size_t N_Words>
-    // cppcheck-suppress noExplicitConstructor
-    /* implicit */ WDataOutP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
-    WDataOutP(const WDataOutP& other) VL_PURE = default;
-    WDataOutP(WDataOutP&& other) VL_PURE = default;
-    WDataOutP& operator=(const WDataOutP& other) VL_PURE = default;
-
-    // METHODS
-    EData* datap() const VL_PURE { return m_datap; }
-    operator bool() const VL_PURE { return m_datap; }
-    EData& operator[](size_t index) const VL_PURE { return m_datap[index]; }
-    WDataOutP operator+(size_t index) const VL_PURE { return WDataOutP(m_datap + index); }
-    WDataOutP operator+(int index) const VL_PURE { return WDataOutP(m_datap + index); }
-};
-static_assert(sizeof(WDataOutP) == sizeof(EData*), "WDataOutP should be a single pointer");
-
-// Read-Only VlWide handle
-class WDataInP final {
-    const EData* m_datap;  // The backing store - non const as the handle is assignable
-
-    // Use WDataInP::external() to create a handle from a raw pointer
-    explicit WDataInP(const EData* datap) VL_PURE : m_datap{datap} {}
-
-public:
-    // FACTORY METHODS
-    // Create a handle from a raw pointer - only to be used in verilated*.h
-    static WDataInP external(const EData* datap) VL_PURE { return WDataInP{datap}; }
-
-    // CONSTRUCTORS
-    // Implicit conversion from 'VlWide'
-    template <std::size_t N_Words>
-    // cppcheck-suppress noExplicitConstructor
-    /* implicit */ WDataInP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
-    // Implicit conversion from 'const VlWide'
-    template <std::size_t N_Words>
-    // cppcheck-suppress noExplicitConstructor
-    /* implicit */ WDataInP(const VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
-    // Implicit conversion from 'WDataOutP'
-    // cppcheck-suppress noExplicitConstructor
-    /* implicit */ WDataInP(const WDataOutP& owp) VL_PURE : m_datap{owp.datap()} {}
-    // Initialize with 'nullptr'
-    explicit WDataInP(std::nullptr_t) VL_PURE : m_datap{nullptr} {}
-    WDataInP(const WDataInP& other) VL_PURE = default;
-    WDataInP(WDataInP&& other) VL_PURE = default;
-    WDataInP& operator=(const WDataInP& other) VL_PURE = default;
-
-    // METHODS
-    const EData* datap() const VL_PURE { return m_datap; }
-    operator bool() const VL_PURE { return m_datap; }
-    const EData& operator[](size_t index) const VL_PURE { return m_datap[index]; }
-    WDataInP operator+(size_t index) const VL_PURE { return WDataInP(m_datap + index); }
-    WDataInP operator+(int index) const VL_PURE { return WDataInP(m_datap + index); }
-};
-static_assert(sizeof(WDataInP) == sizeof(EData*), "WDataInP should be a single pointer");
-
-inline int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
+template <std::size_t L_Stride, std::size_t R_Stride>
+inline int _vl_cmp_w(int words, WDataInP<L_Stride> lwp, WDataInP<R_Stride> rwp) VL_PURE;
 
 template <std::size_t N_Words>
 bool VlWide<N_Words>::operator<(const VlWide<N_Words>& rhs) const VL_PURE {
-    return _vl_cmp_w(N_Words, *this, rhs) < 0;
+    return _vl_cmp_w(N_Words, aval(), rhs.aval()) < 0;
+}
+
+template <std::size_t N_Words>
+struct Vl4Wide final {
+    static constexpr size_t Words = N_Words;
+    static constexpr size_t TotalWords = N_Words * 2;
+
+    // MEMBERS
+    // This should be the only data member, otherwise generated static initializers need updating
+    E4Data m_storage[Words];  // Contents of the packed array
+
+    // CONSTRUCTORS
+    // Default constructors and destructor are used. Note however that C++20 requires that
+    // aggregate types do not have a user declared constructor, not even an explicitly defaulted
+    // one.
+
+    // OPERATOR METHODS
+    bool operator==(const Vl4Wide<N_Words>& that) const VL_PURE {
+        static_assert(sizeof(E4Data) % 8 == 0, "m_storage must be packed so memcmp works");
+        return std::memcmp(m_storage, that.m_storage, N_Words * sizeof(E4Data)) == 0;
+    }
+    bool operator!=(const Vl4Wide<N_Words>& that) const VL_PURE { return !(*this == that); }
+    E4Data& operator[](size_t index) VL_MT_SAFE { return m_storage[index]; }
+    const E4Data& operator[](size_t index) const VL_MT_SAFE { return m_storage[index]; }
+
+    // METHODS
+    E4Data& at(size_t index) VL_MT_SAFE { return m_storage[index]; }
+    const E4Data& at(size_t index) const VL_MT_SAFE { return m_storage[index]; }
+    size_t size() const VL_PURE { return N_Words; }
+    E4Data* data() VL_MT_SAFE { return &m_storage[0]; }
+    const E4Data* data() const VL_MT_SAFE { return &m_storage[0]; }
+    inline bool operator<(const Vl4Wide<N_Words>& rhs) const VL_PURE;
+
+    WDataInP<2> aval() const VL_PURE { return WDataInP<2>::external(&m_storage[0].m_aval); }
+    WDataInP<2> bval() const VL_PURE { return WDataInP<2>::external(&m_storage[0].m_bval); }
+    WDataOutP<2> aval_mut() VL_PURE { return WDataOutP<2>::external(&m_storage[0].m_aval); }
+    WDataOutP<2> bval_mut() VL_PURE { return WDataOutP<2>::external(&m_storage[0].m_bval); }
+};
+
+template <std::size_t N_Words>
+struct VlIsVlWide<Vl4Wide<N_Words>> : public std::true_type {};
+
+template <std::size_t N_Words>
+struct VlIsFourstate<Vl4Wide<N_Words>> : public std::true_type {};
+
+template <std::size_t N_Words>
+struct TwostateCounterpart<Vl4Wide<N_Words>> final {
+    using TwostateType = VlWide<N_Words>;
+};
+
+template <std::size_t N_Words>
+bool Vl4Wide<N_Words>::operator<(const Vl4Wide<N_Words>& rhs) const VL_PURE {
+    // sort first by aval() since usually there will be a difference (if so, we will be able to
+    // omit bval() traversal) and operator<() is only used for ordering in std::map
+    const int avalCmp = _vl_cmp_w(N_Words, aval(), rhs.aval());
+    return avalCmp < 0 || (avalCmp == 0 && _vl_cmp_w(N_Words, bval(), rhs.bval()) < 0);
 }
 
 //===================================================================
 // String formatters (required by below containers)
 
-extern std::string VL_TO_STRING_W(int words, const WDataInP obj);
+extern std::string VL_TO_STRING_W(int words, WDataInPAny obj);
+extern std::string VL_TO_STRING_W(int words, WDataInPAny aval, WDataInPAny bval);
 
 extern std::string VL_TO_STRING(CData lhs);
 extern std::string VL_TO_STRING(SData lhs);
 extern std::string VL_TO_STRING(IData lhs);
 extern std::string VL_TO_STRING(QData lhs);
+extern std::string VL_TO_STRING(C4Data lhs);
+extern std::string VL_TO_STRING(S4Data lhs);
+extern std::string VL_TO_STRING(I4Data lhs);
+extern std::string VL_TO_STRING(Q4Data lhs);
+extern std::string VL_TO_STRING(E4Data lhs);
 extern std::string VL_TO_STRING(double lhs);
 extern std::string VL_TO_STRING(const std::string& obj) VL_PURE;
 template <std::size_t N_Words>
 inline std::string VL_TO_STRING(const VlWide<N_Words>& obj) {
-    return VL_TO_STRING_W(N_Words, obj);
+    return VL_TO_STRING_W(N_Words, obj.aval());
+}
+template <std::size_t N_Words>
+inline std::string VL_TO_STRING(const Vl4Wide<N_Words>& obj) {
+    return VL_TO_STRING_W(N_Words, obj.aval(), obj.bval());
 }
 
 //=========================================================================
@@ -562,7 +774,7 @@ public:
 inline IData VL_RANDOM_RNG_I(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
 inline QData VL_RANDOM_RNG_Q(VlRNG& rngr) VL_MT_UNSAFE { return rngr.rand64(); }
 extern double VL_RANDOM_RNG_D(VlRNG& rngr) VL_MT_UNSAFE;
-extern WDataOutP VL_RANDOM_RNG_W(VlRNG& rngr, int obits, WDataOutP outwp) VL_MT_UNSAFE;
+extern WDataOutP<> VL_RANDOM_RNG_W(VlRNG& rngr, int obits, WDataOutP<> outwp) VL_MT_UNSAFE;
 
 //===================================================================
 // Readmem/Writemem operation classes

@@ -541,7 +541,7 @@ protected:
     // duck-typed void emitSData(uint32_t code, SData newval, int bits) = 0;
     // duck-typed void emitIData(uint32_t code, IData newval, int bits) = 0;
     // duck-typed void emitQData(uint32_t code, QData newval, int bits) = 0;
-    // duck-typed void emitWData(uint32_t code, WDataInP newval, int bits) = 0;
+    // duck-typed void emitWData(uint32_t code, WDataInP<> newval, int bits) = 0;
     // duck-typed void emitDouble(uint32_t code, double newval) = 0;
 
     // Write to previous value buffer value and emit trace entry.
@@ -550,7 +550,13 @@ protected:
     void fullSData(uint32_t code, SData newval, int bits);
     void fullIData(uint32_t code, IData newval, int bits);
     void fullQData(uint32_t code, QData newval, int bits);
-    void fullWData(uint32_t code, WDataInP newval, int bits);
+    void fullWData(uint32_t code, WDataInP<> newval, int bits);
+    template <std::size_t Stride>
+    void fullWData(uint32_t code, WDataInP<Stride> newval, int bits) {
+        uint32_t* const oldp = m_sigs_oldvalp + code;
+        for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newval[i];
+        this->emitWData(code, WDataInP<>::external(oldp), bits);
+    }
     void fullDouble(uint32_t code, double newval);
     void fullEvent(uint32_t code, const VlEventBase* newvalp);
 
@@ -577,9 +583,19 @@ protected:
         const uint64_t diff = old ^ newval;
         if (VL_UNLIKELY(diff)) fullQData(code, newval, bits);
     }
-    VL_ATTR_ALWINLINE void chgWData(uint32_t code, WDataInP newval, int bits) {
+    VL_ATTR_ALWINLINE void chgWData(uint32_t code, WDataInP<> newval, int bits) {
         const uint32_t* const oldp = m_sigs_oldvalp + code;
         for (int i = 0; i < (bits + 31) / 32; ++i) {
+            if (VL_UNLIKELY(oldp[i] ^ newval[i])) {
+                fullWData(code, newval, bits);
+                return;
+            }
+        }
+    }
+    template <std::size_t Stride>
+    VL_ATTR_ALWINLINE void chgWData(uint32_t code, WDataInP<Stride> newval, int bits) {
+        const uint32_t* const oldp = m_sigs_oldvalp + code;
+        for (int i = 0; i < VL_WORDS_I(bits); ++i) {
             if (VL_UNLIKELY(oldp[i] ^ newval[i])) {
                 fullWData(code, newval, bits);
                 return;

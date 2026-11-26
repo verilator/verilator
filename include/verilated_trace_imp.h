@@ -462,7 +462,7 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullQData(uint32_t code, QData newval, int 
 }
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullWData(uint32_t code, WDataInP newval, int bits) {
+void VerilatedTraceBuffer<VL_BUF_T>::fullWData(uint32_t code, WDataInP<> newval, int bits) {
     uint32_t* const oldp = m_sigs_oldvalp + code;
     for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newval[i];
     emitWData(code, newval, bits);
@@ -533,7 +533,7 @@ VL_ATTR_ALWINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpValue(Buffer* buf
         break;
     }
     case StorageKind::WDATA: {
-        const WDataInP valp = WDataInP::external(static_cast<const EData*>(datap));
+        const WDataInP<> valp = WDataInP<>::external(static_cast<const EData*>(datap));
         if VL_CONSTEXPR_CXX17 (T_Full) {
             bufp->fullWData(code, valp, bits);
         } else {
@@ -573,9 +573,10 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpSlices(Buffer* bufp, const Group& g
         const int bits = static_cast<int>(slice.m_bits);
         if VL_CONSTEXPR_CXX17 (T_Storage == StorageKind::WDATA) {
             // A wide slice is of a wide value
-            const WDataInP valuep = WDataInP::external(static_cast<const EData*>(slice.m_datap));
-            VL_SEL_WWII(bits, static_cast<int>(slice.m_valueBits), WDataOutP::external(wideSlicep),
-                        valuep, slice.m_lsb, slice.m_bits);
+            const WDataInP<> valuep
+                = WDataInP<>::external(static_cast<const EData*>(slice.m_datap));
+            VL_SEL_WWII(bits, static_cast<int>(slice.m_valueBits),
+                        WDataOutP<>::external(wideSlicep), valuep, slice.m_lsb, slice.m_bits);
             // Clear the bits above the slice
             if (VL_BITBIT_E(bits)) wideSlicep[VL_WORDS_I(bits) - 1] &= VL_MASK_E(bits);
             dumpValue<T_Full, T_Storage>(bufp, slice.m_code, wideSlicep, bits);
@@ -590,8 +591,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpSlices(Buffer* bufp, const Group& g
             } else if VL_CONSTEXPR_CXX17 (T_Value == StorageKind::QDATA) {
                 value = *static_cast<const QData*>(slice.m_datap) >> slice.m_lsb;
             } else {
-                const WDataInP valuep
-                    = WDataInP::external(static_cast<const EData*>(slice.m_datap));
+                const WDataInP<> valuep
+                    = WDataInP<>::external(static_cast<const EData*>(slice.m_datap));
                 value = VL_SEL_QWII(static_cast<int>(slice.m_valueBits), valuep, slice.m_lsb,
                                     slice.m_bits);
             }

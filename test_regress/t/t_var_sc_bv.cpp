@@ -21,7 +21,7 @@ void compare_signals(const sc_signal<sc_bv<256>>& ls, const sc_signal<sc_bv<256>
     }
 }
 
-void compareWls(int obits, WDataInP const lwp, WDataInP const rwp) {
+void compareWls(int obits, WDataInP<> const lwp, WDataInP<> const rwp) {
     const int words = VL_WORDS_I(obits);
     bool same = true;
 

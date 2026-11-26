@@ -351,6 +351,7 @@ public:
                 emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
             }
             puts(varName(assigntop->varp()));
+            puts(".aval_mut()");
             for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
                 ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
@@ -369,6 +370,7 @@ public:
                 emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
             }
             puts(varName(assigntop->varp()));
+            puts(".aval_mut()");
             for (int word = EMITC_NUM_CONSTW - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
                 ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
@@ -693,6 +695,7 @@ public:
                 iterateAndNextConstNull(selp->lsbp());
                 puts(", ");
                 iterateAndNextConstNull(selp->fromp());
+                if (selp->fromp()->isWide()) puts(".aval_mut()");
                 if (rhs) puts(", ");
             } else {
                 putnbs(nodep, "VL_ASSIGNSEL_");
@@ -704,6 +707,7 @@ public:
                 iterateAndNextConstNull(selp->lsbp());
                 puts(", ");
                 iterateAndNextConstNull(selp->fromp());
+                if (selp->fromp()->isWide()) puts(".aval_mut()");
                 puts(", ");
             }
         } else if (const AstGetcRefN* const selp = VN_CAST(nodep->lhsp(), GetcRefN)) {
@@ -747,6 +751,7 @@ public:
             puts(", ");
             rhs = false;
             iterateAndNextConstNull(castp->fromp());
+            if (castp->fromp()->isWide()) puts(".aval()");
             // Descending unpacked dest: reverse after unpack
             if (unpackDtp && !unpackDtp->declRange().ascending()) reverseUnpack = true;
         } else if (const AstCvtArrayToArray* const castp
@@ -805,7 +810,12 @@ public:
             putns(nodep, "= ");
         }
         if (rhs) iterateAndNextConstNull(nodep->rhsp());
-        if (paren) puts(")");
+        if (paren) {
+            if (rhs && nodep->rhsp()->isWide() && !AstVar::scVarRecurse(nodep->rhsp())) {
+                puts(".aval()");
+            }
+            puts(")");
+        }
         if (decind) ofp()->blockDec();
         puts(";\n");
         if (reverseUnpack) {
@@ -1904,6 +1914,7 @@ public:
             puts(", ");
         }
         iterateAndNextConstNull(nodep->lhsp());
+        if (nodep->lhsp()->isWide()) puts(".aval()");
         puts(", ");
         iterateAndNextConstNull(nodep->rhsp());
         puts(", ");
