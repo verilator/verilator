@@ -22,6 +22,7 @@ module t (
   int n_seq = 0;  // cover property (a ##1 b)  -- identity with |=>
   int n_seq0 = 0;  // cover property (a ##0 b)  -- identity with |->
   int n_strong = 0;  // cover property (strong(a ##1 b))
+  int n_weak = 0;  // cover property (weak(a ##1 b))
   int n_bool = 0;  // cover property (a)        -- bare boolean baseline
   int n_named = 0;  // cover property (named pr) -- identity with |=>
 
@@ -45,6 +46,8 @@ module t (
   cover property (a ##0 b) n_seq0++;
   cp_strong :
   cover property (strong (a ##1 b)) n_strong++;
+  cp_weak :
+  cover property (weak (a ##1 b)) n_weak++;
   cp_bool :
   cover property (a) n_bool++;
   cp_named :
@@ -66,6 +69,7 @@ module t (
     `checkd(n_imp_no, n_seq);  // Other sims: pass, 73
     `checkd(n_imp_ov, n_seq0);  // Other sims: pass, 45
     `checkd(n_strong, n_seq);
+    `checkd(n_weak, n_seq);
     // A named-property cover lowers the same implication, so it also counts
     // non-vacuously (regression guard for the property-inlining path).
     `checkd(n_named, n_imp_no);

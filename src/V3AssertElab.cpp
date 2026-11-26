@@ -229,9 +229,11 @@ class AssertElabVisitor final : public VNVisitor {
         if (outerSpecp->sensesp() && propSpecp->sensesp()) {
             outerSpecp->v3warn(E_UNSUPPORTED,
                                "Unsupported: Clock event before property call and in its body");
-            pushDeletep(propSpecp->sensesp()->unlinkFrBack());
+            pushDeletep(propSpecp->sensesp()->unlinkFrBackWithNext());
         }
-        if (outerSpecp->sensesp()) propSpecp->sensesp(outerSpecp->sensesp()->unlinkFrBack());
+        if (outerSpecp->sensesp()) {
+            propSpecp->addSensesp(outerSpecp->sensesp()->unlinkFrBackWithNext());
+        }
 
         outerSpecp->replaceWith(propSpecp);
         VL_DO_DANGLING(pushDeletep(outerSpecp), outerSpecp);
@@ -260,6 +262,14 @@ class AssertElabVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(specp), specp);
     }
     void inlineSequence(AstSchemaRef* schemaRefp, AstSequence* seqp) {
+        for (AstNode* const declp : seqp->declspList()) {
+            if (VN_AS(declp, Var)->isIO()) continue;
+            declp->v3warn(E_UNSUPPORTED, "Unsupported: local variable in a sequence declaration"
+                                         " (IEEE 1800-2023 16.10)");
+            schemaRefp->replaceWith(new AstConst{schemaRefp->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(schemaRefp), schemaRefp);
+            return;
+        }
         // Clone the body expression since the sequence may be referenced multiple times
         AstNodeExpr* const clonedp = seqp->exprp()->cloneTree(false);
         coverageOff(clonedp);
