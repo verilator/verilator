@@ -26,7 +26,7 @@ module sink (
 endmodule
 
 module t #(
-    parameter int N = 4000
+    parameter int N = 100
 ) (
     input logic [31:0] in,
     output logic [N-1:0] out

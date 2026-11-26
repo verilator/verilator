@@ -11,6 +11,19 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=['--stats'])
+SIZE_RATIO = 4
+SIZE_SMALL = 50
+SIZE_LARGE = SIZE_SMALL * SIZE_RATIO
+RATIO_MIN = 3
+RATIO_MAX = 7  # Linear scaling gives 8x, quadratic gives 32x
+
+
+def verilation(n):
+    test.lint(
+        verilator_flags2=[f"-GN={n}", "--stats", "--debug", "--debugi 0", "--no-debug-check"])
+    return test.op_count_read(test.stats)
+
+
+test.op_count_ok(verilation(SIZE_SMALL), verilation(SIZE_LARGE), RATIO_MIN, RATIO_MAX, r'.*')
 
 test.passes()
