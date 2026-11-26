@@ -4474,10 +4474,10 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstDivS  {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
     TREEOP ("AstMul   {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
     TREEOP ("AstMulS  {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
-    TREEOP ("AstPow   {$rhsp.isZero}",          "replaceNum(nodep, 1)");  // Overrides lhs zero rule
-    TREEOP ("AstPowSS {$rhsp.isZero}",          "replaceNum(nodep, 1)");  // Overrides lhs zero rule
-    TREEOP ("AstPowSU {$rhsp.isZero}",          "replaceNum(nodep, 1)");  // Overrides lhs zero rule
-    TREEOP ("AstPowUS {$rhsp.isZero}",          "replaceNum(nodep, 1)");  // Overrides lhs zero rule
+    TREEOP ("AstPow   {$rhsp.isZero}",          "replaceValChkPure(nodep, 1)");  // Overrides lhs zero rule
+    TREEOP ("AstPowSS {$rhsp.isZero}",          "replaceValChkPure(nodep, 1)");  // Overrides lhs zero rule
+    TREEOP ("AstPowSU {$rhsp.isZero}",          "replaceValChkPure(nodep, 1)");  // Overrides lhs zero rule
+    TREEOP ("AstPowUS {$rhsp.isZero}",          "replaceValChkPure(nodep, 1)");  // Overrides lhs zero rule
     TREEOP ("AstOr    {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
     TREEOP ("AstShiftL    {$lhsp.isZero, $rhsp}",  "replaceValChkPure(nodep, 0)");
     TREEOP ("AstShiftLOvr {$lhsp.isZero, $rhsp}",  "replaceValChkPure(nodep, 0)");
@@ -4620,12 +4620,12 @@ class ConstVisitor final : public VNVisitor {
     TREEOPV("AstGte   {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",    "DONE");
     TREEOPV("AstLt    {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",    "DONE");
     TREEOPV("AstLte   {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",    "DONE");
-    TREEOPV("AstEq    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceZero(nodep)");
-    TREEOPV("AstNeq   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceNum(nodep,1)");
-    TREEOPV("AstGt    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceNum(nodep,1)");
-    TREEOPV("AstGte   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceNum(nodep,1)");
-    TREEOPV("AstLt    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceZero(nodep)");
-    TREEOPV("AstLte   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceZero(nodep)");
+    TREEOPV("AstEq    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceValChkPure(nodep, 0)");
+    TREEOPV("AstNeq   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceValChkPure(nodep, 1)");
+    TREEOPV("AstGt    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceValChkPure(nodep, 1)");
+    TREEOPV("AstGte   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceValChkPure(nodep, 1)");
+    TREEOPV("AstLt    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceValChkPure(nodep, 0)");
+    TREEOPV("AstLte   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceValChkPure(nodep, 0)");
     // Identical operands on both sides
     // AstLogAnd/AstLogOr already converted to AstAnd/AstOr for these rules
     // AstAdd->ShiftL(#,1) but uncommon
@@ -4682,13 +4682,13 @@ class ConstVisitor final : public VNVisitor {
     TREEOPV("AstRedAnd{$lhsp.castConcat}",      "AstAnd{AstRedAnd{$lhsp->castConcat()->lhsp()}, AstRedAnd{$lhsp->castConcat()->rhsp()}}");  // &{a,b} => {&a}&{&b}
     TREEOPV("AstRedOr {$lhsp.castConcat}",      "AstOr {AstRedOr {$lhsp->castConcat()->lhsp()}, AstRedOr {$lhsp->castConcat()->rhsp()}}");  // |{a,b} => {|a}|{|b}
     TREEOPV("AstRedXor{$lhsp.castConcat}",      "AstXor{AstRedXor{$lhsp->castConcat()->lhsp()}, AstRedXor{$lhsp->castConcat()->rhsp()}}");  // ^{a,b} => {^a}^{^b}
-    TREEOPV("AstRedAnd{$lhsp.castExtend, $lhsp->width() > VN_AS($lhsp,,Extend)->lhsp()->width()}", "replaceZero(nodep)");  // &{0,...} => 0  Prevents compiler limited range error
+    TREEOPV("AstRedAnd{$lhsp.castExtend, $lhsp->width() > VN_AS($lhsp,,Extend)->lhsp()->width(), $lhsp.isPure}", "replaceZero(nodep)");  // &{0,...} => 0  Prevents compiler limited range error
     TREEOPV("AstRedOr {$lhsp.castExtend}",      "AstRedOr {$lhsp->castExtend()->lhsp()}");
     TREEOPV("AstRedXor{$lhsp.castExtend}",      "AstRedXor{$lhsp->castExtend()->lhsp()}");
     TREEOP ("AstRedXor{$lhsp.castXor, VN_IS(VN_AS($lhsp,,Xor)->lhsp(),,Const)}", "AstXor{AstRedXor{$lhsp->castXor()->lhsp()}, AstRedXor{$lhsp->castXor()->rhsp()}}");  // ^(const ^ a) => (^const)^(^a)
     TREEOPC("AstAnd {$lhsp.castConst, $rhsp.castRedXor, matchBitOpTree(nodep)}", "DONE");
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
-    TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
+    TREEOPV("AstOneHot0{$lhsp.width1, $lhsp.isPure}", "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
     TREEOPV("AstLogAnd{matchBiopToBitwise(nodep)}", "AstAnd{$lhsp,$rhsp}");
     TREEOPV("AstLogOr {matchBiopToBitwise(nodep)}", "AstOr{$lhsp,$rhsp}");
@@ -4736,7 +4736,7 @@ class ConstVisitor final : public VNVisitor {
     TREEOPV("AstSel{$fromp.castXor, operandSelBiLower(nodep)}", "DONE");
     TREEOPV("AstSel{$fromp.castShiftR, operandSelShiftLower(nodep)}",   "DONE");
     TREEOPA("AstSel{$fromp.castConst, $lsbp.castConst, }",   "replaceConst(nodep)");
-    TREEOPV("AstSel{$fromp.castConcat, $lsbp.castConst, }",  "replaceSelConcat(nodep)");
+    TREEOPV("AstSel{$fromp.castConcat, $lsbp.castConst, $fromp.isPure}",  "replaceSelConcat(nodep)");  // Must not drop side effects
     TREEOPV("AstSel{$fromp.castReplicate, $lsbp.castConst, operandSelReplicate(nodep) }",    "DONE");
     // V3Tristate requires selects below BufIf1.
     // Also do additional operators that are bit-independent, but only definite

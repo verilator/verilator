@@ -17,6 +17,11 @@ module t;
     return 8'd3;
   endfunction
 
+  function automatic logic fb();
+    ++cnt;
+    return 1'b1;
+  endfunction
+
   typedef struct {logic b;} s_t;
   function automatic s_t fs();
     s_t s;
@@ -50,6 +55,7 @@ module t;
     logic [7:0] u;
     logic signed [7:0] s;
     logic [69:0] w;
+    logic [3:0] n;
     u = 8'd0 * f();
     `checkd(u, 8'd0);
     `checkd(cnt, 1);
@@ -95,6 +101,51 @@ module t;
     r = fc().b && 1'b0;
     `checkd(r, 1'b0);
     `checkd(cnt, 15);
+    // Selects of a concatenation, and powers, that discard an operand with side effects
+    n = 4'({f(), 4'd5});
+    `checkd(n, 4'd5);
+    `checkd(cnt, 16);
+    w = 70'({f(), 70'd7});
+    `checkd(w, 70'd7);
+    `checkd(cnt, 17);
+    u = f() ** 8'd0;
+    `checkd(u, 8'd1);
+    `checkd(cnt, 18);
+    // Comparisons with a constant out of the range of the other operand
+    r = 9'(f()) == 9'h100;
+    `checkd(r, 1'b0);
+    `checkd(cnt, 19);
+    r = 9'(f()) != 9'h100;
+    `checkd(r, 1'b1);
+    `checkd(cnt, 20);
+    r = 9'(f()) < 9'h100;
+    `checkd(r, 1'b1);
+    `checkd(cnt, 21);
+    r = 9'(f()) >= 9'h100;
+    `checkd(r, 1'b0);
+    `checkd(cnt, 22);
+    r = 9'(f()) > 9'h100;
+    `checkd(r, 1'b0);
+    `checkd(cnt, 23);
+    r = 9'(f()) <= 9'h100;
+    `checkd(r, 1'b1);
+    `checkd(cnt, 24);
+    s = $signed(f()) ** 8'sd0;
+    `checkd(s, 8'sd1);
+    `checkd(cnt, 25);
+    s = $signed(f()) ** 8'd0;
+    `checkd(s, 8'sd1);
+    `checkd(cnt, 26);
+    u = f() ** 8'sd0;
+    `checkd(u, 8'd1);
+    `checkd(cnt, 27);
+    // Reductions that are constant regardless of an operand with side effects
+    r = &(9'(f()));
+    `checkd(r, 1'b0);
+    `checkd(cnt, 28);
+    r = $onehot0(fb());
+    `checkd(r, 1'b1);
+    `checkd(cnt, 29);
 `ifdef VERILATOR
     begin
       // An operand whose only side effects are unseeded $random draws is discarded, deviating
