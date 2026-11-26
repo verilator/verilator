@@ -3300,6 +3300,8 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
 }
 bool AstNodeFTask::getPurityRecurse() const {
     if (this->dpiImport()) return this->dpiPure();
+    // A function made internally without statements, e.g. randomize(), is defined later
+    if (!this->verilogFunction() && !this->verilogTask() && !this->stmtsp()) return false;
     // Check the declarations and statements if they contain any impure node
     // or any write reference to a variable that isn't an automatic function local.
     for (AstNode* const listp : std::initializer_list<AstNode*>{this->declsp(), this->stmtsp()}) {
