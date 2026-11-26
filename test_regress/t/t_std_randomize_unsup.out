@@ -1,0 +1,18 @@
+%Error-UNSUPPORTED: t/t_std_randomize_unsup.v:19:26: Unsupported: Queue element in 'std::randomize()' argument
+                                                   : ... note: In instance 't'
+   19 |     ok = std::randomize(q[0]);
+      |                          ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_std_randomize_unsup.v:20:26: Unsupported: Queue element in 'std::randomize()' argument
+                                                   : ... note: In instance 't'
+   20 |     ok = std::randomize(q[$]);
+      |                          ^
+%Error-UNSUPPORTED: t/t_std_randomize_unsup.v:21:27: Unsupported: Queue element in 'std::randomize()' argument
+                                                   : ... note: In instance 't'
+   21 |     ok = std::randomize(sq[0].f);
+      |                           ^
+%Error-UNSUPPORTED: t/t_std_randomize_unsup.v:22:27: Unsupported: Queue element in 'std::randomize()' argument
+                                                   : ... note: In instance 't'
+   22 |     ok = std::randomize(hq[0].x);
+      |                           ^
+%Error: Exiting due to

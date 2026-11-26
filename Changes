@@ -25,6 +25,7 @@ Verilator 5.055 devel
 * Add infrastructure to support multiple solver back-ends (#9022).
 * Add `threads_group -workers` for explicit worker placement (#9031).
 * Add error on multiple models under same name.
+* Remove VL_VPRINTF; now uses VL_PRINTF instead.
 * Support string-to-array and array-to-string conversion (#6124).
 * Support user C++ modules while keeping the PCH (#7808) (#8906).
 * Support parsing covergroup bins with set_covergroup_expression (#8862).

@@ -396,7 +396,7 @@ string AstNode::verilogIdent(const string& namein) { return escapedName(namein, 
 
 string AstNode::prettyTypeNameQ() const {
     if (const AstCMethodHard* const methodp = VN_CAST(this, CMethodHard)) {
-        return "'"s + methodp->method().prettyName() + "'";
+        return "'"s + methodp->name() + "'";
     }
     if (name() == "") return typeName();
     return std::string{typeName()} + " '" + prettyNameMsg() + "'";

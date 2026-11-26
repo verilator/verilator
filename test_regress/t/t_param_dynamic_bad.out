@@ -15,11 +15,11 @@
                                      : ... note: In instance 't'
    22 |   localparam int L_WLD[*] = '{1: v};
       |                                  ^
-%Error: t/t_param_dynamic_bad.v:46:33: Expecting expression to be constant, but can't convert a 'array or queue element selection' to constant.
+%Error: t/t_param_dynamic_bad.v:46:33: Expecting expression to be constant, but can't convert a DYNARRAYSEL to constant.
                                      : ... note: In instance 't'
    46 |   localparam int C_DYN_1 = C_DYN[1];
       |                                 ^
-%Error: t/t_param_dynamic_bad.v:48:33: Expecting expression to be constant, but can't convert a 'array or queue element selection' to constant.
+%Error: t/t_param_dynamic_bad.v:48:33: Expecting expression to be constant, but can't convert a QUEUESEL to constant.
                                      : ... note: In instance 't'
    48 |   localparam int C_QUE_1 = C_QUE[1];
       |                                 ^

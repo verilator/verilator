@@ -4995,23 +4995,15 @@ public:
 // === AstNodeSel ===
 class AstArraySel final : public AstNodeSel {
     // @astgen makeDfgVertex
-    void init(const AstNode* fromp) {
-        if (fromp && VN_IS(fromp->dtypep()->skipRefp(), NodeArrayDType)) {
-            // Strip off array to find what array references
-            dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), NodeArrayDType)->subDTypep());
-        }
-    }
-
 public:
     AstArraySel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
         : ASTGEN_SUPER_ArraySel(fl, fromp, bitp) {
-        init(fromp);
+        dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), UnpackArrayDType)->subDTypep());
     }
     AstArraySel(FileLine* fl, AstNodeExpr* fromp, int bit)
-        : ASTGEN_SUPER_ArraySel(fl, fromp, new AstConst(fl, bit)) {  // Need () constructor
-        init(fromp);
-    }
+        : AstArraySel{fl, fromp, new AstConst(fl, bit)} {}  // Need () constructor
     ASTGEN_MEMBERS_AstArraySel;
+    const char* broken() const override;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
     string emitVerilog() override { return "%k(%l%f[%r])"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }  // Special cased
@@ -5021,66 +5013,108 @@ public:
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    bool isGateOptimizable() const override { return true; }  // esp for V3Const::ifSameAssign
+    bool isGateOptimizable() const override { return true; }
     bool isPredictOptimizable() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
 };
 class AstAssocSel final : public AstNodeSel {
-    void init(const AstNode* fromp) {
-        if (fromp && VN_IS(fromp->dtypep()->skipRefp(), AssocArrayDType)) {
-            // Strip off array to find what array references
-            dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), AssocArrayDType)->subDTypep());
-        }
-    }
-
 public:
     AstAssocSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
         : ASTGEN_SUPER_AssocSel(fl, fromp, bitp) {
-        init(fromp);
+        dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), AssocArrayDType)->subDTypep());
     }
     ASTGEN_MEMBERS_AstAssocSel;
+    const char* broken() const override;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
     string emitVerilog() override { return "%k(%l%f[%r])"; }
-    string emitC() override { return "%li%k[%ri]"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }  // Special cased
     string emitSMT() const override { return "(select %l %r)"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    bool isGateOptimizable() const override {
-        return !isLValue();  // AssocSel creates on miss
-    }
+    bool isGateOptimizable() const override { return !isLValue(); }  // Writes can insert
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() override { return !isLValue(); }  // AssocSel creates on miss
+    // Writing a missing element creates it
+    bool isPure() override { return AstNodeSel::isPure() && !isLValue(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
 };
-class AstWildcardSel final : public AstNodeSel {
-    void init(const AstNode* fromp) {
-        if (fromp && VN_IS(fromp->dtypep()->skipRefp(), WildcardArrayDType)) {
-            // Strip off array to find what array references
-            dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), WildcardArrayDType)->subDTypep());
-        }
-    }
-
+class AstDynArraySel final : public AstNodeSel {
+    // Element of a dynamic array
 public:
-    AstWildcardSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
-        : ASTGEN_SUPER_WildcardSel(fl, fromp, bitp) {
-        init(fromp);
+    AstDynArraySel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
+        : ASTGEN_SUPER_DynArraySel(fl, fromp, bitp) {
+        dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), DynArrayDType)->subDTypep());
     }
-    ASTGEN_MEMBERS_AstWildcardSel;
+    ASTGEN_MEMBERS_AstDynArraySel;
+    const char* broken() const override;
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
     string emitVerilog() override { return "%k(%l%f[%r])"; }
-    string emitC() override { return "%li%k[%ri]"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }  // Special cased
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return false; }
     bool cleanRhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
-    bool isGateOptimizable() const override { return true; }  // esp for V3Const::ifSameAssign
+    bool isGateOptimizable() const override { return true; }
     bool isPredictOptimizable() const override { return false; }
+    int instrCount() const override { return widthInstrs(); }
+};
+class AstQueueSel final : public AstNodeSel {
+    // Element of a queue
+    const bool m_fromBack;  // Index counts back from the last element, as in 'q[$ - index]'
+
+public:
+    AstQueueSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp, bool fromBack = false)
+        : ASTGEN_SUPER_QueueSel(fl, fromp, bitp)
+        , m_fromBack{fromBack} {
+        dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), QueueDType)->subDTypep());
+    }
+    ASTGEN_MEMBERS_AstQueueSel;
+    const char* broken() const override;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
+    string emitVerilog() override { return m_fromBack ? "%k(%l%f[$ - %r])" : "%k(%l%f[%r])"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }  // Special cased
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    bool isGateOptimizable() const override { return !isLValue(); }  // Writes can insert
+    bool isPredictOptimizable() const override { return false; }
+    // Writing one past the end appends
+    bool isPure() override { return AstNodeSel::isPure() && !isLValue(); }
+    bool sameNode(const AstNode* samep) const override {
+        return m_fromBack == VN_DBG_AS(samep, QueueSel)->m_fromBack;
+    }
+    int instrCount() const override { return widthInstrs(); }
+    bool fromBack() const { return m_fromBack; }
+};
+class AstWildcardSel final : public AstNodeSel {
+public:
+    AstWildcardSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* bitp)
+        : ASTGEN_SUPER_WildcardSel(fl, fromp, bitp) {
+        dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), WildcardArrayDType)->subDTypep());
+    }
+    ASTGEN_MEMBERS_AstWildcardSel;
+    const char* broken() const override;
+    void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
+    string emitVerilog() override { return "%k(%l%f[%r])"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }  // Special cased
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return false; }
+    bool cleanRhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    bool isGateOptimizable() const override { return !isLValue(); }  // Writes can insert
+    bool isPredictOptimizable() const override { return false; }
+    // Writing a missing element creates it
+    bool isPure() override { return AstNodeSel::isPure() && !isLValue(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
 };
