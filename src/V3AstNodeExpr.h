@@ -2266,7 +2266,9 @@ public:
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool combinable(const AstRand* samep) const {
-        return !seedp() && !samep->seedp() && urandom() == samep->urandom();
+        // Not $urandom, whose draws are part of the random stability of a process
+        // (IEEE 1800-2023 18.14)
+        return !seedp() && !samep->seedp() && !urandom() && !samep->urandom();
     }
     bool urandom() const { return m_urandom; }
 };

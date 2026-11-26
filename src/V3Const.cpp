@@ -3122,6 +3122,8 @@ class ConstVisitor final : public VNVisitor {
     }
     bool matchConcatRand(AstConcat* nodep) {
         //    CONCAT(RAND, RAND) - created by Chisel code
+        // One draw for two unseeded $random calls is an optimization deviating from
+        // IEEE 1800-2023 11.3.5
         AstRand* const aRandp = VN_CAST(nodep->lhsp(), Rand);
         const AstRand* const bRandp = VN_CAST(nodep->rhsp(), Rand);
         if (!aRandp || !bRandp) return false;
