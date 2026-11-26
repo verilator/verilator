@@ -9504,6 +9504,12 @@ class WidthVisitor final : public VNVisitor {
                     ftaskp->setNeedsVlProcess();
                     v3Global.setUsesTiming();
                 }
+                // Mark std::process::kill()
+                AstNodeFTask* const ftaskp
+                    = VN_AS(m_memberMap.findMember(nodep, "kill"), NodeFTask);
+                UASSERT_OBJ(ftaskp, nodep, "Missing std::process::kill()");
+                ftaskp->setNeedsVlProcess();
+                ftaskp->isProcessKill(true);
             }
         }
 
