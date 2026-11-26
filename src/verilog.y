@@ -3044,7 +3044,9 @@ delay_or_event_controlE<nodep>:  // IEEE: delay_or_event_control plus empty
         |       delay_control                           { $$ = $1; }
         |       event_control                           { $$ = $1; }
         |       yREPEAT '(' expr ')' event_control
-                        { $$ = $5; BBUNSUP($1, "Unsupported: repeat event control"); }
+                        { AstEventControl* const controlp = new AstEventControl{$1, $5, nullptr};
+                          controlp->countp($3);
+                          $$ = controlp; }
         ;
 
 delay_controlE<delayp>:

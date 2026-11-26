@@ -12,11 +12,13 @@
 module t;
 
   reg clk = 1;
+  reg rep_clk = 0;
   reg [7:0] d = 0;
   reg [7:0] q = 0;
 
   // Clock generation
   always #0.5 clk = ~clk;
+  always #1 rep_clk = ~rep_clk;
 
   // Input signal generation
   initial begin
@@ -34,6 +36,29 @@ module t;
     d <= 0;
     repeat (5) @(posedge clk);
     $finish;
+  end
+
+  // Intra-assignment repeat event control
+  initial begin
+    automatic int a = 0;
+    static int b = 0;
+    automatic int n = 2;
+
+    a = repeat (0) @(posedge rep_clk) 3;
+    `checkd(a, 3);
+    `checkd($time, 0);
+
+    a = repeat (1) @(posedge rep_clk) 4;
+    `checkd(a, 4);
+    `checkd($time, 1);
+
+    a = repeat (n) @(posedge rep_clk) 5;
+    `checkd(a, 5);
+    `checkd($time, 5);
+
+    b <= repeat (2) @(posedge rep_clk) 6;
+    repeat (3) @(posedge rep_clk);
+    `checkd(b, 6);
   end
 
   // Unit under test (flip-flop)
