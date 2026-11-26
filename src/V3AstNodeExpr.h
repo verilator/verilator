@@ -1337,18 +1337,26 @@ public:
 class AstCvtArrayToPacked final : public AstNodeExpr {
     // Cast from dynamic queue data type to packed array
     // @astgen op1 := fromp : AstNodeExpr
+    const int m_packedWidth;  // Width the source is left-justified in, kept if dtype narrows
 public:
     // cppcheck-suppress constParameterPointer
     // cppcheck-suppress constParameterCallback
     AstCvtArrayToPacked(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
-        : ASTGEN_SUPER_CvtArrayToPacked(fl) {
+        : ASTGEN_SUPER_CvtArrayToPacked(fl)
+        , m_packedWidth{dtp->widthMin()} {
         this->fromp(fromp);
         dtypeFrom(dtp);
     }
     ASTGEN_MEMBERS_AstCvtArrayToPacked;
+    bool sameNode(const AstNode* samep) const override {
+        return packedWidth() == VN_DBG_AS(samep, CvtArrayToPacked)->packedWidth();
+    }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    int packedWidth() const { return m_packedWidth; }
 };
 class AstCvtArrayToString final : public AstNodeExpr {
     // Cast from a dynamic array, queue or unpacked array of bytes to string

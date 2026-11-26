@@ -2290,24 +2290,37 @@ inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q
     }
 }
 
-inline IData VL_PACK_I_RI(int /*obits*/, int lbits, const VlQueue<CData>& q) {
-    IData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i)
-        ret |= static_cast<IData>(q.at(q.size() - 1 - i)) << (i * lbits);
+// The first obits bits of a queue or dynamic array of lbits wide elements, left-aligned and
+// filled with zero bits on the right (IEEE 1800-2023 11.4.14, 11.4.14.3)
+template <typename T_Ret, typename T_Elem>
+inline T_Ret _vl_pack_r(int obits, int lbits, const VlQueue<T_Elem>& q) {
+    T_Ret ret = 0;
+    for (int i = 0; i < q.size() && i * lbits < obits; ++i) {
+        // Lowest bit of the element in the result, negative if only its upper bits fit
+        const int lsb = obits - (i + 1) * lbits;
+        const QData elem = q.at(i);
+        ret |= static_cast<T_Ret>(lsb >= 0 ? elem << lsb : elem >> -lsb);
+    }
     return ret;
 }
-
-inline IData VL_PACK_I_RI(int /*obits*/, int lbits, const VlQueue<SData>& q) {
-    IData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i)
-        ret |= static_cast<IData>(q.at(q.size() - 1 - i)) << (i * lbits);
-    return ret;
+template <typename T_Elem>
+inline WDataOutP _vl_pack_w_r(int obits, int lbits, WDataOutP owp, const VlQueue<T_Elem>& q) {
+    VL_MEMSET_ZERO_W(owp, VL_WORDS_I(obits));
+    for (int i = 0; i < q.size() && i * lbits < obits; ++i) {
+        const int lsb = obits - (i + 1) * lbits;
+        const QData elem = q.at(i);
+        if (lsb >= 0) {
+            _vl_insert_WQ(owp, elem, lsb + lbits - 1, lsb);
+        } else {
+            _vl_insert_WQ(owp, elem >> -lsb, lsb + lbits - 1, 0);
+        }
+    }
+    return owp;
 }
 
-inline IData VL_PACK_I_RI(int /*obits*/, int lbits, const VlQueue<IData>& q) {
-    IData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= q.at(q.size() - 1 - i) << (i * lbits);
-    return ret;
+template <typename T>
+inline IData VL_PACK_I_RI(int obits, int lbits, const VlQueue<T>& q) {
+    return _vl_pack_r<IData>(obits, lbits, q);
 }
 
 template <typename T>
@@ -2355,25 +2368,9 @@ inline IData VL_PACK_I_UI(const int obits, const int lbits,
     return ret;
 }
 
-inline QData VL_PACK_Q_RI(int /*obits*/, int lbits, const VlQueue<CData>& q) {
-    QData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i)
-        ret |= static_cast<QData>(q.at(q.size() - 1 - i)) << (i * lbits);
-    return ret;
-}
-
-inline QData VL_PACK_Q_RI(int /*obits*/, int lbits, const VlQueue<SData>& q) {
-    QData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i)
-        ret |= static_cast<QData>(q.at(q.size() - 1 - i)) << (i * lbits);
-    return ret;
-}
-
-inline QData VL_PACK_Q_RI(int /*obits*/, int lbits, const VlQueue<IData>& q) {
-    QData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i)
-        ret |= static_cast<QData>(q.at(q.size() - 1 - i)) << (i * lbits);
-    return ret;
+template <typename T>
+inline QData VL_PACK_Q_RI(int obits, int lbits, const VlQueue<T>& q) {
+    return _vl_pack_r<QData>(obits, lbits, q);
 }
 
 template <std::size_t N_Depth>
@@ -2400,23 +2397,23 @@ inline QData VL_PACK_Q_UI(int /*obits*/, int lbits, const VlUnpacked<IData, N_De
     return ret;
 }
 
-inline QData VL_PACK_Q_RQ(int /*obits*/, int lbits, const VlQueue<QData>& q) {
-    QData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= q.at(q.size() - 1 - i) << (i * lbits);
-    return ret;
+inline QData VL_PACK_Q_RQ(int obits, int lbits, const VlQueue<QData>& q) {
+    return _vl_pack_r<QData>(obits, lbits, q);
 }
 
-inline IData VL_PACK_I_RQ(int /*obits*/, int lbits, const VlQueue<QData>& q) {
-    IData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= q.at(q.size() - 1 - i) << (i * lbits);
-    return ret;
+inline IData VL_PACK_I_RQ(int obits, int lbits, const VlQueue<QData>& q) {
+    return _vl_pack_r<IData>(obits, lbits, q);
+}
+
+// A wide element is wider than the result, so only the first one contributes
+template <std::size_t N_Words>
+inline IData VL_PACK_I_RW(int obits, int lbits, const VlQueue<VlWide<N_Words>>& q) {
+    return VL_SEL_IWII(lbits, q.at(0), lbits - obits, obits) & VL_MASK_I(obits);
 }
 
 template <std::size_t N_Words>
-inline IData VL_PACK_I_RW(int /*obits*/, int lbits, const VlQueue<VlWide<N_Words>>& q) {
-    IData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= q.at(q.size() - 1 - i)[0] << (i * lbits);
-    return ret;
+inline QData VL_PACK_Q_RW(int obits, int lbits, const VlQueue<VlWide<N_Words>>& q) {
+    return VL_SEL_QWII(lbits, q.at(0), lbits - obits, obits) & VL_MASK_Q(obits);
 }
 
 template <std::size_t N_Depth>
@@ -2426,34 +2423,9 @@ inline QData VL_PACK_Q_UQ(int /*obits*/, int lbits, const VlUnpacked<QData, N_De
     return ret;
 }
 
-inline WDataOutP VL_PACK_W_RI(int obits, int lbits, WDataOutP owp, const VlQueue<CData>& q) {
-    VL_MEMSET_ZERO_W(owp, VL_WORDS_I(obits));
-    if (VL_UNLIKELY(obits < q.size() * lbits)) return owp;  // Though is illegal for q to be larger
-    const int offset = obits - q.size() * lbits;
-    for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WI(owp, q.at(q.size() - i - 1), i * lbits + lbits - 1 + offset,
-                      i * lbits + offset);
-    return owp;
-}
-
-inline WDataOutP VL_PACK_W_RI(int obits, int lbits, WDataOutP owp, const VlQueue<SData>& q) {
-    VL_MEMSET_ZERO_W(owp, VL_WORDS_I(obits));
-    if (VL_UNLIKELY(obits < q.size() * lbits)) return owp;  // Though is illegal for q to be larger
-    const int offset = obits - q.size() * lbits;
-    for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WI(owp, q.at(q.size() - i - 1), i * lbits + lbits - 1 + offset,
-                      i * lbits + offset);
-    return owp;
-}
-
-inline WDataOutP VL_PACK_W_RI(int obits, int lbits, WDataOutP owp, const VlQueue<IData>& q) {
-    VL_MEMSET_ZERO_W(owp, VL_WORDS_I(obits));
-    if (VL_UNLIKELY(obits < q.size() * lbits)) return owp;  // Though is illegal for q to be larger
-    const int offset = obits - q.size() * lbits;
-    for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WI(owp, q.at(q.size() - 1 - i), i * lbits + lbits - 1 + offset,
-                      i * lbits + offset);
-    return owp;
+template <typename T>
+inline WDataOutP VL_PACK_W_RI(int obits, int lbits, WDataOutP owp, const VlQueue<T>& q) {
+    return _vl_pack_w_r(obits, lbits, owp, q);
 }
 
 template <std::size_t N_Depth>
@@ -2484,13 +2456,7 @@ inline WDataOutP VL_PACK_W_UI(int obits, int lbits, WDataOutP owp,
 }
 
 inline WDataOutP VL_PACK_W_RQ(int obits, int lbits, WDataOutP owp, const VlQueue<QData>& q) {
-    VL_MEMSET_ZERO_W(owp, VL_WORDS_I(obits));
-    if (VL_UNLIKELY(obits < q.size() * lbits)) return owp;  // Though is illegal for q to be larger
-    const int offset = obits - q.size() * lbits;
-    for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WQ(owp, q.at(q.size() - 1 - i), i * lbits + lbits - 1 + offset,
-                      i * lbits + offset);
-    return owp;
+    return _vl_pack_w_r(obits, lbits, owp, q);
 }
 
 template <std::size_t N_Depth>
@@ -2506,11 +2472,16 @@ template <std::size_t N_Words>
 inline WDataOutP VL_PACK_W_RW(int obits, int lbits, WDataOutP owp,
                               const VlQueue<VlWide<N_Words>>& q) {
     VL_MEMSET_ZERO_W(owp, VL_WORDS_I(obits));
-    if (VL_UNLIKELY(obits < q.size() * lbits)) return owp;  // Though is illegal for q to be larger
-    const int offset = obits - q.size() * lbits;
-    for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WW(owp, q.at(q.size() - 1 - i), i * lbits + lbits - 1 + offset,
-                      i * lbits + offset);
+    for (int i = 0; i < q.size() && i * lbits < obits; ++i) {
+        const int lsb = obits - (i + 1) * lbits;
+        if (lsb >= 0) {
+            _vl_insert_WW(owp, q.at(i), lsb + lbits - 1, lsb);
+        } else {
+            VlWide<N_Words> upper;
+            VL_SEL_WWII(lbits + lsb, lbits, upper, q.at(i), -lsb, lbits + lsb);
+            _vl_insert_WW(owp, upper, lsb + lbits - 1, 0);
+        }
+    }
     return owp;
 }
 
@@ -3322,6 +3293,7 @@ inline void VL_UNPACK_RW_W(int lbits, int rbits, VlQueue<VlWide<N_Words>>& q, WD
         const int actualBitPos = (bitPos < 0) ? 0 : bitPos;
         const int actualWidth = (bitPos < 0) ? (lbits + bitPos) : lbits;
         VL_SEL_WWII(actualWidth, rbits, q.atWrite(i), rwp, actualBitPos, actualWidth);
+        q.atWrite(i)[VL_WORDS_I(lbits) - 1] &= VL_MASK_E(lbits);  // Clean it
     }
 }
 
