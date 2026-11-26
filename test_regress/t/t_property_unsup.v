@@ -41,8 +41,14 @@ module t (
     input reset
 );
   eventually1 eventually1 (.*);
-  sva_implies2 sva_implies2 (.a(clk), .b(reset));
-  sva_iff2 sva_iff2 (.a(clk), .b(reset));
+  sva_implies2 sva_implies2 (
+      .a(clk),
+      .b(reset)
+  );
+  sva_iff2 sva_iff2 (
+      .a(clk),
+      .b(reset)
+  );
 endmodule
 
 module eventually1 (
@@ -58,7 +64,7 @@ module eventually1 (
 
   // expected to pass
   p0 :
-  assert property (counter == 1 implies eventually[1: 2] counter == 3);
+  assert property (@(posedge clk) counter == 1 implies eventually[1: 2] counter == 3);
 
 endmodule
 
@@ -68,7 +74,7 @@ module sva_implies2 (
 );
 
   p2 :
-  assert property ((eventually[0: 1] a) implies (eventually[0: 1] a));
+  assert property (@(posedge a) (eventually[0: 1] a) implies (eventually[0: 1] a));
 
 endmodule
 
@@ -78,6 +84,6 @@ module sva_iff2 (
 );
 
   p1 :
-  assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
+  assert property (@(posedge a) (eventually[0: 1] a) iff (eventually[0: 1] a));
 
 endmodule

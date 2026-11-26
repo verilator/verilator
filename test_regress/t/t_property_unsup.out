@@ -1,38 +1,22 @@
-%Error-UNSUPPORTED: t/t_property_unsup.v:61:41: Unsupported: eventually[] (in property expression)
+%Error-UNSUPPORTED: t/t_property_unsup.v:67:56: Unsupported: eventually[] (in property expression)
                                               : ... note: In instance 't.eventually1'
-   61 |   assert property (counter == 1 implies eventually[1: 2] counter == 3);
-      |                                         ^~~~~~~~~~
+   67 |   assert property (@(posedge clk) counter == 1 implies eventually[1: 2] counter == 3);
+      |                                                        ^~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_unsup.v:71:21: Unsupported: eventually[] (in property expression)
+%Error-UNSUPPORTED: t/t_property_unsup.v:77:34: Unsupported: eventually[] (in property expression)
                                               : ... note: In instance 't.sva_implies2'
-   71 |   assert property ((eventually[0: 1] a) implies (eventually[0: 1] a));
-      |                     ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:71:50: Unsupported: eventually[] (in property expression)
+   77 |   assert property (@(posedge a) (eventually[0: 1] a) implies (eventually[0: 1] a));
+      |                                  ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_unsup.v:77:63: Unsupported: eventually[] (in property expression)
                                               : ... note: In instance 't.sva_implies2'
-   71 |   assert property ((eventually[0: 1] a) implies (eventually[0: 1] a));
-      |                                                  ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:81:21: Unsupported: eventually[] (in property expression)
+   77 |   assert property (@(posedge a) (eventually[0: 1] a) implies (eventually[0: 1] a));
+      |                                                               ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_unsup.v:87:34: Unsupported: eventually[] (in property expression)
                                               : ... note: In instance 't.sva_iff2'
-   81 |   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
-      |                     ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:81:46: Unsupported: eventually[] (in property expression)
+   87 |   assert property (@(posedge a) (eventually[0: 1] a) iff (eventually[0: 1] a));
+      |                                  ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_unsup.v:87:59: Unsupported: eventually[] (in property expression)
                                               : ... note: In instance 't.sva_iff2'
-   81 |   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
-      |                                              ^~~~~~~~~~
-%Error: t/t_property_unsup.v:61:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
-                                 : ... note: In instance 't.eventually1'
-                                 : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
-   61 |   assert property (counter == 1 implies eventually[1: 2] counter == 3);
-      |   ^~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_property_unsup.v:71:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
-                                 : ... note: In instance 't.sva_implies2'
-                                 : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
-   71 |   assert property ((eventually[0: 1] a) implies (eventually[0: 1] a));
-      |   ^~~~~~
-%Error: t/t_property_unsup.v:81:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
-                                 : ... note: In instance 't.sva_iff2'
-                                 : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
-   81 |   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
-      |   ^~~~~~
+   87 |   assert property (@(posedge a) (eventually[0: 1] a) iff (eventually[0: 1] a));
+      |                                                           ^~~~~~~~~~
 %Error: Exiting due to

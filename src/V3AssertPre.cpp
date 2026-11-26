@@ -954,6 +954,8 @@ private:
             return;
         }
         UASSERT(v3Global.rootp()->stdPackagep(), "Should be imported");
+        UASSERT_OBJ(!nodep->loBoundp(), nodep,
+                    "Ranged eventually should be removed by V3AssertNfa");
 
         AstSenTree* const sentreep = newSenTree(nodep);
         if (!sentreep->sensesp()) {
