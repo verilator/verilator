@@ -460,6 +460,22 @@ class LifeVisitor final : public VNVisitor {
         }
         if (m_containsTiming) setNoopt("timing");
     }
+    void visit(AstWith* nodep) override {
+        // The array method runs the lambda body once per element, so treat it as AstLoop
+        VL_RESTORER(m_containsTiming);
+        {
+            VL_RESTORER(m_noopt);
+            VL_RESTORER(m_lifep);
+            m_lifep = new LifeBlock{m_lifep, m_statep};
+            m_noopt = true;
+            iterateChildren(nodep);
+            m_lifep->lifeToAbove();
+            VL_DO_DANGLING(delete m_lifep, m_lifep);
+        }
+        if (m_containsTiming) setNoopt("timing");
+        // Effects of the lambda body are effects of the enclosing assignment
+        if (!nodep->isPure()) m_sideEffect = true;
+    }
     void visit(AstJumpBlock* nodep) override {
         // As with Loop's we can't predict if a JumpGo will kill us or not
         // It's worse though as an IF(..., JUMPGO) may change the control flow.

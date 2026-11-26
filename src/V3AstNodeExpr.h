@@ -663,6 +663,9 @@ private:
     // dist-ast-dump-suppress  // V3LinkDot temporary use only
     bool m_validated = false;  // identifier_list typo / unused checks already run
     std::set<std::string> m_restrictedNames;  // Names reference is restricted to
+    VIsCached m_purity;  // Pure state
+
+    bool getPurityRecurse() const;
 
 public:
     AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
@@ -674,10 +677,12 @@ public:
     }
     ASTGEN_MEMBERS_AstWith;
     bool hasDType() const override { return true; }
+    bool isPure() override;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     const char* broken() const override {
         BROKEN_RTN(!indexArgRefp());  // varp needed to know lambda's arg dtype
         BROKEN_RTN(!valueArgRefp());  // varp needed to know lambda's arg dtype
+        BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
         return nullptr;
     }
     void dump(std::ostream& str) const override;

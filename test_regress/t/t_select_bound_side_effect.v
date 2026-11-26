@@ -84,6 +84,16 @@ module t;
     arr[q.sum() with (get_w(item))+4] = 7;
     `checkh(w, 4);
     `checkh(arr[3], 6);
+    // Side effects in a 'with' clause are kept when its result is folded or unused
+    begin
+      int zero;
+      zero = 0;
+      y = (q.sum() with (get_w(item))) * zero;
+      `checkh(w, 6);
+      y = q.sum() with (get_w(item));
+      y = 5;
+      `checkh(w, 8);
+    end
     // An index with a new value each evaluation is evaluated once
     for (int i = 0; i < 5; i++) arr[i] = 10 * i + 1;
     for (int seed = 1; seed <= 20; seed++) begin

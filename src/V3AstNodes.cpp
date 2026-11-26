@@ -964,11 +964,7 @@ bool AstCMethodHard::getPurity() {
     for (AstNodeExpr* const argp : pinspList()) {
         if (!argp->isPure()) return false;
     }
-    if (withp()) {
-        for (AstNode* const itemp : withp()->exprpList()) {
-            if (!itemp->isPure()) return false;
-        }
-    }
+    if (withp() && !withp()->isPure()) return false;
     return true;
 }
 int AstCMethodHard::instrCount() const {
@@ -5221,6 +5217,18 @@ void AstWith::dumpJson(std::ostream& str) const {
         dumpJsonStr(str, "restrictedNames", joined);
     }
     dumpJsonGen(str);
+}
+bool AstWith::getPurityRecurse() const {
+    for (AstNode* const itemp : exprpList()) {
+        // After V3Task the body is in an AstCReturn, a statement that ignores its value's purity
+        const AstCReturn* const returnp = VN_CAST(itemp, CReturn);
+        if (!(returnp ? returnp->lhsp() : itemp)->isPure()) return false;
+    }
+    return true;
+}
+bool AstWith::isPure() {
+    if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
+    return m_purity.get();
 }
 void AstWithParse::dump(std::ostream& str) const {
     Super::dump(str);
