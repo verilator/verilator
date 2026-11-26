@@ -1880,7 +1880,6 @@ class AstPropSpec final : public AstNode {
     // @astgen op3 := propp : AstNodeExpr
     // @astgen op4 := matchCountp : Optional[AstNodeExpr] // Cover sequence matches this tick
     VPropStrength m_propStrength = VPropStrength::DEFAULT;
-    bool m_fromInstanceChain = false;  // Body of a property instance whose body is an instance
 
 public:
     AstPropSpec(FileLine* fl, AstSenItem* sensesp, AstNodeExpr* disablep, AstNodeExpr* propp,
@@ -1898,8 +1897,6 @@ public:
         return true;
     }  // Used under Cover, which expects a bool child
     VPropStrength propStrength() const { return m_propStrength; }
-    bool fromInstanceChain() const { return m_fromInstanceChain; }
-    void fromInstanceChain(bool flag) { m_fromInstanceChain = flag; }
 };
 class AstPull final : public AstNode {
     // @astgen op1 := lhsp : AstNodeExpr

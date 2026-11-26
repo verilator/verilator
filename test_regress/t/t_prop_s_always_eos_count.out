@@ -6,4 +6,8 @@ EOS_LARGE_RING
 EOS_RESOLVED_BAD
 [115] %Error: t_prop_s_always_eos_count.v:74: Assertion failed in top.t: EOS_ERROR
 -Info: t/t_prop_s_always_eos_count.v:74: Verilog $stop, ignored due to +verilator+error+limit
-[115] %Error: t_prop_s_always_eos_count.v:77: Assertion failed in top.t
+EOS_SEV
+EOS_SEV
+EOS_SEV
+EOS_SEV
+[115] %Error: t_prop_s_always_eos_count.v:94: Assertion failed in top.t

@@ -14,6 +14,14 @@ module t;
   assert property (@(posedge clk) s_eventually ##1 1);
   assert property (@(negedge clk) s_eventually ##1 1);
 
+  // s_eventually as an operand of a property operator
+  assert property (@(posedge clk) cyc[0] or s_eventually cyc[1]);
+
+  assert property (@(posedge clk) s_eventually s_eventually cyc[0]);
+
+  // s_eventually alongside an unsupported sequence operator
+  assert property (@(posedge clk) cyc[0] [= 2] |-> s_eventually cyc[1]);
+
   always @(posedge clk) begin
     ++cyc;
     if (cyc == MAX) begin

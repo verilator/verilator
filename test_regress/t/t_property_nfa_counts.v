@@ -170,6 +170,8 @@ module t (
   wire inst_a = cyc == 2;
   wire inst_b = cyc == 2 || cyc == 4;
   int inst_or_fail = 0, inst_goto_fail = 0;
+  int goto_fail = 0, goto_next_fail = 0, goto_range_fail = 0, goto_abort_fail = 0;
+  int goto_cover = 0, goto_range_cover = 0;
 
   property p_or(x, y, z);
     x |=> y || z;
@@ -188,6 +190,66 @@ module t (
   else inst_or_fail++;
   assert property (@(posedge clk) p_goto_chain(inst_b, 1'b0))
   else inst_goto_fail++;
+  assert property (@(posedge clk) inst_b [->2] |-> 1'b0)
+  else goto_fail++;
+  assert property (@(posedge clk) inst_b [->2] |=> 1'b0)
+  else goto_next_fail++;
+  assert property (@(posedge clk) inst_b [->2:3] |-> 1'b0)
+  else goto_range_fail++;
+  assert property (@(posedge clk) sync_reject_on (cyc == 8) inst_b [->3])
+  else goto_abort_fail++;
+  cover sequence (@(posedge clk) inst_b [->2]) goto_cover++;
+  cover sequence (@(posedge clk) inst_b [->1:2]) goto_range_cover++;
+
+  // Attempts started at 0-2 reach the second occurrence at 4, 3-4 at 6, 5-6 at 8; later ones
+  // never complete. Only those completing at 6 satisfy the consequent.
+  wire rej_b = cyc == 2 || cyc == 4 || cyc == 6 || cyc == 8;
+  wire rej_c = cyc == 6;
+  int rej_dis_fail = 0, rej_cover = 0, rej_not_fail = 0, rej_abort_fail = 0;
+  int rej_late_true_fail = 0, rej_late_c_fail = 0, rej_late_one_fail = 0, rej_late_false_fail = 0;
+  int rej_nested_fail = 0, rej_conseq_fail = 0;
+
+  // Disabled at 8, which also discards attempts 5-6 failing there
+  assert property (@(posedge clk) disable iff (cyc == 8) rej_b [->2] |-> 1'b0)
+  else rej_dis_fail++;
+  cover property (@(posedge clk) rej_b [->2] |-> rej_c) rej_cover++;
+  assert property (@(posedge clk) not (rej_b [->2] |-> rej_c))
+  else rej_not_fail++;
+  // Abort at 5 fails attempts 3-5, including 3-4 that would pass at 6
+  assert property (@(posedge clk) sync_reject_on (cyc == 5) (rej_b [->2] |-> rej_c))
+  else rej_abort_fail++;
+  // Abort at 8 fails attempts 5-8, including 5-6 completing there and 8 starting there
+  assert property (@(posedge clk) sync_reject_on (cyc == 8) (rej_b [->2] |-> 1'b1))
+  else rej_late_true_fail++;
+  assert property (@(posedge clk) sync_reject_on (cyc == 8) (rej_b [->2] |-> rej_c))
+  else rej_late_c_fail++;
+  assert property (@(posedge clk) sync_reject_on (cyc == 8) (rej_b [->1] |-> 1'b0))
+  else rej_late_one_fail++;
+  assert property (@(posedge clk) sync_reject_on (cyc == 8) (rej_b [->2] |-> 1'b0))
+  else rej_late_false_fail++;
+  assert property (@(posedge clk)
+      sync_reject_on (cyc == 8) (rej_b [->2] |-> sync_reject_on (cyc == 4) rej_c))
+  else rej_nested_fail++;
+  assert property (@(posedge clk) rej_b [->2] |-> sync_reject_on (cyc == 8) rej_c)
+  else rej_conseq_fail++;
+
+  // A goto may match on the first tick of its window, including straight after a delay
+  wire dly_a = cyc == 3;
+  wire dly_b0 = cyc == 3;
+  wire dly_b1 = cyc == 4;
+  wire dly_b2 = cyc == 5;
+  int dly0_fail = 0, dly1_fail = 0, dly2_fail = 0, dly_ante_fail = 0, dly_late_fail = 0;
+
+  assert property (@(posedge clk) not (dly_a ##0 dly_b0 [->1]))
+  else dly0_fail++;
+  assert property (@(posedge clk) not (dly_a ##1 dly_b1 [->1]))
+  else dly1_fail++;
+  assert property (@(posedge clk) not (dly_a ##2 dly_b2 [->1]))
+  else dly2_fail++;
+  assert property (@(posedge clk) dly_a ##1 dly_b1 [->1] |-> 1'b0)
+  else dly_ante_fail++;
+  assert property (@(posedge clk) not (dly_a ##1 dly_b2 [->1]))
+  else dly_late_fail++;
 
   always @(negedge clk) begin
     if (cyc == 12) begin
@@ -214,6 +276,27 @@ module t (
       `checkd(throughout_or_fail, 3);
       `checkd(inst_or_fail, 1);
       `checkd(inst_goto_fail, 3);
+      `checkd(goto_fail, 3);
+      `checkd(goto_next_fail, 3);
+      `checkd(goto_range_fail, 3);
+      `checkd(goto_abort_fail, 9);
+      `checkd(goto_cover, 3);
+      `checkd(goto_range_cover, 8);
+      `checkd(rej_dis_fail, 5);
+      `checkd(rej_cover, 2);
+      `checkd(rej_not_fail, 2);
+      `checkd(rej_abort_fail, 7);
+      `checkd(rej_late_true_fail, 4);
+      `checkd(rej_late_c_fail, 7);
+      `checkd(rej_late_one_fail, 9);
+      `checkd(rej_late_false_fail, 9);
+      `checkd(rej_nested_fail, 7);
+      `checkd(rej_conseq_fail, 5);
+      `checkd(dly0_fail, 1);
+      `checkd(dly1_fail, 1);
+      `checkd(dly2_fail, 1);
+      `checkd(dly_ante_fail, 1);
+      `checkd(dly_late_fail, 1);
       $write("*-* All Finished *-*\n");
       $finish;
     end
