@@ -1,0 +1,14 @@
+%Error: t/t_unconnected_drive_bad.v:9:15: Unconnected input port 'i' is of non-integral type, so it cannot be pulled by `unconnected_drive.
+                                        : ... note: In instance 't'
+    9 |   sub_p1_real sub_p1_real ();
+      |               ^~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_unconnected_drive_bad.v:10:15: Unconnected input port 'i' is of non-integral type, so it cannot be pulled by `unconnected_drive.
+                                         : ... note: In instance 't'
+   10 |   sub_p0_real sub_p0_real ();
+      |               ^~~~~~~~~~~
+%Error: t/t_unconnected_drive_bad.v:11:16: Unconnected input port 'i' is of non-integral type, so it cannot be pulled by `unconnected_drive.
+                                         : ... note: In instance 't'
+   11 |   sub_p1_array sub_p1_array ();
+      |                ^~~~~~~~~~~~
+%Error: Exiting due to

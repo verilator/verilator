@@ -326,7 +326,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              '['
 %token<fl>              ']'
 %token<fl>              '^'
-%token<fl>              '{'
+%token<fl>              '{'  // See also yP_CURLY__EMPTY
 %token<fl>              '|'
 %token<fl>              '}'
 %token<fl>              '~'
@@ -846,6 +846,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 
 %token<fl>              yP_COLON__BEGIN ":-then-begin"
 %token<fl>              yP_COLON__FORK  ":-then-fork"
+%token<fl>              yP_CURLY__EMPTY "{"             // Used when constraint_set is '{' '}'
 %token<fl>              yP_EQ__NEW      "=-then-new"
 %token<fl>              yP_PAR__IGNORE  "(-ignored"     // Used when sequence_expr:expr:( is ignored
 %token<fl>              yP_PAR__STRENGTH "(-for-strength"
@@ -2194,69 +2195,58 @@ type_referenceEq<nodeExprp>:            // IEEE: type_reference (as an ==/!== ex
 struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
         //                      // packedSigningE is NOP for unpacked
                 ySTRUCT        packedSigningE '{'
-        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstStructDType{$1, $2}; }
+        /*mid*/         { $<nodeUOrStructDTypep>$ = GRAMMARP->m_memParentp;  // Enclosing struct, restored below
+                          GRAMMARP->m_memParentp = new AstStructDType{$1, $2}; }
         /*cont*/    struct_union_memberListEnd
-                        { $$ = $<nodeUOrStructDTypep>4; $$->addMembersp($5); }
+                        { $$ = GRAMMARP->m_memParentp;
+                          GRAMMARP->m_memParentp = $<nodeUOrStructDTypep>4; }
         |       yUNION taggedSoftE packedSigningE '{'
-        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2 == tagged_SOFT, $2 == tagged_TAGGED, $3}; }
+        /*mid*/         { $<nodeUOrStructDTypep>$ = GRAMMARP->m_memParentp;  // Enclosing struct, restored below
+                          GRAMMARP->m_memParentp = new AstUnionDType{$1, $2 == tagged_SOFT, $2 == tagged_TAGGED, $3}; }
         /*cont*/    struct_union_memberListEnd
-                        { $$ = $<nodeUOrStructDTypep>5; $$->addMembersp($6); }
+                        { $$ = GRAMMARP->m_memParentp;
+                          GRAMMARP->m_memParentp = $<nodeUOrStructDTypep>5; }
         ;
 
-struct_union_memberListEnd<memberDTypep>: // IEEE: { struct_union_member } '}'
-                struct_union_memberList '}'                     { $$ = $1; }
+struct_union_memberListEnd:     // IEEE: { struct_union_member } '}'
+                struct_union_memberList '}'                     { }
         //
-        |       struct_union_memberList error '}'               { $$ = $1; }  // LCOV_EXCL_LINE
-        |       error '}'                                       { $$ = nullptr; }  // LCOV_EXCL_LINE
+        |       struct_union_memberList error '}'               { }  // LCOV_EXCL_LINE
+        |       error '}'                                       { }  // LCOV_EXCL_LINE
         ;
 
-struct_union_memberList<memberDTypep>: // IEEE: { struct_union_member }
-                struct_union_member                             { $$ = $1; }
+struct_union_memberList:        // IEEE: { struct_union_member }
+                struct_union_member                             { }
 
-        |       struct_union_memberList struct_union_member     { $$ = addNextNull($1, $2); }
+        |       struct_union_memberList struct_union_member     { }
         //
-        |       struct_union_memberList error ';'               { $$ = $1; }  // LCOV_EXCL_LINE
-        |       error ';'                                       { $$ = nullptr; }  // LCOV_EXCL_LINE
+        |       struct_union_memberList error ';'               { }  // LCOV_EXCL_LINE
+        |       error ';'                                       { }  // LCOV_EXCL_LINE
         ;
 
-struct_union_member<memberDTypep>:     // ==IEEE: struct_union_member
+struct_union_member:            // ==IEEE: struct_union_member
                 random_qualifierE data_type_or_void
         /*mid*/         { GRAMMARP->m_memDTypep = $2;  // As a list follows, need to attach this dtype to each member.
                           GRAMMARP->m_memRand = $1.randAttr(); }
         /*cont*/    list_of_member_decl_assignments ';'
-                        { $$ = $4;
-                          DEL(GRAMMARP->m_memDTypep); GRAMMARP->m_memDTypep = nullptr;
+                        { DEL(GRAMMARP->m_memDTypep); GRAMMARP->m_memDTypep = nullptr;
                           GRAMMARP->m_memRand = VRandAttr::NONE; }
-        |       vlTag                                   { $$ = nullptr; }
+        |       vlTag                                   { }
         ;
 
-list_of_member_decl_assignments<memberDTypep>: // Derived from IEEE: list_of_variable_decl_assignments
-                member_decl_assignment                  { $$ = $1; }
-        |       list_of_member_decl_assignments ',' member_decl_assignment      { $$ = addNextNull($1, $3); }
+list_of_member_decl_assignments: // Derived from IEEE: list_of_variable_decl_assignments
+                member_decl_assignment                  { }
+        |       list_of_member_decl_assignments ',' member_decl_assignment      { }
         ;
 
-member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assignment
+member_decl_assignment:         // Derived from IEEE: variable_decl_assignment
         //                      // At present we allow only packed structures/unions.
         //                      // So this is different from variable_decl_assignment
                 idAny variable_dimensionListE
-                        { $$ = new AstMemberDType{$<fl>1, *$1, VFlagChildDType{},
-                                                  GRAMMARP->createArray((GRAMMARP->m_memDTypep
-                                                                         ? GRAMMARP->m_memDTypep->cloneTree(true) : nullptr),
-                                                                        $2, false),
-                                                  nullptr};
-                          $$->rand(GRAMMARP->m_memRand);
-                          PARSEP->tagNodep($$);
-                        }
+                        { GRAMMARP->addMember($<fl>1, *$1, $2, nullptr); }
         |       idAny variable_dimensionListE '=' variable_declExpr
-                        { $$ = new AstMemberDType{$<fl>1, *$1, VFlagChildDType{},
-                                                  GRAMMARP->createArray((GRAMMARP->m_memDTypep
-                                                                         ? GRAMMARP->m_memDTypep->cloneTree(true) : nullptr),
-                                                                        $2, false),
-                                                  $4};
-                          $$->rand(GRAMMARP->m_memRand);
-                          PARSEP->tagNodep($$);
-                        }
-        |       idSVKwd                                 { $$ = nullptr; }
+                        { GRAMMARP->addMember($<fl>1, *$1, $2, $4); }
+        |       idSVKwd                                 { }
         //
         //                      // IEEE: "dynamic_array_variable_identifier '[' ']' [ '=' dynamic_array_new ]"
         //                      // Matches above with variable_dimensionE = "[]"
@@ -3382,7 +3372,8 @@ instPinItListE<pinp>:           // IEEE: list_of_port_connections
 
 instParamItem<pinp>:            // IEEE: named_parameter_assignment + empty
         //                      // Note empty is not allowed in parameter lists
-                yP_DOTSTAR                              { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
+                yP_DOTSTAR
+                        { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
         |       '.' idAny '(' ')'
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, nullptr};
                           $$->svDotName(true); }
@@ -6805,7 +6796,7 @@ property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
                         { $$ = PARSEP->makePropertyCase($1, $3, nullptr); }
         |       yIF '(' expr/*expression_or_dist*/ ')' pexpr  %prec prIF
                         { $$ = new AstImplication{$1, $3, $5, true}; }
-        |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr
+        |       yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr  %prec prIF
                         { AstNodeExpr* const elseCondp = new AstLogNot{$1, $3->cloneTreePure(false)};
                           $$ = new AstSAnd{$1, new AstImplication{$1, $3, $5, true},
                                            new AstImplication{$1, elseCondp, $7, true},
@@ -8336,6 +8327,8 @@ constraint_expression<nodeConstraintItemp>:  // ==IEEE: constraint_expression
         //                      // item V3Randomize already knows how to
         //                      // lower (with disable-soft hoisted by the
         //                      // ConstraintExprVisitor pre-pass).
+        |       expr yP_MINUSGT yP_CURLY__EMPTY '}'
+                        { $$ = new AstConstraintIf{$2, $1, nullptr, nullptr}; }
         |       expr yP_MINUSGT '{' constraint_expressionList '}'
                         { $$ = new AstConstraintIf{$2, $1, $4, nullptr}; }
         |       expr yP_MINUSGT yIF '(' expr ')' constraint_set %prec prLOWER_THAN_ELSE
@@ -8380,6 +8373,7 @@ constraint_expression<nodeConstraintItemp>:  // ==IEEE: constraint_expression
 
 constraint_set<nodeConstraintItemp>:  // ==IEEE: constraint_set
                 constraint_expression                   { $$ = $1; }
+        |       yP_CURLY__EMPTY '}'                     { $$ = nullptr; }
         |       '{' constraint_expressionList '}'       { $$ = $2; }
         //
         |       '{' error '}'                           { $$ = nullptr; }  // LCOV_EXCL_LINE

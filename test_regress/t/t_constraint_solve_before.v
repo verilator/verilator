@@ -109,6 +109,18 @@ module t;
       `checkd(ok, 1);
     end
 
+    // Test: std::randomize calls ordering the same arguments both ways (issue #8882)
+    begin
+      bit [6:0] x;
+      bit [6:0] y;
+      randomize_result = std::randomize(x, y) with { solve x before y; x < y; };
+      `checkd(randomize_result, 1);
+      `checkd(x < y, 1);
+      randomize_result = std::randomize(x, y) with { solve y before x; x < y; };
+      `checkd(randomize_result, 1);
+      `checkd(x < y, 1);
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

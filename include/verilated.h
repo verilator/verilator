@@ -162,8 +162,8 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_NET = (1 << 15),  // Net object
     VLVF_PACKED_AGG = (1 << 16),  // Element type is a packed struct or union
     VLVF_PACKED_UNION = (1 << 17),  // With VLVF_PACKED_AGG, element type is a packed union
-    VLVF_PACKED_MEMBER = (1 << 18),  // Is a packed struct/union member, see VlVarTableEntry
-    VLVF_PACKED_NEEDS_INDEX = (1 << 19),  // With VLVF_PACKED_MEMBER, an ancestor is an array of
+    VLVF_MEMBER = (1 << 18),  // Is a struct/union member, reached through its parent
+    VLVF_PACKED_NEEDS_INDEX = (1 << 19),  // With VLVF_MEMBER, an ancestor is an array of
                                           // packed structs/unions, so needs an element index
     VLVF_DYNAMIC = (1 << 20)  // Unpacked dimension 1 is of a dynamic array or queue
 };
@@ -183,7 +183,7 @@ struct VlVarTableEntry final {
     uint8_t udims;
     uint8_t pdims;
     // Only packed member rows set these
-    uint32_t bitOffset = 0;  // VLVF_PACKED_MEMBER: bit offset within the parent's element 0
+    uint32_t bitOffset = 0;  // Bit offset within the parent's element 0
     uint32_t entSize = 0;  // Element size in bytes, or 0 to derive from vltype
 };
 
@@ -478,9 +478,6 @@ private:
 #ifndef VL_PRINTF
 # define VL_PRINTF printf  ///< Print ala printf, called from main thread; redefine if desired
 #endif
-#ifndef VL_VPRINTF
-# define VL_VPRINTF vprintf  ///< Print ala vprintf, called from main thread; redefine if desired
-#endif
 // clang-format on
 
 //===========================================================================
@@ -617,6 +614,12 @@ protected:
         int m_stderrFD;  // Duplicated stderr file descriptor
         int m_logFD;  // Log file descriptor
     } m_ns;
+
+    /// Callback typedef for addEndContextCb
+    using VoidPCb = void (*)(void*);
+    mutable VerilatedMutex m_endContextMutex;  // Protect m_endContextCbs
+    std::vector<std::pair<VoidPCb, void*>> m_endContextCbs
+        VL_GUARDED_BY(m_endContextMutex);  // Callbacks to run when context is destroyed
 
     mutable VerilatedMutex m_argMutex;  // Protect m_argVec, m_argVecLoaded
     // no need to be save-restored (serialized) the
@@ -866,6 +869,10 @@ public:
     const VerilatedContextImp* impp() const VL_MT_SAFE {
         return reinterpret_cast<const VerilatedContextImp*>(this);
     }
+
+    /// Add callback to run once when the context is destroyed, after final blocks and any
+    /// coverage write
+    void addEndContextCb(void (*cb)(void*), void* datap) VL_MT_SAFE_EXCLUDES(m_endContextMutex);
 
     // Internal: Model and thread setup
     void addModel(VerilatedModel* modelp);

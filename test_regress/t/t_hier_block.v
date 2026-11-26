@@ -169,8 +169,17 @@ module sub1(
 
   logic [7:0] ff;
   enum_t enum_v;
+  // Large enough that the model's memory is unmapped when it is freed
+  // verilator tracing_off
+  logic [7:0] mem[1 << 20];
+  // verilator tracing_on
 
-  always_ff @(posedge clk) ff <= in + 8'(stateless_pkg::ONE);
+  always_ff @(posedge clk) begin
+    mem[20'(in)] <= in;
+    ff <= in + 8'(stateless_pkg::ONE);
+    // Never true, as an entry is zero or the input that wrote it
+    if (mem[20'(in)] != 0 && mem[20'(in)] != in) ff <= 0;
+  end
   always_ff @(posedge clk) enum_v <= enum_v.next();
   assign out = ff;
 endmodule
@@ -243,10 +252,10 @@ module sub3 #(
 
   TYPE [7:0] ff;
   always_ff @(posedge clk) ff <= in + P0;
-  always_ff @(posedge clk) if (out4 != out4_2) $stop;
-
   wire [7:0] out4;
   wire [7:0] out4_2;
+  always_ff @(posedge clk) if (out4 != out4_2) $stop;
+
   assign out = out4;
   /* verilator lint_off REALCVT */
   sub4 #(.P0(1.6), .P1(3.1), .P3(4.1)) i_sub4_0(.clk(clk), .in(ff), .out(out4));  // incr 2

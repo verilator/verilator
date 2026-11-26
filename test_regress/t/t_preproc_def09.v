@@ -55,7 +55,7 @@
 // Local tests
 `define MACROQUOTE(a="==)",b="((((",c=() ) 'a b c'
 `MACROQUOTE();
-'"==)" "((((" () ';
+'"==)" "((((" ()';
 
 // Also check our line counting doesn't go bad
 `define MACROPAREN(a=(6),
@@ -70,5 +70,25 @@
 
             ZOT)
 HERE-`__LINE__ - Line71
+
+// A default used in a token join excludes surrounding whitespace.
+`define MACROJOIN_ERROR(value) error(value)
+`define MACROJOIN_WARNING(value) warning(value)
+`define MACROJOIN(value, severity = ERROR ) `MACROJOIN_``severity(value)
+'`MACROJOIN(default_value)'
+'error(default_value)'
+'`MACROJOIN(non_default_value, WARNING)'
+'warning(non_default_value)'
+'`MACROJOIN(no_value,)'
+'error(no_value)'
+
+`define MACROJOINPREFIX(prefix = DEFAULT ) prefix``_value
+'`MACROJOINPREFIX()'
+'DEFAULT_value'
+
+// Whitespace inside a quoted default is preserved.
+`define MACROSPACED(text = " two words " ) text
+'`MACROSPACED()'
+'" two words "'
 
 //======================================================================

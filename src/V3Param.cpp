@@ -148,7 +148,7 @@ public:
             m_modParams.insert({hierOpt.second.origName(), {}});
         }
         for (AstNodeModule* const modp : nodep->modulespList()) {
-            if (hierOpts.find(modp->prettyName()) != hierOpts.end()) {
+            if (hierOpts.find(modp->name()) != hierOpts.end()) {
                 m_hierBlockMod.emplace(modp->name(), modp);
             }
             // Recursive hierarchical module may change its name, so we have to match its origName.
@@ -407,10 +407,16 @@ class ParamProcessor final {
         return st;
     }
 
-    static bool isAggregateParamValue(const AstNode* nodep) {
-        return VN_IS(nodep, ConsArray) || VN_IS(nodep, ConsStruct);
+    template <typename T_Cons>
+    static string consItemsString(const T_Cons* consp) {
+        string key = "{";
+        for (const auto* const itemp : consp->itemspList()) {
+            if (itemp->keyp()) key += paramValueString(itemp->keyp()) + ":";
+            key += paramValueString(itemp->valuep()) + ",";
+        }
+        if (consp->defaultp()) key += "default:" + paramValueString(consp->defaultp()) + ",";
+        return key + "}";
     }
-
     static string paramValueString(const AstNode* nodep) {
         if (const AstRefDType* const refp = VN_CAST(nodep, RefDType)) {
             nodep = refp->skipRefToNonRefp();
@@ -485,6 +491,14 @@ class ParamProcessor final {
                 key += ",";
             }
             key += "}";
+        } else if (const AstConsDynArray* const consp = VN_CAST(nodep, ConsDynArray)) {
+            key += consItemsString(consp);
+        } else if (const AstConsQueue* const consp = VN_CAST(nodep, ConsQueue)) {
+            key += consItemsString(consp);
+        } else if (const AstConsAssoc* const consp = VN_CAST(nodep, ConsAssoc)) {
+            key += consItemsString(consp);
+        } else if (const AstConsWildcard* const consp = VN_CAST(nodep, ConsWildcard)) {
+            key += consItemsString(consp);
         } else if (const AstClassRefDType* const classRefp = VN_CAST(nodep, ClassRefDType)) {
             // For parameterized class types, use the original class name (without specialization
             // suffix) plus the actual type parameter values. This ensures equivalent class types
@@ -538,7 +552,7 @@ class ParamProcessor final {
             // With the items, as prettyDTypeName() omits them, yet a specialization of a class
             // may declare an enumeration of the same name with other values
             key += " enum {";
-            for (const AstEnumItem* const itemp : dtypep->itemspList()) {
+            for (const AstEnumItem* const itemp : dtypep->originalOrThisDTypep()->itemspList()) {
                 const AstConst* const constp = VN_CAST(itemp->valuep(), Const);
                 key += itemp->name() + "=" + (constp ? constp->num().ascii() : "?") + ";";
             }
@@ -1586,7 +1600,7 @@ class ParamProcessor final {
             } else {
                 UINFO(9, "cellPinCleanup: before constify " << pinp << " " << modvarp);
                 V3Const::constifyParamsEdit(pinp->exprp());
-                if (isAggregateParamValue(pinp->exprp())) {
+                if (VN_IS(pinp->exprp(), NodeCons)) {
                     nameByPinValue(pinp, srcModp, modvarp, longnamer, any_overridesr);
                     return;
                 }
@@ -2154,7 +2168,7 @@ class ParamProcessor final {
                 // An untyped pattern can't be folded without its parameter's type
                 const AstPattern* const patternp = VN_CAST(pinp->exprp(), Pattern);
                 if (patternp && !patternp->childDTypep()) continue;
-                if (!VN_IS(pinp->exprp(), Const) && !isAggregateParamValue(pinp->exprp())) {
+                if (!VN_IS(pinp->exprp(), Const) && !VN_IS(pinp->exprp(), NodeCons)) {
                     // The pin, so a conditional of patterns is typed as an override's value
                     V3Const::constifyParamsEdit(pinp);
                 }

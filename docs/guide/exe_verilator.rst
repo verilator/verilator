@@ -816,7 +816,7 @@ Summary:
    Force include of the specified C++ header file. All generated C++ files
    will insert a #include of the specified file before any other includes.
    The specified file might be used to contain define prototypes of custom
-   ``VL_VPRINTF`` functions, and may need to include :file:`verilatedos.h`
+   ``VL_PRINTF`` functions, and may need to include :file:`verilatedos.h`
    as this file is included before any other standard includes.
 
 .. option:: --flatten
@@ -1079,6 +1079,11 @@ Summary:
 
    In versions before 5.054: Disable merging constant pool entries that have
    the same value but different data types.
+
+.. option:: -fno-outline
+
+   Rarely needed. Disable moving parts of large functions into separate
+   functions.
 
 .. option:: -fno-reloop
 

@@ -120,6 +120,7 @@ class TaskStateVisitor final : public VNVisitor {
     VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
     FuncToClassMap m_funcToClassMap;  // Map for ctor func -> class
     AstNodeFTask* m_ctorp = nullptr;  // Class constructor
+    AstStmtExpr* m_superNewp = nullptr;  // super.new statement in the class constructor
     AstClass* m_classp = nullptr;  // Current class
     V3Graph m_callGraph;  // Task call graph
     TaskBaseVertex* m_curVxp;  // Current vertex we're adding to
@@ -334,10 +335,12 @@ private:
         // Move initial statements into the constructor
         VL_RESTORER_CLEAR(m_initialps);
         VL_RESTORER(m_ctorp);
+        VL_RESTORER(m_superNewp);
         VL_RESTORER(m_classp);
         m_ctorp = nullptr;
+        m_superNewp = nullptr;
         m_classp = nodep;
-        {  // Find m_initialps, m_ctor
+        {  // Find m_initialps, m_ctorp, m_superNewp
             iterateChildren(nodep);
         }
         UASSERT_OBJ(m_ctorp, nodep, "class constructor missing");  // LinkDot always makes it
@@ -351,7 +354,22 @@ private:
             VL_DO_DANGLING(pushDeletep(initialp->unlinkFrBack()), initialp);
         }
         m_initialps.clear();
-        m_ctorp->prependStmtsp(insertp);
+        // IEEE 1800-2023 8.7: initialize properties after super.new
+        AstNodeStmt* initp = nullptr;
+        if (!nodep->isInterfaceClass() && !m_ctorp->taskPublic()) {
+            const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);";
+            initp = new AstCStmt{m_ctorp->fileline(), stmt, VCStmtType::CTOR_VAR_RESET_CALL};
+        }
+        initp = AstNode::addNextNull(initp, insertp);
+        if (m_superNewp) {
+            if (initp) m_superNewp->addNextHere(initp);
+        } else {
+            m_ctorp->prependStmtsp(initp);
+        }
+    }
+    void visit(AstStmtExpr* nodep) override {
+        if (VN_IS(nodep->exprp(), New)) m_superNewp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstInitialAutomatic* nodep) override {
         m_initialps.push_back(nodep);
@@ -604,6 +622,9 @@ class TaskVisitor final : public VNVisitor {
                 outPinp = orderp->fromp();
             }
             postRhsp = new AstCvtQueueToUnpack{pinp->fileline(), postRhsp, outPinp->dtypep()};
+        } else if (AstCvtQueueToUnpack* const cvtp = VN_CAST(outPinp, CvtQueueToUnpack)) {
+            outPinp = cvtp->fromp();
+            postRhsp = new AstCvtUnpackToQueue{pinp->fileline(), postRhsp, outPinp->dtypep()};
         }
         // Put output assignment AFTER function call
         AstNodeExpr* const outPinClonep
@@ -617,16 +638,6 @@ class TaskVisitor final : public VNVisitor {
         AstAssign* const assp = new AstAssign{pinp->fileline(), outPinClonep, postRhsp};
         assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
         return assp;
-    }
-
-    void changeAtWriteRecurse(AstNodeExpr* const exprp) {
-        // Change nested at methods to writable variant
-        if (AstCMethodHard* const cMethodp = VN_CAST(exprp, CMethodHard)) {
-            if (cMethodp->method() == VCMethod::ARRAY_AT) {
-                cMethodp->method(VCMethod::ARRAY_AT_WRITE);
-            }
-            changeAtWriteRecurse(cMethodp->fromp());
-        }
     }
 
     void connectPort(const AstNodeFTaskRef* refp, AstVar* portp, AstArg* argp, AstNode* beginp,
@@ -663,19 +674,9 @@ class TaskVisitor final : public VNVisitor {
                 VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);  // Args no longer needed
             }
             if (portp->isRef() || portp->isConstRef()) {
-                bool refArgOk = false;
-                if (VN_IS(pinp, VarRef) || VN_IS(pinp, MemberRef) || VN_IS(pinp, StructSel)
-                    || VN_IS(pinp, ArraySel)) {
-                    refArgOk = true;
-                } else if (AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
-                    if (VN_IS(cMethodp->fromp()->dtypep()->skipRefp(), QueueDType)) {
-                        refArgOk = cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND
-                                   || cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND_BACK;
-                    } else {
-                        changeAtWriteRecurse(cMethodp);
-                        refArgOk = cMethodp->method() == VCMethod::ARRAY_AT_WRITE;
-                    }
-                }
+                const bool refArgOk = VN_IS(pinp, VarRef) || VN_IS(pinp, MemberRef)
+                                      || VN_IS(pinp, StructSel) || VN_IS(pinp, ArraySel)
+                                      || VN_IS(pinp, DynArraySel) || VN_IS(pinp, QueueSel);
                 if (refArgOk) {
                     if (AstVarRef* const varrefp = VN_CAST(pinp, VarRef)) {
                         varrefp->access(VAccess::READWRITE);
@@ -1044,10 +1045,9 @@ class TaskVisitor final : public VNVisitor {
                                          arrayp->subDTypep(), toDpi));
             }
         } else if (dtypep->containsUnpackedStruct()) {
-            for (const AstMemberDType* const itemp : VN_AS(dtypep, StructDType)->memberspList()) {
+            for (AstMemberDType* const itemp : VN_AS(dtypep, StructDType)->memberspList()) {
                 AstStructSel* const selp
-                    = new AstStructSel{flp, internalp->cloneTree(false), itemp->name()};
-                selp->dtypeFrom(itemp->dtypep());
+                    = new AstStructSel{flp, internalp->cloneTree(false), itemp};
                 stmtsp = AstNode::addNext(stmtsp,
                                           createDpiCvt(selp, suffixed("." + itemp->prettyName()),
                                                        itemp->subDTypep(), toDpi));
@@ -1131,7 +1131,8 @@ class TaskVisitor final : public VNVisitor {
         const std::string cname = AstNode::prettyName(nodep->cname());
         checkLegalCIdentifier(nodep, cname);
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
-        const std::string rtnType = rtnvarp ? rtnvarp->dpiArgType(true, true) : "";
+        const bool rtnAsArg = dpiRtnAsArg(rtnvarp);
+        const std::string rtnType = rtnvarp && !rtnAsArg ? rtnvarp->dpiArgType(true, true) : "";
         // The function we are building
         AstCFunc* const funcp = new AstCFunc{flp, cname, m_scopep, rtnType};
         funcp->dpiExportDispatcher(true);
@@ -1143,10 +1144,12 @@ class TaskVisitor final : public VNVisitor {
         funcp->cname(cname);
         // Add DPI Export to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
+        if (rtnAsArg) funcp->addArgsp(newDpiRtnArgp(rtnvarp));
         makePortList(nodep, funcp);
 
         // Aborted imports must not re-enter SystemVerilog while unwinding.
-        const std::string abortedRtn = rtnvarp ? "std::decay_t<" + rtnType + ">{}" : "void()";
+        const std::string abortedRtn
+            = rtnvarp && !rtnAsArg ? "std::decay_t<" + rtnType + ">{}" : "void()";
         funcp->addStmtsp(new AstIf{flp, new AstCExpr{flp, "VerilatedDpi::exportAborted()", 1},
                                    new AstCReturn{flp, new AstCExpr{flp, abortedRtn}}, nullptr});
 
@@ -1235,7 +1238,9 @@ class TaskVisitor final : public VNVisitor {
         // Convert output/inout arguments back to internal type
         if (outCvtsp) funcp->addStmtsp(outCvtsp);
         // Convert return value
-        if (rtnvarp) {
+        if (rtnAsArg) {
+            funcp->addStmtsp(createAssignInternalToDpi(rtnvarp, true, tmpSuffixp, ""));
+        } else if (rtnvarp) {
             funcp->addStmtsp(createDpiTemp(rtnvarp, ""));
             funcp->addStmtsp(createAssignInternalToDpi(rtnvarp, false, tmpSuffixp, ""));
             const std::string index = rtnvarp->dtypep()->isDpiPrimitive() ? "" : "[0]";
@@ -1249,9 +1254,9 @@ class TaskVisitor final : public VNVisitor {
         const string name = AstNode::prettyName(nodep->cname());
         checkLegalCIdentifier(nodep, name);
         // Tasks (but not void functions) return a boolean 'int' indicating disabled
-        const string rtnType = rtnvarp            ? rtnvarp->dpiArgType(true, true)
-                               : nodep->dpiTask() ? "int"
-                                                  : "";
+        const string rtnType = rtnvarp && !dpiRtnAsArg(rtnvarp) ? rtnvarp->dpiArgType(true, true)
+                               : nodep->dpiTask()               ? "int"
+                                                                : "";
         AstCFunc* const funcp = new AstCFunc{nodep->fileline(), name, m_scopep, rtnType};
         funcp->dpiContext(nodep->dpiContext());
         funcp->dpiImportPrototype(true);
@@ -1268,6 +1273,7 @@ class TaskVisitor final : public VNVisitor {
         // Add DPI Import to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
         funcp->dpiCDecl(nodep->dpiCDecl());
+        if (dpiRtnAsArg(rtnvarp)) funcp->addArgsp(newDpiRtnArgp(rtnvarp));
         makePortList(nodep, funcp);
         return funcp;
     }
@@ -1324,6 +1330,19 @@ class TaskVisitor final : public VNVisitor {
                 }
             }
         }
+    }
+
+    // Whether DPI function result 'rtnvarp' is of a type IEEE 1800-2023 35.5.5 does not allow,
+    // so the C function returns void and takes the result as its first, output argument
+    static bool dpiRtnAsArg(AstVar* rtnvarp) {
+        if (!rtnvarp || rtnvarp->dtypep()->isDpiPrimitive()) return false;
+        return (rtnvarp->dtypep()->isDpiBitVec() && rtnvarp->width() > 32)
+               || rtnvarp->dtypep()->isDpiLogicVec();
+    }
+    static AstVar* newDpiRtnArgp(AstVar* rtnvarp) {
+        AstVar* const argp = rtnvarp->cloneTree(false);
+        argp->funcReturn(false);
+        return argp;
     }
 
     // Check DPI can pass the types of the arguments of 'nodep', else report. Those of an open
@@ -1537,6 +1556,13 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
+        // A result of a type DPI does not allow is passed as the first argument
+        const bool rtnAsArg = rtnvscp && dpiRtnAsArg(rtnvscp->varp());
+        if (rtnAsArg) {
+            cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
+            args = rtnvscp->varp()->name() + tmpSuffixp + (args.empty() ? "" : ", ") + args;
+        }
+
         // Store context, if needed
         if (nodep->dpiContext()) {
             const string stmt = "Verilated::dpiContext(__Vscopep, __Vfilenamep, __Vlineno);";
@@ -1555,7 +1581,7 @@ class TaskVisitor final : public VNVisitor {
         callImportp->addPinsp(new AstAddrOfCFunc{nodep->fileline(), dpiFuncp});
         if (!args.empty()) callImportp->addPinsp(new AstCExpr{nodep->fileline(), args});
 
-        if (rtnvscp) {
+        if (rtnvscp && !rtnAsArg) {
             UASSERT_OBJ(nodep->verilogFunction(), nodep,
                         "Only functions should have return values");
             // If it has a return value, capture it
@@ -1622,17 +1648,15 @@ class TaskVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return nullptr;
                 }
-                if (!portp->dtypep()->isDpiPrimitive()) {
-                    if (portp->dtypep()->isDpiBitVec() && portp->width() > 32) {
-                        portp->v3error("DPI function may not return a > 32 bits wide type "
-                                       "other than basic types.\n"
-                                       + portp->warnMore()
-                                       + "... Suggest make it an output argument instead?");
-                    }
-                    if (portp->dtypep()->isDpiLogicVec()) {
-                        portp->v3error("DPI function may not return a 4-state type "
-                                       "other than a single 'logic' (IEEE 1800-2023 35.5.5)");
-                    }
+                if (dpiRtnAsArg(portp)) {
+                    portp->v3warn(
+                        NONSTD,
+                        "DPI function returning type "
+                            << portp->dtypep()->prettyDTypeNameQ(true)
+                            << " of > 32 bits or 4-state non-standard (IEEE 1800-2023 35.5.5)\n"
+                            << portp->warnMore()
+                            << "... The C function returns void and takes the"
+                               " result as its first, output argument");
                 }
             } else if (nodep->taskPublic()) {
                 if (portp->isWide()) {
@@ -1727,20 +1751,6 @@ class TaskVisitor final : public VNVisitor {
               && ((!nodep->dpiImport() && !nodep->taskPublic()) || v3Global.opt.profExec());
         if (needSyms) cfuncp->argTypes(EmitCUtil::symClassVar());
 
-        if (!nodep->dpiImport() && !nodep->taskPublic()) {
-            // Need symbol table
-            if (cfuncp->isConstructor()) {
-                bool isInterfaceClass = false;
-                if (const AstClass* const classp = VN_CAST(m_modp, Class)) {
-                    isInterfaceClass = classp->isInterfaceClass();
-                }
-                if (!isInterfaceClass) {
-                    const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);";
-                    cfuncp->addStmtsp(
-                        new AstCStmt{nodep->fileline(), stmt, VCStmtType::CTOR_VAR_RESET_CALL});
-                }
-            }
-        }
         if (nodep->dpiContext()) {
             // First three args go to dpiContext call
             createInputVar(cfuncp, "__Vscopep", VBasicDTypeKwd::SCOPEPTR);
@@ -1851,6 +1861,9 @@ class TaskVisitor final : public VNVisitor {
 
         // Mark the fact that this function allocates std::process
         if (nodep->needsVlProcess()) cfuncp->setNeedsVlProcess();
+
+        // Mark the fact that this function is std::process::kill()
+        if (nodep->isProcessKill()) cfuncp->isProcessKill(true);
 
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

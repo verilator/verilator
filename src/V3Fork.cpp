@@ -310,6 +310,7 @@ class DynScopeVisitor final : public VNVisitor {
         AstMemberRef* const memberRefp = new AstMemberRef{
             refp->fileline(), new AstVarRef{refp->fileline(), dynScope.m_handlep, refp->access()},
             refp->varp()};
+        memberRefp->access(refp->access());
         if (refp->varp()->direction().isAny()) {
             memberRefp->varp(
                 VN_AS(m_memberMap.findMember(dynScope.m_classp, refp->varp()->name()), Var));

@@ -24,6 +24,50 @@ module t (
     KEY_E = 24'h525252  // "RRR"
   } key_e;
 
+  task automatic set_out(output int o[*]);
+    o["out"] = 7;
+  endtask
+
+  task automatic set_out_wide(output bit [94:0] o[*]);
+    o["out"] = {32'h7, 63'h1};
+  endtask
+
+  function automatic int bump(ref int n);
+    ++n;
+    return 0;
+  endfunction
+
+  // Element writes and reads keep their effects, once
+  initial begin
+    begin
+      typedef int arr_t[4];
+      arr_t ws[*];
+      ws["x"][0] = 0;
+      ws["x"][1:1] = '{6};
+      `checkh(ws["x"][1], 6);
+    end
+    begin
+      logic [127:0] wa[*];
+      wa[wa.num()][80:20] = 61'h1;
+      `checkh(wa.num(), 1);
+    end
+    begin
+      int wi[*];
+      if (wi.num() == 0) wi[1] = 1;
+      else wi[1] = 2;
+      `checkh(wi[1], 1);
+    end
+    begin
+      int wi[*];
+      int n;
+      int x;
+      wi[0] = 5;
+      n = 0;
+      x = wi[bump(n)] * 0;
+      `checkh(n, 1);
+    end
+  end
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     begin
@@ -88,6 +132,45 @@ module t (
       p = '{};
       i = p.size();
       `checkh(i, 0);
+    end
+    begin
+      int wa [*];
+      int wb [*];
+      int na [*] [3];
+      int nb [*] [3];
+
+      wb["k"] = 5;
+      wa = wb;
+      `checkh(wa["k"], 5);
+      `checkh(wa.num(), 1);
+      nb["k"][2] = 6;
+      na = nb;
+      `checkh(na["k"][2], 6);
+      set_out(wa);
+      `checkh(wa["out"], 7);
+      `checkh(wa.num(), 1);
+    end
+    begin
+      bit [30:0] w31a [*];
+      bit [30:0] w31b [*];
+      bit [62:0] w63a [*];
+      bit [62:0] w63b [*];
+      bit [94:0] w95a [*];
+      bit [94:0] w95b [*];
+
+      w31b["k"] = 31'h4000_0001;
+      w31a = w31b;
+      `checkh(w31a["k"], 31'h4000_0001);
+      w63b["k"] = 63'h4000_0000_0000_0001;
+      w63a = w63b;
+      `checkh(w63a["k"], 63'h4000_0000_0000_0001);
+      w95b[96'h8000_0000_0000_0000_0000_0001] = 95'h4000_0000_0000_0000_0000_0001;
+      w95a = w95b;
+      `checkh(w95a[96'h8000_0000_0000_0000_0000_0001], 95'h4000_0000_0000_0000_0000_0001);
+      `checkh(w95a.num(), 1);
+      set_out_wide(w95a);
+      `checkh(w95a["out"], {32'h7, 63'h1});
+      `checkh(w95a.num(), 1);
     end
 
     $write("*-* All Finished *-*\n");

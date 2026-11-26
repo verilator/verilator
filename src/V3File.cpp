@@ -691,7 +691,8 @@ bool V3OutFormatter::tokenEnd(const char* cp) {
 }
 
 bool V3OutFormatter::tokenNotStart(const char* cp) {
-    return (tokenMatch(cp, "export") || tokenMatch(cp, "import"));
+    return (tokenMatch(cp, "export") || tokenMatch(cp, "import") || tokenMatch(cp, "extern")
+            || tokenMatch(cp, "pure"));
 }
 
 int V3OutFormatter::endLevels(const char* strg) {
@@ -764,6 +765,14 @@ void V3OutFormatter::putns(const AstNode* nodep, const char* strg) {
     bool wordstart = true;
     bool equalsForBracket = false;  // Looking for "= {"
     for (const char* cp = strg; *cp; ++cp) {
+        if (m_lang == LA_VERILOG && *cp == '\\' && !m_inStringLiteral) {
+            // An escaped identifier may hold any character up to whitespace
+            // (IEEE 1800-2023 5.6.1), so none of them is a bracket or quote to track
+            const size_t len = std::strcspn(cp, " \t\n");
+            putsNoTracking(string{cp, len});
+            cp += len - 1;
+            continue;
+        }
         putcNoTracking(*cp);
         if (std::isalpha(*cp)) {
             if (wordstart && m_lang == LA_VERILOG && tokenNotStart(cp)) notstart = true;

@@ -530,11 +530,9 @@ class CoverageVisitor final : public VNVisitor {
                 for (AstMemberDType* const itemp : adtypep->memberspList()) {
                     AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
                     AstNodeExpr* const varRefp = new AstStructSel{
-                        varp->fileline(), above.m_varRefp->cloneTree(false), itemp->name()};
+                        varp->fileline(), above.m_varRefp->cloneTree(false), itemp};
                     AstNodeExpr* const chgRefp = new AstStructSel{
-                        varp->fileline(), above.m_chgRefp->cloneTree(false), itemp->name()};
-                    varRefp->dtypep(subtypep);
-                    chgRefp->dtypep(subtypep);
+                        varp->fileline(), above.m_chgRefp->cloneTree(false), itemp};
                     ToggleEnt newent{above.m_comment + "."s + itemp->name(), varRefp, chgRefp};
                     toggleVarRecurse(subtypep, depth + 1, newent, varp);
                     newent.cleanup();
@@ -542,7 +540,7 @@ class CoverageVisitor final : public VNVisitor {
             }
         } else if (const AstUnionDType* const adtypep = VN_CAST(dtypep, UnionDType)) {
             // Arbitrarily handle only the first member of the union
-            if (const AstMemberDType* const itemp = adtypep->membersp()) {
+            if (AstMemberDType* const itemp = adtypep->membersp()) {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
                 if (adtypep->packed()) {
                     ToggleEnt newent{above.m_comment + "."s + itemp->name(),
@@ -552,11 +550,9 @@ class CoverageVisitor final : public VNVisitor {
                     newent.cleanup();
                 } else {
                     AstNodeExpr* const varRefp = new AstStructSel{
-                        varp->fileline(), above.m_varRefp->cloneTree(false), itemp->name()};
+                        varp->fileline(), above.m_varRefp->cloneTree(false), itemp};
                     AstNodeExpr* const chgRefp = new AstStructSel{
-                        varp->fileline(), above.m_chgRefp->cloneTree(false), itemp->name()};
-                    varRefp->dtypep(subtypep);
-                    chgRefp->dtypep(subtypep);
+                        varp->fileline(), above.m_chgRefp->cloneTree(false), itemp};
                     ToggleEnt newent{above.m_comment + "."s + itemp->name(), varRefp, chgRefp};
                     toggleVarRecurse(subtypep, depth + 1, newent, varp);
                     newent.cleanup();
@@ -787,6 +783,8 @@ class CoverageVisitor final : public VNVisitor {
         }
     }
     void visit(AstCover* nodep) override {
+        // A lowered sequence event control is not a user cover statement
+        if (nodep->isSeqEvent()) return;
         UINFO(4, " COVER: " << nodep);
         VL_RESTORER(m_state);
         m_state.m_on = true;  // Always do cover blocks, even if there's a $stop

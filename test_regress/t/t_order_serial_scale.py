@@ -7,8 +7,6 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-import re
-
 import vltest_bootstrap
 
 test.scenarios('vlt')
@@ -22,12 +20,11 @@ test.top_filename = test.obj_dir + "/" + test.name + ".v"
 
 # Retained instances each have a distinct clock domain. Exhausting a ready scope must not
 # search all other ready domains for another scope. Only measures NBA scheduling, not model builds.
-SIZE_SMALL = 4500
-SIZE_LARGE = SIZE_SMALL * 4
-# Linear scaling gives 4x, quadratic gives 16x
-MAX_RATIO = 10
-# Ignore the ratio when scheduling is fast enough that timer noise dominates
-MIN_SECONDS = 0.25
+SIZE_RATIO = 4
+SIZE_SMALL = 100
+SIZE_LARGE = SIZE_SMALL * SIZE_RATIO
+MIN_RATIO = 3
+MAX_RATIO = 6  # Linear scaling gives 4x, quadratic gives 16x
 
 
 def gen(filename, n):
@@ -43,26 +40,15 @@ def gen(filename, n):
         fh.write("endmodule\n")
 
 
-def sched_seconds(n):
+def verilation(n):
     gen(test.top_filename, n)
-    test.compile(verilator_flags2=["--stats", "--no-debug-check"],
+    test.compile(verilator_flags2=["--stats", "--debug", "--debugi 0", "--no-debug-check"],
                  threads=1,
                  make_main=False,
                  verilator_make_gmake=False)
-    with open(test.stats, 'r', encoding="utf8") as fh:
-        stats = fh.read()
-    times = re.findall(r'Stage, Elapsed time \(sec\), \d+_sched-create-nba\s+(\S+)', stats)
-    if not times:
-        test.error("NBA scheduling elapsed time not found in " + test.stats)
-    return sum(float(t) for t in times)
+    return test.op_count_read(test.stats)
 
 
-# TODO make an use general method for instruction-count compare instead
-small = sched_seconds(SIZE_SMALL)
-large = sched_seconds(SIZE_LARGE)
-if large > MIN_SECONDS and large > small * MAX_RATIO:
-    test.error("Serial ordering time scaled superlinearly with clock domains: " +
-               f"{SIZE_SMALL} domains took {small:.3f}s, " +
-               f"{SIZE_LARGE} domains took {large:.3f}s (over {MAX_RATIO}x)")
+test.op_count_ok(verilation(SIZE_SMALL), verilation(SIZE_LARGE), MIN_RATIO, MAX_RATIO, r'.*')
 
 test.passes()

@@ -31,6 +31,7 @@ public:
     AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
     AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
+    AstNodeUOrStructDType* m_memParentp = nullptr;  // Struct/union of next member declaration
     VRandAttr m_memRand;  // 'rand'/'randc' qualifier for next member declaration
     AstDelay* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
     AstStrengthSpec* m_netStrengthp = nullptr;  // Pointer to strength for next net declaration
@@ -82,6 +83,8 @@ public:
                               bool isPacked) VL_MT_DISABLED;
     AstVar* createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp,
                            AstAttrOf* attrsp) VL_MT_DISABLED;
+    void addMember(FileLine* fileline, const string& name, AstNodeRange* arrayp,
+                   AstNode* valuep) VL_MT_DISABLED;
     AstAssignW* createSupplyExpr(FileLine* fileline, const string& name, int value) VL_MT_DISABLED;
     std::string textQuoted(FileLine* fileline, const std::string& text) {
         return singletonp()->unquoteString(fileline, text);

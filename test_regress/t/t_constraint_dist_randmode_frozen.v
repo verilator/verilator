@@ -320,6 +320,19 @@ class QSel;
   endfunction
 endclass
 
+class QVal;
+  rand uint q[$];
+  constraint c {
+    q[0] dist {
+      30 := 9,
+      90 := 1
+    };
+  }
+  function new();
+    q.push_back(0);
+  endfunction
+endclass
+
 module t;
   int ok;
   initial begin
@@ -940,6 +953,39 @@ module t;
         end
         if (n30 == 0 || n90 == 0) $stop;
         if (n30 <= n90) $stop;
+      end
+      // Frozen queue: membership decides.
+      qs.q.rand_mode(0);
+      qs.q[0].x = 7;
+      for (int i = 0; i < 8; ++i) begin
+        ok = qs.randomize();
+        `checkd(ok, 0);
+        `checkd(qs.q[0].x, 7);
+      end
+    end
+
+    // Frozen value queue: membership decides; unfreezing restores drawing.
+    begin
+      QVal qv;
+      qv = new;
+      qv.q.rand_mode(0);
+      qv.q[0] = 90;
+      for (int i = 0; i < 8; ++i) begin
+        ok = qv.randomize();
+        `checkd(ok, 1);
+        `checkd(qv.q[0], 90);
+      end
+      qv.q[0] = 7;
+      for (int i = 0; i < 8; ++i) begin
+        ok = qv.randomize();
+        `checkd(ok, 0);
+        `checkd(qv.q[0], 7);
+      end
+      qv.q.rand_mode(1);
+      for (int i = 0; i < 8; ++i) begin
+        ok = qv.randomize();
+        `checkd(ok, 1);
+        if (qv.q[0] != 30 && qv.q[0] != 90) $stop;
       end
     end
 

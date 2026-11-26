@@ -26,7 +26,6 @@
 #include <deque>
 #include <functional>
 #include <string>
-#include <unordered_set>
 
 class VSymEnt;
 
@@ -61,7 +60,7 @@ class V3LinkDotIfaceCapture final {
                     VIfaceCaptureTag::Kind kind, const string& cellPath,
                     const string& ownerModName);
     static int resolveCapturedRefs();
-    static void verifyNoDeadRefs(const std::unordered_set<const AstNode*>& liveNodes);
+    static void verifyNoDeadRefs();
 
 public:
     static bool enabled() { return s_enabled; }

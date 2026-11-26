@@ -1,0 +1,42 @@
+%Error: t/t_sequence_event_expr_bad.v:29:28: Illegal use of sequence instance 's_bool' as an expression (IEEE 1800-2023 16.8)
+                                           : ... note: In instance 't'
+   29 |   always @(posedge clk iff s_bool(a, b)) n1 <= n1 + 1;
+      |                            ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_sequence_event_expr_bad.v:30:28: Illegal use of sequence instance 's_cycles' as an expression (IEEE 1800-2023 16.8)
+                                           : ... note: In instance 't'
+   30 |   always @(posedge clk iff s_cycles(a)) n2 <= n2 + 1;
+      |                            ^~~~~~~~
+%Error: t/t_sequence_event_expr_bad.v:31:33: Illegal use of sequence instance 's_clocking' as an expression (IEEE 1800-2023 16.8)
+                                           : ... note: In instance 't'
+   31 |   clocking cb @(posedge clk iff s_clocking(a, b));
+      |                                 ^~~~~~~~~~
+%Error: t/t_sequence_event_expr_bad.v:33:24: Illegal use of sequence instance 's_disable' as an expression (IEEE 1800-2023 16.8)
+                                           : ... note: In instance 't'
+   33 |   default disable iff (s_disable(a, b));
+      |                        ^~~~~~~~~
+%Error: t/t_sequence_event_expr_bad.v:43:12: Illegal use of property instance 'p_event' as an expression (IEEE 1800-2023 16.12)
+                                           : ... note: In instance 't'
+   43 |   always @(p_event(a)) n3 <= n3 + 1;
+      |            ^~~~~~~
+%Error: t/t_sequence_event_expr_bad.v:48:23: Illegal use of sequence instance 's_bool' as an expression (IEEE 1800-2023 16.8)
+                                           : ... note: In instance 't'
+   48 |     constraint c_seq {s_bool(v, v);}
+      |                       ^~~~~~
+%Error: t/t_sequence_event_expr_bad.v:49:24: Illegal use of property instance 'p_event' as an expression (IEEE 1800-2023 16.12)
+                                           : ... note: In instance 't'
+   49 |     constraint c_prop {p_event(v);}
+      |                        ^~~~~~~
+%Error: t/t_sequence_event_expr_bad.v:54:29: Illegal use of sequence instance 's_bool' as an expression (IEEE 1800-2023 16.8)
+                                           : ... note: In instance 't'
+   54 |   always @(posedge clk) if (s_bool(a, b)) n4 <= n4 + 1;
+      |                             ^~~~~~
+%Error: t/t_sequence_event_expr_bad.v:55:48: Illegal use of sequence instance 's_disable' as an expression (IEEE 1800-2023 16.8)
+                                           : ... note: In instance 't'
+   55 |   assert property (@(posedge clk) disable iff (s_disable(a, b)) a);
+      |                                                ^~~~~~~~~
+%Error: t/t_sequence_event_expr_bad.v:58:23: Illegal use of sequence instance 's_bool' as an expression (IEEE 1800-2023 16.8)
+                                           : ... note: In instance 't'
+   58 |     @(posedge clk iff s_bool(a, b)) a;
+      |                       ^~~~~~
+%Error: Exiting due to

@@ -18,3 +18,5 @@ t.cg.cx.<auto[B],auto[C]> [cross]: 1
 t.cg.cx.<auto[C],auto[A]> [cross]: 0
 t.cg.cx.<auto[C],auto[B]> [cross]: 0
 t.cg.cx.<auto[C],auto[C]> [cross]: 1
+t.cg_cond.cp_cond.auto[E2_A]: 1
+t.cg_cond.cp_cond.auto[E2_B]: 1

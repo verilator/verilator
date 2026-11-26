@@ -314,21 +314,6 @@ public:
     string optionalProcArg(const T* const nodep) {
         return (nodep && constructorNeedsProcess(nodep)) ? "vlProcess, " : "";
     }
-    const AstCNew* getSuperNewCallRecursep(AstNode* const nodep) {
-        // Get the super.new call
-        if (!nodep) return nullptr;
-        if (const AstCNew* const cnewp = VN_CAST(nodep, CNew)) return cnewp;
-        if (const AstStmtExpr* const stmtp = VN_CAST(nodep, StmtExpr)) {
-            if (const AstCNew* const cnewp = VN_CAST(stmtp->exprp(), CNew)) return cnewp;
-        }
-        if (const AstJumpBlock* const blockp = VN_CAST(nodep, JumpBlock)) {
-            if (const AstCNew* const cnewp = getSuperNewCallRecursep(blockp->stmtsp())) {
-                return cnewp;
-            }
-        }
-        if (const AstCNew* const cnewp = getSuperNewCallRecursep(nodep->nextp())) return cnewp;
-        return nullptr;
-    }
 
     void emitConstantW(AstConst* nodep, AstVarRef* assigntop) {
         // For tradition and compilation speed, assign each word directly into
@@ -411,11 +396,14 @@ public:
         }
     }
 
-    void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp) {
+    void putConstructorSubinit(const AstClass* classp, const AstCNew* superNewp) {
         // Direct non-virtual bases in declaration order
         for (const AstClassExtends* const extp : classp->extendspList()) {
             if (extp->classp()->isInterfaceClass()) continue;
             if (extp->classp()->useVirtualPublic()) continue;
+            const AstCFunc* const ctorp
+                = VN_CAST(m_memberMap.findMember(extp->classp(), "new"), CFunc);
+            if (ctorp && ctorp->isCoroutine()) puts("co_await ");
             puts(EmitCUtil::prefixNameProtect(extp->classp()));
             puts("::init");
             if (constructorNeedsProcess(extp->classp())) {
@@ -423,11 +411,8 @@ public:
             } else {
                 puts("(vlSymsp");
             }
-            // Handle super.new() args for the concrete parent
-            if (const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp())) {
-                putCommaIterateNext(superNewCallp->argsp(), true);
-            }
-            puts(");\n");
+            putCommaIterateNext(superNewp->argsp(), true);
+            puts(")");
             // Since SystemVerilog allows only for extending from one class, for sure there won't
             // be any more constructors to be called. Even if there are some classes which are
             // "implemented", those are interface classes which do not have constructors.
@@ -530,15 +515,6 @@ public:
             iterateAndNextConstNull(nodep->varsp());
         }
 
-        // After the locals, as the super.new arguments might use them
-        if (nodep->isConstructor()) {
-            const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
-            if (classp && classp->extendsp()) {
-                putsDecoration(nodep, "// Super\n");
-                putConstructorSubinit(classp, nodep);
-            }
-        }
-
         if (nodep->stmtsp()) {
             putsDecoration(nodep, "// Body\n");
             iterateAndNextConstNull(nodep->stmtsp());
@@ -599,6 +575,19 @@ public:
         }
     }
 
+    void visit(AstCvtArrayToString* nodep) override {
+        const bool unpacked = VN_IS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+        putns(nodep, unpacked ? "VL_CVT_UNPACK_TO_N(" : "VL_CVT_Q_TO_N(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(")");
+    }
+    void visit(AstCvtStringToQueue* nodep) override {
+        putns(nodep, "VL_CVT_N_TO_Q<");
+        puts(nodep->dtypep()->cType("", false, false));
+        puts(">(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(")");
+    }
     void visit(AstCvtUnpackToQueue* nodep) override {
         const AstUnpackArrayDType* const arrayp
             = VN_AS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
@@ -785,10 +774,9 @@ public:
                    // Whuch we don't want to do as slows compiler down.
                    && !VN_IS(nodep->rhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), ConsArray)  //
-                   && !VN_IS(nodep->rhsp(), AssocSel)  //
+                   && !VN_IS(nodep->rhsp(), NodeSel)  //
                    && !VN_IS(nodep->rhsp(), MemberRef)  //
                    && !VN_IS(nodep->rhsp(), StructSel)  //
-                   && !VN_IS(nodep->rhsp(), ArraySel)  //
                    && !VN_IS(nodep->rhsp(), ExprStmt)) {
             // Wide functions assign into the array directly, don't need separate assign statement
             m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
@@ -829,20 +817,31 @@ public:
     void visit(AstAssocSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         const std::string atFunc = nodep->isLValue() ? ".atWrite(" : ".at(";
-        putnbs(nodep, atFunc);
-        AstAssocArrayDType* const adtypep
-            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), AssocArrayDType);
-        UASSERT_OBJ(adtypep, nodep, "Associative select on non-associative type");
+        putns(nodep, atFunc);
+        iterateAndNextConstNull(nodep->bitp());
+        puts(")");
+    }
+    void visit(AstDynArraySel* nodep) override {
+        iterateAndNextConstNull(nodep->fromp());
+        // Out of range writes go to a temporary (IEEE 1800-2023 7.4.6)
+        const std::string atFunc = nodep->isLValue() ? ".atWrite(" : ".at(";
+        putns(nodep, atFunc);
+        iterateAndNextConstNull(nodep->bitp());
+        puts(")");
+    }
+    void visit(AstQueueSel* nodep) override {
+        iterateAndNextConstNull(nodep->fromp());
+        // Writing one past the last element appends (IEEE 1800-2023 7.10.1)
+        std::string atFunc = nodep->isLValue() ? ".atWriteAppend" : ".at";
+        if (nodep->fromBack()) atFunc += "Back";
+        putns(nodep, atFunc + "(");
         iterateAndNextConstNull(nodep->bitp());
         puts(")");
     }
     void visit(AstWildcardSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         const std::string atFunc = nodep->isLValue() ? ".atWrite(" : ".at(";
-        putnbs(nodep, atFunc);
-        AstWildcardArrayDType* const adtypep
-            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), WildcardArrayDType);
-        UASSERT_OBJ(adtypep, nodep, "Wildcard select on non-wildcard-associative type");
+        putns(nodep, atFunc);
         iterateAndNextConstNull(nodep->bitp());
         puts(")");
     }
@@ -888,6 +887,10 @@ public:
         emitCCallArgs(nodep, "", m_cfuncp->needsVlProcess());
     }
     void visit(AstCAwait* nodep) override {
+        if (nodep->resultp()) {
+            iterateConst(nodep->resultp());
+            puts(" = ");
+        }
         putns(nodep, "co_await ");
         iterateConst(nodep->exprp());
         puts(";\n");
@@ -924,11 +927,12 @@ public:
     }
     void visit(AstCNew* nodep) override {
         if (VN_IS(nodep->dtypep(), VoidDType)) {  // super.new case
-            putsDecoration(nodep, "/*super.new*/");
+            putConstructorSubinit(VN_AS(m_cfuncp->scopep()->modp(), Class), nodep);
             return;
         }
-        // assignment case;
-        putns(nodep, "VL_NEW(" + EmitCUtil::prefixNameProtect(nodep->dtypep()) + ", "
+        const bool isCoroutine = nodep->funcp()->isCoroutine();
+        const string className = EmitCUtil::prefixNameProtect(nodep->dtypep());
+        putns(nodep, (isCoroutine ? "VL_NEW_ASYNC(" : "VL_NEW(") + className + ", "
                          + optionalProcArg(nodep->dtypep()) + "vlSymsp");
         putCommaIterateNext(nodep->argsp(), true);
         puts(")");

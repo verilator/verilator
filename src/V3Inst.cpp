@@ -272,15 +272,19 @@ public:
         if (!pinp->exprp()) {
             // No-connect, perhaps promote based on `unconnected_drive,
             // otherwise done
-            if (pinVarp->direction() == VDirection::INPUT
-                && cellp->modp()->unconnectedDrive().isSetTrue()) {
-                pinp->exprp(new AstConst{pinp->fileline(), AstConst::All1{}});
-            } else if (pinVarp->direction() == VDirection::INPUT
-                       && cellp->modp()->unconnectedDrive().isSetFalse()) {
-                pinp->exprp(new AstConst{pinp->fileline(), AstConst::All0{}});
-            } else {
+            const VOptionBool drive = cellp->modp()->unconnectedDrive();
+            if (pinVarp->direction() != VDirection::INPUT || drive.isDefault()) return nullptr;
+            if (!pinVarp->dtypep()->skipRefp()->isIntegralOrPacked()) {
+                pinp->v3error("Unconnected input port "
+                              << pinVarp->prettyNameQ()
+                              << " is of non-integral type, so it cannot be pulled by"
+                                 " `unconnected_drive.");
                 return nullptr;
             }
+            AstConst* const constp
+                = new AstConst{pinp->fileline(), AstConst::DTyped{}, pinVarp->dtypep()};
+            if (drive.isSetTrue()) constp->num().setAllBits1();
+            pinp->exprp(constp);
         }
         const AstVarRef* const connectRefp = VN_CAST(pinp->exprp(), VarRef);
         const AstVarXRef* const connectXRefp = VN_CAST(pinp->exprp(), VarXRef);

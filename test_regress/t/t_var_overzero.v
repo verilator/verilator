@@ -53,13 +53,13 @@ module tsub (  /*AUTOARG*/
   input [7:0] dbgsel_w;
   output [7:0] dout;
 
-  wire [7:0] dout = dout0 | dout1;
-
   /*AUTOWIRE*/
   // Beginning of automatic wires (for undeclared instantiated-module outputs)
   wire [7:0] dout0;  // From sub0 of sub0.v
   wire [7:0] dout1;  // From sub1 of sub1.v
   // End of automatics
+
+  wire [7:0] dout = dout0 | dout1;
 
   initial begin
     $write("*-* All Finished *-*\n");
