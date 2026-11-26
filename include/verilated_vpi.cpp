@@ -4814,7 +4814,7 @@ PLI_INT32 vpi_vprintf(PLI_BYTE8* formatp, va_list ap) {
     static thread_local std::string t_buf;
     va_list aq;
     va_copy(aq, ap);
-    const int chars = vsnprintf(nullptr, 0, formatp, aq);
+    const int chars = VL_VSNPRINTF(nullptr, 0, formatp, aq);
     va_end(aq);
     if (VL_UNLIKELY(chars < 0)) return chars;
     t_buf.resize(static_cast<size_t>(chars) + 1);
