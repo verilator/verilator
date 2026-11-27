@@ -5897,8 +5897,25 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // which may find std::randomize and overwrite classOrPackagep
                 return;
             }
-            VSymEnt* const foundp
-                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
+            VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
+            // A simple task/function name uses upward
+            // hierarchical name resolution (IEEE 1800-2023 23.8.1).
+            if (!foundp && first && nodep->dotted().empty() && !nodep->classOrPackagep()) {
+                // Search enclosing scopes for a generate block and task/function declaration
+                bool hasGenBlock = false;
+                for (VSymEnt* symp = dotSymp; symp && !foundp; symp = symp->parentp()) {
+                    hasGenBlock = hasGenBlock || VN_IS(symp->nodep(), GenBlock);
+                    VSymEnt* const findp = symp->findIdFallback(nodep->name());
+                    if (findp && VN_IS(findp->nodep(), NodeFTask)) foundp = findp;
+                }
+                // A generate scope may be pruned, so defer even if lookup has no match
+                if (m_statep->forPrimary() && (foundp || hasGenBlock)) {
+                    nodep->upwardReference(true);
+                    UINFO(9, indent() << "deferring until after a V3Param pass: " << nodep);
+                    m_ds.m_unresolvedCell = true;
+                    return;
+                }
+            }
             AstNodeFTask* const taskp = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;
             AstNodeModule* const taskModulep = foundp ? foundp->classOrPackagep() : nullptr;
             // Ignore deferring linking of functions inside params of classes extending

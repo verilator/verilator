@@ -116,6 +116,20 @@ interface Iface (
   modport mp(input ifsig);
 endinterface
 
+interface UpwardRef;
+  function void method;
+    func();
+  endfunction
+endinterface
+
+module UpwardReferenced;
+  UpwardRef up_ref();
+
+  function void func;
+    $display("Upward referenced call.");
+  endfunction
+endmodule
+
 module t (/*AUTOARG*/
   // Inputs
   clk, in
@@ -200,6 +214,8 @@ module t (/*AUTOARG*/
   Iface the_ifaces [3:0] (.*);
   localparam int CP_SCOPE_PARAM = ClsParam#(bit, 2)::PP;
 
+  UpwardReferenced up_referenced();
+
   initial begin
     if ($test$plusargs("HELLO")) $display("Hello argument found.");
     if (Pkg::FOO == 0) $write("");
@@ -217,6 +233,7 @@ module t (/*AUTOARG*/
     if (the_ifaces[2].ifsig) $write("");
     #1 $write("After #1 delay");
     wait(clk == 1) $write("After wait(clk == 1)");
+    up_referenced.up_ref.method();
   end
 
   bit [6:5][4:3][2:1] arraymanyd[10:11][12:13][14:15];

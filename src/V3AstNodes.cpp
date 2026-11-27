@@ -3343,6 +3343,7 @@ void AstNodeFTaskRef::dump(std::ostream& str) const {
     if (containsGenBlock()) str << " [GENBLK]";
     if (pli()) str << " [PLI]";
     if (superReference()) str << " [SUPERREF]";
+    if (upwardReference()) str << " [UPWARDREF]";
     str << " -> ";
     if (dotted() != "") str << ".=" << dotted() << " ";
     if (inlinedDots() != "") str << " inline.=" << inlinedDots() << " - ";
@@ -3356,6 +3357,7 @@ void AstNodeFTaskRef::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, containsGenBlock);
     dumpJsonBoolFuncIf(str, pli);
     dumpJsonBoolFuncIf(str, superReference);
+    dumpJsonBoolFuncIf(str, upwardReference);
     dumpJsonStrFunc(str, dotted);
     dumpJsonStrFunc(str, inlinedDots);
     dumpJsonGen(str);
