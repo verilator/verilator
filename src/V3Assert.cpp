@@ -1092,6 +1092,7 @@ class AssertVisitor final : public VNVisitor {
             if (sentreep) {
                 // The process of the concurrent assertion is clocked by it
                 UASSERT_OBJ(m_assertCoverp, nodep, "Concurrent assertion not in its process");
+                v3Global.setHasConcurrentAssertions();
                 m_assertCoverp->keyword(VAlwaysKwd::ALWAYS);
                 m_assertCoverp->sentreep(sentreep);
             }

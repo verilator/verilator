@@ -14,7 +14,8 @@ test.scenarios('dist')
 
 
 def get_source_files():
-    git_files = test.run_capture("cd " + test.root + " && git ls-files")
+    git_files = test.run_capture("cd " + test.root +
+                                 " && git ls-files -- \":(exclude,glob)third_party/*/**\"")
     if test.verbose:
         print("MF " + git_files)
     files = {}

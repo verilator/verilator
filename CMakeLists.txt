@@ -18,7 +18,7 @@ project(
     Verilator
     VERSION 5.055
     HOMEPAGE_URL https://verilator.org
-    LANGUAGES CXX
+    LANGUAGES C CXX
 )
 
 # Set default build type to Release if not specified
@@ -128,6 +128,8 @@ mark_as_advanced(FLEX_EXECUTABLE FLEX_INCLUDE_DIR)
 # Build
 #set_property(GLOBAL PROPERTY JOB_POOLS one_job=1)
 
+add_subdirectory(third_party EXCLUDE_FROM_ALL)
+
 if(DEBUG_AND_RELEASE_AND_COVERAGE)
     if(CMAKE_GENERATOR MATCHES "^Visual Studio ")
         error("%Error: The DEBUG_AND_RELEASE_AND_COVERAGE option is not supported in MSBuild-based builds.")
@@ -150,6 +152,19 @@ endif()
 
 set(PACKAGE_NAME ${PROJECT_NAME})
 set(PACKAGE_VERSION ${PROJECT_VERSION})
+# Match Autoconf's integer encoding, including zero-padded minor versions.
+string(
+    REGEX REPLACE
+    "^0+([0-9])"
+    "\\1"
+    version_minor
+    "${PROJECT_VERSION_MINOR}"
+)
+math(
+    EXPR
+    VERILATOR_VERSION_INTEGER
+    "${PROJECT_VERSION_MAJOR} * 1000000 + ${version_minor} * 1000"
+)
 set(CXX ${CMAKE_CXX_COMPILER})
 set(AR ${CMAKE_AR})
 
@@ -226,6 +241,8 @@ foreach(
     install(PROGRAMS bin/${program} TYPE BIN)
 endforeach()
 
+install(FILES third_party/NOTICES.txt DESTINATION licenses)
+
 install(
     DIRECTORY examples
     TYPE DATA
@@ -246,4 +263,5 @@ install(
     PATTERN "include/*.sv"
     PATTERN "include/fstcpp/*.[chv]*"
     PATTERN "include/vltstd/*.[chv]*"
+    PATTERN "verilated_config.h" EXCLUDE
 )

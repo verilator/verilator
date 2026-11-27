@@ -1052,8 +1052,14 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_timing.isDefault() && (v3Global.opt.jsonOnly() || v3Global.opt.lintOnly()))
         v3Global.opt.m_timing.setTrueOrFalse(true);
 
+    // Partitioning is a model-generation option. Analysis-only invocations
+    // must neither require external tools nor emit partition artifacts.
+    if (dpiHdrOnly() || lintOnly() || preprocOnly() || serializeOnly()) m_repcut = false;
+
     // Default split limits if not specified
-    if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
+    if (m_outputSplitCFuncs < 0) {
+        m_outputSplitCFuncs = repcut() ? REPCUT_DEFAULT_CFUNCS : m_outputSplit;
+    }
 
     if (v3Global.opt.main() && v3Global.opt.systemC()) {
         cmdfl->v3warn(E_UNSUPPORTED,
@@ -1578,6 +1584,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-foutline", FOnOff, &m_fOutline);
     DECL_OPTION("-freloop", FOnOff, &m_fReloop);
     DECL_OPTION("-freorder", FOnOff, &m_fReorder);
+    DECL_OPTION("-frepcut", FOnOff, &m_repcut);
     DECL_OPTION("-fslice", FOnOff, &m_fSlice);
     DECL_OPTION("-fslice-element-limit", CbVal, [this, fl](const char* valp) {
         m_fSliceElementLimit = std::atoi(valp);
@@ -1810,6 +1817,21 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-reloop-limit", CbVal, [this, fl](const char* valp) {
         m_reloopLimit = std::atoi(valp);
         if (m_reloopLimit < 2) fl->v3error("--reloop-limit must be >= 2: " << valp);
+    });
+    DECL_OPTION("-repcut-dump-graph", OnOff, &m_repcutDumpGraph).notForRerun().undocumented();
+    DECL_OPTION("-repcut-partitioner", CbVal, [this, &optdir](const char* valp) {
+        m_repcutPartitioner = parseFileArg(optdir, valp);
+    });
+    DECL_OPTION("-repcut-seed", CbVal, [this, fl](const char* valp) {
+        char* endp = nullptr;
+        const unsigned long long value = std::strtoull(valp, &endp, 10);
+        if (!std::isdigit(static_cast<unsigned char>(*valp)) || *endp
+            || value > static_cast<unsigned long long>(std::numeric_limits<int32_t>::max())) {
+            fl->v3error("--repcut-seed requires an integer from 0 to 2147483647, but '"
+                        << valp << "' was passed.");
+            return;
+        }
+        m_repcutSeed = static_cast<int>(value);
     });
     DECL_OPTION("-report-unoptflat", OnOff, &m_reportUnoptflat);
     DECL_OPTION("-replication-limit", CbVal, [this, fl](const char* valp) {

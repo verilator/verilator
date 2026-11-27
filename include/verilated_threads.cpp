@@ -87,6 +87,26 @@ static void shutdownTask(void*) {  // LCOV_EXCL_LINE
 
 void VlWorkerThread::shutdown() { addTask(shutdownTask, nullptr); }
 
+void VlWorkerThread::retainFixed() {
+    bool notify;
+    {
+        const VerilatedLockGuard lock{m_mutex};
+        m_fixedUsers.fetch_add(1, std::memory_order_relaxed);
+        notify = m_waiting;
+    }
+    if (notify) m_cv.notify_one();
+}
+
+bool VlWorkerThread::fixedWork(ExecRec* workp) {
+    VlFixedTask* const taskp = m_fixedTaskp.load(std::memory_order_acquire);
+    if (!taskp) return false;
+    // Copy everything before calling the entry point. Its final notification
+    // allows the caller to restart or destroy both the task and its model.
+    *workp = ExecRec{taskp->m_fnp, taskp->m_selfp};
+    m_fixedTaskp.store(nullptr, std::memory_order_relaxed);
+    return true;
+}
+
 void VlWorkerThread::wait() {
     // Enqueue a task that sets this flag. Execution is in-order so this ensures completion.
     std::atomic<bool> flag{false};

@@ -1,0 +1,497 @@
+diff --git a/third_party/repcut/include/DAG.h b/third_party/repcut/include/DAG.h
+index 2c5e83ba8..5f3a7dc0d 100644
+--- a/third_party/repcut/include/DAG.h
++++ b/third_party/repcut/include/DAG.h
+@@ -63,8 +63,13 @@ namespace repcut {
+         // false on malformed input (with an error logged via rcp_log).
+         bool buildFromFile(const char* filename);
+ 
++        bool buildFromMemory(const RepCutGraph& graph);
++
+         void findSinkNodes();
+ 
+         size_t numVertices() const { return weight.size(); }
++
++    private:
++        void buildIncoming();
+     };
+ } // namespace repcut
+diff --git a/third_party/repcut/include/repcut.h b/third_party/repcut/include/repcut.h
+index 025419b8c..5a16461b3 100644
+--- a/third_party/repcut/include/repcut.h
++++ b/third_party/repcut/include/repcut.h
+@@ -5,6 +5,7 @@
+ #define REPCUT_H
+ 
+ #include <stdbool.h>
++#include <stddef.h>
+ #include <stdint.h>
+ 
+ #ifdef __cplusplus
+@@ -22,8 +23,8 @@ enum RepCutLogLevel {
+ // Zero-initialize before setting fields.
+ struct RepCutContext
+ {
+-    const char* graph_filename;    // required: path to Metis-like graph file
+-    const char* work_directory;    // required: writable dir; must be unique per concurrent run
++    const char* graph_filename;    // required by repcut_run; ignored by repcut_run_graph
++    const char* work_directory;    // required for file API or intermediate dumps
+     int nparts;                    // required: partition count
+     float target_ib;               // default 0.03
+     int parallel_threads;          // default 1
+@@ -74,6 +75,34 @@ struct RepCutStatistics
+ // process for each run with the same backend.
+ int repcut_run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_out);
+ 
++// Borrowed CSR graph: offsets has num_vertices + 1 entries, starts at zero,
++// and ends at num_edges. Neighbors are outgoing vertex IDs in caller order.
++// Weights must be finite; negative weights mark invalid vertices, as in files.
++struct RepCutGraph
++{
++    uint32_t num_vertices;
++    size_t num_edges;
++    const float* weights;
++    const size_t* offsets;
++    const uint32_t* neighbors;
++};
++
++// Called synchronously once per partition, in ascending partition order.
++// Members include replicated ancestors and are sorted by vertex ID. The borrowed
++// array is valid only during the callback (may be NULL when count is zero).
++// Return nonzero to abort. Discard all received memberships if the run fails.
++// Do not throw or reenter the partitioner from the callback.
++typedef int (*RepCutPartitionCallback)(void* user, uint32_t partition,
++                                     const uint32_t* members, size_t count);
++
++// Same pipeline, process-wide guard, and RNG/thread-pool rules as repcut_run.
++// No filesystem access unless save_intermediate_files is true, in which case
++// work_directory must exist and receives intermediate hypergraph/cone dumps.
++// graph_filename is ignored. This function never writes rcp_output.txt.
++int repcut_run_graph(const struct RepCutContext* ctx, const struct RepCutGraph* graph,
++                     RepCutPartitionCallback callback, void* user,
++                     struct RepCutStatistics* stats_out);
++
+ #ifdef __cplusplus
+ }
+ #endif
+diff --git a/third_party/repcut/lib/repcut/DAG.cpp b/third_party/repcut/lib/repcut/DAG.cpp
+index e15e32136..e011e8464 100644
+--- a/third_party/repcut/lib/repcut/DAG.cpp
++++ b/third_party/repcut/lib/repcut/DAG.cpp
+@@ -5,6 +5,7 @@
+ #include <cassert>
+ #include <cerrno>
+ #include <chrono>
++#include <cmath>
+ #include <cstdio>
+ #include <cstdlib>
+ #include <cstring>
+@@ -145,6 +146,61 @@ bool DirectedAcyclicGraph::buildFromFile(const char* filename)
+         return false;
+     }
+ 
++    buildIncoming();
++
++    auto stop = std::chrono::system_clock::now();
++    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
++    rcp_log(log_level, REPCUT_LOG_DEBUG, "Build DAG from file: Done in %llums\n", duration.count());
++    return true;
++}
++
++bool DirectedAcyclicGraph::buildFromMemory(const RepCutGraph& graph)
++{
++    const size_t n = graph.num_vertices;
++    if (!graph.offsets || (n && !graph.weights) || (graph.num_edges && !graph.neighbors)
++        || n == std::numeric_limits<size_t>::max() || graph.offsets[0] != 0
++        || graph.offsets[n] != graph.num_edges) {
++        rcp_log(log_level, REPCUT_LOG_ERROR, "Invalid graph arrays\n");
++        return false;
++    }
++    for (size_t i = 0; i < n; ++i) {
++        if (!std::isfinite(graph.weights[i]) || graph.offsets[i] > graph.offsets[i + 1]
++            || graph.offsets[i + 1] > graph.num_edges) {
++            rcp_log(log_level, REPCUT_LOG_ERROR, "Invalid graph weight or offset\n");
++            return false;
++        }
++    }
++    for (size_t i = 0; i < graph.num_edges; ++i) {
++        if (graph.neighbors[i] >= n) {
++            rcp_log(log_level, REPCUT_LOG_ERROR, "Graph neighbor out of range\n");
++            return false;
++        }
++    }
++    weight.assign(n, 0);
++    valid.assign(n, false);
++    sinkNodes.clear();
++    inNeigh.offsets_.assign(n + 1, 0);
++    outNeigh.offsets_.assign(n + 1, 0);
++    outNeigh.neighbors_.clear();
++    outNeigh.neighbors_.reserve(graph.num_edges);
++    for (size_t src = 0; src < n; ++src) {
++        if (graph.weights[src] >= 0) {
++            weight[src] = graph.weights[src];
++            valid[src] = true;
++            for (size_t i = graph.offsets[src]; i < graph.offsets[src + 1]; ++i) {
++                const uint32_t dst = graph.neighbors[i];
++                outNeigh.neighbors_.push_back(dst);
++                ++inNeigh.offsets_[static_cast<size_t>(dst) + 1];
++            }
++        }
++        outNeigh.offsets_[src + 1] = outNeigh.neighbors_.size();
++    }
++    buildIncoming();
++    return true;
++}
++
++void DirectedAcyclicGraph::buildIncoming()
++{
+     const auto n = numVertices();
+     for (size_t vertex = 1; vertex <= n; ++vertex) {
+         inNeigh.offsets_[vertex] += inNeigh.offsets_[vertex - 1];
+@@ -163,10 +219,6 @@ bool DirectedAcyclicGraph::buildFromFile(const char* filename)
+     }
+     inNeigh.offsets_[0] = 0;
+ 
+-    auto stop = std::chrono::system_clock::now();
+-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+-    rcp_log(log_level, REPCUT_LOG_DEBUG, "Build DAG from file: Done in %llums\n", duration.count());
+-    return true;
+ }
+ 
+ void DirectedAcyclicGraph::findSinkNodes()
+diff --git a/third_party/repcut/lib/repcut/RepCut.cpp b/third_party/repcut/lib/repcut/RepCut.cpp
+index dfadc216e..8ed41e21a 100644
+--- a/third_party/repcut/lib/repcut/RepCut.cpp
++++ b/third_party/repcut/lib/repcut/RepCut.cpp
+@@ -19,7 +19,8 @@ namespace fs = std::filesystem;
+ 
+ using namespace repcut;
+ 
+-static int run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_out)
++static int run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_out,
++               const RepCutGraph* graph, RepCutPartitionCallback callback, void* user)
+ {
+     if (ctx == nullptr) {
+         std::fprintf(stderr, "repcut_run: context is null\n");
+@@ -29,11 +30,12 @@ static int run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_o
+     const RepCutLogLevel ll = ctx->log_level;
+ 
+     // Validate inputs
+-    if (ctx->graph_filename == nullptr || ctx->graph_filename[0] == '\0') {
++    if (!graph && (ctx->graph_filename == nullptr || ctx->graph_filename[0] == '\0')) {
+         rcp_log(ll, REPCUT_LOG_ERROR, "graph_filename is empty\n");
+         return 1;
+     }
+-    if (ctx->work_directory == nullptr || ctx->work_directory[0] == '\0') {
++    const bool files = !graph || ctx->save_intermediate_files;
++    if (files && (ctx->work_directory == nullptr || ctx->work_directory[0] == '\0')) {
+         rcp_log(ll, REPCUT_LOG_ERROR, "work_directory is empty\n");
+         return 1;
+     }
+@@ -55,24 +57,24 @@ static int run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_o
+         return 1;
+     }
+ 
+-    if (!fs::exists(ctx->graph_filename) || !fs::is_regular_file(ctx->graph_filename)) {
++    if (!graph && (!fs::exists(ctx->graph_filename) || !fs::is_regular_file(ctx->graph_filename))) {
+         rcp_log(ll, REPCUT_LOG_ERROR, "Input graph file %s does not exist or is not a regular file\n",
+                 ctx->graph_filename);
+         return 1;
+     }
+-    if (!fs::exists(ctx->work_directory) || !fs::is_directory(ctx->work_directory)) {
++    if (files && (!fs::exists(ctx->work_directory) || !fs::is_directory(ctx->work_directory))) {
+         rcp_log(ll, REPCUT_LOG_ERROR, "Work directory %s does not exist or is not a directory\n", ctx->work_directory);
+         return 1;
+     }
+ 
+     // Acquire work-directory lock
+-    const fs::path lock_path = fs::path(ctx->work_directory) / ".lock";
+-    if (fs::exists(lock_path)) {
++    const fs::path lock_path = files ? fs::path(ctx->work_directory) / ".lock" : fs::path{};
++    if (files && fs::exists(lock_path)) {
+         rcp_log(ll, REPCUT_LOG_ERROR, "Work directory %s is already in use (lock file %s exists)\n",
+                 ctx->work_directory, lock_path.c_str());
+         return 1;
+     }
+-    {
++    if (files) {
+         std::ofstream lk(lock_path);
+         if (!lk) {
+             rcp_log(ll, REPCUT_LOG_ERROR, "Cannot create lock file %s\n", lock_path.c_str());
+@@ -90,7 +92,7 @@ static int run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_o
+         ~LockGuard()
+         {
+             std::error_code ec;
+-            if (fs::exists(p, ec))
++            if (!p.empty() && fs::exists(p, ec))
+                 fs::remove(p, ec);
+         }
+     } guard{lock_path};
+@@ -107,7 +109,7 @@ static int run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_o
+     // Build DAG
+     auto dag = std::make_unique<DirectedAcyclicGraph>();
+     dag->log_level = ll;
+-    if (!dag->buildFromFile(ctx->graph_filename)) {
++    if (!(graph ? dag->buildFromMemory(*graph) : dag->buildFromFile(ctx->graph_filename))) {
+         return 1;
+     }
+     dag->findSinkNodes();
+@@ -115,13 +117,22 @@ static int run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_o
+     // Run partitioner
+     rcp->kahypar_imbalance_factor = ctx->target_ib;
+     rcp->kahypar_seed = ctx->seed;
+-    rcp->set_work_directory(ctx->work_directory);
++    if (files) rcp->set_work_directory(ctx->work_directory);
+     if (!rcp->partition(*dag, ctx->nparts)) {
+         return 1;
+     }
+ 
+-    // Write output file
+-    rcp->saveToFile("rcp_output.txt");
++    if (graph) {
++        for (uint32_t i = 0; i < rcp->partitions.size(); ++i) {
++            const auto& members = rcp->partitions[i];
++            if (callback(user, i, members.data(), members.size()) != 0) {
++                rcp_log(ll, REPCUT_LOG_ERROR, "Partition callback rejected result\n");
++                return 1;
++            }
++        }
++    } else {
++        rcp->saveToFile("rcp_output.txt");
++    }
+ 
+     // Optional stats
+     if (stats_out != nullptr) {
+@@ -143,7 +154,8 @@ static int run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_o
+     return 0;
+ }
+ 
+-extern "C" int repcut_run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_out)
++static int guardedRun(const RepCutContext* ctx, RepCutStatistics* stats_out,
++                      const RepCutGraph* graph, RepCutPartitionCallback callback, void* user)
+ {
+     // MtKaHyPar owns process-global state (including its RNG and thread pool).
+     // Reject overlap rather than silently serializing independent callers.
+@@ -161,7 +173,7 @@ extern "C" int repcut_run(const struct RepCutContext* ctx, struct RepCutStatisti
+     // No C++ exception may cross the public C ABI. Local resource and workdir
+     // guards unwind first, so a failed call does not prevent a later retry.
+     try {
+-        return run(ctx, stats_out);
++        return run(ctx, stats_out, graph, callback, user);
+     }
+     catch (const std::exception& error) {
+         std::fprintf(stderr, "repcut_run: %s\n", error.what());
+@@ -171,3 +183,19 @@ extern "C" int repcut_run(const struct RepCutContext* ctx, struct RepCutStatisti
+     }
+     return 1;
+ }
++
++extern "C" int repcut_run(const RepCutContext* ctx, RepCutStatistics* stats_out)
++{
++    return guardedRun(ctx, stats_out, nullptr, nullptr, nullptr);
++}
++
++extern "C" int repcut_run_graph(const RepCutContext* ctx, const RepCutGraph* graph,
++                                RepCutPartitionCallback callback, void* user,
++                                RepCutStatistics* stats_out)
++{
++    if (!graph || !callback) {
++        std::fprintf(stderr, "repcut_run_graph: graph and callback are required\n");
++        return 1;
++    }
++    return guardedRun(ctx, stats_out, graph, callback, user);
++}
+diff --git a/third_party/repcut/tests/CMakeLists.txt b/third_party/repcut/tests/CMakeLists.txt
+index 06c9a3742..73c5e8ab0 100644
+--- a/third_party/repcut/tests/CMakeLists.txt
++++ b/third_party/repcut/tests/CMakeLists.txt
+@@ -20,3 +20,8 @@ if(RCP_USE_MTKAHYPAR)
+         COMMAND test-library repeat "${CMAKE_CURRENT_BINARY_DIR}/repeat-2t" 2)
+ endif()
+ set_tests_properties(library-external-disabled PROPERTIES TIMEOUT 40)
++add_executable(test-memory test_memory.cpp)
++target_link_libraries(test-memory PRIVATE repcut)
++add_test(NAME library-memory
++    COMMAND ${CMAKE_COMMAND} -DTEST=$<TARGET_FILE:test-memory>
++    -DWORK=${CMAKE_CURRENT_BINARY_DIR}/memory -P ${CMAKE_CURRENT_SOURCE_DIR}/test_memory.cmake)
+diff --git a/third_party/repcut/tests/test_memory.cpp b/third_party/repcut/tests/test_memory.cpp
+new file mode 100644
+index 000000000..5c66f0c60
+--- /dev/null
++++ b/third_party/repcut/tests/test_memory.cpp
+@@ -0,0 +1,146 @@
++#include "DAG.h"
++#include "repcut.h"
++
++#include <filesystem>
++#include <fstream>
++#include <iostream>
++#include <iomanip>
++#include <limits>
++#include <sstream>
++#include <stdexcept>
++#include <vector>
++
++namespace fs = std::filesystem;
++static void require(bool value) { if (!value) throw std::runtime_error("Memory API test failed"); }
++struct Input {
++    std::vector<float> weights;
++    std::vector<size_t> offsets{0};
++    std::vector<uint32_t> neighbors;
++    explicit Input(unsigned n) {
++        for (unsigned i = 0; i < n; ++i) {
++            weights.push_back(0.25f + i % 5);
++            for (unsigned j : {i, (i + 1) % n, (i + 7) % n}) neighbors.push_back(n + j);
++            offsets.push_back(neighbors.size());
++        }
++        for (unsigned i = 0; i < n; ++i) {
++            weights.push_back(1 + i % 3);
++            offsets.push_back(neighbors.size());
++        }
++    }
++    RepCutGraph view() const { return {static_cast<uint32_t>(weights.size()), neighbors.size(), weights.data(), offsets.data(), neighbors.data()}; }
++    void save() const {
++        std::ofstream out("input.graph");
++        out << neighbors.size() << ' ' << weights.size() << '\n';
++        for (size_t i = 0; i < weights.size(); ++i) {
++            out << "n " << weights[i];
++            for (size_t j = offsets[i]; j < offsets[i + 1]; ++j) out << ' ' << neighbors[j];
++            out << '\n';
++        }
++    }
++};
++struct Output {
++    std::vector<std::vector<uint32_t>> parts;
++    bool reject = false;
++    const RepCutContext* nested = nullptr;
++    const RepCutGraph* graph = nullptr;
++    static int collect(void* user, uint32_t part, const uint32_t* ids, size_t n) {
++        auto& out = *static_cast<Output*>(user);
++        if (out.reject || part != out.parts.size()) return 1;
++        if (out.nested) {
++            // Both entry points must share the process-wide busy guard.
++            if (repcut_run(out.nested, nullptr) == 0
++                || repcut_run_graph(out.nested, out.graph, collect, user, nullptr) == 0) return 1;
++            out.nested = nullptr;
++        }
++        out.parts.emplace_back();
++        if (n) out.parts.back().assign(ids, ids + n);
++        return 0;
++    }
++    std::string csv() const {
++        std::ostringstream out;
++        for (const auto& part : parts) {
++            for (auto id : part) out << id << ',';
++            out << '\n';
++        }
++        return out.str();
++    }
++};
++static void checkDag(Input& input) {
++    input.save();
++    repcut::DirectedAcyclicGraph file, memory;
++    require(file.buildFromFile("input.graph"));
++    require(memory.buildFromMemory(input.view()));
++    require(file.weight == memory.weight && file.valid == memory.valid);
++    for (size_t i = 0; i < file.numVertices(); ++i) {
++        for (bool incoming : {false, true}) {
++            auto a = incoming ? file.inNeigh[i] : file.outNeigh[i];
++            auto b = incoming ? memory.inNeigh[i] : memory.outNeigh[i];
++            require(std::vector<uint32_t>(a.begin(), a.end()) == std::vector<uint32_t>(b.begin(), b.end()));
++        }
++    }
++}
++int main(int argc, char** argv) {
++    try {
++        require(argc == 5);
++        const std::string mode = argv[1];
++        fs::create_directories(argv[2]);
++        fs::current_path(argv[2]);
++        Input input(128);
++        auto graph = input.view();
++        RepCutContext ctx{nullptr, nullptr, 4, 0.03f, 1, std::stoi(argv[3]), REPCUT_LOG_SILENT, nullptr, false};
++        RepCutStatistics stats{};
++        Output output;
++        if (mode == "file") {
++            input.save(); ctx.graph_filename = "input.graph"; ctx.work_directory = ".";
++            require(repcut_run(&ctx, &stats) == 0);
++            std::ifstream in("rcp_output.txt");
++            std::cout << in.rdbuf();
++        } else {
++            // Invalid paths must be ignored when dumps are disabled.
++            ctx.graph_filename = "missing/graph"; ctx.work_directory = "missing/work";
++            require(repcut_run_graph(&ctx, &graph, Output::collect, &output, &stats) == 0);
++            require(fs::is_empty("."));
++            std::cout << output.csv();
++            if (mode == "checks") {
++                // Structural parity includes duplicate edges and invalid/zero-weight nodes.
++                input.weights[0] = -1; input.weights[1] = 0;
++                input.neighbors[4] = input.neighbors[3];
++                checkDag(input);
++                input = Input(128); graph = input.view();
++                Output rejected; rejected.reject = true;
++                require(repcut_run_graph(&ctx, &graph, Output::collect, &rejected, nullptr) != 0);
++                for (int kind = 0; kind < 6; ++kind) {
++                    auto bad = graph;
++                    if (kind == 0) bad.offsets = nullptr;
++                    if (kind == 1) bad.neighbors = nullptr;
++                    if (kind == 2) ++bad.num_edges;
++                    if (kind == 3) input.offsets[1] = graph.num_edges + 1;
++                    if (kind == 4) input.neighbors[0] = graph.num_vertices;
++                    if (kind == 5) input.weights[0] = std::numeric_limits<float>::quiet_NaN();
++                    require(repcut_run_graph(&ctx, &bad, Output::collect, &output, nullptr) != 0);
++                    input = Input(128); graph = input.view();
++                }
++                require(repcut_run_graph(&ctx, nullptr, Output::collect, &output, nullptr) != 0);
++                require(repcut_run_graph(&ctx, &graph, nullptr, &output, nullptr) != 0);
++                for (int i = 0; i < 8; ++i) {
++                    Output next; next.nested = i == 0 ? &ctx : nullptr; next.graph = &graph;
++                    require(repcut_run_graph(&ctx, &graph, Output::collect, &next, nullptr) == 0);
++                    require(next.parts.size() == 4);
++                }
++                Input empty(0); auto emptyGraph = empty.view(); Output emptyOutput;
++                require(repcut_run_graph(&ctx, &emptyGraph, Output::collect, &emptyOutput, nullptr) == 0);
++                require(emptyOutput.parts.size() == 4);
++                ctx.save_intermediate_files = true; ctx.work_directory = ".";
++                Output saved;
++                require(repcut_run_graph(&ctx, &graph, Output::collect, &saved, nullptr) == 0);
++                require(fs::exists("parts.hmetis") && !fs::exists("rcp_output.txt") && !fs::exists(".lock"));
++            }
++        }
++        std::ofstream stat(argv[4]);
++        stat << std::setprecision(std::numeric_limits<float>::max_digits10)
++             << stats.nparts << ' ' << stats.sg_size << ' ' << stats.total_part_size << ' '
++             << stats.replication_size << ' ' << stats.sg_weight << ' ' << stats.total_part_weight << ' '
++             << stats.ib_factor_weight << ' ' << stats.replication_weight << ' ' << stats.replication_rate_weight << ' '
++             << stats.ib_factor_size << ' ' << stats.replication_rate_size << '\n';
++    } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
++}
+diff --git a/third_party/repcut/tests/test_memory.cmake b/third_party/repcut/tests/test_memory.cmake
+new file mode 100644
+index 000000000..95a7619f6
+--- /dev/null
++++ b/third_party/repcut/tests/test_memory.cmake
+@@ -0,0 +1,23 @@
++# Each invocation has a fresh process and RNG state.
++file(REMOVE_RECURSE "${WORK}")
++file(MAKE_DIRECTORY "${WORK}")
++foreach(seed 0 42 117)
++    foreach(mode file memory)
++        execute_process(COMMAND "${TEST}" "${mode}" "${WORK}/${seed}-${mode}" "${seed}" "${WORK}/${seed}-${mode}.stats"
++            RESULT_VARIABLE status OUTPUT_FILE "${WORK}/${seed}-${mode}.csv")
++        if(NOT status EQUAL 0)
++            message(FATAL_ERROR "${mode} API failed with seed ${seed}")
++        endif()
++    endforeach()
++    foreach(ext csv stats)
++        execute_process(COMMAND "${CMAKE_COMMAND}" -E compare_files "${WORK}/${seed}-file.${ext}" "${WORK}/${seed}-memory.${ext}"
++            RESULT_VARIABLE status)
++        if(NOT status EQUAL 0)
++            message(FATAL_ERROR "File/memory ${ext} mismatch with seed ${seed}")
++        endif()
++    endforeach()
++endforeach()
++execute_process(COMMAND "${TEST}" checks "${WORK}/checks" 42 "${WORK}/checks.stats" RESULT_VARIABLE status OUTPUT_QUIET)
++if(NOT status EQUAL 0)
++    message(FATAL_ERROR "Memory API validation failed")
++endif()

@@ -27,6 +27,7 @@ class AstNetlist;
 class V3Gate final {
 public:
     static void gateAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void removeUnused(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

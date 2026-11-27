@@ -46,6 +46,7 @@
 #include "V3EmitCBase.h"
 #include "V3EmitV.h"
 #include "V3Order.h"
+#include "V3RepCut.h"
 #include "V3SenExprBuilder.h"
 #include "V3Stats.h"
 
@@ -906,10 +907,17 @@ void schedule(AstNetlist* netlistp) {
         AstVarScope* const trigVscp = trigKit.newTrigVec(name);
         // Add the trigger indices of the input logic
         for (ProcessList* procListp : logic) addTriggerIndices(*procListp, trigKit, false);
+        if (name == "nba" && v3Global.opt.repcut()) {
+            // Batch independent RepCut domains under one thread schedule.
+            V3RepCut::batchNativeKernels(netlistp, logic, trigVscp);
+            // Index the combined dispatch's union sensitivity.
+            for (ProcessList* procListp : logic) addTriggerIndices(*procListp, trigKit, false);
+        }
 
         AstCFunc* const funcp
             = V3Order::order(logic, trigKit, trigVscp, cgRefBindings, name,
-                             name == "nba" && v3Global.opt.mtasks(), false, externalTriggers);
+                             name == "nba" && v3Global.opt.mtasks() && !v3Global.opt.repcut(),
+                             false, externalTriggers);
 
         return {trigVscp, funcp};
     };

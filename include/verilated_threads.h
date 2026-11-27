@@ -29,6 +29,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <memory>
 #include <set>
 #include <stack>
 #include <thread>
@@ -44,6 +45,7 @@
 #endif
 
 class VlExecutionProfiler;
+class VlFixedTask;
 class VlThreadPool;
 
 // VlThreadpool will work with multiple model class types.
@@ -111,6 +113,7 @@ public:
 };
 
 class VlWorkerThread final {
+    friend class VlFixedTask;
     friend class VlThreadPool;
 
     // TYPES
@@ -122,10 +125,12 @@ class VlWorkerThread final {
             : m_fnp{fnp}
             , m_selfp{selfp} {}
     };
+    // Fixed tasks may outlive the pool after fatal shutdown or prepareClone().
+    struct FixedLifetime final {};
 
     // MEMBERS
     mutable VerilatedMutex m_mutex;  // Protection mutex
-    std::condition_variable_any m_cv;
+    std::condition_variable_any m_cv;  // Wake a parked worker when work arrives
     // Only notify the condition_variable if the worker is waiting
     bool m_waiting VL_GUARDED_BY(m_mutex) = false;
 
@@ -135,18 +140,27 @@ class VlWorkerThread final {
     std::vector<ExecRec> m_ready VL_GUARDED_BY(m_mutex);
     // Store the size atomically, so we can spin wait
     std::atomic<size_t> m_ready_size;
+    // Fixed dispatch has one producer, and at most one outstanding invocation.
+    // Keep its frequently written start signal away from queue bookkeeping.
+    alignas(VL_CACHE_LINE_BYTES) std::atomic<VlFixedTask*> m_fixedTaskp{nullptr};
+    alignas(VL_CACHE_LINE_BYTES) std::atomic<uint32_t> m_fixedUsers{0};
+    // Expiration tells surviving tasks that their worker has been destroyed.
+    const std::shared_ptr<FixedLifetime> m_fixedLifetime{std::make_shared<FixedLifetime>()};
     // Thread context
     VerilatedContext* const m_contextp;
     // Underlying thread record
 #ifdef VL_USE_PTHREADS
-    pthread_t m_pthread{};
+    pthread_t m_pthread{};  // Worker thread handle
 #else
-    std::thread m_cthread;
+    std::thread m_cthread;  // Worker thread handle
 #endif
 
     // METHDOS
     static void* start(void*);  // Static entry point, invokes 'main'
     void main();  // 'main' loop of thread
+    void retainFixed() VL_MT_SAFE_EXCLUDES(m_mutex);
+    void releaseFixed() { m_fixedUsers.fetch_sub(1, std::memory_order_relaxed); }
+    bool fixedWork(ExecRec* workp);
 
     VL_UNCOPYABLE(VlWorkerThread);
 
@@ -158,24 +172,43 @@ public:
     // METHODS
     template <bool N_SpinWait>
     void dequeWork(ExecRec* workp) VL_MT_SAFE_EXCLUDES(m_mutex) {
-        // Spin for a while, waiting for new data
-        if VL_CONSTEXPR_CXX17 (N_SpinWait) {
-            for (unsigned i = 0; i < VL_LOCK_SPINS; ++i) {
-                if (VL_LIKELY(m_ready_size.load(std::memory_order_relaxed))) break;
+        // Fixed models keep their assigned workers polling. Registration wakes a
+        // sleeping worker under the same mutex as the condition-variable wait.
+        // Queue users still make progress between fixed invocations.
+        while (true) {
+            unsigned spins = 0;
+            while (m_fixedUsers.load(std::memory_order_relaxed)) {
+                if (fixedWork(workp)) return;
+                if (m_ready_size.load(std::memory_order_relaxed)) break;
                 VL_CPU_RELAX();
+                if (++spins == VL_LOCK_SPINS) {
+                    spins = 0;
+                    std::this_thread::yield();
+                }
             }
+            // Spin for a while, waiting for new data
+            if VL_CONSTEXPR_CXX17 (N_SpinWait) {
+                for (unsigned i = 0; i < VL_LOCK_SPINS; ++i) {
+                    if (VL_LIKELY(m_ready_size.load(std::memory_order_relaxed))
+                        || m_fixedUsers.load(std::memory_order_relaxed))
+                        break;
+                    VL_CPU_RELAX();
+                }
+            }
+            const VerilatedLockGuard lock{m_mutex};
+            while (m_ready.empty() && !m_fixedUsers.load(std::memory_order_relaxed)) {
+                m_waiting = true;
+                m_cv.wait(m_mutex);
+            }
+            m_waiting = false;
+            if (m_ready.empty()) continue;
+            // As noted above this is inefficient if our ready list is ever
+            // long (but it shouldn't be)
+            *workp = m_ready.front();
+            m_ready.erase(m_ready.begin());
+            m_ready_size.fetch_sub(1, std::memory_order_relaxed);
+            return;
         }
-        const VerilatedLockGuard lock{m_mutex};
-        while (m_ready.empty()) {
-            m_waiting = true;
-            m_cv.wait(m_mutex);
-        }
-        m_waiting = false;
-        // As noted above this is inefficient if our ready list is ever
-        // long (but it shouldn't be)
-        *workp = m_ready.front();
-        m_ready.erase(m_ready.begin());
-        m_ready_size.fetch_sub(1, std::memory_order_relaxed);
     }
     void addTask(VlExecFnp fnp, VlSelfP selfp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         bool notify;
@@ -192,6 +225,63 @@ public:
     void wait();  // Blocks calling thread until all tasks complete in this thread
 };
 
+/// Model-owned, statically assigned worker entry point. The caller must join
+/// each invocation before restarting or destroying it. Models sharing a pool
+/// must evaluate sequentially, just as with the ordinary fixed worker schedule.
+///
+/// This is a single-producer start mailbox, not a completion object. start()
+/// release-publishes the task and prior model writes; the worker acquire-loads
+/// it, copies the invocation fields, and clears the mailbox before executing.
+/// A cleared mailbox therefore does not mean the task has completed. Generated
+/// code joins through the schedule's progress before reusing task fields or
+/// destroying the model. The worker must not dereference this object after
+/// publishing completion, since the caller can then release it immediately.
+///
+/// Fixed slots do not participate in the pool's ordinary worker reservations.
+/// Generated dispatch uses the reservation/queue path when an enclosing ordinary
+/// hierarchical schedule owns workers; concurrently nested models must not
+/// configure or start conflicting fixed slots.
+class alignas(VL_CACHE_LINE_BYTES) VlFixedTask final {
+    friend class VlWorkerThread;
+    VlWorkerThread* m_workerp = nullptr;  // Worker assigned to this fixed task
+    std::weak_ptr<VlWorkerThread::FixedLifetime> m_workerLifetime;  // Does not keep the pool alive
+    VlExecFnp m_fnp = nullptr;  // Function to execute on the assigned worker
+    VlSelfP m_selfp = nullptr;  // Model instance passed to the task function
+
+    VL_UNCOPYABLE(VlFixedTask);
+
+public:
+    VlFixedTask() = default;
+    ~VlFixedTask() {
+        // Pool teardown and task destruction are quiescent, never concurrent.
+        if (!m_workerLifetime.expired()) m_workerp->releaseFixed();
+    }
+    /// Register once, before the first invocation. No task is executed here.
+    void configure(VlWorkerThread* workerp, VlExecFnp fnp, VlSelfP selfp) {
+        assert(!m_workerp && workerp && fnp);
+        m_workerp = workerp;
+        m_workerLifetime = workerp->m_fixedLifetime;
+        m_fnp = fnp;
+        m_selfp = selfp;
+        m_workerp->retainFixed();
+    }
+    /// Forget a quiescent registration when its pool is discarded for cloning.
+    /// Do not release the old worker: prepareClone() may already have freed it,
+    /// or fork() may have left its synchronization objects owned by lost threads.
+    /// The next evaluation must configure this task against the replacement pool.
+    void resetForClone() {
+        m_workerp = nullptr;
+        m_workerLifetime.reset();
+        m_fnp = nullptr;
+        m_selfp = nullptr;
+    }
+    /// Release-publish a start signal; the worker acquires all caller input writes.
+    void start() {
+        assert(m_workerp && !m_workerp->m_fixedTaskp.load(std::memory_order_relaxed));
+        m_workerp->m_fixedTaskp.store(this, std::memory_order_release);
+    }
+};
+
 class VlThreadPool final : public VerilatedVirtualBase {
     // MEMBERS
     VerilatedContext* const m_contextp;  // Context for newly acquired workers
@@ -200,6 +290,9 @@ class VlThreadPool final : public VerilatedVirtualBase {
     mutable VerilatedMutex m_mutex;  // Guards indexes of unassigned workers
     // Indexes of unassigned workers
     std::stack<size_t> m_unassignedWorkers VL_GUARDED_BY(m_mutex);
+    // Ordinary hierarchical schedules reserve workers until their join. Fixed
+    // kernels nested in those schedules must participate in the same allocation.
+    std::atomic<size_t> m_reservedWorkers{0};
     // Workers for blocking calls, separate from the statically indexed simulation workers.
     // An acquired worker belongs to its caller until released back to the pool.
     std::vector<VlWorkerThread*> m_idleWorkers VL_GUARDED_BY(m_mutex);
@@ -225,12 +318,18 @@ public:
         assert(!m_unassignedWorkers.empty());
         const size_t index = m_unassignedWorkers.top();
         m_unassignedWorkers.pop();
+        m_reservedWorkers.fetch_add(1, std::memory_order_relaxed);
         return index;
     }
     void freeWorkerIndexes(std::vector<size_t>& indexes) {
         const VerilatedLockGuard lock{m_mutex};
         for (const size_t index : indexes) m_unassignedWorkers.push(index);
+        m_reservedWorkers.fetch_sub(indexes.size(), std::memory_order_relaxed);
         indexes.clear();
+    }
+    /// True while an ordinary hierarchical schedule owns worker slots.
+    bool hasWorkerReservations() const VL_MT_SAFE {
+        return m_reservedWorkers.load(std::memory_order_relaxed) != 0;
     }
     unsigned assignTaskIndex() { return m_assignedTasks++; }
     int numThreads() const { return static_cast<int>(m_workers.size()); }

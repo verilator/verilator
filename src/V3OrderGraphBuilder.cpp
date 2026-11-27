@@ -26,6 +26,8 @@
 #include "V3Sched.h"
 #include "V3VNUserAllocator.h"
 
+#include <unordered_set>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -103,6 +105,8 @@ class OrderGraphBuilder final : public VNVisitorConst {
     bool m_inClocked = false;  // Processing clocked logic
     bool m_inPre = false;  // Underneath AlwaysPre
     bool m_inPost = false;  // Underneath AstAlwaysPost
+    std::unordered_set<const AstCFunc*> m_repcutFuncps;  // Closed bodies walked for this logic
+    bool m_inBatch = false;  // Underneath a combined RepCut batch call
     const bool m_parallel;  // Ordering for multi-threaded execution (record variable accesses)
 
     // What covergroup reference formal arguments are bound to at construction
@@ -117,6 +121,7 @@ class OrderGraphBuilder final : public VNVisitorConst {
         // Reset VarUsage and VarAccess
         AstNode::user2ClearTree();
         AstNode::user4ClearTree();
+        m_repcutFuncps.clear();
         // Create LogicVertex for this logic node
         m_logicVxp
             = new OrderLogicVertex{m_graphp, m_processp->m_scopep, m_domainp, m_hybridp, nodep};
@@ -288,6 +293,18 @@ class OrderGraphBuilder final : public VNVisitorConst {
     void visit(AstNodeCCall* nodep) override {
         iterateChildrenConst(nodep);
         accountEnqueuingCall(nodep);
+        // Combined RepCut batch functions and their ExecGraph/partition bodies
+        // are not inlined, so their accesses are invisible to the orderer. Walk
+        // the closed callees of a combined dispatch. Per-domain calls retain
+        // their selective dependency arguments.
+        const AstCFunc* const funcp = nodep->funcp();
+        const bool batchRoot = funcp->repcutBatchRoot();
+        if (!m_inBatch && !batchRoot) return;
+        if (!funcp->isRepCut()) return;
+        if (!m_repcutFuncps.emplace(funcp).second) return;
+        VL_RESTORER(m_inBatch);
+        if (batchRoot) m_inBatch = true;
+        iterateChildrenConst(const_cast<AstCFunc*>(funcp));
     }
     // A covergroup sample() is not inlined and may read design signals through cross-scope
     // references held by the covergroup. This attributes those references to the calling block.

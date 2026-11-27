@@ -13,7 +13,9 @@ test.scenarios('vlt')
 
 # TODO: This takes excessively long on vltmt, this should be fixed
 
-test.compile(verilator_flags2=["--unroll-count 1000000000", "--output-split 0", "--stats"])
+# Exercise the native MergeCond distance limit; RepCut partitions this cone first.
+test.compile(
+    verilator_flags2=["-fno-repcut", "--unroll-count 1000000000", "--output-split 0", "--stats"])
 
 test.execute()
 

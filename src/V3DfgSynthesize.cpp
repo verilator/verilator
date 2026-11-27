@@ -569,6 +569,95 @@ public:
         , m_ctx{ctx} {}
 };
 
+std::unique_ptr<DfgGraph> V3DfgPasses::astBlockToDfg(AstScope& scope,
+                                                     const std::vector<AstNodeStmt*>& statements,
+                                                     const std::set<AstVarScope*>& liveOuts,
+                                                     const std::set<AstVarScope*>& availableInputs,
+                                                     V3DfgContext& ctx) {
+    const VNUser2InUse user2InUse;
+    std::unique_ptr<DfgGraph> dfgp{new DfgGraph{ctx, "scoped-block", &scope}};
+    std::map<AstVarScope*, size_t> writers;
+    // Reject repeated writes and forward/self references: the block must denote
+    // an acyclic set of equations, with no old/new versions of the same binding.
+    for (size_t i = 0; i < statements.size(); ++i) {
+        const AstAssign* const assignp = VN_CAST(statements[i], Assign);
+        if (!assignp || assignp->timingControlp()) return nullptr;
+        const AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef);
+        if (!lhsp || !lhsp->access().isWriteOnly() || !V3Dfg::isSupported(lhsp->varScopep())
+            || !lhsp->dtypep()->skipRefp()->isIntegralOrPacked()
+            || !writers.emplace(lhsp->varScopep(), i).second) {
+            return nullptr;
+        }
+    }
+    bool supported = true;
+    for (size_t i = 0; i < statements.size(); ++i) {
+        statements[i]->foreach([&](AstNodeExpr* nodep) {
+            if (!nodep->isPure()) supported = false;
+            if (const AstCond* const condp = VN_CAST(nodep, Cond)) {
+                for (const AstNodeExpr* const armp : {condp->thenp(), condp->elsep()}) {
+                    if (VN_IS(armp, Const)) continue;
+                    const AstVarRef* const refp = VN_CAST(armp, VarRef);
+                    if (!refp || !refp->access().isReadOnly()) {
+                        supported = false;
+                        continue;
+                    }
+                    const auto it = writers.find(refp->varScopep());
+                    if (it == writers.end() ? !availableInputs.count(refp->varScopep())
+                                            : it->second >= i) {
+                        supported = false;
+                    }
+                }
+            }
+            if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+                AstVarScope* const vscp = refp->varScopep();
+                if (refp->classOrPackagep() || !vscp || !V3Dfg::isSupported(vscp)) {
+                    supported = false;
+                    return;
+                }
+                const auto it = writers.find(vscp);
+                if (refp->access().isReadOrRW() && it != writers.end() && it->second >= i) {
+                    supported = false;
+                }
+                if (vscp->user2p()) return;
+                // Inputs may be referenced elsewhere in the model. For written
+                // private values, phase analysis supplies the actual boundary.
+                // Flags live only in reserved user1; no public attributes change.
+                if (it == writers.end() || liveOuts.count(vscp) || !vscp->varp()->isInternal()
+                    || vscp->varp()->isSigUserRdPublic() || vscp->varp()->isSigUserRWPublic()) {
+                    DfgVertexVar::setHasExtRdRefs(vscp);
+                }
+                DfgVertexVar* const varp
+                    = VN_IS(vscp->dtypep()->skipRefp(), UnpackArrayDType)
+                          ? static_cast<DfgVertexVar*>(new DfgVarArray{*dfgp, vscp})
+                          : new DfgVarPacked{*dfgp, vscp};
+                vscp->user2p(varp);
+            }
+        });
+    }
+    if (!supported) return nullptr;
+    // Reuse the ordinary typed expression converter, without CFG synthesis.
+    // The temporary logic vertex records conversion allocations only.
+    VNDeleter deleter;
+    AstAlways* const alwaysp = new AstAlways{scope.fileline(), VAlwaysKwd::ALWAYS_COMB, nullptr};
+    deleter.pushDeletep(alwaysp);
+    DfgLogic* const logicp = new DfgLogic{*dfgp, alwaysp, &scope, nullptr};
+    AstToDfgConverter converter{*dfgp, ctx.m_synthContext};
+    for (AstNodeStmt* const stmtp : statements) {
+        const AstAssign* const assignp = VN_AS(stmtp, Assign);
+        DfgVertex* const rhsp = converter.convert(*logicp, assignp->rhsp());
+        if (!rhsp) {
+            logicp->unlinkDelete(*dfgp);
+            return nullptr;
+        }
+        AstVarScope* const vscp = VN_AS(assignp->lhsp(), VarRef)->varScopep();
+        DfgVertexVar* const varp = vscp->user2u().to<DfgVertexVar*>();
+        varp->srcp(rhsp);
+        varp->driverFileLine(assignp->fileline());
+    }
+    logicp->unlinkDelete(*dfgp);
+    return dfgp;
+}
+
 // Debug aid - outisde 'AstToDfgSynthesize' as it is a template, but want one instance
 V3DebugBisect s_dfgSynthDebugBisect{"DfgSynthesize"};
 

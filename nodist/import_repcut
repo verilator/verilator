@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+# DESCRIPTION: Verilator: Reproduce or update the bundled partitioner snapshots
+# SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+"""Export pinned Git sources into a fresh staging directory and apply local patches."""
+
+import argparse
+import hashlib
+import io
+import json
+from pathlib import Path
+import subprocess
+import tarfile
+
+
+def export_package(package, repository, revision, output):
+    """Export one pinned package and verify or refresh its original-file hashes."""
+    name = package['path']
+    updating = revision is not None
+    revision = revision or package['commit']
+    package['commit'] = subprocess.check_output(
+        ['git', '-C', str(repository), 'rev-parse', revision + '^{commit}'], text=True).strip()
+    data = subprocess.check_output(['git', '-C', str(repository), 'archive', package['commit']])
+    files = {}
+    with tarfile.open(fileobj=io.BytesIO(data)) as archive:
+        for member in archive:
+            if not member.isfile() or any(
+                    member.name == excluded or member.name.startswith(excluded)
+                    for excluded in package['excluded']):
+                continue
+            relative = Path(member.name)
+            if relative.is_absolute() or '..' in relative.parts:
+                raise ValueError('Unsafe archive path: ' + member.name)
+            content = archive.extractfile(member).read()
+            target = output / 'third_party' / name / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(content)
+            target.chmod(member.mode & 0o777)
+            files[member.name] = hashlib.sha256(content).hexdigest()
+    if not updating and files != package['files']:
+        raise ValueError('Pinned source manifest mismatch: ' + name)
+    package['files'] = files
+
+
+def main():
+    """Stage snapshots and their local embedding patches for review."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output',
+                        type=Path,
+                        required=True,
+                        help='Fresh staging directory (contains third_party/)')
+    parser.add_argument('--checkout',
+                        action='append',
+                        default=[],
+                        metavar='NAME=PATH',
+                        help='Local Git checkout for each manifest path')
+    parser.add_argument('--revision',
+                        action='append',
+                        default=[],
+                        metavar='NAME=REV',
+                        help='Update a package to a new revision and regenerate its manifest')
+    args = parser.parse_args()
+    source = Path(__file__).resolve().parents[1] / 'third_party'
+    packages = json.loads((source / 'manifest.json').read_text(encoding='utf8'))
+    checkouts = dict(value.split('=', 1) for value in args.checkout)
+    revisions = dict(value.split('=', 1) for value in args.revision)
+    args.output.mkdir(parents=True, exist_ok=False)
+    for package in packages:
+        name = package['path']
+        export_package(package, Path(checkouts[name]).resolve(), revisions.get(name), args.output)
+    (args.output / 'third_party/manifest.json').write_text(json.dumps(packages, indent=2) + '\n',
+                                                           encoding='utf8')
+    for patch in sorted((source / 'patches').glob('*.patch')):
+        subprocess.run(['git', 'apply', str(patch.resolve())], cwd=args.output, check=True)
+    print('Snapshots and manifest written to', args.output)
+    print('Review updated revisions, patches and license notices before copying into Verilator.')
+
+
+if __name__ == '__main__':
+    main()

@@ -86,6 +86,10 @@ class V3DfgBinToOneHotContext final : public V3DfgSubContext {
     friend class V3DfgContext;
 
 public:
+    // Native decoder construction and cache-shape validation use the same limits.
+    static constexpr uint32_t WIDTH_MIN = 7;
+    static constexpr uint32_t WIDTH_MAX = 20;
+    static constexpr uint32_t TERM_LIMIT = 65;
     // STATE
     VDouble0 m_decodersCreated;  // Number of bianry to one-hot decoders created
 
@@ -425,11 +429,14 @@ public:
         m_removeUnobservableContext;  // Stats context for V3DfgRemoveUnobservable
     V3DfgSynthesisContext m_synthContext;  // Statistics context for V3DfgSynthesize
 
-    // Temporary variables created by all algorithms, shared by instances
-    V3SharedTmps m_sharedTmps{"__Vdfg", VVarType::MODULETEMP};
+    // Temporary variables created by all algorithms, shared by instances.
+    // Prefixes must be unique per compilation so a second context (for
+    // example partition-local RepCut optimization) can coexist with the main one.
+    V3SharedTmps m_sharedTmps;
 
     // CONSTRUCTOR
-    V3DfgContext() = default;
+    explicit V3DfgContext(const std::string& tmpsPrefix = "__Vdfg")
+        : m_sharedTmps{tmpsPrefix, VVarType::MODULETEMP} {}
     ~V3DfgContext() {
         V3Stats::addStat("Optimizations, DFG, temporary declarations reused",
                          m_sharedTmps.nReused());

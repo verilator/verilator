@@ -733,6 +733,7 @@ class AstExecGraph final : public AstNodeStmt {
     // @astgen ptr := m_runfuncp : Optional[AstCFunc]  // Statically scheduled dispatch function
     V3Graph* const m_depGraphp;  // contains ExecMTask vertices
     const string m_name;  // Name of this AstExecGraph (for uniqueness at code generation)
+    bool m_forceParallel = false;  // Preserve an explicit parallel scheduling decision
 
 public:
     AstExecGraph(FileLine* fl, const string& name, AstVarScope* trigVscp) VL_MT_DISABLED;
@@ -740,11 +741,18 @@ public:
     ASTGEN_MEMBERS_AstExecGraph;
     void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
     const char* broken() const override;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode* samep) const override {
+        return forceParallel() == VN_DBG_AS(samep, ExecGraph)->forceParallel();
+    }
     string name() const override VL_MT_STABLE { return m_name; }
     V3Graph* depGraphp() { return m_depGraphp; }
     const V3Graph* depGraphp() const { return m_depGraphp; }
     AstCFunc* runfuncp() const { return m_runfuncp; }
     void runfuncp(AstCFunc* funcp) { m_runfuncp = funcp; }
+    bool forceParallel() const { return m_forceParallel; }
+    void forceParallel(bool flag) { m_forceParallel = flag; }
 };
 class AstFClose final : public AstNodeStmt {
     // Parents: stmtlist

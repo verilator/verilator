@@ -1,0 +1,29 @@
+---
+engines:
+  rubocop:
+    enabled: true
+  duplication:
+    enabled: true
+  metrics:
+    enabled: true
+  coverage:
+    enabled: false
+  cppcheck:
+    enabled: true
+    options:
+      suppress:
+        - missingIncludeSystem
+
+languages:
+
+ignore:
+  - "style"
+
+exclude_paths:
+  - "docs/doxygen-awesome*"
+  - "docs/header.html"
+  - "fuzz/**/*"
+  - "fuzz/*"
+  - "scripts/**/*"
+  - "scripts/*"
+  - "**.md"

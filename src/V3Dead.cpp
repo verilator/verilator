@@ -42,6 +42,7 @@
 #include "V3Stats.h"
 
 #include <queue>
+#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -269,6 +270,7 @@ class DeadVisitor final : public VNVisitor {
     std::map<AstNodeDType*, AstNodeModule*> m_dtypePkgsp;  // Data type's containing package
     std::vector<AstVarScope*> m_vscsp;  // All variable scopes
     std::vector<AstScope*> m_scopesp;  // All scopes
+    std::unordered_set<const AstNodeModule*> m_coverageModps;  // Modules with coverage bins
     std::vector<AstCell*> m_cellsp;  // All cells
     std::vector<AstClass*> m_classesp;  // All classes
     std::vector<AstTypedef*> m_typedefsp;  // All typedefs
@@ -383,6 +385,12 @@ class DeadVisitor final : public VNVisitor {
         if (!nodep->isTop() && !nodep->varsp() && !nodep->blocksp()) {
             m_scopesp.push_back(nodep);
         }
+    }
+    void visit(AstNodeCoverDecl* nodep) override {
+        // Package functions carry their coverage into the calling scope when
+        // inlined. An empty package must not register a second, zero-hit copy.
+        if (!VN_IS(m_modp, Package)) m_coverageModps.insert(m_modp);
+        visit(static_cast<AstNode*>(nodep));
     }
     void visit(AstCell* nodep) override {
         iterateChildren(nodep);
@@ -713,7 +721,10 @@ class DeadVisitor final : public VNVisitor {
             for (auto& itr : m_scopesp) {
                 AstScope* const scp = itr;
                 if (!scp) continue;
-                if (scp->user1() == 0) {
+                // Coverage declarations live on the module, outside its scopes.
+                // Even after all executable logic disappears or moves elsewhere,
+                // each instance still needs a scope to register its zero-hit bins.
+                if (scp->user1() == 0 && !m_coverageModps.count(scp->modp())) {
                     UINFO(4, "  Dead AstScope " << scp);
                     scp->aboveScopep()->user1Inc(-1);
                     if (scp->dtypep()) scp->dtypep()->user1Inc(-1);

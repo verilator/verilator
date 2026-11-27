@@ -43,8 +43,9 @@ test.run(cmd=[
     "| tee " + gantt_log])   # yapf:disable
 
 if test.vltmt:
-    test.file_grep(gantt_log, r'Total threads += +(\d+)', 2)
-    test.file_grep(gantt_log, r'Total mtasks += +(\d+)', 6)
+    # The DPI loop stays native under RepCut, leaving one partition idle.
+    test.file_grep(gantt_log, r'Total threads += +(\d+)', 1 if test.repcut else 2)
+    test.file_grep(gantt_log, r'Total mtasks += +(\d+)', 1 if test.repcut else 6)
 else:
     test.file_grep(gantt_log, r'Total threads += +(\d+)', 1)
     test.file_grep(gantt_log, r'Total mtasks += +(\d+)', 0)

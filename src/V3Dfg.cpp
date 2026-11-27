@@ -28,9 +28,10 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //------------------------------------------------------------------------------
 // DfgGraph
 
-DfgGraph::DfgGraph(V3DfgContext& ctx, const string& name)
+DfgGraph::DfgGraph(V3DfgContext& ctx, const string& name, AstScope* tmpScopep)
     : m_ctx{ctx}
-    , m_name{name} {}
+    , m_name{name}
+    , m_tmpScopep{tmpScopep} {}
 
 DfgGraph::~DfgGraph() {
     forEachVertex([&](DfgVertex& vtx) { vtx.unlinkDelete(*this); });
@@ -102,7 +103,10 @@ void DfgGraph::mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) {
 
 DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& prefix,
                                    const DfgDataType& dtype, AstScope* scopep) {
-    AstVarScope* const vscp = m_ctx.m_sharedTmps.make(flp, scopep, dtype.astDtypep(), prefix);
+    // Block-local temporaries must not share declarations with other input instances:
+    // those instances can belong to different partitions with distinct storage attributes.
+    AstVarScope* const vscp = m_ctx.m_sharedTmps.make(flp, m_tmpScopep ? m_tmpScopep : scopep,
+                                                      dtype.astDtypep(), prefix);
     // Create and return the corresponding variable vertex
     if (dtype.isArray()) return new DfgVarArray{*this, vscp};
     return new DfgVarPacked{*this, vscp};

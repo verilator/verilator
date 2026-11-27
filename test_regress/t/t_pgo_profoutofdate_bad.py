@@ -11,6 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vltmt')
 
-test.compile(threads=2, fails=True, expect_filename=test.golden_filename)
+test.compile(threads=2,
+             fails=True,
+             expect_filename=(test.golden_filename.replace(".out", "_repcut.out")
+                              if test.repcut else test.golden_filename))
 
 test.passes()

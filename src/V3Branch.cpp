@@ -34,3 +34,5 @@ void V3Branch::branchAll(AstNetlist* nodep) {
     V3InstrCount::count(nodep, false);
     V3Global::dumpCheckGlobalTree("branch", 0, dumpTreeEitherLevel() >= 3);
 }
+
+void V3Branch::branchSubtree(AstNode* nodep) { V3InstrCount::count(nodep, false); }

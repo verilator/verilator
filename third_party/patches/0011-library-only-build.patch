@@ -1,0 +1,727 @@
+diff --git a/third_party/repcut/CMakeLists.txt b/third_party/repcut/CMakeLists.txt
+index afdf11d62..3b0965020 100644
+--- a/third_party/repcut/CMakeLists.txt
++++ b/third_party/repcut/CMakeLists.txt
+@@ -1,6 +1,2 @@
+-cmake_minimum_required(VERSION 3.13)
+-
+-if(POLICY CMP0167)
+-    cmake_policy(SET CMP0167 NEW)
+-endif()
++cmake_minimum_required(VERSION 3.15)
+
+@@ -11,28 +7,5 @@ set(CMAKE_CXX_EXTENSIONS OFF)
+
+-# By default the rcp command-line tool is built, which requires
+-# boost::program_options.  Disable to build and install only librepcut, which
+-# has zero Boost dependency.
+-option(RCP_BUILD_CLI "Build the rcp command-line tool (requires boost::program_options)" ON)
+-option(RCP_USE_MTKAHYPAR "Link MtKaHyPar" ON)
+-if(NOT RCP_USE_MTKAHYPAR)
+-    message(FATAL_ERROR "The bundled RepCut requires the MtKaHyPar library")
+-endif()
+ option(RCP_BUILD_TESTS "Build library API regression tests" OFF)
+-
+-set(RCP_MTKAHYPAR_USE_HWLOC OFF)
+-if(RCP_USE_MTKAHYPAR)
+-    include(cmake/MtKaHyPar.cmake)
+-endif()
+-
+-# All installable targets go into the `repcut-targets` export set so that
+-# downstream consumers can `find_package(repcut)` and link against the
+-# imported target `repcut::repcut`.
++include(cmake/MtKaHyPar.cmake)
+ add_subdirectory(lib)
+-
+-if(RCP_BUILD_CLI)
+-    find_package(Boost REQUIRED COMPONENTS program_options)
+-    add_subdirectory(tools)
+-    install(TARGETS rcp DESTINATION bin)
+-endif()
+-
+ if(RCP_BUILD_TESTS)
+@@ -41,33 +14 @@ if(RCP_BUILD_TESTS)
+ endif()
+-
+-if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+-install(TARGETS repcut
+-        EXPORT repcut-targets
+-        DESTINATION lib)
+-install(FILES include/repcut.h DESTINATION include)
+-install(FILES LICENSE DESTINATION share/licenses/repcut)
+-
+-# Generate and install the package config so consumers can do:
+-#   find_package(repcut CONFIG REQUIRED)
+-#   target_link_libraries(my_app PRIVATE repcut::repcut)
+-include(CMakePackageConfigHelpers)
+-
+-configure_package_config_file(
+-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/repcut-config.cmake.in"
+-    "${CMAKE_CURRENT_BINARY_DIR}/repcut-config.cmake"
+-    INSTALL_DESTINATION lib/cmake/repcut)
+-
+-write_basic_package_version_file(
+-    "${CMAKE_CURRENT_BINARY_DIR}/repcut-config-version.cmake"
+-    VERSION ${PROJECT_VERSION}
+-    COMPATIBILITY SameMinorVersion)
+-
+-install(EXPORT repcut-targets
+-        FILE repcut-targets.cmake
+-        NAMESPACE repcut::
+-        DESTINATION lib/cmake/repcut)
+-
+-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/repcut-config.cmake"
+-              "${CMAKE_CURRENT_BINARY_DIR}/repcut-config-version.cmake"
+-        DESTINATION lib/cmake/repcut)
+-endif()
+diff --git a/third_party/repcut/cmake/MtKaHyPar.cmake b/third_party/repcut/cmake/MtKaHyPar.cmake
+index 2a5b38382..4c43e98ea 100644
+--- a/third_party/repcut/cmake/MtKaHyPar.cmake
++++ b/third_party/repcut/cmake/MtKaHyPar.cmake
+@@ -1,70 +1,8 @@
+-# Build the pinned dependency in a local scope so its options do not change
+-# the parent project's library type or optional frontends.
++# Scope the dependency settings to the bundled static library.
+ function(rcp_add_mtkahypar)
+-    set(mt_source "${PROJECT_SOURCE_DIR}/external/mt-kahypar")
+-    set(mt_binary "${PROJECT_BINARY_DIR}/external/mt-kahypar")
+-    if(NOT EXISTS "${mt_source}/CMakeLists.txt")
+-        message(FATAL_ERROR
+-            "MtKaHyPar submodule is missing. Run: git submodule update --init --recursive")
+-    endif()
+-
+     set(BUILD_SHARED_LIBS OFF)
+-    set(KAHYPAR_ENABLE_TESTING OFF)
+-    set(KAHYPAR_PYTHON OFF)
+-    set(KAHYPAR_INSTALL_CLI OFF)
+-    set(KAHYPAR_DISABLE_HWLOC ON)
+-    set(KAHYPAR_DISABLE_PARLAY ON)
+-    set(KAHYPAR_ENABLE_THREAD_PINNING OFF)
++    get_filename_component(KAHYPAR_DEPENDENCY_ROOT "${PROJECT_SOURCE_DIR}/.." ABSOLUTE)
+     set(KAHYPAR_SERIAL_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/serial")
+-    set(KAHYPAR_DOWNLOAD_TBB OFF)
+-    set(KAHYPAR_STATIC_LINK_DEPENDENCIES OFF)
+-    set(KAHYPAR_STATIC_LINK_TBB OFF)
+-    add_subdirectory("${mt_source}" "${mt_binary}" EXCLUDE_FROM_ALL)
+-
+-    if(NOT CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+-        return()
+-    endif()
+-
+-    # The archive contains upstream's object library. Installed consumers need
+-    # only its system link dependencies, not the internal build targets.
+-    get_target_property(mt_links mtkahypar INTERFACE_LINK_LIBRARIES)
+-    set_property(TARGET mtkahypar PROPERTY INTERFACE_LINK_LIBRARIES
+-        "$<BUILD_INTERFACE:${mt_links}>"
+-        "$<INSTALL_INTERFACE:Threads::Threads>")
+-    get_target_property(mt_flag_links MtKaHyPar-BuildFlags INTERFACE_LINK_LIBRARIES)
+-    if(mt_flag_links)
+-        target_link_libraries(mtkahypar INTERFACE "$<INSTALL_INTERFACE:${mt_flag_links}>")
+-    endif()
+-    # Static consumers also need sanitizer/coverage runtimes when enabled.
+-    # Keep the builder's optional linker choice out of the installed package.
+-    get_target_property(mt_link_options MtKaHyPar-BuildFlags INTERFACE_LINK_OPTIONS)
+-    if(mt_link_options)
+-        list(REMOVE_ITEM mt_link_options "-fuse-ld=lld" "/LINKER:LLD")
+-        target_link_options(mtkahypar INTERFACE ${mt_link_options})
+-    endif()
+-    if(NOT KAHYPAR_DISABLE_HWLOC)
+-        set_property(TARGET mtkahypar APPEND PROPERTY INTERFACE_LINK_LIBRARIES
+-            "$<INSTALL_INTERFACE:repcut::hwloc>")
+-        set(RCP_MTKAHYPAR_USE_HWLOC ON PARENT_SCOPE)
+-    endif()
+-
+-    # Upstream installs only when built as the top-level project.
+-    install(TARGETS mtkahypar EXPORT repcut-targets
+-            ARCHIVE DESTINATION lib)
+-    install(FILES "${mt_source}/include/mtkahypar.h" "${mt_source}/include/mtkahypartypes.h"
+-            DESTINATION include)
+-
+-    # These header dependencies are compiled into the bundled library.
+-    install(FILES "${mt_source}/LICENSE"
+-            DESTINATION share/licenses/repcut RENAME MtKaHyPar-LICENSE)
+-    foreach(dependency kahypar-shared-resources WHFC parlay)
+-        if(EXISTS "${mt_binary}/external_tools/${dependency}/LICENSE")
+-            install(FILES "${mt_binary}/external_tools/${dependency}/LICENSE"
+-                    DESTINATION share/licenses/repcut RENAME "${dependency}-LICENSE")
+-        endif()
+-    endforeach()
+-    include(FetchContent)
+-    FetchContent_GetProperties(cli11 SOURCE_DIR cli11_source)
+-    install(FILES "${cli11_source}/LICENSE"
+-            DESTINATION share/licenses/repcut RENAME CLI11-LICENSE)
++    add_subdirectory("${PROJECT_SOURCE_DIR}/external/mt-kahypar"
++                     "${PROJECT_BINARY_DIR}/external/mt-kahypar" EXCLUDE_FROM_ALL)
+ endfunction()
+diff --git a/third_party/repcut/external/mt-kahypar/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/CMakeLists.txt
+index 82707128d..835b445e8 100644
+--- a/third_party/repcut/external/mt-kahypar/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/CMakeLists.txt
+@@ -5,3 +5,2 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+ set(MT_KAHYPAR_VERSION "1.7")
+-string(SUBSTRING "${MT_KAHYPAR_VERSION}" 0 1 MT_KAHYPAR_SO_VERSION)
+ set(MTKAHYPAR_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
+@@ -12,3 +11,2 @@ project(MtKaHyPar
+         LANGUAGES CXX C)
+-set(PROJECT_URL "https://github.com/kahypar/mt-kahypar")
+
+@@ -27,14 +25,2 @@ endif()
+
+-if (POLICY CMP0135)  # download timestamps
+-  cmake_policy(SET CMP0135 NEW)
+-endif()
+-if (POLICY CMP0144)  # uppercase find_package variables
+-  cmake_policy(SET CMP0144 NEW)
+-endif()
+-
+-if (NOT DEFINED BUILD_SHARED_LIBS)
+-  # since TBB does not support static linking, we build with dynamic linking by default (except on Windows)
+-  set(BUILD_SHARED_LIBS ON)
+-endif()
+-
+ #################################################################
+@@ -53,9 +39,2 @@ add_library(MtKaHyPar-Sources INTERFACE)
+
+-add_library(MtKaHyPar-ToolsSources INTERFACE)
+-
+-# meta target for CLI/test build
+-add_library(MtKaHyPar-BuildSources OBJECT "")
+-target_link_libraries(MtKaHyPar-BuildSources PRIVATE MtKaHyPar-Sources)
+-target_link_libraries(MtKaHyPar-BuildSources PUBLIC MtKaHyPar-Include MtKaHyPar-BuildFlags)
+-
+ # meta target for library build, which must be built with all features enabled
+@@ -67,6 +46,2 @@ target_compile_definitions(MtKaHyPar-LibraryBuildSources PUBLIC MT_KAHYPAR_LIBRA
+                            KAHYPAR_ENABLE_SOED_METRIC KAHYPAR_ENABLE_STEINER_TREE_METRIC)
+-# building shared libraries requires position independent code
+-if(BUILD_SHARED_LIBS)
+-  set_target_properties(MtKaHyPar-LibraryBuildSources PROPERTIES POSITION_INDEPENDENT_CODE ON)
+-endif()
+
+@@ -77,15 +52,2 @@ endif()
+
+-# general build options
+-option(KAHYPAR_PYTHON "Include the Python interface in the build." OFF)
+-option(KAHYPAR_ENABLE_TESTING "Enables tests, which requires dowloading googletest." OFF)
+-option(KAHYPAR_STATIC_LINK_DEPENDENCIES "In static build, also link dependencies (other than TBB) statically." OFF)
+-option(KAHYPAR_STATIC_LINK_TBB "In static build, also link TBB statically. Note that this is not officially supported!" OFF)
+-option(KAHYPAR_INSTALL_CLI "Provide a target to install an executable binary `mtkahypar`." OFF)
+-option(KAHYPAR_BUILD_DEBIAN_PACKAGE "Provide a target to build a debian package." OFF)
+-
+-# dependencies
+-option(KAHYPAR_DOWNLOAD_TBB "Download TBB automatically." ${MSVC})
+-option(KAHYPAR_DISABLE_HWLOC "Exclude components requiring hwloc. Might impact running time on NUMA platforms." ${MSVC})
+-option(KAHYPAR_DISABLE_PARLAY "Remove the parlay dependency. Might impact running time of deterministic mode on some instances." OFF)
+-
+ # specific compile features/build properties
+@@ -95,11 +57,4 @@ option(KAHYPAR_ENABLE_EXTENDED_INSTRUCTIONS "Allows instructions that might not
+ option(KAHYPAR_ENABLE_ARCH_COMPILE_OPTIMIZATIONS "Adds the compile flags `-mtune=native -march=native`, or `/arch:AVX` for `MSVC`" OFF)
+-option(KAHYPAR_ENABLE_THREAD_PINNING "Enables thread pinning in Mt-KaHyPar." OFF)
+
+-# algorithm features for CLI build (note: the library always contains all non-experimental features)
+-option(KAHYPAR_ENABLE_GRAPH_PARTITIONING_FEATURES "Enables graph partitioning features. Can be turned off for faster compilation." OFF)
+-option(KAHYPAR_ENABLE_HIGHEST_QUALITY_FEATURES "Enables highest quality preset features. Can be turned off for faster compilation." OFF)
+-option(KAHYPAR_ENABLE_LARGE_K_PARTITIONING_FEATURES "Enables large k partitioning features. Can be turned off for faster compilation." OFF)
+-option(KAHYPAR_ENABLE_SOED_METRIC "Enables the sum-of-external-degree metric. Can be turned off for faster compilation." OFF)
+-option(KAHYPAR_ENABLE_STEINER_TREE_METRIC "Enables the Steiner tree metric. Can be turned off for faster compilation." OFF)
+-option(KAHYPAR_ENABLE_EXPERIMENTAL_FEATURES "Enables some experimental features. Can be turned off for faster compilation." OFF)
++option(KAHYPAR_ENABLE_EXPERIMENTAL_FEATURES "Enable experimental algorithms." OFF)
+
+@@ -118,7 +73,2 @@ option(KAHYPAR_USE_GCOV "Compile and run tests with gcov for coverage analysis."
+
+-if(KAHYPAR_ENABLE_STEINER_TREE_METRIC AND NOT KAHYPAR_ENABLE_GRAPH_PARTITIONING_FEATURES)
+-  message(FATAL_ERROR "Steiner tree metric requires graph features. Add -DKAHYPAR_ENABLE_GRAPH_PARTITIONING_FEATURES=On to your cmake command")
+-endif()
+-
+-
+ #################################################################
+@@ -137,13 +87,3 @@ if(CMAKE_BUILD_TYPE)
+   endif()
+-  if(KAHYPAR_ENABLE_TESTING)
+-    set(KAHYPAR_TESTING_ENABLED "Enabled")
+-  else()
+-    set(KAHYPAR_TESTING_ENABLED "Disabled")
+-  endif()
+-  if(BUILD_SHARED_LIBS)
+-    set(KAHYPAR_LINKING_TYPE "Dynamic")
+-  else()
+-    set(KAHYPAR_LINKING_TYPE "Static")
+-  endif()
+-  message(STATUS "Mt-KaHyPar: ${KAHYPAR_BUILD_DESCRIPTION}, Tests ${KAHYPAR_TESTING_ENABLED}, ${KAHYPAR_LINKING_TYPE} Linking")
++  message(STATUS "Mt-KaHyPar: ${KAHYPAR_BUILD_DESCRIPTION}, static serial library")
+ endif()
+@@ -155,8 +95,2 @@ endif()
+
+-if(KAHYPAR_ENABLE_THREAD_PINNING AND KAHYPAR_DISABLE_HWLOC)
+-  message(WARNING "Thread pinning disabled since hwloc library is disabled.")
+-  set(KAHYPAR_ENABLE_THREAD_PINNING FALSE CACHE STRING "" FORCE)
+-endif()
+-
+-include(CopyDeps)
+ if(UNIX)
+@@ -170,9 +104,2 @@ if(UNIX)
+
+-  if(KAHYPAR_ENABLE_THREAD_PINNING)
+-    include(CheckThreadPinning)
+-    if(NOT THREAD_PINNING_WORKS)
+-      message(WARNING "Thread pinning disabled since required system APIs are not available.")
+-      set(KAHYPAR_ENABLE_THREAD_PINNING FALSE CACHE STRING "" FORCE)
+-    endif()
+-  endif()
+ elseif(NOT WIN32)
+@@ -214,6 +141,2 @@ endif(KAHYPAR_USE_64_BIT_IDS)
+
+-if(KAHYPAR_ENABLE_THREAD_PINNING)
+-  target_compile_definitions(MtKaHyPar-BuildFlags INTERFACE KAHYPAR_ENABLE_THREAD_PINNING)
+-endif(KAHYPAR_ENABLE_THREAD_PINNING)
+-
+ if(KAHYPAR_ENABLE_EXPERIMENTAL_FEATURES)
+@@ -222,29 +145,3 @@ endif(KAHYPAR_ENABLE_EXPERIMENTAL_FEATURES)
+
+-if(KAHYPAR_ENABLE_GRAPH_PARTITIONING_FEATURES)
+-  target_compile_definitions(MtKaHyPar-BuildFlags INTERFACE KAHYPAR_ENABLE_GRAPH_PARTITIONING_FEATURES)
+-endif(KAHYPAR_ENABLE_GRAPH_PARTITIONING_FEATURES)
+-
+-if(KAHYPAR_ENABLE_HIGHEST_QUALITY_FEATURES)
+-  target_compile_definitions(MtKaHyPar-BuildFlags INTERFACE KAHYPAR_ENABLE_HIGHEST_QUALITY_FEATURES)
+-endif(KAHYPAR_ENABLE_HIGHEST_QUALITY_FEATURES)
+-
+-if(KAHYPAR_ENABLE_LARGE_K_PARTITIONING_FEATURES)
+-  target_compile_definitions(MtKaHyPar-BuildFlags INTERFACE KAHYPAR_ENABLE_LARGE_K_PARTITIONING_FEATURES)
+-endif(KAHYPAR_ENABLE_LARGE_K_PARTITIONING_FEATURES)
+-
+-if(KAHYPAR_ENABLE_SOED_METRIC)
+-  target_compile_definitions(MtKaHyPar-BuildFlags INTERFACE KAHYPAR_ENABLE_SOED_METRIC)
+-endif(KAHYPAR_ENABLE_SOED_METRIC)
+-
+-if(KAHYPAR_ENABLE_STEINER_TREE_METRIC)
+-  target_compile_definitions(MtKaHyPar-BuildFlags INTERFACE KAHYPAR_ENABLE_STEINER_TREE_METRIC)
+-endif(KAHYPAR_ENABLE_STEINER_TREE_METRIC)
+-
+-if(KAHYPAR_DISABLE_HWLOC)
+-  target_compile_definitions(MtKaHyPar-BuildFlags INTERFACE KAHYPAR_DISABLE_HWLOC)
+-endif()
+-
+-if(KAHYPAR_DISABLE_PARLAY)
+-  target_compile_definitions(MtKaHyPar-BuildFlags INTERFACE KAHYPAR_DISABLE_PARLAY)
+-endif()
++target_compile_definitions(MtKaHyPar-BuildFlags INTERFACE KAHYPAR_DISABLE_HWLOC KAHYPAR_DISABLE_PARLAY)
+
+@@ -409,150 +306,12 @@ endif()
+
+-include(FetchContent)
+-set(KAHYPAR_SHARED_RESOURCES_TAG 6d5c8e2444e4310667ec1925e995f26179d7ee88)
+-set(KAHYPAR_WHFC_TAG             dd3b7901f73ba9a1de44788172ded5ce33b83338)
+-set(KAHYPAR_PARLAY_TAG           e1f1dc0ccf930492a2723f7fbef8510d35bf57f5)
+-set(KAHYPAR_CLI11_VERSION        v2.7.2)
+-set(KAHYPAR_TBB_VERSION          v2022.0.0)
+-set(KAHYPAR_GOOGLETEST_VERSION   v1.15.2)
+-set(KAHYPAR_PYBIND11_VERSION     v3.0.4)
+-
+-if(DEFINED KAHYPAR_DEPENDENCY_ROOT)
+-  # Verilator supplies pinned sources; configuring a release never downloads code.
+-  add_subdirectory("${KAHYPAR_DEPENDENCY_ROOT}/cli11"
+-                   "${CMAKE_CURRENT_BINARY_DIR}/cli11" EXCLUDE_FROM_ALL)
+-  target_link_libraries(MtKaHyPar-Include INTERFACE CLI11::CLI11)
+-  target_include_directories(MtKaHyPar-Include INTERFACE
+-      "${KAHYPAR_DEPENDENCY_ROOT}/kahypar-shared-resources"
+-      "${KAHYPAR_DEPENDENCY_ROOT}")
+-  if(NOT KAHYPAR_DISABLE_PARLAY)
+-    target_include_directories(MtKaHyPar-Include INTERFACE
+-        "${KAHYPAR_DEPENDENCY_ROOT}/parlay/include")
+-    target_compile_options(MtKaHyPar-BuildFlags INTERFACE -DPARLAY_TBB)
+-  endif()
+-else()
+-message(STATUS "Fetching dependencies...")
+-
+-# Include header-only dependencies
+-FetchContent_Declare(
+-    cli11 QUIET EXLUDE_FROM_ALL
+-    GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+-    GIT_TAG ${KAHYPAR_CLI11_VERSION}
+-)
+-FetchContent_MakeAvailable(cli11)
++# Pinned local dependencies; the bundled build never downloads sources.
++add_subdirectory("${KAHYPAR_DEPENDENCY_ROOT}/cli11"
++                 "${CMAKE_CURRENT_BINARY_DIR}/cli11" EXCLUDE_FROM_ALL)
+ target_link_libraries(MtKaHyPar-Include INTERFACE CLI11::CLI11)
+-
+-FetchContent_Populate(
+-  kahypar-shared-resources QUIET EXLUDE_FROM_ALL
+-  GIT_REPOSITORY https://github.com/kahypar/kahypar-shared-resources.git
+-  GIT_TAG        ${KAHYPAR_SHARED_RESOURCES_TAG}
+-  SOURCE_DIR     external_tools/kahypar-shared-resources
+-)
+-FetchContent_Populate(
+-  WHFC QUIET EXLUDE_FROM_ALL
+-  GIT_REPOSITORY https://github.com/larsgottesbueren/WHFC.git
+-  GIT_TAG        ${KAHYPAR_WHFC_TAG}
+-  SOURCE_DIR     external_tools/WHFC
+-)
+ target_include_directories(MtKaHyPar-Include INTERFACE
+-                           ${CMAKE_CURRENT_BINARY_DIR}/external_tools/kahypar-shared-resources
+-                           ${CMAKE_CURRENT_BINARY_DIR}/external_tools)
+-
+-if(NOT KAHYPAR_DISABLE_PARLAY)
+-  FetchContent_Populate(
+-    parlay QUIET EXLUDE_FROM_ALL
+-    GIT_REPOSITORY https://github.com/cmuparlay/parlaylib.git
+-    GIT_TAG        ${KAHYPAR_PARLAY_TAG}
+-    SOURCE_DIR     external_tools/parlay
+-  )
+-  target_include_directories(MtKaHyPar-Include INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/external_tools/parlay/include)
+-  target_compile_options(MtKaHyPar-BuildFlags INTERFACE -DPARLAY_TBB)
+-endif()
+-
+-endif()
+-
+-if (KAHYPAR_ENABLE_TESTING)
+-  FetchContent_Declare(
+-    googletest EXCLUDE_FROM_ALL SYSTEM
+-    GIT_REPOSITORY https://github.com/google/googletest.git
+-    GIT_TAG        ${KAHYPAR_GOOGLETEST_VERSION}
+-  )
+-  FetchContent_MakeAvailable(googletest)
+-  include(gmock)
++    "${KAHYPAR_DEPENDENCY_ROOT}/kahypar-shared-resources"
++    "${KAHYPAR_DEPENDENCY_ROOT}")
++target_include_directories(MtKaHyPar-Include BEFORE INTERFACE "${KAHYPAR_SERIAL_INCLUDE_DIR}")
++target_compile_definitions(MtKaHyPar-Include INTERFACE REPCUT_SERIAL_PARTITIONER=1)
+
+-  add_library(MtKaHyPar-Test INTERFACE)
+-  target_link_libraries(MtKaHyPar-Test INTERFACE gmock gtest gtest_main)
+-endif()
+-if (KAHYPAR_ENABLE_TESTING OR KAHYPAR_PYTHON)
+-  enable_testing()
+-endif()
+-
+-
+-if(KAHYPAR_SERIAL_INCLUDE_DIR)
+-  target_include_directories(MtKaHyPar-Include BEFORE INTERFACE "${KAHYPAR_SERIAL_INCLUDE_DIR}")
+-  target_compile_definitions(MtKaHyPar-Include INTERFACE REPCUT_SERIAL_PARTITIONER=1)
+-else()
+-if(KAHYPAR_DOWNLOAD_TBB)
+-  # Download TBB library
+-  FetchContent_Declare(
+-    TBB EXCLUDE_FROM_ALL SYSTEM
+-    GIT_REPOSITORY https://github.com/oneapi-src/oneTBB.git
+-    GIT_TAG        ${KAHYPAR_TBB_VERSION}
+-    GIT_SHALLOW    FALSE  # TBB seems to assume that a git repo is present
+-  )
+-  block()
+-    if(KAHYPAR_STATIC_LINK_TBB)
+-      set(BUILD_SHARED_LIBS OFF)
+-    else()
+-      set(BUILD_SHARED_LIBS ON)
+-    endif()
+-    set(TBB_TEST OFF CACHE BOOL "")
+-    FetchContent_MakeAvailable(TBB)
+-  endblock()
+-else()
+-  if(KAHYPAR_STATIC_LINK_TBB)
+-    message(WARNING "Static linking of TBB requires -DKAHYPAR_DOWNLOAD_TBB=On. Proceeding with dynamic linking.")
+-  endif()
+-  # Find system TBB library
+-  find_package(TBB 2021.5 COMPONENTS tbb tbbmalloc)
+-  if(NOT TBB_FOUND)
+-    message(FATAL_ERROR "
+-      TBB library not found or current TBB version is too old. Install TBB on your system
+-      or add -DKAHYPAR_DOWNLOAD_TBB=On to the cmake build command.")
+-  endif()
+-  get_target_property(KAHYPAR_TBB_INCLUDE_DIRS TBB::tbb INTERFACE_INCLUDE_DIRECTORIES)
+-  message(STATUS "TBB Version: ${TBB_VERSION_MAJOR}.${TBB_VERSION_MINOR}, TBB Include: ${KAHYPAR_TBB_INCLUDE_DIRS}")
+-endif()
+-target_link_libraries(MtKaHyPar-Include INTERFACE TBB::tbb TBB::tbbmalloc)
+-
+-endif()
+-
+-# Find HWLOC Library
+-if(NOT KAHYPAR_DISABLE_HWLOC)
+-  if(KAHYPAR_STATIC_LINK_DEPENDENCIES)
+-    message(WARNING "Static linking of hwloc is not supported. Consider using -DKAHYPAR_DISABLE_HWLOC=On to remove the dependency.")
+-  endif()
+-  include(DetectHwloc)
+-  if(NOT TARGET HWLOC::hwloc)
+-    message(FATAL_ERROR "Hwloc library not found. Install hwloc on your system.")
+-  endif()
+-  target_link_libraries(MtKaHyPar-Include INTERFACE HWLOC::hwloc)
+-endif()
+-
+-
+-#################################################################
+-## Include the source code and targets via subdirectories      ##
+-#################################################################
+-
+-if(KAHYPAR_PYTHON)
+-  if (NOT BUILD_SHARED_LIBS)
+-    message(SEND_ERROR "Python interface must be built as shared library. To do so, add -DBUILD_SHARED_LIBS=On to your cmake command.")
+-  endif()
+-  add_subdirectory(python)
+-endif()
+-if (KAHYPAR_ENABLE_TESTING)
+-  add_subdirectory(tests)
+-endif()
+-
+-add_subdirectory(mt-kahypar/application)
+-add_subdirectory(tools)
+ add_subdirectory(lib)
+@@ -560,66 +319,2 @@ add_subdirectory(dependencies)
+ add_subdirectory(mt-kahypar)
+-
+-# export target for C interface
+ add_library(MtKaHyPar::mtkahypar ALIAS mtkahypar)
+-
+-
+-#################################################################
+-## Installation                                                ##
+-#################################################################
+-
+-# only create installation targets if this is the top level project
+-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+-  if(UNIX AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+-    # set default installation prefix if not user-defined
+-    set(CMAKE_INSTALL_PREFIX "/usr/" CACHE STRING "" FORCE)
+-  endif()
+-
+-  if(KAHYPAR_INSTALL_CLI)
+-    # CLI installation target
+-    include(GNUInstallDirs)
+-    set_target_properties(MtKaHyPar-CLI PROPERTIES OUTPUT_NAME mtkahypar)
+-    install(TARGETS MtKaHyPar-CLI
+-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+-      RENAME mtkahypar
+-      COMPONENT MtKaHyPar_CLI)
+-    add_custom_target(install-mtkahypar-cli
+-      ${CMAKE_COMMAND}
+-      -DBUILD_TYPE=${CMAKE_BUILD_TYPE}
+-      -DCMAKE_INSTALL_COMPONENT=MtKaHyPar_CLI
+-      -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+-      DEPENDS MtKaHyPar-CLI)
+-  endif()
+-
+-  if(NOT WIN32 AND BUILD_SHARED_LIBS)
+-    # library installation target
+-    include(SetupInstallation)
+-  endif()
+-
+-  if(KAHYPAR_BUILD_DEBIAN_PACKAGE)
+-    # packaging via CPack
+-    include(SetupCPack)
+-  endif()
+-
+-  if(DEFINED KAHYPAR_TBB_DIR)
+-    # remove "\" on windows builds
+-    cmake_path(CONVERT "${KAHYPAR_TBB_DIR}" TO_CMAKE_PATH_LIST KAHYPAR_TBB_DIR)
+-  endif()
+-  if(KAHYPAR_SETUP_PYTHON AND DEFINED KAHYPAR_TBB_DIR)
+-    # preparation for python wheel
+-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pyproject.toml.in ${CMAKE_CURRENT_SOURCE_DIR}/pyproject.toml @ONLY)
+-  endif()
+-  if(KAHYPAR_PYTHON AND DEFINED SKBUILD_PROJECT_NAME)
+-    # build python wheel
+-    if(NOT KAHYPAR_DOWNLOAD_TBB OR NOT DEFINED KAHYPAR_TBB_DIR)
+-      message(FATAL_ERROR "TBB must be built from source for python wheel and KAHYPAR_TBB_DIR must be specified.")
+-    endif()
+-    message(STATUS "Python wheel build enabled, installing TBB to ${KAHYPAR_TBB_DIR}")
+-
+-    install(TARGETS mtkahypar_python
+-      DESTINATION .
+-      COMPONENT MtKaHyPar_Python)
+-    install(TARGETS tbb tbbmalloc
+-      DESTINATION ${KAHYPAR_TBB_DIR}
+-      COMPONENT MtKaHyPar_Python)
+-  endif()
+-endif()
+diff --git a/third_party/repcut/external/mt-kahypar/lib/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/lib/CMakeLists.txt
+index 256a57be6..8bd31479a 100644
+--- a/third_party/repcut/external/mt-kahypar/lib/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/lib/CMakeLists.txt
+@@ -1,16 +1,4 @@
+-if(BUILD_SHARED_LIBS)
+-  add_library(mtkahypar SHARED mtkahypar.cpp)
+-else()
+-  add_library(mtkahypar STATIC mtkahypar.cpp)
+-endif()
++add_library(mtkahypar STATIC mtkahypar.cpp)
+ target_link_libraries(mtkahypar PRIVATE MtKaHyPar-LibraryBuildSources)
+-target_include_directories(mtkahypar INTERFACE
+-  $<BUILD_INTERFACE:${MTKAHYPAR_INCLUDE_DIR}>
+-  $<INSTALL_INTERFACE:include>
+-)
+-
+-if(BUILD_SHARED_LIBS)
+-  target_compile_definitions(mtkahypar PRIVATE MT_KAHYPAR_BUILD_SHARED)
+-else()
+-  target_compile_definitions(mtkahypar PUBLIC MT_KAHYPAR_BUILD_STATIC)
+-endif()
++target_include_directories(mtkahypar INTERFACE ${MTKAHYPAR_INCLUDE_DIR})
++target_compile_definitions(mtkahypar PUBLIC MT_KAHYPAR_BUILD_STATIC)
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/CMakeLists.txt
+index 999697e93..c312fb636 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/CMakeLists.txt
+@@ -26,34 +26,5 @@ target_sources(MtKaHyPar-Sources INTERFACE ${DatastructureSources})
+ target_sources(MtKaHyPar-Sources INTERFACE ${MultilevelDatastructureSources})
+-if(KAHYPAR_ENABLE_GRAPH_PARTITIONING_FEATURES)
+-      target_sources(MtKaHyPar-Sources INTERFACE ${MultilevelGraphDatastructureSources})
+-else()
+-      target_sources(MtKaHyPar-LibraryBuildSources PRIVATE ${MultilevelGraphDatastructureSources})
+-endif()
+-if(KAHYPAR_ENABLE_HIGHEST_QUALITY_FEATURES)
+-      target_sources(MtKaHyPar-Sources INTERFACE ${NLevelDatastructureSources})
+-else()
+-      target_sources(MtKaHyPar-LibraryBuildSources PRIVATE ${NLevelDatastructureSources})
+-endif()
+-if(KAHYPAR_ENABLE_GRAPH_PARTITIONING_FEATURES AND KAHYPAR_ENABLE_HIGHEST_QUALITY_FEATURES)
+-      target_sources(MtKaHyPar-Sources INTERFACE ${NLevelGraphDatastructureSources})
+-else()
+-      target_sources(MtKaHyPar-LibraryBuildSources PRIVATE ${NLevelGraphDatastructureSources})
+-endif()
+-
+-
+-set(ToolsDatastructureSources
+-      static_hypergraph_factory.cpp
+-      static_hypergraph.cpp
+-      static_graph_factory.cpp
+-      static_graph.cpp
+-      contraction_tree.cpp
+-      dynamic_hypergraph.cpp
+-      dynamic_hypergraph_factory.cpp
+-      incident_net_array.cpp
+-      contraction_tree.cpp
+-      dynamic_graph.cpp
+-      dynamic_graph_factory.cpp
+-      dynamic_adjacency_array.cpp
+-      fixed_vertex_support.cpp)
+-
+-target_sources(MtKaHyPar-ToolsSources INTERFACE ${ToolsDatastructureSources})
++target_sources(MtKaHyPar-LibraryBuildSources PRIVATE
++    ${MultilevelGraphDatastructureSources}
++    ${NLevelDatastructureSources}
++    ${NLevelGraphDatastructureSources})
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/io/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/mt-kahypar/io/CMakeLists.txt
+index 40ae48ee1..fbafa2a36 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/io/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/io/CMakeLists.txt
+@@ -11,8 +11,2 @@ target_sources(MtKaHyPar-Sources INTERFACE ${IOSources})
+
+-set(ToolsIOSources
+-        hypergraph_io.cpp
+-        hypergraph_factory.cpp
+-        partitioning_output.cpp)
+-
+-target_sources(MtKaHyPar-ToolsSources INTERFACE ${ToolsIOSources})
+
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/CMakeLists.txt
+index 8990fb397..95140b51e 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/CMakeLists.txt
+@@ -4,2 +4 @@ set(ParallelSources
+ target_sources(MtKaHyPar-Sources INTERFACE ${ParallelSources})
+-target_sources(MtKaHyPar-ToolsSources INTERFACE ${ParallelSources})
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/CMakeLists.txt
+index 518976188..7d5ca8099 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/CMakeLists.txt
+@@ -20,10 +20 @@ set(PartitionSources
+ target_sources(MtKaHyPar-Sources INTERFACE ${PartitionSources})
+-
+-set(PartitionToolsSources
+-        context.cpp
+-        context_enum_classes.cpp
+-        conversion.cpp
+-        metrics.cpp
+-        )
+-
+-target_sources(MtKaHyPar-ToolsSources INTERFACE ${PartitionToolsSources})
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/mapping/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/mapping/CMakeLists.txt
+index 5c63e23ce..1472ee5d3 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/mapping/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/mapping/CMakeLists.txt
+@@ -9,8 +9,2 @@ set(MappingSources
+
+-if ( KAHYPAR_ENABLE_STEINER_TREE_METRIC )
+-  target_sources(MtKaHyPar-Sources INTERFACE ${MappingSources})
+-else ()
+-  target_sources(MtKaHyPar-LibraryBuildSources PRIVATE ${MappingSources})
+-endif()
+-
+-target_sources(MtKaHyPar-ToolsSources INTERFACE ${MappingSources})
++target_sources(MtKaHyPar-LibraryBuildSources PRIVATE ${MappingSources})
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/CMakeLists.txt
+index b94402b22..aa651e69e 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/CMakeLists.txt
+@@ -7,2 +7 @@ set(UtilSources
+ target_sources(MtKaHyPar-Sources INTERFACE ${UtilSources})
+-target_sources(MtKaHyPar-ToolsSources INTERFACE ${UtilSources})
+diff --git a/third_party/repcut/lib/repcut/CMakeLists.txt b/third_party/repcut/lib/repcut/CMakeLists.txt
+index 474dcf26f..12325b664 100644
+--- a/third_party/repcut/lib/repcut/CMakeLists.txt
++++ b/third_party/repcut/lib/repcut/CMakeLists.txt
+@@ -17,18 +17,15 @@ target_link_libraries(repcut Threads::Threads)
+
+-if(RCP_USE_MTKAHYPAR)
+-    # Embed the pinned default preset so installed/static consumers do not need
+-    # to locate a configuration file in the source tree or install prefix.
+-    set(mt_preset "${PROJECT_SOURCE_DIR}/external/mt-kahypar/config/default_preset.ini")
+-    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${mt_preset}")
+-    file(READ "${mt_preset}" RCP_MTKAHYPAR_PRESET)
+-    string(APPEND RCP_MTKAHYPAR_PRESET "\np-louvain-low-memory-contraction=true\n")
+-    configure_file("${PROJECT_SOURCE_DIR}/cmake/MtKaHyParPreset.h.in"
+-        "${CMAKE_CURRENT_BINARY_DIR}/MtKaHyParPreset.h" @ONLY)
+-    target_include_directories(repcut PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+-    target_sources(repcut PRIVATE MtKaHyPar.cpp)
+-    target_compile_definitions(repcut PRIVATE RCP_USE_MTKAHYPAR)
+-    target_link_libraries(repcut MtKaHyPar::mtkahypar)
+-endif()
++# Embed the pinned default preset so installed/static consumers do not need
++# to locate a configuration file in the source tree or install prefix.
++set(mt_preset "${PROJECT_SOURCE_DIR}/external/mt-kahypar/config/default_preset.ini")
++set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${mt_preset}")
++file(READ "${mt_preset}" RCP_MTKAHYPAR_PRESET)
++string(APPEND RCP_MTKAHYPAR_PRESET "\np-louvain-low-memory-contraction=true\n")
++configure_file("${PROJECT_SOURCE_DIR}/cmake/MtKaHyParPreset.h.in"
++    "${CMAKE_CURRENT_BINARY_DIR}/MtKaHyParPreset.h" @ONLY)
++target_include_directories(repcut PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
++target_sources(repcut PRIVATE MtKaHyPar.cpp)
++target_link_libraries(repcut MtKaHyPar::mtkahypar)
+
+-# Expose the public header on the include path both in-tree and when installed.
++# Expose the public header on the include path within the source tree.
+ # Only repcut.h is the public ABI; the other headers under include/ are
+@@ -36,3 +33,2 @@ endif()
+ target_include_directories(repcut PUBLIC
+-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+-    $<INSTALL_INTERFACE:include>)
++    ${PROJECT_SOURCE_DIR}/include)
+diff --git a/third_party/repcut/tests/CMakeLists.txt b/third_party/repcut/tests/CMakeLists.txt
+index de2da1872..94aa0aaa0 100644
+--- a/third_party/repcut/tests/CMakeLists.txt
++++ b/third_party/repcut/tests/CMakeLists.txt
+@@ -8,15 +8,13 @@ add_test(NAME hypergraph-merge
+     COMMAND test-hypergraph "${CMAKE_CURRENT_BINARY_DIR}/hypergraph")
+-if(RCP_USE_MTKAHYPAR)
+-    # Inspect the actual parsed context against the pinned upstream definition.
+-    # Production code uses only MtKaHyPar's public C API.
+-    add_executable(test-mtkahypar-config test_mtkahypar_config.cpp)
+-    target_link_libraries(test-mtkahypar-config PRIVATE repcut MtKaHyPar-Include MtKaHyPar-BuildFlags)
+-    target_compile_definitions(test-mtkahypar-config PRIVATE MT_KAHYPAR_LIBRARY_MODE)
+-    add_test(NAME mtkahypar-low-memory-config
+-        COMMAND test-mtkahypar-config "${CMAKE_CURRENT_BINARY_DIR}/config with spaces")
+-    add_test(NAME library-repeat-1t
+-        COMMAND test-library repeat "${CMAKE_CURRENT_BINARY_DIR}/repeat-1t" 1)
+-    add_test(NAME library-serial-only
+-        COMMAND test-library serial-only "${CMAKE_CURRENT_BINARY_DIR}/serial-only")
+-endif()
++# Inspect the actual parsed context against the pinned upstream definition.
++# Production code uses only MtKaHyPar's public C API.
++add_executable(test-mtkahypar-config test_mtkahypar_config.cpp)
++target_link_libraries(test-mtkahypar-config PRIVATE repcut MtKaHyPar-Include MtKaHyPar-BuildFlags)
++target_compile_definitions(test-mtkahypar-config PRIVATE MT_KAHYPAR_LIBRARY_MODE)
++add_test(NAME mtkahypar-low-memory-config
++    COMMAND test-mtkahypar-config "${CMAKE_CURRENT_BINARY_DIR}/config with spaces")
++add_test(NAME library-repeat-1t
++    COMMAND test-library repeat "${CMAKE_CURRENT_BINARY_DIR}/repeat-1t" 1)
++add_test(NAME library-serial-only
++    COMMAND test-library serial-only "${CMAKE_CURRENT_BINARY_DIR}/serial-only")
+ set_tests_properties(library-external-disabled PROPERTIES TIMEOUT 40)

@@ -1,0 +1,54 @@
+diff --git a/third_party/repcut/lib/repcut/ClusterGraph.cpp b/third_party/repcut/lib/repcut/ClusterGraph.cpp
+index e37b7fa46..88f07cef3 100644
+--- a/third_party/repcut/lib/repcut/ClusterGraph.cpp
++++ b/third_party/repcut/lib/repcut/ClusterGraph.cpp
+@@ -10,6 +10,7 @@
+ #include <limits>
+ #include <numeric>
+ #include <stdexcept>
++#include <string>
+ #include <unordered_map>
+ #include <vector>
+ 
+diff --git a/third_party/repcut/lib/repcut/RepCut.cpp b/third_party/repcut/lib/repcut/RepCut.cpp
+index 8ed41e21a..9926e86ae 100644
+--- a/third_party/repcut/lib/repcut/RepCut.cpp
++++ b/third_party/repcut/lib/repcut/RepCut.cpp
+@@ -71,13 +71,13 @@ static int run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_o
+     const fs::path lock_path = files ? fs::path(ctx->work_directory) / ".lock" : fs::path{};
+     if (files && fs::exists(lock_path)) {
+         rcp_log(ll, REPCUT_LOG_ERROR, "Work directory %s is already in use (lock file %s exists)\n",
+-                ctx->work_directory, lock_path.c_str());
++                ctx->work_directory, lock_path.string().c_str());
+         return 1;
+     }
+     if (files) {
+         std::ofstream lk(lock_path);
+         if (!lk) {
+-            rcp_log(ll, REPCUT_LOG_ERROR, "Cannot create lock file %s\n", lock_path.c_str());
++            rcp_log(ll, REPCUT_LOG_ERROR, "Cannot create lock file %s\n", lock_path.string().c_str());
+             return 1;
+         }
+         lk << "repcut\n";
+diff --git a/third_party/repcut/lib/repcut/RepCutPartitioner.cpp b/third_party/repcut/lib/repcut/RepCutPartitioner.cpp
+index 03eb2aab4..3fa2eb67f 100644
+--- a/third_party/repcut/lib/repcut/RepCutPartitioner.cpp
++++ b/third_party/repcut/lib/repcut/RepCutPartitioner.cpp
+@@ -76,7 +76,7 @@ bool RepCutPartitioner::_partitionCones(DirectedAcyclicGraph& dag)
+         oss << hmetis_path.filename().string() << ".part" << desired_parts << ".epsilon" << kahypar_imbalance_factor
+             << ".seed" << mtkahypar_seed << ".KaHyPar";
+         mtkahypar_output_filename = oss.str();
+-        clusters->writeHMetisFile(hmetis_path.c_str());
++        clusters->writeHMetisFile(hmetis_path.string().c_str());
+     }
+     if (clusters->hyperedges.empty()) {
+         const auto weights = clusters->hypernodeWeights();
+@@ -107,7 +107,7 @@ bool RepCutPartitioner::_saveConeAssignment() const
+         output.close();
+     }
+     if (!output) {
+-        rcp_log(log_level, REPCUT_LOG_ERROR, "Cannot write cone assignments to %s\n", path.c_str());
++        rcp_log(log_level, REPCUT_LOG_ERROR, "Cannot write cone assignments to %s\n", path.string().c_str());
+         return false;
+     }
+     return true;

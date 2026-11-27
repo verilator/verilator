@@ -1,0 +1,4 @@
+add_library(mtkahypar STATIC mtkahypar.cpp)
+target_link_libraries(mtkahypar PRIVATE MtKaHyPar-LibraryBuildSources)
+target_include_directories(mtkahypar INTERFACE ${MTKAHYPAR_INCLUDE_DIR})
+target_compile_definitions(mtkahypar PUBLIC MT_KAHYPAR_BUILD_STATIC)

@@ -14,8 +14,12 @@ test.scenarios('vltmt')
 test.compile(verilator_flags2=['--stats', '--threads-max-mtasks 8', '-Wno-UNOPTTHREADS'],
              threads=2)
 
-# State written by different MTasks starts on separate cache lines
-test.file_grep(test.stats, r'VariableOrder, MTask aligned group starts\s+([2-9]|\d\d+)')
+# State written by different workers starts in separate storage groups.
+if test.repcut:
+    test.file_grep(test.stats, r'VariableOrder, RepCut storage groups\s+(\d+)', 2)
+    test.file_grep(test.stats, r'VariableOrder, RepCut reader groups\s+(\d+)', 2)
+else:
+    test.file_grep(test.stats, r'VariableOrder, MTask aligned group starts\s+([2-9]|\d\d+)')
 
 test.execute()
 

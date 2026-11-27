@@ -8,11 +8,13 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+from clocking_sched import check_output
 
 test.scenarios('vlt')
 
 test.compile()
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
+check_output(test)
 
 test.passes()

@@ -1,0 +1,6 @@
+#pragma once
+
+// Generated from the bundled MtKaHyPar default preset, with RepCut's override.
+namespace repcut {
+    inline constexpr char mtkahypar_preset[] = R"repcut(@RCP_MTKAHYPAR_PRESET@)repcut";
+}

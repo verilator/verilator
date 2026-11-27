@@ -182,6 +182,7 @@ void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNode
         putns(funcp, funcp->dpiCDecl() + ";\n");
         return;
     }
+    if (funcp->noInline()) putns(funcp, "VL_ATTR_NOINLINE ");
     if (!funcp->isDestructor()) {
         putns(funcp, funcp->rtnTypeVoid());
         puts(" ");

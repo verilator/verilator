@@ -1,0 +1,14 @@
+diff --git a/third_party/repcut/include/MtKaHyPar.h b/third_party/repcut/include/MtKaHyPar.h
+index 7541249c9..863af6db3 100644
+--- a/third_party/repcut/include/MtKaHyPar.h
++++ b/third_party/repcut/include/MtKaHyPar.h
+@@ -3,7 +3,8 @@
+ #include "ClusterGraph.h"
+ #include "repcut.h"
+ 
+-#include <mtkahypar.h>
++// Distinguish the library header from this wrapper on case-insensitive filesystems.
++#include "../external/mt-kahypar/include/mtkahypar.h"
+ 
+ #include <cstdint>
+ #include <memory>

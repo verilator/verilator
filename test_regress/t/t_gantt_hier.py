@@ -37,10 +37,12 @@ test.run(cmd=[
 ])
 
 if test.vltmt:
-    test.file_grep(gantt_log, r'Total threads += +(\d+)', 2)
-    test.file_grep(gantt_log, r'Total mtasks += +(\d+)', 6)
-    # Predicted thread utilization should be less than 100%
-    test.file_grep_not(gantt_log, r'Thread utilization =\s*\d\d\d+\.\d+%')
+    # The DPI loop stays native under RepCut, leaving one partition idle.
+    test.file_grep(gantt_log, r'Total threads += +(\d+)', 1 if test.repcut else 2)
+    test.file_grep(gantt_log, r'Total mtasks += +(\d+)', 1 if test.repcut else 6)
+    # The legacy fixture has parallel work and idle time on both workers.
+    if not test.repcut:
+        test.file_grep_not(gantt_log, r'Thread utilization =\s*\d\d\d+\.\d+%')
 else:
     test.file_grep(gantt_log, r'Total threads += +(\d+)', 1)
     test.file_grep(gantt_log, r'Total mtasks += +(\d+)', 0)

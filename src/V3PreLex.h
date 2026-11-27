@@ -100,8 +100,8 @@ class V3PreProcImp;
 #endif
 
 #ifndef YY_BUFFER_STATE
-struct yy_buffer_state;
-typedef struct yy_buffer_state* YY_BUFFER_STATE;
+struct V3PreLexBufferState;
+typedef struct V3PreLexBufferState* YY_BUFFER_STATE;
 # define YY_BUF_SIZE 16384
 #endif
 // clang-format on

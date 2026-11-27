@@ -99,7 +99,7 @@ class EmitCExecGraph final : public EmitCFunc {
         puts("&" + funcNameProtect(nodep->runfuncp()) + ",\n");
         // Profiling measures the parallel execution, so never run serially
         const bool profiling = v3Global.opt.profExec() || v3Global.opt.profPgo();
-        puts(profiling ? "0" : "VL_THREADS_SERIAL_COST");
+        puts(profiling || nodep->forceParallel() ? "0" : "VL_THREADS_SERIAL_COST");
         puts("\n};\n");
     }
 

@@ -12,7 +12,10 @@ import vltest_bootstrap
 test.scenarios('vltmt')
 test.top_filename = "t/t_threads_counter.v"
 
-test.compile(verilator_flags2=['--cc', '--stats', '-CFLAGS -DVL_THREADS_SERIAL_COST=0'], threads=2)
+# Exercise the native scheduler progress words.
+test.compile(
+    verilator_flags2=["-fno-repcut", '--cc', '--stats', '-CFLAGS -DVL_THREADS_SERIAL_COST=0'],
+    threads=2)
 
 test.execute()
 

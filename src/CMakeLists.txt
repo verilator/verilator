@@ -175,6 +175,16 @@ set(HEADERS
     V3Randomize.h
     V3Reloop.h
     V3Reorder.h
+    V3RepCut.h
+    V3RepCutChunk.h
+    V3RepCutDecoder.h
+    V3RepCutEmit.h
+    V3RepCutGraph.h
+    V3RepCutNative.h
+    V3RepCutOptimize.h
+    V3RepCutPlan.h
+    V3RepCutProgram.h
+    V3RepCutShare.h
     V3Rtmd.h
     V3Rtti.h
     V3Sampled.h
@@ -359,6 +369,21 @@ set(COMMON_SOURCES
     V3Randomize.cpp
     V3Reloop.cpp
     V3Reorder.cpp
+    V3RepCut.cpp
+    V3RepCutChunk.cpp
+    V3RepCutDecoder.cpp
+    V3RepCutEmit.cpp
+    V3RepCutGraph.cpp
+    V3RepCutGraphTest.cpp
+    V3RepCutNative.cpp
+    V3RepCutOptimize.cpp
+    V3RepCutOptimizeTest.cpp
+    V3RepCutOutput.cpp
+    V3RepCutPartition.cpp
+    V3RepCutPlan.cpp
+    V3RepCutProgram.cpp
+    V3RepCutSchedule.cpp
+    V3RepCutShare.cpp
     V3Rtmd.cpp
     V3RtmdScoped.cpp
     V3Sampled.cpp
@@ -454,6 +479,10 @@ add_custom_command(
         "${BISON_V3ParseBison_OUTPUT_SOURCE}" "${verilog_y}"
 )
 list(APPEND GENERATED_FILES V3ParseBison.c V3ParseBison.h)
+set_source_files_properties(
+    "${BISON_V3ParseBison_OUTPUT_SOURCE}"
+    PROPERTIES HEADER_FILE_ONLY TRUE
+)
 # Output used directly by the `verilator` target
 
 set(verilog_l "${srcdir}/verilog.l")
@@ -607,6 +636,7 @@ add_dependencies(
 )
 
 target_link_libraries(${verilator} PRIVATE Threads::Threads)
+target_link_libraries(${verilator} PRIVATE $<$<NOT:${coverage_config}>:repcut>)
 
 if(NOT MSVC)
     target_compile_features(${verilator} PRIVATE cxx_std_11)

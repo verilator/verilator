@@ -1,0 +1,96 @@
+---
+# DESCRIPTION: Github actions config
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: reusable-repcut
+
+on:
+  workflow_call:
+    inputs:
+      archive:
+        description: "Name of the repository archive artifact from reusable-build"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+defaults:
+  run:
+    shell: bash
+    working-directory: repo
+
+jobs:
+  test:
+    name: Test | RepCut default and legacy scheduler
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+
+      - name: Download repository archive
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8
+        with:
+          name: ${{ inputs.archive }}
+          path: ${{ github.workspace }}
+
+      - name: Unpack repository archive
+        working-directory: ${{ github.workspace }}
+        run: |
+          tar --zstd -x -f ${{ inputs.archive }}
+          ls -lsha
+
+      - name: Install test dependencies
+        uses: ./repo/.github/actions/install-deps
+        with:
+          stage: test
+
+      - name: Set up Python venv
+        uses: ./repo/.github/actions/setup-venv
+        with:
+          save: false
+
+      - name: Test default functional regressions
+        id: run-default
+        continue-on-error: true
+        working-directory: repo/test_regress
+        env:
+          VERILATOR_ROOT: ${{ github.workspace }}/repo
+        run: |
+          source ../.venv/bin/activate
+          python3 driver.py --vlt --vltmt --jobs "$(nproc)"
+
+      - name: Test explicit legacy scheduler
+        id: run-legacy
+        continue-on-error: true
+        working-directory: repo/test_regress
+        env:
+          VERILATOR_ROOT: ${{ github.workspace }}/repo
+          VERILATOR_TEST_FLAGS: -fno-repcut
+        run: |
+          source ../.venv/bin/activate
+          python3 driver.py --vlt --vltmt --jobs "$(nproc)" \
+            t/t_gantt*.py t/t_mtask*.py t/t_pgo*.py t/t_threads_group*.py \
+            t/t_inst_dff.py t/t_inst_first.py t/t_hier_block_perf.py \
+            t/t_variable_order*.py t/t_case_huge.py t/t_mem_shift.py \
+            t/t_func_inline_combine.py t/t_opt_coalesce_port_share.py \
+            t/t_inst_tree_inl*.py \
+            t/t_opt_merge_cond*.py t/t_cover_control.py t/t_cover_line_cc*.py \
+            t/t_protect_ids_key.py t/t_assert_ctl_arg*.py t/t_assert_unique_case.py \
+            t/t_flag_output_groups_max_size.py
+
+      - name: Upload test logs
+        if: ${{ steps.run-default.outcome == 'failure' || steps.run-legacy.outcome == 'failure' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
+        with:
+          name: repcut-test-logs
+          path: |
+            repo/test_regress/obj_*/*.log
+            repo/test_regress/obj_*/**/*.log
+          retention-days: 7
+
+      - name: Fail job if a test failed
+        if: ${{ (steps.run-default.outcome == 'failure' || steps.run-legacy.outcome == 'failure') && !cancelled() }}
+        run: |-
+          echo "Click on '> Tests' arrow above (or on other steps), to expand it, and see the failure reasons"
+          exit 1

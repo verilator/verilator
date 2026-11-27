@@ -875,12 +875,11 @@ class ExpandVisitor final : public VNVisitor {
                         // else we would just be setting it to the same exact value
                         AstNodeExpr* oldvalp = newAstWordSelClone(destp, w);
                         fixCloneLvalue(oldvalp);
-                        if (!ones) {
-                            oldvalp = new AstAnd{
-                                lfl,
-                                new AstConst{lfl, AstConst::SizedEData{}, maskold.edataWord(w)},
-                                oldvalp};
-                        }
+                        // Mask even an all-ones RHS: a complete word overwrite must
+                        // not read uninitialized storage or preserve unused high bits.
+                        oldvalp = new AstAnd{
+                            lfl, new AstConst{lfl, AstConst::SizedEData{}, maskold.edataWord(w)},
+                            oldvalp};
 
                         // Appropriate word of new value to insert:
                         AstNodeExpr* newp = newWordGrabShift(lfl, w, rhsp, lsb);

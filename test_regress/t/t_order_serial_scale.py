@@ -10,6 +10,8 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+# Measure scaling of the legacy scheduler's retained-instance ordering.
+test.verilator_flags += ['-fno-repcut']
 
 if test.have_dev_gcov:
     test.skip("Too slow with code coverage")

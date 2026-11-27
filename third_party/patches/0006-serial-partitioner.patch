@@ -1,0 +1,881 @@
+diff --git a/third_party/repcut/cmake/MtKaHyPar.cmake b/third_party/repcut/cmake/MtKaHyPar.cmake
+index f27b3e233..2a5b38382 100644
+--- a/third_party/repcut/cmake/MtKaHyPar.cmake
++++ b/third_party/repcut/cmake/MtKaHyPar.cmake
+@@ -12,6 +12,10 @@ function(rcp_add_mtkahypar)
+     set(KAHYPAR_ENABLE_TESTING OFF)
+     set(KAHYPAR_PYTHON OFF)
+     set(KAHYPAR_INSTALL_CLI OFF)
++    set(KAHYPAR_DISABLE_HWLOC ON)
++    set(KAHYPAR_DISABLE_PARLAY ON)
++    set(KAHYPAR_ENABLE_THREAD_PINNING OFF)
++    set(KAHYPAR_SERIAL_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/serial")
+     set(KAHYPAR_DOWNLOAD_TBB OFF)
+     set(KAHYPAR_STATIC_LINK_DEPENDENCIES OFF)
+     set(KAHYPAR_STATIC_LINK_TBB OFF)
+@@ -26,7 +30,7 @@ function(rcp_add_mtkahypar)
+     get_target_property(mt_links mtkahypar INTERFACE_LINK_LIBRARIES)
+     set_property(TARGET mtkahypar PROPERTY INTERFACE_LINK_LIBRARIES
+         "$<BUILD_INTERFACE:${mt_links}>"
+-        "$<INSTALL_INTERFACE:TBB::tbb;TBB::tbbmalloc>")
++        "$<INSTALL_INTERFACE:Threads::Threads>")
+     get_target_property(mt_flag_links MtKaHyPar-BuildFlags INTERFACE_LINK_LIBRARIES)
+     if(mt_flag_links)
+         target_link_libraries(mtkahypar INTERFACE "$<INSTALL_INTERFACE:${mt_flag_links}>")
+diff --git a/third_party/repcut/external/mt-kahypar/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/CMakeLists.txt
+index cef32fcf6..452424272 100644
+--- a/third_party/repcut/external/mt-kahypar/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/CMakeLists.txt
+@@ -485,6 +485,10 @@ if (KAHYPAR_ENABLE_TESTING OR KAHYPAR_PYTHON)
+ endif()
+ 
+ 
++if(KAHYPAR_SERIAL_INCLUDE_DIR)
++  target_include_directories(MtKaHyPar-Include BEFORE INTERFACE "${KAHYPAR_SERIAL_INCLUDE_DIR}")
++  target_compile_definitions(MtKaHyPar-Include INTERFACE REPCUT_SERIAL_PARTITIONER=1)
++else()
+ if(KAHYPAR_DOWNLOAD_TBB)
+   # Download TBB library
+   FetchContent_Declare(
+@@ -518,6 +522,7 @@ else()
+ endif()
+ target_link_libraries(MtKaHyPar-Include INTERFACE TBB::tbb TBB::tbbmalloc)
+ 
++endif()
+ 
+ # Find HWLOC Library
+ if(NOT KAHYPAR_DISABLE_HWLOC)
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/tbb_initializer.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/tbb_initializer.h
+index 624a67845..ca2939388 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/tbb_initializer.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/tbb_initializer.h
+@@ -41,7 +41,9 @@
+ #include <tbb/global_control.h>
+ 
+ #include "mt-kahypar/macros.h"
++#ifndef KAHYPAR_DISABLE_HWLOC
+ #include "mt-kahypar/parallel/thread_pinning_observer.h"
++#endif
+ 
+ namespace mt_kahypar {
+ namespace parallel {
+diff --git a/third_party/repcut/include/MtKaHyPar.h b/third_party/repcut/include/MtKaHyPar.h
+index 863af6db3..5da9c3086 100644
+--- a/third_party/repcut/include/MtKaHyPar.h
++++ b/third_party/repcut/include/MtKaHyPar.h
+@@ -15,8 +15,8 @@ namespace repcut {
+     // The caller owns the returned context; the temporary file is removed.
+     mt_kahypar_context_t* makeMtKaHyParContext(const char* work_directory);
+ 
+-    // Per-call resources. The thread pool and RNG belong to MtKaHyPar's process
+-    // globals; repcut_run serializes access by rejecting overlapping calls.
++    // Per-call resources. MtKaHyPar retains process-global RNG and serial state;
++    // repcut_run serializes access by rejecting overlapping calls.
+     class MtKaHyPar
+     {
+     private:
+diff --git a/third_party/repcut/include/repcut.h b/third_party/repcut/include/repcut.h
+index 5a16461b3..c75e1f51e 100644
+--- a/third_party/repcut/include/repcut.h
++++ b/third_party/repcut/include/repcut.h
+@@ -27,7 +27,7 @@ struct RepCutContext
+     const char* work_directory;    // required for file API or intermediate dumps
+     int nparts;                    // required: partition count
+     float target_ib;               // default 0.03
+-    int parallel_threads;          // default 1
++    int parallel_threads;          // required: 1 (serial-only bundled backend)
+     int seed;                      // nonnegative fixed seed; -1 = choose randomly, logged at INFO
+     enum RepCutLogLevel log_level; // default SILENT
+ 
+@@ -64,11 +64,9 @@ struct RepCutStatistics
+ // On success, writes "rcp_output.txt" under ctx->work_directory.  If
+ // stats_out is non-NULL, populated with aggregate partition statistics.
+ // Only one call may be active per process, even with distinct work directories.
+-// The first linked-backend call initializes MtKaHyPar's process-wide thread
+-// pool; later linked calls must request the same parallel_threads. Per-call
+-// resources are released, but the pool and TBB concurrency limit remain until
+-// process exit. The host must not initialize or use MtKaHyPar independently
+-// of librepcut.
++// The bundled backend executes on the calling thread and requires
++// parallel_threads = 1. MtKaHyPar retains process-global state; the host must
++// not initialize or use MtKaHyPar independently of librepcut.
+ // MtKaHyPar 1.7 does not reset all cached RNG state when reseeding, so repeated
+ // linked calls may produce different partitions with the same seed, even at
+ // one thread. For reproducibility, use a fixed seed, one thread, and a fresh
+diff --git a/third_party/repcut/lib/repcut/MtKaHyPar.cpp b/third_party/repcut/lib/repcut/MtKaHyPar.cpp
+index 4b2cd0fbe..55eebe126 100644
+--- a/third_party/repcut/lib/repcut/MtKaHyPar.cpp
++++ b/third_party/repcut/lib/repcut/MtKaHyPar.cpp
+@@ -50,19 +50,15 @@ mt_kahypar_context_t* repcut::makeMtKaHyParContext(const char* work_directory)
+ 
+ bool MtKaHyPar::initialize(int threads, RepCutLogLevel log_level)
+ {
+-    // Protected by repcut_run's process-wide busy flag. There is no public
+-    // MtKaHyPar API for resizing or shutting down its singleton thread pool.
+-    static int initialized_threads = 0;
+-    if (initialized_threads != 0 && initialized_threads != threads) {
+-        rcp_log(log_level, REPCUT_LOG_ERROR,
+-                "MtKaHyPar was initialized with %d threads; cannot change to %d in this process\n", initialized_threads,
+-                threads);
++    if (threads != 1) {
++        rcp_log(log_level, REPCUT_LOG_ERROR, "The bundled MtKaHyPar requires one thread\n");
+         return false;
+     }
+-    if (initialized_threads == 0) {
+-        // Do not change the embedding application's NUMA allocation policy.
+-        mt_kahypar_initialize(threads, false);
+-        initialized_threads = threads;
++    // Protected by repcut_run's process-wide guard. Initialize serial state once.
++    static bool initialized = false;
++    if (!initialized) {
++        mt_kahypar_initialize(1, false);
++        initialized = true;
+     }
+     return true;
+ }
+diff --git a/third_party/repcut/lib/repcut/RepCut.cpp b/third_party/repcut/lib/repcut/RepCut.cpp
+index 9926e86ae..b0785f0f1 100644
+--- a/third_party/repcut/lib/repcut/RepCut.cpp
++++ b/third_party/repcut/lib/repcut/RepCut.cpp
+@@ -44,8 +44,8 @@ static int run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_o
+         return 1;
+     }
+ 
+-    if (ctx->parallel_threads <= 0) {
+-        rcp_log(ll, REPCUT_LOG_ERROR, "parallel_threads must be > 0\n");
++    if (ctx->parallel_threads != 1) {
++        rcp_log(ll, REPCUT_LOG_ERROR, "The bundled partitioner requires parallel_threads = 1\n");
+         return 1;
+     }
+     if (!std::isfinite(ctx->target_ib) || ctx->target_ib < 0) {
+@@ -157,7 +157,7 @@ static int run(const struct RepCutContext* ctx, struct RepCutStatistics* stats_o
+ static int guardedRun(const RepCutContext* ctx, RepCutStatistics* stats_out,
+                       const RepCutGraph* graph, RepCutPartitionCallback callback, void* user)
+ {
+-    // MtKaHyPar owns process-global state (including its RNG and thread pool).
++    // MtKaHyPar owns process-global state, including its RNG.
+     // Reject overlap rather than silently serializing independent callers.
+     static std::atomic_flag busy = ATOMIC_FLAG_INIT;
+     if (busy.test_and_set(std::memory_order_acquire)) {
+diff --git a/third_party/repcut/tests/CMakeLists.txt b/third_party/repcut/tests/CMakeLists.txt
+index 73c5e8ab0..de2da1872 100644
+--- a/third_party/repcut/tests/CMakeLists.txt
++++ b/third_party/repcut/tests/CMakeLists.txt
+@@ -16,8 +16,8 @@ if(RCP_USE_MTKAHYPAR)
+         COMMAND test-mtkahypar-config "${CMAKE_CURRENT_BINARY_DIR}/config with spaces")
+     add_test(NAME library-repeat-1t
+         COMMAND test-library repeat "${CMAKE_CURRENT_BINARY_DIR}/repeat-1t" 1)
+-    add_test(NAME library-repeat-2t
+-        COMMAND test-library repeat "${CMAKE_CURRENT_BINARY_DIR}/repeat-2t" 2)
++    add_test(NAME library-serial-only
++        COMMAND test-library serial-only "${CMAKE_CURRENT_BINARY_DIR}/serial-only")
+ endif()
+ set_tests_properties(library-external-disabled PROPERTIES TIMEOUT 40)
+ add_executable(test-memory test_memory.cpp)
+@@ -25,3 +25,8 @@ target_link_libraries(test-memory PRIVATE repcut)
+ add_test(NAME library-memory
+     COMMAND ${CMAKE_COMMAND} -DTEST=$<TARGET_FILE:test-memory>
+     -DWORK=${CMAKE_CURRENT_BINARY_DIR}/memory -P ${CMAKE_CURRENT_SOURCE_DIR}/test_memory.cmake)
++
++add_executable(test-serial test_serial.cpp)
++target_include_directories(test-serial PRIVATE "${PROJECT_SOURCE_DIR}/serial")
++target_compile_definitions(test-serial PRIVATE REPCUT_SERIAL_PARTITIONER=1)
++add_test(NAME serial-primitives COMMAND test-serial)
+diff --git a/third_party/repcut/tests/test_library.cpp b/third_party/repcut/tests/test_library.cpp
+index a6484f607..ee2b5a20f 100644
+--- a/third_party/repcut/tests/test_library.cpp
++++ b/third_party/repcut/tests/test_library.cpp
+@@ -99,10 +99,10 @@ static void repeat(int threads)
+     require(repcut_run(&ctx, nullptr) == 0, "Call with saving disabled failed");
+     require(!fs::exists("parts.hmetis"), "Call with saving disabled saved a hypergraph");
+ 
+-    // Initialization is process-wide; a rejected thread change must leave the
+-    // original pool and both busy/workdir guards usable for the next call.
++    // Reject nonserial requests without leaking the busy or work-directory
++    // guard, so a valid serial call can still follow.
+     ++ctx.parallel_threads;
+-    require(repcut_run(&ctx, nullptr) != 0, "Changing the thread pool size was accepted");
++    require(repcut_run(&ctx, nullptr) != 0, "A nonserial thread count was accepted");
+     --ctx.parallel_threads;
+     ctx.seed = -1;
+     require(repcut_run(&ctx, nullptr) == 0, "Call after thread-count rejection failed");
+@@ -161,6 +161,21 @@ static void externalDisabled()
+     std::cout << "Executable rejection and linked-library recovery passed\n";
+ }
+ 
++static void serialOnly()
++{
++    writeGraph(16);
++    fs::remove("rcp_output.txt");
++    RepCutContext ctx{"input.graph", ".", 2, 0.1f, 1, 42, REPCUT_LOG_SILENT, nullptr, false};
++    for (int threads : {0, 2, -1}) {
++        ctx.parallel_threads = threads;
++        require(repcut_run(&ctx, nullptr) != 0, "Nonserial thread count was accepted");
++        require(!fs::exists("rcp_output.txt") && !fs::exists(".lock"), "Rejected call wrote files");
++    }
++    ctx.parallel_threads = 1;
++    require(repcut_run(&ctx, nullptr) == 0, "Serial call after rejection failed");
++    checkClosure(read("rcp_output.txt"), 16, ctx.nparts);
++}
++
+ int main(int argc, char** argv)
+ {
+     try {
+@@ -171,6 +186,9 @@ int main(int argc, char** argv)
+             require(argc == 4, "Missing thread count");
+             repeat(std::stoi(argv[3]));
+         }
++        else if (std::string(argv[1]) == "serial-only") {
++            serialOnly();
++        }
+         else {
+             require(std::string(argv[1]) == "external-disabled", "Unknown test case");
+             externalDisabled();
+diff --git a/third_party/repcut/serial/tbb/blocked_range.h b/third_party/repcut/serial/tbb/blocked_range.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/blocked_range.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/concurrent_queue.h b/third_party/repcut/serial/tbb/concurrent_queue.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/concurrent_queue.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/concurrent_unordered_map.h b/third_party/repcut/serial/tbb/concurrent_unordered_map.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/concurrent_unordered_map.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/concurrent_vector.h b/third_party/repcut/serial/tbb/concurrent_vector.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/concurrent_vector.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/enumerable_thread_specific.h b/third_party/repcut/serial/tbb/enumerable_thread_specific.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/enumerable_thread_specific.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/global_control.h b/third_party/repcut/serial/tbb/global_control.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/global_control.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/parallel_for.h b/third_party/repcut/serial/tbb/parallel_for.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/parallel_for.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/parallel_for_each.h b/third_party/repcut/serial/tbb/parallel_for_each.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/parallel_for_each.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/parallel_invoke.h b/third_party/repcut/serial/tbb/parallel_invoke.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/parallel_invoke.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/parallel_reduce.h b/third_party/repcut/serial/tbb/parallel_reduce.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/parallel_reduce.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/parallel_scan.h b/third_party/repcut/serial/tbb/parallel_scan.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/parallel_scan.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/parallel_sort.h b/third_party/repcut/serial/tbb/parallel_sort.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/parallel_sort.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/scalable_allocator.h b/third_party/repcut/serial/tbb/scalable_allocator.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/scalable_allocator.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/serial.h b/third_party/repcut/serial/tbb/serial.h
+new file mode 100644
+index 000000000..46c1d6e98
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/serial.h
+@@ -0,0 +1,354 @@
++// Serial execution primitives for the bundled Mt-KaHyPar build.
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++// This is the subset used by the pinned partitioner, not a general TBB implementation.
++// Only one partitioning call may be active; librepcut enforces that boundary.
++#pragma once
++
++#ifndef REPCUT_SERIAL_PARTITIONER
++#error This adapter is only for the serial bundled partitioner
++#endif
++
++#include <algorithm>
++#include <chrono>
++#include <cstdlib>
++#include <deque>
++#include <functional>
++#include <iterator>
++#include <memory>
++#include <stdexcept>
++#include <tuple>
++#include <type_traits>
++#include <unordered_map>
++#include <utility>
++
++namespace tbb {
++    struct split
++    {
++    };
++    struct static_partitioner
++    {
++    };
++    struct pre_scan_tag
++    {
++        static constexpr bool is_final_scan() { return false; }
++    };
++    struct final_scan_tag
++    {
++        static constexpr bool is_final_scan() { return true; }
++    };
++
++    template <class T> class blocked_range
++    {
++        T first_, last_;
++
++    public:
++        blocked_range(T first, T last, size_t = 1) : first_(first), last_(last) {}
++        T begin() const { return first_; }
++        T end() const { return last_; }
++        size_t size() const { return static_cast<size_t>(last_ - first_); }
++        bool empty() const { return first_ == last_; }
++        bool is_divisible() const { return false; }
++    };
++
++    template <class Range, class Body, class... Policy, std::enable_if_t<!std::is_integral_v<Range>, int> = 0>
++    void parallel_for(Range range, const Body& body, const Policy&...)
++    {
++        if (!range.empty())
++            body(range);
++    }
++    template <class Index, class Body, class... Policy, std::enable_if_t<std::is_integral_v<Index>, int> = 0>
++    void parallel_for(Index first, Index last, const Body& body, const Policy&...)
++    {
++        for (; first < last; ++first)
++            body(first);
++    }
++    template <class Index, class Step, class Body, std::enable_if_t<std::is_integral_v<Step>, int> = 0>
++    void parallel_for(Index first, Index last, Step step, const Body& body)
++    {
++        if (step <= 0)
++            throw std::invalid_argument("Serial loop step must be positive");
++        for (; first < last; first += step)
++            body(first);
++    }
++    template <class Range, class Body> void parallel_for_each(Range& range, const Body& body)
++    {
++        for (auto& value : range)
++            body(value);
++    }
++    template <class Iterator, class Body> void parallel_for_each(Iterator first, Iterator last, const Body& body)
++    {
++        for (; first != last; ++first)
++            body(*first);
++    }
++    template <class... Body> void parallel_invoke(Body&&... body)
++    {
++        (body(), ...);
++    }
++    template <class Iterator, class... Compare> void parallel_sort(Iterator first, Iterator last, Compare... compare)
++    {
++        std::sort(first, last, compare...);
++    }
++    template <class Range, class... Compare>
++    auto parallel_sort(Range& range, Compare... compare) -> decltype(std::begin(range), std::end(range), void())
++    {
++        std::sort(std::begin(range), std::end(range), compare...);
++    }
++    template <class Range, class T, class Body, class Join, class... Policy>
++    T parallel_reduce(const Range& range, T identity, const Body& body, const Join&, const Policy&...)
++    {
++        return range.empty() ? identity : body(range, identity);
++    }
++    template <class... Args> auto parallel_deterministic_reduce(Args&&... args)
++    {
++        return parallel_reduce(std::forward<Args>(args)...);
++    }
++    template <class Range, class Body> void parallel_scan(const Range& range, Body& body)
++    {
++        if (!range.empty())
++            body(range, final_scan_tag{});
++    }
++    template <class Range, class T, class Body, class Join>
++    T parallel_scan(const Range& range, T identity, const Body& body, const Join&)
++    {
++        return range.empty() ? identity : body(range, identity, true);
++    }
++
++    // A distinct allocator type preserves overloads for Mt-KaHyPar's scalable vectors.
++    template <class T> struct tbb_allocator
++    {
++        using value_type = T;
++        using is_always_equal = std::true_type;
++        using propagate_on_container_move_assignment = std::true_type;
++        tbb_allocator() = default;
++        template <class U> tbb_allocator(const tbb_allocator<U>&) {}
++        T* allocate(size_t n) { return std::allocator<T>{}.allocate(n); }
++        void deallocate(T* p, size_t n) { std::allocator<T>{}.deallocate(p, n); }
++        template <class U> bool operator==(const tbb_allocator<U>&) const { return true; }
++        template <class U> bool operator!=(const tbb_allocator<U>&) const { return false; }
++    };
++    template <class T> using scalable_allocator = tbb_allocator<T>;
++    // Only used as an ETS policy; the serial ETS owns one normally aligned object.
++    template <class T> using cache_aligned_allocator = tbb_allocator<T>;
++
++    // Stable references during growth match the concurrent_vector operations used here.
++    template <class T, class Allocator = tbb_allocator<T>> class concurrent_vector : public std::deque<T, Allocator>
++    {
++        using Base = std::deque<T, Allocator>;
++
++    public:
++        using Base::Base;
++        void reserve(size_t) {}
++        size_t capacity() const { return this->size(); }
++        auto grow_by(size_t n)
++        {
++            const auto start = this->size();
++            this->resize(start + n);
++            return this->begin() + start;
++        }
++        auto grow_to_at_least(size_t n)
++        {
++            const auto start = this->size();
++            if (n > start)
++                this->resize(n);
++            return this->begin() + std::min(start, n);
++        }
++    };
++    template <class T> class concurrent_queue
++    {
++        std::deque<T> values_;
++
++    public:
++        template <class U> void push(U&& value) { values_.push_back(std::forward<U>(value)); }
++        bool try_pop(T& value)
++        {
++            if (values_.empty())
++                return false;
++            value = std::move(values_.front());
++            values_.pop_front();
++            return true;
++        }
++        bool empty() const { return values_.empty(); }
++        size_t unsafe_size() const { return values_.size(); }
++        void clear() { values_.clear(); }
++    };
++    template <class Key, class T, class Hash = std::hash<Key>, class Equal = std::equal_to<Key>>
++    using concurrent_unordered_map = std::unordered_map<Key, T, Hash, Equal>;
++
++    enum ets_key_usage_type { ets_no_key, ets_key_per_instance };
++    template <class T, class Allocator = tbb_allocator<T>, ets_key_usage_type = ets_no_key>
++    class enumerable_thread_specific
++    {
++        std::function<std::unique_ptr<T>()> create_;
++        std::unique_ptr<T> value_;
++        template <class... Args> void initialize(Args&&... args)
++        {
++            create_ = [values = std::make_tuple(std::forward<Args>(args)...)] {
++                return std::apply([](const auto&... values) { return std::make_unique<T>(values...); }, values);
++            };
++        }
++        template <class U> class Iterator
++        {
++            U* value_;
++
++        public:
++            using iterator_category = std::forward_iterator_tag;
++            using value_type = U;
++            using difference_type = std::ptrdiff_t;
++            using pointer = U*;
++            using reference = U&;
++            explicit Iterator(U* value = nullptr) : value_(value) {}
++            U& operator*() const { return *value_; }
++            U* operator->() const { return value_; }
++            Iterator& operator++()
++            {
++                value_ = nullptr;
++                return *this;
++            }
++            Iterator operator++(int)
++            {
++                Iterator old = *this;
++                ++*this;
++                return old;
++            }
++            bool operator==(const Iterator& other) const { return value_ == other.value_; }
++            bool operator!=(const Iterator& other) const { return !(*this == other); }
++            bool operator<(const Iterator& other) const { return value_ && !other.value_; }
++            difference_type operator-(const Iterator& other) const
++            {
++                return static_cast<difference_type>(!value_) - static_cast<difference_type>(!other.value_);
++            }
++        };
++
++    public:
++        using iterator = Iterator<T>;
++        using const_iterator = Iterator<const T>;
++        using range_type = blocked_range<iterator>;
++        using const_range_type = blocked_range<const_iterator>;
++        range_type range() { return {begin(), end()}; }
++        const_range_type range() const { return {begin(), end()}; }
++        enumerable_thread_specific() { initialize(); }
++        template <class Arg, std::enable_if_t<!std::is_same_v<std::decay_t<Arg>, enumerable_thread_specific>, int> = 0>
++        enumerable_thread_specific(Arg&& arg)
++        {
++            if constexpr (std::is_invocable_r_v<T, Arg>)
++                create_ = [factory = std::forward<Arg>(arg)] { return std::unique_ptr<T>(new T(factory())); };
++            else
++                initialize(std::forward<Arg>(arg));
++        }
++        template <class A, class B, class... Args> enumerable_thread_specific(A&& a, B&& b, Args&&... args)
++        {
++            initialize(std::forward<A>(a), std::forward<B>(b), std::forward<Args>(args)...);
++        }
++        enumerable_thread_specific(enumerable_thread_specific&&) = default;
++        enumerable_thread_specific& operator=(enumerable_thread_specific&&) = default;
++        enumerable_thread_specific(const enumerable_thread_specific& other) : create_(other.create_)
++        {
++            if (other.value_)
++                value_ = std::make_unique<T>(*other.value_);
++        }
++        enumerable_thread_specific& operator=(const enumerable_thread_specific& other)
++        {
++            if (this != &other) {
++                enumerable_thread_specific copy(other);
++                swap(copy);
++            }
++            return *this;
++        }
++        T& local()
++        {
++            if (!value_)
++                value_ = create_();
++            return *value_;
++        }
++        T& local(bool& exists)
++        {
++            exists = static_cast<bool>(value_);
++            return local();
++        }
++        void clear() { value_.reset(); }
++        bool empty() const { return !value_; }
++        size_t size() const { return value_ ? 1 : 0; }
++        iterator begin() { return iterator(value_.get()); }
++        iterator end() { return iterator(); }
++        const_iterator begin() const { return const_iterator(value_.get()); }
++        const_iterator end() const { return const_iterator(); }
++        template <class F> T combine(F) { return value_ ? *value_ : T{}; }
++        template <class F> void combine_each(F f)
++        {
++            if (value_)
++                f(*value_);
++        }
++        void swap(enumerable_thread_specific& other)
++        {
++            create_.swap(other.create_);
++            value_.swap(other.value_);
++        }
++    };
++
++    class task_group
++    {
++    public:
++        ~task_group() { wait(); }
++        template <class F> void run(F&& f) { f(); }
++        void wait() {}
++        template <class F> void run_and_wait(F&& f) { f(); }
++    };
++    namespace this_task_arena {
++        inline int current_thread_index()
++        {
++            return 0;
++        }
++        inline int max_concurrency()
++        {
++            return 1;
++        }
++        template <class F> decltype(auto) isolate(F&& f)
++        {
++            return f();
++        }
++    } // namespace this_task_arena
++    class global_control
++    {
++    public:
++        enum parameter { max_allowed_parallelism };
++        global_control(parameter, size_t threads)
++        {
++            if (threads != 1)
++                throw std::invalid_argument("The bundled partitioner requires one thread");
++        }
++        static size_t active_value(parameter) { return 1; }
++    };
++    class tick_count
++    {
++        using Clock = std::chrono::steady_clock;
++        Clock::time_point value_;
++
++    public:
++        static tick_count now()
++        {
++            tick_count result;
++            result.value_ = Clock::now();
++            return result;
++        }
++        struct interval_t
++        {
++            Clock::duration value;
++            double seconds() const { return std::chrono::duration<double>(value).count(); }
++        };
++        friend interval_t operator-(tick_count a, tick_count b) { return {a.value_ - b.value_}; }
++    };
++} // namespace tbb
++
++inline void* scalable_malloc(size_t n)
++{
++    return std::malloc(n);
++}
++inline void* scalable_calloc(size_t n, size_t size)
++{
++    return std::calloc(n, size);
++}
++inline void scalable_free(void* p)
++{
++    std::free(p);
++}
+diff --git a/third_party/repcut/serial/tbb/task.h b/third_party/repcut/serial/tbb/task.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/task.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/task_arena.h b/third_party/repcut/serial/tbb/task_arena.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/task_arena.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/task_group.h b/third_party/repcut/serial/tbb/task_group.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/task_group.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/task_scheduler_observer.h b/third_party/repcut/serial/tbb/task_scheduler_observer.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/task_scheduler_observer.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/tbb_allocator.h b/third_party/repcut/serial/tbb/tbb_allocator.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/tbb_allocator.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/serial/tbb/tick_count.h b/third_party/repcut/serial/tbb/tick_count.h
+new file mode 100644
+index 000000000..94e5a97a6
+--- /dev/null
++++ b/third_party/repcut/serial/tbb/tick_count.h
+@@ -0,0 +1,4 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++#include "serial.h"
+diff --git a/third_party/repcut/tests/test_serial.cpp b/third_party/repcut/tests/test_serial.cpp
+new file mode 100644
+index 000000000..3f881e203
+--- /dev/null
++++ b/third_party/repcut/tests/test_serial.cpp
+@@ -0,0 +1,92 @@
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#include <atomic>
++#include <cassert>
++#include <numeric>
++#include <tbb/concurrent_vector.h>
++#include <tbb/enumerable_thread_specific.h>
++#include <tbb/parallel_for.h>
++#include <tbb/parallel_scan.h>
++#include <vector>
++
++static void require(bool value)
++{
++    if (!value)
++        throw std::runtime_error("Serial primitive test failed");
++}
++struct Scan
++{
++    std::vector<int>& values;
++    int sum = 0;
++    template <class Tag> void operator()(const tbb::blocked_range<size_t>& range, Tag)
++    {
++        require(Tag::is_final_scan());
++        for (size_t i = range.begin(); i < range.end(); ++i) {
++            sum += values[i];
++            values[i] = sum;
++        }
++    }
++};
++struct Immovable
++{
++    std::atomic<int> count{7};
++};
++int main()
++{
++    int total = 0;
++    tbb::parallel_for(0, 5, [&](int i) { total += i; });
++    tbb::parallel_for(0, 5, 2, [&](int i) { total += i; });
++    require(total == 16);
++    tbb::parallel_for(
++        tbb::blocked_range<int>(0, 3), [&](auto& range) { total += range.size(); }, tbb::static_partitioner{});
++    require(total == 19);
++    std::vector<int> values{1, 2, 3, 4};
++    Scan scan{values};
++    tbb::parallel_scan(tbb::blocked_range<size_t>(0, values.size()), scan);
++    require(values == std::vector<int>({1, 3, 6, 10}) && scan.sum == 10);
++    require(tbb::parallel_reduce(
++                tbb::blocked_range<int>(0, 5), 0,
++                [](const auto& range, int sum) {
++                    for (int i = range.begin(); i < range.end(); ++i)
++                        sum += i;
++                    return sum;
++                },
++                std::plus<>()) == 10);
++    int creations = 0;
++    tbb::enumerable_thread_specific<Immovable> local([&] {
++        ++creations;
++        return Immovable{};
++    });
++    require(local.empty());
++    bool exists = true;
++    require(local.local(exists).count == 7 && !exists && creations == 1);
++    local.local(exists).count = 11;
++    require(exists && local.size() == 1 && local.begin()->count == 11);
++    local.clear();
++    require(local.empty());
++    require(local.local().count == 7 && creations == 2);
++    tbb::concurrent_vector<Immovable> stable;
++    stable.resize(1);
++    auto* first = &stable[0];
++    stable.resize(1000);
++    require(first == &stable[0] && first->count == 7);
++    tbb::concurrent_queue<int> queue;
++    int result = 0;
++    queue.push(3);
++    queue.push(8);
++    require(queue.try_pop(result) && result == 3);
++    require(queue.try_pop(result) && result == 8 && !queue.try_pop(result));
++    tbb::task_group tasks;
++    tasks.run([&] { ++total; });
++    tasks.wait();
++    require(total == 20);
++    require(tbb::this_task_arena::max_concurrency() == 1 && tbb::this_task_arena::current_thread_index() == 0);
++    bool rejected = false;
++    try {
++        tbb::global_control guard(tbb::global_control::max_allowed_parallelism, 2);
++    }
++    catch (const std::invalid_argument&) {
++        rejected = true;
++    }
++    require(rejected);
++}

@@ -25,6 +25,7 @@
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
 #include "V3Error.h"
+#include "V3Stats.h"
 
 #include <vector>
 
@@ -215,4 +216,76 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp) {
     UINFO(2, __FUNCTION__ << ":");
     DataflowOptimize::apply(netlistp);
     V3Global::dumpCheckGlobalTree("dfg-optimize", 0, dumpTreeEitherLevel() >= 3);
+}
+
+static void limitBlockExpressions(DfgGraph& dfg, size_t limit) {
+    const std::vector<DfgVertex*> order = V3DfgPasses::topologicalOrder(dfg);
+    DfgUserMap<size_t> sizes = dfg.makeUserMap<size_t>();
+    DfgVertex::ScopeCache scopeCache;
+    size_t count = 0;
+    for (DfgVertex* const vtxp : order) {
+        sizes[vtxp] = 1;
+        if (vtxp->is<DfgVertexVar>() || vtxp->is<DfgConst>()) continue;
+        vtxp->foreachSource([&](const DfgVertex& source) {
+            sizes[vtxp] += sizes.at(source);
+            return false;
+        });
+        if (sizes[vtxp] <= limit) continue;
+        // Bound expression trees after optimization, without splitting guards.
+        ++count;
+        DfgVertexVar* const varp = dfg.makeNewVar(vtxp->fileline(), "ScopedSplit", vtxp->dtype(),
+                                                  vtxp->scopep(scopeCache));
+        vtxp->replaceWith(varp);
+        varp->srcp(vtxp);
+        sizes[varp] = 1;
+    }
+    V3Stats::addStatSum("DFG scoped, bounded expressions", count);
+}
+
+bool V3DfgOptimizer::optimizeBlock(AstScope& scope, std::vector<AstNodeStmt*>& statements,
+                                   const std::set<AstVarScope*>& liveOuts,
+                                   const std::set<AstVarScope*>& availableInputs,
+                                   size_t expressionLimit, V3DfgContext& ctx) {
+    if (statements.empty()) return true;
+    const VNUser1InUse user1InUse;
+    std::unique_ptr<DfgGraph> dfgp
+        = V3DfgPasses::astBlockToDfg(scope, statements, liveOuts, availableInputs, ctx);
+    if (!dfgp) {
+        DfgDataType::reset();
+        V3Stats::addStatSum("DFG scoped, unsupported blocks", 1);
+        return false;
+    }
+    const size_t before = dfgp->size();
+    std::set<AstVarScope*> locals;
+    for (const DfgVertexVar& var : dfgp->varVertices()) {
+        if (var.srcp() && !var.hasExtRefs()) locals.insert(var.vscp());
+    }
+    V3DfgPasses::typeCheck(*dfgp);
+    V3DfgPasses::inlineVars(*dfgp);
+    V3DfgPasses::cse(*dfgp, ctx.m_cseContext0);
+    V3DfgPasses::peephole(*dfgp, ctx.m_peepholeContext);
+    V3DfgPasses::pushDownSels(*dfgp, ctx.m_pushDownSelsContext);
+    V3DfgPasses::cse(*dfgp, ctx.m_cseContext1);
+    V3DfgPasses::regularize(*dfgp, ctx.m_regularizeContext);
+    const size_t localCount = locals.size();
+    for (const DfgVertexVar& var : dfgp->varVertices()) locals.erase(var.vscp());
+    V3Stats::addStatSum("DFG scoped, local definitions", localCount);
+    V3Stats::addStatSum("DFG scoped, locals removed", locals.size());
+    limitBlockExpressions(*dfgp, expressionLimit);
+    for (const DfgVertexVar& var : dfgp->varVertices()) {
+        if (var.hasExtRefs()) continue;  // Existing bindings keep their attributes.
+        var.vscp()->varp()->isInternal(true);
+        var.vscp()->varp()->noReset(true);
+        var.vscp()->varp()->trace(false);
+    }
+    std::vector<AstNodeStmt*> result = V3DfgPasses::dfgToBlock(*dfgp, ctx);
+    V3Stats::addStatSum("DFG scoped, blocks", 1);
+    V3Stats::addStatSum("DFG scoped, input vertices", before);
+    V3Stats::addStatSum("DFG scoped, output vertices", dfgp->size());
+    VNDeleter deleter;
+    for (AstNodeStmt* const stmtp : statements) deleter.pushDeletep(stmtp);
+    statements = std::move(result);
+    dfgp.reset();
+    DfgDataType::reset();
+    return true;
 }

@@ -1,0 +1,949 @@
+diff --git a/third_party/WHFC/algorithm/parallel_push_relabel.h b/third_party/WHFC/algorithm/parallel_push_relabel.h
+index f14bb1f65..d6ae04da4 100644
+--- a/third_party/WHFC/algorithm/parallel_push_relabel.h
++++ b/third_party/WHFC/algorithm/parallel_push_relabel.h
+@@ -2,2 +2,4 @@
+
++#include "repcut_serial.h"
++
+ #include <atomic>
+@@ -126,3 +128,3 @@ namespace whfc {
+                 } else {
+-                    std::atomic_ref<Flow>(flow_value).fetch_add(excess_diff[u], std::memory_order::relaxed);
++                    repcut_serial::Ref<Flow>(flow_value).fetch_add(excess_diff[u], std::memory_order_relaxed);
+                 }
+@@ -135,3 +137,3 @@ namespace whfc {
+                 if (isTarget(u) && excess_diff[u] > 0) {
+-                    std::atomic_ref<Flow>(flow_value).fetch_add(excess_diff[u], std::memory_order::relaxed);
++                    repcut_serial::Ref<Flow>(flow_value).fetch_add(excess_diff[u], std::memory_order_relaxed);
+                 }
+@@ -170,3 +172,3 @@ namespace whfc {
+                             my_excess -= d;
+-                            std::atomic_ref<Flow>(excess_diff[e_in]).fetch_add(d, std::memory_order::relaxed);
++                            repcut_serial::Ref<Flow>(excess_diff[e_in]).fetch_add(d, std::memory_order_relaxed);
+                             push(e_in);
+@@ -194,3 +196,3 @@ namespace whfc {
+                                 my_excess -= d;
+-                                std::atomic_ref<Flow>(excess_diff[e_out]).fetch_add(d, std::memory_order::relaxed);
++                                repcut_serial::Ref<Flow>(excess_diff[e_out]).fetch_add(d, std::memory_order_relaxed);
+                                 push(e_out);
+@@ -215,3 +217,3 @@ namespace whfc {
+             // excess[u] serves as indicator for other nodes that u is active --> update later
+-            std::atomic_ref<Flow>(excess_diff[u]).fetch_sub((excess[u] - my_excess), std::memory_order::relaxed);
++            repcut_serial::Ref<Flow>(excess_diff[u]).fetch_sub((excess[u] - my_excess), std::memory_order_relaxed);
+             return work;
+@@ -245,3 +247,3 @@ namespace whfc {
+                             my_excess -= d;
+-                            std::atomic_ref<Flow>(excess_diff[e_out]).fetch_add(d, std::memory_order::relaxed);
++                            repcut_serial::Ref<Flow>(excess_diff[e_out]).fetch_add(d, std::memory_order_relaxed);
+                             push(e_out);
+@@ -269,3 +271,3 @@ namespace whfc {
+                             my_excess -= d;
+-                            std::atomic_ref<Flow>(excess_diff[v]).fetch_add(d, std::memory_order::relaxed);
++                            repcut_serial::Ref<Flow>(excess_diff[v]).fetch_add(d, std::memory_order_relaxed);
+                             push(v);
+@@ -289,3 +291,3 @@ namespace whfc {
+             // excess[u] serves as indicator for other nodes that u is active --> update later
+-            std::atomic_ref<Flow>(excess_diff[e_in]).fetch_sub((excess[e_in] - my_excess), std::memory_order::relaxed);
++            repcut_serial::Ref<Flow>(excess_diff[e_in]).fetch_sub((excess[e_in] - my_excess), std::memory_order_relaxed);
+             return work;
+@@ -327,3 +329,3 @@ namespace whfc {
+                             my_excess -= d;
+-                            std::atomic_ref<Flow>(excess_diff[v]).fetch_add(d, std::memory_order::relaxed);
++                            repcut_serial::Ref<Flow>(excess_diff[v]).fetch_add(d, std::memory_order_relaxed);
+                             push(v);
+@@ -349,3 +351,3 @@ namespace whfc {
+                             my_excess -= d;
+-                            std::atomic_ref<Flow>(excess_diff[e_in]).fetch_add(d, std::memory_order::relaxed);
++                            repcut_serial::Ref<Flow>(excess_diff[e_in]).fetch_add(d, std::memory_order_relaxed);
+                             push(e_in);
+@@ -369,3 +371,3 @@ namespace whfc {
+             // excess[u] serves as indicator for other nodes that u is active --> update later
+-            std::atomic_ref<Flow>(excess_diff[e_out]).fetch_sub((excess[e_out] - my_excess), std::memory_order::relaxed);
++            repcut_serial::Ref<Flow>(excess_diff[e_out]).fetch_sub((excess[e_out] - my_excess), std::memory_order_relaxed);
+             return work;
+@@ -391,3 +393,3 @@ namespace whfc {
+                     if (!isSource(v) && !isTarget(v) && level[v] == max_level &&
+-                        std::atomic_ref<int>(level[v]).exchange(dist, std::memory_order::acq_rel) == max_level) {
++                        repcut_serial::Ref<int>(level[v]).exchange(dist, std::memory_order_acq_rel) == max_level) {
+                         next_layer.push_back(v);
+@@ -397,3 +399,3 @@ namespace whfc {
+                 if (!isTarget(u) && excess[u] > 0 && last_activated[u] != round) { // add previously mis-labeled nodes to active queue, if not already contained
+-                    size_t pos = std::atomic_ref<size_t>(num_active).fetch_add(1, std::memory_order::relaxed);
++                    size_t pos = repcut_serial::Ref<size_t>(num_active).fetch_add(1, std::memory_order_relaxed);
+                     active[pos] = u;
+@@ -449,3 +451,3 @@ namespace whfc {
+                         if (!isSourceReachable(v) &&
+-                            std::atomic_ref<uint32_t>(reach[v]).exchange(source_reachable_stamp, std::memory_order::acq_rel) != source_reachable_stamp) {
++                            repcut_serial::Ref<uint32_t>(reach[v]).exchange(source_reachable_stamp, std::memory_order_acq_rel) != source_reachable_stamp) {
+                             assert(flow_changed || excess[v] == 0);
+@@ -489,3 +491,3 @@ namespace whfc {
+                     if (!isTargetReachable(v) &&
+-                        std::atomic_ref<uint32_t>(reach[v]).exchange(target_reachable_stamp, std::memory_order::acq_rel) != target_reachable_stamp) {
++                        repcut_serial::Ref<uint32_t>(reach[v]).exchange(target_reachable_stamp, std::memory_order_acq_rel) != target_reachable_stamp) {
+                         assert(excess[v] == 0);
+@@ -618,3 +620,3 @@ namespace whfc {
+         bool activate(Node u) {
+-            return last_activated[u] != round && std::atomic_ref<uint32_t>(last_activated[u]).exchange(round, std::memory_order::acq_rel) != round;
++            return last_activated[u] != round && repcut_serial::Ref<uint32_t>(last_activated[u]).exchange(round, std::memory_order_acq_rel) != round;
+         }
+diff --git a/third_party/WHFC/algorithm/parallel_push_relabel_block.h b/third_party/WHFC/algorithm/parallel_push_relabel_block.h
+index fc5a06644..9ef7fb4b8 100644
+--- a/third_party/WHFC/algorithm/parallel_push_relabel_block.h
++++ b/third_party/WHFC/algorithm/parallel_push_relabel_block.h
+@@ -2,2 +2,4 @@
+
++#include "repcut_serial.h"
++
+ #include <atomic>
+@@ -100,3 +102,3 @@ namespace whfc {
+                 } else {
+-                    std::atomic_ref<Flow>(flow_value).fetch_add(excess_diff[u], std::memory_order::relaxed);
++                    repcut_serial::Ref<Flow>(flow_value).fetch_add(excess_diff[u], std::memory_order_relaxed);
+                 }
+@@ -110,3 +112,3 @@ namespace whfc {
+                 if (isTarget(u) && excess_diff[u] > 0) {
+-                    std::atomic_ref<Flow>(flow_value).fetch_add(excess_diff[u], std::memory_order::relaxed);
++                    repcut_serial::Ref<Flow>(flow_value).fetch_add(excess_diff[u], std::memory_order_relaxed);
+                 }
+@@ -143,3 +145,3 @@ namespace whfc {
+                             my_excess -= d;
+-                            std::atomic_ref<Flow>(excess_diff[e_in]).fetch_add(d, std::memory_order::relaxed);
++                            repcut_serial::Ref<Flow>(excess_diff[e_in]).fetch_add(d, std::memory_order_relaxed);
+                             push(e_in);
+@@ -166,3 +168,3 @@ namespace whfc {
+                             my_excess -= d;
+-                            std::atomic_ref<Flow>(excess_diff[e_out]).fetch_add(d, std::memory_order::relaxed);
++                            repcut_serial::Ref<Flow>(excess_diff[e_out]).fetch_add(d, std::memory_order_relaxed);
+                             push(e_out);
+@@ -192,5 +194,5 @@ namespace whfc {
+             }
+-            std::atomic_ref<Flow>(excess_diff[u])
++            repcut_serial::Ref<Flow>(excess_diff[u])
+                     .fetch_sub((excess[u] - my_excess),
+-                               std::memory_order::relaxed); // excess[u] serves as indicator for other nodes that u is active --> update later
++                               std::memory_order_relaxed); // excess[u] serves as indicator for other nodes that u is active --> update later
+             return work;
+@@ -221,3 +223,3 @@ namespace whfc {
+                         my_excess -= d;
+-                        std::atomic_ref<Flow>(excess_diff[e_out]).fetch_add(d, std::memory_order::relaxed);
++                        repcut_serial::Ref<Flow>(excess_diff[e_out]).fetch_add(d, std::memory_order_relaxed);
+                         push(e_out);
+@@ -244,3 +246,3 @@ namespace whfc {
+                             my_excess -= d;
+-                            std::atomic_ref<Flow>(excess_diff[v]).fetch_add(d, std::memory_order::relaxed);
++                            repcut_serial::Ref<Flow>(excess_diff[v]).fetch_add(d, std::memory_order_relaxed);
+                             push(v);
+@@ -270,5 +272,5 @@ namespace whfc {
+             }
+-            std::atomic_ref<Flow>(excess_diff[e_in])
++            repcut_serial::Ref<Flow>(excess_diff[e_in])
+                     .fetch_sub((excess[e_in] - my_excess),
+-                               std::memory_order::relaxed); // excess[u] serves as indicator for other nodes that u is active --> update later
++                               std::memory_order_relaxed); // excess[u] serves as indicator for other nodes that u is active --> update later
+             return work;
+@@ -306,3 +308,3 @@ namespace whfc {
+                             my_excess -= d;
+-                            std::atomic_ref<Flow>(excess_diff[v]).fetch_add(d, std::memory_order::relaxed);
++                            repcut_serial::Ref<Flow>(excess_diff[v]).fetch_add(d, std::memory_order_relaxed);
+                             push(v);
+@@ -327,3 +329,3 @@ namespace whfc {
+                         my_excess -= d;
+-                        std::atomic_ref<Flow>(excess_diff[e_in]).fetch_add(d, std::memory_order::relaxed);
++                        repcut_serial::Ref<Flow>(excess_diff[e_in]).fetch_add(d, std::memory_order_relaxed);
+                         push(e_in);
+@@ -352,5 +354,5 @@ namespace whfc {
+             }
+-            std::atomic_ref<Flow>(excess_diff[e_out])
++            repcut_serial::Ref<Flow>(excess_diff[e_out])
+                     .fetch_sub((excess[e_out] - my_excess),
+-                               std::memory_order::relaxed); // excess[u] serves as indicator for other nodes that u is active --> update later
++                               std::memory_order_relaxed); // excess[u] serves as indicator for other nodes that u is active --> update later
+             return work;
+@@ -370,3 +372,3 @@ namespace whfc {
+                     if (!isSource(v) && !isTarget(v) && level[v] == max_level &&
+-                        std::atomic_ref<int>(level[v]).exchange(dist, std::memory_order::acq_rel) == max_level) {
++                        repcut_serial::Ref<int>(level[v]).exchange(dist, std::memory_order_acq_rel) == max_level) {
+                         next_layer.push_back(v);
+@@ -450,4 +452,4 @@ namespace whfc {
+             LevelState expected = LevelState::NOT_MODIFIED;
+-            return node_state[u] == desired || std::atomic_ref<LevelState>(node_state[u])
+-                                                       .compare_exchange_strong(expected, desired, std::memory_order::acq_rel, std::memory_order::relaxed);
++            return node_state[u] == desired || repcut_serial::Ref<LevelState>(node_state[u])
++                                                       .compare_exchange_strong(expected, desired, std::memory_order_acq_rel, std::memory_order_relaxed);
+         }
+@@ -457,3 +459,3 @@ namespace whfc {
+         bool activate(Node u) {
+-            return last_activated[u] != round && std::atomic_ref<uint32_t>(last_activated[u]).exchange(round, std::memory_order::acq_rel) != round;
++            return last_activated[u] != round && repcut_serial::Ref<uint32_t>(last_activated[u]).exchange(round, std::memory_order_acq_rel) != round;
+         }
+diff --git a/third_party/WHFC/algorithm/push_relabel_commons.h b/third_party/WHFC/algorithm/push_relabel_commons.h
+index 48f367857..1b363057e 100644
+--- a/third_party/WHFC/algorithm/push_relabel_commons.h
++++ b/third_party/WHFC/algorithm/push_relabel_commons.h
+@@ -2,2 +2,4 @@
+
++#include "repcut_serial.h"
++
+ #include <atomic>
+@@ -126,3 +128,3 @@ namespace whfc {
+                 // flow_value += excess[u];	// if source-reachable nodes with excess get pierced
+-                std::atomic_ref<Flow>(flow_value).fetch_add(excess[u], std::memory_order::relaxed);
++                repcut_serial::Ref<Flow>(flow_value).fetch_add(excess[u], std::memory_order_relaxed);
+                 distance_labels_broken_from_target_side_piercing = true;
+diff --git a/third_party/repcut/external/mt-kahypar/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/CMakeLists.txt
+index b53d0b707..82707128d 100644
+--- a/third_party/repcut/external/mt-kahypar/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/CMakeLists.txt
+@@ -45,3 +45,3 @@ endif()
+ add_library(MtKaHyPar-BuildFlags INTERFACE)
+-target_compile_features(MtKaHyPar-BuildFlags INTERFACE cxx_std_20)
++target_compile_features(MtKaHyPar-BuildFlags INTERFACE cxx_std_17)
+
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/bitset.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/bitset.h
+index 1be092e94..c36372cda 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/bitset.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/bitset.h
+@@ -28,2 +28,4 @@
+
++#include "repcut_serial.h"
++
+ #include <bit>
+@@ -46,3 +48,3 @@ class Bitset {
+   static constexpr Block BITS_PER_BLOCK = std::numeric_limits<Block>::digits;
+-  static_assert(std::popcount(BITS_PER_BLOCK) == 1);
++  static_assert(repcut_serial::popcount64(BITS_PER_BLOCK) == 1);
+   static constexpr Block MOD_MASK = BITS_PER_BLOCK - 1;
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/concurrent_flat_map.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/concurrent_flat_map.h
+index 40b817578..eac8999fa 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/concurrent_flat_map.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/concurrent_flat_map.h
+@@ -29,2 +29,4 @@
+
++#include "repcut_serial.h"
++
+ #include <algorithm>
+@@ -107,4 +109,4 @@ class ConcurrentFlatMap {
+       if ( expected < desired &&
+-           std::atomic_ref(elem->timestamp)
+-               .compare_exchange_strong(expected, desired, std::memory_order::acq_rel, std::memory_order::relaxed) ) {
++           repcut_serial::Ref(elem->timestamp)
++               .compare_exchange_strong(expected, desired, std::memory_order_acq_rel, std::memory_order_relaxed) ) {
+         elem->key = key;
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/connectivity_set.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/connectivity_set.h
+index 8d70e11ba..27669f99d 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/connectivity_set.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/connectivity_set.h
+@@ -29,2 +29,4 @@
+
++#include "repcut_serial.h"
++
+ #include <atomic>
+@@ -114,3 +116,3 @@ public:
+     const size_t pos = static_cast<size_t>(he) * _num_blocks_per_hyperedge + div;
+-    return parallel::atomic_load(_bits[pos], std::memory_order::relaxed) &
++    return parallel::atomic_load(_bits[pos], std::memory_order_relaxed) &
+            (UnsafeBlock(1) << rem);
+@@ -123,3 +125,3 @@ public:
+     for (size_t i = start; i < end; ++i) {
+-      std::atomic_ref(_bits[i]).store(0, std::memory_order::relaxed);
++      repcut_serial::Ref(_bits[i]).store(0, std::memory_order_relaxed);
+     }
+@@ -130,3 +132,3 @@ public:
+       tbb::parallel_for(UL(0), _bits.size(), [&](const size_t i) {
+-        std::atomic_ref(_bits[i]).store(0, std::memory_order::relaxed);
++        repcut_serial::Ref(_bits[i]).store(0, std::memory_order_relaxed);
+       });
+@@ -135,3 +137,3 @@ public:
+       for (size_t i = 0; i < _bits.size(); ++i) {
+-        std::atomic_ref(_bits[i]).store(0, std::memory_order::relaxed);
++        repcut_serial::Ref(_bits[i]).store(0, std::memory_order_relaxed);
+       }
+@@ -146,3 +148,3 @@ public:
+       conn += utils::popcount_64(
+-          parallel::atomic_load(_bits[i], std::memory_order::relaxed));
++          parallel::atomic_load(_bits[i], std::memory_order_relaxed));
+     }
+@@ -188,4 +190,4 @@ private:
+     ASSERT(idx < _bits.size());
+-    std::atomic_ref(_bits[idx]).fetch_xor(UnsafeBlock(1) << rem, std::memory_order::relaxed);
+-	}
++    repcut_serial::Ref(_bits[idx]).fetch_xor(UnsafeBlock(1) << rem, std::memory_order_relaxed);
++  }
+
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/delta_connectivity_set.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/delta_connectivity_set.h
+index fd380ae74..17a9d6279 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/delta_connectivity_set.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/delta_connectivity_set.h
+@@ -134,3 +134,3 @@ class DeltaConnectivitySet {
+       return parallel::atomic_load(_shared_bitset[block_idx],
+-                                   std::memory_order::relaxed) ^
++                                   std::memory_order_relaxed) ^
+              *(_thread_local_bitset + block_idx);
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/fixed_vertex_support.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/fixed_vertex_support.h
+index df516a695..7c8648993 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/fixed_vertex_support.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/fixed_vertex_support.h
+@@ -28,2 +28,4 @@
+
++#include "repcut_serial.h"
++
+ #include <atomic>
+@@ -119,4 +121,4 @@ class FixedVertexSupport {
+     PartitionID desired = block;
+-    if (std::atomic_ref(_fixed_vertex_data[hn].block)
+-        .compare_exchange_strong(expected, desired, std::memory_order::acq_rel, std::memory_order::relaxed)) {
++    if (repcut_serial::Ref(_fixed_vertex_data[hn].block)
++        .compare_exchange_strong(expected, desired, std::memory_order_acq_rel, std::memory_order_relaxed)) {
+       const HypernodeWeight weight_of_hn = _hg->nodeWeight(hn);
+@@ -144,3 +146,3 @@ class FixedVertexSupport {
+     return parallel::atomic_load(_fixed_vertex_data[hn].block,
+-                                 std::memory_order::relaxed);
++                                 std::memory_order_relaxed);
+   }
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/partitioned_graph.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/partitioned_graph.h
+index f1c4e8ead..6a1fb7c87 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/partitioned_graph.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/partitioned_graph.h
+@@ -30,2 +30,4 @@
+
++#include "repcut_serial.h"
++
+ #include <atomic>
+@@ -1154,3 +1156,3 @@ private:
+       }
+-      std::atomic_ref(_part_ids[u]).store(to, std::memory_order::relaxed);
++      repcut_serial::Ref(_part_ids[u]).store(to, std::memory_order_relaxed);
+       DBG << "Done changing node part: " << V(u) << " >>>";
+@@ -1197,3 +1199,3 @@ private:
+     const HypernodeID v = edgeTarget(edge);
+-    PartitionID block_of_v = std::atomic_ref(_part_ids[v]).load(std::memory_order::relaxed);
++    PartitionID block_of_v = repcut_serial::Ref(_part_ids[v]).load(std::memory_order_relaxed);
+     EdgeMove& edge_move = _edge_sync[unique_id];
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/static_bitset.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/static_bitset.h
+index c6267ffe1..c3c0eed37 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/static_bitset.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/static_bitset.h
+@@ -28,2 +28,4 @@
+
++#include "repcut_serial.h"
++
+ #include <atomic>
+@@ -47,3 +49,3 @@ class StaticBitset {
+   static constexpr Block BITS_PER_BLOCK = std::numeric_limits<Block>::digits;
+-  static_assert(std::popcount(BITS_PER_BLOCK) == 1);
++  static_assert(repcut_serial::popcount64(BITS_PER_BLOCK) == 1);
+   static constexpr Block MOD_MASK = BITS_PER_BLOCK - 1;
+@@ -119,3 +121,3 @@ class StaticBitset {
+       return parallel::atomic_load(_bitset[_current_block_id >> DIV_SHIFT],
+-                                   std::memory_order::relaxed);
++                                   std::memory_order_relaxed);
+     }
+@@ -178,3 +180,3 @@ class StaticBitset {
+       cnt += utils::popcount_64(
+-          parallel::atomic_load(_bitset[i], std::memory_order::relaxed));
++          parallel::atomic_load(_bitset[i], std::memory_order_relaxed));
+     }
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/thread_safe_fast_reset_flag_array.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/thread_safe_fast_reset_flag_array.h
+index 7f6a613a2..7c83a9501 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/thread_safe_fast_reset_flag_array.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/datastructures/thread_safe_fast_reset_flag_array.h
+@@ -28,2 +28,4 @@
+
++#include "repcut_serial.h"
++
+ #include <algorithm>
+@@ -80,8 +82,8 @@ public:
+   bool compare_and_set_to_true(const size_t i) {
+-    Type expected = std::atomic_ref(_v[i]).load(std::memory_order::relaxed);
++    Type expected = repcut_serial::Ref(_v[i]).load(std::memory_order_relaxed);
+     Type desired = _threshold;
+     if (expected != _threshold &&
+-        std::atomic_ref(_v[i]).compare_exchange_strong(
+-            expected, desired, std::memory_order::acq_rel,
+-            std::memory_order::relaxed)) {
++        repcut_serial::Ref(_v[i]).compare_exchange_strong(
++            expected, desired, std::memory_order_acq_rel,
++            std::memory_order_relaxed)) {
+       // Value was successfully set from false to true
+@@ -96,3 +98,3 @@ public:
+   void set(const size_t i, const bool value) {
+-	std::atomic_ref(_v[i]).store(value ? _threshold : 0, std::memory_order::relaxed);
++	repcut_serial::Ref(_v[i]).store(value ? _threshold : 0, std::memory_order_relaxed);
+   }
+@@ -136,3 +138,3 @@ public:
+   bool isSet(size_t i) const {
+-	return std::atomic_ref(_v[i]).load(std::memory_order::relaxed) == _threshold;
++	return repcut_serial::Ref(_v[i]).load(std::memory_order_relaxed) == _threshold;
+   }
+@@ -142,3 +144,3 @@ public:
+     for ( size_t i = 0; i < _size; ++i ) {
+-      std::atomic_ref(_v[i]).store(init_value, std::memory_order::relaxed);
++      repcut_serial::Ref(_v[i]).store(init_value, std::memory_order_relaxed);
+     }
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/io/hypergraph_io.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/io/hypergraph_io.cpp
+index ebaa63632..67beb124d 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/io/hypergraph_io.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/io/hypergraph_io.cpp
+@@ -27,2 +27,4 @@
+
++#include "repcut_serial.h"
++
+ #include "hypergraph_io.h"
+@@ -186,4 +188,4 @@ namespace mt_kahypar::io {
+         } else {
+-          std::atomic_ref(res.num_removed_single_pin_hyperedges)
+-              .fetch_add(1, std::memory_order::relaxed);
++          repcut_serial::Ref(res.num_removed_single_pin_hyperedges)
++              .fetch_add(1, std::memory_order_relaxed);
+         };
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/atomic_wrapper.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/atomic_wrapper.h
+index 49937a0dc..dac22f65e 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/atomic_wrapper.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/parallel/atomic_wrapper.h
+@@ -34,2 +34,4 @@
+
++#include "repcut_serial.h"
++
+ #include <atomic>
+@@ -256,3 +258,3 @@ T atomic_load(const T &value,
+                     std::memory_order order = std::memory_order_seq_cst) {
+-  return std::atomic_ref<T>(const_cast<T &>(value)).load(order);
++  return repcut_serial::Ref<T>(const_cast<T &>(value)).load(order);
+ }
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/coarsening/multilevel/deterministic_multilevel_coarsener.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/coarsening/multilevel/deterministic_multilevel_coarsener.cpp
+index f59ce60bc..449b1dd12 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/coarsening/multilevel/deterministic_multilevel_coarsener.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/coarsening/multilevel/deterministic_multilevel_coarsener.cpp
+@@ -26,2 +26,4 @@
+
++#include "repcut_serial.h"
++
+ #include "deterministic_multilevel_coarsener.h"
+@@ -291,3 +293,3 @@ void DeterministicMultilevelCoarsener<TypeTraits>::calculatePreferredTargetClust
+     propositions[u] = best_target;
+-    std::atomic_ref(opportunistic_cluster_weight[best_target]).fetch_add(hg.nodeWeight(u), std::memory_order::relaxed);
++    repcut_serial::Ref(opportunistic_cluster_weight[best_target]).fetch_add(hg.nodeWeight(u), std::memory_order_relaxed);
+   }
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/coarsening/num_nodes_tracker.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/coarsening/num_nodes_tracker.h
+index 091d70a7b..393164234 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/coarsening/num_nodes_tracker.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/coarsening/num_nodes_tracker.h
+@@ -30,2 +30,4 @@
+
++#include "repcut_serial.h"
++
+ #include <atomic>
+@@ -51,3 +53,3 @@ class NumNodesTracker {
+     return parallel::atomic_load(_current_num_nodes,
+-                                 std::memory_order::relaxed);
++                                 std::memory_order_relaxed);
+   }
+@@ -73,4 +75,4 @@ class NumNodesTracker {
+   void subtractMultiple(HypernodeID num_contractions, size_t num_threads, HypernodeID hierarchy_contraction_limit) {
+-    HypernodeID local_contracted_nodes = std::atomic_ref(_contracted_nodes.local())
+-        .fetch_add(num_contractions, std::memory_order::relaxed);
++    HypernodeID local_contracted_nodes = repcut_serial::Ref(_contracted_nodes.local())
++        .fetch_add(num_contractions, std::memory_order_relaxed);
+
+@@ -92,5 +94,5 @@ class NumNodesTracker {
+       _contracted_nodes.combine_each([&](HypernodeID& val) {
+-        updated_num_nodes -= std::atomic_ref(val).load(std::memory_order::relaxed);
++        updated_num_nodes -= repcut_serial::Ref(val).load(std::memory_order_relaxed);
+       });
+-      std::atomic_ref(_current_num_nodes).store(updated_num_nodes, std::memory_order::relaxed);
++      repcut_serial::Ref(_current_num_nodes).store(updated_num_nodes, std::memory_order_relaxed);
+
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/flows/flow_hypergraph_builder.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/flows/flow_hypergraph_builder.cpp
+index 315b21d12..6dafb2be2 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/flows/flow_hypergraph_builder.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/flows/flow_hypergraph_builder.cpp
+@@ -27,2 +27,4 @@
+
++#include "repcut_serial.h"
++
+ #include "mt-kahypar/partition/refinement/flows/flow_hypergraph_builder.h"
+@@ -175,3 +177,3 @@ void FlowHypergraphBuilder::finalizeParallel() {
+       whfc::InHeIndex::ValueType ind_he = nodes[u].first_out +
+-          std::atomic_ref(_inc_he_pos[u]).fetch_add(1, std::memory_order::relaxed);
++          repcut_serial::Ref(_inc_he_pos[u]).fetch_add(1, std::memory_order_relaxed);
+       incident_hyperedges[ind_he] = { e, pin_it };
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/flows/flow_hypergraph_builder.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/flows/flow_hypergraph_builder.h
+index eb9b92c35..7d30becb0 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/flows/flow_hypergraph_builder.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/flows/flow_hypergraph_builder.h
+@@ -29,2 +29,4 @@
+
++#include "repcut_serial.h"
++
+ #include <atomic>
+@@ -62,3 +64,3 @@ namespace mt_kahypar {
+       MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE whfc::PinIndex pinCount(const whfc::Hyperedge e) {
+-        ASSERT(e < std::atomic_ref(_num_hes.value()).load(std::memory_order_relaxed));
++        ASSERT(e < repcut_serial::Ref(_num_hes.value()).load(std::memory_order_relaxed));
+         return _hes[e + 1].first_out - _hes[e].first_out;
+@@ -67,3 +69,3 @@ namespace mt_kahypar {
+       MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE whfc::Flow& capacity(const whfc::Hyperedge e) {
+-        ASSERT(e < std::atomic_ref(_num_hes.value()).load(std::memory_order_relaxed));
++        ASSERT(e < repcut_serial::Ref(_num_hes.value()).load(std::memory_order_relaxed));
+         return _hes[e].capacity;
+@@ -72,3 +74,3 @@ namespace mt_kahypar {
+       TmpPinRange pinsOf(const whfc::Hyperedge e) {
+-        ASSERT(e < std::atomic_ref(_num_hes.value()).load(std::memory_order_relaxed));
++        ASSERT(e < repcut_serial::Ref(_num_hes.value()).load(std::memory_order_relaxed));
+         return TmpPinRange(_pins.begin() + _hes[e].first_out,
+@@ -78,3 +80,3 @@ namespace mt_kahypar {
+       MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE whfc::Hyperedge originalHyperedgeID(const whfc::Hyperedge& e) {
+-        ASSERT(e < std::atomic_ref(_num_hes.value()).load(std::memory_order_relaxed));
++        ASSERT(e < repcut_serial::Ref(_num_hes.value()).load(std::memory_order_relaxed));
+         return _global_start_he + e;
+@@ -102,3 +104,3 @@ namespace mt_kahypar {
+         // is used in assertions by other threads
+-        std::atomic_ref(_num_hes.value()).fetch_add(1, std::memory_order_relaxed);
++        repcut_serial::Ref(_num_hes.value()).fetch_add(1, std::memory_order_relaxed);
+         #else
+@@ -248,3 +250,3 @@ namespace mt_kahypar {
+       _tmp_csr_buckets[bucket].addPin(u, pin_idx);
+-      std::atomic_ref(nodes[u + 1].first_out.value()).fetch_add(1, std::memory_order::relaxed);
++      repcut_serial::Ref(nodes[u + 1].first_out.value()).fetch_add(1, std::memory_order_relaxed);
+     }
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/flows/parallel_construction.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/flows/parallel_construction.cpp
+index 9fac73488..40ec82cfc 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/flows/parallel_construction.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/flows/parallel_construction.cpp
+@@ -26,2 +26,4 @@
+
++#include "repcut_serial.h"
++
+ #include "mt-kahypar/partition/refinement/flows/parallel_construction.h"
+@@ -57,3 +59,3 @@ ParallelConstruction<GraphAndGainTypes>::DynamicIdenticalNetDetection::get(const
+   const size_t bucket_idx = he_hash % _hash_buckets.size();
+-  if ( std::atomic_ref(_hash_buckets[bucket_idx].threshold).load(std::memory_order::relaxed) == _threshold ) {
++  if ( repcut_serial::Ref(_hash_buckets[bucket_idx].threshold).load(std::memory_order_relaxed) == _threshold ) {
+     // There exists already some hyperedges with the same hash
+@@ -84,15 +86,15 @@ void ParallelConstruction<GraphAndGainTypes>::DynamicIdenticalNetDetection::add(
+   const size_t bucket_idx = tmp_he.hash % _hash_buckets.size();
+-  uint32_t expected = std::atomic_ref(_hash_buckets[bucket_idx].threshold)
+-                          .load(std::memory_order::relaxed);
++  uint32_t expected = repcut_serial::Ref(_hash_buckets[bucket_idx].threshold)
++                          .load(std::memory_order_relaxed);
+   uint32_t desired = _threshold - 1;
+-  while ( std::atomic_ref(_hash_buckets[bucket_idx].threshold )
+-               .load(std::memory_order::relaxed) < _threshold ) {
++  while ( repcut_serial::Ref(_hash_buckets[bucket_idx].threshold )
++               .load(std::memory_order_relaxed) < _threshold ) {
+     if ( expected < desired &&
+-        std::atomic_ref(_hash_buckets[bucket_idx].threshold)
++        repcut_serial::Ref(_hash_buckets[bucket_idx].threshold)
+              .compare_exchange_strong(expected, desired,
+-                                      std::memory_order::acq_rel,
+-                                      std::memory_order::relaxed) ) {
++                                      std::memory_order_acq_rel,
++                                      std::memory_order_relaxed) ) {
+       _hash_buckets[bucket_idx].identical_nets.clear();
+-      std::atomic_ref(_hash_buckets[bucket_idx].threshold)
+-          .store(_threshold, std::memory_order::relaxed);
++      repcut_serial::Ref(_hash_buckets[bucket_idx].threshold)
++          .store(_threshold, std::memory_order_relaxed);
+     }
+@@ -248,4 +250,4 @@ FlowProblem ParallelConstruction<GraphAndGainTypes>::constructDefault(const Part
+       if ( parameters.is_cut || (phg.pinCountInPart(he, block_0) > 0 && phg.pinCountInPart(he, block_1) > 0) ) {
+-        std::atomic_ref(flow_problem.total_cut)
+-            .fetch_add(parameters.capacity, std::memory_order::relaxed);
++        repcut_serial::Ref(flow_problem.total_cut)
++            .fetch_add(parameters.capacity, std::memory_order_relaxed);
+       }
+@@ -266,4 +268,4 @@ FlowProblem ParallelConstruction<GraphAndGainTypes>::constructDefault(const Part
+         // from the cut with the current flow problem => remove he from flow problem
+-        std::atomic_ref(flow_problem.non_removable_cut)
+-            .fetch_add(parameters.capacity, std::memory_order::relaxed);
++        repcut_serial::Ref(flow_problem.non_removable_cut)
++            .fetch_add(parameters.capacity, std::memory_order_relaxed);
+       } else if ( !tmp_pins.empty() ) {
+@@ -297,4 +299,4 @@ FlowProblem ParallelConstruction<GraphAndGainTypes>::constructDefault(const Part
+             // Current hyperedge is identical to an already added
+-            std::atomic_ref(_flow_hg.capacity(identical_net.bucket, identical_net.e))
+-                .fetch_add(parameters.capacity, std::memory_order::relaxed);
++            repcut_serial::Ref(_flow_hg.capacity(identical_net.bucket, identical_net.e))
++                .fetch_add(parameters.capacity, std::memory_order_relaxed);
+           }
+@@ -381,4 +383,4 @@ FlowProblem ParallelConstruction<GraphAndGainTypes>::constructDefaultDeterminist
+     if ( parameters.is_cut || (phg.pinCountInPart(he, block_0) > 0 && phg.pinCountInPart(he, block_1) > 0) ) {
+-      std::atomic_ref(flow_problem.total_cut)
+-          .fetch_add(parameters.capacity, std::memory_order::relaxed);
++      repcut_serial::Ref(flow_problem.total_cut)
++          .fetch_add(parameters.capacity, std::memory_order_relaxed);
+     }
+@@ -399,4 +401,4 @@ FlowProblem ParallelConstruction<GraphAndGainTypes>::constructDefaultDeterminist
+       // from the cut with the current flow problem => remove he from flow problem
+-      std::atomic_ref(flow_problem.non_removable_cut)
+-          .fetch_add(tmp_hyperedges[i].weight, std::memory_order::relaxed);
++      repcut_serial::Ref(flow_problem.non_removable_cut)
++          .fetch_add(tmp_hyperedges[i].weight, std::memory_order_relaxed);
+     } else if (!tmp_pins.empty()) {
+@@ -556,4 +558,4 @@ FlowProblem ParallelConstruction<GraphAndGainTypes>::constructOptimizedForLargeH
+         if ( parameters.is_cut || (actual_pin_count_block_0 > 0 && actual_pin_count_block_1 > 0) ) {
+-          std::atomic_ref(flow_problem.total_cut)
+-              .fetch_add(parameters.capacity, std::memory_order::relaxed);
++          repcut_serial::Ref(flow_problem.total_cut)
++              .fetch_add(parameters.capacity, std::memory_order_relaxed);
+         }
+@@ -563,4 +565,4 @@ FlowProblem ParallelConstruction<GraphAndGainTypes>::constructOptimizedForLargeH
+           // from the cut with the current flow problem => remove he from flow problem
+-          std::atomic_ref(flow_problem.non_removable_cut)
+-              .fetch_add(parameters.capacity, std::memory_order::relaxed);
++          repcut_serial::Ref(flow_problem.non_removable_cut)
++              .fetch_add(parameters.capacity, std::memory_order_relaxed);
+         } else {
+@@ -597,4 +599,4 @@ FlowProblem ParallelConstruction<GraphAndGainTypes>::constructOptimizedForLargeH
+               // Current hyperedge is identical to an already added
+-              std::atomic_ref(_flow_hg.capacity(identical_net.bucket, identical_net.e))
+-                  .fetch_add(parameters.capacity, std::memory_order::relaxed);
++              repcut_serial::Ref(_flow_hg.capacity(identical_net.bucket, identical_net.e))
++                  .fetch_add(parameters.capacity, std::memory_order_relaxed);
+             }
+@@ -711,4 +713,4 @@ FlowProblem ParallelConstruction<GraphAndGainTypes>::constructOptimizedForLargeH
+         if ( parameters.is_cut || (actual_pin_count_block_0 > 0 && actual_pin_count_block_1 > 0) ) {
+-          std::atomic_ref(flow_problem.total_cut)
+-              .fetch_add(parameters.capacity, std::memory_order::relaxed);
++          repcut_serial::Ref(flow_problem.total_cut)
++              .fetch_add(parameters.capacity, std::memory_order_relaxed);
+         }
+@@ -718,4 +720,4 @@ FlowProblem ParallelConstruction<GraphAndGainTypes>::constructOptimizedForLargeH
+           // from the cut with the current flow problem => remove he from flow problem
+-          std::atomic_ref(flow_problem.non_removable_cut)
+-              .fetch_add(parameters.capacity, std::memory_order::relaxed);
++          repcut_serial::Ref(flow_problem.non_removable_cut)
++              .fetch_add(parameters.capacity, std::memory_order_relaxed);
+         } else {
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/fm/fm_commons.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/fm/fm_commons.cpp
+index 8023d8e25..6b69094ae 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/fm/fm_commons.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/fm/fm_commons.cpp
+@@ -26,2 +26,4 @@
+
++#include "repcut_serial.h"
++
+ #include <algorithm>
+@@ -219,4 +221,4 @@ namespace mt_kahypar {
+             if (current_rank < upper_limit) {
+-              std::atomic_ref(fallback_bucket_weights[block][current_rank])
+-                  .fetch_add(it->value, std::memory_order::relaxed);
++              repcut_serial::Ref(fallback_bucket_weights[block][current_rank])
++                  .fetch_add(it->value, std::memory_order_relaxed);
+             }
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/fm/global_rollback.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/fm/global_rollback.cpp
+index 1691fb224..6a3629de2 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/fm/global_rollback.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/fm/global_rollback.cpp
+@@ -26,2 +26,4 @@
+
++#include "repcut_serial.h"
++
+ #include "mt-kahypar/partition/refinement/fm/global_rollback.h"
+@@ -224,3 +226,3 @@ namespace mt_kahypar {
+           // increase gain of v by benefit
+-          std::atomic_ref(m.gain).fetch_add(benefit, std::memory_order::relaxed);
++          repcut_serial::Ref(m.gain).fetch_add(benefit, std::memory_order_relaxed);
+         }
+@@ -229,3 +231,3 @@ namespace mt_kahypar {
+           // decrease gain of v by penalty
+-          std::atomic_ref(m.gain).fetch_sub(penalty, std::memory_order::relaxed);
++          repcut_serial::Ref(m.gain).fetch_sub(penalty, std::memory_order_relaxed);
+         }
+@@ -286,3 +288,3 @@ namespace mt_kahypar {
+       // is the case for attributed gains.
+-      std::atomic_ref(m.gain).fetch_add(attributed_gain, std::memory_order::relaxed);
++      repcut_serial::Ref(m.gain).fetch_add(attributed_gain, std::memory_order_relaxed);
+     }
+@@ -333,3 +335,3 @@ namespace mt_kahypar {
+       const HyperedgeWeight attributed_gain = AttributedGains::gain(sync_update);
+-      std::atomic_ref(first_m.gain).fetch_add(-attributed_gain, std::memory_order::relaxed);
++      repcut_serial::Ref(first_m.gain).fetch_add(-attributed_gain, std::memory_order_relaxed);
+
+@@ -345,3 +347,3 @@ namespace mt_kahypar {
+         const HyperedgeWeight attributed_gain = AttributedGains::gain(sync_update);
+-        std::atomic_ref(second_m.gain).fetch_add(-attributed_gain, std::memory_order::relaxed);
++        repcut_serial::Ref(second_m.gain).fetch_add(-attributed_gain, std::memory_order_relaxed);
+       }
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/rebalancing/advanced_rebalancer.cpp b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/rebalancing/advanced_rebalancer.cpp
+index 15bbcf574..655b43bfa 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/rebalancing/advanced_rebalancer.cpp
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/rebalancing/advanced_rebalancer.cpp
+@@ -26,2 +26,4 @@
+
++#include "repcut_serial.h"
++
+ #include "mt-kahypar/partition/refinement/rebalancing/advanced_rebalancer.h"
+@@ -258,5 +260,5 @@ namespace impl {
+       uint8_t expected = 1;
+-      if (std::atomic_ref(*is_overloaded)
+-          .compare_exchange_strong(expected, 0, std::memory_order::acquire, std::memory_order::relaxed)) {
+-        std::atomic_ref(*num_overloaded_blocks).fetch_sub(1, std::memory_order::relaxed);
++      if (repcut_serial::Ref(*is_overloaded)
++          .compare_exchange_strong(expected, 0, std::memory_order_acquire, std::memory_order_relaxed)) {
++        repcut_serial::Ref(*num_overloaded_blocks).fetch_sub(1, std::memory_order_relaxed);
+       }
+@@ -357,3 +359,3 @@ namespace impl {
+                       [&] {
+-                          move_id = std::atomic_ref(global_move_id).fetch_add(1, std::memory_order::relaxed);
++                          move_id = repcut_serial::Ref(global_move_id).fetch_add(1, std::memory_order_relaxed);
+                       },
+@@ -433,4 +435,4 @@ namespace impl {
+       }
+-      std::atomic_ref(attributed_gain)
+-          .fetch_add(local_attributed_gain, std::memory_order::relaxed);
++      repcut_serial::Ref(attributed_gain)
++          .fetch_add(local_attributed_gain, std::memory_order_relaxed);
+     };
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/rebalancing/advanced_rebalancer.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/rebalancing/advanced_rebalancer.h
+index 1a65b02fa..e3558230c 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/rebalancing/advanced_rebalancer.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/partition/refinement/rebalancing/advanced_rebalancer.h
+@@ -28,2 +28,4 @@
+
++#include "repcut_serial.h"
++
+ #include <atomic>
+@@ -64,9 +66,9 @@ namespace rebalancer {
+       uint8_t expected = 1;
+-      return state == 1 && std::atomic_ref(state)
+-          .compare_exchange_strong(expected, 2, std::memory_order::acquire, std::memory_order::relaxed);
++      return state == 1 && repcut_serial::Ref(state)
++          .compare_exchange_strong(expected, 2, std::memory_order_acquire, std::memory_order_relaxed);
+     }
+
+-    void unlock() { std::atomic_ref(state).store(1, std::memory_order::release); }
++    void unlock() { repcut_serial::Ref(state).store(1, std::memory_order_release); }
+
+-    void markAsMovedAndUnlock() { std::atomic_ref(state).store(3, std::memory_order::release); }
++    void markAsMovedAndUnlock() { repcut_serial::Ref(state).store(3, std::memory_order_release); }
+
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/bit_ops.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/bit_ops.h
+index 7146edcc1..16f5f7221 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/bit_ops.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/bit_ops.h
+@@ -29,3 +29,4 @@
+
+-#include <bit>
++#include "repcut_serial.h"
++
+ #include <cstdint>
+@@ -40,3 +41,3 @@ inline int popcount_64(const uint64_t x) noexcept {
+ #ifndef MT_KAHYPAR_MSVC_USE_POPCNT_INTRINSICS
+-  return std::popcount(x);
++  return repcut_serial::popcount64(x);
+ #else
+@@ -47,3 +48,3 @@ inline int popcount_64(const uint64_t x) noexcept {
+ constexpr inline int lowest_set_bit_64(const uint64_t x) noexcept {
+-  return std::countr_zero(x);
++  return repcut_serial::countrZero64(x);
+ }
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/deduplicate.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/deduplicate.h
+index 33bf8721f..9ac118614 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/deduplicate.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/deduplicate.h
+@@ -29,2 +29,4 @@
+
++#include "repcut_serial.h"
++
+ #include <cstdint>
+@@ -51,4 +53,4 @@ inline void deduplicateHyperedgePins(vec<HypernodeID>& hyperedge,
+     // Remove duplicated pins
+-    std::atomic_ref(num_hes_with_duplicated_pins).fetch_add(1, std::memory_order::relaxed);
+-    std::atomic_ref(num_duplicated_pins).fetch_add(hyperedge.size() - j, std::memory_order::relaxed);
++    repcut_serial::Ref(num_hes_with_duplicated_pins).fetch_add(1, std::memory_order_relaxed);
++    repcut_serial::Ref(num_duplicated_pins).fetch_add(hyperedge.size() - j, std::memory_order_relaxed);
+     hyperedge.resize(j);
+diff --git a/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/progress_bar.h b/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/progress_bar.h
+index 4a5b2f6a8..61934487d 100644
+--- a/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/progress_bar.h
++++ b/third_party/repcut/external/mt-kahypar/mt-kahypar/utils/progress_bar.h
+@@ -28,2 +28,4 @@
+
++#include "repcut_serial.h"
++
+ #include <mutex>
+@@ -112,3 +114,3 @@ class ProgressBar {
+   void addToObjective(const int64_t delta) {
+-    std::atomic_ref(_objective).fetch_add(delta, std::memory_order::relaxed);
++    repcut_serial::Ref(_objective).fetch_add(delta, std::memory_order_relaxed);
+   }
+diff --git a/third_party/repcut/tests/test_serial.cpp b/third_party/repcut/tests/test_serial.cpp
+index 3f881e203..7c598fd4e 100644
+--- a/third_party/repcut/tests/test_serial.cpp
++++ b/third_party/repcut/tests/test_serial.cpp
+@@ -2,4 +2,8 @@
+ // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#include "repcut_serial.h"
++
+ #include <atomic>
+ #include <cassert>
++#include <cstdint>
++#include <limits>
+ #include <numeric>
+@@ -33,4 +37,77 @@ struct Immovable
+ };
++template <class T> static void checkReferences()
++{
++    for (const T initial : {std::numeric_limits<T>::min(), std::numeric_limits<T>::max(), T{0}, T{1}}) {
++        for (const T delta : {std::numeric_limits<T>::min(), std::numeric_limits<T>::max(), T{0}, T{1}}) {
++            T value = initial;
++            const repcut_serial::Ref ref{value};
++            std::atomic<T> atomic{initial};
++            require(ref.fetch_add(delta) == atomic.fetch_add(delta));
++            require(ref.load() == atomic.load());
++            require(ref.fetch_sub(delta) == atomic.fetch_sub(delta));
++            require(ref.load() == atomic.load());
++            require(ref.fetch_xor(delta) == atomic.fetch_xor(delta));
++            require(ref.load() == atomic.load());
++            require(ref.exchange(initial) == atomic.exchange(initial));
++            require(ref.load() == atomic.load());
++            T expected = initial;
++            require(ref.compare_exchange_strong(expected, delta, std::memory_order_acq_rel, std::memory_order_relaxed));
++            require(expected == initial && value == delta);
++            ref.store(initial, std::memory_order_release);
++            require(ref.load(std::memory_order_acquire) == initial);
++        }
++    }
++}
++static void checkSerialReferences()
++{
++    checkReferences<int8_t>();
++    checkReferences<uint8_t>();
++    checkReferences<int16_t>();
++    checkReferences<uint16_t>();
++    checkReferences<int32_t>();
++    checkReferences<uint32_t>();
++    checkReferences<int64_t>();
++    checkReferences<uint64_t>();
++    enum class State : uint8_t { first, second, third };
++    State value = State::first;
++    const repcut_serial::Ref ref{value};
++    const repcut_serial::Ref alias{value};
++    State expected = State::second;
++    require(!ref.compare_exchange_strong(expected, State::third));
++    require(expected == State::first && value == State::first);
++    require(ref.compare_exchange_strong(expected, State::second));
++    require(expected == State::first && alias.load() == State::second);
++    require(alias.exchange(State::third) == State::second && ref.load() == State::third);
++}
++static void checkBits()
++{
++    static_assert(repcut_serial::popcount64(0) == 0);
++    static_assert(repcut_serial::popcount64(UINT64_MAX) == 64);
++    static_assert(repcut_serial::countrZero64(0) == 64);
++    static_assert(repcut_serial::countrZero64(UINT64_C(1) << 63) == 63);
++    for (unsigned bit = 0; bit < 64; ++bit) {
++        const uint64_t value = UINT64_C(1) << bit;
++        require(repcut_serial::popcount64(value) == 1);
++        require(repcut_serial::countrZero64(value) == static_cast<int>(bit));
++        require(repcut_serial::popcount64(~value) == 63);
++    }
++    uint64_t state = 42;
++    for (int i = 0; i < 1000; ++i) {
++        state ^= state << 13;
++        state ^= state >> 7;
++        state ^= state << 17;
++        int count = 0;
++        for (uint64_t bits = state; bits; bits >>= 1)
++            count += bits & 1;
++        int zeros = 0;
++        for (uint64_t bits = state; zeros < 64 && !(bits & 1); bits >>= 1)
++            ++zeros;
++        require(repcut_serial::popcount64(state) == count);
++        require(repcut_serial::countrZero64(state) == zeros);
++    }
++}
+ int main()
+ {
++    checkSerialReferences();
++    checkBits();
+     int total = 0;
+diff --git a/third_party/repcut/serial/repcut_serial.h b/third_party/repcut/serial/repcut_serial.h
+new file mode 100644
+index 000000000..6cfdd5315
+--- /dev/null
++++ b/third_party/repcut/serial/repcut_serial.h
+@@ -0,0 +1,81 @@
++// C++17 primitives for the serial bundled partitioner.
++// SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
++// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
++#pragma once
++
++#ifndef REPCUT_SERIAL_PARTITIONER
++#error These reference operations require the serial bundled partitioner
++#endif
++
++#include <atomic>
++#include <cstdint>
++#include <cstring>
++#include <type_traits>
++
++namespace repcut_serial {
++    // Ref is not atomic: task execution is synchronous and librepcut rejects
++    // overlapping calls with a real atomic guard. Never use it for shared workers.
++    template <class T> class Ref
++    {
++        static_assert((std::is_integral_v<T> || std::is_enum_v<T>) && !std::is_same_v<T, bool>);
++        using Unsigned = std::make_unsigned_t<T>;
++        T& m_value;
++
++        T replaceBits(Unsigned bits) const
++        {
++            const T previous = m_value;
++            // Preserve the two's-complement wrap of integral atomic arithmetic
++            // without signed overflow or out-of-range unsigned-to-signed casts.
++            std::memcpy(&m_value, &bits, sizeof(T));
++            return previous;
++        }
++
++    public:
++        explicit Ref(T& value) : m_value{value} {}
++        T load(std::memory_order = std::memory_order_seq_cst) const { return m_value; }
++        void store(T value, std::memory_order = std::memory_order_seq_cst) const { m_value = value; }
++        T exchange(T value, std::memory_order = std::memory_order_seq_cst) const
++        {
++            const T previous = m_value;
++            m_value = value;
++            return previous;
++        }
++        T fetch_add(T value, std::memory_order = std::memory_order_seq_cst) const
++        {
++            return replaceBits(static_cast<Unsigned>(static_cast<std::uintmax_t>(static_cast<Unsigned>(m_value)) +
++                                                     static_cast<Unsigned>(value)));
++        }
++        T fetch_sub(T value, std::memory_order = std::memory_order_seq_cst) const
++        {
++            return replaceBits(static_cast<Unsigned>(static_cast<std::uintmax_t>(static_cast<Unsigned>(m_value)) -
++                                                     static_cast<Unsigned>(value)));
++        }
++        T fetch_xor(T value, std::memory_order = std::memory_order_seq_cst) const
++        {
++            return replaceBits(static_cast<Unsigned>(m_value) ^ static_cast<Unsigned>(value));
++        }
++        bool compare_exchange_strong(T& expected, T desired, std::memory_order = std::memory_order_seq_cst,
++                                     std::memory_order = std::memory_order_seq_cst) const
++        {
++            if (m_value == expected) {
++                m_value = desired;
++                return true;
++            }
++            expected = m_value;
++            return false;
++        }
++    };
++
++    constexpr int popcount64(std::uint64_t value) noexcept
++    {
++        value -= (value >> 1) & UINT64_C(0x5555555555555555);
++        value = (value & UINT64_C(0x3333333333333333)) + ((value >> 2) & UINT64_C(0x3333333333333333));
++        value = (value + (value >> 4)) & UINT64_C(0x0f0f0f0f0f0f0f0f);
++        return static_cast<int>((value * UINT64_C(0x0101010101010101)) >> 56);
++    }
++    constexpr int countrZero64(std::uint64_t value) noexcept
++    {
++        // For zero, unsigned wrap produces all ones and the result is 64.
++        return popcount64((value & (std::uint64_t{0} - value)) - std::uint64_t{1});
++    }
++} // namespace repcut_serial

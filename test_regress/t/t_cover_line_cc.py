@@ -17,6 +17,11 @@ test.compile(verilator_flags2=['--cc --coverage-line --coverage-branch +define+A
 
 test.execute()
 
+# Counts for pure continuous assignments depend on the evaluation schedule.
+# Keep every coverage point and its exact count checked for each backend.
+if test.repcut:
+    test.golden_filename = "t/t_cover_line_repcut.out"
+
 test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
               "--annotate-points",
               "--annotate", test.obj_dir + "/annotated",
@@ -41,7 +46,8 @@ test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
               test.obj_dir + "/coverage.dat"],
          verilator_run=True)  # yapf:disable
 
-test.files_identical(test.obj_dir + "/coverage.info", "t/" + test.name + ".info.out")
+test.files_identical(test.obj_dir + "/coverage.info",
+                     "t/" + test.name + ("_repcut.info.out" if test.repcut else ".info.out"))
 
 # If installed
 nout = test.run_capture("lcov --version", check=False)

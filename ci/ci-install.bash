@@ -91,6 +91,7 @@ if [ "$STAGE" = "build" ]; then
       PACKAGES=(
         bear
         ccache
+        cmake
         help2man
         libfl-dev
         libsystemc-dev
@@ -108,6 +109,7 @@ if [ "$STAGE" = "build" ]; then
       autoconf
       bison
       ccache
+      cmake
       flex
       gperftools
       help2man
@@ -128,6 +130,7 @@ elif [ "$STAGE" = "test" ]; then
     if [ "$DISTRO_ID" = "ubuntu" ]; then
       PACKAGES=(
         ccache
+        cmake
         gdb
         jq
         lcov
@@ -143,6 +146,7 @@ elif [ "$STAGE" = "test" ]; then
   elif [ "$HOST_OS" = "macOS" ]; then
     PACKAGES=(
       ccache
+      cmake
       jq
       perl
       z3
@@ -162,6 +166,7 @@ elif [ "$STAGE" = "lint-py" ]; then
 
   if [ "$HOST_OS" = "linux" ] && [ "$DISTRO_ID" = "ubuntu" ]; then
     PACKAGES=(
+      cmake
       python3-clang  # Not run, but importers are linted
     )
     apt-get-retry update
@@ -175,6 +180,7 @@ elif [ "$STAGE" = "format" ]; then
   if [ "$HOST_OS" = "linux" ] && [ "$DISTRO_ID" = "ubuntu" ]; then
     PACKAGES=(
       clang-format-21  # Version pinned, so all of CI formats alike
+      cmake
     )
     apt-get-retry update
     apt-get-retry install --yes "${PACKAGES[@]}"
@@ -199,6 +205,7 @@ elif [ "$STAGE" = "rtlmeter-run" ]; then
   if [ "$HOST_OS" = "linux" ] && [ "$DISTRO_ID" = "ubuntu" ]; then
     PACKAGES=(
       ccache
+      cmake
       libfl-dev
       libjemalloc-dev
       libsystemc-dev

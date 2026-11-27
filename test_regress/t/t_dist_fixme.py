@@ -17,7 +17,9 @@ if not os.path.exists(test.root + "/.git"):
 Exempt_Re = r'(test_regress/t/uvm/.*/dpi/uvm_hdl_xcelium.c)'
 
 ### Must trim output before and after our file list
-files = test.run_capture("cd " + test.root + " && git ls-files --exclude-standard")
+files = test.run_capture(
+    "cd " + test.root +
+    " && git ls-files --exclude-standard -- \":(exclude,glob)third_party/*/**\"")
 if test.verbose:
     print("ST " + files)
 

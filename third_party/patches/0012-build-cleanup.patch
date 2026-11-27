@@ -1,0 +1,26 @@
+diff --git a/third_party/repcut/CMakeLists.txt b/third_party/repcut/CMakeLists.txt
+index 3b0965020..306f02525 100644
+--- a/third_party/repcut/CMakeLists.txt
++++ b/third_party/repcut/CMakeLists.txt
+@@ -7,3 +7,2 @@ set(CMAKE_CXX_EXTENSIONS OFF)
+ 
+-option(RCP_BUILD_TESTS "Build library API regression tests" OFF)
+ include(cmake/MtKaHyPar.cmake)
+diff --git a/third_party/repcut/external/mt-kahypar/CMakeLists.txt b/third_party/repcut/external/mt-kahypar/CMakeLists.txt
+index 835b445e8..80e7354de 100644
+--- a/third_party/repcut/external/mt-kahypar/CMakeLists.txt
++++ b/third_party/repcut/external/mt-kahypar/CMakeLists.txt
+@@ -181,13 +181,2 @@ endif()
+ 
+-# lld is way faster than ld. If you have it, use it!
+-find_program(LLD_BIN lld)
+-if (LLD_BIN AND KAHYPAR_X86)
+-  message(STATUS "Found and will use LLVM linker " ${LLD_BIN})
+-  if(MSVC)
+-    target_link_options(MtKaHyPar-BuildFlags INTERFACE /LINKER:LLD)
+-  else()
+-    target_link_options(MtKaHyPar-BuildFlags INTERFACE -fuse-ld=lld)
+-  endif()
+-endif()
+-
+ if(NOT MSVC)

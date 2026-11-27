@@ -12,7 +12,8 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.verilated_debug = True
 
-test.compile(verilator_flags2=['-fno-inline-cfuncs'])
+# This golden records the native scheduler's function-by-function debug trace.
+test.compile(verilator_flags2=['-fno-repcut', '-fno-inline-cfuncs'])
 
 test.execute()
 

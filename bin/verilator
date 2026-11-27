@@ -480,6 +480,8 @@ detailed descriptions of these arguments.
     --future0 <option>          Ignore an option for compatibility
     --future1 <option>          Ignore an option with argument for compatibility
      -fno-<optimization>        Disable internal optimization stage
+     -fno-repcut                Select the existing partitioning algorithm
+     -frepcut                   Select RepCut partitioning (default)
      -G<name>=<value>           Overwrite top-level parameter
     --gate-stmts <value>        Tune gate optimizer depth
     --gdb                       Run Verilator under GDB interactively
@@ -570,6 +572,8 @@ detailed descriptions of these arguments.
     --quiet-stats               Don't print statistics
     --relative-includes         Resolve includes relative to current file
     --reloop-limit <value>      Minimum iterations for forming loops
+    --repcut-partitioner <exe>  Select the external RepCut partitioner
+    --repcut-seed <value>       Set the partitioning seed (default: 42)
     --replication-limit <value> Replication concatenation limit (default: 8k)
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --rr                        Run Verilator and record with rr

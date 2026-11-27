@@ -18,8 +18,10 @@ test.compile(verilator_flags2=[
 test.execute()
 
 if test.vlt:
-    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, calls inlined\s+(\d+)', 5)
-    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions inlined\s+(\d+)', 5)
-    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions removed\s+(\d+)', 6)
+    inlined = 7 if test.repcut else 5
+    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, calls inlined\s+(\d+)', inlined)
+    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions inlined\s+(\d+)', inlined)
+    test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions removed\s+(\d+)',
+                   inlined + 1)
 
 test.passes()

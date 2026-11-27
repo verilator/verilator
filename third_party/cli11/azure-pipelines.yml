@@ -1,0 +1,179 @@
+# Copyright (c) 2017-2026, University of Cincinnati, developed by Henry Schreiner
+# under NSF AWARD 1414736 and by the respective contributors.
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+trigger:
+  - main
+  - "v*"
+
+pr:
+  - main
+
+variables:
+  # Single-file tests double the test build; only a few jobs turn them on
+  cli11.single: OFF
+  cli11.std: 14
+  cli11.build_type: Debug
+  cli11.options: -DCLI11_EXAMPLES_JSON=ON
+  cli11.precompile: OFF
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
+
+jobs:
+  - job: CppLint
+    pool:
+      vmImage: "ubuntu-latest"
+    container: helics/buildenv:cpplint
+    steps:
+      - bash: cpplint --counting=detailed --recursive examples include/CLI tests
+        displayName: Checking against google style guide
+
+  - job: build_only
+    strategy:
+      matrix:
+        visual_studio_arm64:
+          vmImage: "windows-2025"
+          cli11.std: 17
+          cli11.build_type: Debug
+          cli11.options:
+            -G "Visual Studio 17 2022" -A ARM64
+            -DCLI11_ENABLE_EXTRA_VALIDATORS=1
+    pool:
+      vmImage: $(vmImage)
+
+    steps:
+      - template: .ci/azure-build.yml
+
+  - job: Native
+    strategy:
+      matrix:
+        Linux14:
+          vmImage: "ubuntu-latest"
+          cli11.single: ON
+        Linux14PC:
+          vmImage: "ubuntu-latest"
+          cli11.precompile: ON
+        Linux14PC-Shared:
+          vmImage: "ubuntu-latest"
+          cli11.precompile: ON
+          cli11.options: -DBUILD_SHARED_LIBS=ON
+        macOS-15_20:
+          vmImage: "macOS-15"
+          cli11.std: 20
+          cli11.options: -DCLI11_ENABLE_EXTRA_VALIDATORS=1
+        macOS-latest_23:
+          vmImage: "macos-latest"
+          cli11.std: 23
+          cli11.single: ON
+          cli11.options: -DCLI11_ENABLE_EXTRA_VALIDATORS=1
+        macOS-14_11:
+          vmImage: "macOS-14"
+          cli11.std: 11
+        macOS-14_14_PC:
+          vmImage: "macOS-14"
+          cli11.std: 14
+          cli11.precompile: ON
+        Windows17:
+          vmImage: "windows-2022"
+          cli11.std: 17
+          cli11.options: -DCLI11_ENABLE_EXTRA_VALIDATORS=1
+        Windows17PC:
+          vmImage: "windows-2022"
+          cli11.std: 17
+          cli11.precompile: ON
+          cli11.options: -DCLI11_ENABLE_EXTRA_VALIDATORS=1
+        Windows11:
+          vmImage: "windows-2022"
+          cli11.std: 11
+          cli11.single: ON
+        Windows20:
+          vmImage: "windows-2025"
+          cli11.std: 20
+          cli11.options:
+            -DCMAKE_CXX_FLAGS="/EHsc /GR-" -DCLI11_DISABLE_EXTRA_VALIDATORS=1
+        WindowsLatest:
+          # CMake compiles MSVC std 23 with /std:c++latest; 26 is not supported yet
+          vmImage: "windows-2025"
+          cli11.std: 23
+          cli11.options: -DCMAKE_CXX_FLAGS="/EHsc /GR-"
+        Linux17nortti:
+          vmImage: "ubuntu-latest"
+          cli11.std: 17
+          cli11.options:
+            -DCMAKE_CXX_FLAGS="-fno-rtti" -DCLI11_ENABLE_EXTRA_VALIDATORS=1
+    pool:
+      vmImage: $(vmImage)
+    steps:
+      - template: .ci/azure-build.yml
+      - template: .ci/azure-test.yml
+
+  - job: Meson
+    pool:
+      vmImage: "ubuntu-latest"
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: "3.11"
+      - script: python3 -m pip install meson ninja
+        displayName: install meson
+      - script: mkdir tests/mesonTest/subprojects
+        displayName: generate test directories
+      - script: ln -s  "$(pwd)" tests/mesonTest/subprojects/CLI11
+        displayName: generate CLI11 symlink
+        # Ensure that Meson doesn't use cmake or pkgconfig to find CLI11
+      - script: meson setup build --force-fallback-for=CLI11
+        displayName: Run meson to generate build
+        workingDirectory: tests/mesonTest
+      - script: ninja -C tests/mesonTest/build
+        displayName: Build with Ninja
+      - script: ./tests/mesonTest/build/main --help
+        displayName: Run help
+
+  - job: Docker
+    variables:
+      cli11.single: OFF
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      matrix:
+        gcc9:
+          containerImage: gcc:9
+          cli11.std: 17
+          cli11.options:
+            -DCMAKE_CXX_FLAGS="-Wstrict-overflow=5"
+            -DCLI11_ENABLE_EXTRA_VALIDATORS=1
+        gcc11:
+          containerImage: gcc:11
+          cli11.std: 20
+          cli11.options:
+            -DCMAKE_CXX_FLAGS="-Wredundant-decls -Wconversion"
+            -DCLI11_DISABLE_EXTRA_VALIDATORS=1
+        gcc7:
+          containerImage: gcc:7
+          cli11.std: 14
+          cli11.options: -DCMAKE_CXX_FLAGS="-Wconversion"
+        gcc4.8:
+          containerImage: helics/buildenv:gcc4-8-builder
+          cli11.std: 11
+        clang3.4:
+          containerImage: silkeh/clang:3.4
+          cli11.std: 11
+          cli11.options:
+            -DCLI11_WARNINGS_AS_ERRORS=OFF  -DCLI11_DISABLE_EXTRA_VALIDATORS=1
+        clang8_17:
+          containerImage: silkeh/clang:8
+          cli11.std: 17
+          cli11.options:
+            -DCLI11_FORCE_LIBCXX=ON -DCLI11_ENABLE_EXTRA_VALIDATORS=1
+        clang10_20:
+          containerImage: silkeh/clang:10
+          cli11.std: 20
+          cli11.options:
+            -DCLI11_FORCE_LIBCXX=ON -DCMAKE_CXX_FLAGS=-std=c++20
+            -DCLI11_ENABLE_EXTRA_VALIDATORS=1
+    container: $[ variables['containerImage'] ]
+    steps:
+      - template: .ci/azure-cmake.yml
+      - template: .ci/azure-build.yml
+      - template: .ci/azure-test.yml

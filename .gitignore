@@ -33,6 +33,7 @@ gmon.out
 internals.txt
 ncverilog.history
 nohup.out
+/redir_??????
 verilator-config-version.cmake
 verilator-config.cmake
 verilator.pc
@@ -52,3 +53,4 @@ xrun.history
 
 # Normal CMake build directory
 /build
+/third_party_build/

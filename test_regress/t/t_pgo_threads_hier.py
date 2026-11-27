@@ -27,7 +27,9 @@ test.execute(all_run_flags=[
 
 test.file_grep(test.obj_dir + "/profile.vlt", r'profile_data -model "VTest"')
 test.file_grep(test.obj_dir + "/profile.vlt", r'profile_data -model "VCheck"')
-test.file_grep(test.obj_dir + "/profile.vlt", r'profile_data -model "VCoreHier"')
+# RepCut's CoreHier has no native mtasks; its hierarchical call is still profiled.
+core_profile = '-hier-dpi' if test.repcut else '-model'
+test.file_grep(test.obj_dir + "/profile.vlt", r'profile_data ' + core_profile + r' "VCoreHier"')
 test.file_grep(test.obj_dir + "/profile.vlt", r'profile_data -model "V' + test.name + '"')
 
 # Check for cost rollovers

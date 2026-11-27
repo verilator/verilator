@@ -32,6 +32,8 @@ def check_files():
         if re.search(r't_flag_prefix', filename):
             test.error("bad filename '" + filename + "'")
             continue
+        if os.path.isdir(path):
+            continue
         if re.search(r'^(.*\.(o|a)|Vprefix)$', filename):
             continue
         if re.search(r'\.gcda$', filename):

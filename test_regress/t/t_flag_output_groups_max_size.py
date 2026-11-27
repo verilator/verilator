@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-MAX_SIZE_BYTES = 1024 * 1024
+MAX_CPP_BYTES = 256 * 1024
 VARS = ("VM_CLASSES_FAST", "VM_CLASSES_SLOW")
 
 classes_mk = test.obj_dir + "/" + test.vm_prefix + "_classes.mk"
@@ -47,10 +47,14 @@ test.compile(
     verilator_flags2=["--output-split 1000", "--output-groups 3", "--output-groups-size 0"],
     verilator_make_gmake=False)
 bucket_starts = {files[0] for var in VARS for files in class_entries(var)}
+# Header size depends on the scheduling backend. Leave the same C++ budget for
+# grouping in either mode, so the limit exercises groups instead of single files.
+max_size_bytes = MAX_CPP_BYTES + sum(
+    os.path.getsize(f) for f in test.glob_some(test.obj_dir + "/*.h"))
 
 test.compile(verilator_flags2=[
     "--output-split 1000", "--output-groups 3", "--output-groups-size",
-    str(MAX_SIZE_BYTES)
+    str(max_size_bytes)
 ])
 
 test.execute()
@@ -69,11 +73,11 @@ for var in VARS:
             continue
         group_bytes = header_bytes + sum(file_size(f) for f in files)
         # Each group together with the generated headers fits in the limit
-        if group_bytes > MAX_SIZE_BYTES:
+        if group_bytes > max_size_bytes:
             test.error(var + " group " + str(i) + " is " + str(group_bytes) + " bytes")
         # Each group is as large as possible, the next file of its bucket would not fit
         if (i + 1 < len(entries) and entries[i + 1][0] not in bucket_starts
-                and group_bytes + file_size(entries[i + 1][0]) <= MAX_SIZE_BYTES):
+                and group_bytes + file_size(entries[i + 1][0]) <= max_size_bytes):
             test.error(var + " group " + str(i) + " of " + str(group_bytes) +
                        " bytes could include the next file")
 
