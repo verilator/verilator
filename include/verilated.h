@@ -461,6 +461,8 @@ private:
     // Evaluate a time step, recording --prof-exec sections iff 'Profiling'.
     template <bool Profiling>
     void evalImpl();
+    // Iterate the 'Settle' region until it converges
+    void settle();
     // Check the iteration convergence
     void checkConvergence(uint32_t iterCount, const char* namep,
                           void (VerilatedModel::*dumpTriggersp)() = nullptr) {

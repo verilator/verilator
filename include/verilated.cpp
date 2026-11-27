@@ -4249,6 +4249,13 @@ void VerilatedEvalLoop::didNotConverge(const char* namep,
     VL_UNREACHABLE;  // VL_FATAL_MT does not return
 }
 
+void VerilatedEvalLoop::settle() {
+    uint32_t stlIterCount = 0;
+    do {
+        checkConvergence(++stlIterCount, "Settle", &VerilatedModel::dumpTriggersStl);
+    } while (m_model.evalStl(stlIterCount == 1));
+}
+
 template <bool Profiling>
 void VerilatedEvalLoop::evalImpl() {
     VL_DEBUG_IF(VL_DBG_MSGF("+ Eval\n"););
@@ -4268,11 +4275,7 @@ void VerilatedEvalLoop::evalImpl() {
         m_model.evalStatic();
         // Initial blocks
         m_model.evalInitial();
-        // The 'Settle' region, iterated until it converges
-        uint32_t stlIterCount = 0;
-        do {
-            checkConvergence(++stlIterCount, "Settle", &VerilatedModel::dumpTriggersStl);
-        } while (m_model.evalStl(stlIterCount == 1));
+        settle();
         m_model.m_didInit = true;
     }
 
