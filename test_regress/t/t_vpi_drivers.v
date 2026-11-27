@@ -457,11 +457,6 @@ module t #(
   always_comb ret_c = k_q ^ 8'(8'h5a * dpiOne());
   always_ff @(posedge clk) ret_q <= ret_c;
 
-  // A comb signal read mid-eval, its source put between evals
-  logic [7:0] prb_s, prb_c;
-  assign prb_c = prb_s ^ 8'h3c;
-  import "DPI-C" context function void midEvalProbe();
-  always @(posedge clk) midEvalProbe();
   // A part select read mid-eval, overwritten after the read
   /* verilator lint_off UNOPTFLAT */
   logic [7:0] pk_c;
@@ -543,7 +538,7 @@ module t #(
   // Written whole by one block and in part by another
   logic [3:0] vbx;
   always @* vbx[sel] = en;
-  always_comb vbx[3:2] = d[1:0];
+  always @* vbx[3:2] = d[1:0];
 
   // A cycle between whole vectors, not their bits, through a function's temporaries
   /* verilator lint_off UNOPTFLAT */

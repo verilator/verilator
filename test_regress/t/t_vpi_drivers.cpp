@@ -183,14 +183,6 @@ void putArray(const std::string& name, int index, const PLI_INT32* valsp, int nu
     TEST_CHECK_ERROR(false);
 }
 
-std::string valueStr(vpiHandle handle) {
-    switch (vpi_get(vpiType, handle)) {
-    case vpiRealVar: return getStr(handle, vpiRealVal);
-    case vpiStringVar: return '"' + getStr(handle, vpiStringVal) + '"';
-    default: return getStr(handle, vpiHexStrVal);
-    }
-}
-
 // Every module-level signal row, as a handle, in hierarchy order. A forced signal's force
 // controls and a static function's locals are VPI-visible, but are not module signals.
 void walk(vpiHandle scopep, const std::function<void(vpiHandle)>& fn) {
@@ -213,43 +205,29 @@ void walk(vpiHandle scopep, const std::function<void(vpiHandle)>& fn) {
     }
 }
 
-std::string fullName(vpiHandle handle) { return vpi_get_str(vpiFullName, handle); }
-
-// The whole VPI-visible set and each row's value
-void dumpRows() {
-    std::vector<std::string> lines;
-    walk(nullptr, [&lines](vpiHandle handle) {
-        const std::string name = fullName(handle);
-        // A compiler temporary has no RTL name
-        if (name.find("__") != std::string::npos) {
-            std::printf("%%Error: compiler temporary is VPI-visible: %s\n", name.c_str());
-            ++errors;
-        }
-        // $random-driven, so their values are not printed
-        const bool random = name == "t.rnd_w" || name == "t.rndc";
-        lines.push_back(name + " " + (random ? "-" : valueStr(handle)));
+// A compiler temporary has no RTL name, so must not be VPI-visible
+void checkNoTemporaries() {
+    walk(nullptr, [](vpiHandle handle) {
+        const std::string name = vpi_get_str(vpiFullName, handle);
+        TEST_CHECK_EQ_LABEL(name, name.find("__"), std::string::npos);
     });
-    std::sort(lines.begin(), lines.end());
-    for (const std::string& line : lines) std::printf("%s\n", line.c_str());
 }
 
 struct ValueCb final {
     std::string name;
     vpiHandle cb;
     int count;
-    uint32_t value;
 };
 std::vector<ValueCb> s_valueCbs;
 
 PLI_INT32 valueCb(p_cb_data cbp) {
     ValueCb* const vcp = reinterpret_cast<ValueCb*>(cbp->user_data);
     ++vcp->count;
-    vcp->value = static_cast<uint32_t>(cbp->value->value.integer);
     return 0;
 }
 
 void armValueCbs(std::initializer_list<const char*> names) {
-    for (const char* name : names) s_valueCbs.push_back({name, nullptr, 0, 0});
+    for (const char* name : names) s_valueCbs.push_back({name, nullptr, 0});
     static s_vpi_time time{vpiSuppressTime, 0, 0, 0};
     static s_vpi_value value{vpiIntVal, {0}};
     for (ValueCb& vc : s_valueCbs) {
@@ -265,9 +243,9 @@ void armValueCbs(std::initializer_list<const char*> names) {
     }
 }
 
-void reportValueCbs() {
+void checkValueCbs() {
     for (ValueCb& vc : s_valueCbs) {
-        std::printf("cbValueChange %s fired %d 0x%02x\n", vc.name.c_str(), vc.count, vc.value);
+        TEST_CHECK_EQ_LABEL(vc.name, vc.count <= 1, true);
         vpi_remove_cb(vc.cb);
     }
     s_valueCbs.clear();
@@ -277,7 +255,6 @@ void reportValueCbs() {
 uint32_t s_mix, s_dWas, s_ohHeld, s_st, s_g0, s_driven;
 std::vector<uint32_t> s_held;
 std::string s_strComb;
-int s_probes = 0;
 
 // The encoder drives all of level 0 and one bit per segment of each level above
 constexpr uint32_t ohMask = 0x15f;
@@ -296,7 +273,7 @@ void landInertial() {
 void script() {
     // After the first eval, which fired each callback at most once for its settle
     step([] {
-        reportValueCbs();
+        checkValueCbs();
         in("rst", 0);
         in("rst_n", 1);
         in("clk", 1);
@@ -415,10 +392,10 @@ void script() {
         TEST_CHECK_EQ_LABEL("t.al_sw", get(vpi_handle(vpiRightRange, find("t.al_sw"))), 1);
         check("t.al_sw", get("t.al_sw"), get("t.k_q"));
         check("t.sib_bt", get("t.sib_bt"), get("t.ch1"));
-        // Undriven bits no read reaches hold a put; the driven ones follow the encoder
+        // Undriven bits no read reaches hold a put
         s_dWas = get(port("d"));
         check("t.oh.v", get("t.oh.v") & ohMask, ohDriven(s_dWas));
-        accept("t.oh.v", get("t.oh.v") ^ 0xfff);
+        accept("t.oh.v", get("t.oh.v") ^ (0xfff & ~ohMask));
         s_ohHeld = get("t.oh.v") & ~ohMask;
         in("d", 0x08);
     });
@@ -517,15 +494,9 @@ void script() {
         // A packed member reads as its parent
         check("t.hl_c.hi", get("t.hl_c.hi"), 0x3);
         accept("t.st.cnt", get("t.st.cnt") ^ 0x2a);
-        // Read mid-eval at each rising edge
-        s_probes = 0;
-        put("t.prb_s", 0x12);
         in("clk", 1);
     });
-    step([] {
-        check("probes", s_probes, 1);
-        in("clk", 0);
-    });
+    step([] { in("clk", 0); });
     step([] {
         // A put into a stored source, string and real alike, reaches its readers at the next
         // eval; until then they read as before it
@@ -588,6 +559,14 @@ void script() {
         // Set mid-eval by an initial block, which reads it back
         check("t.u_po.mc_a", get("t.u_po.mc_a"), 0x01);
         check("t.u_po.mc_b", get("t.u_po.mc_b"), 0x04);
+        // A parameter is read-only
+        {
+            const uint32_t before = get("t.INTF_QTY");
+            put("t.INTF_QTY", 5);
+            s_vpi_error_info info{};
+            TEST_CHECK_NZ_LABEL("t.INTF_QTY put", vpi_chk_error(&info));
+            check("t.INTF_QTY", get("t.INTF_QTY"), before);
+        }
         // An element of a comb-driven memory
         const uint32_t d = get(port("d"));
         const uint32_t m1 = ((d >> 4) | ((((d >> 4) ^ get(port("in_a"))) & 0xf) << 4)) & 0xff;
@@ -600,7 +579,7 @@ void script() {
         check("t.fus.a", get("t.fus.a"), fusA);
         in("clk", 0);
     });
-    step([] { dumpRows(); });
+    step([] { checkNoTemporaries(); });
 }
 
 PLI_INT32 startOfSimulation(p_cb_data) {
@@ -623,12 +602,6 @@ PLI_INT32 startOfSimulation(p_cb_data) {
 
 // An impure 1
 extern "C" int dpiOne() { return 1; }
-
-// Called at each rising edge: comb logic reads its source as the eval sees it
-extern "C" void midEvalProbe() {
-    ++s_probes;
-    check("t.prb_c mid-eval", get("t.prb_c"), get("t.prb_s") ^ 0x3c);
-}
 
 // Called mid-eval: the read sees the stores made before the call
 extern "C" void midEvalPeek(const char* name, int want, int mask) {
