@@ -10772,12 +10772,19 @@ class WidthVisitor final : public VNVisitor {
         if (stage & PRELIM) {
             underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
         }
-        underp = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr), false) : underp;
+        // A sampled array's element type is checked below, rather than converting a real array
+        if (VN_IS(underp, NodeExpr)
+            && !(allowUnpacked && VN_IS(underp->dtypep()->skipRefp(), UnpackArrayDType))) {
+            underp = checkCvtUS(VN_AS(underp, NodeExpr), false);
+        }
         AstNodeDType* const expDTypep = underp->dtypep();
         underp = iterateCheck(parentp, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
-        const AstNodeDType* const checkDtp = allowUnpacked
-                                                 ? V3AssertCommon::sampledValueDTypep(expDTypep)
-                                                 : expDTypep->skipRefToEnump();
+        (void)underp;  // cppcheck
+        if (allowUnpacked) {
+            V3AssertCommon::checkSampledDType(parentp, expDTypep, /* allowUnpacked */ true);
+            return;
+        }
+        AstNodeDType* const checkDtp = expDTypep->skipRefToEnump();
         // Sampling functions may still reference an untyped property formal here.
         // V3AssertPre checks the actual type after property argument substitution.
         if (!checkDtp->isIntegralOrPacked()
@@ -10786,7 +10793,6 @@ class WidthVisitor final : public VNVisitor {
                              << " expects a numeric " << side << " operand, but it has data type "
                              << checkDtp->prettyDTypeNameQ() << " (IEEE 1800-2023 11.3)");
         }
-        (void)underp;  // cppcheck
     }
     void iterateCheckAssign(AstNode* parentp, const char* side, AstNode* rhsp, Stage stage,
                             AstNodeDType* lhsDTypep, VAccess rhsAccess = VAccess::READ) {

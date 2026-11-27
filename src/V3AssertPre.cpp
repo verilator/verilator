@@ -248,13 +248,7 @@ private:
 
     static void checkSamplingFuncDType(AstNodeExpr* nodep, const AstNode* exprp,
                                        const bool allowUnpacked = false) {
-        const AstNodeDType* const dtypep
-            = allowUnpacked ? V3AssertCommon::sampledValueDTypep(exprp->dtypep())
-                            : exprp->dtypep()->skipRefp();
-        if (!dtypep->isIntegralOrPacked()) {
-            nodep->v3error("Expected numeric type, but got a " << dtypep->prettyDTypeNameQ()
-                                                               << " data type");
-        }
+        V3AssertCommon::checkSampledDType(nodep, exprp->dtypep(), allowUnpacked);
     }
 
     AstSenTree* newSenTree(AstNode* nodep, AstSenTree* useTreep = nullptr,

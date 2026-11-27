@@ -38,4 +38,12 @@
                            : ... note: In instance 't'
    24 |     if ($past(d, TICKS)) $stop;
       |         ^~~~~
+%Error: t/t_past_bad.v:30:9: Expected numeric type, but got a 'real' data type
+                           : ... note: In instance 't'
+   30 |     if ($stable(reals)) $stop;
+      |         ^~~~~~~
+%Error: t/t_past_bad.v:31:9: Expected numeric type, but got a 'string' data type
+                           : ... note: In instance 't'
+   31 |     if ($changed(strings)) $stop;
+      |         ^~~~~~~~
 %Error: Exiting due to

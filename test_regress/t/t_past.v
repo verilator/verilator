@@ -157,6 +157,24 @@ module UnpackedSamples(input clk, input [31:0] in);
   endproperty
   assert property (@(posedge clk) constructed_samples(pair_t'{8'h11, 8'h22}))
   else `stop;
+
+  // Selects from a call's result keep the elements the call returns
+  typedef bit [7:0] triple_t[3];
+  function automatic triple_t build(bit [7:0] x);
+    return '{8'h11, x, 8'h33};
+  endfunction
+  function automatic bit [23:0] build_packed(bit [7:0] x);
+    return {8'h11, x, 8'h33};
+  endfunction
+  bit [7:0] arg;
+  bit [7:0] previous_arg;
+  always @(posedge clk) begin
+    arg <= in[7:0];
+    previous_arg <= arg;
+    `checkh($past(build(arg)[0:1]), pair_t'{8'h11, previous_arg})
+    `checkh($past(build(arg)[2]), 8'h33)
+    `checkh($past(build_packed(arg)[23:8]), {8'h11, previous_arg})
+  end
 endmodule
 
 module Test (  /*AUTOARG*/

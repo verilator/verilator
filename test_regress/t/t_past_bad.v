@@ -23,4 +23,11 @@ module t (
   always @(posedge clk) begin
     if ($past(d, TICKS)) $stop;
   end
+
+  real reals[2];
+  string strings[2];
+  always @(posedge clk) begin
+    if ($stable(reals)) $stop;
+    if ($changed(strings)) $stop;
+  end
 endmodule

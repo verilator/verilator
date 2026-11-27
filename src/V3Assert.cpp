@@ -94,12 +94,18 @@ public:
 
 }  // namespace
 
-const AstNodeDType* V3AssertCommon::sampledValueDTypep(const AstNodeDType* dtypep) {
+void V3AssertCommon::checkSampledDType(AstNode* nodep, const AstNodeDType* dtypep,
+                                       bool allowUnpacked) {
     dtypep = dtypep->skipRefp();
-    while (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
-        dtypep = arrayp->subDTypep()->skipRefp();
+    if (allowUnpacked) {
+        while (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
+            dtypep = arrayp->subDTypep()->skipRefp();
+        }
     }
-    return dtypep;
+    // An untyped property formal is checked once its actual is substituted
+    if (dtypep->isIntegralOrPacked() || (dtypep->basicp() && dtypep->basicp()->untyped())) return;
+    nodep->v3error("Expected numeric type, but got a " << dtypep->prettyDTypeNameQ()
+                                                       << " data type");
 }
 
 void V3AssertCommon::collectDefaultDisable(AstNetlist* nodep) {
@@ -320,6 +326,11 @@ class DefaultSampledValueVisitor final : public VNVisitor {
         } else {
             iterateChildren(nodep);
         }
+    }
+    void visit(AstNodeFTaskRef* nodep) override {
+        // A call's result is computed from its replaced arguments, so is not itself replaced
+        VL_RESTORER(m_defaulted);
+        iterateChildren(nodep);
     }
     void visit(AstNodeVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
