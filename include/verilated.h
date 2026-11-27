@@ -93,12 +93,14 @@ class VerilatedContext;
 class VerilatedContextImp;
 class VerilatedContextImpData;
 class VerilatedCovContext;
+class VerilatedDeserialize;
 class VerilatedEvalMsgQueue;
 class VerilatedFst;
 class VerilatedFstC;
 class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
+class VerilatedSerialize;
 class VerilatedIfaceRef;
 struct VlIfaceRefTableEntry;
 template <typename, typename>
@@ -165,7 +167,64 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_MEMBER = (1 << 18),  // Is a struct/union member, reached through its parent
     VLVF_PACKED_NEEDS_INDEX = (1 << 19),  // With VLVF_MEMBER, an ancestor is an array of
                                           // packed structs/unions, so needs an element index
-    VLVF_DYNAMIC = (1 << 20)  // Unpacked dimension 1 is of a dynamic array or queue
+    VLVF_DYNAMIC = (1 << 20),  // Unpacked dimension 1 is of a dynamic array or queue
+    VLVF_LAZY_REMAT = (1 << 21),  // --vpi-lazy: rematerialized row; no storage, may be read-only
+    // --vpi-lazy: a candidate kept as storage, so writable, less any VLVF_LAZY_COMB-masked bits
+    VLVF_LAZY_RETAINED = (1 << 22),
+    VLVF_LAZY_COPY = (1 << 23),  // --vpi-lazy: rematerialized by memcpy from srcOffset, not a cone
+    // --vpi-lazy: combinationally driven, so read-only, or with VLVF_PUB_RW, its masked bits
+    VLVF_LAZY_COMB = (1 << 24)
+};
+
+struct VlLazyRematEntry;
+
+/// --vpi-lazy descriptor, a rematerialized row's VerilatedVar::m_datap.
+struct VerilatedVarLazyDatap final {
+    void (*rematFuncp)(
+        void* selfp);  ///< Rematerializes the shadow if stale; unused for a copy row
+    void* selfp;  ///< The row's module instance
+    /// Copy rows only: VerilatedLazyState::epoch when last copied; cones keep theirs in the
+    /// module's stamp array
+    uint64_t stamp;
+    uint32_t storageOffset;  ///< Shadow's byte offset in selfp
+    uint32_t srcOffset;  ///< Copy rows' source byte offset in selfp; unused for cones
+
+    /// Set up for 'remat''s row whose shadow is 'offset' bytes into instance 'instp'
+    void init(const VlLazyRematEntry& remat, void* instp, uint32_t offset);
+};
+
+// ILP32 lays the same members out in 24 bytes, so this is a cap, not an equality
+static_assert(sizeof(VerilatedVarLazyDatap) <= 32, "VerilatedVarLazyDatap unexpectedly grew");
+
+/// One --vpi-lazy descriptor's rematerialize method, indexed by VlVarTableEntry::lazyDescSlot()
+struct VlLazyRematEntry final {
+    void (*rematFuncp)(void* selfp);  ///< See VerilatedVarLazyDatap::rematFuncp
+    /// A copy's source; with VLVF_LAZY_COMB, a cone's VlLazyCombMask index
+    uint32_t srcByteOffset;
+    uint32_t vlflags;  ///< VLVF_LAZY_* flags added to the row's own
+
+    /// VLVF_LAZY_COMB row's VlLazyCombMask index
+    int32_t combMaskIdx() const { return static_cast<int32_t>(srcByteOffset); }
+};
+
+/// Combinationally driven bits of one flat unpacked element of a --vpi-lazy row
+struct VlLazyCombRun final {
+    uint32_t elem;  ///< Flat unpacked element index
+    uint32_t lsb;  ///< First driven bit within the element
+    uint32_t width;  ///< Driven bits from lsb
+};
+
+/// Bits a VPI put may not change, indexed by VlVarTableEntry::lazyCombMask()
+struct VlLazyCombMask final {
+    const VlLazyCombRun* runsp;  ///< Ordered by element, then bit
+    uint32_t nRuns;  ///< Entries in runsp
+};
+
+/// What a --vpi-lazy put overwrote: bytes, or for a string variable its old value
+struct VlLazyUndo final {
+    void* datap;  ///< Where the put wrote
+    bool isStr;  ///< datap is a std::string
+    std::string old;  ///< The bytes, or string, before the put
 };
 
 // One VPI-visible variable, a row for VerilatedScope::varsInsertFromTable() or
@@ -182,10 +241,22 @@ struct VlVarTableEntry final {
     VerilatedVarType vltype;
     uint8_t udims;
     uint8_t pdims;
-    // Only packed member rows set these
-    uint32_t bitOffset = 0;  // Bit offset within the parent's element 0
+    // Only --vpi-lazy and member rows set these. Read 'aux' through the accessors
+    // below: the row is 40 bytes, so a field per meaning would make it 48.
+    int32_t aux = -1;
     uint32_t entSize = 0;  // Element size in bytes, or 0 to derive from vltype
+
+    // A struct/union member, see VLVF_MEMBER
+    bool isMember() const { return vlflags & VLVF_MEMBER; }
+    bool isLazyComb() const { return vlflags & VLVF_LAZY_COMB; }
+    // Bit offset of a packed member within its parent's element 0
+    uint32_t memberBitOffset() const { return isMember() ? static_cast<uint32_t>(aux) : 0; }
+    // Model-wide VlLazyCombMask index of a VLVF_LAZY_COMB row, else -1
+    int32_t lazyCombMask() const { return isLazyComb() ? aux : -1; }
+    // Module-relative --vpi-lazy descriptor slot, else -1
+    int32_t lazyDescSlot() const { return isMember() || isLazyComb() ? -1 : aux; }
 };
+static_assert(sizeof(VlVarTableEntry) <= 40, "VlVarTableEntry unexpectedly grew");
 
 // IEEE 1800-2023 Table 20-6
 enum class VerilatedAssertType : uint8_t {
@@ -456,6 +527,8 @@ public:
         m_profilerp = profilerp;
         m_profTopLevel = topLevel;
     }
+    /// Iterate the 'Settle' region until it converges; also re-settles a --vpi-lazy write
+    void settle();
 
 private:
     // Evaluate a time step, recording --prof-exec sections iff 'Profiling'.
@@ -942,6 +1015,45 @@ public:
     void selfTestClearMagic() { m_magic = 0x2; }
 };
 
+/// --vpi-lazy runtime state, a member of a --vpi-lazy model's generated symbol table
+struct VerilatedLazyState final {
+    /// Rematerialization generation: memos equal to it are fresh, and zero stamps never are.
+    /// Odd within an eval, so a mid-eval read never trusts a memo; other moves keep the parity.
+    uint64_t epoch = 2;
+    const VlLazyCombMask* combMasksp = nullptr;  ///< Comb masks, if any
+    bool written = false;  ///< Write to a retained signal awaiting a settle
+    /// An eval() has begun, in this model or the one saved. Unlike the model's m_didInit, set
+    /// before the time 0 settle, and reachable from VerilatedSyms.
+    bool evalBegun = false;
+    bool undoOn = false;  ///< Has a rematerialized row, so puts log
+    bool undoIn = false;  ///< The undo log is swapped in
+    std::vector<VlLazyUndo> undo;  ///< See vl_vpi_undo_log() in verilated_vpi.cpp
+    /// Called from the generated evalBegin()
+    void evalBegin() VL_MT_UNSAFE_ONE {
+        ++epoch;
+        evalBegun = true;
+    }
+    /// Retire every memo and the undo log. Called from the generated evalEnd().
+    void evalEnd() VL_MT_UNSAFE_ONE {
+        ++epoch;
+        undo.clear();
+    }
+    /// Bump the epoch, keeping its in-eval parity
+    void epochBump() VL_MT_UNSAFE_ONE { epoch += 2; }
+    /// Nothing has settled, so storage holds reset values
+    bool beforeFirstEval() const { return !evalBegun; }
+    /// Whether a memo stamped 'stamp' is stale; if so, restamps it
+    bool stale(uint64_t& stamp) VL_MT_UNSAFE_ONE {
+        if (stamp == epoch) return false;
+        stamp = epoch;
+        // A read's first rematerialization swaps the undo log in, and the read swaps it back
+        if (VL_UNLIKELY(!undo.empty() && !undoIn && !(epoch & 1))) undoSwap(true);
+        return true;
+    }
+    /// Swap the logged pre-put bytes in ('in'), or the puts back
+    void undoSwap(bool in) VL_MT_UNSAFE_ONE;
+};
+
 //===========================================================================
 // Verilator symbol table base class
 // Used for internal VPI implementation, and introspection into scopes
@@ -957,6 +1069,8 @@ public:  // But for internal use only
     VL_UNCOPYABLE(VerilatedSyms);
 
     virtual const char* name() const = 0;
+    /// Null unless --vpi-lazy. Virtual rather than a member so other models keep their size.
+    virtual VerilatedLazyState* lazyp() { return nullptr; }
 };
 
 // An interface reference port, and the concrete interface it is connected to.
@@ -1014,7 +1128,8 @@ private:
     const int8_t m_timeunit;  // Timeunit in negative power-of-10
     const Type m_type;  // Type of the scope
 
-    void varInsertFromRow(const VlVarTableEntry& e, void* datap, bool isParam) VL_MT_UNSAFE;
+    void varInsertFromRow(const VlVarTableEntry& e, void* datap, bool isParam,
+                          const VlLazyRematEntry* rematp = nullptr) VL_MT_UNSAFE;
 
 public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedScope(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
@@ -1032,7 +1147,11 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      void* forceReadSignalDatap, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims, ...) VL_MT_UNSAFE;
-    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
+    // lazyBasep/lazyRematsp are null when the table has no lazy rows; both keyed by
+    // VlVarTableEntry::lazyDescSlot()
+    void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
+                             VerilatedVarLazyDatap* lazyBasep = nullptr,
+                             const VlLazyRematEntry* lazyRematsp = nullptr) VL_MT_UNSAFE;
     void paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,
                                const void* const* paramPtrsp) VL_MT_UNSAFE;
     void ifaceRefInsert(const VerilatedIfaceRef* ifaceRefp) VL_MT_UNSAFE;

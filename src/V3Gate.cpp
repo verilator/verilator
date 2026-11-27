@@ -287,6 +287,12 @@ class GateBuildVisitor final : public VNVisitorConst {
         m_logicVertexp->clearReducibleAndDedupable("Rtmd");
         m_logicVertexp->setConsumed("Rtmd");
         iterateChildrenConst(nodep);
+        if (!nodep->stored()) return;
+        // Dedup would sever the runtime from the driver
+        GateVarVertex* const vVtxp = m_graphp->makeVarVertex(nodep->vscp());
+        vVtxp->clearDedupable("RtmdStored");
+        // Substituting a writable variable's driver into its readers would hide a write
+        if (nodep->writable()) vVtxp->clearReducible("RtmdWritable");
     }
     void visit(AstSenItem* nodep) override {
         VL_RESTORER(m_inSenItem);
@@ -748,6 +754,11 @@ class GateInline final {
             for (V3GraphEdge* const edgep : vVtxp->outEdges().unlinkable()) {
                 GateLogicVertex* const dstVtxp = edgep->top()->as<GateLogicVertex>();
 
+                // One rematerialize function serves every instance.
+                if (const AstCFunc* const cfuncp = VN_CAST(dstVtxp->nodep(), CFunc)) {
+                    if (cfuncp->vpiLazyRemat()) continue;
+                }
+
                 // Do not inline anything other than buffers and inverters into
                 // sensitivity lists. If the signal becomes constant, we might
                 // miss an initialization time edge.
@@ -770,8 +781,11 @@ class GateInline final {
 
                 if (!canInline) continue;  // Cannot optimize this replacement
 
-                // A descriptor can only read another variable whole
-                if (VN_IS(dstVtxp->nodep(), RtmdVar) && !VN_IS(substp, VarRef)) continue;
+                // A descriptor can only read another variable whole, and a stored variable's
+                // descriptor must keep reading the variable itself
+                if (const AstRtmdVar* const sigp = VN_CAST(dstVtxp->nodep(), RtmdVar)) {
+                    if (sigp->stored() || !VN_IS(substp, VarRef)) continue;
+                }
 
                 UINFOTREE(9, dstVtxp->nodep(), "", "inside");
 

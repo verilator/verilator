@@ -431,7 +431,7 @@ class BitBlastVisitor final : public VNVisitorConst, public VNDeleter {
     }
     void visit(AstRtmdVar* nodep) override {
         // Ignore reference for splitting, but need to reconstruct the variable
-        if (nodep->refp()) nodep->vscp()->user2(true);
+        if (nodep->refp() && nodep->keepWhole()) nodep->vscp()->user2(true);
     }
     void visit(AstMemberRef* nodep) override {
         iterateChildrenConst(nodep);

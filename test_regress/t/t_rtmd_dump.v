@@ -75,6 +75,7 @@ module sub #(
   time tval;
   event ev;
   chandle ch;
+  string str;
   // Ascending ranges are intentional, to check their indices
   // verilator lint_off ASCRANGE
   logic [1:3][4:1] pmd;
@@ -117,6 +118,7 @@ module sub #(
     $display("%p", tval);
     $display("%p", ev.triggered);
     $display("%p", ch == null);
+    $display("%p", str);
     $display("%p", pmd);
     $display("%p", asc);
     $display("%p", umd);

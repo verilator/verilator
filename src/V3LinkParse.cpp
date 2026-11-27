@@ -529,9 +529,16 @@ class LinkParseVisitor final : public VNVisitor {
         V3Control::applyVarAttr(m_modp, m_ftaskp, nodep);
 
         // The function return variable is not user visible
-        if (v3Global.opt.anyPublicFlat() && nodep->varType().isVPIAccessible()
-            && !nodep->isFuncReturn()) {
-            if (v3Global.opt.publicFlatRW()) {
+        if ((v3Global.opt.anyPublicFlat() || v3Global.opt.vpiLazy())
+            && nodep->varType().isVPIAccessible() && !nodep->isFuncReturn()) {
+            if (v3Global.opt.vpiLazy()) {
+                if (nodep->isParam()) {
+                    // vpi_put_value ignores a parameter; RW would make every reader 'ico' logic
+                    nodep->sigUserRdPublic(true);
+                } else {
+                    nodep->vpiLazyRole(VVpiLazyRole::CANDIDATE);
+                }
+            } else if (v3Global.opt.publicFlatRW()) {
                 nodep->sigUserRWPublic(true);
             } else if (v3Global.opt.publicParams() && nodep->isParam()) {
                 nodep->sigUserRWPublic(true);
@@ -555,6 +562,7 @@ class LinkParseVisitor final : public VNVisitor {
 
         iterateChildren(nodep);
         m_varp = nullptr;
+        nodep->vpiLazyYieldToUserPublic();
         // temporaries under an always aren't expected to be blocking
         if (m_procedurep && VN_IS(m_procedurep, Always))
             nodep->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);

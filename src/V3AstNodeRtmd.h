@@ -377,6 +377,9 @@ class AstRtmdVar final : public AstNodeRtmdItem {
     const std::string m_name;  // Name of the variable in the hierarchy
     uint32_t m_actSetIdx = ~0U;  // Index of its set in AstNetlist::actSets(), from V3Trace
     bool m_traced = false;  // Traced, as its variable, unless turned off by V3Rtmd::scopedAll
+    bool m_vpiLazy = false;  // Under --vpi-lazy, referenced until V3VpiLazy::prepare decides
+    bool m_stored = false;  // Its variable must stay a real, undeduplicated variable
+    bool m_writable = false;  // VPI may write it, so readers must keep reading it
 public:
     AstRtmdVar(FileLine* fl, const std::string& name, AstRtmdVarType* typeDescp, AstVarRef* refp)
         : ASTGEN_SUPER_RtmdVar(fl)
@@ -402,7 +405,16 @@ public:
     void actSetIdx(uint32_t idx) { m_actSetIdx = idx; }
     bool traced() const { return m_traced; }
     void traced(bool flag) { m_traced = flag; }
-    bool needsRuntimeAccess() const { return m_traced; }
+    bool vpiLazy() const { return m_vpiLazy; }
+    void vpiLazy(bool flag) { m_vpiLazy = flag; }
+    bool stored() const { return m_stored; }
+    void stored(bool flag) { m_stored = flag; }
+    bool writable() const { return m_writable; }
+    void writable(bool flag) { m_writable = flag; }
+    // Passes splitting the variable must drive it back whole: a --vpi-lazy read-only variable's
+    // VPI row reads it whole
+    bool keepWhole() const;
+    bool needsRuntimeAccess() const { return m_traced || m_vpiLazy; }
     AstScope* refScopep() const { return m_refScopep; }
     void refScopep(AstScope* scopep) { m_refScopep = scopep; }
 };

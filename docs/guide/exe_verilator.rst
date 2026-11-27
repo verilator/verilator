@@ -1899,6 +1899,7 @@ Summary:
    Enables public as with :vlopt:`--public-flat-rw`, but only to the specified depth of modules.
    It operates at the module maximum level, so if a module's cells are A.B.X and A.X, the
    a --public-depth 3 must be used to make module X public, and both A.B.X and A.X will be public.
+   Ignored with :vlopt:`--vpi-lazy`.
 
 .. option:: --public-flat-rw
 
@@ -1908,7 +1909,8 @@ Summary:
    particularly useful in combination with :vlopt:`--vpi`. This may also in
    some rare cases result in mis-simulation of generated clocks. Instead of
    this global option, marking only those signals that need public_flat_rw
-   is typically significantly better performing.
+   is typically significantly better performing. Ignored with
+   :vlopt:`--vpi-lazy`.
 
 .. option:: --public-ignore
 
@@ -1921,7 +1923,7 @@ Summary:
 
    Declares all parameters public as if they had
    ``/*verilator public_flat_rd*/``
-   metacomments.
+   metacomments. Ignored with :vlopt:`--vpi-lazy`.
 
 
 .. option:: -pvalue+<name>=<value>
@@ -2426,6 +2428,21 @@ Summary:
 .. option:: --vpi
 
    Enable the use of VPI and linking against the :file:`verilated_vpi.cpp` files.
+
+.. option:: --vpi-lazy
+
+   Declares all variables, ports, wires, and parameters VPI accessible by
+   their flat name, as :vlopt:`--public-flat-rw` does, but rematerializes
+   combinationally driven signals when VPI reads them rather than storing
+   them in the model. Those signals are read-only unless marked
+   ``public_flat_rw`` or ``forceable``. Implies :vlopt:`--vpi`. See
+   :ref:`Lazy VPI Signal Access`.
+
+   :vlopt:`--public-flat-rw`, :vlopt:`--public-depth` and
+   :vlopt:`--public-params` are ignored alongside it with a
+   :option:`NOEFFECT` warning, though a ``public_flat_rw`` metacomment is
+   honored. With :vlopt:`--no-vpi <--vpi>`, :vlopt:`--vpi-lazy` itself is
+   ignored. :vlopt:`--savable` is not supported with it.
 
 .. option:: --waiver-multiline
 

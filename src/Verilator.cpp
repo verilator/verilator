@@ -120,6 +120,7 @@
 #include "V3Unknown.h"
 #include "V3Unroll.h"
 #include "V3VariableOrder.h"
+#include "V3VpiLazy.h"
 #include "V3Waiver.h"
 #include "V3Width.h"
 #include "V3WidthCommit.h"
@@ -411,6 +412,7 @@ static void process() {
             // Move assignments/sensitives into a SBLOCK for each unique sensitivity list
             // (May convert some ALWAYS to combo blocks, so should be before V3Gate step.)
             V3Active::activeAll(v3Global.rootp());
+            if (v3Global.opt.vpiLazy()) V3VpiLazy::classifyComb(v3Global.rootp());
 
             // Decompose arrays and structs into their elements and members
             if (v3Global.opt.fDecompose()) V3Decompose::decomposeAll(v3Global.rootp());
@@ -443,6 +445,8 @@ static void process() {
             // We reserve AST user slots across both sub-passes so helper pointers can be handed
             // directly from force discovery to assign/deassign lowering without rediscovery.
             V3Force::forceAndAssignAll(v3Global.rootp());
+
+            if (v3Global.opt.vpiLazy()) V3VpiLazy::prepare(v3Global.rootp());
 
             // DFG optimization
             if (v3Global.opt.fDfg()) V3DfgOptimizer::optimize(v3Global.rootp());

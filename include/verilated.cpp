@@ -4004,6 +4004,20 @@ VerilatedSyms::~VerilatedSyms() {
     delete __Vm_evalMsgQp;
 }
 
+void VerilatedLazyState::undoSwap(bool in) VL_MT_UNSAFE_ONE {
+    undoIn = in;
+    // Newest first going in, so where puts overlap the oldest value lands last
+    const size_t n = undo.size();
+    for (size_t i = 0; i < n; ++i) {
+        VlLazyUndo& entry = undo[in ? n - 1 - i : i];
+        if (entry.isStr) {
+            std::swap(*static_cast<std::string*>(entry.datap), entry.old);
+        } else {
+            std::swap_ranges(entry.old.begin(), entry.old.end(), static_cast<char*>(entry.datap));
+        }
+    }
+}
+
 //===========================================================================
 // Verilated:: Methods
 
@@ -4249,6 +4263,13 @@ void VerilatedEvalLoop::didNotConverge(const char* namep,
     VL_UNREACHABLE;  // VL_FATAL_MT does not return
 }
 
+void VerilatedEvalLoop::settle() {
+    uint32_t stlIterCount = 0;
+    do {
+        checkConvergence(++stlIterCount, "Settle", &VerilatedModel::dumpTriggersStl);
+    } while (m_model.evalStl(stlIterCount == 1));
+}
+
 template <bool Profiling>
 void VerilatedEvalLoop::evalImpl() {
     VL_DEBUG_IF(VL_DBG_MSGF("+ Eval\n"););
@@ -4268,11 +4289,7 @@ void VerilatedEvalLoop::evalImpl() {
         m_model.evalStatic();
         // Initial blocks
         m_model.evalInitial();
-        // The 'Settle' region, iterated until it converges
-        uint32_t stlIterCount = 0;
-        do {
-            checkConvergence(++stlIterCount, "Settle", &VerilatedModel::dumpTriggersStl);
-        } while (m_model.evalStl(stlIterCount == 1));
+        settle();
         m_model.m_didInit = true;
     }
 
@@ -4456,11 +4473,24 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
     return &(m_varsp->find(namep)->second);
 }
 
-void VerilatedScope::varInsertFromRow(const VlVarTableEntry& e, void* datap,
-                                      bool isParam) VL_MT_UNSAFE {
-    const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags);
-    VerilatedVar var{e.namep, datap,   e.vltype,  vlflags,    e.udims,
-                     e.pdims, isParam, e.entSize, e.bitOffset};
+void VerilatedVarLazyDatap::init(const VlLazyRematEntry& remat, void* instp, uint32_t offset) {
+    rematFuncp = remat.rematFuncp;
+    selfp = instp;
+    stamp = 0;  // The epoch starts at 2, so the row reads as stale
+    storageOffset = offset;
+    srcOffset = remat.srcByteOffset;
+}
+
+void VerilatedScope::varInsertFromRow(const VlVarTableEntry& e, void* datap, bool isParam,
+                                      const VlLazyRematEntry* rematp) VL_MT_UNSAFE {
+    const uint32_t rematFlags = rematp ? rematp->vlflags : 0;
+    const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags | rematFlags);
+    const int32_t combMask
+        = (rematFlags & VLVF_LAZY_COMB) ? rematp->combMaskIdx() : e.lazyCombMask();
+    VerilatedVar var{e.namep, datap,     e.vltype,
+                     vlflags, e.udims,   e.pdims,
+                     isParam, e.entSize, e.memberBitOffset(),
+                     combMask};
     for (int d = 0; d < e.udims; ++d) {
         var.m_unpacked[d].m_left = e.dimsp[2 * d];
         var.m_unpacked[d].m_right = e.dimsp[2 * d + 1];
@@ -4481,13 +4511,26 @@ void VerilatedScope::varInsertFromRow(const VlVarTableEntry& e, void* datap,
     m_varsp->emplace(e.namep, std::move(var));
 }
 
-void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n,
-                                         void* basep) VL_MT_UNSAFE {
+void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
+                                         VerilatedVarLazyDatap* lazyBasep,
+                                         const VlLazyRematEntry* lazyRematsp) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
     // A packed member row's basep is its parent's storage
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
-    uint8_t* const rowBasep = static_cast<uint8_t*>(basep);
-    for (size_t i = 0; i < n; ++i) varInsertFromRow(entp[i], rowBasep + entp[i].byteOffset, false);
+    uint8_t* const base = static_cast<uint8_t*>(basep);
+    for (size_t i = 0; i < n; ++i) {
+        const VlVarTableEntry& e = entp[i];
+        const int32_t descSlot = e.lazyDescSlot();
+        if (descSlot < 0) {
+            varInsertFromRow(e, base + e.byteOffset, false);
+            continue;
+        }
+        // Fits: the emitted Syms static_asserts its size, which spans every instance, fits 31 bits
+        VerilatedVarLazyDatap& desc = lazyBasep[descSlot];
+        desc.init(lazyRematsp[descSlot], base, static_cast<uint32_t>(e.byteOffset));
+        m_symsp->lazyp()->undoOn = true;
+        varInsertFromRow(e, &desc, false, &lazyRematsp[descSlot]);
+    }
 }
 
 void VerilatedScope::paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,

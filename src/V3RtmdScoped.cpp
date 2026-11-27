@@ -71,7 +71,9 @@ class RtmdScoped final : public VNVisitor {
         // A constant (e.g. parameter) would otherwise need storage only for this reference, so
         // read the value from the constant pool instead
         AstNodeExpr* const valuep = VN_AS(nodep->varp()->valuep(), NodeExpr);
-        if (valuep && valuep->isConstantTree()) {
+        // --vpi-lazy may yet need the variable itself stored
+        if (valuep && valuep->isConstantTree()
+            && (!nodep->vpiLazy() || nodep->varp()->isParam())) {
             refp->replaceWith(V3ConstPool::find(valuep));
             VL_DO_DANGLING(pushDeletep(refp), refp);
         }
