@@ -60,6 +60,16 @@ brew-retry() {
   fatal "'brew $*' failed on all attempts"
 }
 
+# Run 'wget', retrying if failed, including on transient HTTP errors
+wget-retry() {
+  local _attempt
+  for _attempt in 1 2 3; do
+    [ "$_attempt" -eq 1 ] || sleep $((15 * _attempt))
+    wget --retry-connrefused --retry-on-host-error --timeout=15 --waitretry=5 -q "$@" && return 0
+  done
+  fatal "'wget $*' failed on all attempts"
+}
+
 install-wavetools() {
   source ci/docker/buildenv/wavetools.conf
   local _base_url="https://github.com/hudson-trading/wavetools/releases/download/${WAVETOOLS_VERSION}"
@@ -75,7 +85,7 @@ install-wavetools() {
   local _tmpdir
   _tmpdir=$(mktemp -d)
   local _archive="wavetools-${WAVETOOLS_VERSION}-${_platform}"
-  wget --retry-connrefused --retry-on-host-error --timeout=15 --waitretry=5 -q -O "${_tmpdir}/${_archive}.tar.gz" "${_base_url}/${_archive}.tar.gz"
+  wget-retry -O "${_tmpdir}/${_archive}.tar.gz" "${_base_url}/${_archive}.tar.gz"
   tar -xzf "${_tmpdir}/${_archive}.tar.gz" -C "${_tmpdir}"
   sudo cp "${_tmpdir}/${_archive}/"* /usr/local/bin/
   rm -rf "${_tmpdir}"
