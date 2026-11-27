@@ -1,0 +1,10 @@
+%Warning-NONSTD: t/t_dpi_result_type_nonstd.v:34:38: DPI function returning type 'bit[32:0]' of > 32 bits or 4-state non-standard (IEEE 1800-2023 35.5.5)
+                                                   : ... The C function returns void and takes the result as its first, output argument
+   34 |   import "DPI-C" function bit [32:0] i_bit33(input bit [32:0] in);
+      |                                      ^~~~~~~
+                 ... For warning description see https://verilator.org/warn/NONSTD?v=latest
+                 ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
+%Warning-NONSTD: t/t_dpi_result_type_nonstd.v:36:25: DPI function returning type 'logic[55:0]' of > 32 bits or 4-state non-standard (IEEE 1800-2023 35.5.5)
+                                                   : ... The C function returns void and takes the result as its first, output argument
+   36 |   function logic [55:0] e_logic56(input logic [55:0] in);
+      |                         ^~~~~~~~~

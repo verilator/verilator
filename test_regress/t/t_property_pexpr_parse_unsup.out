@@ -23,9 +23,6 @@
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:76:5: Unsupported: nexttime (in property expression)
    76 |     nexttime s_eventually a;
       |     ^~~~~~~~
-%Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:80:14: Unsupported: s_eventually[] (in property expression)
-   80 |     nexttime s_eventually [2:$] always a;
-      |              ^~~~~~~~~~~~
 %Error-UNSUPPORTED: t/t_property_pexpr_unsup.v:80:5: Unsupported: nexttime (in property expression)
    80 |     nexttime s_eventually [2:$] always a;
       |     ^~~~~~~~

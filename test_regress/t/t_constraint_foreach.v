@@ -185,6 +185,43 @@ class J;
   }
 endclass
 
+class GQ;  // G with a queue
+  typedef struct { rand bit [31:0]a; rand bit c; } cfg_t;
+  rand cfg_t cfg[$];
+  rand bit b;
+
+  function new();
+    cfg_t e;
+    repeat (6) cfg.push_back(e);
+  endfunction
+
+  constraint g {
+    foreach (cfg[i]) {
+      solve b before cfg[i].a, cfg[i].c;
+
+      b -> cfg[i].c == 1;
+      b -> cfg[i].a == 0;
+    }
+  }
+endclass
+
+class HQ;  // H with a queue
+  rand integer a[$];
+  rand integer b;
+
+  function new();
+    a = '{0, 0, 0, 0, 0, 0};
+  endfunction
+
+  constraint h {
+    foreach (a[i]) {
+      solve b before a[i];
+
+      a[i] != b;
+    }
+  }
+endclass
+
 module t;
   initial begin
     automatic C c = new;
@@ -195,6 +232,8 @@ module t;
     automatic H h = new;
     automatic I i = new;
     automatic J j = new;
+    automatic GQ gq = new;
+    automatic HQ hq = new;
 
     `check_rand(c, c.x, 4 < c.x && c.x < 7);
     `check_rand(d, d.posit, (d.posit ? 4 : -3) < d.x && d.x < (d.posit ? 7 : 0));
@@ -217,6 +256,12 @@ module t;
     `check_rand(j, j.a, (j.arr.sum() + j.a == 200));
     foreach (j.arr[i]) begin
         `check_rand(j, j.arr[i], (j.arr[i] inside {[10 : 200]}));
+    end
+    foreach (gq.cfg[i]) begin
+      `check_rand_min_count(gq, gq.cfg[i].a, 0, 14);
+    end
+    foreach (hq.a[i]) begin
+      `check_rand(hq, hq.a[i], (hq.a[i] != hq.b));
     end
     $write("*-* All Finished *-*\n");
     $finish;

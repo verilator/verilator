@@ -25,6 +25,8 @@ Verilator 5.055 devel
 * Add infrastructure to support multiple solver back-ends (#9022).
 * Add `threads_group -workers` for explicit worker placement (#9031).
 * Add error on multiple models under same name.
+* Remove VL_VPRINTF; now uses VL_PRINTF instead.
+* Support string-to-array and array-to-string conversion (#6124).
 * Support user C++ modules while keeping the PCH (#7808) (#8906).
 * Support parsing covergroup bins with set_covergroup_expression (#8862).
 * Support suspendable DPI exports with timing and event controls using threads (#8863).
@@ -37,47 +39,64 @@ Verilator 5.055 devel
 * Support obj.randomize with constraint block without parentheses (#9201).
 * Support '// coverage off/on' and '// pragma coverage off/on' comments (#9210).
 * Support $coverage_control to reset all coverage (#9234).
+* Support dynamic array, queue and associative array parameters.
+* Support empty constraint set in constraint if, foreach and implication (#9261).
+* Support wildcard randomization (#9304).
+* Support disabling a named fork from a task (#9321).
+* Support 'inside' on associative and wildcard arrays (#9351).
 
 **Issues resolved:**
 
-(#2167) (#3923) (#4613) (#5266) (#5439) (#5485) (#5644) (#5681) (#5819)
-(#6280) (#7001) (#7355) (#7541) (#7808) (#8089) (#8090) (#8214) (#8236)
-(#8346) (#8539) (#8594) (#8642) (#8670) (#8686) (#8770) (#8787) (#8804)
-(#8814) (#8825) (#8829) (#8860) (#8861) (#8862) (#8863) (#8880) (#8881)
-(#8906) (#8908) (#8911) (#8912) (#8914) (#8915) (#8918) (#8922) (#8924)
+(#2167) (#3909) (#3923) (#4613) (#5266) (#5439) (#5485) (#5644) (#5681)
+(#5819) (#6124) (#6280) (#7001) (#7355) (#7541) (#7808) (#8089) (#8090)
+(#8107) (#8178) (#8214) (#8236) (#8346) (#8539) (#8594) (#8642) (#8670)
+(#8686) (#8694) (#8770) (#8787) (#8804) (#8814) (#8825) (#8829) (#8860)
+(#8861) (#8862) (#8863) (#8880) (#8881) (#8882) (#8883) (#8906) (#8908)
+(#8911) (#8912) (#8914) (#8915) (#8918) (#8920) (#8922) (#8924) (#8931)
 (#8938) (#8939) (#8944) (#8945) (#8946) (#8950) (#8953) (#8954) (#8957)
-(#8962) (#8970) (#8978) (#8979) (#8981) (#8984) (#8985) (#8986) (#8987)
-(#8988) (#8990) (#8992) (#8994) (#8995) (#8996) (#8997) (#8998) (#8999)
-(#9001) (#9002) (#9003) (#9005) (#9006) (#9010) (#9011) (#9012) (#9013)
-(#9014) (#9015) (#9016) (#9017) (#9018) (#9019) (#9022) (#9023) (#9029)
-(#9030) (#9031) (#9032) (#9033) (#9036) (#9039) (#9042) (#9045) (#9046)
-(#9047) (#9048) (#9049) (#9056) (#9062) (#9063) (#9065) (#9068) (#9069)
-(#9071) (#9072) (#9073) (#9074) (#9075) (#9076) (#9078) (#9079) (#9080)
-(#9081) (#9084) (#9085) (#9089) (#9093) (#9094) (#9097) (#9099) (#9101)
-(#9103) (#9104) (#9105) (#9106) (#9107) (#9108) (#9109) (#9110) (#9116)
-(#9117) (#9118) (#9119) (#9120) (#9126) (#9127) (#9128) (#9133) (#9135)
-(#9137) (#9140) (#9141) (#9143) (#9145) (#9146) (#9147) (#9148) (#9149)
-(#9150) (#9153) (#9154) (#9158) (#9160) (#9161) (#9162) (#9163) (#9166)
-(#9167) (#9168) (#9169) (#9170) (#9171) (#9172) (#9173) (#9174) (#9175)
-(#9178) (#9179) (#9181) (#9183) (#9186) (#9191) (#9192) (#9193) (#9195)
-(#9197) (#9200) (#9201) (#9202) (#9203) (#9204) (#9205) (#9207) (#9209)
-(#9210) (#9212) (#9213) (#9214) (#9215) (#9216) (#9217) (#9218) (#9219)
-(#9220) (#9223) (#9229) (#9230) (#9231) (#9232) (#9233) (#9234) (#9235)
-(#9236) (#9238) (#9239)
+(#8961) (#8962) (#8970) (#8978) (#8979) (#8981) (#8984) (#8985) (#8986)
+(#8987) (#8988) (#8990) (#8992) (#8994) (#8995) (#8996) (#8997) (#8998)
+(#8999) (#9001) (#9002) (#9003) (#9005) (#9006) (#9007) (#9009) (#9010)
+(#9011) (#9012) (#9013) (#9014) (#9015) (#9016) (#9017) (#9018) (#9019)
+(#9022) (#9023) (#9029) (#9030) (#9031) (#9032) (#9033) (#9036) (#9039)
+(#9042) (#9045) (#9046) (#9047) (#9048) (#9049) (#9054) (#9056) (#9062)
+(#9063) (#9065) (#9067) (#9068) (#9069) (#9070) (#9071) (#9072) (#9073)
+(#9074) (#9075) (#9076) (#9078) (#9079) (#9080) (#9081) (#9084) (#9085)
+(#9089) (#9092) (#9093) (#9094) (#9097) (#9099) (#9100) (#9101) (#9103)
+(#9104) (#9105) (#9106) (#9107) (#9108) (#9109) (#9110) (#9116) (#9117)
+(#9118) (#9119) (#9120) (#9126) (#9127) (#9128) (#9133) (#9135) (#9137)
+(#9138) (#9140) (#9141) (#9143) (#9145) (#9146) (#9147) (#9148) (#9149)
+(#9150) (#9153) (#9154) (#9158) (#9160) (#9161) (#9162) (#9163) (#9165)
+(#9166) (#9167) (#9168) (#9169) (#9170) (#9171) (#9172) (#9173) (#9174)
+(#9175) (#9176) (#9178) (#9179) (#9181) (#9183) (#9185) (#9186) (#9188)
+(#9191) (#9192) (#9193) (#9195) (#9197) (#9199) (#9200) (#9201) (#9202)
+(#9203) (#9204) (#9205) (#9207) (#9209) (#9210) (#9212) (#9213) (#9214)
+(#9215) (#9216) (#9217) (#9218) (#9219) (#9220) (#9221) (#9223) (#9228)
+(#9229) (#9230) (#9231) (#9232) (#9233) (#9234) (#9235) (#9236) (#9238)
+(#9239) (#9240) (#9243) (#9244) (#9245) (#9246) (#9247) (#9251) (#9255)
+(#9256) (#9257) (#9258) (#9259) (#9261) (#9262) (#9263) (#9264) (#9266)
+(#9267) (#9268) (#9270) (#9271) (#9272) (#9274) (#9275) (#9276) (#9277)
+(#9278) (#9287) (#9288) (#9289) (#9290) (#9291) (#9292) (#9293) (#9294)
+(#9295) (#9296) (#9301) (#9302) (#9304) (#9306) (#9309) (#9310) (#9311)
+(#9312) (#9318) (#9321) (#9323) (#9324) (#9327) (#9331) (#9336) (#9338)
+(#9340) (#9342) (#9344) (#9345) (#9348) (#9350) (#9351) (#9356)
 
 **Contributors:**
 
 [Adrien Le Masle] [Alexander] [Aliaksei Chapyzhenka] [Andrew Nolte] [Artur
-Bieniek, Antmicro Ltd.] [Bartłomiej Chmiel, Antmicro Ltd.] [Chili CHIPS]
-[David Harris] [Ethan Sifferman] [Geza Lore, Testorrent USA, Inc.] [Graeme
-Smecher] [Guangyuan Xu] [Igor Zaworski, Antmicro Ltd.] [Juntao Liu]
+Bieniek, Antmicro Ltd.] [Bartosz Skorowski, Antmicro Ltd.] [Bartłomiej
+Chmiel, Antmicro Ltd.] [Chili CHIPS] [Christopher Onyiuke] [David Harris]
+[Ethan Sifferman] [Geza Lore, Testorrent USA, Inc.] [Graeme Smecher]
+[Guangyuan Xu] [Igor Zaworski, Antmicro Ltd.] [Jakub Wasilewski, Antmicro
+Ltd.] [Juntao Liu] [Kaleb Barrett] [Krzysztof Bieganski, Antmicro Ltd.]
 [Madhusudan Kannan] [Marco Bartoli] [Martijn Wobbes, Antmicro Ltd.]
 [Mateusz Gancarz, Antmicro Ltd.] [Matthew Ballance] [Michael Bedford
-Taylor] [Michael Wrighton] [Patrick Creighton] [Patrick O'Neill] [Pawel
-Kojma, Antmicro Ltd.] [Rahul Behl, Testorrent USA, Inc.] [Rajesh Bhagwat]
-[Ryszard Rozak, Antmicro Ltd.] [Simon Zhang] [Steven Bellock] [Varun
-Koyyalagunta, Testorrent USA, Inc.] [Vincent Palatin] [Wilson Snyder]
-[Xiaoyu Zhang] [Yu-Cheng Liu] [Yutetsu TAKATSUKASA] [林俊杰]
+Taylor] [Michael Wrighton] [Nick Brereton] [Patrick Creighton] [Patrick
+O'Neill] [Pawel Kojma, Antmicro Ltd.] [Rahul Behl, Testorrent USA, Inc.]
+[Rajesh Bhagwat] [Ryszard Rozak, Antmicro Ltd.] [Simon Zhang] [Steven
+Bellock] [Szymon Jędras, Antmicro Ltd.] [Varun Koyyalagunta, Testorrent
+USA, Inc.] [Vincent Palatin] [Wilson Snyder] [Wolfgang Mayerwieser] [Xia
+Chao] [Xiaoyu Zhang] [Yu-Cheng Liu] [Yutetsu TAKATSUKASA] [林俊杰]
 
 
 Verilator 5.054 2026-11-01

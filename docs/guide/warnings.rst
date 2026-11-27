@@ -1689,6 +1689,10 @@ List Of Warnings
    ``{default: 0}`` as accepted by other simulators, is replaced by
    ``'{default: 0}``.
 
+   Also warns when a DPI function returns a 4-state vector or a 2-state
+   vector wider than 32 bits, which IEEE 1800-2023 35.5.5 does not allow.
+   See :option:`import&32;"DPI-C"&32;function`.
+
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
@@ -2735,9 +2739,10 @@ List Of Warnings
 
 .. option:: USEBEFOREDECL
 
-   Error that a parameter or localparam is referenced before its
-   declaration. IEEE 1800-2023 6.20.1 lets a parameter refer only to
-   earlier parameters, and some other tools reject such code.
+   Error that a parameter, localparam, net, or variable is referenced
+   before its declaration. IEEE 1800-2023 6.5 requires data to be declared
+   before it is used, and 6.20.1 lets a parameter refer only to earlier
+   parameters. Some other tools reject such code.
 
    Faulty example:
 
@@ -2750,7 +2755,8 @@ List Of Warnings
         localparam int N = 8;
       endmodule
 
-   To fix, move the declaration before the reference.
+   This applies to references anywhere in the scope, including inside
+   functions and tasks.  To fix, move the declaration before the reference.
 
    Ignoring this error will only suppress the lint check; it will simulate
    correctly.

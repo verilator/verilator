@@ -412,6 +412,7 @@ public:
     void clearSelf(const VlClass* selfp) {
         if (m_selfp == selfp) m_selfp = nullptr;
     }
+    bool isKilled() const { return state() == KILLED; }
 
     // Random state (IEEE 1800-2023 9.7, 18.14)
     void srandom(uint64_t seed) VL_MT_UNSAFE { m_rng.srandom(seed); }
@@ -478,6 +479,13 @@ public:
     void clearFired() override { (*this)->m_fired = false; }
     void clearTriggered() override { (*this)->m_triggered = false; }
 };
+
+// Type trait: whether T is an event, or an unpacked array of events
+template <typename T_Element>
+struct VlIsEvent final : std::is_base_of<VlEventBase, T_Element> {};
+template <typename T_Element, std::size_t N_Depth>
+struct VlIsEvent<VlUnpacked<T_Element, N_Depth>> final
+    : std::integral_constant<bool, VlIsEvent<T_Element>::value> {};
 
 inline std::string VL_TO_STRING(const VlEventBase& e);
 
@@ -706,11 +714,22 @@ public:
         applyBound();
     }
     // Verilog: '{index: value}, sized by new[size], else by the largest index
-    explicit VlQueue(size_t size, std::initializer_list<std::pair<QData, T_Value>> items)
-        : VlQueue{size, T_Value{}, items} {}
+    explicit VlQueue(size_t size, std::initializer_list<std::pair<QData, T_Value>> items) {
+        resize(size);
+        for (const auto& item : items) {
+            if (item.first < size) m_deque[item.first] = item.second;
+        }
+        applyBound();
+    }
 
-    bool operator==(const VlQueue& rhs) const { return m_deque == rhs.m_deque; }
-    bool operator!=(const VlQueue& rhs) const { return m_deque != rhs.m_deque; }
+    template <typename T_Rhs, size_t N_RhsMaxSize>
+    bool operator==(const VlQueue<T_Rhs, N_RhsMaxSize>& rhs) const {
+        return std::equal(m_deque.begin(), m_deque.end(), rhs.m_deque.begin(), rhs.m_deque.end());
+    }
+    template <typename T_Rhs, size_t N_RhsMaxSize>
+    bool operator!=(const VlQueue<T_Rhs, N_RhsMaxSize>& rhs) const {
+        return !(*this == rhs);
+    }
     bool operator<(const VlQueue& rhs) const {
         for (int index = 0; index < m_deque.size(); ++index) {
             if (m_deque[index] < rhs.m_deque[index]) return true;
@@ -744,7 +763,7 @@ public:
     // Dynamic array new[] becomes a renew()
     void renew(size_t size) {
         clear();
-        m_deque.resize(size, atDefault());
+        resize(size);
     }
     // Dynamic array new[]() becomes a renew_copy()
     void renew_copy(size_t size, const VlQueue<T_Value, N_MaxSize>& rhs) {
@@ -752,14 +771,20 @@ public:
             clear();
         } else {
             *this = rhs;
-            m_deque.resize(size, atDefault());
+            resize(size);
         }
     }
     // Unpacked array new[]() becomes a renew_copy()
     template <typename T_UnpackedValue, std::size_t N_UnpackedDepth>
     void renew_copy(size_t size, const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs);
 
-    void resize(size_t size) { m_deque.resize(size, atDefault()); }
+    void resize(size_t size) {
+        if (VlIsEvent<T_Value>::value) {
+            m_deque.resize(size);
+        } else {
+            m_deque.resize(size, atDefault());
+        }
+    }
     // Assign the elements of a range, as DPI does from a C layout copy
     template <typename T_Iterator>
     void assign(const T_Iterator& first, const T_Iterator& last) {
@@ -807,7 +832,10 @@ public:
     T_Value& atWriteAppend(int32_t index) {
         // cppcheck-suppress variableScope
         static thread_local T_Value t_throwAway;
-        if (index == m_deque.size()) push_back(atDefault());
+        if (index == m_deque.size()) {
+            resize(m_deque.size() + 1);
+            applyBound();
+        }
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
             t_throwAway = atDefault();
             return t_throwAway;
@@ -1160,6 +1188,7 @@ private:
     // MEMBERS
     Map m_map;  // State of the assoc array
     T_Value m_defaultValue;  // Default value
+    bool m_hasExplicitDefault = false;  // m_defaultValue is given by the user, e.g. '{default: x}
 
 public:
     // CONSTRUCTORS
@@ -1174,7 +1203,8 @@ public:
     explicit VlAssocArray(const T_Value& defaultValue,
                           std::initializer_list<std::pair<const T_Key, T_Value>> init)
         : m_map{init}
-        , m_defaultValue{defaultValue} {}
+        , m_defaultValue{defaultValue}
+        , m_hasExplicitDefault{true} {}
     ~VlAssocArray() = default;
     VlAssocArray(const VlAssocArray&) = default;
     VlAssocArray(VlAssocArray&&) = default;
@@ -1195,6 +1225,11 @@ public:
     void erase(const T_Key& index) { m_map.erase(index); }
     // Return 0/1 if element exists. Verilog: function int exists(input index)
     int exists(const T_Key& index) const { return m_map.find(index) != m_map.end(); }
+    // inside (set membership operator)
+    bool inside(const T_Value& value) const {
+        return std::any_of(m_map.cbegin(), m_map.cend(),
+                           [&](const auto& pair) { return pair.second == value; });
+    }
     // Return first element.  Verilog: function int first(ref index);
     int first(T_Key& indexr) const {
         const auto it = m_map.cbegin();
@@ -1231,6 +1266,8 @@ public:
     T_Value& atWrite(const T_Key& index) {
         const auto it = m_map.find(index);
         if (it == m_map.end()) {
+            // Copies of the implicit default would share its events; an explicit one is merged
+            if (VlIsEvent<T_Value>::value && !m_hasExplicitDefault) return m_map[index];
             std::pair<typename Map::iterator, bool> pit = m_map.emplace(index, m_defaultValue);
             return pit.first->second;
         }
@@ -1965,7 +2002,7 @@ void VlQueue<T_Value, N_MaxSize>::renew_copy(
     size_t size, const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs) {
     clear();
     if (size == 0) return;
-    m_deque.resize(size, atDefault());
+    resize(size);
     for (size_t i = 0; i < std::min(size, N_UnpackedDepth); ++i) { m_deque[i] = rhs.m_storage[i]; }
 }
 
@@ -2162,6 +2199,8 @@ struct VlNull final {
     }
 };
 
+struct VlClassRefNoInit final {};
+
 template <class T>
 inline bool operator==(T* lhsp, VlNull) {
     return !lhsp;
@@ -2207,6 +2246,10 @@ public:
         : m_objp{new T_Class} {
         // Instantly init the object to presevrve RAII
         m_objp->init(std::forward<T_Args>(args)...);
+        m_objp->m_deleterp = &deleter;
+    }
+    VlClassRef(VlDeleter& deleter, VlClassRefNoInit)
+        : m_objp{new T_Class} {
         m_objp->m_deleterp = &deleter;
     }
     VlClassRef(VlDeleter& deleter, T_Class&& args)

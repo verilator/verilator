@@ -1475,7 +1475,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             puts(")");
         }
     }
-    void visit(AstCCall* nodep) override {
+    void visit(AstNodeCCall* nodep) override {
         puts(nodep->funcp()->name());
         puts("(");
         iterateAndNextConstNull(nodep->argsp());
@@ -1538,6 +1538,18 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(") ");
         iterateConst(nodep->exprp());
         puts("\n");
+    }
+    void visit(AstEventually* nodep) override {
+        puts(nodep->verilogKwd());
+        if (nodep->loBoundp()) {
+            puts(" [");
+            iterateConst(nodep->loBoundp());
+            puts(":");
+            iterateConst(nodep->hiBoundp());
+            puts("]");
+        }
+        putbs(" ");
+        iterateConst(nodep->exprp());
     }
     void visit(AstPropAlways* nodep) override {
         puts(nodep->isStrong() ? "s_always" : "always");
@@ -1671,6 +1683,10 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
     }
     void visit(AstCAwait* nodep) override {
+        if (nodep->resultp()) {
+            iterateConst(nodep->resultp());
+            puts(" = ");
+        }
         putfs(nodep, "co_await ");
         iterateConst(nodep->exprp());
         puts(";\n");

@@ -63,9 +63,9 @@ Specifically:
 ## RTLMeter
 
 Determine which RTLMeter run the pull request needs, if any. RTLMeter builds and
-runs large designs. A 'perf' run also compares their performance and simulated
-cycle counts with the target branch, a 'test' run only checks that they still
-build and pass.
+runs large designs. A 'test' run checks that they still build, pass, and simulate
+the expected number of clock cycles. A 'perf' run also compares their
+performance with the target branch.
 
 - perf: if there is a risk of a non-trivial performance change.
 
@@ -74,7 +74,7 @@ build and pass.
 - perf: for changes to V3Const/V3Subst/V3Width constant-folding or cast lowering, and cross-cutting
   AST/internal refactors even if "no functional change".
 
-- perf: whenever simulated behavior could differ (cycle counts): always_latch/always_comb/NBA/time-0 semantic changes,
+- test: whenever simulated behavior could differ (cycle counts): always_latch/always_comb/NBA/time-0 semantic changes,
   virtual-interface/DFG exclusion changes, ordering and DFG rework.
 
 - test: for any new or tightened error/warning that can apply to existing code, since fatal

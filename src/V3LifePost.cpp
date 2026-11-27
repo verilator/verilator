@@ -40,6 +40,8 @@
 //  2) No write of 'q' anywhere except for the ASSIGNPOST itself
 //  3) The first write of 'd' is complete (writes all bits)
 //  4) Every read  of 'q' either falls before the second write of 'd', or after only read of 'd'
+//     (locations sharing an enclosing AstLoop are unordered, tracked via each location's
+//     outermost enclosing AstLoop ID, so loop back-edges cannot place a read after a write)
 //
 // Notes:
 //
@@ -91,21 +93,27 @@ class LifePostDlyVisitor final : public VNVisitorConst {
         T_Node* m_nodep;  // The AstNode being recorded
         const AstExecGraph* m_egraphp;  // AstExecTraph location is under, if any
         const ExecMTask* m_mtaskp;  // The ExecMTask location is under, if any
-        uint32_t m_seqNum;  // Location counter
+        const uint32_t m_seqNum;  // Location counter
+        const uint32_t m_loopId;  // Outermost enclosing AstLoop instance ID, or 0 if not in a loop
 
     public:
-        Location(T_Node* nodep, const AstExecGraph* egp, const ExecMTask* mtaskp, uint32_t seqNum)
+        Location(T_Node* nodep, const AstExecGraph* egp, const ExecMTask* mtaskp, uint32_t seqNum,
+                 uint32_t loopId)
             : m_nodep{nodep}
             , m_egraphp{egp}
             , m_mtaskp{mtaskp}
-            , m_seqNum{seqNum} {}
+            , m_seqNum{seqNum}
+            , m_loopId{loopId} {}
         Location() = delete;
 
         T_Node* const& nodep() const { return m_nodep; }
 
-        // "is before" - Note: Equality (concurrency) is possible iff they are independent mtasks!
+        // "is before" - Every execution of 'this' strictly precedes every execution of 'that'.
+        // Incomparability is possible if they are in independent mtasks or share an enclosing
+        // loop (where a back-edge may run a later iteration of 'this' after 'that').
         template <typename U_Node>
         bool operator<(const Location<U_Node>& that) const {
+            if (m_loopId && m_loopId == that.m_loopId) return false;
             // If they are in different mtasks under the same graph, check for a path in the graph
             if (m_egraphp && m_egraphp == that.m_egraphp && m_mtaskp != that.m_mtaskp) {
                 GraphPathChecker* const checkerp = m_egraphp->user1u().to<GraphPathChecker*>();
@@ -125,6 +133,8 @@ class LifePostDlyVisitor final : public VNVisitorConst {
 
     // STATE
     uint32_t m_sequence = 0;  // Sequence number of assigns/varrefs,
+    uint32_t m_loopId = 0;  // Outermost enclosing AstLoop instance ID, or 0 if outside loops
+    uint32_t m_nextLoopId = 0;  // Next unique ID for an outermost AstLoop entry
     const AstExecGraph* m_execGraphp = nullptr;  // Current AstExecGraph being processed (or null)
     const ExecMTask* m_execMTaskp = nullptr;  // Current ExecMTask being processed (or null)
     VDouble0 m_statAssnDel;  // Statistic tracking
@@ -286,11 +296,16 @@ class LifePostDlyVisitor final : public VNVisitorConst {
 
         ++m_sequence;
         if (nodep->access().isWriteOrRW()) {
-            m_writes[vscp].emplace_back(nodep, m_execGraphp, m_execMTaskp, m_sequence);
+            m_writes[vscp].emplace_back(nodep, m_execGraphp, m_execMTaskp, m_sequence, m_loopId);
         }
         if (nodep->access().isReadOrRW()) {
-            m_reads[vscp].emplace_back(nodep, m_execGraphp, m_execMTaskp, m_sequence);
+            m_reads[vscp].emplace_back(nodep, m_execGraphp, m_execMTaskp, m_sequence, m_loopId);
         }
+    }
+    void visit(AstLoop* nodep) override {
+        VL_RESTORER(m_loopId);
+        if (!m_loopId) m_loopId = ++m_nextLoopId;
+        iterateChildrenConst(nodep);
     }
     void visit(AstNodeAssign* nodep) override {
         // Record RHS before assignment
@@ -300,7 +315,8 @@ class LifePostDlyVisitor final : public VNVisitorConst {
             if (const AstVarRef* const rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
                 if (lhsp->varScopep()->optimizeLifePost()  //
                     && rhsp->varScopep()->optimizeLifePost()) {
-                    m_assigns.emplace_back(nodep, m_execGraphp, m_execMTaskp, ++m_sequence);
+                    m_assigns.emplace_back(nodep, m_execGraphp, m_execMTaskp, ++m_sequence,
+                                           m_loopId);
                 }
             }
         }

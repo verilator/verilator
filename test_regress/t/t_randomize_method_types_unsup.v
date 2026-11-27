@@ -26,6 +26,10 @@ class Cls;
   constraint global_constraint {
     foo.x < y;
   }
+  constraint qback {
+    q[$] == 1;
+    q[$ - 1] == 2;
+  }
 endclass
 
 module t;

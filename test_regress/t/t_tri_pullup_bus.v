@@ -134,6 +134,11 @@ module t;
       .out_value(out_value)
   );
 
+  bit pull_done = 0;
+  bit concat_done = 0;
+  bit stream_done = 0;
+  bit wide_stream_done = 0;
+
   initial begin
     // Test: Lower bits = 0xF
     in_value = 4'hF;
@@ -163,7 +168,6 @@ module t;
 
   logic pull_enable;
   logic [6:0] pull_data;
-  bit pull_done = 0;
 
   // A per-bit pull must preserve the tri1 default in both packed range directions.
   tri1 [7:1] packed_default_pullup_desc;
@@ -208,7 +212,6 @@ module t;
   wire concat_bit;
   logic concat_enable;
   logic [6:0] concat_data;
-  bit concat_done = 0;
   mixed_pull_mod mixed_concat (.pad({concat_packed[9:7], {concat_middle[4:2], concat_bit}}));
   assign {concat_packed[9:7], concat_middle[4:2], concat_bit} = concat_enable ? concat_data : 7'bz;
   assign concat_packed[6:3] = concat_data[3:0];
@@ -347,7 +350,6 @@ module t;
   // Output streams must reorder drive enables and weak pulls along with data.
   logic [6:0] stream_enable;
   logic [6:0] stream_data;
-  bit stream_done = 0;
   wire [6:0] stream_right;
   wire [6:0] stream_left;
   wire [6:0] stream_pairs;
@@ -417,7 +419,6 @@ module t;
   wire [WIDE_WIDTH-1:0] wide_blocks;
   wire [WIDE_WIDTH-1:0] wide_reverse_observed;
   wire [WIDE_WIDTH-1:0] wide_blocks_observed;
-  bit wide_stream_done = 0;
   wide_stream_pull_mod wide_bit_stream (
       .enable(wide_enable), .data(wide_data), .pad({<<{wide_reverse}}),
       .observed(wide_reverse_observed)

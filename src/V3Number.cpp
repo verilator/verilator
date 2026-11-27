@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cmath>
+#include <cstring>
 #include <functional>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -2027,7 +2028,7 @@ V3Number& V3Number::opNeq(const V3Number& lhs, const V3Number& rhs) {
 }
 
 V3Hash V3Number::toHash() const {
-    // Shouldmatch isCaseEq
+    // Should match isIdentical
     if (isString()) return V3Hash{toString()};
     if (isDouble()) return V3Hash{toDouble()};
     V3Hash hash{width()};
@@ -2036,10 +2037,16 @@ V3Hash V3Number::toHash() const {
 }
 
 bool V3Number::isCaseEq(const V3Number& rhs) const {
-    // Should match toHash
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
+    // IEEE undefined for real, but we use to mean bit-equivalence (+0.0 and -0.0 differ)
+    // Should match toHash
     if (isString()) return toString() == rhs.toString();
-    if (isDouble()) return toDouble() == rhs.toDouble();
+    if (isDouble()) {
+        // Same bits, so NaN equals itself, and +NaN or +0.0 differ from -NaN or -0.0
+        const double l = toDouble();
+        const double r = rhs.toDouble();
+        return std::memcmp(&l, &r, sizeof(double)) == 0;
+    }
     if (width() != rhs.width()) return false;
     for (int i = 0; i < words(); ++i) {
         if (!(m_data.num()[i] == rhs.m_data.num()[i])) return false;

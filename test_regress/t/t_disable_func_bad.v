@@ -11,13 +11,17 @@ function int increment_x;
   return x;
 endfunction
 
+function void disable_fork_from_function;
+  disable t.init.fork_blk;
+endfunction
+
 module t;
 
-  initial begin
-    fork
-      increment_x();
-      #1 disable increment_x;
+  initial begin : init
+    fork : fork_blk
+      disable_fork_from_function();
     join
+    #1 disable increment_x;
   end
 
 endmodule

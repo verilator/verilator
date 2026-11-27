@@ -3804,6 +3804,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
                           << " search start due to inlinedDots=" << inlinedDots);
         return dotSymp;
     }
+    string resolvedScopePath(const VSymEnt* symp) const {
+        // Use the resolved symbol's ancestry, independent of the reference's spelling.
+        // Descendants are module-relative; upward references retain their rooted path.
+        std::vector<string> scopes;
+        for (; symp != m_modSymp && symp->parentp(); symp = symp->parentp()) {
+            scopes.emplace_back(AstNode::dedotName(symp->nodep()->name()));
+        }
+        string path;
+        for (auto it = scopes.crbegin(); it != scopes.crend(); ++it) {
+            if (!path.empty()) path += '.';
+            path += *it;
+        }
+        return path;
+    }
     VSymEnt* findDottedRefSymp(AstNode* nodep, VSymEnt* lookupSymp, const string& dotted,
                                string& baddot, VSymEnt*& okSymp, bool* modportp = nullptr) {
         // Return scope to search for a relinked hierarchical reference
@@ -3818,6 +3832,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 << (!baddot.empty() ? AstNode::prettyNameQ(baddot) : nodep->prettyNameQ()) << '\n'
                 << nodep->warnContextPrimary());
             return nullptr;
+        }
+        if (AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef)) {
+            xrefp->resolvedDotted(resolvedScopePath(dotSymp));
         }
         if (const AstVar* const varp = VN_CAST(dotSymp->nodep(), Var)) {
             if (const AstIfaceRefDType* const ifaceRefp
@@ -5121,9 +5138,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep) {
                             const string dotted = refp->dotted();
                             const size_t pos = dotted.find("__BRA__??__KET__");
-                            // Arrays of interfaces all have the same parameters
+                            // Arrays of interfaces all have the same parameters, so the
+                            // index is not needed. Each generate block of a loop has its
+                            // own, so the index must stay
                             if (pos != string::npos && varp->isParam()
-                                && VN_IS(m_ds.m_unlinkedScopep, CellArrayRef)) {
+                                && VN_IS(m_ds.m_unlinkedScopep, CellArrayRef)
+                                && !VN_IS(m_ds.m_dotSymp->nodep(), GenBlock)) {
                                 refp->dotted(dotted.substr(0, pos));
                                 newp = refp;
                             } else {
@@ -5143,15 +5163,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             //                << varp->prettyNameQ() << endl);
                         }
                         // A bind's references are written outside the module they resolve in
-                        if (varp->isParam() && start && !foundp->imported()
-                            && !VN_IS(m_modp, Class)
+                        if (start && !foundp->imported() && !VN_IS(m_modp, Class)
                             && nodep->fileline()->tokenNum() > m_modp->fileline()->tokenNum()
                             && nodep->fileline()->tokenNum() < varp->fileline()->tokenNum()) {
                             nodep->v3warn(
                                 USEBEFOREDECL,
-                                "Reference to parameter "
+                                "Reference to "
+                                    << (varp->isParam() ? "parameter " : "signal ")
                                     << nodep->prettyNameQ()
-                                    << " before its declaration (IEEE 1800-2023 6.20.1)\n"
+                                    << " before its declaration (IEEE 1800-2023 "
+                                    << (varp->isParam() ? "6.20.1" : "6.5") << ")\n"
                                     << nodep->warnMore()
                                     << "... Suggest move the declaration before the reference\n"
                                     << nodep->warnContextPrimary() << '\n'
@@ -5773,27 +5794,29 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
                 if (fromDtp) {
                     const AstNodeDType* const resolvedDtp = fromDtp->skipRefOrNullp();
-                    // Inherited type references may remain unresolved until after V3Param.
+                    // Type references may remain unresolved in the primary pass
                     if (m_statep->forPrimary()
-                        && (isParamedClassRefDType(fromDtp)
-                            || (m_insideClassExtParam && !resolvedDtp))) {
+                        && (isParamedClassRefDType(fromDtp) || !resolvedDtp)) {
                         m_ds.m_unresolvedClass = true;
                     } else {
                         const AstClassRefDType* const classDtp
                             = VN_CAST(resolvedDtp, ClassRefDType);
-                        if (!classDtp)
+                        if (!classDtp) {
                             nodep->v3error("'randomize() with' on a non-class-instance "
                                            << fromDtp->prettyNameQ());
-                        else if (m_statep->forPrimary()
-                                 && m_extendsParam.count(classDtp->classp())) {
-                            // Inherited members are unavailable until the base class is
-                            // specialized. Defer lookup rather than incorrectly binding names in
-                            // the caller.
-                            m_ds.m_unresolvedClass = true;
                         } else {
                             // Import inherited members in case the class was not visited yet.
-                            if (!m_statep->forPrimary()) classExtendImport(classDtp->classp());
-                            m_randSymp = m_statep->getNodeSym(classDtp->classp());
+                            // This also records whether it has a parameterized base class.
+                            classExtendImport(classDtp->classp());
+                            if (m_statep->forPrimary()
+                                && m_extendsParam.count(classDtp->classp())) {
+                                // Inherited members are unavailable until the base class is
+                                // specialized. Defer lookup rather than incorrectly binding
+                                // names in the caller.
+                                m_ds.m_unresolvedClass = true;
+                            } else {
+                                m_randSymp = m_statep->getNodeSym(classDtp->classp());
+                            }
                         }
                     }
                 }

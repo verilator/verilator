@@ -280,24 +280,12 @@ private:
             // Clear 'fired' state when done (guarded if through a nullable reference)
             // The event is modified, so the select (e.g. assoc array) must be an lvalue
             AstNodeExpr* const clearFromp = currp();
-            if (AstNodeVarRef* const refp
-                = VN_CAST(clearFromp->getVAccessTargetRecurse(), NodeVarRef)) {
+            AstNodeExpr* const targetp = clearFromp->getVAccessTargetRecurse();
+            if (AstNodeVarRef* const refp = VN_CAST(targetp, NodeVarRef)) {
                 refp->access(VAccess::WRITE);
-            }
-            // Dynamic array and queue selects were already made as read-only 'at'
-            for (AstNodeExpr* selp = clearFromp;;) {
-                if (AstCMethodHard* const cmethodp = VN_CAST(selp, CMethodHard)) {
-                    if (cmethodp->method() == VCMethod::ARRAY_AT) {
-                        cmethodp->method(VCMethod::ARRAY_AT_WRITE);
-                    } else if (cmethodp->method() == VCMethod::ARRAY_AT_BACK) {
-                        cmethodp->method(VCMethod::DYN_AT_WRITE_APPEND_BACK);
-                    }
-                    selp = cmethodp->fromp();
-                } else if (const AstNodeSel* const nodeSelp = VN_CAST(selp, NodeSel)) {
-                    selp = nodeSelp->fromp();
-                } else {
-                    break;
-                }
+            } else if (AstMemberRef* const refp = VN_CAST(targetp, MemberRef)) {
+                // An event member itself is not written, only the container selected from
+                if (refp != clearFromp) refp->access(VAccess::WRITE);
             }
             AstCMethodHard* const clearp
                 = new AstCMethodHard{flp, clearFromp, VCMethod::EVENT_CLEAR_FIRED};

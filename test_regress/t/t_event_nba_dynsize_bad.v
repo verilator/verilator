@@ -30,6 +30,7 @@ module t (
     ->>tea[i];  // OK
     ->>teq[i];  // Error
     ->>teq[0];  // Error
+    ->>teq[$];  // Error
     ->>ted[i];  // Error
     ->>tes[i];  // Error
     ->>tew[i];  // Error

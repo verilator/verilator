@@ -25,6 +25,10 @@ module t (
     lhs = rhs;
   endfunction
 
+  function int get_val(const ref int rhs);
+    return rhs;
+  endfunction
+
   initial begin
     q_t iq;
     iq.push_back(42);
@@ -39,6 +43,40 @@ module t (
     iq[1000] = 1000;
     `checkh(iq.size(), 2);
     `checks(iq[1000], 0);
+    `checks(get_val(iq[0]), 9000);
+  end
+
+  function automatic int bump(ref int n);
+    ++n;
+    return 0;
+  endfunction
+
+  // Element writes and reads keep their effects
+  initial begin
+    begin
+      typedef int arr_t[4];
+      arr_t sq[$];
+      arr_t z;
+      int j;
+      z = '{0, 0, 0, 0};
+      sq.push_back(z);
+      sq.push_back(z);
+      j = 0;
+      sq[j][1:1] = '{7};
+      foreach (sq[i]) sq[i][2:2] = '{8};
+      `checkh(sq[0][1], 7);
+      `checkh(sq[0][2], 8);
+      `checkh(sq[1][2], 8);
+    end
+    begin
+      int iq[$];
+      int n;
+      int x;
+      iq.push_back(5);
+      n = 0;
+      x = iq[bump(n)] * 0;
+      `checkh(n, 1);
+    end
   end
 
   always @(posedge clk) begin
@@ -236,6 +274,15 @@ module t (
       `checks(q[0][0], 1);
     end
 
+    // Append to queue of queues by modifying the new element
+    begin
+      int q[$][$];
+      q[q.size()].push_back(1);
+      `checkh(q.size(), 1);
+      `checkh(q[0].size(), 1);
+      `checks(q[0][0], 1);
+    end
+
     // Do not append with [] if used as index
     begin
       int p[$];
@@ -244,6 +291,14 @@ module t (
       `checkh(p.size(), 0);
       `checkh(q.size(), 1);
       `checks(q[0], 1);
+    end
+
+    // Append with a partial write of a wide element
+    begin
+      logic [127:0] q[$];
+      q[q.size()][80:20] = 61'h1;
+      `checkh(q.size(), 1);
+      `checkh(q[0], 128'h1 << 20);
     end
 
     begin

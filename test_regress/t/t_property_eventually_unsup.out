@@ -1,0 +1,58 @@
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:23:5: Unsupported: s_eventually[] (in property expression)
+                                                        : ... note: In instance 't'
+   23 |     s_eventually[2: 5] clk;
+      |     ^~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:28:12: Unsupported: s_eventually[] (in property expression)
+                                                         : ... note: In instance 't'
+   28 |     always s_eventually[lo: HI] clk;
+      |            ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:37:35: Unsupported: eventually[] (in property expression)
+                                                         : ... note: In instance 't'
+   37 |   assert property (@(posedge clk) eventually[1: 2] delayed);
+      |                                   ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:15:5: Unsupported: eventually[] (in property expression)
+                                                        : ... note: In instance 't'
+   15 |     eventually[2: 5] clk;
+      |     ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:45:42: Unsupported: eventually[] (in property expression)
+                                                         : ... note: In instance 't'
+   45 |   always @(posedge clk) assert property (eventually[1: 2] clk);
+      |                                          ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:48:35: Unsupported: temporal property if/case with a pass action
+                                                         : ... note: In instance 't'
+   48 |   assert property (@(posedge clk) if (cyc == 1) s_eventually (cyc >= 2) else 1'b1)
+      |                                   ^~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:50:35: Unsupported: temporal property if/case with a pass action
+                                                         : ... note: In instance 't'
+   50 |   assert property (@(posedge clk) case (cyc) 1: s_eventually (cyc >= 2); default: 1'b1;
+      |                                   ^~~~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:53:34: Unsupported: temporal property if/case with cover
+                                                         : ... note: In instance 't'
+   53 |   cover property (@(posedge clk) if (cyc == 1) s_eventually (cyc >= 2) else 1'b1);
+      |                                  ^~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:54:40: Unsupported: temporal property if/case with negation
+                                                         : ... note: In instance 't'
+   54 |   assert property (@(posedge clk) not (if (cyc == 1) s_eventually (cyc >= 2) else 1'b1));
+      |                                        ^~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:36:35: Unsupported: property/sequence operator inside s_eventually
+                                                         : ... note: In instance 't'
+   36 |   assert property (@(posedge clk) s_eventually delayed);
+      |                                   ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:39:35: Unsupported: property/sequence operator inside s_eventually
+                                                         : ... note: In instance 't'
+   39 |   assert property (@(posedge clk) s_eventually ##1 1);
+      |                                   ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:40:35: Unsupported: property/sequence operator inside s_eventually
+                                                         : ... note: In instance 't'
+   40 |   assert property (@(negedge clk) s_eventually ##1 1);
+      |                                   ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:19:5: Unsupported: property/sequence operator inside s_eventually
+                                                        : ... note: In instance 't'
+   19 |     s_eventually always[2: 5] clk;
+      |     ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:42:35: Unsupported: cycle delay in s_eventually
+                                                         : ... note: In instance 't'
+   42 |   assert property (@(posedge clk) s_eventually (not (clk ##1 clk)));
+      |                                   ^~~~~~~~~~~~
+%Error: Exiting due to
