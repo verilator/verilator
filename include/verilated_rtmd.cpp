@@ -136,6 +136,7 @@ const char* VlRtmdDataType::atomKeyword(bool& signedByDefault) const {
     case VlRtmdDataTypeRow::Atom::Kind::CHANDLE: return "chandle";
     case VlRtmdDataTypeRow::Atom::Kind::EVENT: return "event";
     case VlRtmdDataTypeRow::Atom::Kind::TIME: return "time";
+    case VlRtmdDataTypeRow::Atom::Kind::STRING: return "string";
     case VlRtmdDataTypeRow::Atom::Kind::INTEGER: signedByDefault = true; return "integer";
     case VlRtmdDataTypeRow::Atom::Kind::INT: signedByDefault = true; return "int";
     case VlRtmdDataTypeRow::Atom::Kind::SHORTINT: signedByDefault = true; return "shortint";

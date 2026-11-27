@@ -54,6 +54,12 @@ module t (
   string v_string;
   chandle v_chandle;
 
+  typedef struct {
+    string s;
+    int i;
+  } stru_str_t;
+  stru_str_t v_stru_str;
+
   string v_assoc[string];
   initial v_assoc["key"] = "value";
 
@@ -117,6 +123,7 @@ module t (
     v_arrp_arrp <= ~v_arrp_arrp;
     v_real <= v_real + 0.1;
     v_string <= cyc[0] ? "foo" : "bar";
+    v_stru_str.s <= cyc[0] ? "foo" : "bar";
     v_arr_real[0] <= v_arr_real[0] + 0.2;
     v_arr_real[1] <= v_arr_real[1] + 0.3;
     v_enumed <= enumed_t'(v_enumed + 1);
