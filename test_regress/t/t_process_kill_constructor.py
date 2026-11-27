@@ -18,8 +18,8 @@ test.execute()
 if test.vlt_all:
     # Base methods must stay plain functions, only their killing overrides are coroutines
     prefix = test.obj_dir + "/" + test.vm_prefix + "_t__03A__03A"
-    test.file_grep(prefix + "base_killer__Vclpkg.h", r'void init\(')
-    test.file_grep(prefix + "base_plain__Vclpkg.h", r'void __VnoInFunc_hidden\(')
-    test.file_grep(prefix + "base_plain__Vclpkg.h", r'void __VnoInFunc_rechained\(')
+    test.file_grep(prefix + "base_killer.h", r'void init\(')
+    test.file_grep(prefix + "base_plain.h", r'void __VnoInFunc_hidden\(')
+    test.file_grep(prefix + "base_plain.h", r'void __VnoInFunc_rechained\(')
 
 test.passes()

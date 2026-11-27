@@ -668,8 +668,13 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
 void EmitCFunc::emitVarResetScopeHash() {
     if (VL_LIKELY(m_createdScopeHash)) { return; }
     if (m_classOrPackagep) {
-        m_classOrPackageHash
-            = std::to_string(VString::hashMurmur(m_classOrPackagep->name())) + "ULL";
+        // Hashed by the package name even if the class has no package, so adding a static
+        // member does not change the reset value
+        const std::string classPackageName
+            = VN_IS(m_classOrPackagep, Class)
+                  ? AstClassPackage::nameFromClass(m_classOrPackagep->name())
+                  : m_classOrPackagep->name();
+        m_classOrPackageHash = std::to_string(VString::hashMurmur(classPackageName)) + "ULL";
     } else {
         puts(string("const uint64_t __VscopeHash = VL_MURMUR64_HASH(")
              + (m_useSelfForThis ? "vlSelf" : "this") + "->vlNamep);\n");

@@ -138,7 +138,8 @@ protected:
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
     bool m_instantiatesOwnProcess = false;  // Statement that instantiates its own process
-    const AstClassPackage* m_classOrPackagep = nullptr;  // Pointer to current class or package
+    // Current class's ClassPackage (or the class itself if it has none), or current ClassPackage
+    const AstNodeModule* m_classOrPackagep = nullptr;
     string m_classOrPackageHash;  // Hash of class or package name
 
     bool constructorNeedsProcess(const AstClass* const classp) {
