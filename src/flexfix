@@ -16,6 +16,9 @@ import re
 import sys
 
 for line in sys.stdin:
+    # Keep the preprocessor's C scanner buffer distinct from the C++ scanner's buffer.
+    if sys.argv[1] == 'V3PreLex':
+        line = re.sub(r'\byy_(?:c_)?buffer_state\b', 'V3PreLexBufferState', line)
     # Fix flex 2.6.1 warning
     line = re.sub(r'for \( i = 0; i < _yybytes_len; \+\+i \)',
                   r'for ( i = 0; (yy_size_t)(i) < (yy_size_t)(_yybytes_len); ++i )', line)
