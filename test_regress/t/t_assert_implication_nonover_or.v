@@ -15,14 +15,11 @@ module t (
 
   int cyc = 0;
   logic a = 0, x = 0, y = 0, a2 = 0, x2 = 0, y2 = 0, a3 = 0, x3 = 0, y3 = 0;
-  logic b = 1, z = 0, z2 = 0;
   int fail_or = 0, fail_or_noparen = 0, fail_prop_or = 0, fail_multi_ante = 0;
   int fail_delay_or = 0, fail_and = 0;
   int cov_prop_or = 0, cov_prop_lor = 0, cov_seq_or = 0, cov_seq_lor = 0;
   int pass_top_or = 0, fail_top_or = 0, pass_top_not_or = 0, fail_top_not_or = 0;
   int fail_rep0 = 0, fail_rep1 = 0, fail_nonbool_l = 0, fail_nonbool_l2 = 0, fail_nonbool_r = 0;
-  int fail_or3 = 0, fail_or3_nest = 0, fail_prop_or3 = 0, fail_or3_impl = 0, fail_or3_impl2 = 0;
-  int fail_or3_seq = 0, fail_or3_hold = 0;
 
   // a in cycles 3, 6, 9, 12; the consequent cycle after each has
   //   cycle 4: x=0 y=0 -> every disjunction fails
@@ -40,7 +37,11 @@ module t (
   assert property (@(posedge clk) a |=> (x && y))
   else fail_and = fail_and + 1;
 
-  // Disjunctions of three terms (z stays low) fail in cycle 4 too
+  // Disjunctions of three terms. b is high until cycle 20 and z is high only in cycle 19,
+  // so they fail in cycle 4 too
+  logic b = 1, z = 0, z2 = 0;
+  int fail_or3 = 0, fail_or3_nest = 0, fail_prop_or3 = 0, fail_or3_impl = 0, fail_or3_impl2 = 0;
+  int fail_or3_seq = 0, fail_or3_hold = 0;
   assert property (@(posedge clk) a |=> (x || y || z))
   else fail_or3 = fail_or3 + 1;
   assert property (@(posedge clk) a |=> (x || y) || z)
@@ -86,6 +87,10 @@ module t (
   cover property (@(posedge clk) x || y) cov_prop_lor = cov_prop_lor + 1;
   cover sequence (@(posedge clk) x or y) cov_seq_or = cov_seq_or + 1;
   cover sequence (@(posedge clk) x || y) cov_seq_lor = cov_seq_lor + 1;
+  // Three-term top-level cover sequences: x or y in cycles 7, 10, 13 and z in cycle 19
+  int cov_seq_or3 = 0, cov_seq_lor3 = 0;
+  cover sequence (@(posedge clk) x or y or z) cov_seq_or3 = cov_seq_or3 + 1;
+  cover sequence (@(posedge clk) x || y || z) cov_seq_lor3 = cov_seq_lor3 + 1;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
@@ -95,6 +100,8 @@ module t (
     a2 <= (cyc == 14);
     x2 <= (cyc == 15);
     z2 <= (cyc == 15);
+    z <= (cyc == 18);
+    b <= (cyc < 19);
     a3 <= (cyc == 16);
     y3 <= (cyc == 17);
     if (cyc == 20) begin
@@ -115,6 +122,8 @@ module t (
       `checkd(cov_prop_lor, 3);
       `checkd(cov_seq_or, 3);
       `checkd(cov_seq_lor, 3);
+      `checkd(cov_seq_or3, 4);
+      `checkd(cov_seq_lor3, 4);
       `checkd(pass_top_or, 3);
       `checkd(fail_top_or, 17);
       `checkd(pass_top_not_or, 17);
