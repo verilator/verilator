@@ -107,6 +107,7 @@ class RtmdTypeBuilder final {
         case VBasicDTypeKwd::CHANDLE:
         case VBasicDTypeKwd::TIME:
         case VBasicDTypeKwd::EVENT:
+        case VBasicDTypeKwd::STRING:
             // Supported in RTMD
             return new AstRtmdDTAtom{flp, kwd, dtypep->isSigned()};
 
@@ -484,11 +485,11 @@ class RtmdBuilder final : public VNVisitor {
         // Build the var type descriptor
         AstRtmdVarType* const varTypep = m_typeBuilder.varType(nodep, rtmdTypep);
         // Build the variable descriptor
-        AstVarRef* const refp = nodep->isTrace()  //
-                                    ? new AstVarRef{flp, nodep, VAccess::READ}
-                                    : nullptr;
+        // Tracing reads values as bits, which a string's storage is not
+        const bool traced = nodep->isTrace() && !nodep->dtypep()->containsString();
+        AstVarRef* const refp = traced ? new AstVarRef{flp, nodep, VAccess::READ} : nullptr;
         AstRtmdVar* const sigp = new AstRtmdVar{flp, rtmdName(nodep), varTypep, refp};
-        sigp->traced(nodep->isTrace());
+        sigp->traced(traced);
         addItem(sigp, m_rootIop);
     }
 

@@ -73,6 +73,17 @@ TOP : $root
       var tval : time (no address)
       var ev : event (no address)
       var ch : chandle (no address)
+      var str : string (no address)
+      var strs : string _ [0:1] (no address)
+      enterUnpackedArray [0:1]
+        [0] : string (no address)
+        [1] : string (no address)
+      exitUnpackedArray
+      var strinfo : struct (no address)
+      enterUnpackedStruct, 2 members
+        s : string (no address)
+        i : int (no address)
+      exitUnpackedStruct
       var pmd : logic [1:3][4:1] (no address)
       enterPackedArray [1:3]
         [1] @8 : logic [4:1] (no address)
@@ -186,6 +197,17 @@ TOP : $root
       var tval : time (no address)
       var ev : event (no address)
       var ch : chandle (no address)
+      var str : string (no address)
+      var strs : string _ [0:1] (no address)
+      enterUnpackedArray [0:1]
+        [0] : string (no address)
+        [1] : string (no address)
+      exitUnpackedArray
+      var strinfo : struct (no address)
+      enterUnpackedStruct, 2 members
+        s : string (no address)
+        i : int (no address)
+      exitUnpackedStruct
       var pmd : logic [1:3][4:1] (no address)
       enterPackedArray [1:3]
         [1] @8 : logic [4:1] (no address)
