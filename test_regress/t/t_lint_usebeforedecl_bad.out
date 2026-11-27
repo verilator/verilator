@@ -41,4 +41,32 @@
                       t/t_lint_usebeforedecl_bad.v:65:18: ... Location of declaration
    65 |   localparam int W2 = 4;
       |                  ^~
+%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:68:29: Reference to signal 'stress' before its declaration (IEEE 1800-2023 6.5)
+                                                        : ... Suggest move the declaration before the reference
+   68 |   always @(posedge clk) if (stress) cnt <= cnt + 1;   
+      |                             ^~~~~~
+                      t/t_lint_usebeforedecl_bad.v:69:7: ... Location of declaration
+   69 |   bit stress = 1;
+      |       ^~~~~~
+%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:68:44: Reference to signal 'cnt' before its declaration (IEEE 1800-2023 6.5)
+                                                        : ... Suggest move the declaration before the reference
+   68 |   always @(posedge clk) if (stress) cnt <= cnt + 1;   
+      |                                            ^~~
+                      t/t_lint_usebeforedecl_bad.v:70:7: ... Location of declaration
+   70 |   int cnt;
+      |       ^~~
+%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:68:37: Reference to signal 'cnt' before its declaration (IEEE 1800-2023 6.5)
+                                                        : ... Suggest move the declaration before the reference
+   68 |   always @(posedge clk) if (stress) cnt <= cnt + 1;   
+      |                                     ^~~
+                      t/t_lint_usebeforedecl_bad.v:70:7: ... Location of declaration
+   70 |   int cnt;
+      |       ^~~
+%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:73:18: Reference to signal 'late_w' before its declaration (IEEE 1800-2023 6.5)
+                                                        : ... Suggest move the declaration before the reference
+   73 |   wire early_w = late_w;   
+      |                  ^~~~~~
+                      t/t_lint_usebeforedecl_bad.v:74:8: ... Location of declaration
+   74 |   wire late_w = 1'b1;
+      |        ^~~~~~
 %Error: Exiting due to

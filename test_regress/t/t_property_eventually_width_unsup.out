@@ -1,0 +1,18 @@
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:57:35: Unsupported: eventually range low bound value exceeds implementation limit of 65536 (--max-num-width)
+                                                         : ... note: In instance 't'
+   57 |   assert property (@(posedge clk) eventually[32'h8000_0000: 32'h8000_0000] 1'b1);
+      |                                   ^~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:58:35: Unsupported: eventually range high bound value exceeds implementation limit of 65536 (--max-num-width)
+                                                         : ... note: In instance 't'
+   58 |   assert property (@(posedge clk) eventually[0: 64'h1_0000_0000] 1'b1);
+      |                                   ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:59:35: Unsupported: s_eventually range low bound value exceeds implementation limit of 65536 (--max-num-width)
+                                                         : ... note: In instance 't'
+   59 |   assert property (@(posedge clk) s_eventually[32'h8000_0000: $] 1'b1);
+      |                                   ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_eventually_unsup.v:60:35: Unsupported: s_eventually range high bound value exceeds implementation limit of 65536 (--max-num-width)
+                                                         : ... note: In instance 't'
+   60 |   assert property (@(posedge clk) s_eventually[0: 64'h1_0000_0000] 1'b1);
+      |                                   ^~~~~~~~~~~~
+%Error: Exiting due to

@@ -104,6 +104,7 @@ module t(
   input clk
    );
 
+  int cyc = 0;
   logic a = 0, b = 0, c = 0;
   t_xor u_xor(.*);
   t_nand u_nand(.*);
@@ -135,8 +136,6 @@ module t(
   `endif
 
   t_cstmt u_cstmt();
-
-  int cyc = 0;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;

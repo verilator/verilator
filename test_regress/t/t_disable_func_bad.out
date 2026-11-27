@@ -1,5 +1,8 @@
-%Error-UNSUPPORTED: t/t_disable_func_bad.v:19:10: Node of type FUNCREF 'increment_x' referenced by disable
-   19 |       #1 disable increment_x;
-      |          ^~~~~~~
+%Error-UNSUPPORTED: t/t_disable_func_bad.v:24:8: Node of type FUNCREF 'increment_x' referenced by disable
+   24 |     #1 disable increment_x;
+      |        ^~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_disable_func_bad.v:15:3: Unsupported: disabling fork from function
+   15 |   disable t.init.fork_blk;
+      |   ^~~~~~~
 %Error: Exiting due to

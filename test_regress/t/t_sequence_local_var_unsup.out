@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_sequence_local_var_unsup.v:11:9: Unsupported: local variable in a sequence declaration (IEEE 1800-2023 16.10)
+                                                       : ... note: In instance 't'
+   11 |     bit x;
+      |         ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

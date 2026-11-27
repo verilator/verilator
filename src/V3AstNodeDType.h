@@ -102,10 +102,14 @@ public:
             static_cast<const AstNodeDType*>(this)->skipRefIterp(false, true));
     }
     // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType|ConstDType to EnumDType
-    const AstNodeDType* skipRefToEnump() const { return skipRefIterp(true, false); }
-    AstNodeDType* skipRefToEnump() {
+    // if skipDerived is set to true then it calls skipDerivedDTypep() on the result
+    const AstNodeDType* skipRefToEnump(const bool skipDerived = false) const {
+        const AstNodeDType* const resultp = skipRefIterp(true, false);
+        return skipDerived ? resultp->skipDerivedDTypep() : resultp;
+    }
+    AstNodeDType* skipRefToEnump(const bool skipDerived = false) {
         return const_cast<AstNodeDType*>(
-            static_cast<const AstNodeDType*>(this)->skipRefIterp(true, false));
+            static_cast<const AstNodeDType*>(this)->skipRefToEnump(skipDerived));
     }
     // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType|ConstDType to EnumDType,
     // Returns null if not resolved
@@ -115,6 +119,20 @@ public:
     AstNodeDType* skipRefToNonRefp() {
         return const_cast<AstNodeDType*>(
             static_cast<const AstNodeDType*>(this)->skipRefIterp(false, false));
+    }
+    // Skips derived DType (which may be only an incomplete mock) to its original DType
+    // Particularly important with derived enums since those have no itemps
+    // Where original DType: is a two-state struct or enum
+    // Where derived DType: is a four-state dtype (created artificially by V3Width) which
+    // represents the two-state original dtype but with a four-state value domain. Derived DTypes
+    // should only occur in expressions and never as a variable (unless it is an internal temporary
+    // variable keeping some lifted expression). This is necessary for cases like:
+    // ('x ? TWO_STATE_ENUM : TWO_STATE_ENUM_VAL2) - since result of this expression
+    // is a two-state enum but contains an 'x in its value
+    const AstNodeDType* skipDerivedDTypep() const;
+    AstNodeDType* skipDerivedDTypep() {
+        return const_cast<AstNodeDType*>(
+            static_cast<const AstNodeDType*>(this)->skipDerivedDTypep());
     }
     // If array, returns element dtype, otherwise returns skipRef dtype
     // If skipRef is false, RefDTypes are not followed (safe before typedef linking)
@@ -275,6 +293,8 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     //
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Package emitted with
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Equivalent BasicDType if packed
+    // @astgen ptr := m_originalDTypep : Optional[AstNodeUOrStructDType]  // Base DType from which
+    //                                                                       this is derived
     string m_name;  // Name from upper typedef, if any
     string m_typedefName;  // Typedef's dtypeName() once moved off the typedef declaring it
     const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
@@ -288,7 +308,8 @@ protected:
     AstNodeUOrStructDType(VNType t, FileLine* fl, VSigning numericUnpack)
         : AstNodeDType{t, fl}
         , m_uniqueNum{uniqueNumInc()}
-        , m_refDTypep{nullptr} {
+        , m_refDTypep{nullptr}
+        , m_originalDTypep{nullptr} {
         // VSigning::NOSIGN overloaded to indicate not packed
         m_packed = (numericUnpack != VSigning::NOSIGN);
         numeric(VSigning::fromBool(numericUnpack.isSigned()));
@@ -301,10 +322,13 @@ protected:
         , m_packed{other.m_packed}
         , m_isFourstate{other.m_isFourstate}
         , m_mimicsFourstate{other.m_mimicsFourstate}
-        , m_refDTypep{other.m_refDTypep} {}
+        , m_refDTypep{other.m_refDTypep}
+        , m_originalDTypep{nullptr} {}
 
 public:
     ASTGEN_MEMBERS_AstNodeUOrStructDType;
+    const char* broken() const override;
+    inline int nMembers() const;
     int uniqueNum() const { return m_uniqueNum; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -316,6 +340,7 @@ public:
         m_refDTypep = dtypep;
     }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
+    AstNodeDType* virtRefDType2p() const override { return m_originalDTypep; }
     AstNodeDType* subDTypep() const override VL_MT_STABLE { return m_refDTypep; }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     int widthAlignBytes() const override;
@@ -351,6 +376,16 @@ public:
     bool emitToString() const { return m_emitToString; }
     void setEmitToString() { m_emitToString = true; }
     bool isAggregateType() const override { return !packed(); }
+    AstNodeUOrStructDType* originalDTypep() const { return m_originalDTypep; }
+    const AstNodeUOrStructDType* originalOrThisDTypep() const {
+        return m_originalDTypep ? m_originalDTypep : this;
+    }
+    AstNodeUOrStructDType* originalOrThisDTypep() {
+        return m_originalDTypep ? m_originalDTypep : this;
+    }
+    void originalDTypep(AstNodeUOrStructDType* const originalDTypep) {
+        m_originalDTypep = originalDTypep;
+    }
 };
 
 // === Concrete node types =====================================================
@@ -960,6 +995,8 @@ class AstEnumDType final : public AstNodeDType {
     // @astgen op2 := itemsp : List[AstEnumItem]
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
+    // @astgen ptr := m_originalDTypep : Optional[AstEnumDType]  // Base DType from which this is
+    //                                                              derived
     string m_name;  // Name from upper typedef, if any
     string m_typedefName;  // Typedef's dtypeName() once moved off the typedef declaring it
     const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
@@ -967,7 +1004,8 @@ class AstEnumDType final : public AstNodeDType {
 public:
     AstEnumDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstEnumItem* itemsp)
         : ASTGEN_SUPER_EnumDType(fl)
-        , m_uniqueNum{uniqueNumInc()} {
+        , m_uniqueNum{uniqueNumInc()}
+        , m_originalDTypep{nullptr} {
         childDTypep(dtp);  // Only for parser
         refDTypep(nullptr);
         addItemsp(itemsp);
@@ -979,7 +1017,8 @@ public:
         , m_name{other.m_name}
         , m_typedefName{other.m_typedefName}
         , m_uniqueNum{uniqueNumInc()}
-        , m_refDTypep{other.m_refDTypep} {}
+        , m_refDTypep{other.m_refDTypep}
+        , m_originalDTypep{nullptr} {}
     ASTGEN_MEMBERS_AstEnumDType;
 
     const char* broken() const override;
@@ -996,6 +1035,7 @@ public:
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
+    AstNodeDType* virtRefDType2p() const override { return m_originalDTypep; }
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& flag) override { m_name = flag; }
     // Keep the name the typedef declaring it gives, as it moves off it to the type table
@@ -1010,6 +1050,12 @@ public:
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
     size_t itemCount() const { return itemspList().size(); }
     bool isCompound() const override { return false; }
+    AstEnumDType* originalDTypep() const { return m_originalDTypep; }
+    const AstEnumDType* originalOrThisDTypep() const {
+        return m_originalDTypep ? m_originalDTypep : this;
+    }
+    AstEnumDType* originalOrThisDTypep() { return m_originalDTypep ? m_originalDTypep : this; }
+    void originalDTypep(AstEnumDType* const originalDTypep) { m_originalDTypep = originalDTypep; }
 };
 
 class AstIfaceGenericDType final : public AstNodeDType {
@@ -1131,24 +1177,30 @@ class AstMemberDType final : public AstNodeDType {
     // @astgen op3 := valuep : Optional[AstNode]
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
+    // @astgen ptr := m_parentp : AstNodeUOrStructDType  // The struct/union this is a member of
     string m_name;  // Name of variable
+    const int m_index;  // Ordinal of this member in its struct/union
     string m_tag;  // Holds the string of the verilator tag -- used in JSON output.
     int m_lsb = -1;  // Within this level's packed struct, the LSB of the first bit of the member
     bool m_constrainedRand = false;  // Member has a constraint expression
     VRandAttr m_rand;  // Randomizability of this member (rand, randc, etc)
 public:
-    AstMemberDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp,
-                   AstNode* valuep)
+    AstMemberDType(FileLine* fl, AstNodeUOrStructDType* parentp, int index, const string& name,
+                   VFlagChildDType, AstNodeDType* dtp, AstNode* valuep)
         : ASTGEN_SUPER_MemberDType(fl)
-        , m_name{name} {
+        , m_name{name}
+        , m_index{index}
+        , m_parentp{parentp} {
         childDTypep(dtp);  // Only for parser
         this->valuep(valuep);
         dtypep(nullptr);  // V3Width will resolve
-        refDTypep(nullptr);
     }
-    AstMemberDType(FileLine* fl, const string& name, AstNodeDType* dtp)
+    AstMemberDType(FileLine* fl, AstNodeUOrStructDType* parentp, int index, const string& name,
+                   AstNodeDType* dtp)
         : ASTGEN_SUPER_MemberDType(fl)
-        , m_name{name} {
+        , m_name{name}
+        , m_index{index}
+        , m_parentp{parentp} {
         UASSERT(dtp, "AstMember created with no dtype");
         refDTypep(dtp);
         dtypep(this);
@@ -1164,6 +1216,8 @@ public:
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeUOrStructDType* getChildStructp();
+    AstNodeUOrStructDType* parentp() const { return m_parentp; }
+    int index() const { return m_index; }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }

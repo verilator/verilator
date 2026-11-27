@@ -2848,6 +2848,15 @@ class ConstVisitor final : public VNVisitor {
                     return true;
                 }
             }
+            const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+            if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
+                // The leftmost bits of a dynamically sized source (IEEE 1800-2023 11.4.14.3)
+                const int width = dstDTypep->widthStream();
+                srcp = new AstCvtArrayToPacked{
+                    srcp->fileline(), srcp,
+                    srcp->findBitOrLogicDType(width, width, VSigning::UNSIGNED,
+                                              srcDTypep->subDTypep()->isFourstate())};
+            }
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
             if (VN_IS(dstDTypep, UnpackArrayDType)) {
@@ -2870,15 +2879,11 @@ class ConstVisitor final : public VNVisitor {
                     // Source narrower than destination: left-justify by shifting left.
                     // The right stream operator packs left-to-right, so remaining
                     // LSBs are zero-filled (IEEE 1800-2023 11.4.14.3).
-                    if (!VN_IS(srcp->dtypep()->skipRefp(), QueueDType)) {
-                        AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dWidth};
-                        srcp = new AstShiftL{
-                            srcp->fileline(), extendp,
-                            new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
-                            dWidth};
-                    } else {  // if it is a queue we dont need do do a shiftL
-                        srcp = new AstExtend{srcp->fileline(), srcp};
-                    }
+                    AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dWidth};
+                    srcp = new AstShiftL{
+                        srcp->fileline(), extendp,
+                        new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
+                        dWidth};
                 }
             }
             nodep->lhsp(dstp);
@@ -2901,7 +2906,9 @@ class ConstVisitor final : public VNVisitor {
                 srcp = packedp;
             } else if ((VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
                         || VN_IS(srcDTypep, UnpackArrayDType))) {
-                if (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType)) {
+                const bool dynamicDst
+                    = VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType);
+                if (dynamicDst || !VN_IS(srcDTypep, UnpackArrayDType)) {
                     int blockSize = 1;
                     if (const AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
                         blockSize = constp->toSInt();
@@ -2924,14 +2931,21 @@ class ConstVisitor final : public VNVisitor {
                     if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
                         srcElementBits = elemDtp->width();
                     }
+                    // A dynamically sized source is reversed before packing it left-justified,
+                    // as its width is not known
+                    AstNodeDType* const arrayDTypep
+                        = dynamicDst ? dstDTypep : srcp->dtypep()->skipRefp();
                     int dstElementBits = 0;
-                    if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                    if (const AstNodeDType* const elemDtp = arrayDTypep->subDTypep()) {
                         dstElementBits = elemDtp->width();
                     }
                     streamp->unlinkFrBack();
                     srcp = new AstCvtArrayToArray{
-                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep,     true,
+                        srcp->fileline(), srcp->unlinkFrBack(), arrayDTypep,   true,
                         blockSize,        dstElementBits,       srcElementBits};
+                    if (!dynamicDst) {
+                        srcp = new AstCvtArrayToPacked{srcp->fileline(), srcp, dstDTypep};
+                    }
                     nodep->rhsp(srcp);
                     VL_DO_DANGLING(pushDeletep(streamp), streamp);
                 } else {
@@ -3436,11 +3450,17 @@ class ConstVisitor final : public VNVisitor {
         replaceWithSimulation(nodep);
     }
 
+    // Not folded, so not constant
+    void visit(AstAssocSel* nodep) override { visit(static_cast<AstNode*>(nodep)); }
+    void visit(AstDynArraySel* nodep) override { visit(static_cast<AstNode*>(nodep)); }
+    void visit(AstQueueSel* nodep) override { visit(static_cast<AstNode*>(nodep)); }
+    void visit(AstWildcardSel* nodep) override { visit(static_cast<AstNode*>(nodep)); }
+
     void visit(AstStructSel* nodep) override {
         iterateChildren(nodep);
 
         if (const AstConsStruct* const consp = VN_CAST(nodep->fromp(), ConsStruct)) {
-            AstNodeExpr* const valuep = consp->memberValuep(nodep->name());
+            AstNodeExpr* const valuep = consp->memberValuep(nodep->memberp());
             if (const AstConst* const constp = VN_CAST(valuep, Const)) {
                 VL_DO_DANGLING(replaceNum(nodep, constp->num()), nodep);
             } else {
@@ -3493,16 +3513,9 @@ class ConstVisitor final : public VNVisitor {
                 } else if (const AstConst* const itemp = VN_CAST(selItemp, Const)) {
                     VL_DO_DANGLING(replaceNum(nodep, itemp->num()), nodep);
                     did = true;
-                } else if (m_params && consp) {
-                    // Allow parameters to pass arrays
-                    // Earlier recursion of ConsArray made sure each array value is constant
-                    // This exception is fairly fragile, i.e. doesn't
-                    // support arrays of arrays or other stuff
-                    AstNode* const newp = valuep->cloneTree(false);
-                    nodep->replaceWithKeepDType(newp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    did = true;
-                } else if (m_params && VN_IS(valuep, ConsStruct)) {
+                } else if (m_params && VN_IS(valuep, NodeCons)
+                           && VN_AS(valuep, NodeCons)->isConstantTree()) {
+                    // Allow parameters to pass aggregates
                     AstNode* const newp = valuep->cloneTree(false);
                     nodep->replaceWithKeepDType(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -4281,10 +4294,8 @@ class ConstVisitor final : public VNVisitor {
         if (operandBoolShift(nodep->condp())) replaceBoolShift(nodep->condp());
     }
 
-    void visit(AstConsArray* nodep) override { iterateChildren(nodep); }
-    void visit(AstConsStruct* nodep) override { iterateChildren(nodep); }
-    void visit(AstConsStructItem* nodep) override { iterateChildren(nodep); }
-    void visit(AstConsArrayItem* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeCons* nodep) override { iterateChildren(nodep); }
+    void visit(AstNodeConsItem* nodep) override { iterateChildren(nodep); }
     void visit(AstUnbounded* nodep) override { iterateChildren(nodep); }
     // These are converted by V3Param.  Don't constify as we don't want the
     // from() VARREF to disappear, if any.
@@ -4389,7 +4400,11 @@ class ConstVisitor final : public VNVisitor {
     //-----
     // clang-format off
     TREE_SKIP_VISIT("ArraySel");
+    TREE_SKIP_VISIT("AssocSel");
     TREE_SKIP_VISIT("CAwait");
+    TREE_SKIP_VISIT("DynArraySel");
+    TREE_SKIP_VISIT("QueueSel");
+    TREE_SKIP_VISIT("WildcardSel");
 
     //-----
     //  "AstNODETYPE {             # bracket not paren
@@ -4845,10 +4860,9 @@ void V3Const::collectFixedAggregateTerms(VNDeleter& deleter, AstNodeExpr* const 
                 termps, packReal, warnImpure);
         }
     } else if (sdtypep && !sdtypep->packed()) {
-        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
+        for (AstMemberDType* const itemp : sdtypep->memberspList()) {
             AstStructSel* const selp
-                = new AstStructSel{flp, fromp->cloneTree(false, warnImpure), itemp->name()};
-            selp->dtypeFrom(itemp->dtypep());
+                = new AstStructSel{flp, fromp->cloneTree(false, warnImpure), itemp};
             selp->didWidth(true);
             collectFixedAggregateTerms(deleter, selp, termps, packReal, warnImpure);
         }

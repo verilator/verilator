@@ -412,6 +412,7 @@ public:
     void clearSelf(const VlClass* selfp) {
         if (m_selfp == selfp) m_selfp = nullptr;
     }
+    bool isKilled() const { return state() == KILLED; }
 
     // Random state (IEEE 1800-2023 9.7, 18.14)
     void srandom(uint64_t seed) VL_MT_UNSAFE { m_rng.srandom(seed); }
@@ -709,8 +710,14 @@ public:
     explicit VlQueue(size_t size, std::initializer_list<std::pair<QData, T_Value>> items)
         : VlQueue{size, T_Value{}, items} {}
 
-    bool operator==(const VlQueue& rhs) const { return m_deque == rhs.m_deque; }
-    bool operator!=(const VlQueue& rhs) const { return m_deque != rhs.m_deque; }
+    template <typename T_Rhs, size_t N_RhsMaxSize>
+    bool operator==(const VlQueue<T_Rhs, N_RhsMaxSize>& rhs) const {
+        return std::equal(m_deque.begin(), m_deque.end(), rhs.m_deque.begin(), rhs.m_deque.end());
+    }
+    template <typename T_Rhs, size_t N_RhsMaxSize>
+    bool operator!=(const VlQueue<T_Rhs, N_RhsMaxSize>& rhs) const {
+        return !(*this == rhs);
+    }
     bool operator<(const VlQueue& rhs) const {
         for (int index = 0; index < m_deque.size(); ++index) {
             if (m_deque[index] < rhs.m_deque[index]) return true;
@@ -1195,6 +1202,11 @@ public:
     void erase(const T_Key& index) { m_map.erase(index); }
     // Return 0/1 if element exists. Verilog: function int exists(input index)
     int exists(const T_Key& index) const { return m_map.find(index) != m_map.end(); }
+    // inside (set membership operator)
+    bool inside(const T_Value& value) const {
+        return std::any_of(m_map.cbegin(), m_map.cend(),
+                           [&](const auto& pair) { return pair.second == value; });
+    }
     // Return first element.  Verilog: function int first(ref index);
     int first(T_Key& indexr) const {
         const auto it = m_map.cbegin();
@@ -2162,6 +2174,8 @@ struct VlNull final {
     }
 };
 
+struct VlClassRefNoInit final {};
+
 template <class T>
 inline bool operator==(T* lhsp, VlNull) {
     return !lhsp;
@@ -2207,6 +2221,10 @@ public:
         : m_objp{new T_Class} {
         // Instantly init the object to presevrve RAII
         m_objp->init(std::forward<T_Args>(args)...);
+        m_objp->m_deleterp = &deleter;
+    }
+    VlClassRef(VlDeleter& deleter, VlClassRefNoInit)
+        : m_objp{new T_Class} {
         m_objp->m_deleterp = &deleter;
     }
     VlClassRef(VlDeleter& deleter, T_Class&& args)

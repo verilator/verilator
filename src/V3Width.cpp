@@ -323,15 +323,13 @@ class PortLValueVisitor final : public VNVisitor {
     }
     void visit(AstSliceSel* nodep) override { iterateDestination(nodep->fromp()); }
     void visit(AstAssocSel* nodep) override { dynamicElement(nodep); }
+    void visit(AstDynArraySel* nodep) override { dynamicElement(nodep); }
+    void visit(AstQueueSel* nodep) override { dynamicElement(nodep); }
     void visit(AstWildcardSel* nodep) override { dynamicElement(nodep); }
     void visit(AstNodeStream* nodep) override { iterateDestination(nodep->lhsp()); }
     void visit(AstReplicate* nodep) override { iterateDestination(nodep->srcp()); }
     void visit(AstNodeConsItem* nodep) override { iterateDestination(nodep->valuep()); }
     void visit(AstStructSel* nodep) override { iterateDestination(nodep->fromp()); }
-    void visit(AstCMethodHard* nodep) override {
-        // Dynamic array and queue element accesses are lowered to methods.
-        if (nodep->method().isDynElementAccess()) dynamicElement(nodep);
-    }
     void visit(AstMemberRef* nodep) override {
         // Static class properties have already been replaced with variable references.
         if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
@@ -340,6 +338,7 @@ class PortLValueVisitor final : public VNVisitor {
         }
     }
     // Function/method arguments compute values, not destinations.
+    void visit(AstCMethodHard*) override {}
     void visit(AstNodeFTaskRef*) override {}
     void visit(AstNode* nodep) override {
         if (!m_failed) iterateChildren(nodep);
@@ -415,6 +414,8 @@ class WidthVisitor final : public VNVisitor {
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
     std::unordered_set<const AstVar*> m_seqUntypedFormals;  // Untyped formals of current sequence
     std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
+    std::unordered_map<const AstNodeDType*, AstNodeDType*>
+        m_derivedDTypeps;  // Maps from a two-state dtype to a four-state counterpart
 
     static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
 
@@ -739,6 +740,37 @@ class WidthVisitor final : public VNVisitor {
         const AstCond* const condp = VN_CAST(nodep, Cond);
         return condp && isOverridePattern(condp->thenp()) && isOverridePattern(condp->elsep());
     }
+    AstNodeDType* findFourstateCounterpart(AstNodeDType* const dtypep) {
+        const auto it = m_derivedDTypeps.emplace(dtypep, nullptr);
+        if (!it.second) return it.first->second;
+        AstNodeDType* const skipToEnumDTypep = dtypep->skipRefToEnump();
+        AstNodeDType*& resultp = it.first->second;
+        if (AstEnumDType* const enumDTypep = VN_CAST(skipToEnumDTypep, EnumDType)) {
+            AstEnumItem* const itemsp = enumDTypep->itemsp()->unlinkFrBackWithNext();
+            AstEnumDType* const newp = enumDTypep->cloneTreePure(false);
+            enumDTypep->addItemsp(itemsp);
+            newp->refDTypep(newp->findLogicDType(newp->subDTypep()->width(),
+                                                 newp->subDTypep()->widthMin(),
+                                                 newp->subDTypep()->numeric()));
+            newp->dtypep(newp);
+            newp->originalDTypep(enumDTypep);
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            resultp = newp;
+        } else if (AstNodeUOrStructDType* const uOrStructDTypep
+                   = VN_CAST(skipToEnumDTypep, NodeUOrStructDType)) {
+            AstNodeUOrStructDType* const newp = uOrStructDTypep->cloneTreePure(false);
+            newp->isFourstate(true);
+            newp->dtypep(newp);
+            newp->refDTypep(newp->subDTypep()->findStatesCounterpart(true));
+            newp->originalDTypep(uOrStructDTypep);
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            resultp = newp;
+        } else {
+            dtypep->v3fatalSrc("findFourstateCounterpart can be called only on AstEnumDType and "
+                               "AstNodeUOrStructDType");
+        }
+        return resultp;
+    }
     void visit(AstCond* nodep) override {
         // op = cond ? expr1 : expr2
         // See IEEE-2012 11.4.11 and Table 11-21.
@@ -827,43 +859,61 @@ class WidthVisitor final : public VNVisitor {
                 nodep->dtypeSetDouble();
             } else if (thenDTypep->isString() || elseDTypep->isString()) {
                 // There is a specific case:
-                // strings and how they should be handled when condp() is 'x
+                // string literals and how they should be handled when condp() is 'x
                 // ('x ? "Option1" : "Option2") === "Option0"
                 // ('x ? "Option1" : "Option2") ===
                 // 56'b010011110111000001110100011010010110111101101110001100xx
                 // Issue is that the type of this is still string but the value contains 'x - types
                 // and domains are not the same thing in SystemVerilog but in Verilator they are
+                //
+                // However in case of a string (not literals):
+                // string a = "Option1"
+                // string b = "Option2"
+                // ('x ? a : b) === ""
                 nodep->dtypeSetString();
             } else {
                 const bool isAnyResultFourstate
                     = thenDTypeSkippedp->isFourstate() || elseDTypeSkippedp->isFourstate();
-                bool handled = false;
                 const bool isCondpFourstate = nodep->condp()->isFourstateOrNoDtype();
                 AstNodeDType* const thenEnumDTypep = thenDTypep->skipRefToEnump();
                 if (VN_IS(thenDTypeSkippedp, NodeUOrStructDType)
-                    && thenDTypeSkippedp->sameTree(elseDTypeSkippedp)) {
-                    nodep->dtypep(thenDTypep);
-                    handled = true;
+                    && AstNode::computeCastable(thenDTypeSkippedp, elseDTypeSkippedp, nullptr)
+                           .isMatching()) {
+                    nodep->dtypep(
+                        (isAnyResultFourstate || !isCondpFourstate)
+                            ? (thenDTypeSkippedp->isFourstate() ? thenDTypep : elseDTypep)
+                            : findFourstateCounterpart(thenEnumDTypep));
                 } else if (VN_IS(thenEnumDTypep, EnumDType)
-                           && thenEnumDTypep->sameTree(elseDTypep->skipRefToEnump())) {
-                    // Preserve enum identity even when the condition can contain X or Z.
-                    nodep->dtypep(thenEnumDTypep);
-                    handled = true;
-                }
-                if (!handled) {
+                           && AstNode::computeCastable(thenEnumDTypep, elseDTypep, nullptr)
+                                  .isMatching()) {
+                    // if enum is two-state we have to check condp() - because if it is
+                    // four-state the result must be four-state as well
+                    nodep->dtypep(
+                        (isAnyResultFourstate || !isCondpFourstate)
+                            ? (thenDTypeSkippedp->isFourstate() ? thenDTypep : elseDTypep)
+                            : findFourstateCounterpart(thenEnumDTypep));
+                } else {
                     const int width = std::max(thenDTypep->width(), elseDTypep->width());
                     const int widthMin = std::max(thenDTypep->widthMin(), elseDTypep->widthMin());
                     const VSigning numeric
                         = VSigning::fromBool(thenDTypep->isSigned() && elseDTypep->isSigned());
                     const bool isFourstate = isAnyResultFourstate || isCondpFourstate;
+                    const bool canPreserveElseDType
+                        = !VN_IS(elseDTypep->skipRefToEnump(), EnumDType)
+                          && !VN_IS(elseDTypeSkippedp, NodeUOrStructDType);
+                    const bool canPreserveThenDType
+                        = !VN_IS(thenDTypep->skipRefToEnump(), EnumDType)
+                          && !VN_IS(thenDTypeSkippedp, NodeUOrStructDType);
                     // Try to preserve a dtype
-                    if ((width == elseDTypeSkippedp->width()
-                         && widthMin == elseDTypeSkippedp->widthMin())
+                    if (canPreserveElseDType
+                        && (width == elseDTypeSkippedp->width()
+                            && widthMin == elseDTypeSkippedp->widthMin())
                         && elseDTypeSkippedp->numeric() == numeric
                         && isFourstate == elseDTypeSkippedp->isFourstate()) {
                         nodep->dtypep(elseDTypep);
-                    } else if ((width == thenDTypeSkippedp->width()
-                                && widthMin == thenDTypeSkippedp->widthMin())
+                    } else if (canPreserveThenDType
+                               && (width == thenDTypeSkippedp->width()
+                                   && widthMin == thenDTypeSkippedp->widthMin())
                                && thenDTypeSkippedp->numeric() == numeric
                                && isFourstate == thenDTypeSkippedp->isFourstate()) {
                         nodep->dtypep(thenDTypep);
@@ -1542,22 +1592,13 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
             //
-            int frommsb;
-            int fromlsb;
-            const AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefp();
-            if (const AstUnpackArrayDType* const adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
-                frommsb = adtypep->hi();
-                fromlsb = adtypep->lo();
-                if (fromlsb > frommsb) std::swap(frommsb, fromlsb);
-                // However, if the lsb<0 we may go negative, so need more bits!
-                if (fromlsb < 0) frommsb += -fromlsb;
-                nodep->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
-            } else {
-                // Note PackArrayDType doesn't use an ArraySel but a normal Sel.
-                UINFO(1, "    Related dtype: " << fromDtp);
-                nodep->v3fatalSrc("Array reference exceeds dimension of array");
-                frommsb = fromlsb = 0;
-            }
+            const AstUnpackArrayDType* const adtypep
+                = VN_AS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+            int frommsb = adtypep->hi();
+            int fromlsb = adtypep->lo();
+            // However, if the lsb<0 we may go negative, so need more bits!
+            if (fromlsb < 0) frommsb += -fromlsb;
+            nodep->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             const int selwidth = V3Number::log2b(frommsb + 1 - 1) + 1;  // Width to address a bit
             AstNodeDType* const selwidthDTypep = nodep->findBitOrLogicDType(
                 selwidth, selwidth, nodep->bitp()->dtypep()->numeric(),
@@ -1607,15 +1648,31 @@ class WidthVisitor final : public VNVisitor {
         // Signed/Real: Output type based on array-declared type; binary operator
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            const AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefp();
-            const AstAssocArrayDType* const adtypep = VN_CAST(fromDtp, AssocArrayDType);
-            if (!adtypep) {
-                UINFO(1, "    Related dtype: " << fromDtp);
-                nodep->v3fatalSrc("Associative array reference is not to associative array");
-            }
+            const AstAssocArrayDType* const adtypep
+                = VN_AS(nodep->fromp()->dtypep()->skipRefp(), AssocArrayDType);
             iterateCheckTyped(nodep, "Associative select", nodep->bitp(), adtypep->keyDTypep(),
                               BOTH);
             nodep->dtypeFrom(adtypep->subDTypep());
+        }
+    }
+    void visit(AstDynArraySel* nodep) override {
+        // Signed/Real: Output type based on array-declared type; binary operator
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            iterateCheckSizedSelf(nodep, "index", nodep->bitp(), SELF, BOTH,
+                                  /* deferUntyped */ true);
+            userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+            nodep->dtypeFrom(nodep->fromp()->dtypep()->skipRefp()->subDTypep());
+        }
+    }
+    void visit(AstQueueSel* nodep) override {
+        // Signed/Real: Output type based on array-declared type; binary operator
+        assertAtExpr(nodep);
+        if (m_vup->prelim()) {
+            iterateCheckSizedSelf(nodep, "index", nodep->bitp(), SELF, BOTH,
+                                  /* deferUntyped */ true);
+            userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+            nodep->dtypeFrom(nodep->fromp()->dtypep()->skipRefp()->subDTypep());
         }
     }
 
@@ -1670,12 +1727,8 @@ class WidthVisitor final : public VNVisitor {
         // Signed/Real: Output type based on array-declared type; binary operator
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            const AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefp();
-            const AstWildcardArrayDType* const adtypep = VN_CAST(fromDtp, WildcardArrayDType);
-            if (!adtypep) {
-                UINFO(1, "    Related dtype: " << fromDtp);
-                nodep->v3fatalSrc("Wildcard array reference is not to wildcard array");
-            }
+            const AstWildcardArrayDType* const adtypep
+                = VN_AS(nodep->fromp()->dtypep()->skipRefp(), WildcardArrayDType);
             const AstBasicDType* const basicp = nodep->bitp()->dtypep()->skipRefp()->basicp();
             if (!basicp
                 || (basicp->keyword() != VBasicDTypeKwd::STRING
@@ -1756,18 +1809,9 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->fromp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->bitp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->thsp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
-        // Error recovery returns this existing receiver rather than a new selection.
-        AstNodeExpr* const fromp = nodep->fromp();
         AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
             VL_DANGLING(nodep);
-            if (AstCMethodHard* const methodp = VN_CAST(selp, CMethodHard)) {
-                if (methodp != fromp) {
-                    // visit(AstCMethodHard) does not revisit the newly lowered index.
-                    iterateCheckSizedSelf(methodp, "index", methodp->pinsp(), SELF, FINAL,
-                                          /* deferUntyped */ true);
-                }
-            }
             userIterate(selp, m_vup);
             return;
         }
@@ -1828,6 +1872,15 @@ class WidthVisitor final : public VNVisitor {
         // However a later operation may have changed the node->signed w/o changing
         // the number's sign.  So we don't: nodep->dtypeChgSigned(nodep->num().isSigned());
         if (nodep->didWidthAndSet()) return;
+        if (m_vup && m_vup->prelim() && nodep->num().isFromString() && m_vup->dtypeNullSkipRefp()
+            && m_vup->dtypeNullSkipRefp()->isString()) {
+            AstConst* const strp
+                = new AstConst{nodep->fileline(), AstConst::String{}, nodep->num().toString()};
+            strp->didWidth(true);
+            nodep->replaceWith(strp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         if (m_vup && m_vup->prelim()) {
             if (VN_IS(nodep->dtypep()->skipRefToEnump(), EnumDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), StructDType)
@@ -2023,6 +2076,34 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetBit();
         }
     }
+    void visit(AstEventually* nodep) override {
+        // IEEE 1800-2023 16.12.13
+        assertAtExpr(nodep);
+        if (!m_vup->prelim()) return;
+
+        nodep->dtypeSetBit();
+
+        if (!nodep->loBoundp()) {
+            if (v3Global.opt.timing().isSetFalse() || !v3Global.opt.timing().isSetTrue()) {
+                nodep->v3warn(E_NOTIMING, nodep->verilogKwd() << " requires --timing");
+                nodep->replaceWith(
+                    new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 1, 0});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+            iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
+            return;
+        }
+
+        iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
+
+        if (!VN_IS(nodep->loBoundp(), Unbounded)) {
+            userIterateAndNext(nodep->loBoundp(), WidthVP{SELF, BOTH}.p());
+        }
+        if (!VN_IS(nodep->hiBoundp(), Unbounded)) {
+            userIterateAndNext(nodep->hiBoundp(), WidthVP{SELF, BOTH}.p());
+        }
+    }
     void visit(AstRising* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
@@ -2159,18 +2240,6 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->seedp()) iterateCheckSigned32(nodep, "seed", nodep->seedp(), BOTH);
         }
     }
-    void visit(AstSEventually* nodep) override {
-        if (v3Global.opt.timing().isSetFalse() || !v3Global.opt.timing().isSetTrue()) {
-            nodep->v3warn(E_NOTIMING, "s_eventually requires --timing");
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 1, 0});
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            return;
-        }
-        if (m_vup->prelim()) {
-            iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
-            nodep->dtypeSetBit();
-        }
-    }
     void visit(AstSGotoRep* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
@@ -2278,8 +2347,6 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstSClocked* nodep) override {
-        VL_RESTORER(m_underSExpr);
-        m_underSExpr = true;
         m_hasSExpr = true;
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
@@ -2288,6 +2355,7 @@ class WidthVisitor final : public VNVisitor {
             for (AstSenItem* senp = nodep->sensesp(); senp;
                  senp = VN_CAST(senp->nextp(), SenItem)) {
                 userIterateAndNext(senp->sensp(), WidthVP{SELF, BOTH}.p());
+                userIterateAndNext(senp->condp(), WidthVP{SELF, BOTH}.p());
             }
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             nodep->dtypeSetBit();
@@ -3498,12 +3566,28 @@ class WidthVisitor final : public VNVisitor {
                     && VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
                     userIterateAndNext(nodep->fromp(), WidthVP{nodep->dtypep(), PRELIM}.p());
                 } else {
-                    userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM, STREAM_USE_CAST}.p());
+                    AstNodeDType* const fromDtp
+                        = isByteArrayDType(nodep->dtypep()->skipRefp(), false)
+                              ? nodep->findStringDType()
+                              : nullptr;
+                    userIterateAndNext(nodep->fromp(),
+                                       WidthVP{fromDtp, PRELIM, STREAM_USE_CAST}.p());
                 }
             }
             UINFOTREE(9, nodep, "", "CastDit");
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
             AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
+            // Packed values cast to byte arrays use the existing packed-to-array lowering.
+            if (isByteArrayDType(toDtp, false) && fromDtp->isIntegralOrPacked()
+                && !VN_IS(nodep->fromp(), NodeStream)) {
+                AstNodeExpr* const fromp = nodep->fromp()->unlinkFrBack();
+                AstNodeExpr* const newp
+                    = new AstCvtPackedToArray{nodep->fileline(), fromp, nodep->dtypep()};
+                newp->didWidth(true);
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
             const auto castable = AstNode::computeCastable(toDtp, fromDtp, nodep->fromp());
             // An equivalent array is assignment compatible, so cast as assigned
             // (IEEE 1800-2023 6.24.1), but otherwise casting an unpacked array or struct is a
@@ -4635,8 +4719,13 @@ class WidthVisitor final : public VNVisitor {
             // Similar logic in V3Case
             return irangep->newAndFromInside(exprp, irangep->lhsp()->unlinkFrBack(),
                                              irangep->rhsp()->unlinkFrBack());
-        } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
-                   || VN_IS(itemDtp, QueueDType)) {
+        } else if (itemDtp->isNonPackedArray()) {
+            const AstNodeDType* const memberTypep = itemDtp->subDTypep()->skipRefp();
+            if (memberTypep->isNonPackedArray()) {
+                itemp->v3warn(E_UNSUPPORTED, "Unsupported: 'inside' on array of unpacked arrays");
+                VL_DO_DANGLING(exprp->deleteTree(), exprp);
+                return nullptr;
+            }
             // Unsupported in parameters
             AstNodeExpr* const inewp = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(),
                                                           VCMethod::ARRAY_INSIDE, exprp};
@@ -4644,11 +4733,6 @@ class WidthVisitor final : public VNVisitor {
             inewp->dtypeSetBit();
             inewp->didWidth(true);
             return inewp;
-        } else if (VN_IS(itemDtp, AssocArrayDType) || VN_IS(itemDtp, WildcardArrayDType)) {
-            nodep->v3error("Inside operator not specified on associative arrays "
-                           "(IEEE 1800-2023 11.4.13)");
-            VL_DO_DANGLING(exprp->deleteTree(), exprp);
-            return nullptr;
         }
         return AstEqWild::newTyped(itemp->fileline(), exprp, itemp->unlinkFrBack());
     }
@@ -4748,7 +4832,9 @@ class WidthVisitor final : public VNVisitor {
             // MSB is first, so loop backwards
             for (itemp = nodep->membersp(); itemp && itemp->nextp();
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {}
-            bool isFourstate = false;
+            // Curently AstNodeUOrStructDType::originalDTypep() returns non-null value for mock
+            // four-state AstNodeUOrStructDType derived from a two-state original version
+            bool isFourstate = nodep->originalDTypep();
             for (; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
                 isFourstate |= itemp->isFourstate();
                 itemp->lsb(lsb);
@@ -5271,10 +5357,8 @@ class WidthVisitor final : public VNVisitor {
                 // Should be able to treat it as a normal-ish nodesel - maybe.
                 // The lhsp() will be strange until this stage; create the number here?
             } else {
-                AstStructSel* const newp = new AstStructSel{
-                    nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name()};
-                // Must skip over the member to find the union; as the member may disappear later
-                newp->dtypep(memberp->subDTypep()->skipRefToEnump());
+                AstStructSel* const newp
+                    = new AstStructSel{nodep->fileline(), nodep->fromp()->unlinkFrBack(), memberp};
                 newp->didWidth(true);  // Don't replace dtype with basic type
                 UINFO(9, "   MEMBERREF -> " << newp);
                 UINFO(9, "           dt-> " << newp->dtypep());
@@ -5321,7 +5405,7 @@ class WidthVisitor final : public VNVisitor {
         } else if (nodep->name() == "constraint_mode") {
             methodCallConstraint(nodep, nullptr);
         } else if (AstEnumDType* const adtypep = VN_CAST(fromDtp, EnumDType)) {
-            methodCallEnum(nodep, adtypep);
+            methodCallEnum(nodep, adtypep->originalOrThisDTypep());
         } else if (AstAssocArrayDType* const adtypep = VN_CAST(fromDtp, AssocArrayDType)) {
             methodCallAssoc(nodep, adtypep);
         } else if (AstWildcardArrayDType* const adtypep = VN_CAST(fromDtp, WildcardArrayDType)) {
@@ -5742,24 +5826,10 @@ class WidthVisitor final : public VNVisitor {
         return nodep->argsp()->exprp();
     }
     void methodCallLValueRecurse(AstMethodCall* nodep, AstNode* childp, const VAccess& access) {
-        if (AstCMethodHard* const ichildp = VN_CAST(childp, CMethodHard)) {
-            if (ichildp->method().isDynElementAccess()) {
-                const AstNodeDType* const fromDtypep = ichildp->fromp()->dtypep()->skipRefp();
-                if (VN_IS(fromDtypep, QueueDType) || VN_IS(fromDtypep, DynArrayDType)) {
-                    // Change access methods to writable ones
-                    if (ichildp->method() == VCMethod::ARRAY_AT) {
-                        ichildp->method(VCMethod::ARRAY_AT_WRITE);
-                    } else if (ichildp->method() == VCMethod::ARRAY_AT_BACK) {
-                        ichildp->method(VCMethod::DYN_AT_WRITE_APPEND_BACK);
-                    }
-                }
-                methodCallLValueRecurse(nodep, ichildp->fromp(), access);
-                return;
-            }
-        }
         if (AstNodeVarRef* const varrefp = VN_CAST(childp, NodeVarRef)) {
             varrefp->access(access);
-        } else if (const AstMemberRef* const ichildp = VN_CAST(childp, MemberRef)) {
+        } else if (AstMemberRef* const ichildp = VN_CAST(childp, MemberRef)) {
+            ichildp->access(access);
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
         } else if (const AstStructSel* const ichildp = VN_CAST(childp, StructSel)) {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
@@ -5846,20 +5916,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void methodCallDyn(AstMethodCall* nodep, AstDynArrayDType* adtypep) {
         AstCMethodHard* newp = nullptr;
-        if (nodep->name() == "at") {  // Created internally for []
-            methodOkArguments(nodep, 1, 1);
-            iterateCheckSigned32(nodep, "argument", methodArg(nodep, 0), BOTH);
-            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::ARRAY_AT};
-            newp->dtypeFrom(adtypep->subDTypep());
-        } else if (nodep->name() == "atWrite") {  // Created internally for []
-            methodOkArguments(nodep, 1, 1);
-            iterateCheckSigned32(nodep, "argument", methodArg(nodep, 0), BOTH);
-            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
-            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::ARRAY_AT_WRITE};
-            newp->dtypeFrom(adtypep->subDTypep());
-        } else if (nodep->name() == "size") {
+        if (nodep->name() == "size") {
             methodOkArguments(nodep, 0, 0);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       VCMethod::DYN_SIZE};
@@ -5898,22 +5955,8 @@ class WidthVisitor final : public VNVisitor {
     }
     void methodCallQueue(AstMethodCall* nodep, AstQueueDType* adtypep) {
         AstCMethodHard* newp = nullptr;
-        if (nodep->name() == "at" || nodep->name() == "atBack") {  // Created internally for []
-            methodOkArguments(nodep, 1, 1);
-            iterateCheckSigned32(nodep, "argument", methodArg(nodep, 0), BOTH);
-            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod(nodep->name())};
-            newp->dtypeFrom(adtypep->subDTypep());
-        } else if (nodep->name() == "atWriteAppend"
-                   || nodep->name() == "atWriteAppendBack") {  // Created internally for []
-            methodOkArguments(nodep, 1, 1);
-            iterateCheckSigned32(nodep, "argument", methodArg(nodep, 0), BOTH);
-            methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::WRITE);
-            newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                      VCMethod::arrayMethod(nodep->name())};
-            newp->dtypeFrom(adtypep->subDTypep());
-        } else if (nodep->name() == "num"  // function int num()
-                   || nodep->name() == "size") {
+        if (nodep->name() == "num"  // function int num()
+            || nodep->name() == "size") {
             methodOkArguments(nodep, 0, 0);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       VCMethod::DYN_SIZE};
@@ -6753,8 +6796,8 @@ class WidthVisitor final : public VNVisitor {
         // which member each AstPatternItem corresponds to before we can
         // determine the dtypep for that PatternItem's value, and then
         // width the initial value appropriately.
-        using PatMap = std::map<const AstMemberDType*, AstPatternItem*>;
-        PatMap patmap;  // Store member: value
+        // The value of each member, by member index
+        std::vector<AstPatternItem*> memberPatps(vdtypep->nMembers());
         DTypeMap dtypemap;  // Store data_type: default_value
         {
             const AstMemberDType* memp = vdtypep->membersp();
@@ -6772,11 +6815,12 @@ class WidthVisitor final : public VNVisitor {
                                                       << textp->text() << "' not found as member");
                                 break;
                             } else {
-                                const std::pair<PatMap::iterator, bool> ret
-                                    = patmap.emplace(memp, patp);
-                                if (!ret.second) {
+                                AstPatternItem*& memberPatpr = memberPatps[memp->index()];
+                                if (memberPatpr) {
                                     patp->v3error("Assignment pattern contains duplicate entry: "
                                                   << VN_AS(patp->keyp(), Text)->text());
+                                } else {
+                                    memberPatpr = patp;
                                 }
                                 memp = VN_AS(memp->nextp(), MemberDType);
                             }
@@ -6794,10 +6838,12 @@ class WidthVisitor final : public VNVisitor {
                         }
                     } else if (memp) {
                         // constant expr
-                        const std::pair<PatMap::iterator, bool> ret = patmap.emplace(memp, patp);
-                        if (!ret.second) {
+                        AstPatternItem*& memberPatpr = memberPatps[memp->index()];
+                        if (memberPatpr) {
                             patp->v3error("Assignment pattern contains duplicate entry: "
                                           << VN_AS(patp->keyp(), Text)->text());
+                        } else {
+                            memberPatpr = patp;
                         }
                         memp = VN_AS(memp->nextp(), MemberDType);
                     } else {
@@ -6813,8 +6859,8 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* newp = nullptr;
         if (vdtypep->packed()) {
             for (AstMemberDType* const memp : vdtypep->memberspList()) {
-                const auto it = patmap.find(memp);
-                if (it == patmap.end()) {  // default or default_type assignment
+                AstPatternItem* const memberPatp = memberPatps[memp->index()];
+                if (!memberPatp) {  // default or default_type assignment
                     if (AstStructDType* const memp_nested_vdtypep
                         = VN_CAST(memp->virtRefDTypep(), StructDType)) {
                         newp = nestedvalueConcat_patternStruct(memp_nested_vdtypep, defaultp, newp,
@@ -6826,21 +6872,18 @@ class WidthVisitor final : public VNVisitor {
                         if (patp) VL_DO_DANGLING(pushDeletep(patp), patp);
                     }
                 } else {  // member assignment
-                    newp = valueConcat_patternStruct(it->second, newp, memp, nodep);
+                    newp = valueConcat_patternStruct(memberPatp, newp, memp, nodep);
                 }
             }
         } else {  // Unpacked
             AstConsStruct* const consp = new AstConsStruct{nodep->fileline(), vdtypep};
             for (AstMemberDType* const memp : vdtypep->memberspList()) {
-                const auto it = patmap.find(memp);
-                AstPatternItem* patp = nullptr;
-                if (it == patmap.end()) {  // Default or default_type assignment
+                AstPatternItem* patp = memberPatps[memp->index()];
+                if (!patp) {  // Default or default_type assignment
                     patp = defaultPatp_patternStruct(nodep, memp, defaultp, dtypemap);
                     pushDeletep(patp);  // patp used below
                     patp = defaultPatp_forDType(patp, memp->virtRefDTypep(), dtypemap);
                     pushDeletep(patp);  // patp used below
-                } else {
-                    patp = it->second;  // Member assignment
                 }
                 AstNodeExpr* const valuep = patternMemberValueIterate(patp, memp);
                 consp->addItemsp(new AstConsStructItem{patp->fileline(), memp, valuep});
@@ -6919,7 +6962,7 @@ class WidthVisitor final : public VNVisitor {
         const AstStructDType* const structp = VN_CAST(elemDTypeSkipRefp, StructDType);
         const bool unpackedStruct = structp && !structp->packed();
 
-        if (!VN_IS(elemDTypeSkipRefp, UnpackArrayDType) && !unpackedStruct) {
+        if (!VN_IS(elemDTypeSkipRefp, NodeArrayDType) && !unpackedStruct) {
             VL_DO_DANGLING(pushDeletep(valuep), valuep);
             return defaultp->cloneTree(false);
         }
@@ -9126,15 +9169,10 @@ class WidthVisitor final : public VNVisitor {
                 // Verilator accepts this for compatibility with other simulators.
                 continue;
             }
-            if (VN_IS(exprp, VarRef) || VN_IS(exprp, ArraySel) || VN_IS(exprp, StructSel)) {
+            if (VN_IS(exprp, VarRef) || VN_IS(exprp, ArraySel) || VN_IS(exprp, DynArraySel)
+                || VN_IS(exprp, QueueSel) || VN_IS(exprp, StructSel)) {
                 // Valid usage
                 continue;
-            }
-            if (const AstCMethodHard* const methodp = VN_CAST(exprp, CMethodHard)) {
-                if (methodp->method() == VCMethod::ARRAY_AT
-                    || methodp->method() == VCMethod::ARRAY_AT_WRITE) {
-                    continue;
-                }
             }
             argp->v3error("Non-variable arguments for 'std::randomize()'.");
         }
@@ -9452,6 +9490,12 @@ class WidthVisitor final : public VNVisitor {
                     ftaskp->setNeedsVlProcess();
                     v3Global.setUsesTiming();
                 }
+                // Mark std::process::kill()
+                AstNodeFTask* const ftaskp
+                    = VN_AS(m_memberMap.findMember(nodep, "kill"), NodeFTask);
+                UASSERT_OBJ(ftaskp, nodep, "Missing std::process::kill()");
+                ftaskp->setNeedsVlProcess();
+                ftaskp->isProcessKill(true);
             }
         }
 
@@ -11021,7 +11065,7 @@ class WidthVisitor final : public VNVisitor {
             // folding loses it
             if (streamp && VN_IS(streamp->dtypep(), StreamDType)) packStreamOperand(streamp);
             if (streamp && !VN_IS(streamp->dtypep(), StreamDType)) {
-                AstNodeExpr* const paddedp = padStringStream(streamp->unlinkFrBack());
+                AstNodeExpr* const paddedp = padStream(streamp->unlinkFrBack(), VL_BYTESIZE);
                 cvtp->lhsp(paddedp);
                 underp = paddedp;
             } else if (streamp && !stringStreamSupported(streamp)) {
@@ -11035,6 +11079,29 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(cvtp), cvtp);
                 underp = newp;
             }
+        } else if (rhsAccess.isReadOnly() && VN_IS(underp, NodeStream)
+                   && !VN_IS(underp->dtypep(), StreamDType)
+                   && (VN_IS(expDTypep->skipRefp(), QueueDType)
+                       || VN_IS(expDTypep->skipRefp(), DynArrayDType))
+                   && expDTypep->skipRefp()->subDTypep()->skipRefp()->isIntegralOrPacked()) {
+            // Unpack the bits of the stream into the elements, as for a string above
+            underp
+                = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, FINAL, childStreamUse}.p());
+            AstNodeStream* const streamp = VN_AS(underp, NodeStream);
+            VNRelinker linker;
+            streamp->unlinkFrBack(&linker);
+            AstNodeExpr* srcp = streamp;
+            // A right stream does not reorder a packed value
+            if (VN_IS(streamp, StreamR)) {
+                srcp = streamp->lhsp()->unlinkFrBack();
+                VL_DO_DANGLING(pushDeletep(streamp), streamp);
+            }
+            AstNodeDType* const arrayDTypep = expDTypep->skipRefp();
+            srcp = padStream(srcp, arrayDTypep->subDTypep()->skipRefp()->width());
+            AstNodeExpr* const newp = new AstCvtPackedToArray{srcp->fileline(), srcp, arrayDTypep};
+            newp->didWidth(true);
+            linker.relink(newp);
+            underp = newp;
         } else {
             const AstNodeDType* const underDtp = underp->dtypep()->skipRefp();
             if (determ != ASSIGN && expDTypep->skipRefp()->isIntegralOrPacked()
@@ -11315,14 +11382,14 @@ class WidthVisitor final : public VNVisitor {
             return nodep;
         }
     }
-    // Return a fixed-width stream assigned to a string, filled with zero bits on the right to
-    // whole bytes, as a string is a dynamic array of bytes (IEEE 1800-2023 11.4.14, 6.24.3)
-    static AstNodeExpr* padStringStream(AstNodeExpr* const streamp) {
-        const int width = streamp->width();
-        const int paddedWidth = VL_BYTES_I(width) * VL_BYTESIZE;
-        if (width == paddedWidth) return streamp;
-        FileLine* const flp = streamp->fileline();
-        AstNodeExpr* const extendp = new AstExtend{flp, streamp, paddedWidth};
+    // Zero-fill the bits streamed to a dynamically sized target on the right to whole elements
+    // (IEEE 1800-2023 11.4.14)
+    static AstNodeExpr* padStream(AstNodeExpr* const exprp, const int elementWidth) {
+        const int width = exprp->width();
+        const int paddedWidth = (width + elementWidth - 1) / elementWidth * elementWidth;
+        if (width == paddedWidth) return exprp;
+        FileLine* const flp = exprp->fileline();
+        AstNodeExpr* const extendp = new AstExtend{flp, exprp, paddedWidth};
         AstNodeExpr* const shiftp = new AstConst{flp, static_cast<uint32_t>(paddedWidth - width)};
         AstNodeExpr* const newp = new AstShiftL{flp, extendp, shiftp, paddedWidth};
         extendp->didWidth(true);
@@ -11658,6 +11725,7 @@ class WidthVisitor final : public VNVisitor {
         // of small width and complete and so can use an array, and
         // a map for when the value is many bits and sparse.
         uint64_t maxval = 0;
+        adtypep = adtypep->originalOrThisDTypep();
         for (const AstEnumItem* const itemp : adtypep->itemspList()) {
             const AstConst* const vconstp = VN_CAST(itemp->valuep(), Const);
             UASSERT_OBJ(vconstp, errNodep, "Enum item without constified value");
@@ -11676,11 +11744,13 @@ class WidthVisitor final : public VNVisitor {
         // Return a reference to a constant table which has the specified attrType information
         // for this enum, for next/prev moving 'step' items. The reference is cached, so the
         // table is built only once.
-        UASSERT_OBJ(nodep->itemsp(), nodep, "enum without items");
+        UASSERT_OBJ(nodep->originalOrThisDTypep()->itemsp(), nodep, "enum without items");
         std::vector<const AstEnumItem*> items;  // For next/prev, the items in order
         size_t offset = 0;  // For next/prev, how many items to move forwards
         if (attrType == VAttrType::ENUM_NEXT || attrType == VAttrType::ENUM_PREV) {
-            for (const AstEnumItem* const itemp : nodep->itemspList()) items.push_back(itemp);
+            for (const AstEnumItem* const itemp : nodep->originalOrThisDTypep()->itemspList()) {
+                items.push_back(itemp);
+            }
             // Moving 'step' items wraps around the enum (IEEE 1800-2023 6.19.5.3), and moving
             // backwards is moving forwards by the remaining items, so e.g. next(1), next(N + 1)
             // and prev(N - 1) of N items share one table
@@ -11733,7 +11803,7 @@ class WidthVisitor final : public VNVisitor {
         {
             uint64_t ordinal = 0;
             size_t idx = 0;
-            for (const AstEnumItem* const itemp : nodep->itemspList()) {
+            for (const AstEnumItem* const itemp : nodep->originalOrThisDTypep()->itemspList()) {
                 const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
                 UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
                 if (!vconstp->num().isAnyXZ()) {  // Can 2-state runtime decode
@@ -11807,7 +11877,7 @@ class WidthVisitor final : public VNVisitor {
             // Wide values select an ordinal in the shared name table.
             AstNodeExpr* indexp = new AstConst{nodep->fileline(), 0};
             uint32_t ordinal = 0;
-            for (const AstEnumItem* const itemp : adtypep->itemspList()) {
+            for (const AstEnumItem* const itemp : adtypep->originalOrThisDTypep()->itemspList()) {
                 const AstConst* const constp = VN_AS(itemp->valuep(), Const);
                 if (constp->num().isAnyXZ()) continue;
                 indexp = new AstCond{nodep->fileline(),

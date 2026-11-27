@@ -62,9 +62,9 @@
 // to the IEEE-1800 compliant form:
 //    __VleLvalCall_0 = getInstance();
 //    __VleLvalCall_0.member = foo;
-// There are also some other internal LValues represented via CMethodHard that
-// return references, and are marked as impure. For this reason only we still
-// need to special case their handling via AstNodeExpr::isLValue().
+// Selects that can insert an element when written (AssocSel, QueueSel and
+// WildcardSel) are also impure LValues. For this reason only we still need to
+// special case their handling via AstNodeExpr::isLValue().
 //
 // $fscanf/$sscanf: the call is always lifted into a statement of its own,
 // and non-addressable destinations (part-selects, members, array elements)
@@ -537,6 +537,9 @@ class LiftExprVisitor final : public VNVisitor {
     // VISITORS - Expression special cases
     // These return C++ references rather than values, cannot be lifted
     void visit(AstAssocSel* nodep) override { iterateChildren(nodep); }
+    void visit(AstDynArraySel* nodep) override { iterateChildren(nodep); }
+    void visit(AstQueueSel* nodep) override { iterateChildren(nodep); }
+    void visit(AstWildcardSel* nodep) override { iterateChildren(nodep); }
     void visit(AstCMethodHard* nodep) override { iterateChildren(nodep); }
     // Don't know whether these may return non-values, assume so
     void visit(AstCExpr* nodep) override { iterateChildren(nodep); }

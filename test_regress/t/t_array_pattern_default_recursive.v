@@ -105,6 +105,36 @@ module t;
       if (arr_nested_default[i].b != 8'hff) $stop;
     end
 
+    // A default applies to every leaf element of nested packed arrays (issue #9331)
+    begin
+      typedef logic [4:0][30:0] row_t;
+      typedef row_t [2:0] rows_t;
+      typedef struct packed {
+        row_t r;
+        logic [6:0] b;
+      } prow_t;
+      rows_t rows;
+      prow_t prow;
+      rows = '{default: 4};
+      prow = '{r: '{default: 4}, b: 7'd5};
+      for (int i = 0; i < 3; ++i) begin
+        for (int j = 0; j < 5; ++j) begin
+          if (rows[i][j] != 31'd4) $stop;
+        end
+      end
+      for (int j = 0; j < 5; ++j) begin
+        if (prow.r[j] != 31'd4) $stop;
+      end
+      if (prow.b != 7'd5) $stop;
+      // A default of the element's own packed array type is the whole element
+      begin
+        row_t row;
+        row = {5{31'd9}};
+        rows = '{default: row};
+        for (int i = 0; i < 3; ++i) if (rows[i] != row) $stop;
+      end
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

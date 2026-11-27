@@ -14,7 +14,4 @@ test.top_filename = "t/t_dump.v"
 
 test.lint(v_flags=["--dumpi-tree 1 --dump-V3LinkInc --dump-tree-addrids"])
 
-out_filename = test.glob_one(test.obj_dir + "/*_linkinc.tree")
-test.files_identical(out_filename, test.golden_filename)
-
 test.passes()

@@ -908,7 +908,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %left           yP_ANDANDAND
 %left           yMATCHES
 %left           prTAGGED
-//UNSUP %left   prSEQ_CLOCKING
+%left           prSEQ_CLOCKING
 
 // PSL op precedence
 
@@ -2195,69 +2195,58 @@ type_referenceEq<nodeExprp>:            // IEEE: type_reference (as an ==/!== ex
 struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
         //                      // packedSigningE is NOP for unpacked
                 ySTRUCT        packedSigningE '{'
-        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstStructDType{$1, $2}; }
+        /*mid*/         { $<nodeUOrStructDTypep>$ = GRAMMARP->m_memParentp;  // Enclosing struct, restored below
+                          GRAMMARP->m_memParentp = new AstStructDType{$1, $2}; }
         /*cont*/    struct_union_memberListEnd
-                        { $$ = $<nodeUOrStructDTypep>4; $$->addMembersp($5); }
+                        { $$ = GRAMMARP->m_memParentp;
+                          GRAMMARP->m_memParentp = $<nodeUOrStructDTypep>4; }
         |       yUNION taggedSoftE packedSigningE '{'
-        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2 == tagged_SOFT, $2 == tagged_TAGGED, $3}; }
+        /*mid*/         { $<nodeUOrStructDTypep>$ = GRAMMARP->m_memParentp;  // Enclosing struct, restored below
+                          GRAMMARP->m_memParentp = new AstUnionDType{$1, $2 == tagged_SOFT, $2 == tagged_TAGGED, $3}; }
         /*cont*/    struct_union_memberListEnd
-                        { $$ = $<nodeUOrStructDTypep>5; $$->addMembersp($6); }
+                        { $$ = GRAMMARP->m_memParentp;
+                          GRAMMARP->m_memParentp = $<nodeUOrStructDTypep>5; }
         ;
 
-struct_union_memberListEnd<memberDTypep>: // IEEE: { struct_union_member } '}'
-                struct_union_memberList '}'                     { $$ = $1; }
+struct_union_memberListEnd:     // IEEE: { struct_union_member } '}'
+                struct_union_memberList '}'                     { }
         //
-        |       struct_union_memberList error '}'               { $$ = $1; }  // LCOV_EXCL_LINE
-        |       error '}'                                       { $$ = nullptr; }  // LCOV_EXCL_LINE
+        |       struct_union_memberList error '}'               { }  // LCOV_EXCL_LINE
+        |       error '}'                                       { }  // LCOV_EXCL_LINE
         ;
 
-struct_union_memberList<memberDTypep>: // IEEE: { struct_union_member }
-                struct_union_member                             { $$ = $1; }
+struct_union_memberList:        // IEEE: { struct_union_member }
+                struct_union_member                             { }
 
-        |       struct_union_memberList struct_union_member     { $$ = addNextNull($1, $2); }
+        |       struct_union_memberList struct_union_member     { }
         //
-        |       struct_union_memberList error ';'               { $$ = $1; }  // LCOV_EXCL_LINE
-        |       error ';'                                       { $$ = nullptr; }  // LCOV_EXCL_LINE
+        |       struct_union_memberList error ';'               { }  // LCOV_EXCL_LINE
+        |       error ';'                                       { }  // LCOV_EXCL_LINE
         ;
 
-struct_union_member<memberDTypep>:     // ==IEEE: struct_union_member
+struct_union_member:            // ==IEEE: struct_union_member
                 random_qualifierE data_type_or_void
         /*mid*/         { GRAMMARP->m_memDTypep = $2;  // As a list follows, need to attach this dtype to each member.
                           GRAMMARP->m_memRand = $1.randAttr(); }
         /*cont*/    list_of_member_decl_assignments ';'
-                        { $$ = $4;
-                          DEL(GRAMMARP->m_memDTypep); GRAMMARP->m_memDTypep = nullptr;
+                        { DEL(GRAMMARP->m_memDTypep); GRAMMARP->m_memDTypep = nullptr;
                           GRAMMARP->m_memRand = VRandAttr::NONE; }
-        |       vlTag                                   { $$ = nullptr; }
+        |       vlTag                                   { }
         ;
 
-list_of_member_decl_assignments<memberDTypep>: // Derived from IEEE: list_of_variable_decl_assignments
-                member_decl_assignment                  { $$ = $1; }
-        |       list_of_member_decl_assignments ',' member_decl_assignment      { $$ = addNextNull($1, $3); }
+list_of_member_decl_assignments: // Derived from IEEE: list_of_variable_decl_assignments
+                member_decl_assignment                  { }
+        |       list_of_member_decl_assignments ',' member_decl_assignment      { }
         ;
 
-member_decl_assignment<memberDTypep>:   // Derived from IEEE: variable_decl_assignment
+member_decl_assignment:         // Derived from IEEE: variable_decl_assignment
         //                      // At present we allow only packed structures/unions.
         //                      // So this is different from variable_decl_assignment
                 idAny variable_dimensionListE
-                        { $$ = new AstMemberDType{$<fl>1, *$1, VFlagChildDType{},
-                                                  GRAMMARP->createArray((GRAMMARP->m_memDTypep
-                                                                         ? GRAMMARP->m_memDTypep->cloneTree(true) : nullptr),
-                                                                        $2, false),
-                                                  nullptr};
-                          $$->rand(GRAMMARP->m_memRand);
-                          PARSEP->tagNodep($$);
-                        }
+                        { GRAMMARP->addMember($<fl>1, *$1, $2, nullptr); }
         |       idAny variable_dimensionListE '=' variable_declExpr
-                        { $$ = new AstMemberDType{$<fl>1, *$1, VFlagChildDType{},
-                                                  GRAMMARP->createArray((GRAMMARP->m_memDTypep
-                                                                         ? GRAMMARP->m_memDTypep->cloneTree(true) : nullptr),
-                                                                        $2, false),
-                                                  $4};
-                          $$->rand(GRAMMARP->m_memRand);
-                          PARSEP->tagNodep($$);
-                        }
-        |       idSVKwd                                 { $$ = nullptr; }
+                        { GRAMMARP->addMember($<fl>1, *$1, $2, $4); }
+        |       idSVKwd                                 { }
         //
         //                      // IEEE: "dynamic_array_variable_identifier '[' ']' [ '=' dynamic_array_new ]"
         //                      // Matches above with variable_dimensionE = "[]"
@@ -3383,7 +3372,8 @@ instPinItListE<pinp>:           // IEEE: list_of_port_connections
 
 instParamItem<pinp>:            // IEEE: named_parameter_assignment + empty
         //                      // Note empty is not allowed in parameter lists
-                yP_DOTSTAR                              { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
+                yP_DOTSTAR
+                        { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
         |       '.' idAny '(' ')'
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2, nullptr};
                           $$->svDotName(true); }
@@ -6399,10 +6389,12 @@ clocking_eventE<senItemp>:      // IEEE: optional clocking_event
 clocking_event<senItemp>:       // IEEE: clocking_event
         //                      // IEEE: '@' ps_identifier
         //                      // IEEE: '@' hierarchical_identifier
-        //UNSUP: '@' idClassSel/*ps_identifier*/
-                '@' id
-                        { $$ = new AstSenItem{$<fl>2, VEdgeType::ET_CHANGED,
-                                              new AstParseRef{$<fl>2, *$2, nullptr, nullptr}}; }
+                '@' idDottedSel
+                        { $$ = new AstSenItem{$2->fileline(), VEdgeType::ET_CHANGED, $2}; }
+        |       '@' packageClassScope idAny
+                        { $$ = new AstSenItem{$2->fileline(), VEdgeType::ET_CHANGED,
+                                              new AstDot{$<fl>3, true, $2,
+                                                        new AstParseRef{$<fl>3, *$3, nullptr, nullptr}}}; }
         |       '@' '(' event_expression ')'            { $$ = $3; }
         ;
 
@@ -6587,12 +6579,6 @@ concurrent_assertion_statement<nodeStmtp>:  // ==IEEE: concurrent_assertion_stat
                               $6, VAssertType::CONCURRENT};
                           coverp->isCoverSeq(true);
                           $$ = coverp; }
-        |       yCOVER ySEQUENCE '(' clocking_event sexpr ')' stmt
-                        { AstCover* const coverp = new AstCover{$1,
-                              new AstPropSpec{$4->fileline(), $4, nullptr, $5},
-                              $7, VAssertType::CONCURRENT};
-                          coverp->isCoverSeq(true);
-                          $$ = coverp; }
         |       yCOVER ySEQUENCE '(' clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' sexpr ')' stmt
                         { AstCover* const coverp = new AstCover{$1,
                               new AstPropSpec{$4->fileline(), $4, $8, $10},
@@ -6707,7 +6693,7 @@ assertion_variable_declarationList<nodep>:  // IEEE: part of assertion_variable_
         ;
 
 sequence_declaration<sequencep>:  // ==IEEE: sequence_declaration
-                sequence_declarationFront sequence_port_listE ';' sequence_declarationBody
+                sequence_declarationFront sequence_port_listE ';' sequence_declarationBodyExpr
         /*cont*/    yENDSEQUENCE endLabelE
                         { $$ = $1;
                           $$->addDeclsp($2);
@@ -6757,16 +6743,6 @@ sequence_formal_typeNoDt<nodeDTypep>:  // ==IEEE: sequence_formal_type (w/o data
                         { $$ = nullptr; GRAMMARP->m_typedPropertyPort = false; }
         ;
 
-sequence_declarationBody<nodeExprp>:  // IEEE: part of sequence_declaration
-                sequence_declarationBodyExpr            { $$ = $1; }
-        //                      // IEEE: clocking_event sequence_expr (16.7)
-        //                      // A leading clocking event on a named sequence body.
-        |       '@' '(' event_expression ')' sexpr      { $$ = new AstSClocked{$1, $3, $5}; }
-        |       '@' '(' event_expression ')' sexpr ';'  { $$ = new AstSClocked{$1, $3, $5}; }
-        |       '@' senitemVar sexpr                    { $$ = new AstSClocked{$1, $2, $3}; }
-        |       '@' senitemVar sexpr ';'                { $$ = new AstSClocked{$1, $2, $3}; }
-        ;
-
 sequence_declarationBodyExpr<nodeExprp>:  // IEEE: part of sequence_declaration
         //                      // 1800-2012 makes ';' optional
                 sexpr                                   { $$ = $1; }
@@ -6774,29 +6750,24 @@ sequence_declarationBodyExpr<nodeExprp>:  // IEEE: part of sequence_declaration
         ;
 
 property_spec<propSpecp>:               // IEEE: property_spec
-        //UNSUP: This rule has been super-specialized to what is supported now
-        //UNSUP remove below
-                '@' '(' senitem ')' yDISABLE yIFF '(' expr ')' property_exprSpec
-                        { $$ = $10; $$->fileline($1); $$->sensesp($3); $$->disablep($8); }
-        |       '@' '(' senitem ')' property_exprSpec
-                        { $$ = $5; $$->fileline($1); $$->sensesp($3); }
-        |       '@' senitemVar property_exprSpec
-                        { $$ = $3; $$->fileline($1); $$->sensesp($2); }
-        |       yDISABLE yIFF '(' expr ')' '@' '(' senitem ')' property_exprSpec
-                        { $$ = $10; $$->fileline($1); $$->sensesp($8); $$->disablep($4); }
-        //UNSUP remove above
-        |       yDISABLE yIFF '(' expr ')' property_exprSpec
-                        { $$ = $6; $$->fileline($4->fileline()); $$->disablep($4); }
-        |       property_exprSpec                       { $$ = $1; }
+        //                      // A clocking_event before a plain property_expr parses via pexpr
+                property_exprSpec                       { $$ = $1; }
+        |       clocking_eventE yDISABLE yIFF '(' expr ')' property_exprSpec
+                        { $$ = $7; $$->fileline($1 ? $<fl>1 : $5->fileline());
+                          $$->addSensesp($1); $$->disablep($5); }
         ;
 
 property_exprSpec<propSpecp>:  // A property expression plus explicit weak/strong strength
                 pexpr
                         { $$ = new AstPropSpec{$1->fileline(), nullptr, nullptr, $1}; }
-        |       ySTRONG '(' sexpr ')'
-                        { $$ = new AstPropSpec{$1, nullptr, nullptr, $3, VPropStrength::STRONG}; }
-        |       yWEAK '(' sexpr ')'
-                        { $$ = new AstPropSpec{$1, nullptr, nullptr, $3, VPropStrength::WEAK}; }
+        |       clocking_eventE ySTRONG '(' sexpr ')'
+                        { $$ = new AstPropSpec{$1 ? $<fl>1 : $2, nullptr, nullptr,
+                                               $1 ? new AstSClocked{$<fl>1, $1, $4} : $4,
+                                               VPropStrength::STRONG}; }
+        |       clocking_eventE yWEAK '(' sexpr ')'
+                        { $$ = new AstPropSpec{$1 ? $<fl>1 : $2, nullptr, nullptr,
+                                               $1 ? new AstSClocked{$<fl>1, $1, $4} : $4,
+                                               VPropStrength::WEAK}; }
         ;
 
 property_exprCaseIf<nodeExprp>:  // IEEE: part of property_expr for if/case
@@ -6903,13 +6874,13 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
                         { $$ = new AstPropAlways{$1, $2, new AstUnbounded{$1}, new AstUnbounded{$1}, true}; }
         |       yS_EVENTUALLY pexpr  %prec prS_EVENTUALLY
                         {
-                            $$ = new AstSEventually{$1, $2};
+                            $$ = new AstEventually{$1, $2, nullptr, nullptr, true};
                             PARSEP->importIfInStd($1, "process");
                         }
-        |       yS_EVENTUALLY anyrange pexpr  %prec prS_EVENTUALLY
-                        { $$ = $3; BBUNSUP($1, "Unsupported: s_eventually[] (in property expression)"); DEL($2); }
-        |       yEVENTUALLY anyrange pexpr  %prec prEVENTUALLY
-                        { $$ = $3; BBUNSUP($1, "Unsupported: eventually[] (in property expression)"); DEL($2); }
+        |       yS_EVENTUALLY '[' constExpr ':' constExpr ']' pexpr  %prec prS_EVENTUALLY
+                        { $$ = new AstEventually{$1, $7, $3, $5, true}; }
+        |       yEVENTUALLY '[' constExpr ':' constExpr ']' pexpr  %prec prEVENTUALLY
+                        { $$ = new AstEventually{$1, $7, $3, $5, false}; }
         |       ~o~pexpr yUNTIL pexpr
                         { $$ = new AstUntil{$2, $1, $3, false, false}; }
         |       ~o~pexpr yS_UNTIL pexpr
@@ -6939,8 +6910,6 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // property_statement_spec: clocking_event property_statement
         //
         //                      // Include property_specDisable to match property_spec rule
-        //UNSUP clocking_event ~p~sexpr %prec prSEQ_CLOCKING
-        //UNSUP         { $$ = $2; BBUNSUP($2, "Unsupported: clocking event (in sequence expression)"); DEL($1); }
         //
         //============= sexpr rules copied for property_expr
         |       BISONPRE_COPY_ONCE(sexpr,{s/~p~s/p/g; })        // {copied}
@@ -7039,8 +7008,9 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // IEEE: sexpr yWITHIN sexpr
         |       ~p~sexpr yWITHIN sexpr
                         { $$ = new AstSWithin{$2, $1, $3}; }
-        //                      // Note concurrent_assertion had duplicate rule for below
-        //UNSUP clocking_event ~p~sexpr %prec prSEQ_CLOCKING    { }
+        //                      // IEEE: clocking_event sequence_expr (A.2.10)
+        |       clocking_event ~p~sexpr %prec prSEQ_CLOCKING
+                        { $$ = new AstSClocked{$<fl>1, $1, $2}; }
         //
         //============= expr rules copied for sequence_expr
         |       BISONPRE_COPY_ONCE(expr,{s/~l~/s/g; s/~p~/s/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g; })  // {copied}

@@ -214,7 +214,7 @@ class ProtectVisitor final : public VNVisitor {
                   + "_protectlib_create(string scope__V);\n\n");
         comboComment(txtp, fl);
         m_comboPortsp = new AstTextBlock{fl,  //
-                                         "import \"DPI-C\" function longint " + m_libName
+                                         "import \"DPI-C\" function longint unsigned " + m_libName
                                              + "_protectlib_combo_update(\n",  //
                                          ", ",  //
                                          ");\n\n"};
@@ -223,8 +223,8 @@ class ProtectVisitor final : public VNVisitor {
         seqComment(txtp, fl);
         if (m_hasClk) {
             m_seqPortsp = new AstTextBlock{fl,  //
-                                           "import \"DPI-C\" function longint " + m_libName
-                                               + "_protectlib_seq_update(\n",  //
+                                           "import \"DPI-C\" function longint unsigned "
+                                               + m_libName + "_protectlib_seq_update(\n",  //
                                            ", ",  //
                                            ");\n\n"};
             m_seqPortsp->add("chandle handle__V\n");
@@ -367,7 +367,7 @@ class ProtectVisitor final : public VNVisitor {
         addComment(txtp, fl, "Container class to house verilated object and sequence number");
         txtp->add("class " + m_topName + "_container: public " + m_topName + " {\n");
         txtp->add("public:\n");
-        txtp->add("long long m_seqnum;\n");
+        txtp->add("unsigned long long m_seqnum = 0;\n");
         txtp->add(m_topName + "_container(const char* scopep__V):\n");
         txtp->add(m_topName + "(Verilated::threadContextp(), scopep__V, false) {}\n");
         txtp->add("};\n\n");
@@ -410,7 +410,8 @@ class ProtectVisitor final : public VNVisitor {
         // Updates
         comboComment(txtp, fl);
         m_cComboParamsp = new AstTextBlock{
-            fl, "long long " + m_libName + "_protectlib_combo_update(\n", ",\n", "\n) {\n"};
+            fl, "unsigned long long " + m_libName + "_protectlib_combo_update(\n", ",\n",
+            "\n) {\n"};
         m_cComboParamsp->add("void* vhandlep__V");
         txtp->add(m_cComboParamsp);
         m_cComboInsp = new AstTextBlock{fl};
@@ -425,7 +426,8 @@ class ProtectVisitor final : public VNVisitor {
         if (m_hasClk) {
             seqComment(txtp, fl);
             m_cSeqParamsp = new AstTextBlock{
-                fl, "long long " + m_libName + "_protectlib_seq_update(\n", ",\n", "\n) {\n"};
+                fl, "unsigned long long " + m_libName + "_protectlib_seq_update(\n", ",\n",
+                "\n) {\n"};
             m_cSeqParamsp->add("void* vhandlep__V");
             txtp->add(m_cSeqParamsp);
             m_cSeqClksp = new AstTextBlock{fl};

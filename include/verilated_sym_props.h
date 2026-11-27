@@ -191,7 +191,7 @@ public:
     bool isNet() const { return ((m_vlflags & VLVF_NET) != 0); }
     bool isPackedAgg() const { return ((m_vlflags & VLVF_PACKED_AGG) != 0); }
     bool isPackedUnion() const { return ((m_vlflags & VLVF_PACKED_UNION) != 0); }
-    bool isPackedMember() const { return ((m_vlflags & VLVF_PACKED_MEMBER) != 0); }
+    bool isMember() const { return ((m_vlflags & VLVF_MEMBER) != 0); }
     bool isPackedNeedsIndex() const { return ((m_vlflags & VLVF_PACKED_NEEDS_INDEX) != 0); }
     // Bit offset of a packed struct/union member within its (element 0) parent storage
     uint32_t bitOffset() const VL_MT_SAFE { return m_bitOffset; }
