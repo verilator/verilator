@@ -605,6 +605,279 @@ public:
 template <typename T_Class>
 class VlClassRef;
 
+// Type-erased backing storage for VlDeque
+class VlDequeImpl final {
+public:
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+    struct Ops final {
+        void (*construct)(void*);
+        void (*copyConstruct)(void*, const void*);
+        void (*moveConstruct)(void*, void*);
+        void (*copyAssign)(void*, const void*);
+        void (*moveAssign)(void*, void*);
+        void (*destroy)(void*);
+    };
+
+private:
+    struct VlBlock final {
+        const size_type m_elementSize;  // Element size in bytes
+        const size_type m_capacity;  // Elements per block
+        unsigned char* const m_storagep;  // Aligned elements storage
+
+        static VlBlock* construct(size_type elementSize, size_type elementAlignment,
+                                  size_type capacity);
+        static void destroy(VlBlock* blockp);
+
+    private:
+        VlBlock(size_type elementSize, size_type capacity, unsigned char* storagep);
+        VlBlock(const VlBlock&) = delete;
+        ~VlBlock() = default;
+    };
+
+public:
+    class iterator final {
+        friend class VlDequeImpl;
+        VlBlock* const* m_blockpp = nullptr;  // Current block
+        unsigned char* m_currentp = nullptr;  // Current element address
+        iterator(VlBlock* const* blockpp, unsigned char* currentp)
+            : m_blockpp{blockpp}
+            , m_currentp{currentp} {}
+
+    public:
+        iterator() = default;
+        void* datap() const VL_PURE { return m_currentp; }
+        iterator& operator++();
+        iterator& operator--();
+        iterator& operator+=(difference_type offset);
+        difference_type operator-(const iterator& rhs) const;
+        bool operator==(const iterator& rhs) const {
+            return m_blockpp == rhs.m_blockpp && m_currentp == rhs.m_currentp;
+        }
+    };
+
+private:
+    static constexpr size_type INITIAL_MAP_CAPACITY = 8;
+    static constexpr size_type BLOCK_BYTES = 512;
+    size_type m_elementSize;  // Element size in bytes
+    size_type m_elementAlignment;  // Element alignment in bytes
+    size_type m_blockSizeLog2;  // Log2 of the number of elements per block
+    const Ops* m_opsp;  // Element operations
+    VlBlock** m_blocksp = nullptr;  // Array of blocks
+    size_type m_mapCapacity = 0;  // Size of m_blocksp
+    size_type m_allocatedBlocks = 0;  // Allocated blocks
+    size_type m_firstBlock = 0;  // First allocated and used block
+    size_type m_frontOffset = 0;  // Offset of the first used slot in its block
+    size_type m_size = 0;  // Used slots
+
+    size_type blockSize() const { return size_type{1} << m_blockSizeLog2; }
+    size_type blockIndex(size_type slot) const { return m_firstBlock + (slot >> m_blockSizeLog2); }
+    unsigned char* slotp(size_type index) const;
+    void reserveMap(bool atFront, size_type blocks = 1);
+    void ensureBackSlot(size_type slots = 1);
+    void ensureFrontSlot();
+    void swap(VlDequeImpl& rhs) noexcept;
+
+public:
+    VlDequeImpl(size_type elementSize, size_type elementAlignment, const Ops& ops);
+    VlDequeImpl(const VlDequeImpl& rhs);
+    VlDequeImpl(VlDequeImpl&& rhs) noexcept;
+    ~VlDequeImpl();
+    template <typename T_Value, typename T_Iterator>
+    void assign(T_Iterator begin_it, T_Iterator end_it) {
+        const size_type new_size = std::distance(begin_it, end_it);
+        clear(new_size);
+        ensureBackSlot(new_size);
+        for (; begin_it != end_it; ++begin_it) {
+            new (slotp(m_size)) T_Value(*begin_it);
+            ++m_size;
+        }
+    }
+    VlDequeImpl& operator=(const VlDequeImpl& rhs);
+    VlDequeImpl& operator=(VlDequeImpl&& rhs) noexcept;
+    size_type size() const { return m_size; }
+    bool empty() const { return !m_size; }
+    void clear(size_type keep_slots = 1);
+    void* at(size_type index) { return slotp(index); }
+    const void* at(size_type index) const { return slotp(index); }
+    void push_front(const void* valuep);
+    void push_front_move(void* valuep);
+    void push_back(const void* valuep);
+    void push_back_move(void* valuep);
+    void pop_front();
+    void pop_back();
+    void resize(size_type size);
+    void resize(size_type size, const void* valuep);
+    iterator insert(iterator position, const void* valuep);
+    iterator erase(iterator position);
+    iterator begin() const;
+    iterator end() const;
+};
+
+template <typename T_Value>
+class VlDeque final {
+    VlDequeImpl m_deque;  // Type-erased backing storage
+    static const VlDequeImpl::Ops& ops() {
+        static const VlDequeImpl::Ops s_ops{
+            [](void* p) { new (p) T_Value{}; },
+            [](void* p, const void* valuep) {
+                new (p) T_Value{*static_cast<const T_Value*>(valuep)};
+            },
+            [](void* p, void* valuep) {
+                new (p) T_Value{std::move(*static_cast<T_Value*>(valuep))};
+            },
+            [](void* p, const void* valuep) {
+                *static_cast<T_Value*>(p) = *static_cast<const T_Value*>(valuep);
+            },
+            [](void* p, void* valuep) {
+                *static_cast<T_Value*>(p) = std::move(*static_cast<T_Value*>(valuep));
+            },
+            [](void* p) { static_cast<T_Value*>(p)->~T_Value(); }};
+        return s_ops;
+    }
+
+public:
+    using value_type = T_Value;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+    template <bool N_Const>
+    class Iterator final {
+        friend class VlDeque;
+        template <bool>
+        friend class Iterator;
+        VlDequeImpl::iterator m_iterator;  // Type-erased iterator
+        explicit Iterator(VlDequeImpl::iterator iterator)
+            : m_iterator{iterator} {}
+
+    public:
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type = T_Value;
+        using difference_type = std::ptrdiff_t;
+        using pointer = typename std::conditional<N_Const, const T_Value*, T_Value*>::type;
+        using reference = typename std::conditional<N_Const, const T_Value&, T_Value&>::type;
+        Iterator() = default;
+        template <bool M_Const, typename std::enable_if<N_Const && !M_Const, int>::type = 0>
+        Iterator(const Iterator<M_Const>& rhs)
+            : m_iterator{rhs.m_iterator} {}
+        reference operator*() const VL_PURE { return *static_cast<pointer>(m_iterator.datap()); }
+        pointer operator->() const { return static_cast<pointer>(m_iterator.datap()); }
+        reference operator[](difference_type offset) const { return *(*this + offset); }
+        Iterator& operator++() {
+            ++m_iterator;
+            return *this;
+        }
+        Iterator& operator--() {
+            --m_iterator;
+            return *this;
+        }
+        Iterator operator++(int) {
+            Iterator old = *this;
+            ++*this;
+            return old;
+        }
+        Iterator operator--(int) {
+            Iterator old = *this;
+            --*this;
+            return old;
+        }
+        Iterator& operator+=(difference_type offset) {
+            m_iterator += offset;
+            return *this;
+        }
+        Iterator& operator-=(difference_type offset) { return *this += -offset; }
+        Iterator operator+(difference_type offset) const {
+            Iterator out = *this;
+            return out += offset;
+        }
+        Iterator operator-(difference_type offset) const {
+            Iterator out = *this;
+            return out -= offset;
+        }
+        friend Iterator operator+(difference_type offset, Iterator rhs) { return rhs += offset; }
+        template <bool M_Const>
+        difference_type operator-(const Iterator<M_Const>& rhs) const {
+            return m_iterator - rhs.m_iterator;
+        }
+        template <bool M_Const>
+        bool operator==(const Iterator<M_Const>& rhs) const {
+            return m_iterator == rhs.m_iterator;
+        }
+        template <bool M_Const>
+        bool operator!=(const Iterator<M_Const>& rhs) const {
+            return !(*this == rhs);
+        }
+        template <bool M_Const>
+        bool operator<(const Iterator<M_Const>& rhs) const {
+            return (*this - rhs) < 0;
+        }
+        template <bool M_Const>
+        bool operator<=(const Iterator<M_Const>& rhs) const {
+            return (*this - rhs) <= 0;
+        }
+        template <bool M_Const>
+        bool operator>(const Iterator<M_Const>& rhs) const {
+            return (*this - rhs) > 0;
+        }
+        template <bool M_Const>
+        bool operator>=(const Iterator<M_Const>& rhs) const {
+            return (*this - rhs) >= 0;
+        }
+    };
+    using iterator = Iterator<false>;
+    using const_iterator = Iterator<true>;
+
+    VlDeque()
+        : m_deque{sizeof(T_Value), alignof(T_Value), ops()} {}
+    template <typename T_Iterator>
+    VlDeque(T_Iterator begin_it, T_Iterator end_it)
+        : VlDeque{} {
+        assign(begin_it, end_it);
+    }
+    template <typename T_Iterator>
+    void assign(T_Iterator begin_it, T_Iterator end_it) {
+        m_deque.assign<T_Value>(begin_it, end_it);
+    }
+    size_type size() const { return m_deque.size(); }
+    bool empty() const { return m_deque.empty(); }
+    void clear() { m_deque.clear(); }
+    T_Value& operator[](size_type index) { return *static_cast<T_Value*>(m_deque.at(index)); }
+    const T_Value& operator[](size_type index) const {
+        return *static_cast<const T_Value*>(m_deque.at(index));
+    }
+    T_Value& front() { return (*this)[0]; }
+    const T_Value& front() const { return (*this)[0]; }
+    T_Value& back() { return (*this)[size() - 1]; }
+    const T_Value& back() const { return (*this)[size() - 1]; }
+    void push_front(const T_Value& value) { m_deque.push_front(std::addressof(value)); }
+    void push_front(T_Value&& value) { m_deque.push_front_move(std::addressof(value)); }
+    void push_back(const T_Value& value) { m_deque.push_back(std::addressof(value)); }
+    void push_back(T_Value&& value) { m_deque.push_back_move(std::addressof(value)); }
+    void pop_front() { m_deque.pop_front(); }
+    void pop_back() { m_deque.pop_back(); }
+    void resize(size_type size) { m_deque.resize(size); }
+    void resize(size_type size, const T_Value& value) {
+        m_deque.resize(size, std::addressof(value));
+    }
+    iterator insert(iterator position, const T_Value& value) {
+        if (position != begin() && position != end()) {
+            const T_Value copy{value};
+            return iterator{m_deque.insert(position.m_iterator, std::addressof(copy))};
+        }
+        return iterator{m_deque.insert(position.m_iterator, std::addressof(value))};
+    }
+    iterator erase(iterator position) { return iterator{m_deque.erase(position.m_iterator)}; }
+    iterator begin() { return iterator{m_deque.begin()}; }
+    iterator end() { return iterator{m_deque.end()}; }
+    const_iterator begin() const { return const_iterator{m_deque.begin()}; }
+    const_iterator end() const { return const_iterator{m_deque.end()}; }
+    const_iterator cbegin() const { return begin(); }
+    const_iterator cend() const { return end(); }
+    bool operator==(const VlDeque& rhs) const {
+        return size() == rhs.size() && std::equal(begin(), end(), rhs.begin());
+    }
+    bool operator!=(const VlDeque& rhs) const { return !(*this == rhs); }
+};
+
 //===================================================================
 // Verilog queue and dynamic array container
 // There are no multithreaded locks on this; the base variable must
@@ -613,37 +886,39 @@ class VlClassRef;
 // Bound here is the maximum size() allowed, e.g. 1 + SystemVerilog bound
 // For dynamic arrays it is always zero
 template <typename T_Value, size_t N_MaxSize = 0>
-class VlQueue final {
-private:
-    template <typename U_Value, size_t M_MaxSize>
-    friend class VlQueue;
+class VlQueue;
 
-    // TYPES
-    using Deque = std::deque<T_Value>;
-
+template <typename T_Value>
+class VlQueue<T_Value, 0> VL_NOT_FINAL {
 public:
+    using Deque = VlDeque<T_Value>;
     using const_iterator = typename Deque::const_iterator;
     template <typename T_Func>
     using WithFuncReturnType = decltype(std::declval<T_Func>()(0, std::declval<T_Value>()));
 
-private:
+protected:
     // MEMBERS
     Deque m_deque;  // State of the assoc array
     T_Value m_defaultValue{};  // Default value
 
     // METHODS
     // Discard elements beyond the bound, with the warning IEEE 1800-2023 7.10.5 requires
-    void applyBound() {
-        if (VL_UNLIKELY(N_MaxSize && N_MaxSize < m_deque.size())) {
-            Verilated::queueBoundError(N_MaxSize, m_deque.size());
-            m_deque.resize(N_MaxSize);
+    VL_ATTR_NOINLINE void applyBound(size_t maxSize) {
+        if (VL_UNLIKELY(maxSize && maxSize < m_deque.size())) {
+            Verilated::queueBoundError(maxSize, m_deque.size());
+            m_deque.resize(maxSize);
         }
+    }
+    VL_ATTR_NOINLINE void sliceInto(VlQueue& out, int32_t lsb, int32_t msb, size_t maxSize) const {
+        if (VL_UNLIKELY(lsb < 0)) lsb = 0;
+        if (VL_UNLIKELY(msb >= static_cast<int32_t>(m_deque.size()))) msb = m_deque.size() - 1;
+        for (int32_t i = lsb; i <= msb; ++i) out.push_back(m_deque[i], maxSize);
     }
     // Helpers for the variadic constructor, which applies the bound once all are appended
     void append(const T_Value& value) { m_deque.push_back(value); }
     template <size_t N_RhsMaxSize>
     void append(const VlQueue<T_Value, N_RhsMaxSize>& rhs) {
-        for (const T_Value& value : rhs.m_deque) m_deque.push_back(value);
+        for (const T_Value& value : rhs) m_deque.push_back(value);
     }
     template <std::size_t N_Depth>
     void append(const VlUnpacked<T_Value, N_Depth>& rhs) {
@@ -653,7 +928,7 @@ private:
               typename = typename std::enable_if<
                   std::is_convertible<VlClassRef<T_Subclass>, T_Value>::value>::type>
     void append(const VlQueue<VlClassRef<T_Subclass>, N_RhsMaxSize>& rhs) {
-        for (const VlClassRef<T_Subclass>& value : rhs.m_deque) m_deque.push_back(value);
+        for (const VlClassRef<T_Subclass>& value : rhs) m_deque.push_back(value);
     }
     template <typename T_Subclass, std::size_t N_Depth,
               typename = typename std::enable_if<
@@ -677,25 +952,23 @@ private:
 
 public:
     // CONSTRUCTORS
-    // cppcheck-suppress uninitMemberVar // m_defaultValue isn't defaulted, caller must
-    VlQueue() = default;
-    ~VlQueue() = default;
-    VlQueue(const VlQueue&) = default;
-    VlQueue(VlQueue&&) = default;
-    VlQueue& operator=(const VlQueue&) = default;
-    VlQueue& operator=(VlQueue&&) = default;
+    VL_ATTR_NOINLINE VlQueue() = default;
+    VL_ATTR_NOINLINE ~VlQueue() = default;
+    VL_ATTR_NOINLINE VlQueue(const VlQueue&) = default;
+    VL_ATTR_NOINLINE VlQueue(VlQueue&&) = default;
+    VL_ATTR_NOINLINE VlQueue& operator=(const VlQueue&) = default;
+    VL_ATTR_NOINLINE VlQueue& operator=(VlQueue&&) = default;
 
     // Template constuctors that construct from containers holding sub-classes
     template <typename T_Subclass>
-    inline VlQueue(const VlQueue<VlClassRef<T_Subclass>>&);
+    VL_ATTR_NOINLINE VlQueue(const VlQueue<VlClassRef<T_Subclass>, 0>&);
     template <typename T_Subclass>
-    inline VlQueue(VlQueue<VlClassRef<T_Subclass>>&&);
+    VL_ATTR_NOINLINE VlQueue(VlQueue<VlClassRef<T_Subclass>, 0>&&);
 
     // Verilog: '{a, b} or {a, q}
     template <typename... T_Args>
     explicit VlQueue(const T_Args&... args) {
         appendAll(args...);
-        applyBound();
     }
     // Verilog: '{index: value, default: value}, sized by new[size], else by the largest index
     explicit VlQueue(size_t size, const T_Value& defaultValue,
@@ -704,7 +977,6 @@ public:
         for (const auto& item : items) {
             if (item.first < size) m_deque[item.first] = item.second;
         }
-        applyBound();
     }
     // Verilog: '{index: value}, sized by new[size], else by the largest index
     explicit VlQueue(size_t size, std::initializer_list<std::pair<QData, T_Value>> items)
@@ -725,82 +997,76 @@ public:
         return false;
     }
 
-    // Standard copy constructor works. Verilog: assoca = assocb
-    // Also must allow conversion from a different N_MaxSize queue
-    template <size_t N_RhsMaxSize = 0>
-    VlQueue operator=(const VlQueue<T_Value, N_RhsMaxSize>& rhs) {
-        m_deque = rhs.privateDeque();
-        applyBound();
-        return *this;
-    }
-
     // METHODS
     T_Value& atDefault() { return m_defaultValue; }
     const T_Value& atDefault() const { return m_defaultValue; }
-    const Deque& privateDeque() const { return m_deque; }
 
     // Size. Verilog: function int size(), or int num()
     int size() const { return m_deque.size(); }
+    bool empty() const { return m_deque.empty(); }
     // Clear array. Verilog: function void delete([input index])
-    void clear() { m_deque.clear(); }
-    void erase(int32_t index) {
+    VL_ATTR_NOINLINE void clear() { m_deque.clear(); }
+
+    VL_ATTR_NOINLINE void erase(int32_t index) {
         if (VL_LIKELY(index >= 0 && index < m_deque.size()))
             m_deque.erase(m_deque.begin() + index);
     }
 
     // Dynamic array new[] becomes a renew()
-    void renew(size_t size) {
-        clear();
+    VL_ATTR_NOINLINE void renew(size_t size) {
+        m_deque.clear();
         m_deque.resize(size, atDefault());
     }
+
     // Dynamic array new[]() becomes a renew_copy()
-    void renew_copy(size_t size, const VlQueue<T_Value, N_MaxSize>& rhs) {
+    VL_ATTR_NOINLINE void renew_copy(size_t size, const VlQueue& rhs) {
         if (size == 0) {
             clear();
         } else {
             *this = rhs;
-            m_deque.resize(size, atDefault());
+            resize(size);
         }
     }
     // Unpacked array new[]() becomes a renew_copy()
     template <typename T_UnpackedValue, std::size_t N_UnpackedDepth>
-    void renew_copy(size_t size, const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs);
+    VL_ATTR_NOINLINE void renew_copy(size_t size,
+                                     const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs);
 
-    void resize(size_t size) { m_deque.resize(size, atDefault()); }
+    VL_ATTR_NOINLINE void resize(size_t size) { m_deque.resize(size, atDefault()); }
     // Assign the elements of a range, as DPI does from a C layout copy
     template <typename T_Iterator>
     void assign(const T_Iterator& first, const T_Iterator& last) {
         m_deque.assign(first, last);
-        applyBound();
     }
 
     // function void q.push_front(value)
-    void push_front(const T_Value& value) {
+    VL_ATTR_NOINLINE void push_front(const T_Value& value, size_t maxSize = 0) {
         m_deque.push_front(value);
-        applyBound();
+        applyBound(maxSize);
     }
     // function void q.push_back(value)
-    void push_back(const T_Value& value) {
+    VL_ATTR_NOINLINE void push_back(const T_Value& value, size_t maxSize = 0) {
         m_deque.push_back(value);
-        applyBound();
+        applyBound(maxSize);
     }
+
     // function value_t q.pop_front();
-    T_Value pop_front() {
+    VL_ATTR_NOINLINE T_Value pop_front() {
         if (m_deque.empty()) return m_defaultValue;
-        T_Value v = m_deque.front();
+        T_Value v = std::move(m_deque.front());
         m_deque.pop_front();
         return v;
     }
     // function value_t q.pop_back();
-    T_Value pop_back() {
+    VL_ATTR_NOINLINE T_Value pop_back() {
         if (m_deque.empty()) return m_defaultValue;
-        T_Value v = m_deque.back();
+        T_Value v = std::move(m_deque.back());
         m_deque.pop_back();
         return v;
     }
 
     // Setting. Verilog: assoc[index] = v (should only be used by dynamic arrays)
-    T_Value& atWrite(int32_t index) {
+    VL_ATTR_NOINLINE T_Value& atWrite(int32_t index) {
         // cppcheck-suppress variableScope
         static thread_local T_Value t_throwAway;
         // Needs to work for dynamic arrays, so does not use N_MaxSize
@@ -811,10 +1077,10 @@ public:
         return m_deque[index];
     }
     // Setting. Verilog: assoc[index] = v (should only be used by queues)
-    T_Value& atWriteAppend(int32_t index) {
+    VL_ATTR_NOINLINE T_Value& atWriteAppend(int32_t index, size_t maxSize = 0) {
         // cppcheck-suppress variableScope
         static thread_local T_Value t_throwAway;
-        if (index == m_deque.size()) push_back(atDefault());
+        if (static_cast<size_t>(index) == m_deque.size()) push_back(atDefault(), maxSize);
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
             t_throwAway = atDefault();
             return t_throwAway;
@@ -828,14 +1094,16 @@ public:
         return m_deque[index];
     }
     // Access with an index counted from end (e.g. q[$])
-    T_Value& atWriteAppendBack(int32_t index) { return atWriteAppend(m_deque.size() - 1 - index); }
+    T_Value& atWriteAppendBack(int32_t index, size_t maxSize = 0) {
+        return atWriteAppend(m_deque.size() - 1 - index, maxSize);
+    }
     const T_Value& atBack(int32_t index) const { return at(m_deque.size() - 1 - index); }
 
     // function void q.insert(index, value);
-    void insert(int32_t index, const T_Value& value) {
+    VL_ATTR_NOINLINE void insert(int32_t index, const T_Value& value, size_t maxSize = 0) {
         if (VL_UNLIKELY(index < 0 || index > m_deque.size())) return;
         m_deque.insert(m_deque.begin() + index, value);
-        applyBound();
+        applyBound(maxSize);
     }
 
     // inside (set membership operator)
@@ -846,21 +1114,19 @@ public:
     // Index of $, signed so $-relative indices do not wrap
     int32_t lastIndex() const { return static_cast<int32_t>(m_deque.size()) - 1; }
     // Return slice q[lsb:msb]
-    VlQueue slice(int32_t lsb, int32_t msb) const {
+    VL_ATTR_NOINLINE VlQueue slice(int32_t lsb, int32_t msb, size_t maxSize = 0) const {
         VlQueue out;
-        if (VL_UNLIKELY(lsb < 0)) lsb = 0;
-        if (VL_UNLIKELY(msb >= static_cast<int32_t>(m_deque.size()))) msb = m_deque.size() - 1;
-        for (int32_t i = lsb; i <= msb; ++i) out.push_back(m_deque[i]);
+        sliceInto(out, lsb, msb, maxSize);
         return out;
     }
-    VlQueue sliceFrontBack(int32_t lsb, int32_t msb) const {
-        return slice(lsb, lastIndex() - msb);
+    VlQueue sliceFrontBack(int32_t lsb, int32_t msb, size_t maxSize = 0) const {
+        return slice(lsb, lastIndex() - msb, maxSize);
     }
-    VlQueue sliceBackBack(int32_t lsb, int32_t msb) const {
-        return slice(lastIndex() - lsb, lastIndex() - msb);
+    VlQueue sliceBackBack(int32_t lsb, int32_t msb, size_t maxSize = 0) const {
+        return slice(lastIndex() - lsb, lastIndex() - msb, maxSize);
     }
     // Assign src elements to q[lsb:msb]
-    void sliceAssign(int32_t lsb, int32_t msb, const VlQueue& src) {
+    VL_ATTR_NOINLINE void sliceAssign(int32_t lsb, int32_t msb, const VlQueue& src) {
         const int32_t sz = static_cast<int32_t>(m_deque.size());
         const int32_t srcSz = static_cast<int32_t>(src.m_deque.size());
         if (VL_UNLIKELY(sz <= 0 || srcSz <= 0)) return;
@@ -868,7 +1134,7 @@ public:
         if (VL_UNLIKELY(msb >= sz)) msb = sz - 1;
         const int32_t count = std::min(msb - lsb + 1, srcSz);
         if (VL_UNLIKELY(count <= 0)) return;
-        std::copy_n(src.m_deque.begin(), count, m_deque.begin() + lsb);
+        std::copy_n(src.begin(), count, begin() + lsb);
     }
     void sliceAssignFrontBack(int32_t lsb, int32_t msb, const VlQueue& src) {
         sliceAssign(lsb, lastIndex() - msb, src);
@@ -877,12 +1143,15 @@ public:
         sliceAssign(lastIndex() - lsb, lastIndex() - msb, src);
     }
 
-    // For save/restore
+    // For save/restore and range iteration
+    typename Deque::iterator begin() { return m_deque.begin(); }
     const_iterator begin() const { return m_deque.begin(); }
+    typename Deque::iterator end() { return m_deque.end(); }
     const_iterator end() const { return m_deque.end(); }
 
     // Methods
-    void sort() { std::sort(m_deque.begin(), m_deque.end()); }
+    VL_ATTR_NOINLINE void sort() { std::sort(m_deque.begin(), m_deque.end()); }
+
     template <typename T_Func>
     void sort(T_Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
@@ -891,18 +1160,24 @@ public:
             return with_func(0, a) < with_func(0, b);
         });
     }
-    void rsort() { std::sort(m_deque.rbegin(), m_deque.rend()); }
+
+    VL_ATTR_NOINLINE void rsort() {
+        std::sort(m_deque.begin(), m_deque.end(),
+                  [](const T_Value& a, const T_Value& b) { return b < a; });
+    }
+
     template <typename T_Func>
     void rsort(T_Func with_func) {
         // with_func returns arbitrary type to use for the sort comparison
-        std::sort(m_deque.rbegin(), m_deque.rend(), [=](const T_Value& a, const T_Value& b) {
+        std::sort(m_deque.begin(), m_deque.end(), [=](const T_Value& a, const T_Value& b) {
             // index number is meaningless with sort, as it changes
-            return with_func(0, a) < with_func(0, b);
+            return with_func(0, b) < with_func(0, a);
         });
     }
-    void reverse() { std::reverse(m_deque.begin(), m_deque.end()); }
-    void shuffle() { std::shuffle(m_deque.begin(), m_deque.end(), VlURNG{}); }
-    VlQueue unique() const {
+
+    VL_ATTR_NOINLINE void reverse() { std::reverse(m_deque.begin(), m_deque.end()); }
+    VL_ATTR_NOINLINE void shuffle() { std::shuffle(m_deque.begin(), m_deque.end(), VlURNG{}); }
+    VL_ATTR_NOINLINE VlQueue<T_Value, 0> unique() const {
         VlQueue out;
         std::set<T_Value> saw;
         for (const auto& i : m_deque) {
@@ -928,8 +1203,8 @@ public:
         }
         return out;
     }
-    VlQueue<IData> unique_index() const {
-        VlQueue<IData> out;
+    VL_ATTR_NOINLINE VlQueue<IData, 0> unique_index() const {
+        VlQueue<IData, 0> out;
         IData index = 0;
         std::set<T_Value> saw;
         for (const auto& i : m_deque) {
@@ -942,9 +1217,10 @@ public:
         }
         return out;
     }
+
     template <typename T_Func>
-    VlQueue<IData> unique_index(T_Func with_func) const {
-        VlQueue<IData> out;
+    VlQueue<IData, 0> unique_index(T_Func with_func) const {
+        VlQueue<IData, 0> out;
         IData index = 0;
         std::set<decltype(with_func(0, m_deque[0]))> saw;
         for (const auto& i : m_deque) {
@@ -969,8 +1245,8 @@ public:
         return out;
     }
     template <typename T_Func>
-    VlQueue<IData> find_index(T_Func with_func) const {
-        VlQueue<IData> out;
+    VlQueue<IData, 0> find_index(T_Func with_func) const {
+        VlQueue<IData, 0> out;
         IData index = 0;
         for (const auto& i : m_deque) {
             if (with_func(index, i)) out.push_back(index);
@@ -989,36 +1265,36 @@ public:
         return VlQueue{};
     }
     template <typename T_Func>
-    VlQueue<IData> find_first_index(T_Func with_func) const {
+    VlQueue<IData, 0> find_first_index(T_Func with_func) const {
         IData index = 0;
         for (const auto& i : m_deque) {
-            if (with_func(index, i)) return VlQueue<IData>{index};
+            if (with_func(index, i)) return VlQueue<IData, 0>{index};
             ++index;
         }
-        return VlQueue<IData>{};
+        return VlQueue<IData, 0>{};
     }
     template <typename T_Func>
     VlQueue find_last(T_Func with_func) const {
-        IData index = m_deque.size() - 1;
-        for (auto& item : vlstd::reverse_view(m_deque)) {
-            if (with_func(index, item)) return VlQueue{item};
+        for (IData index = m_deque.size(); index > 0;) {
             --index;
+            const auto& item = m_deque[index];
+            if (with_func(index, item)) return VlQueue{item};
         }
         return VlQueue{};
     }
     template <typename T_Func>
-    VlQueue<IData> find_last_index(T_Func with_func) const {
-        IData index = m_deque.size() - 1;
-        for (auto& item : vlstd::reverse_view(m_deque)) {
-            if (with_func(index, item)) return VlQueue<IData>{index};
+    VlQueue<IData, 0> find_last_index(T_Func with_func) const {
+        for (IData index = m_deque.size(); index > 0;) {
             --index;
+            const auto& item = m_deque[index];
+            if (with_func(index, item)) return VlQueue<IData, 0>{index};
         }
-        return VlQueue<IData>{};
+        return VlQueue<IData, 0>{};
     }
     // Map method (IEEE 1800-2023 7.12.5)
     template <typename T_Func>
-    VlQueue<WithFuncReturnType<T_Func>> map(T_Func with_func) const {
-        VlQueue<WithFuncReturnType<T_Func>> out;
+    VlQueue<WithFuncReturnType<T_Func>, 0> map(T_Func with_func) const {
+        VlQueue<WithFuncReturnType<T_Func>, 0> out;
         IData index = 0;
         for (const auto& i : m_deque) {
             out.push_back(with_func(index, i));
@@ -1028,7 +1304,7 @@ public:
     }
 
     // Reduction operators
-    VlQueue min() const {
+    VL_ATTR_NOINLINE VlQueue<T_Value, 0> min() const {
         if (m_deque.empty()) return VlQueue{};
         const auto it = std::min_element(m_deque.cbegin(), m_deque.cend());
         return VlQueue{*it};
@@ -1042,7 +1318,8 @@ public:
                                          });
         return VlQueue{*it};
     }
-    VlQueue max() const {
+
+    VL_ATTR_NOINLINE VlQueue<T_Value, 0> max() const {
         if (m_deque.empty()) return VlQueue{};
         const auto it = std::max_element(m_deque.cbegin(), m_deque.cend());
         return VlQueue{*it};
@@ -1057,6 +1334,7 @@ public:
         return VlQueue{*it};
     }
 
+    template <typename U = T_Value>
     T_Value r_sum() const {
         T_Value out(0);  // Type must have assignment operator
         for (const auto& i : m_deque) out += i;
@@ -1069,6 +1347,7 @@ public:
         for (const auto& i : m_deque) out += with_func(index++, i);
         return out;
     }
+    template <typename U = T_Value>
     T_Value r_product() const {
         if (m_deque.empty()) return T_Value(0);  // The big three do it this way
         T_Value out = T_Value(1);
@@ -1083,6 +1362,7 @@ public:
         for (const auto& i : m_deque) out *= with_func(index++, i);
         return out;
     }
+    template <typename U = T_Value>
     T_Value r_and() const {
         if (m_deque.empty()) return T_Value(0);  // The big three do it this way
         T_Value out = ~T_Value(0);
@@ -1097,6 +1377,7 @@ public:
         for (const auto& i : m_deque) out &= with_func(index++, i);
         return out;
     }
+    template <typename U = T_Value>
     T_Value r_or() const {
         T_Value out = T_Value(0);
         for (const auto& i : m_deque) out |= i;
@@ -1109,6 +1390,7 @@ public:
         for (const auto& i : m_deque) out |= with_func(index++, i);
         return out;
     }
+    template <typename U = T_Value>
     T_Value r_xor() const {
 #ifdef VERILATOR_BIG3_NULLARY_ARITHMETICS_QUIRKS
         if (m_deque.empty()) return T_Value(0);
@@ -1126,7 +1408,7 @@ public:
     }
 
     // Dumping. Verilog: str = $sformatf("%p", assoc)
-    std::string to_string() const {
+    VL_ATTR_NOINLINE std::string to_string() const {
         if (m_deque.empty()) return "'{}";  // No trailing space
         std::string out = "'{";
         std::string comma;
@@ -1135,6 +1417,91 @@ public:
             comma = ", ";
         }
         return out + "}";
+    }
+};
+
+template <typename T_Value, size_t N_MaxSize>
+class VlQueue final : public VlQueue<T_Value, 0> {
+private:
+    using Base = VlQueue<T_Value, 0>;
+
+public:
+    // CONSTRUCTORS
+    VL_ATTR_ALWINLINE VlQueue() = default;
+    VL_ATTR_ALWINLINE ~VlQueue() = default;
+    VL_ATTR_ALWINLINE VlQueue(const VlQueue&) = default;
+    VL_ATTR_ALWINLINE VlQueue(VlQueue&&) = default;
+    VL_ATTR_ALWINLINE VlQueue& operator=(const VlQueue&) = default;
+    VL_ATTR_ALWINLINE VlQueue& operator=(VlQueue&&) = default;
+    VL_ATTR_ALWINLINE VlQueue& operator=(const Base& rhs) {
+        Base::operator=(rhs);
+        this->applyBound(N_MaxSize);
+        return *this;
+    }
+
+    template <typename T_Subclass, size_t N_RhsMaxSize>
+    VL_ATTR_ALWINLINE VlQueue&
+    operator=(const VlQueue<VlClassRef<T_Subclass>, N_RhsMaxSize>& rhs) {
+        Base::operator=(rhs);
+        this->applyBound(N_MaxSize);
+        return *this;
+    }
+
+    // Template constructors that construct from containers holding sub-classes
+    template <typename T_Subclass>
+    VL_ATTR_ALWINLINE VlQueue(const VlQueue<VlClassRef<T_Subclass>, 0>& that)
+        : Base{that} {
+        this->applyBound(N_MaxSize);
+    }
+    template <typename T_Subclass>
+    VL_ATTR_ALWINLINE VlQueue(VlQueue<VlClassRef<T_Subclass>, 0>&& that)
+        : Base{std::move(that)} {
+        this->applyBound(N_MaxSize);
+    }
+
+    // Verilog: '{a, b} or {a, q}
+    template <typename... T_Args>
+    explicit VlQueue(const T_Args&... args)
+        : Base{args...} {
+        this->applyBound(N_MaxSize);
+    }
+    // Verilog: '{index: value, default: value}, sized by new[size], else by the largest index
+    explicit VlQueue(size_t size, const T_Value& defaultValue,
+                     std::initializer_list<std::pair<QData, T_Value>> items)
+        : Base{size, defaultValue, items} {
+        this->applyBound(N_MaxSize);
+    }
+    // Verilog: '{index: value}, sized by new[size], else by the largest index
+    explicit VlQueue(size_t size, std::initializer_list<std::pair<QData, T_Value>> items)
+        : VlQueue{size, T_Value{}, items} {}
+
+    // METHODS
+    template <typename T_Iterator>
+    void assign(const T_Iterator& first, const T_Iterator& last) {
+        Base::assign(first, last);
+        this->applyBound(N_MaxSize);
+    }
+    VL_ATTR_ALWINLINE void push_front(const T_Value& value) { Base::push_front(value, N_MaxSize); }
+    VL_ATTR_ALWINLINE void push_back(const T_Value& value) { Base::push_back(value, N_MaxSize); }
+    VL_ATTR_ALWINLINE void insert(int32_t index, const T_Value& value) {
+        Base::insert(index, value, N_MaxSize);
+    }
+    VL_ATTR_ALWINLINE T_Value& atWriteAppend(int32_t index) {
+        return Base::atWriteAppend(index, N_MaxSize);
+    }
+    VL_ATTR_ALWINLINE T_Value& atWriteAppendBack(int32_t index) {
+        return Base::atWriteAppendBack(index, N_MaxSize);
+    }
+    VL_ATTR_ALWINLINE VlQueue slice(int32_t lsb, int32_t msb) const {
+        VlQueue out;
+        this->sliceInto(out, lsb, msb, N_MaxSize);
+        return out;
+    }
+    VL_ATTR_ALWINLINE VlQueue sliceFrontBack(int32_t lsb, int32_t msb) const {
+        return slice(lsb, this->lastIndex() - msb);
+    }
+    VL_ATTR_ALWINLINE VlQueue sliceBackBack(int32_t lsb, int32_t msb) const {
+        return slice(this->lastIndex() - lsb, this->lastIndex() - msb);
     }
 };
 
@@ -1971,10 +2338,11 @@ std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
 template <typename T_Value, std::size_t N_Depth>
 struct VlContainsCustomStruct<VlUnpacked<T_Value, N_Depth>> : VlContainsCustomStruct<T_Value> {};
 
-template <typename T_Value, size_t N_MaxSize>
+template <typename T_Value>
 template <typename T_UnpackedValue, std::size_t N_UnpackedDepth>
-void VlQueue<T_Value, N_MaxSize>::renew_copy(
-    size_t size, const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs) {
+VL_ATTR_NOINLINE void
+VlQueue<T_Value, 0>::renew_copy(size_t size,
+                                const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs) {
     clear();
     if (size == 0) return;
     m_deque.resize(size, atDefault());
@@ -2435,21 +2803,16 @@ inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {
 
 //======================================================================
 
-template <typename T_Value, size_t N_MaxSize>
+template <typename T_Value>
 template <typename T_Subclass>
-VlQueue<T_Value, N_MaxSize>::VlQueue(const VlQueue<VlClassRef<T_Subclass>>& that)
-    : m_deque{that.m_deque.begin(), that.m_deque.end()}
-    , m_defaultValue{that.m_defaultValue} {
-    applyBound();
-}
+VL_ATTR_NOINLINE VlQueue<T_Value, 0>::VlQueue(const VlQueue<VlClassRef<T_Subclass>, 0>& that)
+    : m_deque{that.begin(), that.end()}
+    , m_defaultValue{that.atDefault()} {}
 
-template <typename T_Value, size_t N_MaxSize>
+template <typename T_Value>
 template <typename T_Subclass>
-VlQueue<T_Value, N_MaxSize>::VlQueue(VlQueue<VlClassRef<T_Subclass>>&& that)
-    : m_deque{std::make_move_iterator(that.m_deque.begin()),
-              std::make_move_iterator(that.m_deque.end())}
-    , m_defaultValue{std::move(that.m_defaultValue)} {
-    applyBound();
-}
+VL_ATTR_NOINLINE VlQueue<T_Value, 0>::VlQueue(VlQueue<VlClassRef<T_Subclass>, 0>&& that)
+    : m_deque{std::make_move_iterator(that.begin()), std::make_move_iterator(that.end())}
+    , m_defaultValue{std::move(that.atDefault())} {}
 
 #endif  // Guard
