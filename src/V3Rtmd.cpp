@@ -453,22 +453,6 @@ class RtmdBuilder final : public VNVisitor {
         visitScope(nodep, VRtmdHierKind::TASK, false);
     }
 
-    static bool hasString(const AstNodeDType* dtypep) {
-        dtypep = dtypep->skipRefp();
-        if (const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
-            return basicp->keyword() == VBasicDTypeKwd::STRING;
-        }
-        if (const AstNodeArrayDType* const arrayp = VN_CAST(dtypep, NodeArrayDType)) {
-            return hasString(arrayp->subDTypep());
-        }
-        if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
-            for (const AstMemberDType* const memberp : structp->memberspList()) {
-                if (hasString(memberp->subDTypep())) return true;
-            }
-        }
-        return false;
-    }
-
     // Variables
     void visit(AstVar* nodep) override {
         UASSERT_OBJ(m_levelp, nodep, "Var not under Module");
@@ -502,7 +486,7 @@ class RtmdBuilder final : public VNVisitor {
         AstRtmdVarType* const varTypep = m_typeBuilder.varType(nodep, rtmdTypep);
         // Build the variable descriptor
         // Tracing reads values as bits, which a string's storage is not
-        const bool traced = nodep->isTrace() && !hasString(nodep->dtypep());
+        const bool traced = nodep->isTrace() && !nodep->dtypep()->containsString();
         AstVarRef* const refp = traced ? new AstVarRef{flp, nodep, VAccess::READ} : nullptr;
         AstRtmdVar* const sigp = new AstRtmdVar{flp, rtmdName(nodep), varTypep, refp};
         sigp->traced(traced);
