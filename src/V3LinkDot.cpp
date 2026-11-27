@@ -3694,6 +3694,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
                           << " search start due to inlinedDots=" << inlinedDots);
         return dotSymp;
     }
+    string resolvedScopePath(const VSymEnt* symp) const {
+        // Use the resolved symbol's ancestry, independent of the reference's spelling.
+        // Descendants are module-relative; upward references retain their rooted path.
+        std::vector<string> scopes;
+        for (; symp != m_modSymp && symp->parentp(); symp = symp->parentp()) {
+            scopes.emplace_back(AstNode::dedotName(symp->nodep()->name()));
+        }
+        string path;
+        for (auto it = scopes.crbegin(); it != scopes.crend(); ++it) {
+            if (!path.empty()) path += '.';
+            path += *it;
+        }
+        return path;
+    }
     VSymEnt* findDottedRefSymp(AstNode* nodep, VSymEnt* lookupSymp, const string& dotted,
                                string& baddot, VSymEnt*& okSymp, bool* modportp = nullptr) {
         // Return scope to search for a relinked hierarchical reference
@@ -3708,6 +3722,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 << (!baddot.empty() ? AstNode::prettyNameQ(baddot) : nodep->prettyNameQ()) << '\n'
                 << nodep->warnContextPrimary());
             return nullptr;
+        }
+        if (AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef)) {
+            xrefp->resolvedDotted(resolvedScopePath(dotSymp));
         }
         if (const AstVar* const varp = VN_CAST(dotSymp->nodep(), Var)) {
             if (const AstIfaceRefDType* const ifaceRefp
@@ -4907,8 +4924,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         UINFO(9, indent() << " cell -> iface varref " << foundp->nodep());
                         AstNodeExpr* newp;
                         if (m_ds.m_dotText != "") {
-                            newp = new AstVarXRef{nodep->fileline(), ifaceRefVarp, m_ds.m_dotText,
-                                                  VAccess::READ};
+                            newp = new AstVarXRef{nodep->fileline(), ifaceRefVarp->name(),
+                                                  m_ds.m_dotText, VAccess::READ};
+                            VN_AS(newp, VarXRef)->containsGenBlock(m_ds.m_genBlk);
                             if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep) {
                                 newp = new AstUnlinkedRef{nodep->fileline(), newp, newp->name(),
                                                           m_ds.m_unlinkedScopep->unlinkFrBack()};
@@ -5003,9 +5021,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep) {
                             const string dotted = refp->dotted();
                             const size_t pos = dotted.find("__BRA__??__KET__");
-                            // Arrays of interfaces all have the same parameters
+                            // Arrays of interfaces all have the same parameters, so the
+                            // index is not needed. Each generate block of a loop has its
+                            // own, so the index must stay
                             if (pos != string::npos && varp->isParam()
-                                && VN_IS(m_ds.m_unlinkedScopep, CellArrayRef)) {
+                                && VN_IS(m_ds.m_unlinkedScopep, CellArrayRef)
+                                && !VN_IS(m_ds.m_dotSymp->nodep(), GenBlock)) {
                                 refp->dotted(dotted.substr(0, pos));
                                 newp = refp;
                             } else {
