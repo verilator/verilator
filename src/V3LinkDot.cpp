@@ -5003,9 +5003,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep) {
                             const string dotted = refp->dotted();
                             const size_t pos = dotted.find("__BRA__??__KET__");
-                            // Arrays of interfaces all have the same parameters
+                            // Arrays of interfaces all have the same parameters, so the
+                            // index is not needed. Each generate block of a loop has its
+                            // own, so the index must stay
                             if (pos != string::npos && varp->isParam()
-                                && VN_IS(m_ds.m_unlinkedScopep, CellArrayRef)) {
+                                && VN_IS(m_ds.m_unlinkedScopep, CellArrayRef)
+                                && !VN_IS(m_ds.m_dotSymp->nodep(), GenBlock)) {
                                 refp->dotted(dotted.substr(0, pos));
                                 newp = refp;
                             } else {
