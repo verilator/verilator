@@ -612,6 +612,10 @@ const char* AstAnd::widthMismatch() const VL_MT_STABLE {
     BROKEN_RTN(lhsp()->widthMin() != widthMin());
     return nullptr;
 }
+const char* AstArraySel::broken() const {
+    BROKEN_RTN(!VN_IS(fromp()->dtypep()->skipRefp(), UnpackArrayDType));
+    return nullptr;
+}
 AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, uint32_t assertType,
                            uint32_t directiveType, AstNodeExpr* levelp, AstNodeExpr* itemsp)
     : ASTGEN_SUPER_AssertCtl(fl)
@@ -669,6 +673,10 @@ void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
 }
 string AstAssocArrayDType::prettyDTypeName(bool full) const {
     return subDTypep()->prettyDTypeName(full) + "$[" + keyDTypep()->prettyDTypeName(full) + "]";
+}
+const char* AstAssocSel::broken() const {
+    BROKEN_RTN(!VN_IS(fromp()->dtypep()->skipRefp(), AssocArrayDType));
+    return nullptr;
 }
 void AstAttrOf::dump(std::ostream& str) const {
     Super::dump(str);
@@ -951,16 +959,6 @@ void AstCMethodHard::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 bool AstCMethodHard::getPurity() {
-    if (method() == VCMethod::DYN_AT_WRITE_APPEND
-        || method() == VCMethod::DYN_AT_WRITE_APPEND_BACK) {
-        // Treat atWriteAppend as pure if the argument is a loop iterator
-        if (const AstNodeExpr* const argp = pinsp()) {
-            if (const AstVarRef* const varrefp = VN_CAST(argp, VarRef)) {
-                if (varrefp->varp()->isUsedLoopIdx()) return true;
-            }
-        }
-        return false;
-    }
     if (!method().isPure()) return false;
     if (!fromp()->isPure()) return false;
     for (AstNodeExpr* const argp : pinspList()) {
@@ -1778,6 +1776,14 @@ void AstCvtArrayToArray::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, srcElementBits);
     dumpJsonGen(str);
 }
+void AstCvtArrayToPacked::dump(std::ostream& str) const {
+    Super::dump(str);
+    str << " packedWidth=" << packedWidth();
+}
+void AstCvtArrayToPacked::dumpJson(std::ostream& str) const {
+    dumpJsonNumFunc(str, packedWidth);
+    dumpJsonGen(str);
+}
 void AstDelay::dump(std::ostream& str) const {
     Super::dump(str);
     if (isCycleDelay()) str << " [CYCLE]";
@@ -1845,6 +1851,10 @@ void AstDynArrayDType::dumpSmall(std::ostream& str) const {
 }
 string AstDynArrayDType::prettyDTypeName(bool full) const {
     return subDTypep()->prettyDTypeName(full) + "$[]";
+}
+const char* AstDynArraySel::broken() const {
+    BROKEN_RTN(!VN_IS(fromp()->dtypep()->skipRefp(), DynArrayDType));
+    return nullptr;
 }
 void AstElabDisplay::dump(std::ostream& str) const {
     Super::dump(str);
@@ -1920,6 +1930,14 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* r
     } else {
         return new AstEqWild{fl, lhsp, rhsp};
     }
+}
+void AstEventually::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (isStrong()) str << " [STRONG]";
+}
+void AstEventually::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isStrong);
+    dumpJsonGen(str);
 }
 AstExecGraph::AstExecGraph(FileLine* fl, const string& name, AstVarScope* trigVscp) VL_MT_DISABLED
     : ASTGEN_SUPER_ExecGraph(fl),
@@ -3148,17 +3166,11 @@ int AstNodeDType::widthStream() const {
 AstNode* AstNodeExpr::baseFromp(bool overMembers) {
     AstNode* nodep = this;
     while (nodep) {
-        if (VN_IS(nodep, ArraySel)) {
-            nodep = VN_AS(nodep, ArraySel)->fromp();
+        if (VN_IS(nodep, NodeSel)) {
+            nodep = VN_AS(nodep, NodeSel)->fromp();
             continue;
         } else if (VN_IS(nodep, Sel)) {
             nodep = VN_AS(nodep, Sel)->fromp();
-            continue;
-        } else if (VN_IS(nodep, AssocSel)) {
-            nodep = VN_AS(nodep, AssocSel)->fromp();
-            continue;
-        } else if (VN_IS(nodep, WildcardSel)) {
-            nodep = VN_AS(nodep, WildcardSel)->fromp();
             continue;
         } else if (VN_IS(nodep, CMethodHard)) {
             nodep = VN_AS(nodep, CMethodHard)->fromp();
@@ -3204,21 +3216,15 @@ const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
     if (const AstSel* const anodep = VN_CAST(this, Sel)) {
         return anodep->fromp()->getVAccessTargetRecurse();
     }
-    if (const AstArraySel* const anodep = VN_CAST(this, ArraySel)) {
+    if (const AstStructSel* const anodep = VN_CAST(this, StructSel)) {
         return anodep->fromp()->getVAccessTargetRecurse();
     }
-    if (const AstStructSel* const anodep = VN_CAST(this, StructSel)) {
+    if (const AstSliceSel* const anodep = VN_CAST(this, SliceSel)) {
         return anodep->fromp()->getVAccessTargetRecurse();
     }
     if (const AstConcat* const anodep = VN_CAST(this, Concat)) {
         // Enough to check only one side, as both must be same otherwise malformed
         return anodep->lhsp()->getVAccessTargetRecurse();
-    }
-    if (const AstCMethodHard* const anodep = VN_CAST(this, CMethodHard)) {
-        if (anodep->method().isDynElementAccess()) {
-            // Used for things like Queue/AssocArray/DynArray
-            return anodep->fromp()->getVAccessTargetRecurse();
-        }
     }
     return nullptr;  // nothing found
 }
@@ -3777,6 +3783,18 @@ string AstQueueDType::prettyDTypeName(bool full) const {
     string str = subDTypep()->prettyDTypeName(full) + "$[$";
     if (boundConst()) str += ":" + cvtToStr(boundConst());
     return str + "]";
+}
+const char* AstQueueSel::broken() const {
+    BROKEN_RTN(!VN_IS(fromp()->dtypep()->skipRefp(), QueueDType));
+    return nullptr;
+}
+void AstQueueSel::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (fromBack()) str << " [BACK]";
+}
+void AstQueueSel::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, fromBack);
+    dumpJsonGen(str);
 }
 void AstRSProdList::dump(std::ostream& str) const {
     Super::dump(str);
@@ -5178,6 +5196,10 @@ bool AstWildcardArrayDType::sameNode(const AstNode* samep) const {
 bool AstWildcardArrayDType::similarDTypeNode(const AstNodeDType* samep) const {
     const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);
     return asamep->subDTypep() && subDTypep()->similarDType(asamep->subDTypep());
+}
+const char* AstWildcardSel::broken() const {
+    BROKEN_RTN(!VN_IS(fromp()->dtypep()->skipRefp(), WildcardArrayDType));
+    return nullptr;
 }
 void AstWith::dump(std::ostream& str) const {
     Super::dump(str);

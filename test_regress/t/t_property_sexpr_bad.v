@@ -16,4 +16,5 @@ module t (
   end
 
   assert property (@(posedge clk) ##1 not val);
+  assert property (@(posedge clk) (@(posedge clk) not val) ##1 val);
 endmodule

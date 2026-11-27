@@ -64,7 +64,17 @@ module t #(
   sub #(.W(W2)) u_sub (.o(o2));  // <--- Error: before declaration
   localparam int W2 = 4;
 
+  bit clk;
+  always @(posedge clk) if (stress) cnt <= cnt + 1;  // <--- Error: before declaration
+  bit stress = 1;
+  int cnt;
+
   logic [PB-1:0] x;
+  wire early_w = late_w;  // <--- Error: before declaration
+  wire late_w = 1'b1;
+  wire imp_ok;
+  assign imp_ok = 1'b1;
+  sub3 u_sub3 (.o(imp_ok));  // Declared before use: no error
   int i3 = P3;  // Imported from a package declared later in the file: no error
   bind sub2 chk #(.W(SW)) u_chk ();  // SW resolves in sub2: no error
   sub2 u_sub2 ();
@@ -79,3 +89,11 @@ endmodule
 package pkg3;
   localparam int P3 = 3;
 endpackage
+
+module sub3 (
+    o
+);
+  output o;  // Non-ANSI port declared then redeclared is not a use before declaration
+  reg o;
+  initial o = 1'b1;
+endmodule

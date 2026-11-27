@@ -228,14 +228,13 @@ class WidthSelVisitor final : public VNVisitor {
         AstNodeDType* const ddtypep = fromdata.m_dtypep;
         const VNumRange fromRange = fromdata.m_fromRange;
         UINFO(6, "  ddtypep " << ddtypep);
-        if (const AstUnpackArrayDType* const adtypep = VN_CAST(ddtypep, UnpackArrayDType)) {
+        if (VN_IS(ddtypep, UnpackArrayDType)) {
             // SELBIT(array, index) -> ARRAYSEL(array, index)
             AstNodeExpr* subp = rhsp;
             if (fromRange.lo() != 0 || fromRange.hi() < 0) {
                 subp = newSubNeg(subp, fromRange.lo());
             }
             AstArraySel* const newp = new AstArraySel{nodep->fileline(), fromp, subp};
-            newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             UINFOTREE(9, newp, "", "SELBTn");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -267,46 +266,32 @@ class WidthSelVisitor final : public VNVisitor {
             UINFOTREE(9, newp, "", "SELBTn");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (const AstAssocArrayDType* const adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
+        } else if (VN_IS(ddtypep, AssocArrayDType)) {
             // SELBIT(array, index) -> ASSOCSEL(array, index)
             AstAssocSel* const newp = new AstAssocSel{nodep->fileline(), fromp, rhsp};
-            newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             UINFOTREE(9, newp, "", "SELBTn");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (const AstWildcardArrayDType* const adtypep
-                   = VN_CAST(ddtypep, WildcardArrayDType)) {
+        } else if (VN_IS(ddtypep, WildcardArrayDType)) {
             // SELBIT(array, index) -> WILDCARDSEL(array, index)
             AstWildcardSel* const newp = new AstWildcardSel{nodep->fileline(), fromp, rhsp};
-            newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             UINFOTREE(9, newp, "", "SELBTn");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (const AstDynArrayDType* const adtypep = VN_CAST(ddtypep, DynArrayDType)) {
-            // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
-            const VCMethod method
-                = nodep->access().isWriteOrRW() ? VCMethod::ARRAY_AT_WRITE : VCMethod::ARRAY_AT;
-            AstCMethodHard* const newp
-                = new AstCMethodHard{nodep->fileline(), fromp, method, rhsp};
-            newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
+        } else if (VN_IS(ddtypep, DynArrayDType)) {
+            // SELBIT(array, index) -> DYNARRAYSEL(array, index)
+            AstDynArraySel* const newp = new AstDynArraySel{nodep->fileline(), fromp, rhsp};
             UINFOTREE(9, newp, "", "SELBTq");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (const AstQueueDType* const adtypep = VN_CAST(ddtypep, QueueDType)) {
-            // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
-            AstCMethodHard* newp;
+        } else if (VN_IS(ddtypep, QueueDType)) {
+            // SELBIT(queue, index) -> QUEUESEL(queue, index)
+            AstQueueSel* newp;
             if (AstNodeExpr* const backnessp = selQueueBackness(rhsp)) {
-                const VCMethod method = nodep->access().isWriteOrRW()
-                                            ? VCMethod::DYN_AT_WRITE_APPEND_BACK
-                                            : VCMethod::ARRAY_AT_BACK;
-                newp = new AstCMethodHard{nodep->fileline(), fromp, method, backnessp};
+                newp = new AstQueueSel{nodep->fileline(), fromp, backnessp, true};
             } else {
-                const VCMethod method = nodep->access().isWriteOrRW()
-                                            ? VCMethod::DYN_AT_WRITE_APPEND
-                                            : VCMethod::ARRAY_AT;
-                newp = new AstCMethodHard{nodep->fileline(), fromp, method, rhsp};
+                newp = new AstQueueSel{nodep->fileline(), fromp, rhsp};
             }
-            newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             UINFOTREE(9, newp, "", "SELBTq");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);

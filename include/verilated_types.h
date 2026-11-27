@@ -710,8 +710,14 @@ public:
     explicit VlQueue(size_t size, std::initializer_list<std::pair<QData, T_Value>> items)
         : VlQueue{size, T_Value{}, items} {}
 
-    bool operator==(const VlQueue& rhs) const { return m_deque == rhs.m_deque; }
-    bool operator!=(const VlQueue& rhs) const { return m_deque != rhs.m_deque; }
+    template <typename T_Rhs, size_t N_RhsMaxSize>
+    bool operator==(const VlQueue<T_Rhs, N_RhsMaxSize>& rhs) const {
+        return std::equal(m_deque.begin(), m_deque.end(), rhs.m_deque.begin(), rhs.m_deque.end());
+    }
+    template <typename T_Rhs, size_t N_RhsMaxSize>
+    bool operator!=(const VlQueue<T_Rhs, N_RhsMaxSize>& rhs) const {
+        return !(*this == rhs);
+    }
     bool operator<(const VlQueue& rhs) const {
         for (int index = 0; index < m_deque.size(); ++index) {
             if (m_deque[index] < rhs.m_deque[index]) return true;

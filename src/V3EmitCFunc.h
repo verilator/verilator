@@ -88,7 +88,8 @@ class EmitCLazyDecls final : public VNVisitorConst {
     void visit(AstVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
         // Only constant pool symbols are lazy declared for now ...
-        if (EmitCParentModule::get(varp)->isConstPool()) lazyDeclareConstPoolVar(varp);
+        const AstNodeModule* const varModp = EmitCParentModule::get(varp);
+        if (varModp && varModp->isConstPool()) lazyDeclareConstPoolVar(varp);
     }
 
     void visit(AstExecGraph* nodep) override {
@@ -566,12 +567,18 @@ public:
         puts("_");
         emitRU(fromDtp);
         emitIQW(elemDtp);
+        // A wide result is written to a temporary of the dtype's width
+        UASSERT_OBJ(nodep->isWide() ? nodep->packedWidth() == nodep->widthMin()
+                                    : nodep->packedWidth() <= VL_QUADSIZE,
+                    nodep, "Packed width does not fit the result");
+        const string packedWidth = cvtToStr(nodep->packedWidth());
         if (descending) {
             // Wrap source in VL_PACK_REVERSED so VL_PACK sees ascending order
-            emitOpName(nodep, "(%nw, %rw, %P, VL_PACK_REVERSED(%li))", nodep->fromp(), elemDtp,
-                       nullptr);
+            emitOpName(nodep, "(" + packedWidth + ", %rw, %P, VL_PACK_REVERSED(%li))",
+                       nodep->fromp(), elemDtp, nullptr);
         } else {
-            emitOpName(nodep, "(%nw, %rw, %P, %li)", nodep->fromp(), elemDtp, nullptr);
+            emitOpName(nodep, "(" + packedWidth + ", %rw, %P, %li)", nodep->fromp(), elemDtp,
+                       nullptr);
         }
     }
 
@@ -774,11 +781,9 @@ public:
                    // Whuch we don't want to do as slows compiler down.
                    && !VN_IS(nodep->rhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), ConsArray)  //
-                   && !VN_IS(nodep->rhsp(), AssocSel)  //
-                   && !VN_IS(nodep->rhsp(), WildcardSel)  //
+                   && !VN_IS(nodep->rhsp(), NodeSel)  //
                    && !VN_IS(nodep->rhsp(), MemberRef)  //
                    && !VN_IS(nodep->rhsp(), StructSel)  //
-                   && !VN_IS(nodep->rhsp(), ArraySel)  //
                    && !VN_IS(nodep->rhsp(), ExprStmt)) {
             // Wide functions assign into the array directly, don't need separate assign statement
             m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
@@ -819,20 +824,31 @@ public:
     void visit(AstAssocSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         const std::string atFunc = nodep->isLValue() ? ".atWrite(" : ".at(";
-        putnbs(nodep, atFunc);
-        AstAssocArrayDType* const adtypep
-            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), AssocArrayDType);
-        UASSERT_OBJ(adtypep, nodep, "Associative select on non-associative type");
+        putns(nodep, atFunc);
+        iterateAndNextConstNull(nodep->bitp());
+        puts(")");
+    }
+    void visit(AstDynArraySel* nodep) override {
+        iterateAndNextConstNull(nodep->fromp());
+        // Out of range writes go to a temporary (IEEE 1800-2023 7.4.6)
+        const std::string atFunc = nodep->isLValue() ? ".atWrite(" : ".at(";
+        putns(nodep, atFunc);
+        iterateAndNextConstNull(nodep->bitp());
+        puts(")");
+    }
+    void visit(AstQueueSel* nodep) override {
+        iterateAndNextConstNull(nodep->fromp());
+        // Writing one past the last element appends (IEEE 1800-2023 7.10.1)
+        std::string atFunc = nodep->isLValue() ? ".atWriteAppend" : ".at";
+        if (nodep->fromBack()) atFunc += "Back";
+        putns(nodep, atFunc + "(");
         iterateAndNextConstNull(nodep->bitp());
         puts(")");
     }
     void visit(AstWildcardSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         const std::string atFunc = nodep->isLValue() ? ".atWrite(" : ".at(";
-        putnbs(nodep, atFunc);
-        AstWildcardArrayDType* const adtypep
-            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), WildcardArrayDType);
-        UASSERT_OBJ(adtypep, nodep, "Wildcard select on non-wildcard-associative type");
+        putns(nodep, atFunc);
         iterateAndNextConstNull(nodep->bitp());
         puts(")");
     }

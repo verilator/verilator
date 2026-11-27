@@ -8,24 +8,28 @@ class Inner;
   rand int x;
 endclass
 
-class QOwner;
-  rand Inner q[$];
+class COwner;
+  rand Inner m[2];
+  rand int idx;
+  function Inner get(int i);
+    return m[i];
+  endfunction
   constraint c {
-    q[0].x dist {
+    get(idx).x dist {
       5 := 9,
       10 := 1
     };
   }
   function new();
-    Inner tmp = new;
-    q.push_back(tmp);
+    m[0] = new;
+    m[1] = new;
   endfunction
 endclass
 
-class QValue;
+class QSum;
   rand int iq[$];
   constraint c {
-    iq[0] dist {
+    iq.sum() dist {
       5 := 9,
       10 := 1
     };
@@ -37,13 +41,13 @@ endclass
 
 module t;
   initial begin
-    automatic QOwner qo = new;
-    automatic QValue qv = new;
+    automatic COwner co = new;
+    automatic QSum qs = new;
     automatic int ok;
-    qo.q.rand_mode(0);
-    qv.iq.rand_mode(0);
-    ok = qo.randomize();
-    ok = qv.randomize();
+    co.idx.rand_mode(0);
+    qs.iq.rand_mode(0);
+    ok = co.randomize();
+    ok = qs.randomize();
     $finish;
   end
 endmodule
