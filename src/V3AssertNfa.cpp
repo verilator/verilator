@@ -34,6 +34,7 @@
 #include "V3Const.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
+#include "V3Task.h"
 #include "V3UniqueNames.h"
 
 #include <unordered_set>
@@ -47,6 +48,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 namespace {
 
 class SvaStateVertex;
+class SvaTransEdge;
 
 // Per-vertex algorithm data, stored via V3GraphVertex::userp() during lowering
 struct SvaVertexData final {
@@ -56,6 +58,7 @@ struct SvaVertexData final {
         = nullptr;  // Cached outgoing slot; isolates readers from in-place writes
     AstVar* delayRingIdxVarp = nullptr;  // Next slot written in delayRingVarp
     AstVar* delayRingLiveCountVarp = nullptr;  // Number of threads in delayRingVarp
+    AstVar* liveRepCountVarp = nullptr;  // Number of attempts represented by a live repetition
     AstVar* delayRingWrappedVarp = nullptr;  // All slots written since the last clear
     AstVar* doneLVarp = nullptr;  // SAnd LHS done-latch
     AstVar* doneRVarp = nullptr;  // SAnd RHS done-latch
@@ -74,6 +77,17 @@ public:
     bool m_isMatch = false;
     // OWNED throughout-guard condition clones; IEEE 1800-2023 16.9.9
     std::vector<AstNodeExpr*> m_throughoutConds;
+    // Required condition of an unbounded repetition whose endpoint is
+    // continued by a following boolean expression.
+    AstNodeExpr* m_liveRepCondp = nullptr;
+    // Vertex used to check whether the live repetition can continue.
+    SvaStateVertex* m_liveRepCheckVtxp = nullptr;
+    // Clocked edge carrying new attempts into this live repetition.
+    SvaTransEdge* m_liveRepEntryEdgep = nullptr;
+    // A valid endpoint match clears the live repetition state.
+    AstNodeExpr* m_liveRepClearCondp = nullptr;
+    // OWNED; match-item statements to execute when the live repetition matches.
+    AstNodeStmt* m_liveRepMatchItemsp = nullptr;
     // Nonzero for a ring-buffer vertex for ## delays.
     bool m_isFixedDelayRing = false;
     unsigned m_delayRingSize = 0;  // Number of ring slots. Range: max-min+1.
@@ -109,6 +123,11 @@ public:
         : V3GraphVertex{graphp} {}
     ~SvaStateVertex() override {
         for (AstNodeExpr* cp : m_throughoutConds) VL_DO_DANGLING(cp->deleteTree(), cp);
+        if (m_liveRepCondp) VL_DO_DANGLING(m_liveRepCondp->deleteTree(), m_liveRepCondp);
+        if (m_liveRepClearCondp)
+            VL_DO_DANGLING(m_liveRepClearCondp->deleteTree(), m_liveRepClearCondp);
+        if (m_liveRepMatchItemsp)
+            VL_DO_DANGLING(m_liveRepMatchItemsp->deleteTree(), m_liveRepMatchItemsp);
         if (m_delayRingClearCondp)
             VL_DO_DANGLING(m_delayRingClearCondp->deleteTree(), m_delayRingClearCondp);
         if (m_delayRingAdvanceCondp)
@@ -244,6 +263,32 @@ static AstNodeExpr* sampled(AstNodeExpr* exprp) {
     return new AstSampled{exprp->fileline(), exprp, exprp->dtypep(), true};
 }
 
+// Match-item actions execute when a sequence matches, but their input values are sampled in the
+// assertion's sampling region. Wrap read-only references while leaving writable operands intact.
+class SampleMatchItemReadsVisitor final : public VNVisitor {
+    void visit(AstSampled*) override {}
+    void visit(AstNodeFTaskRef* nodep) override {
+        const V3TaskConnects tconnects
+            = V3Task::taskConnects(nodep, nodep->taskp()->declsp(), nullptr, false);
+        for (const auto& tconnect : tconnects) {
+            AstVar* const portp = tconnect.first;
+            AstArg* const argp = tconnect.second;
+            if (!portp->isInput()) continue;
+            iterateNull(argp->exprp());
+        }
+    }
+    void visit(AstNodeVarRef* nodep) override {
+        if (!nodep->access().isReadOnly()) return;
+        AstNodeExpr* const sampledp = sampled(nodep->cloneTreePure(false));
+        nodep->replaceWith(sampledp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    explicit SampleMatchItemReadsVisitor(AstNode* nodep) { iterateAndNextNull(nodep); }
+};
+
 static const char* assertPassOnQuery(bool vacuous) {
     static constexpr const char* queries[2]
         = {"ASSERT_CTL_PASS_ON_NONVACUOUS", "ASSERT_CTL_PASS_ON_VACUOUS"};
@@ -337,6 +382,8 @@ class SvaNfaBuilder final {
     bool m_markStrongPending = false;  // Mark new vertices as strong s_always in-window
     // A cover only records matches, so a pending obligation at $finish is not a failure
     bool m_noEosFailure = false;
+    // True only when the whole directive has one linear path to a terminal live repetition.
+    const bool m_allowLiveRepReject;
     // IEEE 1800-2023 16.14.3 cover sequence: each end-of-match fires the action,
     // not just the first. Builder builds parallel-branch (no first-match-wins)
     // topology when true. Default false preserves cover_property semantics.
@@ -344,6 +391,9 @@ class SvaNfaBuilder final {
     // Unsupported endpoint topology must reject, not ignore, or the wait hangs
     bool m_isSeqEvent = false;
     bool m_inSequencePrefix = false;  // Prefix composition does not preserve every endpoint
+    // Building the RHS of a ranged delay. A failed candidate cannot reject
+    // while another delay candidate can still match.
+    bool m_inRangedDelayRhs = false;
     bool m_wantBoolLeaf = false;  // Building a |-> / |=> or top-level body (see buildOrMerge)
 
     struct RangeDelayRejectInfo final {
@@ -740,8 +790,52 @@ class SvaNfaBuilder final {
 
         // Multi-cycle RHS: recurse (only plain boolean is returned as finalCondp).
         if (exprp->isMultiCycleSva()) {
+            VL_RESTORER(m_inRangedDelayRhs);
+            if (delayp->isRangeDelay()) m_inRangedDelayRhs = true;
             const BuildResult result = buildExpr(exprp, currentp, isTopLevelStep);
             if (result.valid()) addFiniteRangeReject(rangeRejectInfo, result, flp);
+            return result;
+        }
+        // A failed required repetition cannot be recovered by a later endpoint.
+        // Reject the attempt even when the endpoint is false on this tick.
+        if (m_allowLiveRepReject && !m_inSequencePrefix && currentp->m_liveRepCondp) {
+            AstNodeExpr* const liveRepCondp = currentp->m_liveRepCondp;
+            UASSERT_OBJ(currentp->m_liveRepCheckVtxp, currentp,
+                        "Live repetition endpoint missing check vertex");
+            SvaStateVertex* const liveRepVtxp = currentp->m_liveRepCheckVtxp;
+
+            AstExprStmt* const matchItemExprp = VN_CAST(exprp, ExprStmt);
+            AstNodeExpr* const endpointBoolp = matchItemExprp ? matchItemExprp->resultp() : exprp;
+            if (!endpointBoolp->isPure()) {
+                endpointBoolp->purityCheck();
+                VL_DO_DANGLING(currentp->m_liveRepCondp->deleteTree(), currentp->m_liveRepCondp);
+                return {currentp, exprp, std::move(rangeMidSources)};
+            }
+
+            SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
+            sinkVtxp->m_isRejectSink = true;
+            AstNodeExpr* const guardp = liveRepCondp->cloneTreePure(false);
+            SvaTransEdge* const rejEdgep = m_graph.addLink(liveRepVtxp, sinkVtxp, guardp);
+            rejEdgep->m_rejectOnFail = true;
+
+            // The endpoint is valid only when the repetition itself matched on this tick.
+            // A valid match also retires the live repetition state for later ticks.
+            liveRepVtxp->m_liveRepClearCondp
+                = new AstLogAnd{flp, liveRepCondp->cloneTreePure(false),
+                                sampled(endpointBoolp->cloneTreePure(false))};
+
+            // Match items are statements, not side effects in the endpoint's boolean expression.
+            // Execute them once on the successful-match path instead of cloning them into guards.
+            if (matchItemExprp) {
+                UASSERT_OBJ(!liveRepVtxp->m_liveRepMatchItemsp, liveRepVtxp,
+                            "Live repetition match items set more than once");
+                liveRepVtxp->m_liveRepMatchItemsp = matchItemExprp->stmtsp()->cloneTree(true);
+                SampleMatchItemReadsVisitor{liveRepVtxp->m_liveRepMatchItemsp};
+            }
+
+            BuildResult result{currentp, endpointBoolp->cloneTreePure(false),
+                               std::move(rangeMidSources)};
+            VL_DO_DANGLING(currentp->m_liveRepCondp->deleteTree(), currentp->m_liveRepCondp);
             return result;
         }
         return {currentp, exprp, std::move(rangeMidSources)};
@@ -812,14 +906,20 @@ class SvaNfaBuilder final {
                 currentp = checkVtxp;
             } else {
                 SvaStateVertex* const loopBackVtxp = scopedCreateVertex();
-                guardedEdge(currentp, loopBackVtxp, flp);
+                loopBackVtxp->m_liveRepEntryEdgep = guardedEdge(currentp, loopBackVtxp, flp);
                 SvaStateVertex* const reCheckVtxp = scopedCreateVertex();
                 guardedLink(loopBackVtxp, reCheckVtxp, sampledRefOrClone(hoistVarp, exprp, flp),
                             flp);
                 guardedEdge(reCheckVtxp, loopBackVtxp, flp);
                 guardedLink(reCheckVtxp, currentp, flp);
+                currentp->m_liveRepCheckVtxp = loopBackVtxp;
             }
             currentp->m_isUnbounded = true;
+            // The rejection path clones this condition. Leave impure repetition
+            // expressions on the existing path so their side effects are not duplicated.
+            if (m_allowLiveRepReject && minN != 0 && exprp->isPure()) {
+                currentp->m_liveRepCondp = sampledRefOrClone(hoistVarp, exprp, flp);
+            }
             m_inUnboundedScope = true;
         } else if (repp->maxCountp()) {
             const unsigned maxN = getConstUInt(repp->maxCountp());
@@ -1624,11 +1724,13 @@ public:
     }
 
     SvaNfaBuilder(SvaGraph& graph, AstNodeModule* modp, V3UniqueNames& propTempNames,
-                  bool isCoverSeq = false, bool isSeqEvent = false, bool noEosFailure = false)
+                  bool isCoverSeq = false, bool isSeqEvent = false, bool noEosFailure = false,
+                  bool allowLiveRepReject = false)
         : m_graph{graph}
         , m_modp{modp}
         , m_propTempNames{propTempNames}
         , m_noEosFailure{noEosFailure}
+        , m_allowLiveRepReject{allowLiveRepReject}
         , m_isCoverSeq{isCoverSeq}
         , m_isSeqEvent{isSeqEvent} {}
 
@@ -1818,6 +1920,7 @@ class SvaNfaLowering final {
     AstNodeModule* const m_modp;  // Module to add state vars and always blocks to
     AstNodeDType* const m_u32DTypep;  // Shared unsigned counter dtype
     V3UniqueNames m_names{"__Vnfa"};  // Unique names for generated variables
+    V3UniqueNames m_matchItemCountNames{"__VnfaMatchItemCount"};  // Match-item replay counters
     size_t m_statDelayRingEdgeVisits = 0;  // Delay-ring incoming edges visited
     size_t m_statLinkEdgeVisits = 0;  // Incoming edges visited while resolving Links
 
@@ -2002,6 +2105,19 @@ class SvaNfaLowering final {
                              new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)}};
     }
 
+    // Count contribution of the same clocked edge used to enter a live repetition.
+    static AstNodeExpr* gatedEdgeCountp(LowerCtx& c, const SvaTransEdge& tedger) {
+        const SvaStateVertex* const fromVtxp = tedger.fromVtxp();
+        UASSERT_OBJ(fromVtxp->datap()->stateCountSigp, fromVtxp,
+                    "Live-repetition count source missing stateCountSig");
+        AstNodeExpr* countp = fromVtxp->datap()->stateCountSigp->cloneTreePure(false);
+        if (c.disableExprp) {
+            countp = addCountp(c.flp, nullptr, countp,
+                               new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)});
+        }
+        return addCountp(c.flp, nullptr, countp, notKillActive(c));
+    }
+
     // Phase 2/2b/2c: Emit NBA register updates and in-place delay-ring writes.
     // Phase 2: State register NBA always block. Each clocked-edge target
     // latches the OR of its incoming contributions.
@@ -2024,15 +2140,75 @@ class SvaNfaLowering final {
                         "Registered vertex has no clocked incoming contribution");
             nextStatep = gateNotKill(c, nextStatep);
 
+            // A successful endpoint consumes the unbounded repetition attempt. Keep the
+            // current-cycle match signal intact, but do not carry the repetition state into
+            // later cycles where it could be rejected after the endpoint already matched.
+            if (vtxp->m_liveRepClearCondp) {
+                nextStatep = new AstCond{c.flp, vtxp->m_liveRepClearCondp->cloneTreePure(false),
+                                         new AstConst{c.flp, AstConst::BitFalse{}}, nextStatep};
+            }
+
             AstAssignDly* const assignp = new AstAssignDly{
                 c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::WRITE}, nextStatep};
             bodyp = AstNode::addNextNull(bodyp, assignp);
+            if (vtxp->datap()->liveRepCountVarp) {
+                UASSERT_OBJ(vtxp->m_liveRepEntryEdgep, vtxp,
+                            "Live-repetition count missing entry edge");
+                AstNodeExpr* nextCountp = gatedEdgeCountp(c, *vtxp->m_liveRepEntryEdgep);
+                nextCountp
+                    = new AstCond{c.flp, vtxp->m_liveRepClearCondp->cloneTreePure(false),
+                                  newTypedConstp(c.flp, nextCountp->dtypep(), 0), nextCountp};
+                bodyp = AstNode::addNextNull(
+                    bodyp, new AstAssignDly{c.flp,
+                                            new AstVarRef{c.flp, vtxp->datap()->liveRepCountVarp,
+                                                          VAccess::WRITE},
+                                            nextCountp});
+            }
+            if (vtxp->m_liveRepMatchItemsp) {
+                UASSERT_OBJ(vtxp->m_liveRepEntryEdgep, vtxp,
+                            "Live-repetition match items missing entry edge");
+                AstNodeExpr* const entryCountp = gatedEdgeCountp(c, *vtxp->m_liveRepEntryEdgep);
+                AstNodeExpr* matchItemCondp = new AstNeq{c.flp, entryCountp->cloneTreePure(false),
+                                                         newTypedConstp(c.flp, m_u32DTypep, 0)};
+                matchItemCondp = new AstLogAnd{c.flp, matchItemCondp,
+                                               vtxp->m_liveRepClearCondp->cloneTreePure(false)};
+                AstNodeExpr* const matchItemCountp = new AstCond{
+                    c.flp, matchItemCondp, entryCountp, newTypedConstp(c.flp, m_u32DTypep, 0)};
+                AstVar* const remainingMatchCountVarp = new AstVar{
+                    c.flp, VVarType::MODULETEMP, m_matchItemCountNames.get(""), m_u32DTypep};
+                remainingMatchCountVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+                m_modp->addStmtsp(remainingMatchCountVarp);
+                bodyp = AstNode::addNextNull(
+                    bodyp,
+                    new AstAssign{c.flp,
+                                  new AstVarRef{c.flp, remainingMatchCountVarp, VAccess::WRITE},
+                                  matchItemCountp});
+                AstLoop* const matchItemLoop = new AstLoop{c.flp};
+                matchItemLoop->addStmtsp(new AstLoopTest{
+                    c.flp, matchItemLoop,
+                    new AstGt{c.flp, new AstVarRef{c.flp, remainingMatchCountVarp, VAccess::READ},
+                              newTypedConstp(c.flp, m_u32DTypep, 0)}});
+                matchItemLoop->addStmtsp(vtxp->m_liveRepMatchItemsp->cloneTree(true));
+                matchItemLoop->addStmtsp(new AstAssign{
+                    c.flp, new AstVarRef{c.flp, remainingMatchCountVarp, VAccess::WRITE},
+                    new AstSub{c.flp, new AstVarRef{c.flp, remainingMatchCountVarp, VAccess::READ},
+                               newTypedConstp(c.flp, m_u32DTypep, 1)}});
+                bodyp = AstNode::addNextNull(bodyp, matchItemLoop);
+            }
             if (asyncDisable) {
                 clearp = AstNode::addNextNull(
                     clearp,
                     new AstAssignDly{
                         c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::WRITE},
                         new AstConst{c.flp, AstConst::BitFalse{}}});
+                if (vtxp->datap()->liveRepCountVarp) {
+                    clearp = AstNode::addNextNull(
+                        clearp,
+                        new AstAssignDly{
+                            c.flp,
+                            new AstVarRef{c.flp, vtxp->datap()->liveRepCountVarp, VAccess::WRITE},
+                            newTypedConstp(c.flp, m_u32DTypep, 0)});
+                }
             }
         }
         if (bodyp) addStateAlways(c, bodyp, clearp);
@@ -2400,10 +2576,19 @@ class SvaNfaLowering final {
             AstNodeExpr* const notCondp = new AstLogNot{c.flp, condp};
             AstNodeExpr* const rawFailp = new AstLogAnd{c.flp, srcSigp, notCondp};
             if (needThreadFailCount) {
-                // thread_fail_count += fail;
-                sigs.threadFailCountp = addCountp(
-                    c.flp, sigs.threadFailCountp,
-                    new AstExtend{c.flp, rawFailp->cloneTreePure(false), m_u32DTypep->width()});
+                // Replay one failure for each attempt represented by this shared repetition
+                // state; other rejection links still contribute their boolean failure.
+                AstNodeExpr* contributionp = nullptr;
+                if (fromVtxp->datap()->liveRepCountVarp) {
+                    contributionp = new AstCond{
+                        c.flp, rawFailp->cloneTreePure(false),
+                        new AstVarRef{c.flp, fromVtxp->datap()->liveRepCountVarp, VAccess::READ},
+                        newTypedConstp(c.flp, m_u32DTypep, 0)};
+                } else {
+                    contributionp = new AstExtend{c.flp, rawFailp->cloneTreePure(false),
+                                                  m_u32DTypep->width()};
+                }
+                sigs.threadFailCountp = addCountp(c.flp, sigs.threadFailCountp, contributionp);
             }
             AstNodeExpr* const failp = gateNotKill(c, rawFailp);
             sigs.requiredStepRejectp = orExprs(c.flp, sigs.requiredStepRejectp, failp);
@@ -2564,9 +2749,14 @@ class SvaNfaLowering final {
             if (vtxp->datap()->stateVarp) {
                 vtxp->datap()->stateSigp
                     = new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::READ};
-                vtxp->datap()->stateCountSigp = new AstExtend{
-                    c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::READ},
-                    m_u32DTypep->width()};
+                if (vtxp->datap()->liveRepCountVarp) {
+                    vtxp->datap()->stateCountSigp
+                        = new AstVarRef{c.flp, vtxp->datap()->liveRepCountVarp, VAccess::READ};
+                } else {
+                    vtxp->datap()->stateCountSigp = new AstExtend{
+                        c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::READ},
+                        m_u32DTypep->width()};
+                }
             } else if (vtxp->datap()->delayRingVarp) {
                 if (vtxp->m_isFixedDelayRing) {
                     // state_count = wrapped ? head : 0; state = state_count != 0;
@@ -2844,6 +3034,15 @@ public:
             varp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(varp);
             vtx[i]->datap()->stateVarp = varp;
+            if (vtx[i]->m_liveRepClearCondp) {
+                UASSERT_OBJ(vtx[i]->m_liveRepEntryEdgep, vtx[i],
+                            "Live repetition clear missing entry edge");
+                AstVar* const countVarp = new AstVar{regFlp, VVarType::MODULETEMP,
+                                                     varName + "_liveCount", m_u32DTypep};
+                countVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+                m_modp->addStmtsp(countVarp);
+                vtx[i]->datap()->liveRepCountVarp = countVarp;
+            }
         }
 
         // Build lowering context for phase sub-functions.
@@ -3011,6 +3210,31 @@ class AssertNfaVisitor final : public VNVisitor {
             parts.seqExprp = exprp;
         }
         return parts;
+    }
+
+    // The live-repetition reject edge is attempt-wide, so it is safe only when the
+    // directive has one temporal path.  Keep composite/ranged shapes on the existing
+    // lowering until the NFA retains per-attempt path ownership.
+    static bool hasSingleTerminalLiveRepPath(const PropertyParts& parts,
+                                             const AstNodeExpr* seqBodyp, bool negated) {
+        if (negated) return false;
+        if (parts.hasImplication && hasMultiCycleExpr(parts.triggerExprp)) return false;
+
+        unsigned consRepCount = 0;
+        unsigned unboundedRepCount = 0;
+        seqBodyp->foreach([&](const AstSConsRep* repp) {
+            ++consRepCount;
+            if (repp->unbounded()) ++unboundedRepCount;
+        });
+        if (consRepCount != 1 || unboundedRepCount != 1) return false;
+
+        if (seqBodyp->exists([](const AstDelay* delayp) { return delayp->isRangeDelay(); })) {
+            return false;
+        }
+        return !seqBodyp->exists([](const AstNodeExpr* nodep) {
+            if (!nodep->isMultiCycleSva()) return false;
+            return !VN_IS(nodep, SExpr) && !VN_IS(nodep, SConsRep);
+        });
     }
 
     static bool canSplitImplicationPassActions(const PropertyParts& parts) {
@@ -3388,9 +3612,17 @@ class AssertNfaVisitor final : public VNVisitor {
 
         FileLine* const flp = assertp->fileline();
 
+        const bool allowLiveRepReject
+            = VN_IS(assertp, Assert) && hasSingleTerminalLiveRepPath(parts, seqBodyp, negated);
+
         SvaGraph graph;
-        SvaNfaBuilder builder{graph,      m_modp,     m_propTempNames,
-                              isCoverSeq, isSeqEvent, coverp != nullptr};
+        SvaNfaBuilder builder{graph,
+                              m_modp,
+                              m_propTempNames,
+                              isCoverSeq,
+                              isSeqEvent,
+                              coverp != nullptr,
+                              allowLiveRepReject};
 
         const BuildResult result = buildAssertionGraph(builder, graph, seqBodyp, parts, flp);
         if (result.valid()) wireMatchAndMidSources(graph, result, flp);

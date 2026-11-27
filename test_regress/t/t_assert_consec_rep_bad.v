@@ -4,6 +4,36 @@
 // SPDX-FileCopyrightText: 2026 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+`ifdef TEST_IMPURE_REPETITION
+module t (input clk);
+  logic start = 0;
+  logic a = 1;
+  logic b = 0;
+  int calls = 0;
+
+  function logic repeated();
+    calls++;
+    return a;
+  endfunction
+
+  // Bad: functions in assertion Boolean expressions must not have side effects.
+  assert property (@(posedge clk) start |-> repeated()[*1:$] ##0 b);
+endmodule
+`elsif TEST_IMPURE_ENDPOINT
+module t (input clk);
+  logic start = 0;
+  logic a = 1;
+  int calls = 0;
+
+  function logic endpoint();
+    calls++;
+    return 0;
+  endfunction
+
+  // Bad: functions in assertion Boolean expressions must not have side effects.
+  assert property (@(posedge clk) start |-> a[*1:$] ##0 endpoint());
+endmodule
+`else
 module t (input clk);
   logic a;
   int n;
@@ -30,3 +60,4 @@ module t (input clk);
   assert property (@(posedge clk) a [*n:$] |-> 1);
 
 endmodule
+`endif
