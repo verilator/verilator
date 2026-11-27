@@ -21,6 +21,7 @@
 #include "vpi_user.h"
 
 #include <algorithm>
+#include <bitset>
 #include <cstdint>
 #include <cstdio>
 #include <functional>
@@ -245,7 +246,7 @@ void armValueCbs(std::initializer_list<const char*> names) {
 
 void checkValueCbs() {
     for (ValueCb& vc : s_valueCbs) {
-        TEST_CHECK_EQ_LABEL(vc.name, vc.count <= 1, true);
+        TEST_CHECK_EQ_LABEL(vc.name, vc.count, 1);
         vpi_remove_cb(vc.cb);
     }
     s_valueCbs.clear();
@@ -271,7 +272,7 @@ void landInertial() {
 }
 
 void script() {
-    // After the first eval, which fired each callback at most once for its settle
+    // After the first eval
     step([] {
         checkValueCbs();
         in("rst", 0);
@@ -324,7 +325,7 @@ void script() {
                       {~x & 0xff, 8},
                       {~x & 0xff, 8}}));
         const Words wm33 = cat(
-            {{static_cast<uint32_t>(__builtin_parity(d)), 1}, {d, 8}, {d, 8}, {d, 8}, {d, 8}});
+            {{static_cast<uint32_t>(std::bitset<8>{d}.count() & 1), 1}, {d, 8}, {d, 8}, {d, 8}, {d, 8}});
         const Words wm65 = cat({{d, 8},
                                 {d, 8},
                                 {d, 8},
@@ -591,9 +592,9 @@ PLI_INT32 startOfSimulation(p_cb_data) {
     in("sel", 1);
     in("d", 0x21);
     in("in_a", 0x40);
-    // Each fires at most once, for the first eval's settle
-    armValueCbs({"t.ch1", "t.fmid_c", "t.sib_b", "t.al_sw", "t.ff_q", "t.hl_c.hi", "t.hl_c.lo",
-                 "t.hl_c", "t.u_px.i"});
+    // Each changes once, in the first eval's settle; a flop's readers are left out, as before its
+    // first edge they change under 2-state but stay X under 4-state
+    armValueCbs({"t.fmid_c", "t.hl_c.hi", "t.hl_c.lo", "t.hl_c", "t.u_px.i"});
     script();
     scheduleStep();
     return 0;

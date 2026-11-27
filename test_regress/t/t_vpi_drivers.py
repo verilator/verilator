@@ -9,9 +9,8 @@
 
 import vltest_bootstrap
 
-# Not vltmt: the design calls VPI from an always block, which --threads may run off the main thread.
-# Not iv: Icarus lacks the interface, DPI and mixed-driver constructs the design is made of.
-test.scenarios('vlt', 'ms', 'nc', 'vcs', 'xrun')
+# Not vltmt, whose threads may run the design's DPI calls into VPI off the main thread
+test.scenarios('vlt', 'ms')
 
 test.compile(make_top_shell=False,
              make_pli=True,
