@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2024 Antmicro Ltd
+// SPDX-FileCopyrightText: 2024-2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
 class c1;
@@ -55,7 +55,9 @@ class SubC extends SubB;
   endfunction
   function int doit;
     // access ambiguous names so width complains if we miss something
-    doit = 1;
+    doit = PARAM;
+    if (f.randomize() with { x == local::doit; } != 1) $stop;
+    if (f.x != PARAM) $stop;
 
     f.x = 4;
     x = 5;
