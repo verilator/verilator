@@ -15,11 +15,14 @@ module t (
 
   int cyc = 0;
   logic a = 0, x = 0, y = 0, a2 = 0, x2 = 0, y2 = 0, a3 = 0, x3 = 0, y3 = 0;
+  logic b = 1, z = 0, z2 = 0;
   int fail_or = 0, fail_or_noparen = 0, fail_prop_or = 0, fail_multi_ante = 0;
   int fail_delay_or = 0, fail_and = 0;
   int cov_prop_or = 0, cov_prop_lor = 0, cov_seq_or = 0, cov_seq_lor = 0;
   int pass_top_or = 0, fail_top_or = 0, pass_top_not_or = 0, fail_top_not_or = 0;
   int fail_rep0 = 0, fail_rep1 = 0, fail_nonbool_l = 0, fail_nonbool_l2 = 0, fail_nonbool_r = 0;
+  int fail_or3 = 0, fail_or3_nest = 0, fail_prop_or3 = 0, fail_or3_impl = 0, fail_or3_impl2 = 0;
+  int fail_or3_seq = 0, fail_or3_hold = 0;
 
   // a in cycles 3, 6, 9, 12; the consequent cycle after each has
   //   cycle 4: x=0 y=0 -> every disjunction fails
@@ -36,6 +39,24 @@ module t (
   else fail_delay_or = fail_delay_or + 1;
   assert property (@(posedge clk) a |=> (x && y))
   else fail_and = fail_and + 1;
+
+  // Disjunctions of three terms (z stays low) fail in cycle 4 too
+  assert property (@(posedge clk) a |=> (x || y || z))
+  else fail_or3 = fail_or3 + 1;
+  assert property (@(posedge clk) a |=> (x || y) || z)
+  else fail_or3_nest = fail_or3_nest + 1;
+  assert property (@(posedge clk) a |=> (x or y or z))
+  else fail_prop_or3 = fail_prop_or3 + 1;
+  assert property (@(posedge clk) a |=> b |-> (x || y || z))
+  else fail_or3_impl = fail_or3_impl + 1;
+  assert property (@(posedge clk) a ##1 b |-> (x || y || z))
+  else fail_or3_seq = fail_or3_seq + 1;
+  // Checked in cycles 5, 8, 11, 14, where x, y and z are all low
+  assert property (@(posedge clk) a |=> $stable(b) |=> (x || y || z))
+  else fail_or3_impl2 = fail_or3_impl2 + 1;
+  // a2 is true only in cycle 15 and z2 in cycle 16, so the last term holds
+  assert property (@(posedge clk) a2 |=> (x3 || y3 || z2))
+  else fail_or3_hold = fail_or3_hold + 1;
 
   // A top-level disjunction must reject too; 'not' of it fails where it holds
   assert property (@(posedge clk) x or y) pass_top_or = pass_top_or + 1;
@@ -73,6 +94,7 @@ module t (
     y <= (cyc == 9 || cyc == 12);
     a2 <= (cyc == 14);
     x2 <= (cyc == 15);
+    z2 <= (cyc == 15);
     a3 <= (cyc == 16);
     y3 <= (cyc == 17);
     if (cyc == 20) begin
@@ -82,6 +104,13 @@ module t (
       `checkd(fail_multi_ante, 1);
       `checkd(fail_delay_or, 1);
       `checkd(fail_and, 3);
+      `checkd(fail_or3, 1);
+      `checkd(fail_or3_nest, 1);
+      `checkd(fail_prop_or3, 1);
+      `checkd(fail_or3_impl, 1);
+      `checkd(fail_or3_seq, 1);
+      `checkd(fail_or3_impl2, 4);
+      `checkd(fail_or3_hold, 0);
       `checkd(cov_prop_or, 3);
       `checkd(cov_prop_lor, 3);
       `checkd(cov_seq_or, 3);
