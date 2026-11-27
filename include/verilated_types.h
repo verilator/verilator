@@ -480,6 +480,13 @@ public:
     void clearTriggered() override { (*this)->m_triggered = false; }
 };
 
+// Type trait: whether T is an event, or an unpacked array of events
+template <typename T_Element>
+struct VlIsEvent final : std::is_base_of<VlEventBase, T_Element> {};
+template <typename T_Element, std::size_t N_Depth>
+struct VlIsEvent<VlUnpacked<T_Element, N_Depth>> final
+    : std::integral_constant<bool, VlIsEvent<T_Element>::value> {};
+
 inline std::string VL_TO_STRING(const VlEventBase& e);
 
 inline std::string VL_TO_STRING(const VlEvent& e) {
@@ -707,8 +714,13 @@ public:
         applyBound();
     }
     // Verilog: '{index: value}, sized by new[size], else by the largest index
-    explicit VlQueue(size_t size, std::initializer_list<std::pair<QData, T_Value>> items)
-        : VlQueue{size, T_Value{}, items} {}
+    explicit VlQueue(size_t size, std::initializer_list<std::pair<QData, T_Value>> items) {
+        resize(size);
+        for (const auto& item : items) {
+            if (item.first < size) m_deque[item.first] = item.second;
+        }
+        applyBound();
+    }
 
     template <typename T_Rhs, size_t N_RhsMaxSize>
     bool operator==(const VlQueue<T_Rhs, N_RhsMaxSize>& rhs) const {
@@ -751,7 +763,7 @@ public:
     // Dynamic array new[] becomes a renew()
     void renew(size_t size) {
         clear();
-        m_deque.resize(size, atDefault());
+        resize(size);
     }
     // Dynamic array new[]() becomes a renew_copy()
     void renew_copy(size_t size, const VlQueue<T_Value, N_MaxSize>& rhs) {
@@ -759,14 +771,20 @@ public:
             clear();
         } else {
             *this = rhs;
-            m_deque.resize(size, atDefault());
+            resize(size);
         }
     }
     // Unpacked array new[]() becomes a renew_copy()
     template <typename T_UnpackedValue, std::size_t N_UnpackedDepth>
     void renew_copy(size_t size, const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs);
 
-    void resize(size_t size) { m_deque.resize(size, atDefault()); }
+    void resize(size_t size) {
+        if (VlIsEvent<T_Value>::value) {
+            m_deque.resize(size);
+        } else {
+            m_deque.resize(size, atDefault());
+        }
+    }
     // Assign the elements of a range, as DPI does from a C layout copy
     template <typename T_Iterator>
     void assign(const T_Iterator& first, const T_Iterator& last) {
@@ -814,7 +832,10 @@ public:
     T_Value& atWriteAppend(int32_t index) {
         // cppcheck-suppress variableScope
         static thread_local T_Value t_throwAway;
-        if (index == m_deque.size()) push_back(atDefault());
+        if (index == m_deque.size()) {
+            resize(m_deque.size() + 1);
+            applyBound();
+        }
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
             t_throwAway = atDefault();
             return t_throwAway;
@@ -1167,6 +1188,7 @@ private:
     // MEMBERS
     Map m_map;  // State of the assoc array
     T_Value m_defaultValue;  // Default value
+    bool m_hasExplicitDefault = false;  // m_defaultValue is given by the user, e.g. '{default: x}
 
 public:
     // CONSTRUCTORS
@@ -1181,7 +1203,8 @@ public:
     explicit VlAssocArray(const T_Value& defaultValue,
                           std::initializer_list<std::pair<const T_Key, T_Value>> init)
         : m_map{init}
-        , m_defaultValue{defaultValue} {}
+        , m_defaultValue{defaultValue}
+        , m_hasExplicitDefault{true} {}
     ~VlAssocArray() = default;
     VlAssocArray(const VlAssocArray&) = default;
     VlAssocArray(VlAssocArray&&) = default;
@@ -1243,6 +1266,8 @@ public:
     T_Value& atWrite(const T_Key& index) {
         const auto it = m_map.find(index);
         if (it == m_map.end()) {
+            // Copies of the implicit default would share its events; an explicit one is merged
+            if (VlIsEvent<T_Value>::value && !m_hasExplicitDefault) return m_map[index];
             std::pair<typename Map::iterator, bool> pit = m_map.emplace(index, m_defaultValue);
             return pit.first->second;
         }
@@ -1977,7 +2002,7 @@ void VlQueue<T_Value, N_MaxSize>::renew_copy(
     size_t size, const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs) {
     clear();
     if (size == 0) return;
-    m_deque.resize(size, atDefault());
+    resize(size);
     for (size_t i = 0; i < std::min(size, N_UnpackedDepth); ++i) { m_deque[i] = rhs.m_storage[i]; }
 }
 

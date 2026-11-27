@@ -1,9 +1,13 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2023 Antmicro Ltd
+// SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
 int evt_recv_cnt;
 int new_evt_recv_cnt;
@@ -12,6 +16,45 @@ module t;
 
   class Foo;
     event evt1;
+
+    task check_dynamic_array();
+      event events[];
+      bit woke;
+      events = new[2];
+      `checkd(events[0] == events[1], 0);
+      fork
+        begin
+          @(events[0]);
+          woke = 1;
+        end
+      join_none
+      #1 ->events[1];
+      #1 `checkd(woke, 0);
+      ->events[0];
+      #1 `checkd(woke, 1);
+    endtask
+
+    task assign_event(input event source_event, output event destination_event);
+      destination_event = source_event;
+    endtask
+
+    task check_queue();
+      event queue_events[$][2];
+      assign_event(evt1, queue_events[queue_events.size()][0]);
+      assign_event(evt1, queue_events[queue_events.size()][0]);
+      `checkd(queue_events[0][1] == queue_events[1][1], 0);
+    endtask
+
+    task check_associative_array();
+      event events[int][2];
+      events[0][0] = evt1;
+      events[1][0] = evt1;
+      `checkd(events[0][1] == events[1][1], 0);
+      // New entries of an explicit default are merged with it
+      events = '{default: '{evt1, evt1}};
+      events[0][0] = evt1;
+      `checkd(events[0][1] == evt1, 1);
+    endtask
 
     task automatic send_evt();
       fork
@@ -45,6 +88,9 @@ module t;
   initial begin
     Foo foo1;
     foo1 = new;
+    foo1.check_dynamic_array();
+    foo1.check_queue();
+    foo1.check_associative_array();
 
     evt_recv_cnt = 0;
     new_evt_recv_cnt = 0;
