@@ -59,6 +59,7 @@ class VSymEnt final {
     AstNode* m_nodep;  // Node that entry belongs to
     VSymEnt* m_fallbackp = nullptr;  // Table "above" this in name scope, for fallback resolution
     VSymEnt* m_parentp = nullptr;  // Table that created this
+    VSymEnt* m_shadowedp = nullptr;  // Same-named entry of an earlier generate alternative
     AstNodeModule* m_classOrPackagep = nullptr;  // Package node is in (for V3LinkDot, unused here)
     string m_symPrefix;  // String to prefix symbols with (for V3LinkDot, unused here)
     bool m_exported = true;  // Allow importing
@@ -143,6 +144,8 @@ public:
     VSymEnt* fallbackp() const { return m_fallbackp; }
     void parentp(VSymEnt* entp) { m_parentp = entp; }
     VSymEnt* parentp() const { return m_parentp; }
+    void shadowedp(VSymEnt* entp) { m_shadowedp = entp; }
+    VSymEnt* shadowedp() const { return m_shadowedp; }
     // True if symp is a parent of this table, without going above stopp
     bool isEnclosedBy(const VSymEnt* symp, const VSymEnt* stopp) const {
         for (const VSymEnt* curp = this; curp != stopp; curp = curp->parentp()) {
@@ -182,16 +185,18 @@ public:
 
         return entp;
     }
-    void reinsert(const string& name, VSymEnt* entp) {
+    VSymEnt* reinsert(const string& name, VSymEnt* entp) {  // Returns entry replaced, if any
         IdNameMap& nameMap = namesWritable().m_idName;
         const auto it = nameMap.find(name);
         if (name != "" && it != nameMap.end()) {
             UINFO(9, "     SymReinsert se" << cvtToHex(this) << " '" << name << "' se"
                                            << cvtToHex(entp) << "  " << entp->nodep());
+            VSymEnt* const replacedp = it->second;
             it->second = entp;  // Replace
-        } else {
-            insert(name, entp);
+            return replacedp;
         }
+        insert(name, entp);
+        return nullptr;
     }
     VSymEnt* findIdFlat(const string& name) {
         // Find identifier without looking upward through symbol hierarchy
@@ -213,6 +218,14 @@ public:
                 symp->m_wildImported = true;
                 return symp;
             }
+        }
+        return nullptr;
+    }
+    VSymEnt* findIdFlatOrShadowed(const string& name) {
+        // Find identifier without looking upward, also in the same-named entries of earlier
+        // generate alternatives, as V3Param has yet to choose between them (IEEE 1800-2023 27.5)
+        for (VSymEnt* symp = this; symp; symp = symp->m_shadowedp) {
+            if (VSymEnt* const foundp = symp->findIdFlat(name)) return foundp;
         }
         return nullptr;
     }

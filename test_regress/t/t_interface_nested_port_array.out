@@ -17,8 +17,4 @@
                                               : ... Or, perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
    49 |     l0_if#(W) l0,
       |     ^~~~~
-%Error: Internal Error: t/t_interface_nested_port_array.v:10:11: ../V3LinkDot.cpp:#: Module/etc never assigned a symbol entry?
-                                                               : ... note: In instance 't.m_l3.m_l2.m_l2b.m_l1_1.m_l0a1'
-   10 | interface l0_if #(
-      |           ^~~~~
-                        ... This fatal error may be caused by the earlier error(s); resolve those first.
+%Error: Exiting due to
