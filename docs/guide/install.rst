@@ -168,6 +168,16 @@ packages (see internals.rst), and a Python virtual environment:
    sudo apt-get install python3-clang bear jq
    cpan install Pod::Perldoc
 
+Building the documentation PDF (``make docs``) additionally needs a LaTeX
+installation with XeTeX and the TeX Gyre fonts, plus a font with CJK
+characters, used for contributor names:
+
+.. code-block:: bash
+
+   sudo apt-get install latexmk texlive-xetex texlive-latex-extra
+   sudo apt-get install texlive-fonts-recommended fonts-texgyre
+   sudo apt-get install fonts-droid-fallback
+
 The Python virtual environment is only required for running the whole test
 suite, and for additional development steps like linting and formatting. It
 is not required for building Verilator itself. To install the python
