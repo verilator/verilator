@@ -885,6 +885,22 @@ module t;
         else begin
         end
     end
+    begin : assert_prop_eventually
+        assert property (@(posedge clk) eventually [
+                         32'sh0:32'sh3] in
+        ) begin
+        end
+        else begin
+        end
+    end
+    begin : assert_prop_s_eventually
+        assert property (@(posedge clk) s_eventually
+                          in
+        ) begin
+        end
+        else begin
+        end
+    end
     begin : assert_prop_overlap_impl
         assert property (@(posedge clk) 
             ???? // IMPLICATION

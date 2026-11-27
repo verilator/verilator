@@ -88,7 +88,8 @@ class EmitCLazyDecls final : public VNVisitorConst {
     void visit(AstVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
         // Only constant pool symbols are lazy declared for now ...
-        if (EmitCParentModule::get(varp)->isConstPool()) lazyDeclareConstPoolVar(varp);
+        const AstNodeModule* const varModp = EmitCParentModule::get(varp);
+        if (varModp && varModp->isConstPool()) lazyDeclareConstPoolVar(varp);
     }
 
     void visit(AstExecGraph* nodep) override {
@@ -566,12 +567,18 @@ public:
         puts("_");
         emitRU(fromDtp);
         emitIQW(elemDtp);
+        // A wide result is written to a temporary of the dtype's width
+        UASSERT_OBJ(nodep->isWide() ? nodep->packedWidth() == nodep->widthMin()
+                                    : nodep->packedWidth() <= VL_QUADSIZE,
+                    nodep, "Packed width does not fit the result");
+        const string packedWidth = cvtToStr(nodep->packedWidth());
         if (descending) {
             // Wrap source in VL_PACK_REVERSED so VL_PACK sees ascending order
-            emitOpName(nodep, "(%nw, %rw, %P, VL_PACK_REVERSED(%li))", nodep->fromp(), elemDtp,
-                       nullptr);
+            emitOpName(nodep, "(" + packedWidth + ", %rw, %P, VL_PACK_REVERSED(%li))",
+                       nodep->fromp(), elemDtp, nullptr);
         } else {
-            emitOpName(nodep, "(%nw, %rw, %P, %li)", nodep->fromp(), elemDtp, nullptr);
+            emitOpName(nodep, "(" + packedWidth + ", %rw, %P, %li)", nodep->fromp(), elemDtp,
+                       nullptr);
         }
     }
 

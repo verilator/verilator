@@ -3,4 +3,8 @@
    18 |   assert property (@(posedge clk) ##1 not val);
       |                                       ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_property_sexpr_bad.v:19:51: Unexpected 'not' in sequence expression context
+                                      : ... note: In instance 't'
+   19 |   assert property (@(posedge clk) (@(posedge clk) not val) ##1 val);
+      |                                                   ^~~
 %Error: Exiting due to

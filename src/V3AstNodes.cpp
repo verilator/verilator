@@ -1776,6 +1776,14 @@ void AstCvtArrayToArray::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, srcElementBits);
     dumpJsonGen(str);
 }
+void AstCvtArrayToPacked::dump(std::ostream& str) const {
+    Super::dump(str);
+    str << " packedWidth=" << packedWidth();
+}
+void AstCvtArrayToPacked::dumpJson(std::ostream& str) const {
+    dumpJsonNumFunc(str, packedWidth);
+    dumpJsonGen(str);
+}
 void AstDelay::dump(std::ostream& str) const {
     Super::dump(str);
     if (isCycleDelay()) str << " [CYCLE]";
@@ -1922,6 +1930,14 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* r
     } else {
         return new AstEqWild{fl, lhsp, rhsp};
     }
+}
+void AstEventually::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (isStrong()) str << " [STRONG]";
+}
+void AstEventually::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isStrong);
+    dumpJsonGen(str);
 }
 AstExecGraph::AstExecGraph(FileLine* fl, const string& name, AstVarScope* trigVscp) VL_MT_DISABLED
     : ASTGEN_SUPER_ExecGraph(fl),

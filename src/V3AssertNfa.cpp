@@ -3062,17 +3062,7 @@ class AssertNfaVisitor final : public VNVisitor {
                 replaceBodyOnBuildError(specp->fileline(), specp, true);
                 return true;
             }
-            for (const AstSenItem* sp = clockedp->sensesp(); sp;
-                 sp = VN_CAST(sp->nextp(), SenItem)) {
-                if (!sp->edgeType().anEdge()) {
-                    clockedp->v3warn(E_UNSUPPORTED,
-                                     "Unsupported: non-edge clocking event on a sequence; "
-                                     "use an edge such as @(posedge clk)");
-                    replaceBodyOnBuildError(specp->fileline(), specp, true);
-                    return true;
-                }
-            }
-            specp->sensesp(clockedp->sensesp()->unlinkFrBackWithNext());
+            specp->addSensesp(clockedp->sensesp()->unlinkFrBackWithNext());
             AstNodeExpr* const bodyp = clockedp->exprp()->unlinkFrBack();
             clockedp->replaceWith(bodyp);
             VL_DO_DANGLING(pushDeletep(clockedp), clockedp);
@@ -3307,6 +3297,14 @@ class AssertNfaVisitor final : public VNVisitor {
     // Returns the PropSpec to lower, or nullptr when fully handled here.
     AstPropSpec* prepareAssertionProp(AstNodeCoverOrAssert* assertp) {
         if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
+            // Blackbox only the ranged eventually, leaving surrounding sequences to the NFA.
+            specp->propp()->foreach([this](AstEventually* ep) {
+                if (!ep->loBoundp()) return;
+                ep->v3warn(E_UNSUPPORTED,
+                           "Unsupported: " << ep->verilogKwd() << "[] (in property expression)");
+                ep->replaceWith(new AstConst{ep->fileline(), AstConst::BitTrue{}});
+                VL_DO_DANGLING(pushDeletep(ep), ep);
+            });
             // Leave a chain of property instances to V3AssertPre: the NFA lowering
             // reports one fail for attempts failing in the same cycle, e.g. after a goto
             // repetition antecedent, but each attempt fails (IEEE 1800-2023 16.14.1).
@@ -3365,7 +3363,7 @@ class AssertNfaVisitor final : public VNVisitor {
         const bool countMatches = countsMatches(assertp);
         // Inherit module defaults (IEEE 14.12, 16.15) when assertion has none.
         if (!propp->sensesp() && m_defaultClockingp) {
-            propp->sensesp(m_defaultClockingp->sentreep()->sensesp()->cloneTree(true));
+            propp->addSensesp(m_defaultClockingp->sentreep()->sensesp()->cloneTree(true));
         }
         if (!propp->disablep() && m_defaultDisablep && !isSeqEvent) {
             propp->disablep(m_defaultDisablep->condp()->cloneTreePure(true));

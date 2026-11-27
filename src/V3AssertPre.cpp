@@ -538,7 +538,7 @@ private:
                 VL_DO_DANGLING(pushDeletep(valuep), valuep);
                 return;
             }
-            sentreep = new AstSenTree{flp, m_senip->cloneTree(false)};
+            sentreep = new AstSenTree{flp, m_senip->cloneTree(true)};
         } else {
             sentreep = m_defaultClockingp->sentreep()->cloneTree(false);
         }
@@ -945,8 +945,17 @@ private:
         sizep->dtypep(refp->findBasicDType(VBasicDTypeKwd::UINT32));
         return sizep;
     }
-    void visit(AstSEventually* nodep) override {
+    void visit(AstEventually* nodep) override {
+        if (nodep->exprp()->isMultiCycleSva()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: property/sequence operator inside "
+                                             << nodep->verilogKwd());
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         UASSERT(v3Global.rootp()->stdPackagep(), "Should be imported");
+        UASSERT_OBJ(!nodep->loBoundp(), nodep,
+                    "Ranged eventually should be removed by V3AssertNfa");
 
         AstSenTree* const sentreep = newSenTree(nodep);
         if (!sentreep->sensesp()) {
@@ -1147,7 +1156,7 @@ private:
                                                new AstConst{flp, 1}}}});
         loopp->addStmtsp(new AstIf{
             flp, new AstLt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, countp},
-            new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr}});
+            new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(true)}, nullptr}});
 
         beginp->addStmtsp(loopp);
 
@@ -1156,10 +1165,10 @@ private:
             // Trailing window: ##1 advance, then scan !expr cycles checking rhs.
             // Window closes when expr becomes true again (fail if rhs was never true).
             beginp->addStmtsp(new AstEventControl{
-                flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});  // ##1
+                flp, new AstSenTree{flp, sensesp->cloneTree(true)}, nullptr});  // ##1
             if (!isOverlapped) {
                 beginp->addStmtsp(new AstEventControl{
-                    flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});  // |=>
+                    flp, new AstSenTree{flp, sensesp->cloneTree(true)}, nullptr});  // |=>
             }
             // Window loop: check rhs at each !expr cycle (done variable for termination)
             AstVar* const doneVarp
@@ -1186,12 +1195,12 @@ private:
             windowp->addStmtsp(new AstIf{flp, rhsp, passsp});
             // @(clk) -- advance to next cycle in window
             windowp->addStmtsp(
-                new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});
+                new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(true)}, nullptr});
             beginp->addStmtsp(windowp);
         } else if (isNonConsec) {
             // Standalone nonconsec: ##1 into window, then pass
             beginp->addStmtsp(
-                new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr});
+                new AstEventControl{flp, new AstSenTree{flp, sensesp->cloneTree(true)}, nullptr});
             beginp->addStmtsp(new AstPExprClause{flp, true});
         } else if (rhsp) {
             // Goto rep: check consequent once at match endpoint

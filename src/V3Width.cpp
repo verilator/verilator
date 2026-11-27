@@ -2076,6 +2076,34 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetBit();
         }
     }
+    void visit(AstEventually* nodep) override {
+        // IEEE 1800-2023 16.12.13
+        assertAtExpr(nodep);
+        if (!m_vup->prelim()) return;
+
+        nodep->dtypeSetBit();
+
+        if (!nodep->loBoundp()) {
+            if (v3Global.opt.timing().isSetFalse() || !v3Global.opt.timing().isSetTrue()) {
+                nodep->v3warn(E_NOTIMING, nodep->verilogKwd() << " requires --timing");
+                nodep->replaceWith(
+                    new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 1, 0});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+            iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
+            return;
+        }
+
+        iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
+
+        if (!VN_IS(nodep->loBoundp(), Unbounded)) {
+            userIterateAndNext(nodep->loBoundp(), WidthVP{SELF, BOTH}.p());
+        }
+        if (!VN_IS(nodep->hiBoundp(), Unbounded)) {
+            userIterateAndNext(nodep->hiBoundp(), WidthVP{SELF, BOTH}.p());
+        }
+    }
     void visit(AstRising* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
@@ -2212,18 +2240,6 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->seedp()) iterateCheckSigned32(nodep, "seed", nodep->seedp(), BOTH);
         }
     }
-    void visit(AstSEventually* nodep) override {
-        if (v3Global.opt.timing().isSetFalse() || !v3Global.opt.timing().isSetTrue()) {
-            nodep->v3warn(E_NOTIMING, "s_eventually requires --timing");
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 1, 0});
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            return;
-        }
-        if (m_vup->prelim()) {
-            iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
-            nodep->dtypeSetBit();
-        }
-    }
     void visit(AstSGotoRep* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
@@ -2331,8 +2347,6 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstSClocked* nodep) override {
-        VL_RESTORER(m_underSExpr);
-        m_underSExpr = true;
         m_hasSExpr = true;
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
@@ -2341,6 +2355,7 @@ class WidthVisitor final : public VNVisitor {
             for (AstSenItem* senp = nodep->sensesp(); senp;
                  senp = VN_CAST(senp->nextp(), SenItem)) {
                 userIterateAndNext(senp->sensp(), WidthVP{SELF, BOTH}.p());
+                userIterateAndNext(senp->condp(), WidthVP{SELF, BOTH}.p());
             }
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             nodep->dtypeSetBit();
@@ -11041,7 +11056,7 @@ class WidthVisitor final : public VNVisitor {
             // folding loses it
             if (streamp && VN_IS(streamp->dtypep(), StreamDType)) packStreamOperand(streamp);
             if (streamp && !VN_IS(streamp->dtypep(), StreamDType)) {
-                AstNodeExpr* const paddedp = padStringStream(streamp->unlinkFrBack());
+                AstNodeExpr* const paddedp = padStream(streamp->unlinkFrBack(), VL_BYTESIZE);
                 cvtp->lhsp(paddedp);
                 underp = paddedp;
             } else if (streamp && !stringStreamSupported(streamp)) {
@@ -11055,6 +11070,29 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(cvtp), cvtp);
                 underp = newp;
             }
+        } else if (rhsAccess.isReadOnly() && VN_IS(underp, NodeStream)
+                   && !VN_IS(underp->dtypep(), StreamDType)
+                   && (VN_IS(expDTypep->skipRefp(), QueueDType)
+                       || VN_IS(expDTypep->skipRefp(), DynArrayDType))
+                   && expDTypep->skipRefp()->subDTypep()->skipRefp()->isIntegralOrPacked()) {
+            // Unpack the bits of the stream into the elements, as for a string above
+            underp
+                = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, FINAL, childStreamUse}.p());
+            AstNodeStream* const streamp = VN_AS(underp, NodeStream);
+            VNRelinker linker;
+            streamp->unlinkFrBack(&linker);
+            AstNodeExpr* srcp = streamp;
+            // A right stream does not reorder a packed value
+            if (VN_IS(streamp, StreamR)) {
+                srcp = streamp->lhsp()->unlinkFrBack();
+                VL_DO_DANGLING(pushDeletep(streamp), streamp);
+            }
+            AstNodeDType* const arrayDTypep = expDTypep->skipRefp();
+            srcp = padStream(srcp, arrayDTypep->subDTypep()->skipRefp()->width());
+            AstNodeExpr* const newp = new AstCvtPackedToArray{srcp->fileline(), srcp, arrayDTypep};
+            newp->didWidth(true);
+            linker.relink(newp);
+            underp = newp;
         } else {
             const AstNodeDType* const underDtp = underp->dtypep()->skipRefp();
             if (determ != ASSIGN && expDTypep->skipRefp()->isIntegralOrPacked()
@@ -11335,14 +11373,14 @@ class WidthVisitor final : public VNVisitor {
             return nodep;
         }
     }
-    // Return a fixed-width stream assigned to a string, filled with zero bits on the right to
-    // whole bytes, as a string is a dynamic array of bytes (IEEE 1800-2023 11.4.14, 6.24.3)
-    static AstNodeExpr* padStringStream(AstNodeExpr* const streamp) {
-        const int width = streamp->width();
-        const int paddedWidth = VL_BYTES_I(width) * VL_BYTESIZE;
-        if (width == paddedWidth) return streamp;
-        FileLine* const flp = streamp->fileline();
-        AstNodeExpr* const extendp = new AstExtend{flp, streamp, paddedWidth};
+    // Zero-fill the bits streamed to a dynamically sized target on the right to whole elements
+    // (IEEE 1800-2023 11.4.14)
+    static AstNodeExpr* padStream(AstNodeExpr* const exprp, const int elementWidth) {
+        const int width = exprp->width();
+        const int paddedWidth = (width + elementWidth - 1) / elementWidth * elementWidth;
+        if (width == paddedWidth) return exprp;
+        FileLine* const flp = exprp->fileline();
+        AstNodeExpr* const extendp = new AstExtend{flp, exprp, paddedWidth};
         AstNodeExpr* const shiftp = new AstConst{flp, static_cast<uint32_t>(paddedWidth - width)};
         AstNodeExpr* const newp = new AstShiftL{flp, extendp, shiftp, paddedWidth};
         extendp->didWidth(true);
