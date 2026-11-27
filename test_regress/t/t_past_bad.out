@@ -38,12 +38,16 @@
                            : ... note: In instance 't'
    24 |     if ($past(d, TICKS)) $stop;
       |         ^~~~~
-%Error: t/t_past_bad.v:30:9: Expected numeric type, but got a 'real' data type
+%Error: t/t_past_bad.v:32:9: Expected numeric type, but got a 'real' data type
                            : ... note: In instance 't'
-   30 |     if ($stable(reals)) $stop;
+   32 |     if ($stable(reals)) $stop;
       |         ^~~~~~~
-%Error: t/t_past_bad.v:31:9: Expected numeric type, but got a 'string' data type
+%Error: t/t_past_bad.v:33:9: Expected numeric type, but got a 'string' data type
                            : ... note: In instance 't'
-   31 |     if ($changed(strings)) $stop;
+   33 |     if ($changed(strings)) $stop;
       |         ^~~~~~~~
+%Error: t/t_past_bad.v:34:9: Expected numeric type, but got a 'struct t.unpacked_t' data type
+                           : ... note: In instance 't'
+   34 |     if ($stable(structs)) $stop;
+      |         ^~~~~~~
 %Error: Exiting due to
