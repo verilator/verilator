@@ -1065,11 +1065,13 @@ class ParamProcessor final {
             iterateChildren(refp);
         }
 
-        void visit(AstConfigUse* nodep) override {
+        void visit(AstConfigUse* nodep) override {  // LCOV_EXCL_START
+            // For now this is impossible (as config with params is unsupported, but developer that
+            // will implement them, should stop here and think about this edge case
             UINFO(10, "PinRelinkVisitor::visit " << nodep);
             UASSERT_OBJ(!nodep->paramsp(), nodep,
                         "Parametrized ConfigUse should be rejected by parser");
-        }
+        }  // LCOV_EXCL_STOP
 
         void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
