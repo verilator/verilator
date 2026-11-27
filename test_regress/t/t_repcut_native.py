@@ -13,7 +13,7 @@ import subprocess
 from pathlib import Path
 
 import vltest_bootstrap
-from repcut_common import partitioner
+from repcut_common import clear_model_profiles, partitioner
 
 test.scenarios('vltmt')
 # Internal graph and lowering reports are opt-in.
@@ -136,6 +136,7 @@ for case in ('stock', 'stock_vpi', 'serial', 'parallel', 'protected', 'trace', '
             assert any(
                 re.search(r'"repcutDependencyArgs":\s*true',
                           Path(p).read_text(encoding="utf8")) for p in dumps)
+    clear_model_profiles(test)
     subprocess.run(['make', '-C', test.obj_dir, '-f', test.vm_prefix + '.mk', '-j2'], check=True)
     run_flags = ['+verilator+prof+vlt+file+' + str(profile)] if mode == 'profile' else []
     result = subprocess.run([

@@ -11,6 +11,12 @@ import shlex
 from pathlib import Path
 
 
+def clear_model_profiles(test):
+    """Discard incompatible model profiles before rebuilding in the same directory."""
+    for path in Path(test.obj_dir).glob('*.gcda'):
+        path.unlink()
+
+
 def partitioner(test, membership):
     """Provide controlled test ownership through the external tool protocol."""
     executable = (Path(test.obj_dir) / 'test_partitioner.py').resolve()

@@ -14,7 +14,7 @@ import subprocess
 from pathlib import Path
 
 import vltest_bootstrap
-from repcut_common import partitioner
+from repcut_common import clear_model_profiles, partitioner
 
 test.scenarios('vltmt')
 # Internal graph and lowering reports are opt-in.
@@ -116,6 +116,7 @@ for mode, threads in modes:
                  threads=threads,
                  verilator_flags2=options + runtime +
                  ['--exe', str(Path(test.pli_filename).resolve())])
+    clear_model_profiles(test)
     subprocess.run(['make', '-C', test.obj_dir, '-f', test.vm_prefix + '.mk', '-j2'], check=True)
     result = subprocess.run([str(Path(test.obj_dir).resolve() / test.vm_prefix)],
                             capture_output=True,
