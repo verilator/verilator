@@ -202,6 +202,9 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstFork* nodep) override {
         if (nodep->user1SetOnce()) return;
+        VL_RESTORER_COPY(m_displayScope);
+        VL_RESTORER_COPY(m_namedScope);
+        VL_RESTORER_COPY(m_unnamedScope);
         dotNames(nodep->name(), nodep->fileline(), "__FORK__");
         iterateChildren(nodep);
         if (AstNode* const declsp = nodep->declsp()) {

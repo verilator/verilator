@@ -1,6 +1,6 @@
-%Error-NOTIMING: t/t_fork.v:10:5: Fork statements require --timing
+%Error-NOTIMING: t/t_fork.v:18:3: Fork statements require --timing
                                 : ... note: In instance 't'
-   10 |     fork : fblk
-      |     ^~~~
+   18 |   fork : fblk
+      |   ^~~~
                  ... For error description see https://verilator.org/warn/NOTIMING?v=latest
 %Error: Exiting due to
