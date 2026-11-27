@@ -3711,7 +3711,12 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
         |       yP_MINUSGT expr ';'
                         { $$ = new AstFireEvent{$1, $2, false}; }
         |       yP_MINUSGTGT delay_or_event_controlE expr ';'
-                        { $$ = new AstFireEvent{$1, $3, true}; }
+                        { if ($2 && VN_IS($2, EventControl)) {
+                              BBUNSUP($2, "Unsupported: repeat event control"
+                                             " in nonblocking event trigger");
+                          }
+                          DEL($2);
+                          $$ = new AstFireEvent{$1, $3, true}; }
         //
         // do/for/forever/while loops all modelled as AstLoop
         |       yDO stmt yWHILE '(' expr ')' ';'

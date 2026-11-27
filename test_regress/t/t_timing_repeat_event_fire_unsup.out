@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_timing_repeat_event_fire_unsup.v:11:9: Unsupported: repeat event control in nonblocking event trigger
+   11 |     ->> repeat (2) @(posedge clk) ev;
+      |         ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

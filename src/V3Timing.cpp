@@ -1166,9 +1166,15 @@ class TimingControlVisitor final : public VNVisitor {
                 flp, new AstVarRef{flp, cntVscp, VAccess::WRITE}, countp->unlinkFrBack()};
             nodep->replaceWith(initp);
             AstLoop* const loopp = new AstLoop{flp};
-            loopp->addStmtsp(new AstLoopTest{
-                flp, loopp,
-                new AstGt{flp, new AstVarRef{flp, cntVscp, VAccess::READ}, new AstConst{flp, 0}}});
+            AstNodeExpr* condp = nullptr;
+            if (cntVscp->varp()->dtypep()->isSigned()) {
+                condp = new AstGtS{flp, new AstVarRef{flp, cntVscp, VAccess::READ},
+                                   new AstConst{flp, 0}};
+            } else {
+                condp = new AstGt{flp, new AstVarRef{flp, cntVscp, VAccess::READ},
+                                  new AstConst{flp, 0}};
+            }
+            loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
             loopp->addStmtsp(nodep);
             loopp->addStmtsp(
                 new AstAssign{flp, new AstVarRef{flp, cntVscp, VAccess::WRITE},
