@@ -9,6 +9,7 @@
 #include <verilated.h>
 
 #include VM_PREFIX_INCLUDE
+#include "Vt_multitop_sig_ifc.h"
 
 #include <iostream>
 
@@ -28,18 +29,30 @@ int main(int argc, char* argv[]) {
     {
         topp->a__02Ein = 0;
         topp->b__02Ein = 0;
+        topp->a__02Eifc_if->in = 0;
+        topp->b__02Eifc_if->in = 0;
         topp->uniq_in = 0;
+        topp->uniq_ifc_if->in = 0;
         topp->eval();
         TEST_CHECK_EQ(topp->a__02Eout, 1);
         TEST_CHECK_EQ(topp->b__02Eout, 0);
+        TEST_CHECK_EQ(topp->a__02Eifc_if->out, 0);
+        TEST_CHECK_EQ(topp->b__02Eifc_if->out, 1);
         TEST_CHECK_EQ(topp->uniq_out, 1);
+        TEST_CHECK_EQ(topp->uniq_ifc_if->out, 1);
         topp->a__02Ein = 1;
         topp->b__02Ein = 1;
+        topp->a__02Eifc_if->in = 1;
+        topp->b__02Eifc_if->in = 1;
         topp->uniq_in = 1;
+        topp->uniq_ifc_if->in = 1;
         topp->eval();
         TEST_CHECK_EQ(topp->a__02Eout, 0);
         TEST_CHECK_EQ(topp->b__02Eout, 1);
+        TEST_CHECK_EQ(topp->a__02Eifc_if->out, 1);
+        TEST_CHECK_EQ(topp->b__02Eifc_if->out, 0);
         TEST_CHECK_EQ(topp->uniq_out, 0);
+        TEST_CHECK_EQ(topp->uniq_ifc_if->out, 0);
     }
 
     topp->final();
