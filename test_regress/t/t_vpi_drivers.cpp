@@ -20,12 +20,6 @@
 #include "svdpi.h"
 #include "vpi_user.h"
 
-#if defined(VERILATOR) && defined(T_VPI_DRIVERS_SAVABLE)
-#include "verilated_save.h"
-#include VM_PREFIX_INCLUDE
-extern VM_PREFIX* testVpiTopp;
-#endif
-
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
@@ -108,105 +102,6 @@ PLI_INT32 runStep(p_cb_data) {
     return 0;
 }
 
-#if defined(VERILATOR) && defined(T_VPI_DRIVERS_SAVABLE)
-const char* const s_savePath = VL_STRINGIFY(TEST_OBJ_DIR) "/saved.vltsv";
-const char* const s_prePath = VL_STRINGIFY(TEST_OBJ_DIR) "/saved_pre.vltsv";
-const char* const s_midPath = VL_STRINGIFY(TEST_OBJ_DIR) "/saved_mid.vltsv";
-uint32_t s_ch1Reset = 0;  // lz_save.ch1 before the first eval
-
-void saveModel(const char* path = s_savePath) {
-    VerilatedSave os;
-    os.open(path);
-    os << *testVpiTopp;
-}
-
-void restoreModel(const char* path = s_savePath) {
-    VerilatedRestore os;
-    os.open(path);
-    os >> *testVpiTopp;
-}
-
-bool plusArg(const std::string& arg) {
-    s_vpi_vlog_info info{};
-    vpi_get_vlog_info(&info);
-    for (int i = 0; i < info.argc; ++i)
-        if (info.argv[i] == arg) return true;
-    return false;
-}
-
-// Saved between a put and the eval consuming it: restored, into this model or a fresh one, the
-// put's readers read as before it until that eval, which settles the stored ones
-void checkRestored() {
-    check("lz_save.k_q restored", get("lz_save.k_q"), 0x40);
-    check("lz_save.ch1 restored", get("lz_save.ch1"), 0x28);
-    check("lz_save.al1 restored", get("lz_save.al1"), 0x21);
-    check("lz_save.so restored", get("lz_save.so"), 0x7b);
-}
-
-void checkSettled() {
-    check("lz_save.ch1", get("lz_save.ch1"), 0x47);
-    check("lz_save.so", get("lz_save.so"), 0x1a);
-}
-
-void script() {
-    if (plusArg("+restore")) {
-        step([] {
-            // Saved before the first eval: reads its reset values, as a fresh model does
-            restoreModel(s_prePath);
-            check("lz_save.ch1 restored unsettled", get("lz_save.ch1"), s_ch1Reset);
-            restoreModel();
-            checkRestored();
-        });
-        step(checkSettled);
-        return;
-    }
-    step([] { in("clk", 1); });
-    step([] { in("clk", 0); });
-    step([] {
-        accept("lz_save.k_q", 0x40);
-        check("lz_save.ch1 before eval", get("lz_save.ch1"), 0x28);
-        check("lz_save.al1 before eval", get("lz_save.al1"), 0x21);
-        // Traced as a put
-        accept("lz_save.u_tr.keep", 0x10);
-        saveModel();
-    });
-    step([] {
-        checkSettled();
-        check("lz_save.al1", get("lz_save.al1"), 0x40);
-        restoreModel();
-        checkRestored();
-    });
-    step(checkSettled);
-}
-
-PLI_INT32 startOfSimulation(p_cb_data) {
-    // For the design's $dumpvars
-    Verilated::traceEverOn(true);
-    in("clk", 0);
-    s_ch1Reset = get("lz_save.ch1");
-    if (plusArg("+restore")) {
-        // Saved mid-eval: restored between evals, a put's readers read as before it
-        restoreModel(s_midPath);
-        const uint32_t kq = get("lz_save.k_q");
-        put("lz_save.k_q", kq ^ 0x80);
-        check("lz_save.ch1 restored from mid-eval", get("lz_save.ch1"), (kq + 7) & 0xff);
-    } else {
-        saveModel(s_prePath);
-    }
-    put("lz_save.d", 0x21);
-    script();
-    scheduleStep();
-    return 0;
-}
-
-}  // namespace
-
-// Called at each rising edge
-extern "C" void midEvalSave() {
-    if (!plusArg("+restore")) saveModel(s_midPath);
-}
-
-#else
 void putStr(const std::string& name, PLI_INT32 format, const char* str) {
     s_vpi_value value{};
     value.format = format;
@@ -895,7 +790,6 @@ extern "C" void midEvalPeek(const char* name, int want, int mask) {
 // Called from an initial block: the eval itself consumes the put
 extern "C" void midEvalPut(const char* name, int v) { put(name, static_cast<uint32_t>(v)); }
 
-#endif
 
 void startup() {
 #ifdef VERILATOR

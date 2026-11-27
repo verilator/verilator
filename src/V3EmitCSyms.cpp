@@ -1966,35 +1966,10 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
             puts("\nvoid " + symClassName() + "::" + funcname + "(" + classname + "& os) {\n");
             puts("// Internal state\n");
             puts("os " + op + " __Vm_didInit;\n");
-            if (v3Global.opt.vpiLazy()) {
-                if (de) {
-                    puts("uint64_t __Vm_lazyEpochSaved;\n");
-                    puts("os >> __Vm_lazyEpochSaved;\n");
-                    puts("os >> __Vm_lazy.written;\n");
-                    puts("os >> __Vm_lazy.evalBegun;\n");
-                } else {
-                    puts("os << __Vm_lazy.epoch;\n");
-                    puts("os << __Vm_lazy.written;\n");
-                    puts("os << __Vm_lazy.evalBegun;\n");
-                    // A save from within a read's rematerialization must see the puts in place
-                    puts("const bool __Vm_lazyUndoWasIn = __Vm_lazy.undoIn;\n");
-                    puts("if (VL_UNLIKELY(__Vm_lazyUndoWasIn)) __Vm_lazy.undoSwap(false);\n");
-                }
-            }
             puts("// Module instance state\n");
             for (const ScopeModPair& itpair : m_scopes) {
                 const AstScope* const scopep = itpair.first;
                 puts(instName(scopep) + "." + funcname + "(os);\n");
-            }
-            if (v3Global.opt.vpiLazy()) {
-                // The undo log, so a restored model reads as the saved one did until its eval
-                if (de) {
-                    puts("__Vm_lazy.restore(__Vm_lazyEpochSaved);\n");
-                    puts("__Vm_lazy.undoRestore(os, this);\n");
-                } else {
-                    puts("__Vm_lazy.undoSave(os, this);\n");
-                    puts("if (VL_UNLIKELY(__Vm_lazyUndoWasIn)) __Vm_lazy.undoSwap(true);\n");
-                }
             }
             puts("}\n");
         }

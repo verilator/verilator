@@ -2442,7 +2442,7 @@ Summary:
    :vlopt:`--public-params` are ignored alongside it with a
    :option:`NOEFFECT` warning, though a ``public_flat_rw`` metacomment is
    honored. With :vlopt:`--no-vpi <--vpi>`, :vlopt:`--vpi-lazy` itself is
-   ignored.
+   ignored. :vlopt:`--savable` is not supported with it.
 
 .. option:: --waiver-multiline
 

@@ -1,0 +1,3 @@
+%Error: Unsupported: --savable with --vpi-lazy
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

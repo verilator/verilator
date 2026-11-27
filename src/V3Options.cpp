@@ -1005,6 +1005,7 @@ void V3Options::notify() VL_MT_DISABLED {
                                 "makes every parameter VPI accessible");
         m_publicParams = false;
     }
+    if (m_vpiLazy && m_savable) cmdfl->v3error("Unsupported: --savable with --vpi-lazy");
     if (m_systemC && !v3Global.opt.libCreate().empty()) {
         cmdfl->v3error("--sc cannot be used together with --lib-create. Suggest see manual");
     }

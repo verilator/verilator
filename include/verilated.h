@@ -1043,13 +1043,6 @@ struct VerilatedLazyState final {
     }
     /// Bump the epoch, keeping its in-eval parity
     void epochBump() VL_MT_UNSAFE_ONE { epoch += 2; }
-    /// Retire every memo and logged put a restore overwrote: the next even epoch past both, as
-    /// restored stamps are at most the saved epoch, which is odd if saved mid-eval.
-    void restore(uint64_t savedEpoch) VL_MT_UNSAFE_ONE {
-        epoch = ((savedEpoch > epoch ? savedEpoch : epoch) | 1) + 1;
-        undo.clear();
-        undoIn = false;
-    }
     /// Nothing has settled, so storage holds reset values
     bool beforeFirstEval() const { return !evalBegun; }
     /// Whether a memo stamped 'stamp' is stale; if so, restamps it
@@ -1062,9 +1055,6 @@ struct VerilatedLazyState final {
     }
     /// Swap the logged pre-put bytes in ('in'), or the puts back
     void undoSwap(bool in) VL_MT_UNSAFE_ONE;
-    /// --savable: the undo log, relative to 'symsp', the derived symbol table
-    void undoSave(VerilatedSerialize& os, const void* symsp) const VL_MT_UNSAFE_ONE;
-    void undoRestore(VerilatedDeserialize& os, void* symsp) VL_MT_UNSAFE_ONE;
 };
 
 //===========================================================================
