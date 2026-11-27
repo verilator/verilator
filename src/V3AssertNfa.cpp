@@ -988,6 +988,9 @@ class SvaNfaBuilder final {
     // Build merge vertex for SOr / LogOr: both branches feed into one vertex.
     BuildResult buildOrMerge(AstNodeExpr* lhsp, AstNodeExpr* rhsp, SvaStateVertex* entryVtxp,
                              FileLine* flp, bool wantBoolLeaf) {
+        // A disjunction operand of a body disjunction is a body leaf too, e.g. x || y || z
+        VL_RESTORER(m_wantBoolLeaf);
+        m_wantBoolLeaf = wantBoolLeaf;
         const BuildResult lhs = buildExpr(lhsp, entryVtxp);
         const BuildResult rhs = buildExpr(rhsp, entryVtxp);
         if (!lhs.valid() || !rhs.valid()) {  // LCOV_EXCL_START -- sub-build fail bail
