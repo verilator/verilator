@@ -12,11 +12,13 @@
 module t;
 
   reg clk = 1;
+  reg rep_clk = 0;
   reg [7:0] d = 0;
   reg [7:0] q = 0;
 
   // Clock generation
   always #0.5 clk = ~clk;
+  always #1 rep_clk = ~rep_clk;
 
   // Input signal generation
   initial begin
@@ -34,6 +36,67 @@ module t;
     d <= 0;
     repeat (5) @(posedge clk);
     $finish;
+  end
+
+  // Intra-assignment repeat event control
+  initial begin
+    automatic int a = 0;
+    static int b = 0;
+    automatic int n = 2;
+
+    a = repeat (0) @(posedge rep_clk) 3;
+    `checkd(a, 3);
+    `checkd($time, 0);
+
+    a = repeat (1) @(posedge rep_clk) 4;
+    `checkd(a, 4);
+    `checkd($time, 1);
+
+    a = repeat (n) @(posedge rep_clk) 5;
+    `checkd(a, 5);
+    `checkd($time, 5);
+
+    a = repeat (-1) @(posedge rep_clk) 8;
+    `checkd(a, 8);
+    `checkd($time, 5);
+
+    n = -1;
+    a = repeat (n) @(posedge rep_clk) 9;
+    `checkd(a, 9);
+    `checkd($time, 5);
+
+    b <= repeat (2) @(posedge rep_clk) 6;
+    @(posedge rep_clk);
+    `checkd(b, 0);
+    @(posedge rep_clk);
+    @(negedge rep_clk);
+    `checkd(b, 6);
+  end
+
+  // Procedural continuous assignment
+  initial begin
+    static int av = 0;
+    // verilator lint_off IEEEMAYDEPRECATE
+    assign av = repeat (2) @(posedge rep_clk) 7;
+    // verilator lint_on IEEEMAYDEPRECATE
+    repeat (3) @(posedge rep_clk);
+    `checkd(av, 7);
+  end
+
+  // RHS is captured before the wait
+  initial begin
+    automatic int rhs = 7;
+    automatic int av = 0;
+
+    fork
+      av = repeat (2) @(posedge rep_clk) rhs;
+      begin
+        @(posedge rep_clk);
+        rhs = 9;
+      end
+    join
+    `checkd(av, 7);
+    `checkd($time, 3);
   end
 
   // Unit under test (flip-flop)

@@ -111,7 +111,6 @@ for s in [
         'Unsupported: no_inline for tasks',
         'Unsupported: property port \'local\'',
         'Unsupported: randsequence production function variable',
-        'Unsupported: repeat event control',
         'Unsupported: static cast to',
         'Unsupported: super',
         'Unsupported: with[] stream expression',

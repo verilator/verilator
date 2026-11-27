@@ -2897,7 +2897,11 @@ class WidthVisitor final : public VNVisitor {
         }
         if (nodep->fileline()->timingOn()) {
             if (v3Global.opt.timing().isSetTrue()) {
-                iterateChildren(nodep);
+                if (nodep->countp()) {
+                    iterateCheckSizedSelf(nodep, "Count", nodep->countp(), SELF, BOTH);
+                }
+                if (nodep->sentreep()) userIterate(nodep->sentreep(), nullptr);
+                if (nodep->stmtsp()) userIterate(nodep->stmtsp(), nullptr);
                 return;
             } else if (v3Global.opt.timing().isSetFalse()) {
                 nodep->v3warn(E_NOTIMING,
