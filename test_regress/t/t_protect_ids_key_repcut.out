@@ -24,11 +24,9 @@
   <map from="PSInnD" to="__VnbaTriggered"/>
   <map from="PSOH40" to="__Vrepcut_native0_effects"/>
   <map from="PSYWqd" to="__Vrepcut_native0_evaluate"/>
-  <map from="PSgWma" to="__Vrepcut_native0_p0"/>
   <map from="PSVeJP" to="__Vrepcut_native0_p0__source0"/>
   <map from="PS8A8v" to="__Vrepcut_native0_p0__source1"/>
   <map from="PSkrVX" to="__Vrepcut_native0_p0_effect_pending"/>
-  <map from="PSgb3F" to="__Vrepcut_native0_serial"/>
   <map from="PSPiYK" to="__Vscopep_t__secret_inst"/>
   <map from="PSHASP" to="__VstlTriggered"/>
   <map from="PSkXH4" to="__Vtrigprevexpr___TOP__clk__0"/>
