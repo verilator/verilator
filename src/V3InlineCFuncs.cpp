@@ -353,16 +353,23 @@ class InlineCFuncsVisitor final : public VNVisitor {
         // Create the function vertex
         InlineCFuncsFunctionVertex* const vtxp = getInlineCFuncsFunctionVertexp(nodep);
 
+        // RepCut compute helpers are internal calls. Preserve scheduling/publication
+        // boundaries, but let the bounded inliner absorb ordinary helper bodies.
+        const bool repcutHelper = nodep->isRepCut() && !nodep->voidSelf()
+                                  && !nodep->repcutNativeBatch() && !nodep->repcutBatchRoot()
+                                  && !nodep->repcutLocalPublish() && !nodep->repcutDependencyArgs()
+                                  && !nodep->repcutSharedOrder();
+
         // Check if the function itself is not inlineable
         if (nodep->rtnTypeVoid() != "void") vtxp->setNoInline("Not void");
         if (nodep->dpiImportPrototype()) vtxp->setNoInline("DPI import prototype");
         if (nodep->recursive()) vtxp->setNoInline("Recursive");
-        if (nodep->noInline()) vtxp->setNoInline("Compilation boundary");
+        if (nodep->noInline() && !repcutHelper) vtxp->setNoInline("Compilation boundary");
         if (nodep->argsp()) vtxp->setNoInline("Has arguments");
         if (nodep->isVirtual()) vtxp->setNoInline("Virtual method");
 
         // Check if the function should not be removed
-        if (nodep->entryPoint()) vtxp->setKeep("Entry point");
+        if (nodep->entryPoint() && !repcutHelper) vtxp->setKeep("Entry point");
         if (nodep->dpiImportPrototype()) vtxp->setKeep("DPI import prototype");
         if (nodep->dpiExportDispatcher()) vtxp->setKeep("DPI export implementation");
         if (nodep->isVirtual()) vtxp->setKeep("Virtual method");
