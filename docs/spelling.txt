@@ -1268,6 +1268,7 @@ unoptflat
 unoptimizable
 unparenthesized
 unroller
+unrounded
 unsatisfiable
 unselected
 unsized

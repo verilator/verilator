@@ -455,6 +455,7 @@ module t (/*AUTOARG*/
     if (CP_SCOPE_PARAM != 2) $write("");
     sel_idx <= cyc[3:0];
     queue_of_t.push_back(1);
+    if (q[$] != q[$ - 1]) $write("");  // AstQueueSel from the back
 
     $display("%g", $log10(r));
     $display("%g", $ln(r));
@@ -570,6 +571,8 @@ module t (/*AUTOARG*/
 
   assert_prop_always: assert property (@(posedge clk) always [0:3] in);
   assert_prop_s_always: assert property (@(posedge clk) s_always [1:2] in);
+  assert_prop_eventually: assert property (@(posedge clk) eventually [0:3] in);
+  assert_prop_s_eventually: assert property (@(posedge clk) s_eventually in);
   assert_prop_overlap_impl: assert property (@(posedge clk) in |-> in);
   assert_prop_nonoverlap_impl: assert property (@(posedge clk) in |=> in);
   assert_prop_overlap_fb: assert property (@(posedge clk) in #-# in);
@@ -719,6 +722,20 @@ module t (/*AUTOARG*/
     if (vder.randomize() != 1) $stop;
   end
   escapes escapes();
+
+  class ProcessKiller;
+    function new(std::process victim);
+      kill_virtual(victim);
+    endfunction
+    virtual function void kill_virtual(std::process victim);
+      victim.kill();
+    endfunction
+  endclass
+
+  initial begin
+    ProcessKiller killer;
+    killer = new(process::self());
+  end
 endmodule
 
 module param_mod #(

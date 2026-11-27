@@ -51,6 +51,7 @@
 #include "V3AssertElab.h"
 
 #include "V3Assert.h"
+#include "V3Const.h"
 #include "V3LinkLValue.h"
 #include "V3Stats.h"
 #include "V3Task.h"
@@ -134,6 +135,64 @@ class AssertElabVisitor final : public VNVisitor {
     VDouble0 m_statSeqInlined;  // Statistic tracking
 
     // METHODS
+    // Fold and validate ranged eventually bounds after substituting property arguments.
+    static bool checkSvaEventuallyBounds(AstEventually* nodep) {
+        const int errorsBefore = V3Error::errorCount();
+        V3Const::constifyParamsEdit(nodep->loBoundp());
+        if (!VN_IS(nodep->hiBoundp(), Unbounded)) V3Const::constifyParamsEdit(nodep->hiBoundp());
+        if (V3Error::errorCount() != errorsBefore) return false;
+        const bool hiUnbounded = VN_IS(nodep->hiBoundp(), Unbounded);
+        if (!nodep->isStrong() && hiUnbounded) {
+            nodep->v3error("The range for a weak eventually must be bounded (IEEE "
+                           "1800-2023 16.12.13)");
+            return false;
+        }
+        const AstConst* const loConstp = VN_CAST(nodep->loBoundp(), Const);
+        const AstConst* const hiConstp = VN_CAST(nodep->hiBoundp(), Const);
+
+        if (!loConstp || loConstp->num().isOpaque()) {
+            nodep->loBoundp()->v3error(nodep->verilogKwd() << " range low bound must be integral"
+                                                              " (IEEE 1800-2023 16.12.13)");
+            return false;
+        }
+        if (loConstp->num().isFourState()) {
+            loConstp->v3error(nodep->verilogKwd() << " range low bound cannot contain X or Z"
+                                                     " (IEEE 1800-2023 16.12.13)");
+            return false;
+        }
+        if (loConstp->dtypep()->isSigned() && loConstp->num().isNegative()) {
+            loConstp->v3error(nodep->verilogKwd() << " range low bound must be non-negative"
+                                                     " (IEEE 1800-2023 16.12.13)");
+            return false;
+        }
+        if (!V3AssertCommon::checkSvaValueLimit(
+                nodep, loConstp, (nodep->verilogKwd() + " range low bound value").c_str())) {
+            return false;
+        }
+        if (hiUnbounded) return true;
+
+        if (!hiConstp || hiConstp->num().isOpaque()) {
+            nodep->hiBoundp()->v3error(nodep->verilogKwd() << " range high bound must be integral"
+                                                              " (IEEE 1800-2023 16.12.13)");
+            return false;
+        }
+        if (hiConstp->num().isFourState()) {
+            hiConstp->v3error(nodep->verilogKwd() << " range high bound cannot contain X or Z"
+                                                     " (IEEE 1800-2023 16.12.13)");
+            return false;
+        }
+        if ((hiConstp->dtypep()->isSigned() && hiConstp->num().isNegative())
+            || hiConstp->num().isLt(loConstp->num())) {
+            hiConstp->v3error(nodep->verilogKwd() << " range high bound must be >= low bound"
+                                                     " (IEEE 1800-2023 16.12.13)");
+            return false;
+        }
+        if (!V3AssertCommon::checkSvaValueLimit(
+                nodep, hiConstp, (nodep->verilogKwd() + " range high bound value").c_str())) {
+            return false;
+        }
+        return true;
+    }
     // The property instantiated as the whole of specp, if any
     static const AstProperty* instancedProperty(const AstPropSpec* specp) {
         const AstSchemaRef* const schemaRefp = VN_CAST(specp->propp(), SchemaRef);
@@ -229,9 +288,11 @@ class AssertElabVisitor final : public VNVisitor {
         if (outerSpecp->sensesp() && propSpecp->sensesp()) {
             outerSpecp->v3warn(E_UNSUPPORTED,
                                "Unsupported: Clock event before property call and in its body");
-            pushDeletep(propSpecp->sensesp()->unlinkFrBack());
+            pushDeletep(propSpecp->sensesp()->unlinkFrBackWithNext());
         }
-        if (outerSpecp->sensesp()) propSpecp->sensesp(outerSpecp->sensesp()->unlinkFrBack());
+        if (outerSpecp->sensesp()) {
+            propSpecp->addSensesp(outerSpecp->sensesp()->unlinkFrBackWithNext());
+        }
 
         outerSpecp->replaceWith(propSpecp);
         VL_DO_DANGLING(pushDeletep(outerSpecp), outerSpecp);
@@ -260,6 +321,14 @@ class AssertElabVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(specp), specp);
     }
     void inlineSequence(AstSchemaRef* schemaRefp, AstSequence* seqp) {
+        for (AstNode* const declp : seqp->declspList()) {
+            if (VN_AS(declp, Var)->isIO()) continue;
+            declp->v3warn(E_UNSUPPORTED, "Unsupported: local variable in a sequence declaration"
+                                         " (IEEE 1800-2023 16.10)");
+            schemaRefp->replaceWith(new AstConst{schemaRefp->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(schemaRefp), schemaRefp);
+            return;
+        }
         // Clone the body expression since the sequence may be referenced multiple times
         AstNodeExpr* const clonedp = seqp->exprp()->cloneTree(false);
         coverageOff(clonedp);
@@ -292,6 +361,14 @@ class AssertElabVisitor final : public VNVisitor {
         VL_RESTORER(m_inPropExpr);
         m_inPropExpr = true;
         iterateAndNextNull(nodep->propp());
+    }
+    void visit(AstEventually* nodep) override {
+        if (nodep->loBoundp() && !checkSvaEventuallyBounds(nodep)) {
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        iterateChildren(nodep);
     }
     void visit(AstSenItem* nodep) override {
         // A clocking event inside a property expression has an expression condition

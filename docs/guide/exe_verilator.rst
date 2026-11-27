@@ -816,7 +816,7 @@ Summary:
    Force include of the specified C++ header file. All generated C++ files
    will insert a #include of the specified file before any other includes.
    The specified file might be used to contain define prototypes of custom
-   ``VL_VPRINTF`` functions, and may need to include :file:`verilatedos.h`
+   ``VL_PRINTF`` functions, and may need to include :file:`verilatedos.h`
    as this file is included before any other standard includes.
 
 .. option:: --flatten

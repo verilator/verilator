@@ -67,9 +67,8 @@ AstNodeStmt* RandModeVars::wrapIfMode(const RandomizeMode mode, AstVar* modeVarp
     if (mode.usesMode) {
         // user2p can be either AstClass or AstClassPackage (for static constraints)
         AstNodeModule* const modp = VN_AS(modeVarp->user2p(), NodeModule);
-        AstCMethodHard* const atp
-            = new AstCMethodHard{fl, new AstVarRef{fl, modp, modeVarp, VAccess::READ},
-                                 VCMethod::ARRAY_AT, new AstConst{fl, mode.index}};
+        AstDynArraySel* const atp = new AstDynArraySel{
+            fl, new AstVarRef{fl, modp, modeVarp, VAccess::READ}, new AstConst{fl, mode.index}};
         atp->dtypeSetUInt32();
         return new AstIf{fl, atp, stmtp};
     }

@@ -1,0 +1,44 @@
+// Verilated -*- C++ -*-
+// DESCRIPTION: Verilator output: Prototypes for DPI import and export functions.
+//
+// Verilator includes this file in all generated .cpp files that use DPI functions.
+// Manually include this file where DPI .c import functions are declared to ensure
+// the C functions match the expectations of the DPI imports.
+
+#ifndef VERILATED_VT_DPI_RESULT_TYPE_NONSTD__DPI_H_
+#define VERILATED_VT_DPI_RESULT_TYPE_NONSTD__DPI_H_  // guard
+
+#include "svdpi.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+// DPI EXPORTS
+extern void e_bit65(svBitVecVal* e_bit65__Vfuncrtn, const svBitVecVal* in);
+extern void e_bit95_t(svBitVecVal* e_bit95_t__Vfuncrtn, const svBitVecVal* in);
+extern void e_integer(svLogicVecVal* e_integer__Vfuncrtn, int in);
+extern void e_logic56(svLogicVecVal* e_logic56__Vfuncrtn, const svLogicVecVal* in);
+extern void e_logic_8_2(svLogicVecVal* e_logic_8_2__Vfuncrtn, const svLogicVecVal* in);
+extern void e_struct_4_state_9(svLogicVecVal* e_struct_4_state_9__Vfuncrtn, const svLogicVecVal* in);
+extern void e_union_2_state_65(svBitVecVal* e_union_2_state_65__Vfuncrtn, const svBitVecVal* in);
+
+// DPI IMPORTS
+extern int check_exports();
+extern void i_bit128(svBitVecVal* i_bit128__Vfuncrtn, const svBitVecVal* in);
+extern void i_bit33(svBitVecVal* i_bit33__Vfuncrtn, const svBitVecVal* in);
+extern void i_bit_1_33(svBitVecVal* i_bit_1_33__Vfuncrtn, const svBitVecVal* in);
+extern void i_bit_t_33(svBitVecVal* i_bit_t_33__Vfuncrtn, const svBitVecVal* in);
+extern void i_integer(svLogicVecVal* i_integer__Vfuncrtn, int in);
+extern void i_logic100_xz(svLogicVecVal* i_logic100_xz__Vfuncrtn, const svLogicVecVal* in);
+extern void i_logic2(svLogicVecVal* i_logic2__Vfuncrtn, const svLogicVecVal* in);
+extern void i_logic65_t(svLogicVecVal* i_logic65_t__Vfuncrtn, const svLogicVecVal* in);
+extern void i_struct_2_state_33(svBitVecVal* i_struct_2_state_33__Vfuncrtn, const svBitVecVal* in);
+extern void i_union_4_state_17(svLogicVecVal* i_union_4_state_17__Vfuncrtn, const svLogicVecVal* in);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  // guard

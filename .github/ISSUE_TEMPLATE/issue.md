@@ -21,7 +21,7 @@ Can you please attach an example that shows the issue or missing feature?
 
 <!-- Please replace this with your answer. Examples must be openly licensed, completely self-contained so can directly run what you provide. Ideally use test_regress format, see https://veripool.org/guide/latest/contributing.html?highlight=test_regress#reporting-bugs -->
 
-What output from that test indicates it is wrong, and what is the correct or expected output?  (Or, please make test self-checking if possible.)
+What output from that test indicates it is wrong, and what is the correct or expected output?  For Verilog-related issues make the test self-checking, e.g. `$stop` on wrong result.
 
 <!-- Please replace this with your answer -->
 

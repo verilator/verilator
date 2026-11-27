@@ -551,9 +551,6 @@ private:
 #ifndef VL_PRINTF
 # define VL_PRINTF printf  ///< Print ala printf, called from main thread; redefine if desired
 #endif
-#ifndef VL_VPRINTF
-# define VL_VPRINTF vprintf  ///< Print ala vprintf, called from main thread; redefine if desired
-#endif
 // clang-format on
 
 //===========================================================================

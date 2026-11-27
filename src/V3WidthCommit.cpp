@@ -584,15 +584,19 @@ private:
         // This check could go anywhere after V3Param
         nodep->v3fatalSrc("Presels should have been removed before this point");
     }
-    void visit(AstCMethodHard* nodep) override {
+    void visit(AstAssocSel* nodep) override {
         VL_RESTORER(m_dynsizedelem);
-        if (nodep->method() == VCMethod::ARRAY_AT || nodep->method() == VCMethod::ARRAY_AT_WRITE
-            || nodep->method() == VCMethod::DYN_AT_WRITE_APPEND)
-            m_dynsizedelem = true;
+        m_dynsizedelem = true;
         iterateChildren(nodep);
         editDType(nodep);
     }
-    void visit(AstAssocSel* nodep) override {
+    void visit(AstDynArraySel* nodep) override {
+        VL_RESTORER(m_dynsizedelem);
+        m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstQueueSel* nodep) override {
         VL_RESTORER(m_dynsizedelem);
         m_dynsizedelem = true;
         iterateChildren(nodep);

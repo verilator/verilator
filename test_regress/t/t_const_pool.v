@@ -127,6 +127,12 @@ typedef struct {
   int q[$];
 } withQueue_t;
 
+// Differ only in the sign of a zero, which must not share a constant
+typedef struct {
+  real r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
+  real zero;
+} zeros_t;
+
 // Aggregates nested in a constant
 typedef struct {
   bit [255:0] wide;
@@ -262,6 +268,15 @@ module t;
       `checkh(f.longintValue, -64'sd5);
       `checkh(f.integerValue, -32'sd7);
       `checks(f.strHigh, {8'hff, 8'h80, "z"});
+    end
+    begin
+      zeros_t pz, nz;
+      pz = '{r0: 1.0, r1: 1.0, r2: 1.0, r3: 1.0, r4: 1.0, r5: 1.0, r6: 1.0, r7: 1.0, r8: 1.0,
+             r9: 1.0, zero: 0.0};
+      nz = '{r0: 1.0, r1: 1.0, r2: 1.0, r3: 1.0, r4: 1.0, r5: 1.0, r6: 1.0, r7: 1.0, r8: 1.0,
+             r9: 1.0, zero: -0.0};
+      `checkh($realtobits(pz.zero), 64'h0000_0000_0000_0000);
+      `checkh($realtobits(nz.zero), 64'h8000_0000_0000_0000);
     end
     begin
       nested_t n;

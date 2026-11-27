@@ -91,12 +91,18 @@ module t (
   endfunction
   always_comb vc = pick(id);
 
+  // Module-scope dynamic array indexed directly from always_comb
+  logic [3:0] md[] = '{4'd1, 4'd2, 4'd3, 4'd4};
+  logic [3:0] vd;
+  always_comb vd = md[int'(id) % 4];
+
   int cyc = 0;
   logic [3:0] vals[3] = '{4'd4, 4'd8, 4'd5};
   always @(posedge clk) begin
     cyc <= cyc + 1;
     id <= id + 8'd29;
     `checkd(vc, mq.size() == 0 ? 4'd0 : vals[int'(id) % mq.size()]);
+    `checkd(vd, 4'(int'(id) % 4 + 1));
     if (cyc < 3) mq.push_back(vals[cyc]);
     if (cyc == 20) begin
       $write("*-* All Finished *-*\n");

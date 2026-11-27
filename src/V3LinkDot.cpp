@@ -5025,15 +5025,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             //                << varp->prettyNameQ() << endl);
                         }
                         // A bind's references are written outside the module they resolve in
-                        if (varp->isParam() && start && !foundp->imported()
-                            && !VN_IS(m_modp, Class)
+                        if (start && !foundp->imported() && !VN_IS(m_modp, Class)
                             && nodep->fileline()->tokenNum() > m_modp->fileline()->tokenNum()
                             && nodep->fileline()->tokenNum() < varp->fileline()->tokenNum()) {
                             nodep->v3warn(
                                 USEBEFOREDECL,
-                                "Reference to parameter "
+                                "Reference to "
+                                    << (varp->isParam() ? "parameter " : "signal ")
                                     << nodep->prettyNameQ()
-                                    << " before its declaration (IEEE 1800-2023 6.20.1)\n"
+                                    << " before its declaration (IEEE 1800-2023 "
+                                    << (varp->isParam() ? "6.20.1" : "6.5") << ")\n"
                                     << nodep->warnMore()
                                     << "... Suggest move the declaration before the reference\n"
                                     << nodep->warnContextPrimary() << '\n'
