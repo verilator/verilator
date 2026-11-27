@@ -169,19 +169,25 @@ latex_logo = "../_static/verilator_logo.png"
 latex_engine = 'xelatex'
 
 latex_elements = {
-    'extraclassoptions': 'openany,oneside',
-    'papersize': 'letterpaper',
-    'makeindex': '',
-    'printindex': '',
+    'extraclassoptions':
+    'openany,oneside',
+    'papersize':
+    'letterpaper',
+    'makeindex':
+    '',
+    'printindex':
+    '',
     # 'pointsize': '10pt',
     # Same Times-like fonts as pdflatex, without ff/fi/fl ligatures
-    'fontpkg': r'''
+    'fontpkg':
+    r'''
 \setmainfont[Ligatures=NoCommon]{TeX Gyre Termes}
 \setsansfont[Ligatures=NoCommon]{TeX Gyre Heros}
 \setmonofont{TeX Gyre Cursor}
 ''',
     # Contributor names include CJK characters; use a CJK font for them
-    'preamble': r'''
+    'preamble':
+    r'''
 \usepackage{ucharclasses}
 \IfFontExistsTF{Droid Sans Fallback}{
   \newfontfamily\vlCjkFont{Droid Sans Fallback}
