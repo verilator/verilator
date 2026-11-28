@@ -22,6 +22,14 @@ module t (
     else a = 399;
   end
 
+  initial begin
+    // A null action leaves the else for the enclosing if.
+    if (a)
+      expect (@(posedge clk) b);
+    else
+      a = 0;
+  end
+
   // TODO set a/b appropriately - this is just a parsing test currently
 
 endmodule

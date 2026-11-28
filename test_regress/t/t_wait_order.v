@@ -16,6 +16,14 @@ module t;
   bit  nif[10], nelse[10];
 
   initial begin
+    // A null action leaves the else for the enclosing if.
+    if (wif[0])
+      wait_order (a, b);
+    else
+      welse[0] = 1;
+  end
+
+  initial begin
     wait_order (a, b) wif[0] = '1;
   end
 `ifdef FAIL_ASSERT_1

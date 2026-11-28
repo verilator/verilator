@@ -1,0 +1,5 @@
+%Error: t/t_assert_semicolon_bad.v:10:17: syntax error, unexpected else
+   10 |     assert (x); else $error("Assertion failed");
+      |                 ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
