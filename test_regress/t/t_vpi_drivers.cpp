@@ -324,8 +324,11 @@ void script() {
                       {~x & 0xff, 8},
                       {~x & 0xff, 8},
                       {~x & 0xff, 8}}));
-        const Words wm33 = cat(
-            {{static_cast<uint32_t>(std::bitset<8>{d}.count() & 1), 1}, {d, 8}, {d, 8}, {d, 8}, {d, 8}});
+        const Words wm33 = cat({{static_cast<uint32_t>(std::bitset<8>{d}.count() & 1), 1},
+                                {d, 8},
+                                {d, 8},
+                                {d, 8},
+                                {d, 8}});
         const Words wm65 = cat({{d, 8},
                                 {d, 8},
                                 {d, 8},
