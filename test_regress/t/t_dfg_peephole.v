@@ -489,7 +489,9 @@ module t (
   `signal(PUSH_SEL_THROUGH_SPLICE, sel_from_partial_tmp[1:0]);
 
   /* verilator lint_off MULTIDRIVEN */
+  /* verilator lint_off UNOPTFLAT */
   logic [2:0] sel_from_default_var;
+  /* verilator lint_on UNOPTFLAT */
   /* verilator lint_on MULTIDRIVEN */
   logic [2:0] sel_from_default_cond;
   logic sel_from_default_bit;

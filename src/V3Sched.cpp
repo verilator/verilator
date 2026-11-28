@@ -47,6 +47,7 @@
 #include "V3EmitV.h"
 #include "V3Order.h"
 #include "V3SenExprBuilder.h"
+#include "V3StaticPrefix.h"
 #include "V3Stats.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -198,6 +199,7 @@ void createEvalRegion(
 LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
     LogicClasses result;
     VNDeleter deleter;  // Deletes the AstActives once their processes are moved
+    V3StaticPrefix staticPrefix;  // For always_comb/always_latch sensitivities
 
     netlistp->foreach([&](AstScope* scopep) {
         scopep->foreach([&](AstActive* activep) {
@@ -241,9 +243,16 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
                 // Only combinational logic has implicit sensitivities
                 std::unordered_set<const AstVarScope*> implicitSensitivities;
                 if (senTreep->hasCombo()) {
-                    implicitSensitivities = util::computeImplicitSensitivities(procp);
+                    implicitSensitivities
+                        = util::computeImplicitSensitivities(procp, staticPrefix);
                 }
-                logicClassp->add({scopep, senTreep, procp, std::move(implicitSensitivities)});
+                // Combinational logic without implicit sensitivities is really an
+                // initial block in disguise, V3Order would prune it otherwise.
+                ProcessList& procList
+                    = logicClassp == &result.m_comb && implicitSensitivities.empty()
+                          ? result.m_initial
+                          : *logicClassp;
+                procList.add({scopep, senTreep, procp, std::move(implicitSensitivities)});
             }
             VL_DO_DANGLING(deleter.pushDeletep(activep->unlinkFrBack()), activep);
         });
