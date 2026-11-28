@@ -29,6 +29,7 @@ public:
     static void emitcFiles() VL_MT_DISABLED;
     static void emitcHeaders() VL_MT_DISABLED;
     static void emitcImp();
+    static void emitcGpu() VL_MT_DISABLED;
     static void emitcInlines() VL_MT_DISABLED;
     static void emitcModel() VL_MT_DISABLED;
     static void emitcPch() VL_MT_DISABLED;

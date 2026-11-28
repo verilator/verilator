@@ -231,6 +231,7 @@ public:
     const std::string& ptrToId(const void* p);
     std::thread::id mainThreadId() const { return m_mainThreadId; }
     static std::vector<std::string> verilatedCppFiles();
+    static std::vector<std::string> verilatedGpuFiles();
     uint64_t currentHierBlockCost() const { return m_currentHierBlockCost; }
     void currentHierBlockCost(uint64_t cost) { m_currentHierBlockCost = cost; }
 

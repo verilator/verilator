@@ -104,8 +104,8 @@ struct VlWide final {
         return std::memcmp(m_storage, that.m_storage, N_Words * sizeof(EData)) == 0;
     }
     bool operator!=(const VlWide<N_Words>& that) const VL_PURE { return !(*this == that); }
-    EData& operator[](size_t index) VL_MT_SAFE { return m_storage[index]; }
-    const EData& operator[](size_t index) const VL_MT_SAFE { return m_storage[index]; }
+    VL_HD EData& operator[](size_t index) VL_MT_SAFE { return m_storage[index]; }
+    VL_HD const EData& operator[](size_t index) const VL_MT_SAFE { return m_storage[index]; }
     VlWide<N_Words>& operator&=(const VlWide& rhs) {
         VL_AND_W(N_Words, *this, *this, rhs);
         return *this;
@@ -130,11 +130,11 @@ struct VlWide final {
     }
 
     // METHODS
-    EData& at(size_t index) VL_MT_SAFE { return m_storage[index]; }
-    const EData& at(size_t index) const VL_MT_SAFE { return m_storage[index]; }
-    size_t size() const VL_PURE { return N_Words; }
-    EData* data() VL_MT_SAFE { return &m_storage[0]; }
-    const EData* data() const VL_MT_SAFE { return &m_storage[0]; }
+    VL_HD EData& at(size_t index) VL_MT_SAFE { return m_storage[index]; }
+    VL_HD const EData& at(size_t index) const VL_MT_SAFE { return m_storage[index]; }
+    VL_HD size_t size() const VL_PURE { return N_Words; }
+    VL_HD EData* data() VL_MT_SAFE { return &m_storage[0]; }
+    VL_HD const EData* data() const VL_MT_SAFE { return &m_storage[0]; }
     inline bool operator<(const VlWide<N_Words>& rhs) const VL_PURE;
 };
 
@@ -159,28 +159,28 @@ class WDataOutP final {
     EData* m_datap;  // The backing store - non const as the handle is assignable
 
     // Use WDataOutP::external() to create a handle from a raw pointer
-    explicit WDataOutP(EData* datap) VL_PURE : m_datap{datap} {}
+    VL_HD explicit WDataOutP(EData* datap) VL_PURE : m_datap{datap} {}
 
 public:
     // FACTORY METHODS
     // Create a handle from a raw pointer - only to be used in verilated*.h
-    static WDataOutP external(EData* datap) VL_PURE { return WDataOutP{datap}; }
+    VL_HD static WDataOutP external(EData* datap) VL_PURE { return WDataOutP{datap}; }
 
     // CONSTRUCTORS
     // Implicit conversion from 'VlWide'
     template <std::size_t N_Words>
     // cppcheck-suppress noExplicitConstructor
-    /* implicit */ WDataOutP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
+    VL_HD /* implicit */ WDataOutP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
     WDataOutP(const WDataOutP& other) VL_PURE = default;
     WDataOutP(WDataOutP&& other) VL_PURE = default;
     WDataOutP& operator=(const WDataOutP& other) VL_PURE = default;
 
     // METHODS
-    EData* datap() const VL_PURE { return m_datap; }
-    operator bool() const VL_PURE { return m_datap; }
-    EData& operator[](size_t index) const VL_PURE { return m_datap[index]; }
-    WDataOutP operator+(size_t index) const VL_PURE { return WDataOutP(m_datap + index); }
-    WDataOutP operator+(int index) const VL_PURE { return WDataOutP(m_datap + index); }
+    VL_HD EData* datap() const VL_PURE { return m_datap; }
+    VL_HD operator bool() const VL_PURE { return m_datap; }
+    VL_HD EData& operator[](size_t index) const VL_PURE { return m_datap[index]; }
+    VL_HD WDataOutP operator+(size_t index) const VL_PURE { return WDataOutP(m_datap + index); }
+    VL_HD WDataOutP operator+(int index) const VL_PURE { return WDataOutP(m_datap + index); }
 };
 static_assert(sizeof(WDataOutP) == sizeof(EData*), "WDataOutP should be a single pointer");
 
@@ -189,41 +189,42 @@ class WDataInP final {
     const EData* m_datap;  // The backing store - non const as the handle is assignable
 
     // Use WDataInP::external() to create a handle from a raw pointer
-    explicit WDataInP(const EData* datap) VL_PURE : m_datap{datap} {}
+    VL_HD explicit WDataInP(const EData* datap) VL_PURE : m_datap{datap} {}
 
 public:
     // FACTORY METHODS
     // Create a handle from a raw pointer - only to be used in verilated*.h
-    static WDataInP external(const EData* datap) VL_PURE { return WDataInP{datap}; }
+    VL_HD static WDataInP external(const EData* datap) VL_PURE { return WDataInP{datap}; }
 
     // CONSTRUCTORS
     // Implicit conversion from 'VlWide'
     template <std::size_t N_Words>
     // cppcheck-suppress noExplicitConstructor
-    /* implicit */ WDataInP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
+    VL_HD /* implicit */ WDataInP(VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
     // Implicit conversion from 'const VlWide'
     template <std::size_t N_Words>
     // cppcheck-suppress noExplicitConstructor
-    /* implicit */ WDataInP(const VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {}
+    VL_HD /* implicit */ WDataInP(const VlWide<N_Words>& vlWide) VL_PURE : m_datap{vlWide.data()} {
+    }
     // Implicit conversion from 'WDataOutP'
     // cppcheck-suppress noExplicitConstructor
-    /* implicit */ WDataInP(const WDataOutP& owp) VL_PURE : m_datap{owp.datap()} {}
+    VL_HD /* implicit */ WDataInP(const WDataOutP& owp) VL_PURE : m_datap{owp.datap()} {}
     // Initialize with 'nullptr'
-    explicit WDataInP(std::nullptr_t) VL_PURE : m_datap{nullptr} {}
+    VL_HD explicit WDataInP(std::nullptr_t) VL_PURE : m_datap{nullptr} {}
     WDataInP(const WDataInP& other) VL_PURE = default;
     WDataInP(WDataInP&& other) VL_PURE = default;
     WDataInP& operator=(const WDataInP& other) VL_PURE = default;
 
     // METHODS
-    const EData* datap() const VL_PURE { return m_datap; }
-    operator bool() const VL_PURE { return m_datap; }
-    const EData& operator[](size_t index) const VL_PURE { return m_datap[index]; }
-    WDataInP operator+(size_t index) const VL_PURE { return WDataInP(m_datap + index); }
-    WDataInP operator+(int index) const VL_PURE { return WDataInP(m_datap + index); }
+    VL_HD const EData* datap() const VL_PURE { return m_datap; }
+    VL_HD operator bool() const VL_PURE { return m_datap; }
+    VL_HD const EData& operator[](size_t index) const VL_PURE { return m_datap[index]; }
+    VL_HD WDataInP operator+(size_t index) const VL_PURE { return WDataInP(m_datap + index); }
+    VL_HD WDataInP operator+(int index) const VL_PURE { return WDataInP(m_datap + index); }
 };
 static_assert(sizeof(WDataInP) == sizeof(EData*), "WDataInP should be a single pointer");
 
-inline int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
+inline VL_HD int _vl_cmp_w(int words, WDataInP const lwp, WDataInP const rwp) VL_PURE;
 
 template <std::size_t N_Words>
 bool VlWide<N_Words>::operator<(const VlWide<N_Words>& rhs) const VL_PURE {
@@ -1640,8 +1641,8 @@ public:
         return VlUnpackedSliceRef<T_Value, N_Out>{&m_storage[loIdx]};
     }
 
-    void fill(const T_Value& value) {
-        std::fill(std::begin(m_storage), std::end(m_storage), value);
+    VL_HD void fill(const T_Value& value) {
+        for (size_t i = 0; i < N_Depth; ++i) m_storage[i] = value;
     }
 
     // To fit C++14
@@ -1677,14 +1678,14 @@ public:
         return find_element<N_CurrentDimension>(indices, std::is_class<T_Value>{});
     }
 
-    T_Value& operator[](size_t index) { return m_storage[index]; }
-    constexpr const T_Value& operator[](size_t index) const { return m_storage[index]; }
+    VL_HD T_Value& operator[](size_t index) { return m_storage[index]; }
+    VL_HD constexpr const T_Value& operator[](size_t index) const { return m_storage[index]; }
 
     // *this != that, which might be used for change detection/trigger computation, but avoid
     // operator overloading in VlUnpacked for safety in other contexts.
-    bool neq(const VlUnpacked<T_Value, N_Depth>& that) const { return neq(*this, that); }
+    VL_HD bool neq(const VlUnpacked<T_Value, N_Depth>& that) const { return neq(*this, that); }
     // Similar to 'neq' above, *this = that used for change detection
-    void assign(const VlUnpacked<T_Value, N_Depth>& that) { *this = that; }
+    VL_HD void assign(const VlUnpacked<T_Value, N_Depth>& that) { *this = that; }
     bool operator==(const VlUnpacked<T_Value, N_Depth>& that) const { return !neq(that); }
     bool operator!=(const VlUnpacked<T_Value, N_Depth>& that) const { return neq(that); }
     // interface to C style arrays (used in ports), see issue #5125
@@ -1896,7 +1897,7 @@ public:
         return out;
     }
     T_Value r_and() const {
-        if (m_storage.empty()) return T_Value(0);  // The big three do it this way
+        if (N_Depth == 0) return T_Value(0);  // The big three do it this way
         T_Value out = ~T_Value(0);
         for (const auto& i : m_storage) out &= i;
         return out;
@@ -1943,7 +1944,7 @@ public:
 
 private:
     template <typename T_Val, std::size_t N_Dep>
-    static bool neq(const VlUnpacked<T_Val, N_Dep>& a, const VlUnpacked<T_Val, N_Dep>& b) {
+    static VL_HD bool neq(const VlUnpacked<T_Val, N_Dep>& a, const VlUnpacked<T_Val, N_Dep>& b) {
         for (size_t i = 0; i < N_Dep; ++i) {
             // Recursive 'neq', in case T_Val is also a VlUnpacked<_, _>
             if (neq(a.m_storage[i], b.m_storage[i])) return true;
@@ -1961,7 +1962,7 @@ private:
     }
 
     template <typename T_Other>  //
-    static bool neq(const T_Other& a, const T_Other& b) {
+    static VL_HD bool neq(const T_Other& a, const T_Other& b) {
         // Base case (T_Other is not VlUnpacked<_, _>), fall back on !=
         return a != b;
     }

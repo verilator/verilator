@@ -1241,6 +1241,69 @@ Summary:
    a newline and exit immediately. This can be useful in makefiles. See
    also :vlopt:`-V`, and the various :file:`*.mk` files.
 
+.. option:: --gpu
+
+   Build a model that runs on an NVIDIA GPU with CUDA, in addition to the
+   normal C++ model. Many copies of the same design run in parallel on the
+   GPU, one copy per test, all sharing one compiled model. Requires
+   :command:`nvcc` from the CUDA toolkit, and in the default resident mode
+   :vlopt:`--timing` with a testbench that makes its own clocks. With
+   :vlopt:`--threads`, the GPU
+   also runs the task graph of each copy in parallel, which makes a single
+   copy much faster. See :ref:`gpu simulation`.
+
+.. option:: --gpu-arch <arch>
+
+   GPU architecture passed to :command:`nvcc` as :code:`-arch`. Defaults to
+   :code:`native`, which compiles for the GPU found on the build machine.
+
+.. option:: --gpu-dpi <name>[,<name>...]
+
+   Names of DPI import functions that have a GPU implementation. The user
+   provides each one as a :code:`__device__` function of the same name whose
+   first argument is a :code:`VlGpuDpiCtx`, followed by the DPI arguments.
+   Without this option a DPI import is host-only, and a design that calls it
+   from code that runs every cycle cannot run resident on the GPU. See
+   :ref:`gpu dpi`.
+
+.. option:: --gpu-fork-slots <n>
+
+   Number of concurrent instances reserved for each process that can fork
+   in resident mode (for example :code:`assign #d` continuous delays).
+   Defaults to 4. A copy that needs more fails with a message asking for a
+   larger value.
+
+.. option:: --gpu-hybrid
+
+   Use the hybrid GPU mode, in which the host CPU runs the scheduler and
+   launches GPU kernels for each region. The default resident mode instead
+   runs the whole scheduler on the GPU, with no host round trips while
+   simulating. Hybrid mode supports more timing constructs but is much
+   slower.
+
+.. option:: --gpu-layout <layout>
+
+   How the state of the copies is arranged in GPU memory: :code:`soa`
+   (each signal contiguous across all copies), :code:`aos` (each copy
+   contiguous) or :code:`aosoa` (groups of copies, each group stored as
+   :code:`soa`). The default is :code:`aosoa` in resident mode and
+   :code:`soa` in hybrid mode; :code:`aos` and :code:`aosoa` need resident
+   mode. :code:`aos` is fastest for one or a few copies and slowest for
+   large batches.
+
+.. option:: --gpu-layout-group <n>
+
+   Number of copies per group with :vlopt:`--gpu-layout aosoa`. Must be a
+   power of two of at least 32. Defaults to 128.
+
+.. option:: --gpu-output-bytes <n>
+
+   Size in bytes of the per-copy buffer that holds :code:`$display` and
+   similar output on the GPU until the host prints it. Defaults to 65536.
+   Resident mode empties the buffers every time slice, so only a copy that
+   prints more than this in one slice overflows; such a copy is reported
+   as failed.
+
 .. option:: --help
 
    Displays this message and program version and exits.

@@ -234,6 +234,17 @@ public:
         openNewOutputFile(baseName, false, false, false, descriptionp);
     }
 
+    void openNewOutputGpuFile(const std::string& baseName, const char* descriptionp) {
+        V3Stats::addStatSum(V3Stats::STAT_CPP_FILES, 1);
+        AstCFile* const cfilep = new AstCFile{v3Global.rootp()->fileline(),
+                                              v3Global.opt.makeDir() + "/" + baseName + ".cu"};
+        cfilep->slow(false);
+        cfilep->source(true);
+        cfilep->support(false);
+        m_newCfileps.emplace_back(cfilep);
+        openOutputFile(cfilep, descriptionp);
+    }
+
     // Open exisitng AstCFile for writing
     void openOutputFile(AstCFile* cfilep, const char* descriptionp) {
         UASSERT(!m_ofp, "Output file is already open");

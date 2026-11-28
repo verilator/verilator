@@ -114,11 +114,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                                            << " w/ no temp, perhaps missing op in V3EmitC?");
                     commaOut();
                     putOut();
-                    if (!m_wideTempRefp->selfPointer().isEmpty()) {
-                        emitDereference(m_wideTempRefp,
-                                        m_wideTempRefp->selfPointerProtect(m_useSelfForThis));
-                    }
-                    out += varName(m_wideTempRefp->varp());
+                    out += varRefText(m_wideTempRefp);
                     m_wideTempRefp = nullptr;
                     needComma = true;
                 } else if (usesQueue) {
@@ -488,11 +484,10 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
     // something that starts off clear already, no need to clear it again
     AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
     const string vlSelf = VSelfPointerText::replaceThis(m_useSelfForThis, "this->");
-    const string varNameProtected
-        = ((VN_IS(m_modp, Class) || varp->isFuncLocal()) || !prefix.empty())
-              ? varName(varp)
-              : vlSelf + varName(varp);
-    const string newPrefix = prefix + varNameProtected;
+    const bool plain = VN_IS(m_modp, Class) || varp->isFuncLocal();
+    const string newPrefix = plain             ? prefix + varName(varp)
+                             : !prefix.empty() ? memberResetText(varp, prefix)
+                                               : memberResetText(varp, vlSelf);
     if (varp->isIO() && m_modp->isTop() && optSystemC()) {
         // System C top I/O doesn't need loading, as the lower level subinst code does it.}
     } else if (varp->isParam()) {

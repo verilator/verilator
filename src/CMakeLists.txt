@@ -113,6 +113,7 @@ set(HEADERS
     V3FunctionTraits.h
     V3Gate.h
     V3Global.h
+    V3Gpu.h
     V3Graph.h
     V3GraphAlg.h
     V3GraphPathChecker.h
@@ -279,6 +280,7 @@ set(COMMON_SOURCES
     V3EmitCConstPool.cpp
     V3EmitCExecGraph.cpp
     V3EmitCFunc.cpp
+    V3EmitCGpu.cpp
     V3EmitCHeaders.cpp
     V3EmitCImp.cpp
     V3EmitCInlines.cpp
@@ -301,6 +303,8 @@ set(COMMON_SOURCES
     V3FuncOpt.cpp
     V3Gate.cpp
     V3Global.cpp
+    V3Gpu.cpp
+    V3GpuTiming.cpp
     V3Graph.cpp
     V3GraphAcyc.cpp
     V3GraphAlg.cpp

@@ -2418,6 +2418,7 @@ IData VL_SYSTEM_IN(const std::string& lhs) VL_MT_SAFE {
 }
 
 IData VL_TESTPLUSARGS_I(const std::string& format) VL_MT_SAFE {
+    Verilated::threadContextp()->impp()->plusargRead(format.c_str());
     const std::string& match = Verilated::threadContextp()->impp()->argPlusMatch(format.c_str());
     return match.empty() ? 0 : 1;
 }
@@ -2447,6 +2448,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
         }
     }
 
+    Verilated::threadContextp()->impp()->plusargRead(prefix.c_str());
     const std::string& match = Verilated::threadContextp()->impp()->argPlusMatch(prefix.c_str());
     const char* const dp = match.c_str() + 1 /*leading + */ + prefix.length();
     if (match.empty()) return 0;
@@ -2518,6 +2520,7 @@ IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_S
             }
         }
     }
+    Verilated::threadContextp()->impp()->plusargRead(prefix.c_str());
     const std::string& match = Verilated::threadContextp()->impp()->argPlusMatch(prefix.c_str());
     const char* const dp = match.c_str() + 1 /*leading + */ + prefix.length();
     if (match.empty()) return 0;

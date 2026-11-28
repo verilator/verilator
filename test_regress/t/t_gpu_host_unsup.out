@@ -1,0 +1,3 @@
+%Error-UNSUPPORTED: Unsupported: GPU-resident mode: '_eval_nba': plusargs
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

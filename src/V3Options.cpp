@@ -950,6 +950,19 @@ void V3Options::notify() VL_MT_DISABLED {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
+    if (!m_gpuLayout.empty() && m_gpuLayout != "soa" && m_gpuLayout != "aos"
+        && m_gpuLayout != "aosoa") {
+        cmdfl->v3error("--gpu-layout must be 'soa', 'aos' or 'aosoa', but got '" << m_gpuLayout
+                                                                                 << "'.");
+    }
+    if (m_gpuHybrid && (m_gpuLayout == "aos" || m_gpuLayout == "aosoa")) {
+        cmdfl->v3error("--gpu-layout '" << m_gpuLayout
+                                        << "' needs resident mode, not --gpu-hybrid.");
+    }
+    if (m_gpuLayoutGroup < 32 || (m_gpuLayoutGroup & (m_gpuLayoutGroup - 1))) {
+        cmdfl->v3error("--gpu-layout-group must be a power of two of at least 32.");
+    }
+
     // m_build, m_preprocOnly, m_dpiHdrOnly, m_lintOnly, and m_jsonOnly are mutually
     // exclusive
     std::vector<std::string> backendFlags;
@@ -1608,6 +1621,18 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         v3Global.vlExit(0);
     });
 
+    DECL_OPTION("-gpu", OnOff, &m_gpu);
+    DECL_OPTION("-gpu-arch", Set, &m_gpuArch);
+    DECL_OPTION("-gpu-dpi", CbVal, [this](const char* valp) {
+        for (const string& name : VString::split(valp)) {
+            if (!name.empty()) m_gpuDpis.insert(name);
+        }
+    });
+    DECL_OPTION("-gpu-fork-slots", Set, &m_gpuForkSlots);
+    DECL_OPTION("-gpu-hybrid", OnOff, &m_gpuHybrid);
+    DECL_OPTION("-gpu-layout", Set, &m_gpuLayout);
+    DECL_OPTION("-gpu-layout-group", Set, &m_gpuLayoutGroup);
+    DECL_OPTION("-gpu-output-bytes", Set, &m_gpuOutputBytes);
     DECL_OPTION("-hierarchical", OnOff, &m_hierarchical);
     DECL_OPTION("-hierarchical-block", CbVal, [this](const char* valp) {
         const V3HierarchicalBlockOption opt{valp};
@@ -2118,6 +2143,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                    || suffixed(filename, ".ixx")) {
             V3Options::addCppFile(filename);
             m_moduleFiles.insert(filename);
+        } else if (suffixed(filename, ".cu")) {
+            V3Options::addGpuFile(filename);
         } else if (suffixed(filename, ".a")  //
                    || suffixed(filename, ".o")  //
                    || suffixed(filename, ".so")) {

@@ -1,0 +1,20 @@
+== gpu_batch_summary
+first PASS 205
+second FAIL 5
+stopped FAIL 205
+third PASS 205
+== first
+seed=3 cyc=20 lfsr=1572864 time=205
+*-* All Finished *-*
+- t/t_gpu_jobs.v:46: Verilog $finish
+== second
+%Error: job argument +limit=45 is read by the design during initialization, which all GPU copies share; give it on the command line or read it in GPU DPI code
+== stopped
+seed=5 cyc=20 lfsr=2621440 time=205
+%Error: t/t_gpu_jobs.v:44: Verilog $stop
+*-* All Finished *-*
+- t/t_gpu_jobs.v:46: Verilog $finish
+== third
+seed=11 cyc=20 lfsr=5767168 time=205
+*-* All Finished *-*
+- t/t_gpu_jobs.v:46: Verilog $finish

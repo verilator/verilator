@@ -274,6 +274,9 @@ public:  // But only for verilated*.cpp
 
     // METHODS - arguments
     std::string argPlusMatch(const char* prefixp) VL_MT_SAFE_EXCLUDES(m_argMutex);
+    void plusargRead(const char* prefixp) {
+        if (m_plusargReadCb) m_plusargReadCb(prefixp);
+    }
     std::pair<int, char**> argc_argv() VL_MT_SAFE_EXCLUDES(m_argMutex);
 
     // METHODS - scope name - INTERNAL only for verilated*.cpp

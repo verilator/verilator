@@ -65,6 +65,7 @@
 #include "V3FuncOpt.h"
 #include "V3Gate.h"
 #include "V3Global.h"
+#include "V3Gpu.h"
 #include "V3Graph.h"
 #include "V3HashTable.h"
 #include "V3HierBlock.h"
@@ -638,6 +639,8 @@ static void process() {
             // Create AstCUse to determine what class forward declarations/#includes needed in C
             V3CUse::cUseAll();
 
+            if (v3Global.opt.gpu()) V3Gpu::apply(v3Global.rootp());
+
             // Evaluate cost of a current hierarchical block
             if (!v3Global.opt.libCreate().empty()) {
                 v3Global.currentHierBlockCost(V3Control::getCurrentHierBlockCost());
@@ -670,6 +673,7 @@ static void process() {
     if (!v3Global.opt.serializeOnly()
         && !v3Global.opt.dpiHdrOnly()) {  // Unfortunately we have some lint checks in emitcImp.
         V3EmitC::emitcImp();
+        V3EmitC::emitcGpu();
     }
     if (v3Global.opt.serializeOnly()) {
         emitSerialized();

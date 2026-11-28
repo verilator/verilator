@@ -524,6 +524,10 @@ public:
         return static_cast<uint64_t>(ifs.tellg());
     }
 
+    static bool isGpuSource(const string& name) {
+        return name.size() > 3 && name.compare(name.size() - 3, 3, ".cu") == 0;
+    }
+
     void putMakeClassEntry(V3OutMkFile& of, const string& name) {
         of.puts("  " + V3Os::filenameNonDirExt(name) + " \\\n");
         ++m_putClassCount;
@@ -545,7 +549,8 @@ public:
                 if (cfilep && VString::endsWith(cfilep->name(), ".h")) {
                     headerBytes += fileSize(cfilep);
                 }
-                if (cfilep && cfilep->source() && cfilep->support() == false) {
+                if (cfilep && cfilep->source() && cfilep->support() == false
+                    && !isGpuSource(cfilep->name())) {
                     std::vector<FilenameWithScore>& files = cfilep->slow() ? slowFiles : fastFiles;
                     uint64_t& totalScore = cfilep->slow() ? slowTotalScore : fastTotalScore;
 
@@ -598,6 +603,19 @@ public:
         of.putSet("VM_TRACE_VCD", v3Global.opt.traceEnabledVcd() ? "1" : "0");
         of.puts("# VPI enabled?  0/1 (from --vpi)\n");
         of.putSet("VM_VPI", v3Global.opt.vpi() ? "1" : "0");
+        of.puts("# GPU enabled?  0/1 (from --gpu)\n");
+        of.putSet("VM_GPU", v3Global.opt.gpu() ? "1" : "0");
+        if (v3Global.opt.gpu()) {
+            of.puts("# GPU architecture (from --gpu-arch)\n");
+            of.putSet("VM_GPU_ARCH", v3Global.opt.gpuArch());
+            of.puts("# Deferred output bytes per copy (from --gpu-output-bytes)\n");
+            of.putSet("VM_GPU_DEFER_BYTES", std::to_string(v3Global.opt.gpuOutputBytes()));
+            std::string layout = v3Global.opt.gpuLayout();
+            if (layout.empty()) layout = v3Global.opt.gpuHybrid() ? "soa" : "aosoa";
+            of.puts("# GPU state layout (from --gpu-layout, --gpu-layout-group)\n");
+            of.putSet("VM_GPU_LAYOUT", layout);
+            of.putSet("VM_GPU_LAYOUT_GROUP", std::to_string(v3Global.opt.gpuLayoutGroup()));
+        }
         // Link flags for runtime VPI library loading are emitted by emitOverallMake() after
         // verilated.mk is included (so $(CFG_LDFLAGS_DYNAMIC)/$(CFG_LDLIBS_DYNAMIC) are defined).
 
@@ -640,7 +658,8 @@ public:
                     for (AstNodeFile* const nodep : v3Global.rootp()->filespList()) {
                         const AstCFile* const cfilep = VN_CAST(nodep, CFile);
                         if (cfilep && cfilep->source() && cfilep->slow() == (slow != 0)
-                            && cfilep->support() == (support != 0)) {
+                            && cfilep->support() == (support != 0)
+                            && !isGpuSource(cfilep->name())) {
                             putMakeClassEntry(of, cfilep->name());
                         }
                     }
@@ -648,6 +667,24 @@ public:
                 of.puts("\n");
                 V3Stats::addStat("Makefile targets, " + targetVar, m_putClassCount);
             }
+        }
+
+        if (v3Global.opt.gpu()) {
+            of.puts("# GPU run-time classes, compile with nvcc\n");
+            m_putClassCount = 0;
+            of.puts("VM_GPU_GLOBAL += \\\n");
+            for (const string& cu : v3Global.verilatedGpuFiles()) putMakeClassEntry(of, cu);
+            of.puts("\n");
+            of.puts("# Generated GPU classes, compile with nvcc\n");
+            of.puts("VM_GPU_CLASSES += \\\n");
+            for (AstNodeFile* const nodep : v3Global.rootp()->filespList()) {
+                const AstCFile* const cfilep = VN_CAST(nodep, CFile);
+                if (cfilep && cfilep->source() && isGpuSource(cfilep->name())) {
+                    putMakeClassEntry(of, cfilep->name());
+                }
+            }
+            of.puts("\n");
+            V3Stats::addStat("Makefile targets, VM_GPU", m_putClassCount);
         }
 
         of.putsHeader();
@@ -757,6 +794,17 @@ public:
 
         of.puts("\n");
 
+        if (v3Global.opt.gpu()) {
+            of.puts("# User .cu files (from .cu's on Verilator command line)\n");
+            of.puts("VM_GPU_USER_CLASSES = \\\n");
+            for (const auto& cufile : v3Global.opt.gpuFiles()) {
+                of.puts("  " + V3Os::filenameNonDirExt(cufile) + " \\\n");
+                dirs.insert(
+                    V3Os::filenameRelativePath(V3Os::filenameDir(cufile), v3Global.opt.makeDir()));
+            }
+            of.puts("\n");
+        }
+
         of.puts("# User .cpp directories (from .cpp's on Verilator command line)\n");
         of.puts("VM_USER_DIR = \\\n");
         for (const auto& i : dirs) of.puts("  " + i + " \\\n");
@@ -839,16 +887,16 @@ public:
             of.puts("\n### Link rules... (from --exe)\n");
             // '{prefix}__ALL.a', contains all hierarchical libraries
             of.puts(v3Global.opt.exeName()
-                    + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a"
+                    + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VK_GPU_LINK_OBJS) $(VM_PREFIX)__ALL.a"
                       " $(VM_USER_LDLIBS_FILES)\n");
             // User library files are in LDLIBS, so do not also link them from $^
             of.puts("\t$(LINK) $(LDFLAGS) $(filter-out $(VM_USER_LDLIBS_FILES),$^) $(LOADLIBES) "
                     "$(LDLIBS) $(LIBS) $(SC_LIBS) -o $@\n");
             of.puts("\n");
         } else if (!v3Global.opt.libCreate().empty()) {
-            const string libCreateDeps = "$(VK_OBJS) $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) "
-                                         + v3Global.opt.libCreate() + ".o $(VM_HIER_LIBS)"
-                                         + archiveDep;
+            const string libCreateDeps
+                = "$(VK_OBJS) $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VK_GPU_LINK_OBJS) "
+                  + v3Global.opt.libCreate() + ".o $(VM_HIER_LIBS)" + archiveDep;
             of.puts("\n### Library rules from --lib-create\n");
             // The rule to create .a is defined in verilated.mk, so just define dependency here.
             of.puts(v3Global.opt.libCreateName(false) + ": " + libCreateDeps + "\n");
@@ -879,7 +927,7 @@ public:
             of.puts("\n### Library rules (default lib mode)\n");
             // The rule to create .a is defined in verilated.mk, so just define dependency here.
             of.puts(libname + ": $(VK_OBJS) $(VK_USER_OBJS) $(VM_HIER_LIBS)" + archiveDep + "\n");
-            of.puts("libverilated.a: $(VK_GLOBAL_OBJS)\n");
+            of.puts("libverilated.a: $(VK_GLOBAL_OBJS) $(VK_GPU_LINK_OBJS)\n");
             // let default rule depend on '{prefix}__ALL.a', for compatibility
             of.puts("lib" + v3Global.opt.prefix() + ": " + libname
                     + " libverilated.a $(VM_PREFIX)__ALL.a\n");
