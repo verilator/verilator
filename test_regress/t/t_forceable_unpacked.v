@@ -68,6 +68,12 @@ module t (input wire clk, output reg [31:0] cyc);
       `checkh(var_arr_a[7][4], 2'h3);
     end
     3: begin
+      // A released part of an element reads back at once, the external force controls
+      // having been used
+      force var_arr[7][5][3] = 1'b1;
+      release var_arr[7][5][3];
+      `checkh(var_arr[7][5],   2'h3);
+      var_arr[7][5] = 2'h2;
       `checkh(var_arr[6][5],   2'h2);
       `checkh(var_arr[7][4],   2'h2);
       `checkh(var_arr_a[6][5], 2'h1);

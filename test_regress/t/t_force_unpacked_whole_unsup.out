@@ -1,0 +1,23 @@
+%Error-UNSUPPORTED: t/t_force_unpacked_whole_unsup.v:17:5: Unsupported: Force of unpacked array from queue or dynamic array
+   17 |     force a = q;
+      |     ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_force_unpacked_whole_unsup.v:18:5: Unsupported: Force of unpacked array from streaming expression
+   18 |     force a = {>>{p}};
+      |     ^~~~~
+%Error-UNSUPPORTED: t/t_force_unpacked_whole_unsup.v:19:5: Unsupported: Procedural assign of unpacked array from queue or dynamic array
+   19 |     assign a = q;
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_force_unpacked_whole_unsup.v:20:5: Unsupported: Procedural assign of unpacked array from streaming expression
+   20 |     assign a = {>>{p}};
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_force_unpacked_whole_unsup.v:21:5: Unsupported: Force of unpacked array from queue or dynamic array
+   21 |     force a = d;
+      |     ^~~~~
+%Error-UNSUPPORTED: t/t_force_unpacked_whole_unsup.v:22:5: Unsupported: Force of unpacked array from queue or dynamic array
+   22 |     force a2[0] = q;
+      |     ^~~~~
+%Error-UNSUPPORTED: t/t_force_unpacked_whole_unsup.v:23:5: Unsupported: Procedural assign of forceable unpacked array
+   23 |     assign f = a;
+      |     ^~~~~~
+%Error: Exiting due to
