@@ -2225,6 +2225,43 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
     }
     void visit(AstSFormatF* nodep) override {}
+    // Only a soft AstConstraintExpr is soft; any other item is hard
+    static bool isSoftItem(const AstNode* const itemp) {
+        const AstConstraintExpr* const constrExprp = VN_CAST(itemp, ConstraintExpr);
+        return constrExprp && constrExprp->isSoft();
+    }
+    static AstConstraintExpr* newTrueConstraint(FileLine* const fl, const bool isSoft) {
+        AstConstraintExpr* const truep
+            = new AstConstraintExpr{fl, new AstConst{fl, AstConst::BitTrue{}}};
+        truep->isSoft(isSoft);  // Else the copy would hold both kinds and be split again
+        return truep;
+    }
+    // Drop the items, nested ones included, not of the wanted softness.
+    void pruneToSoftness(AstNode* const itemsp, const bool keepSoft) {
+        for (AstNode *nextp, *itemp = itemsp; itemp; itemp = nextp) {
+            nextp = itemp->nextp();
+            if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
+                pruneArms(cifp, keepSoft);
+            } else if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
+                pruneToSoftness(cfep->bodyp(), keepSoft);
+                // Both copies hold the bucket preamble; only the soft chain reads it.
+                if (!keepSoft) cfep->user3p(nullptr);
+            } else if (isSoftItem(itemp) != keepSoft) {
+                VL_DO_DANGLING(pushDeletep(itemp->unlinkFrBack()), itemp);
+            }
+        }
+    }
+    // Prune both arms.  An emptied arm is refilled with a vacuous 'true' of the kept
+    // softness, so the if still collapses to an AstCond: a one-armed AstLogIf cannot
+    // take the run-time condition gating a frozen 'dist'.
+    void pruneArms(AstConstraintIf* const cifp, const bool keepSoft) {
+        const bool hadElse = cifp->elsesp();
+        pruneToSoftness(cifp->thensp(), keepSoft);
+        pruneToSoftness(cifp->elsesp(), keepSoft);
+        FileLine* const fl = cifp->fileline();
+        if (!cifp->thensp()) cifp->addThensp(newTrueConstraint(fl, keepSoft));
+        if (hadElse && !cifp->elsesp()) cifp->addElsesp(newTrueConstraint(fl, keepSoft));
+    }
     void visit(AstConstraintIf* nodep) override {
         // Outside a fold, this if's branches are folded here and m_constraintVars collects
         // their names for the constraint replacing it; a nested if adds to its parent's fold
@@ -2233,6 +2270,26 @@ class ConstraintExprVisitor final : public VNVisitor {
                     "Constraint names of an earlier fold were not taken over");
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
+        // The arms collapse into one expression of one softness, so an if holding
+        // both soft and hard items is split into a hard and a soft copy.
+        bool anySoft = false;
+        bool anyHard = false;
+        nodep->foreach([&](const AstNodeConstraintItem* const itemp) {
+            if (VN_IS(itemp, ConstraintIf) || VN_IS(itemp, ConstraintForeach)) return;
+            if (isSoftItem(itemp)) {
+                anySoft = true;
+            } else {
+                anyHard = true;
+            }
+        });
+        if (anySoft && anyHard) {
+            // The copy duplicates the condition; V3Width rejects an impure one (SIDEEFFECT).
+            AstConstraintIf* const softCopyp = nodep->cloneTree(false);
+            pruneArms(nodep, false);
+            pruneArms(softCopyp, true);
+            nodep->addNextHere(softCopyp);  // AstNode::iterateAndNext visits the copy next
+            anySoft = false;  // This node keeps only the hard items
+        }
         AstNodeExpr* const thenp = editSingle(fl, nodep->thensp());
         AstNodeExpr* const elsep = editSingle(fl, nodep->elsesp());
         if (thenp && elsep) {
@@ -2249,6 +2306,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             newp->dtypeSetBit();  // Result is boolean (prevents bare-var != 0 wrapping)
             newp->user1(true);  // Assume result-dependent
             AstConstraintExpr* const exprp = new AstConstraintExpr{fl, newp};
+            exprp->isSoft(anySoft);
             nodep->replaceWith(exprp);
             // Iterated next (AstNode::iterateAndNext), and takes over the folded names
             if (foldOwner) m_foldTakerp = exprp;
@@ -3045,9 +3103,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                             : static_cast<AstNode*>(hoistIfp);
                     // Replace in-tree disable-soft with a no-op boolean
                     // constraint so editSingle() folds cleanly.
-                    AstConstraintExpr* const truep
-                        = new AstConstraintExpr{fl, new AstConst{fl, AstConst::BitTrue{}}};
-                    exprp->replaceWith(truep);
+                    exprp->replaceWith(newTrueConstraint(fl, false));
                     VL_DO_DANGLING(exprp->deleteTree(), exprp);
                 }
             }
