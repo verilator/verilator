@@ -1,0 +1,78 @@
+{
+    "$schema": "https://json.schemastore.org/sarif-2.1.0-rtm.5.json",
+    "version": "###",
+    "runs": [
+        {
+            "tool": {
+                "driver": {
+                    "name": "Verilator",
+                    "version": "###",
+                    "informationUri": "https://verilator.org",
+                    "rules": [
+
+                    ]
+                }
+            },
+            "invocations": [
+                {
+                    "commandLine": "--prefix Vt_sarif_fixes --lint-only -Mdir obj_vlt/t_sarif_fixes --debug-check --x-assign unique -Wno-fatal --diagnostics-sarif --no-skip-identical +librescan +notimingchecks +libext+.v -y t +incdir+t +define+TEST_OBJ_DIR=obj_vlt/t_sarif_fixes +define+TEST_DUMPFILE=obj_vlt/t_sarif_fixes/simx.vcd t/t_sarif_fixes.v",
+                    "executionSuccessful": false
+                }
+            ],
+            "results": [
+                {
+                    "level": "error",
+                    "message": {
+                        "text": "Can't find definition of variable: 'foobat'\n... Suggested alternative: 'foobar'\n... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.",
+                        "markdown": "```\n%Error: t/t_sarif_fixes.v:11:9: Can't find definition of variable: 'foobat'\n                              : ... Suggested alternative: 'foobar'\n   11 |     if (foobat) $stop;   \n      |         ^~~~~~\n        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.\n\n```\n"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///.../t_sarif_fixes.v"
+                                },
+                                "region": {
+                                    "sourceLanguage": "systemverilog",
+                                    "startLine": 11,
+                                    "startColumn": 9,
+                                    "endColumn": 15,
+                                    "snippit": {
+                                        "text": "    if (foobat) $stop;",
+                                        "markdown": "```\n   11 |     if (foobat) $stop;   \n      |         ^~~~~~\n\n```\n"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "fixes": [
+                        {
+                            "description": {
+                                "text": "Replace 'foobat' with 'foobar'"
+                            },
+                            "artifactChanges": [
+                                {
+                                    "artifactLocation": {
+                                        "uri": "file:///.../t_sarif_fixes.v"
+                                    },
+                                    "replacements": [
+                                        {
+                                            "deletedRegion": {
+                                                "startLine": 11,
+                                                "startColumn": 9,
+                                                "endColumn": 15
+                                            },
+                                            "insertedContent": {
+                                                "text": "foobar"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "level": "error",
+                    "message": {
+                        "text": "Exiting due to
