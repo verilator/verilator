@@ -11,7 +11,14 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(v_flags2=[test.pli_filename])
+# This VL_API_IMPORT conflicts with VL_API_EXPORT, so the model fails to compile
+# if it declares a DPI export as an import, as with dllimport and dllexport on Windows
+test.compile(v_flags2=[test.pli_filename],
+             verilator_flags2=[
+                 "-CFLAGS -Werror=attributes",
+                 "-CFLAGS \"'-DVL_API_EXPORT=__attribute__((visibility(\\\"default\\\")))'\"",
+                 "-CFLAGS \"'-DVL_API_IMPORT=__attribute__((visibility(\\\"hidden\\\")))'\""
+             ])
 
 test.files_identical(test.obj_dir + "/" + test.vm_prefix + "__Dpi.h",
                      "t/" + test.name + "__Dpi.out")

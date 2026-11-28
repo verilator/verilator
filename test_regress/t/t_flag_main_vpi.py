@@ -13,7 +13,12 @@ test.scenarios('vlt')
 
 # Compile with --binary --vpi to exercise the VPI-aware generated main.
 # Also compile a VPI shared library to be loaded at runtime via +verilator+vpi+.
-test.compile(make_pli=True, verilator_flags2=["--binary --vpi --public-flat-rw"])
+# With hidden visibility, that library finds the VPI functions only through VL_API_EXPORT.
+test.compile(make_pli=True,
+             verilator_flags2=[
+                 "--binary --vpi --public-flat-rw", "-CFLAGS -fvisibility=hidden",
+                 "-CFLAGS \"'-DVL_API_EXPORT=__attribute__((visibility(\\\"default\\\")))'\""
+             ])
 
 # Run the generated binary; load the VPI library via the +verilator+vpi+ plusarg.
 # The VPI library's output (observed 'count' reaching MAX_TICKS, then end-of-sim) is

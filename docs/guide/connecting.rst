@@ -299,6 +299,17 @@ compatible but is easier to read and better supports multiple designs.
    Vour::publicSetBool(value);
    // or top->publicSetBool(value);
 
+The DPI export functions are declared in Vour__Dpi.h with the
+``VL_API_IMPORT`` macro, and defined in Vour__Dpi.cpp with the
+``VL_API_EXPORT`` macro. On Windows these default to
+``__declspec(dllimport)`` and ``__declspec(dllexport)``, which import and
+export the functions from a DLL, and on other platforms they are empty.
+Define either macro when compiling to override its default.
+
+When defined, ``VL_API_EXPORT`` also takes precedence over the svdpi.h and
+vpi_user.h defaults of ``DPI_DLLESPEC`` and ``PLI_DLLESPEC``, which mark
+the svdpi.h and VPI functions the model defines.
+
 Note that if the DPI task or function accesses any register or net within
 the RTL, it will require a scope to be set. This can be done using the
 standard functions within svdpi.h, after the module is instantiated, but
