@@ -1,0 +1,23 @@
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_path.vlt:13:1: Unsupported: DPI-hook insertion of target 'top_module.bi.p': a member path into an interface signal
+                                                        : ... Suggest hook the whole signal
+   13 | insert_dpihook -callback "instrument_var" -var "top_module.bi.p.a"
+      | ^~~~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_path.vlt:16:1: Unsupported: DPI-hook insertion of target 'top_module.g[0].gs': a member path into a variable of a generate block
+   16 | insert_dpihook -callback "cb" -var "top_module.g[0].gs.b"
+      | ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_bad_path.v:58:15: Unsupported: DPI-hook target 's' in 'top_module': the addressed member is an unpacked aggregate
+                                                     : ... note: In instance 'top_module'
+                                                     : ... Suggest hook a scalar or packed leaf
+   58 |   box_t       s;
+      |               ^
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_path.vlt:10:1: Unsupported: DPI-hook insertion of target 'top_module.u[0]': arrayed module instances
+   10 | insert_dpihook -callback "instrument_var" -var "top_module.u[0].sig"
+      | ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_path.vlt:11:1: Unsupported: DPI-hook insertion of target 'top_module.ud' resolving to a non-module container
+   11 | insert_dpihook -callback "instrument_var" -var "top_module.ud.a"
+      | ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_path.vlt:12:1: Unsupported: DPI-hook insertion of target 'top_module.ud.a' resolving to a non-module container
+   12 | insert_dpihook -callback "instrument_var" -var "top_module.ud.a.m"
+      | ^~~~~~~~~~~~~~
+%Error: Exiting due to

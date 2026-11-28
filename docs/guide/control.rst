@@ -182,6 +182,14 @@ The grammar of control commands is as follows:
 
    Same as :option:`/*verilator&32;no_inline_task*/` metacomment.
 
+.. option:: insert_dpihook -callback "<funcname>" -var "<hierpath>"
+
+   Creates a DPI hook for the specified signal, allowing the signal to be altered from C++ code.
+   The signal to target is specified with the ``-var`` option containing the complete hierarchical path (e.g. ``top.cpu.regfile.data``).
+   The ``-callback`` option defines the name of the imported DPI-C function.
+   See :ref:`DPI Hooks` for a complete example, the binding from C++, and the
+   supported targets.
+
 .. option:: isolate_assignments -module "<modulename>" -function "<fname>"
 
 .. option:: isolate_assignments -module "<modulename>" [-function "<funcname>"] -var "<signame>"

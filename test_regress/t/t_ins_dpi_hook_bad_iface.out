@@ -1,0 +1,5 @@
+%Error: t/t_ins_dpi_hook_bad_iface.vlt:10:1: DPI-hook insertion of target 'top_module.bi1': signal 'nosuch' not found in interface 'simple_if'
+   10 | insert_dpihook -callback "cb" -var "top_module.bi1.nosuch"
+      | ^~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

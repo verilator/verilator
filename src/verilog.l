@@ -143,6 +143,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "hier_params"         { FL; return yVLT_HIER_PARAMS; }
   "hier_workers"        { FL; return yVLT_HIER_WORKERS; }
   "inline"              { FL; return yVLT_INLINE; }
+  "insert_dpihook"      { FL; return yVLT_INSERT_DPIHOOK; }
   "isolate_assignments" { FL; return yVLT_ISOLATE_ASSIGNMENTS; }
   "lint_off"            { FL; return yVLT_LINT_OFF; }
   "lint_on"             { FL; return yVLT_LINT_ON; }
@@ -167,6 +168,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "verilator_lib"       { FL; return yVLT_VERILATOR_LIB; }
 
   -?"-block"            { FL; return yVLT_D_BLOCK; }
+  -?"-callback"         { FL; return yVLT_D_CALLBACK; }
   -?"-contents"         { FL; return yVLT_D_CONTENTS; }
   -?"-cost"             { FL; return yVLT_D_COST; }
   -?"-clock"            { FL; return yVLT_D_CLOCK; }

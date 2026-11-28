@@ -1639,6 +1639,7 @@ public:
         return m_e == INPUT || m_e == INOUT || m_e == REF || m_e == CONSTREF;
     }
     bool isOutput() const { return m_e == OUTPUT; }
+    bool isOutputish() const VL_MT_SAFE { return m_e == OUTPUT || m_e == INOUT; }
     bool isReadOnly() const VL_MT_SAFE { return m_e == INPUT || m_e == CONSTREF; }
     bool isWritable() const VL_MT_SAFE { return m_e == OUTPUT || m_e == INOUT || m_e == REF; }
     bool isRef() const VL_MT_SAFE { return m_e == REF; }

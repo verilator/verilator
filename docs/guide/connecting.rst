@@ -421,6 +421,182 @@ Instead of DPI exporting, there's also Verilator public functions, which
 are slightly faster, but less compatible.
 
 
+.. _dpi hooks:
+
+DPI Hooks
+---------
+
+The :option:`insert_dpihook` control file directive lets C++ code alter the
+value of a signal without changing the Verilog source. Verilator inserts a
+call to an imported DPI-C function at the signal before optimization, so
+the signal stays reachable while the rest of the design is still optimized.
+
+For example, given this design:
+
+.. code-block:: sv
+
+   module top(input clk, input [7:0] d, output [7:0] o);
+      sub u_sub(.clk, .d, .o);
+   endmodule
+
+   module sub(input clk, input [7:0] d, output [7:0] o);
+      logic [7:0] target;
+      always_ff @(posedge clk) target <= d;
+      assign o = target;
+   endmodule
+
+and this control file:
+
+.. code-block::
+
+   `verilator_config
+   insert_dpihook -callback "stuck" -var "top.u_sub.target"
+
+Verilator transforms ``sub`` into the equivalent of the following
+pseudo-Verilog (simplified, the generated names differ):
+
+.. code-block:: sv
+
+   module sub(input clk, input [7:0] d, output [7:0] o,
+              input int __Vdpihook_id[1], input string __Vdpihook_path[1][1],
+              input bit __Vdpihook_trigger);
+      import "DPI-C" function byte stuck(input int id, input bit trigger,
+                                         input logic [7:0] value);
+      logic [7:0] target;
+      always_ff @(posedge clk) target <= d;
+
+      // Set once, at time zero, when a slot binds "target" of this instance
+      bit bound;
+      int case_id;
+      initial
+         for (int i = 0; i < 1; ++i)
+            if (__Vdpihook_path[i][0] == "target") begin
+               bound = 1;
+               case_id = __Vdpihook_id[i];
+            end
+
+      wire [7:0] hooked = bound ? stuck(case_id, __Vdpihook_trigger, target) : target;
+      assign o = hooked;  // was: assign o = target
+   endmodule
+
+``top`` gets the same three ports and passes them on to ``u_sub``; of each
+slot's path it passes only the part below ``u_sub``.
+
+Verilator writes the C prototype of the callback into the model's
+``__Dpi.h`` header. A callback that forces the signal to zero for case id
+1, and otherwise returns the value unchanged, is:
+
+.. code-block:: C++
+
+   #include "Vtop__Dpi.h"
+
+   char stuck(int id, svBit trigger, const svLogicVecVal* value) {
+       if (id == 1) return 0;
+       return static_cast<char>(value->aval);
+   }
+
+The C++ harness binds the hook before the first ``eval()``, and toggles
+``__Vdpihook_trigger`` whenever the hooks are to be re-evaluated, here once
+per time step:
+
+.. code-block:: C++
+
+   topp->__Vdpihook_path[0][0] = "u_sub";
+   topp->__Vdpihook_path[0][1] = "target";
+   topp->__Vdpihook_id[0] = 1;
+   while (!contextp->gotFinish()) {
+       // ... drive clk and d ...
+       topp->__Vdpihook_trigger = !topp->__Vdpihook_trigger;
+       topp->eval();
+       contextp->timeInc(1);
+   }
+
+This DPI hook is (re)evaluated whenever one of its input signals changes. A
+callback whose result depends on the simulation time, such as a fault that
+is only active in a time window, must also be re-evaluated while the signal
+does not change; otherwise a window that opens while the signal is stable
+would only take effect at the next change of the signal. Therefore every
+callback also receives the ``__Vdpihook_trigger`` input, and toggling it
+re-evaluates all hooks at the next ``eval()``. The harness thereby decides
+the time resolution of such callbacks, for example once per time step as
+above, or once per clock cycle.
+
+There are some special cases to consider when using DPI hooks. The callback
+function must return a value of the same width as the hooked signal. A
+target wider than 64 bits cannot be returned, and instead takes a ``void``
+callback and needs a helper signal defined, which is also added as first
+argument, e.g. ``output logic [W-1:0] result``. If multiple signals are
+hooked to the same callback, the callback must return a value of the same
+width as the other hooked signals. Additionally the hooked signals must be
+of the same kind, since 4-state vectors, 2-state vectors and integer atoms
+such as ``int`` have different C types. If this can not be guaranteed, the
+signal must use another callback function. Additionally a signal can only
+be hooked once.
+
+The hook carries no information about specific bit positions or bit ranges.
+Instead it hands the whole signal to the callback and takes the whole value
+back. Which specific bits or bit ranges a fault touches can therefore be
+decided in the callback, together with the timing.
+
+The following targets are supported:
+
+- Packed types, including targets wider than 64 bits
+- Unpacked aggregates
+- Aggregate leaves addressed by path
+- Unpacked-array elements
+- Signals in generate scopes
+- Signals in instances inside generate blocks
+- Interface signals
+
+When the configuration is done for Verilator and the hook is inserted the
+C++ wrapper must bind the hook. This is done by using the
+``__Vdpihook_path[i][j]`` and ``__Vdpihook_id[i]`` ports. The first one
+needs to be filled with the path parts ending with the signal for ``[j]``,
+and ``[i]`` has one entry per ``insert_dpihook`` directive, so all
+configured signals can be faulted at the same time. Each such entry is
+referred to as a slot. Additionally each signal path is assigned a case id,
+which selects the effect the callback function has on the hooked signal.
+Two paths may share an id, in which case the callback treats them alike.
+The case id is filled into ``__Vdpihook_id[i]`` and is passed to the
+callback function as ``input int id``.
+
+To bind a signal to a slot, the path below the top module must be
+specified. This is done by filling the ``__Vdpihook_path[i]`` array with
+the path parts, with every instance on the way to the signal being one path
+part, and the last part being the signal. For example, ``-var
+"top.cpu.regfile.data"`` is bound by filling ``__Vdpihook_path[i]`` with
+``"cpu"``, ``"regfile"`` and ``"data"``. When the signal is in the top
+module, only the signal name is filled in, e.g. ``-var "top.v"`` with
+``"v"`` only. Interface instances, including elements of an interface array
+such as ``arr[0]``, also count as instances. This is the same way for
+standard signals, but some signals are addressed in a special form:
+
+- A generate block does not take a path part of its own. Its name is
+  written in front of the next part, separated by a dot, so an instance
+  inside a generate block is the single part ``lane[0].u`` (not ``lane[0]``
+  followed by ``u``), a signal declared in one is ``lane[0].q``, and nested
+  blocks give ``outer[0].inner[1].q``.
+- A signal in form of a struct member is named in the last part together
+  with its struct, e.g. ``s.a``.
+- A signal in form of an element of an unpacked array is named with its
+  declared index, e.g. ``mem[2]``, or ``m[5]`` for an array declared as
+  ``m[4:7]``.
+
+The ports must be written before the first ``eval()``, the same ordering
+that applies to any other model input. The binding is sampled once, at time
+zero, so writing the ports later binds nothing; that mistake is reported
+with a runtime warning when the simulation ends.
+
+If a slot in the wrapper to bind a path does not match any existing path,
+the slot is reported with a runtime warning.
+
+It is important to note that reads are redirected within the module
+declaring the target, for an interface signal in every module accessing it,
+and where a read reaches the signal through a cross-module hierarchical
+reference. The changing effect propagates outwards through ports and
+interface connections.
+
+
 Verification Procedural Interface (VPI)
 =======================================
 

@@ -1,0 +1,48 @@
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_type.v:24:9: Unsupported: Target variable 'ch' in 'top_module' has an unpacked or aggregate type that cannot be hooked directly; only packed (bit-vector) types are supported
+                                                      : ... note: In instance 'top_module'
+   24 |   cls_t ch;
+      |         ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_type.v:25:7: Unsupported: Target variable 'q' in 'top_module' has an unpacked or aggregate type that cannot be hooked directly; only packed (bit-vector) types are supported
+                                                      : ... note: In instance 'top_module'
+   25 |   int q[$];
+      |       ^
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_type.v:26:7: Unsupported: Target variable 'wa' in 'top_module' has an unpacked or aggregate type that cannot be hooked directly; only packed (bit-vector) types are supported
+                                                      : ... note: In instance 'top_module'
+   26 |   int wa[*];
+      |       ^~
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_type.v:27:8: Unsupported: Target variable 'mws.w' in 'top_module' has an unpacked or aggregate type that cannot be hooked directly; only packed (bit-vector) types are supported
+                                                      : ... note: In instance 'top_module'
+   27 |   ws_t mws;
+      |        ^~~
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_type.v:28:7: Unsupported: Target variable 'warr[1]' in 'top_module' has an unpacked or aggregate type that cannot be hooked directly; only packed (bit-vector) types are supported
+                                                      : ... note: In instance 'top_module'
+   28 |   int warr[2][*];
+      |       ^~~~
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_type.v:30:11: Unsupported: Target variable 'mw.t' in 'top_module' of type 'string'
+                                                       : ... note: In instance 'top_module'
+   30 |   mixed_t mw;
+      |           ^~
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_type.v:31:8: Unsupported: Target variable 'rs[0]' in 'top_module' is a floating-point type, which has no gate-level representation
+                                                      : ... note: In instance 'top_module'
+   31 |   real rs[2];
+      |        ^~
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_type.v:32:15: Unsupported: Target variable 'bigmem' in 'top_module' flattens to 512 leaves, too large to hook as a whole (limit 256)
+                                                       : ... note: In instance 'top_module'
+                                                       : ... Suggest hook individual elements
+   32 |   logic [7:0] bigmem[512];
+      |               ^~~~~~
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_type.v:29:11: Unsupported: Target variable 'm.t' in 'top_module' of type 'string'
+                                                       : ... note: In instance 'top_module'
+   29 |   mixed_t m;
+      |           ^
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_type.v:29:11: Unsupported: Target variable 'm.r' in 'top_module' is a floating-point type, which has no gate-level representation
+                                                       : ... note: In instance 'top_module'
+   29 |   mixed_t m;
+      |           ^
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_type.v:27:8: Unsupported: DPI-hook target 'mws' in 'top_module': the addressed member is an unpacked aggregate
+                                                      : ... note: In instance 'top_module'
+                                                      : ... Suggest hook a scalar or packed leaf
+   27 |   ws_t mws;
+      |        ^~~
+%Error: Exiting due to

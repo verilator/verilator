@@ -1,0 +1,17 @@
+$[0| na[1]: 00 s.arr: 00 00 acc: 00]
+[0] hi=aa lo=00
+$[1| na[1]: 04 s.arr: 56 70 acc: 01]
+[1] hi=aa lo=20
+$[2| na[1]: f4 s.arr: 56 71 acc: 02]
+[2] hi=aa lo=20
+$[3| na[1]: f4 s.arr: 56 ee acc: 03]
+[3] hi=aa lo=20
+$[4| na[1]: 34 s.arr: 56 ee acc: 04]
+[4] hi=aa lo=20
+$[5| na[1]: 44 s.arr: 56 74 acc: 14]
+[5] hi=aa lo=20
+$[6| na[1]: 54 s.arr: 56 75 acc: 24]
+[6] hi=aa lo=20
+$[7| na[1]: 64 s.arr: 56 76 acc: 25]
+[7] hi=aa lo=20
+*-* All Finished *-*

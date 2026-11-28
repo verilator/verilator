@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_unsup_libcreate.vlt:10:1: Unsupported: insert_dpihook with --lib-create
+   10 | insert_dpihook -callback "instrument_var" -var "top_module.a2.out"
+      | ^~~~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

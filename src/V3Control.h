@@ -26,6 +26,34 @@
 #include "V3Mutex.h"
 
 //######################################################################
+// Declarative hook-insertion configuration parsed from the .vlt file
+
+// Make one step into the target signal, after the instance path is resolved.
+// "-var" string is separated into instance path, var name and residual access path
+// (e.g. "a.b[i].c.d[j]").
+struct DpiHookStep final {
+    bool isIndex = false;  // true: array index; false: member name
+    uint32_t index = 0;  // Array element index, when isIndex
+    string member;  // Member name, when !isIndex
+};
+using DpiHookAccessPath = std::vector<DpiHookStep>;
+
+// Longest run of digits accepted in the configuration (e.g. element index,
+// generate-scope or interface-array index) is nine digits since it always fits 32-bit int
+static constexpr size_t DPIHOOK_MAX_NUM_DIGITS = 9;
+inline bool isDpiHookConfigNumber(const string& s) {
+    return !s.empty() && s.size() <= DPIHOOK_MAX_NUM_DIGITS
+           && s.find_first_not_of("0123456789") == string::npos;
+}
+
+struct HookInsertCfgEntry final {
+    string callback;  // Name of the DPI callback function to insert
+    string varTarget;  // Target variable name within the module
+    DpiHookAccessPath accessPath;  // Member/index steps into the target var (e.g. "a.b[i]")
+    FileLine* fl;  // Location of the insert_dpihook directive
+};
+
+//######################################################################
 
 class V3Control final {
 public:
@@ -52,6 +80,7 @@ public:
     static void addFsmRegisterWrapper(FileLine* fl, const string& module, const string& d,
                                       const string& q, const string& clock, const string& reset,
                                       const string& resetValue);
+    static void addHookInsertCfg(FileLine* fl, const string& callback, const string& target);
     static void addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max);
     static void addIgnoreMatch(V3ErrorCode code, const string& filename, const string& contents,
                                const string& match);
@@ -79,6 +108,7 @@ public:
     static int getHierWorkers(const string& model);
     static FileLine* getHierWorkersFileLine(const string& model);
     static const FsmRegisterWrapper* getFsmRegisterWrapper(const string& module);
+    static std::map<string, std::vector<HookInsertCfgEntry>>& getHookInsertCfg();
     static uint64_t getProfileData(const string& hierDpi);
     static uint64_t getProfileData(const string& model, const string& key);
     static FileLine* getProfileDataFileLine();

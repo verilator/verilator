@@ -70,6 +70,7 @@
 #include "V3HierBlock.h"
 #include "V3Inline.h"
 #include "V3InlineCFuncs.h"
+#include "V3InsertDPIHook.h"
 #include "V3Inst.h"
 #include "V3Interface.h"
 #include "V3LibMap.h"
@@ -229,6 +230,12 @@ static void process() {
         V3WidthCommit::widthCommit(v3Global.rootp());
         v3Global.assertDTypesResolved(true);
         v3Global.widthMinUsage(VWidthMinUsage::MATCHES_WIDTH);
+
+        // Hook-insert design with the configurations given in .vlt file
+        if (!V3Control::getHookInsertCfg().empty()) {
+            v3Global.dpi(true);
+            V3InsertDPIHook::hookInsert(v3Global.rootp());
+        }
 
         // End of elaboration
         V3Stats::addStatPerf(V3Stats::STAT_WALLTIME_ELAB, elabWallTime.deltaTime());

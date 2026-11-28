@@ -1,0 +1,43 @@
+%Error: t/t_ins_dpi_hook_bad_path.vlt:10:1: DPI-hook insertion of target 'top.w.l' could not find initial 'module' in 'topModule.instance.__'
+   10 | insert_dpihook -callback "instrument_var" -var "top.w.l.sig"
+      | ^~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_ins_dpi_hook_bad_path.v:60:15: DPI-hook target 'v' in 'top_module': index [3] applied to 'logic[7:0]'; element access is supported on unpacked arrays only
+                                         : ... note: In instance 'top_module'
+                                         : ... Suggest hook the whole signal
+   60 |   logic [7:0] v;
+      |               ^
+%Error: t/t_ins_dpi_hook_bad_path.v:65:15: Element index 2 is out of range for target variable 'mr' in 'top_module' (4 elements)
+                                         : ... note: In instance 'top_module'
+   65 |   logic [7:0] mr[4:7];
+      |               ^~
+%Error: t/t_ins_dpi_hook_bad_path.v:65:15: Element index 9 is out of range for target variable 'mr' in 'top_module' (4 elements)
+                                         : ... note: In instance 'top_module'
+   65 |   logic [7:0] mr[4:7];
+      |               ^~
+%Error: t/t_ins_dpi_hook_bad_path.v:59:15: DPI-hook target 'na' in 'top_module': element index 5 out of range (2 elements)
+                                         : ... note: In instance 'top_module'
+   59 |   nib_t       na[2];
+      |               ^~
+%Error: t/t_ins_dpi_hook_bad_path.v:58:15: DPI-hook target 's' in 'top_module': no member named 'nope'
+                                         : ... note: In instance 'top_module'
+   58 |   box_t       s;
+      |               ^
+%Error: t/t_ins_dpi_hook_bad_path.v:58:15: DPI-hook target 's' in 'top_module': index [1] applied to 'logic[7:0]'; element access is supported on unpacked arrays only
+                                         : ... note: In instance 'top_module'
+   58 |   box_t       s;
+      |               ^
+%Error: t/t_ins_dpi_hook_bad_path.vlt:11:1: DPI-hook insertion of target 'top_module.u[x]' could not find initial 'instance' in 'topModule.instance.__'
+   11 | insert_dpihook -callback "instrument_var" -var "top_module.u[x].sig"
+      | ^~~~~~~~~~~~~~
+%Error: t/t_ins_dpi_hook_bad_path.v:60:15: DPI-hook target 'v' in 'top_module': member '.x' of 'logic[7:0]'; member access is supported on structs only
+                                         : ... note: In instance 'top_module'
+   60 |   logic [7:0] v;
+      |               ^
+%Error: t/t_ins_dpi_hook_bad_path.vlt:13:1: DPI-hook insertion of target 'top_module.w.l.nosuch' could not find 'var' in '__.instance.var'
+   13 | insert_dpihook -callback "instrument_var" -var "top_module.w.l.nosuch"
+      | ^~~~~~~~~~~~~~
+%Error: t/t_ins_dpi_hook_bad_path.vlt:12:1: DPI-hook insertion of target 'top_module.w.nope' could not find 'instance' in '__.instance.__'
+   12 | insert_dpihook -callback "instrument_var" -var "top_module.w.nope.sig"
+      | ^~~~~~~~~~~~~~
+%Error: Exiting due to

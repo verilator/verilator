@@ -1,0 +1,10 @@
+[0] reg=00 self=00 arst=00 task=2e cond=22 targ=03 pin=00
+[1] reg=21 self=00 arst=00 task=29 cond=11 targ=24 pin=21
+[2] reg=7c self=3c arst=96 task=81 cond=22 targ=7f pin=7c
+[3] reg=71 self=01 arst=2b task=9a cond=11 targ=74 pin=71
+[4] reg=30 self=02 arst=1b task=3a cond=22 targ=33 pin=30
+[5] reg=35 self=03 arst=2e task=35 cond=11 targ=38 pin=35
+[6] reg=3a self=04 arst=14 task=30 cond=22 targ=3d pin=3a
+[7] reg=3f self=05 arst=2b task=4b cond=11 targ=42 pin=3f
+[8] reg=44 self=06 arst=6f task=46 cond=22 targ=47 pin=44
+*-* All Finished *-*

@@ -1,0 +1,15 @@
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_bad_iface.v:15:10: Unsupported: DPI-hook insertion of target 'top_module.bi2.us': aggregate or member-addressed interface signal
+                                                      : ... note: In instance 'top_module'
+                                                      : ... Suggest hook a packed leaf
+   15 |   pair_t us;
+      |          ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_bad_iface.v:16:8: Unsupported: Target variable 'rv' in 'top_module.bi3' is a floating-point type, which has no gate-level representation
+                                                     : ... note: In instance 'top_module'
+   16 |   real rv;
+      |        ^~
+%Error-UNSUPPORTED: t/t_ins_dpi_hook_bad_iface.v:29:42: Unsupported: DPI-hook insertion of target 'top_module.bi4.seed': a read-write reference to an interface signal
+                                                      : ... note: In instance 'top_module'
+   29 |   always @(posedge clk) r <= $random(bi4.seed);
+      |                                          ^~~~
+%Error: Exiting due to
