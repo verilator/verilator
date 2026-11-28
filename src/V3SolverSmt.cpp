@@ -162,6 +162,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     bool m_structSel = false;  // Marks when inside structSel
                                // (used to format "%s.%s" for struct arrays and nested structs)
     bool m_deferRandModeHoist = false;  // Wait for the complete struct member path
+    int m_conditionalDepth = 0;  // Inside branches the solver decides
+    std::vector<AstNodeExpr*> m_stateGuardsp;  // Run-time conditions of enclosing branches
+    std::vector<std::pair<AstNodeExpr*, AstNodeExpr*>> m_frozenStaleReadsp;  // Mode gate, guard
     std::set<std::string>& m_writtenVars;  // Track which variable paths have write_var generated
                                            // (shared across all constraints)
     std::set<std::string> m_inlineWrittenVars;  // Per-instance tracking for inline constraints
@@ -171,6 +174,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstNodeFTask* m_prepareConstrainedArraysp = nullptr;  // Grow arrays for indexed struct access
     uint32_t* m_uniqueConstraintIdp = nullptr;  // Current ID of unique call
     V3UniqueNames& m_uniqueNames;  // Unique names of temporaries, and of blocks holding them
+    bool m_blockUsesMode = false;  // May be turned off; unsupported shapes take master's path
     std::vector<AstVar*> m_rangeConstrainedEnums;  // Enums that are already range-constrained
     // First expression found under an inside index
     AstNode* m_firstExpressionInsideIndexp = nullptr;
@@ -1797,9 +1801,306 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstShiftL* nodep) override { handleShift(nodep); }
     void visit(AstShiftR* nodep) override { handleShift(nodep); }
     void visit(AstShiftRS* nodep) override { handleShift(nodep); }
+    static AstVar* selChainRootVarp(AstNodeExpr* exprp) {
+        if (const AstNodeVarRef* const refp = VN_CAST(exprp, NodeVarRef)) return refp->varp();
+        if (const AstMemberRef* const mselp = VN_CAST(exprp, MemberRef)) return mselp->varp();
+        if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
+            return selChainRootVarp(sselp->fromp());
+        }
+        if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
+            return selChainRootVarp(selp->fromp());
+        }
+        // $-relative queue indexing can't reach here: that syntax isn't accepted
+        // as a randomizable constraint expression at all.
+        if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT)  // LCOV_EXCL_BR_LINE
+                return selChainRootVarp(cmethp->fromp());
+        }
+        return nullptr;
+    }
+    // Intermediate marks are tainted by their indexes, so walk to a leaf.
+    static bool selChainIsRand(AstNodeExpr* exprp) {
+        if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
+            return selChainIsRand(selp->fromp());
+        }
+        if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT)  // LCOV_EXCL_BR_LINE
+                return selChainIsRand(cmethp->fromp());
+        }
+        if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
+            return selChainIsRand(sselp->fromp());
+        }
+        if (const AstMemberRef* const mselp = VN_CAST(exprp, MemberRef)) {
+            return mselp->user1() && selChainIsRand(mselp->fromp());
+        }
+        return exprp->user1();
+    }
+    static bool selChainHasRandIndex(AstNodeExpr* exprp) {
+        if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
+            return selp->bitp()->user1() || selChainHasRandIndex(selp->fromp());
+        }
+        if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT) {  // LCOV_EXCL_BR_LINE
+                // No pins to judge; assume the worst (reject loud).
+                if (!cmethp->pinsp()) return true;  // LCOV_EXCL_BR_LINE
+                return cmethp->pinsp()->user1() || selChainHasRandIndex(cmethp->fromp());
+            }
+        }
+        if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
+            return selChainHasRandIndex(sselp->fromp());
+        }
+        if (const AstMemberRef* const mselp = VN_CAST(exprp, MemberRef)) {
+            return selChainHasRandIndex(mselp->fromp());
+        }
+        return false;
+    }
+    // No cross-scope references: inlining would leave them dangling.
+    static bool selChainCloneSafe(AstNodeExpr* exprp) {
+        if (VN_IS(exprp, VarRef)) return true;
+        if (const AstMemberRef* const mselp = VN_CAST(exprp, MemberRef)) {
+            return selChainCloneSafe(mselp->fromp());
+        }
+        if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
+            return selChainCloneSafe(sselp->fromp());
+        }
+        if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
+            return selp->bitp()->isPure() && selChainCloneSafe(selp->fromp());
+        }
+        if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT) {  // LCOV_EXCL_BR_LINE
+                if (!cmethp->pinsp()) return false;
+                return cmethp->pinsp()->isPure() && selChainCloneSafe(cmethp->fromp());
+            }
+        }
+        return false;
+    }
+    void discardUnsupportedCompare(AstNodeBiop* nodep) {
+        AstConst* const constp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        constp->dtypeFrom(nodep);
+        nodep->replaceWith(constp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    // Marks the value path only, never an index.
+    static void markRandDependentPathRecurse(AstNodeExpr* exprp) {
+        exprp->user1(true);
+        if (const AstMemberRef* const mselp = VN_CAST(exprp, MemberRef)) {
+            markRandDependentPathRecurse(mselp->fromp());
+        } else if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
+            markRandDependentPathRecurse(sselp->fromp());
+        } else if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+            markRandDependentPathRecurse(selp->fromp());
+        }
+    }
+    static bool isDynamicSizedArrayDType(const AstNodeDType* dtp) {
+        return VN_IS(dtp, QueueDType) || VN_IS(dtp, DynArrayDType) || VN_IS(dtp, AssocArrayDType)
+               || VN_IS(dtp, WildcardArrayDType);
+    }
+    static bool arrayDTypeSupported(const AstNodeDType* dtp) {
+        if (const AstUnpackArrayDType* const arrp = VN_CAST(dtp, UnpackArrayDType)) {
+            return arrayDTypeSupported(arrp->subDTypep()->skipRefp());
+        }
+        return !isDynamicSizedArrayDType(dtp);
+    }
+    // Balance the conjunction tree: a left-deep fold overflows the stack in a
+    // later pass past a few thousand elements.
+    static AstNodeExpr* balancedLogAndp(FileLine* fl, std::vector<AstNodeExpr*>& elemsp) {
+        std::vector<AstNodeExpr*> nextp;
+        nextp.reserve((elemsp.size() + 1) / 2);
+        while (elemsp.size() > 1) {
+            nextp.resize((elemsp.size() + 1) / 2);
+            for (size_t i = 0; i < elemsp.size(); i += 2) {
+                if (i + 1 == elemsp.size()) {
+                    nextp[i / 2] = elemsp[i];
+                } else {
+                    AstNodeExpr* const andp = new AstLogAnd{fl, elemsp[i], elemsp[i + 1]};
+                    andp->user1(true);
+                    nextp[i / 2] = andp;
+                }
+            }
+            elemsp.swap(nextp);
+        }
+        return elemsp.front();
+    }
+    static bool arrayLeafComparable(const AstNodeDType* dtp) {
+        while (const AstUnpackArrayDType* const arrp = VN_CAST(dtp, UnpackArrayDType)) {
+            dtp = arrp->subDTypep()->skipRefp();
+        }
+        const AstNodeUOrStructDType* const sdtp = VN_CAST(dtp, NodeUOrStructDType);
+        return !VN_IS(dtp, ClassRefDType) && (!sdtp || sdtp->packed());
+    }
+    // Storage-index comparison pairs the wrong elements when directions differ
+    // (arr[0:1] vs arr[1:0]).
+    // The sides are already known equivalent (IEEE 6.22.2), so the left side
+    // alone decides whether this dimension is an array.
+    static bool arrayDirectionsMatch(const AstNodeDType* lhsDtp, const AstNodeDType* rhsDtp) {
+        const AstUnpackArrayDType* const lhsArrp = VN_CAST(lhsDtp, UnpackArrayDType);
+        if (!lhsArrp) return true;
+        const AstUnpackArrayDType* const rhsArrp = VN_AS(rhsDtp, UnpackArrayDType);
+        if (lhsArrp->declRange().ascending() != rhsArrp->declRange().ascending()) return false;
+        return arrayDirectionsMatch(lhsArrp->subDTypep()->skipRefp(),
+                                    rhsArrp->subDTypep()->skipRefp());
+    }
+    AstNodeExpr* buildElementwiseEqp(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
+                                     const AstUnpackArrayDType* lhsArrDtp,
+                                     const AstUnpackArrayDType* rhsArrDtp, bool markLhs,
+                                     bool markRhs) {
+        // The sub-dtypes are already known equivalent (IEEE 6.22.2), so the left
+        // side alone decides whether to recurse.
+        const AstNodeDType* const lhsSubDtp = lhsArrDtp->subDTypep()->skipRefp();
+        const AstUnpackArrayDType* const lhsSubArrDtp = VN_CAST(lhsSubDtp, UnpackArrayDType);
+        const AstUnpackArrayDType* const rhsSubArrDtp
+            = lhsSubArrDtp ? VN_AS(rhsArrDtp->subDTypep()->skipRefp(), UnpackArrayDType) : nullptr;
+        std::vector<AstNodeExpr*> elemEqps;
+        const int n = lhsArrDtp->elementsConst();
+        elemEqps.reserve(n);
+        // Pair by declared position (0 = $left): storage order differs per direction.
+        const bool lhsAscending = lhsArrDtp->declRange().ascending();
+        const bool rhsAscending = rhsArrDtp->declRange().ascending();
+        for (int p = 0; p < n; ++p) {
+            const int lhsK = lhsAscending ? p : (n - 1 - p);
+            const int rhsK = rhsAscending ? p : (n - 1 - p);
+            AstNodeExpr* const lhsBasep = lhsp->cloneTreePure(false);
+            AstNodeExpr* const rhsBasep = rhsp->cloneTreePure(false);
+            AstArraySel* const lhsElemp = new AstArraySel{
+                fl, lhsBasep,
+                new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(lhsK)}};
+            AstArraySel* const rhsElemp = new AstArraySel{
+                fl, rhsBasep,
+                new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(rhsK)}};
+            if (markLhs) markRandDependentPathRecurse(lhsElemp);
+            if (markRhs) markRandDependentPathRecurse(rhsElemp);
+            AstNodeExpr* const elemEqp
+                = lhsSubArrDtp ? buildElementwiseEqp(fl, lhsElemp, rhsElemp, lhsSubArrDtp,
+                                                     rhsSubArrDtp, markLhs, markRhs)
+                               : static_cast<AstNodeExpr*>(new AstEq{fl, lhsElemp, rhsElemp});
+            elemEqp->user1(true);
+            elemEqps.push_back(elemEqp);
+        }
+        VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+        VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
+        return balancedLogAndp(fl, elemEqps);
+    }
+    // The SMT emitter crashes on the reorder wrapper (IEEE 1800-2023 7.6); the
+    // direction check below redoes the reorder itself.
+    static void stripUnpackReorderCvt(AstNodeBiop* nodep) {
+        if (AstCvtUnpackToUnpack* const cvtp = VN_CAST(nodep->rhsp(), CvtUnpackToUnpack)) {
+            AstNodeExpr* const fromp = cvtp->fromp()->unlinkFrBack();
+            cvtp->replaceWith(fromp);
+            VL_DO_DANGLING(cvtp->deleteTree(), cvtp);
+        }
+    }
+    void handleEqNeq(AstNodeBiop* nodep, bool isNeq) {
+        if (editFormat(nodep)) return;
+        stripUnpackReorderCvt(nodep);
+        AstNodeDType* const lhsDtp = nodep->lhsp()->dtypep()->skipRefp();
+        AstNodeDType* const rhsDtp = nodep->rhsp()->dtypep()->skipRefp();
+        const bool isArrayShaped
+            = VN_IS(lhsDtp, UnpackArrayDType) || isDynamicSizedArrayDType(lhsDtp);
+        AstVar* const lhsRootVarp = isArrayShaped ? selChainRootVarp(nodep->lhsp()) : nullptr;
+        AstVar* const rhsRootVarp = isArrayShaped ? selChainRootVarp(nodep->rhsp()) : nullptr;
+        const bool lhsIsRand = lhsRootVarp && selChainIsRand(nodep->lhsp());
+        const bool rhsIsRand = rhsRootVarp && selChainIsRand(nodep->rhsp());
+        // Opposite declared directions still need elementwise expansion.
+        const bool directionMismatch
+            = lhsIsRand && rhsIsRand && !arrayDirectionsMatch(lhsDtp, rhsDtp);
+        // SMT array (in)equality also covers indices outside the declared range.
+        const bool bothRandFixed = lhsIsRand && rhsIsRand && VN_IS(lhsDtp, UnpackArrayDType)
+                                   && arrayDTypeSupported(lhsDtp);
+        if (isArrayShaped && (!lhsIsRand || !rhsIsRand || directionMismatch || bothRandFixed)) {
+            FileLine* const fl = nodep->fileline();
+            const bool compareSupported
+                = arrayDTypeSupported(lhsDtp) && arrayLeafComparable(lhsDtp) && lhsRootVarp
+                  && rhsRootVarp && selChainCloneSafe(nodep->lhsp())
+                  && selChainCloneSafe(nodep->rhsp())
+                  && !((!lhsIsRand && selChainHasRandIndex(nodep->lhsp()))
+                       || (!rhsIsRand && selChainHasRandIndex(nodep->rhsp())));
+            if (m_blockUsesMode && !compareSupported) {
+                editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+                return;
+            }
+            if (!arrayDTypeSupported(lhsDtp)) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint on an array "
+                              "shape containing a queue, dynamic, or associative array");
+                discardUnsupportedCompare(nodep);
+                return;
+            }
+            if (!arrayLeafComparable(lhsDtp)) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint on an array of "
+                              "unpacked structs or class handles");
+                discardUnsupportedCompare(nodep);
+                return;
+            }
+            if (!lhsRootVarp || !rhsRootVarp) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint with an operand "
+                              "shape Verilator can't resolve to a variable, member, or "
+                              "array-indexed element");
+                discardUnsupportedCompare(nodep);
+                return;
+            }
+            if (!selChainCloneSafe(nodep->lhsp()) || !selChainCloneSafe(nodep->rhsp())) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint with an operand "
+                              "Verilator can't safely evaluate once per array element (a "
+                              "hierarchical reference or a function call)");
+                discardUnsupportedCompare(nodep);
+                return;
+            }
+            if ((!lhsIsRand && selChainHasRandIndex(nodep->lhsp()))
+                || (!rhsIsRand && selChainHasRandIndex(nodep->rhsp()))) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint against a "
+                              "non-random operand indexed by a random variable");
+                discardUnsupportedCompare(nodep);
+                return;
+            }
+            // The shape check above already confirmed unpacked arrays on both
+            // sides, so neither cast can fail.
+            const AstUnpackArrayDType* const lhsArrDtp = VN_AS(lhsDtp, UnpackArrayDType);
+            const AstUnpackArrayDType* const rhsArrDtp = VN_AS(rhsDtp, UnpackArrayDType);
+            AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+            AstNodeExpr* resultp
+                = buildElementwiseEqp(fl, lhsp, rhsp, lhsArrDtp, rhsArrDtp, lhsIsRand, rhsIsRand);
+            if (isNeq) {
+                resultp = new AstLogNot{fl, resultp};
+                resultp->user1(true);
+            }
+            nodep->replaceWith(resultp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            iterate(resultp);
+            return;
+        }
+        editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+    }
+    void visit(AstEq* nodep) override { handleEqNeq(nodep, false); }
+    void visit(AstNeq* nodep) override { handleEqNeq(nodep, true); }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+    }
+    void visit(AstLogIf* nodep) override {
+        VL_RESTORER(m_conditionalDepth);
+        const bool stateCond = !nodep->lhsp()->user1();
+        if (stateCond) {
+            m_stateGuardsp.push_back(nodep->lhsp()->cloneTree(false));
+        } else {
+            ++m_conditionalDepth;
+        }
+        visit(static_cast<AstNodeBiop*>(nodep));
+        if (stateCond) popStateGuard();
+    }
+    void visit(AstLogOr* nodep) override {
+        VL_RESTORER(m_conditionalDepth);
+        ++m_conditionalDepth;
+        visit(static_cast<AstNodeBiop*>(nodep));
+    }
+    void visit(AstLogNot* nodep) override {
+        VL_RESTORER(m_conditionalDepth);
+        ++m_conditionalDepth;
+        visit(static_cast<AstNodeUniop*>(nodep));
     }
     void visit(AstNodeUniop* nodep) override {
         if (editFormat(nodep)) return;
@@ -1811,10 +2112,14 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstCond* nodep) override {
         if (editFormat(nodep)) return;
+        VL_RESTORER(m_conditionalDepth);
         if (!nodep->condp()->user1()) {
             // Do not burden the solver if cond computable: (cond ? "then" : "else")
+            m_stateGuardsp.push_back(nodep->condp()->cloneTree(false));
             iterate(nodep->thenp());
+            negateStateGuard(nodep->fileline());
             iterate(nodep->elsep());
+            popStateGuard();
             UASSERT_OBJ(
                 nodep->thenp()->isString() && nodep->elsep()->isString(), nodep,
                 "Branches of conditional expression in constraint not converted to strings");
@@ -1822,6 +2127,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             return;
         }
         // Fall back to "(ite cond then else)"
+        ++m_conditionalDepth;
         visit(static_cast<AstNodeTriop*>(nodep));
     }
     void visit(AstReplicate* nodep) override {
@@ -1994,12 +2300,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // which can be over-marked in sum/with expansion contexts). A
         // std::randomize() with-clause argument carries no rand qualifier of
         // its own but is still part of the solve.
-        bool indexIsRand = false;
-        nodep->bitp()->foreach([&](const AstNodeVarRef* vrefp) {
-            if (vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg()) {
-                indexIsRand = true;
-            }
-        });
+        const bool indexIsRand = selectIndexIsRand(nodep->bitp());
         if (m_nestedAccessp) {
             AstNodeExpr* const bitp = nodep->bitp()->cloneTreePure(false);
             AstNodeExpr* const bitFormatp
@@ -2060,6 +2361,147 @@ class ConstraintExprVisitor final : public VNVisitor {
         const AstClass* const classp = VN_CAST(varp->user2p(), Class);
         return classp && classp->user2p() == varp;
     }
+    // An index counts as symbolic when it names a declaration-rand variable,
+    // so both branches of a mode gate agree on which indices stay symbolic.
+    static bool selectIndexIsRand(AstNodeExpr* bitp) {
+        bool rand = false;
+        bitp->foreach([&](const AstNodeVarRef* vrefp) {
+            if (vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg()) {
+                rand = true;
+            }
+        });
+        return rand;
+    }
+    static bool chainHasRandIndex(AstNodeExpr* origp) {
+        for (AstNodeExpr* curp = origp; curp;) {
+            AstNodeExpr* idxp = nullptr;
+            AstNodeExpr* nextp = nullptr;
+            if (AstNodeSel* const selp = VN_CAST(curp, NodeSel)) {
+                idxp = selp->bitp();
+                nextp = selp->fromp();
+            } else if (AstCMethodHard* const methodp = VN_CAST(curp, CMethodHard)) {
+                idxp = methodp->pinsp();
+                nextp = methodp->fromp();
+            } else if (AstStructSel* const sselp = VN_CAST(curp, StructSel)) {
+                nextp = sselp->fromp();
+            } else if (AstMemberRef* const mselp = VN_CAST(curp, MemberRef)) {
+                nextp = mselp->fromp();
+            }
+            if (idxp && selectIndexIsRand(idxp)) return true;
+            curp = nextp;
+        }
+        return false;
+    }
+    // One ArraySel level of a frozen select chain, outermost first.
+    struct FrozenSelectLevel final {
+        AstNodeExpr* idxEmissionp = nullptr;  // Formatted index from its frame
+        int elements = 0;  // Storage positions to enumerate
+        bool symbolic = false;
+    };
+    // Pair each ArraySel level of a pre-edit chain with the formatted index
+    // from its frame. Anything else (or a frame mismatch) declines, keeping
+    // the current C++ value.
+    static bool collectFrozenLevels(AstNodeExpr* origp, const std::vector<AstSFormatF*>& frames,
+                                    std::vector<FrozenSelectLevel>& levels) {
+        AstNodeExpr* curp = origp;
+        size_t fi = 0;
+        while (AstArraySel* const selp = VN_CAST(curp, ArraySel)) {
+            // Every ArraySel formats exactly one select frame, in chain order.
+            if (fi >= frames.size()  // LCOV_EXCL_BR_LINE
+                || frames[fi]->name() != "(select %s %s)")  // LCOV_EXCL_BR_LINE
+                return false;  // LCOV_EXCL_LINE
+            const AstUnpackArrayDType* const arrDtp
+                = VN_AS(selp->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+            AstNodeExpr* const idxEmissionp = VN_CAST(frames[fi]->exprsp()->nextp(), NodeExpr);
+            const bool symbolic = selectIndexIsRand(selp->bitp());
+            // Formatted select frames always carry the index.
+            if (symbolic && !idxEmissionp) return false;  // LCOV_EXCL_LINE
+            // Width processing rewrites the index to a storage position,
+            // so enumerate storage, not declared values.
+            levels.push_back({idxEmissionp, arrDtp->elementsConst(), symbolic});
+            curp = selp->fromp();
+            ++fi;
+        }
+        return fi == frames.size();
+    }
+    // SMT literal at the 32-bit array index sort (see the ArraySel visitor).
+    static std::string smtIndexConst(int value) {
+        char buf[16];
+        (void)VL_SNPRINTF(buf, sizeof(buf), "#x%08x", static_cast<uint32_t>(value));
+        return buf;
+    }
+    // Render the mode-off value of a frozen select chain: indices that stay
+    // symbolic in the mode-on branch select over C++-read elements instead
+    // of being C++-evaluated at their stale pre-solve values.
+    AstNodeExpr* frozenSelectElsep(FileLine* fl, AstNodeExpr* origp,
+                                   const std::vector<FrozenSelectLevel>& levels,
+                                   const std::vector<std::pair<size_t, int>>& subst, size_t j,
+                                   int elemWidth) {
+        size_t k = j;
+        while (k < levels.size() && !levels[k].symbolic) ++k;
+        if (k == levels.size()) {
+            AstNodeExpr* const leafp = origp->cloneTree(false);
+            AstNodeExpr* curp = leafp;
+            size_t si = 0;
+            for (const auto& binding : subst) {
+                while (si < binding.first) {
+                    curp = VN_AS(curp, ArraySel)->fromp();
+                    ++si;
+                }
+                AstArraySel* const selp = VN_AS(curp, ArraySel);
+                VNRelinker handle;
+                AstNodeExpr* const bitp = selp->bitp()->unlinkFrBack(&handle);
+                AstConst* const constp = new AstConst{fl, AstConst::WidthedValue{}, 32,
+                                                      static_cast<uint32_t>(binding.second)};
+                constp->dtypeFrom(bitp);
+                handle.relink(constp);
+                VL_DO_DANGLING(bitp->deleteTree(), bitp);
+                curp = selp->fromp();
+                ++si;
+            }
+            AstSFormatF* const formatp = getConstFormat(leafp);
+            formatp->user1(true);
+            return formatp;
+        }
+        // Positions past the last element read as zero.
+        AstSFormatF* const zerop
+            = getConstFormat(new AstConst{fl, AstConst::WidthedValue{}, elemWidth, 0});
+        zerop->user1(true);
+        const int elements = levels[k].elements;
+        AstNodeExpr* const tablep
+            = frozenSelectRangep(fl, origp, levels, subst, k, 0, elements, elemWidth);
+        return frozenSelectItep(fl, tablep, zerop, levels[k], elements);
+    }
+    // (ite (bvult idx bound) thenp elsep) over one level's formatted index.
+    static AstNodeExpr* frozenSelectItep(FileLine* fl, AstNodeExpr* thenp, AstNodeExpr* elsep,
+                                         const FrozenSelectLevel& lvl, int bound) {
+        AstNodeExpr* const condp = new AstSFormatF{fl, "(bvult %s " + smtIndexConst(bound) + ")",
+                                                   false, lvl.idxEmissionp->cloneTree(false)};
+        condp->user1(true);
+        AstSFormatF* const itep = new AstSFormatF{
+            fl, "(ite %s %s %s)", false, AstNode::addNext(condp, AstNode::addNext(thenp, elsep))};
+        itep->user1(true);
+        return itep;
+    }
+    // Select among positions [lo, hi) of level k by halving the range, so the
+    // nesting depth grows with log2 of the element count: a chain one level
+    // deep per element overflows the stack in later recursive passes.
+    AstNodeExpr* frozenSelectRangep(FileLine* fl, AstNodeExpr* origp,
+                                    const std::vector<FrozenSelectLevel>& levels,
+                                    const std::vector<std::pair<size_t, int>>& subst, size_t k,
+                                    int lo, int hi, int elemWidth) {
+        if (hi - lo == 1) {
+            std::vector<std::pair<size_t, int>> deeper = subst;
+            deeper.emplace_back(k, lo);
+            return frozenSelectElsep(fl, origp, levels, deeper, k + 1, elemWidth);
+        }
+        const int mid = lo + (hi - lo) / 2;
+        AstNodeExpr* const lowp
+            = frozenSelectRangep(fl, origp, levels, subst, k, lo, mid, elemWidth);
+        AstNodeExpr* const highp
+            = frozenSelectRangep(fl, origp, levels, subst, k, mid, hi, elemWidth);
+        return frozenSelectItep(fl, lowp, highp, levels[k], mid);
+    }
     // Lift a rand_mode Cond above the (select ...) chain of a frozen array element.
     bool hoistRandModeOverSelectAndMember(AstSFormatF* newp, AstNodeExpr* origp) {
         if (m_deferRandModeHoist) return false;
@@ -2082,7 +2524,44 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         if (!modeCondp) return false;
         FileLine* const fl = newp->fileline();
+        // Past the bound the mode-off branch reads the current value (see m_frozenStaleReadsp).
+        static constexpr int MAX_FROZEN_INDEX_CASES = 16384;
+        AstNodeExpr* elsep = nullptr;
+        bool staleIndex = false;
+        if (origp->dtypep()->skipRefp()->isIntegralOrPacked()) {
+            std::vector<FrozenSelectLevel> levels;
+            if (collectFrozenLevels(origp, frames, levels)) {
+                int64_t cases = 1;
+                bool hasSymbolic = false;
+                for (const auto& lvl : levels) {
+                    if (!lvl.symbolic) continue;
+                    hasSymbolic = true;
+                    cases *= lvl.elements;
+                }
+                if (hasSymbolic && cases <= MAX_FROZEN_INDEX_CASES) {
+                    elsep = frozenSelectElsep(fl, origp, levels, {}, 0, origp->width());
+                    VL_DO_DANGLING(origp->deleteTree(), origp);
+                }
+            }
+        }
+        if (!elsep) {
+            staleIndex = chainHasRandIndex(origp) && !m_conditionalDepth;
+            elsep = getConstFormat(origp);
+        }
         AstNodeExpr* const modep = modeCondp->condp()->unlinkFrBack();
+        if (staleIndex) {
+            AstNodeExpr* guardp = nullptr;
+            for (AstNodeExpr* const condp : m_stateGuardsp) {
+                AstNodeExpr* const clonep = condp->cloneTree(false);
+                if (guardp) {
+                    guardp = new AstLogAnd{fl, guardp, clonep};
+                    guardp->dtypeSetBit();
+                } else {
+                    guardp = clonep;
+                }
+            }
+            m_frozenStaleReadsp.emplace_back(modep->cloneTree(false), guardp);
+        }
         AstNodeExpr* activep = modeCondp->thenp()->unlinkFrBack();
         // Rebuild the select chain text around the SMT name, innermost first
         for (auto it = frames.rbegin(); it != frames.rend(); ++it) {
@@ -2091,7 +2570,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             activep = new AstSFormatF{fl, (*it)->name(), false,
                                       AstNode::addNext(activep, remainingArgsp)};
         }
-        AstCond* const hoistp = new AstCond{fl, modep, activep, getConstFormat(origp)};
+        AstCond* const hoistp = new AstCond{fl, modep, activep, elsep};
         hoistp->user1(true);  // Mark as formatted
         newp->replaceWith(hoistp);
         VL_DO_DANGLING(pushDeletep(newp), newp);
@@ -2233,8 +2712,21 @@ class ConstraintExprVisitor final : public VNVisitor {
                     "Constraint names of an earlier fold were not taken over");
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
-        AstNodeExpr* const thenp = editSingle(fl, nodep->thensp());
-        AstNodeExpr* const elsep = editSingle(fl, nodep->elsesp());
+        AstNodeExpr* thenp;
+        AstNodeExpr* elsep;
+        {
+            VL_RESTORER(m_conditionalDepth);
+            const bool stateCond = !nodep->condp()->user1();
+            if (stateCond) {
+                m_stateGuardsp.push_back(nodep->condp()->cloneTree(false));
+            } else {
+                ++m_conditionalDepth;
+            }
+            thenp = editSingle(fl, nodep->thensp());
+            if (stateCond) negateStateGuard(fl);
+            elsep = editSingle(fl, nodep->elsesp());
+            if (stateCond) popStateGuard();
+        }
         if (thenp && elsep) {
             newp = new AstCond{fl, nodep->condp()->unlinkFrBack(), thenp, elsep};
         } else if (thenp) {
@@ -2562,11 +3054,47 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Emit as soft or hard constraint per IEEE 1800-2023 18.5.13
         const VCMethod method
             = nodep->isSoft() ? VCMethod::RANDOMIZER_SOFT : VCMethod::RANDOMIZER_HARD;
+        AstNodeStmt* const stmtp
+            = newConstraintCallp(nodep, method, nodep->exprp()->unlinkFrBack(), vars);
+        // A frozen read at a stale random index has no right answer: fail randomize() instead.
+        FileLine* const fl = nodep->fileline();
+        for (const auto& read : m_frozenStaleReadsp) {
+            AstNodeExpr* okp
+                = new AstCond{fl, read.first, newBitFormatp(fl, true), newBitFormatp(fl, false)};
+            okp->user1(true);
+            if (read.second) {
+                okp = new AstCond{fl, read.second, okp, newBitFormatp(fl, true)};
+                okp->user1(true);
+            }
+            stmtp->addNextHere(newConstraintCallp(nodep, VCMethod::RANDOMIZER_HARD, okp, {}));
+        }
+        m_frozenStaleReadsp.clear();
+        nodep->replaceWith(stmtp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+    AstSFormatF* newBitFormatp(FileLine* fl, bool value) {
+        AstSFormatF* const formatp
+            = getConstFormat(value ? new AstConst{fl, AstConst::BitTrue{}}
+                                   : new AstConst{fl, AstConst::BitFalse{}});
+        formatp->user1(true);
+        return formatp;
+    }
+    void negateStateGuard(FileLine* fl) {
+        AstNodeExpr* const notp = new AstLogNot{fl, m_stateGuardsp.back()};
+        notp->dtypeSetBit();
+        m_stateGuardsp.back() = notp;
+    }
+    void popStateGuard() {
+        VL_DO_DANGLING(m_stateGuardsp.back()->deleteTree(), m_stateGuardsp.back());
+        m_stateGuardsp.pop_back();
+    }
+    AstNodeStmt* newConstraintCallp(AstConstraintExpr* nodep, VCMethod method, AstNodeExpr* exprp,
+                                    const std::set<std::string>& vars) {
         AstCMethodHard* const callp = new AstCMethodHard{
             nodep->fileline(),
             new AstVarRef{nodep->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
                           VAccess::READWRITE},
-            method, nodep->exprp()->unlinkFrBack()};
+            method, exprp};
         callp->dtypeSetVoid();
         if (method == VCMethod::RANDOMIZER_HARD) {
             // hard() pin layout is asserted in EmitCFunc: the variable list is always pin 2
@@ -2593,8 +3121,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         callp->addPinsp(
             new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, "\"" + prettyText + "\""});
-        nodep->replaceWith(callp->makeStmt());
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        return callp->makeStmt();
     }
     void visit(AstDynArraySel* nodep) override { visitElementSel(nodep); }
     void visit(AstQueueSel* nodep) override {
@@ -3066,7 +3593,8 @@ public:
                                    uint32_t* uniqueConstraintIdp, V3UniqueNames& uniqueNames,
                                    AstNodeFTask* memberrefInitTaskp = nullptr,
                                    VInsertionSet<AstVar*>* sizeConstrainedArraysp = nullptr,
-                                   AstNodeFTask* prepareConstrainedArraysp = nullptr)
+                                   AstNodeFTask* prepareConstrainedArraysp = nullptr,
+                                   bool blockUsesMode = false)
         : m_classp{classp}
         , m_inlineInitBlockp{inlineInitp}
         , m_memberrefInitTaskp{memberrefInitTaskp}
@@ -3077,7 +3605,8 @@ public:
         , m_sizeConstrainedArraysp{sizeConstrainedArraysp}
         , m_prepareConstrainedArraysp{prepareConstrainedArraysp}
         , m_uniqueConstraintIdp{uniqueConstraintIdp}
-        , m_uniqueNames{uniqueNames} {
+        , m_uniqueNames{uniqueNames}
+        , m_blockUsesMode{blockUsesMode} {
         // Pre-pass before SMT lowering: extract conditional disable-soft
         // directives as runtime AstIf statements and append them to the
         // constraint-items chain so they reach the setup task body.  The SMT
@@ -4134,10 +4663,20 @@ public:
                     AstBegin* const holderp = SmtUtil::newItemsHolderp(
                         constrp->fileline(), constrp->itemsp()->unlinkFrBackWithNext());
                     taskp->addStmtsp(wrapIfConstraintMode(nodep, constrp, holderp));
-                    ConstraintExprVisitor{
-                        classp,        m_memberMap,  holderp->declsp(), nullptr,
-                        genp,          randModeVarp, m_writtenVars,     &m_uniqueConstraintId,
-                        m_uniqueNames, randomizep,   &sizeArrays,       prepareArraysTaskp};
+                    const RandomizeMode blockMode = {.asUQuad = constrp->user1()};
+                    ConstraintExprVisitor{classp,
+                                          m_memberMap,
+                                          holderp->declsp(),
+                                          nullptr,
+                                          genp,
+                                          randModeVarp,
+                                          m_writtenVars,
+                                          &m_uniqueConstraintId,
+                                          m_uniqueNames,
+                                          randomizep,
+                                          &sizeArrays,
+                                          prepareArraysTaskp,
+                                          blockMode.usesMode};
                     SmtUtil::replaceWithLowered(holderp);
                 }
             });
