@@ -17,6 +17,9 @@ module t (
   endclocking
 
   logic a;
+  bit [6:0] values[2];
+  bit [6:0] matrix[2][3];
+  bit [6:0] packed_value;
 
   //PASSES:
   int count_not_stable;  // Counts changes
@@ -43,6 +46,39 @@ module t (
   assert property (@(posedge clk) $steady_gclk(a))
   else count_not_steady_gclk = count_not_steady_gclk + 1;
 
+  int count_array_changes;
+  assert property (@(posedge clk) $changing_gclk(values))
+    count_array_changes = count_array_changes + 1;
+
+  int count_array_not_steady;
+  assert property (@(posedge clk) $steady_gclk(values))
+  else count_array_not_steady = count_array_not_steady + 1;
+
+  int count_array_future;
+  assert property (@(posedge clk) $future_gclk(values) != values)
+    count_array_future = count_array_future + 1;
+
+  int count_packed_changes;
+  assert property (@(posedge clk) $changing_gclk(packed_value))
+    count_packed_changes = count_packed_changes + 1;
+
+  int count_packed_not_steady;
+  assert property (@(posedge clk) $steady_gclk(packed_value))
+  else count_packed_not_steady = count_packed_not_steady + 1;
+
+  property value_samples(signal);
+    $steady_gclk(signal) == !$changing_gclk(signal)
+    && $steady_gclk(signal) == ($future_gclk(signal) == signal);
+  endproperty
+  assert property (@(posedge clk) value_samples(matrix))
+  else `stop;
+  assert property (@(posedge clk) value_samples(matrix[0]))
+  else `stop;
+  assert property (@(posedge clk) value_samples(matrix[0][1:2]))
+  else `stop;
+  assert property (@(posedge clk) value_samples(packed_value))
+  else `stop;
+
   int cyc = 0;
 
   always @(posedge clk) begin
@@ -61,12 +97,18 @@ module t (
     end
     else if (cyc == 5) begin
       a <= 1;  // rise
+      values[1] <= 7'h40;
+      matrix[0][2] <= 7'h40;
+      packed_value <= 7'h40;  // Only a non-LSB bit changes.
     end
     else if (cyc == 6) begin
       a <= 1;  // stable
     end
     else if (cyc == 7) begin
       a <= 0;  // fall
+      values[1] <= 0;
+      matrix[0][2] <= 0;
+      packed_value <= 0;
     end
     else if (cyc == 10) begin
       `checkd(count_not_stable, 2);
@@ -76,6 +118,11 @@ module t (
       `checkd(count_future_gclk, 2);
       `checkd(count_rising_gclk, 1);
       `checkd(count_not_steady_gclk, 2);
+      `checkd(count_array_changes, 2);
+      `checkd(count_array_not_steady, 2);
+      `checkd(count_array_future, 2);
+      `checkd(count_packed_changes, 2);
+      `checkd(count_packed_not_steady, 2);
       $write("*-* All Finished *-*\n");
       $finish;
     end

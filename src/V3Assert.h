@@ -26,6 +26,9 @@
 
 class V3AssertCommon final {
 public:
+    // Check a sampled value function can sample a value of this type, else report it on nodep
+    static void checkSampledDType(AstNode* nodep, const AstNodeDType* dtypep,
+                                  bool allowUnpacked) VL_MT_DISABLED;
     static void collectDefaultDisable(AstNetlist* nodep) VL_MT_DISABLED;
     static string assertCtlGetCall(const char* query, VAssertType type,
                                    VAssertDirectiveType directiveType) VL_MT_DISABLED;

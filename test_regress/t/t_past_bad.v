@@ -18,4 +18,19 @@ module t (
     if ($past(d, 32'h7ffffffe)) $stop;
     if ($past(d, 32'h7ffffffc)) $stop;
   end
+
+  localparam int TICKS[1] = '{1};
+  always @(posedge clk) begin
+    if ($past(d, TICKS)) $stop;
+  end
+
+  real reals[2];
+  string strings[2];
+  typedef struct {int a;} unpacked_t;
+  unpacked_t structs[2];
+  always @(posedge clk) begin
+    if ($stable(reals)) $stop;
+    if ($changed(strings)) $stop;
+    if ($stable(structs)) $stop;
+  end
 endmodule

@@ -30,4 +30,24 @@
                                        : ... note: In instance 't'
    19 |     if ($past(d, 32'h7ffffffc)) $stop;
       |         ^~~~~
+%Error: t/t_past_bad.v:24:9: Operator PAST expects a numeric Ticks operand, but it has data type 'int$[0:0]' (IEEE 1800-2023 11.3)
+                           : ... note: In instance 't'
+   24 |     if ($past(d, TICKS)) $stop;
+      |         ^~~~~
+%Error: t/t_past_bad.v:24:9: $past tick value must be constant (IEEE 1800-2023 16.9.3)
+                           : ... note: In instance 't'
+   24 |     if ($past(d, TICKS)) $stop;
+      |         ^~~~~
+%Error: t/t_past_bad.v:32:9: Expected numeric type, but got a 'real' data type
+                           : ... note: In instance 't'
+   32 |     if ($stable(reals)) $stop;
+      |         ^~~~~~~
+%Error: t/t_past_bad.v:33:9: Expected numeric type, but got a 'string' data type
+                           : ... note: In instance 't'
+   33 |     if ($changed(strings)) $stop;
+      |         ^~~~~~~~
+%Error: t/t_past_bad.v:34:9: Expected numeric type, but got a 'struct t.unpacked_t' data type
+                           : ... note: In instance 't'
+   34 |     if ($stable(structs)) $stop;
+      |         ^~~~~~~
 %Error: Exiting due to

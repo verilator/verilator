@@ -94,6 +94,20 @@ public:
 
 }  // namespace
 
+void V3AssertCommon::checkSampledDType(AstNode* nodep, const AstNodeDType* dtypep,
+                                       bool allowUnpacked) {
+    dtypep = dtypep->skipRefp();
+    if (allowUnpacked) {
+        while (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
+            dtypep = arrayp->subDTypep()->skipRefp();
+        }
+    }
+    // An untyped property formal is checked once its actual is substituted
+    if (dtypep->isIntegralOrPacked() || (dtypep->basicp() && dtypep->basicp()->untyped())) return;
+    nodep->v3error("Expected numeric type, but got a " << dtypep->prettyDTypeNameQ()
+                                                       << " data type");
+}
+
 void V3AssertCommon::collectDefaultDisable(AstNetlist* nodep) {
     { DefaultDisableLocalVisitor{nodep}; }
     { DefaultDisablePropagateVisitor{nodep}; }
@@ -276,12 +290,14 @@ class DefaultSampledValueVisitor final : public VNVisitor {
     bool m_defaulted = false;  // A reference below was replaced by its default
 
     // METHODS
-    AstConst* newTypeDefault(AstNodeExpr* nodep) {
-        m_defaulted = true;
-        AstConst* const constp
-            = new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()};
-        if (nodep->dtypep()->isFourstate()) constp->num().setAllBitsX();
-        constp->dtypeFrom(nodep);
+    static AstNodeExpr* newTypeDefault(FileLine* const flp, AstNodeDType* const dtypep) {
+        if (const AstUnpackArrayDType* const arrayp
+            = VN_CAST(dtypep->skipRefp(), UnpackArrayDType)) {
+            return new AstConsArray{flp, dtypep, newTypeDefault(flp, arrayp->subDTypep())};
+        }
+        AstConst* const constp = new AstConst{flp, AstConst::DTyped{}, dtypep};
+        if (dtypep->isFourstate()) constp->num().setAllBitsX();
+        constp->dtypep(dtypep);
         return constp;
     }
 
@@ -296,7 +312,7 @@ class DefaultSampledValueVisitor final : public VNVisitor {
         }
         if (setDefaulted) {
             m_defaulted = true;  // Propagate up that replacement was made
-            nodep->replaceWith(newTypeDefault(nodep));
+            nodep->replaceWith(newTypeDefault(nodep->fileline(), nodep->dtypep()));
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
@@ -311,16 +327,23 @@ class DefaultSampledValueVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
     }
+    void visit(AstNodeFTaskRef* nodep) override {
+        // A call's result is computed from its replaced arguments, so is not itself replaced
+        VL_RESTORER(m_defaulted);
+        iterateChildren(nodep);
+    }
     void visit(AstNodeVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
         if (varp->isParam()
             || (!varp->isNet() && varp->lifetime().isStatic() && varp->hasUserInit())) {
             return;
         }
-        nodep->replaceWith(newTypeDefault(nodep));
+        m_defaulted = true;
+        nodep->replaceWith(newTypeDefault(nodep->fileline(), nodep->dtypep()));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstArraySel* nodep) override { visitSelect(nodep); }
+    void visit(AstSliceSel* nodep) override { visitSelect(nodep); }
     void visit(AstSel* nodep) override { visitSelect(nodep); }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 

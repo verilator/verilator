@@ -1934,7 +1934,7 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
-                                  /* deferUntyped */ true);
+                                  /* deferUntyped */ true, /* allowUnpacked */ true);
             userIterate(nodep->sentreep(), nullptr);
             nodep->dtypeFrom(nodep->exprp());
         }
@@ -1943,7 +1943,7 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
-                                  /* deferUntyped */ true);
+                                  /* deferUntyped */ true, /* allowUnpacked */ true);
             nodep->dtypeFrom(nodep->exprp());
             if (nodep->ticksp()) {
                 iterateCheckSizedSelf(nodep, "Ticks", nodep->ticksp(), SELF, BOTH,
@@ -2126,7 +2126,7 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
-                                  /* deferUntyped */ true);
+                                  /* deferUntyped */ true, /* allowUnpacked */ true);
             nodep->dtypeFrom(nodep->exprp());
         }
     }
@@ -2184,7 +2184,7 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
-                                  /* deferUntyped */ true);
+                                  /* deferUntyped */ true, /* allowUnpacked */ true);
             userIterate(nodep->sentreep(), nullptr);
             nodep->dtypeSetBit();
         }
@@ -2193,7 +2193,7 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH,
-                                  /* deferUntyped */ true);
+                                  /* deferUntyped */ true, /* allowUnpacked */ true);
             nodep->dtypeSetBit();
         }
     }
@@ -10811,7 +10811,8 @@ class WidthVisitor final : public VNVisitor {
         (void)underp;  // cppcheck
     }
     void iterateCheckSizedSelf(AstNode* parentp, const char* side, AstNode* underp, Determ determ,
-                               Stage stage, bool deferUntyped = false) {
+                               Stage stage, bool deferUntyped = false,
+                               const bool allowUnpacked = false) {
         // Coerce child to any sized-number data type; child is self-determined
         // i.e. isolated from expected type.
         // e.g. parentp=CONCAT, underp=lhs in CONCAT(lhs,rhs)
@@ -10821,9 +10822,18 @@ class WidthVisitor final : public VNVisitor {
         if (stage & PRELIM) {
             underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
         }
-        underp = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr), false) : underp;
+        // A sampled array's element type is checked below, rather than converting a real array
+        if (VN_IS(underp, NodeExpr)
+            && !(allowUnpacked && VN_IS(underp->dtypep()->skipRefp(), UnpackArrayDType))) {
+            underp = checkCvtUS(VN_AS(underp, NodeExpr), false);
+        }
         AstNodeDType* const expDTypep = underp->dtypep();
         underp = iterateCheck(parentp, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+        (void)underp;  // cppcheck
+        if (allowUnpacked) {
+            V3AssertCommon::checkSampledDType(parentp, expDTypep, /* allowUnpacked */ true);
+            return;
+        }
         AstNodeDType* const checkDtp = expDTypep->skipRefToEnump();
         // Sampling functions may still reference an untyped property formal here.
         // V3AssertPre checks the actual type after property argument substitution.
@@ -10833,7 +10843,6 @@ class WidthVisitor final : public VNVisitor {
                              << " expects a numeric " << side << " operand, but it has data type "
                              << checkDtp->prettyDTypeNameQ() << " (IEEE 1800-2023 11.3)");
         }
-        (void)underp;  // cppcheck
     }
     void iterateCheckAssign(AstNode* parentp, const char* side, AstNode* rhsp, Stage stage,
                             AstNodeDType* lhsDTypep, VAccess rhsAccess = VAccess::READ) {
