@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_constraint_array_index_explicit_at_unsup.v:18:50: Unsupported: Randomized index in complex expression
+   18 |   constraint c { id inside {[0:3]}; hs.at(0).used[id] == 8'h33; }
+      |                                                  ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
