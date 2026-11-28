@@ -1843,8 +1843,218 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
     }
+    // Array and index of an array element select
+    static AstNodeExpr* arraySelFromp(AstNodeExpr* selp) {
+        if (AstArraySel* const arraySelp = VN_CAST(selp, ArraySel)) return arraySelp->fromp();
+        return VN_AS(selp, CMethodHard)->fromp();
+    }
+    static AstNodeExpr* arraySelIndexp(AstNodeExpr* selp) {
+        if (AstArraySel* const arraySelp = VN_CAST(selp, ArraySel)) return arraySelp->bitp();
+        return VN_AS(selp, CMethodHard)->pinsp();
+    }
+    static bool isArraySel(const AstNode* nodep) {
+        const AstCMethodHard* const methodp = VN_CAST(nodep, CMethodHard);
+        return VN_IS(nodep, ArraySel) || (methodp && methodp->method() == VCMethod::ARRAY_AT);
+    }
+    static bool hasRandIndex(AstNodeExpr* selp) {
+        return arraySelIndexp(selp)->exists([](const AstNodeVarRef* vrefp) {
+            return vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg();
+        });
+    }
+    // Return the outermost array element select a struct member select (arr[i][j].a) takes its
+    // element from whose index depends on a random variable, or nullptr
+    static AstNodeExpr* randIndexedArraySel(AstStructSel* nodep) {
+        for (AstNodeExpr* selp = nodep->fromp(); isArraySel(selp); selp = arraySelFromp(selp)) {
+            if (hasRandIndex(selp)) return selp;
+        }
+        return nullptr;
+    }
+    // Offset of the element of foreach variable loopVarp in an array with lower bound lo, at
+    // the given width, as V3WidthSel computes from an index
+    static AstNodeExpr* newElementOffsetp(FileLine* fl, AstVar* loopVarp, int lo, int width) {
+        AstNodeExpr* offsetp = new AstVarRef{fl, loopVarp, VAccess::READ};
+        if (lo) offsetp = new AstSub{fl, offsetp, new AstConst{fl, static_cast<uint32_t>(lo)}};
+        if (width < offsetp->width()) return new AstSel{fl, offsetp, 0, width};
+        if (width > offsetp->width()) return new AstExtend{fl, offsetp, width};
+        return offsetp;
+    }
+    // Each struct array element member is a solver variable of its own (arr.<index>.member),
+    // so the member of the element at random index e becomes a chain over the current
+    // elements, built at runtime: (ite (= e 0) arr.0.member (ite (= e 1) arr.1.member ... 0)).
+    // guardRandIndexedStructSels() keeps e within the array where it is evaluated.
+    void lowerRandIndexedStructSel(AstStructSel* nodep) {
+        FileLine* const fl = nodep->fileline();
+        AstStructSel* const elemp = nodep->cloneTree(false);
+        AstNodeExpr* const arraySelp = randIndexedArraySel(elemp);
+        AstNodeExpr* const arrayp = arraySelFromp(arraySelp);
+        AstNodeExpr* const indexp = arraySelIndexp(arraySelp)->unlinkFrBack();
+        const bool arrayIsRand = arrayp->user1();
+        AstVar* const loopVarp = new AstVar{fl, VVarType::BLOCKTEMP, m_uniqueNames.get("__Vindex"),
+                                            nodep->findIntDType()};
+        AstForeachHeader* const headerp
+            = new AstForeachHeader{fl, arrayp->cloneTreePure(false), loopVarp};
+        const AstUnpackArrayDType* const unpackDtp
+            = VN_CAST(arrayp->dtypep()->skipRefp(), UnpackArrayDType);
+        const int lo = unpackDtp ? unpackDtp->lo() : 0;
+        // The member of the iteration's element; a member of a non-random element is state.
+        // An unpacked array is indexed at the width V3WidthSel gave the index, other arrays
+        // with an int.
+        const int selWidth = unpackDtp ? indexp->width() : loopVarp->width();
+        AstNodeExpr* const loopSelp
+            = newSel(fl, arrayp, newElementOffsetp(fl, loopVarp, lo, selWidth));
+        loopSelp->user1(arrayIsRand);
+        arraySelp->replaceWith(loopSelp);
+        VL_DO_DANGLING(pushDeletep(arraySelp), arraySelp);
+        elemp->user1(arrayIsRand);
+        const int cmpWidth = std::max(indexp->width(), selWidth);
+        AstNodeExpr* cmpIndexp = indexp;
+        if (cmpIndexp->width() < cmpWidth) {
+            cmpIndexp = new AstExtend{fl, cmpIndexp, cmpWidth};
+            cmpIndexp->user1(true);
+        }
+        AstEq* const eqp = new AstEq{fl, cmpIndexp, newElementOffsetp(fl, loopVarp, lo, cmpWidth)};
+        eqp->dtypeSetBit();
+        eqp->user1(true);
+        // The chain built by the previous iterations
+        AstVar* const textVarp = newTextVarp(nodep);
+        AstSFormatF* const prevFmtp
+            = new AstSFormatF{fl, "%s", false, new AstVarRef{fl, textVarp, VAccess::READ}};
+        prevFmtp->user1(true);
+        AstCond* const condp = new AstCond{fl, eqp, elemp, prevFmtp};
+        condp->dtypeFrom(nodep);
+        condp->user1(true);
+        AstAssign* const assignp
+            = new AstAssign{fl, new AstVarRef{fl, textVarp, VAccess::WRITE},
+                            VN_AS(iterateSubtreeReturnEdits(condp), NodeExpr)};
+        // The chain ends in 0, formatted as getConstFormat() does
+        const int width = nodep->width();
+        const std::string zero
+            = (width & 3) ? "#b" + std::string(width, '0') : "#x" + std::string(width / 4, '0');
+        nodep->replaceWith(newTextBuildp(fl, textVarp, zero, new AstForeach{fl, headerp, assignp},
+                                         new AstVarRef{fl, textVarp, VAccess::READ}));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    static AstNodeExpr* newLogAndp(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
+        if (!lhsp) return rhsp;
+        AstLogAnd* const andp = new AstLogAnd{fl, lhsp, rhsp};
+        andp->dtypeSetBit();
+        andp->user1(true);
+        return andp;
+    }
+    static AstNodeExpr* newLogIfp(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* rhsp) {
+        if (!condp) return rhsp;
+        AstLogIf* const ifp = new AstLogIf{fl, condp, rhsp};
+        ifp->dtypeSetBit();
+        ifp->user1(true);
+        return ifp;
+    }
+    static AstNodeExpr* newLogNotp(FileLine* fl, AstNodeExpr* lhsp) {
+        AstLogNot* const notp = new AstLogNot{fl, lhsp};
+        notp->dtypeSetBit();
+        notp->user1(true);
+        return notp;
+    }
+    // Condition under which nodep within exprp is evaluated, or nullptr if always: the taken
+    // branches of the ?:, &&, || and -> it lies in
+    static AstNodeExpr* newEvaluatedCondp(AstNode* nodep, const AstNode* exprp) {
+        AstNodeExpr* condp = nullptr;
+        for (; nodep != exprp; nodep = nodep->backp()) {
+            const AstNode* const abovep = nodep->backp();
+            if (abovep->nextp() == nodep) continue;  // nodep is not the first operand
+            FileLine* const fl = abovep->fileline();
+            AstNodeExpr* termp = nullptr;
+            if (const AstCond* const cp = VN_CAST(abovep, Cond)) {
+                if (nodep == cp->thenp()) termp = cp->condp()->cloneTreePure(false);
+                if (nodep == cp->elsep())
+                    termp = newLogNotp(fl, cp->condp()->cloneTreePure(false));
+            } else if (const AstLogAnd* const andp = VN_CAST(abovep, LogAnd)) {
+                if (nodep == andp->rhsp()) termp = andp->lhsp()->cloneTreePure(false);
+            } else if (const AstLogIf* const ifp = VN_CAST(abovep, LogIf)) {
+                if (nodep == ifp->rhsp()) termp = ifp->lhsp()->cloneTreePure(false);
+            } else if (const AstLogOr* const orp = VN_CAST(abovep, LogOr)) {
+                if (nodep == orp->rhsp())
+                    termp = newLogNotp(fl, orp->lhsp()->cloneTreePure(false));
+            }
+            if (termp) condp = newLogAndp(fl, condp, termp);
+        }
+        return condp;
+    }
+    // 'index < size', compared unsigned at a width holding both, so a negative index is out of
+    // range
+    static AstNodeExpr* newIndexInRangep(FileLine* fl, AstNodeExpr* indexp, AstNodeExpr* sizep) {
+        const int width = std::max(indexp->width(), sizep->width());
+        if (indexp->width() < width) {
+            AstNodeExpr* const extendp = new AstExtend{fl, indexp, width};
+            extendp->user1(indexp->user1());
+            indexp = extendp;
+        }
+        if (sizep->width() < width) {
+            AstNodeExpr* const extendp = new AstExtend{fl, sizep, width};
+            extendp->user1(sizep->user1());
+            sizep = extendp;
+        }
+        AstLt* const ltp = new AstLt{fl, indexp, sizep};
+        ltp->user1(true);
+        return ltp;
+    }
+    // Number of elements an array has when the constraints are set up
+    static AstNodeExpr* newCurrentSizep(FileLine* fl, AstNodeExpr* arrayp) {
+        if (const AstUnpackArrayDType* const unpackDtp
+            = VN_CAST(arrayp->dtypep()->skipRefp(), UnpackArrayDType)) {
+            return new AstConst{fl, static_cast<uint32_t>(unpackDtp->elementsConst())};
+        }
+        AstCMethodHard* const sizep
+            = new AstCMethodHard{fl, arrayp->cloneTreePure(false), VCMethod::DYN_SIZE};
+        sizep->dtypeSetInt();
+        return sizep;
+    }
+    // A random index into a struct array must address an element wherever it is evaluated, so
+    // a constraint item 'expr' using arr[e].member, evaluated under condition c, becomes:
+    //   (c -> e < arr.size()) && ((c -> e < current arr.size()) -> expr)
+    // The size of a size-constrained array is that being solved, but its elements exist only
+    // once it is resized after solving its size, which the second implication waits for; it is
+    // omitted for other arrays, whose current size is their size.
+    void guardRandIndexedStructSels(AstConstraintExpr* nodep) {
+        AstNodeExpr* const exprp = nodep->exprp();
+        AstNodeExpr* inRangep = nullptr;
+        AstNodeExpr* inCurrentRangep = nullptr;
+        exprp->foreach([&](AstStructSel* structSelp) {
+            for (AstNodeExpr* selp = structSelp->fromp(); isArraySel(selp);
+                 selp = arraySelFromp(selp)) {
+                if (!hasRandIndex(selp)) continue;
+                FileLine* const fl = selp->fileline();
+                AstNodeExpr* const arrayp = arraySelFromp(selp);
+                AstNodeExpr* const indexp = arraySelIndexp(selp);
+                AstNodeExpr* const evalCondp = newEvaluatedCondp(selp, exprp);
+                AstNodeExpr* sizep = newCurrentSizep(fl, arrayp);
+                const AstVarRef* const arrayRefp = VN_CAST(arrayp, VarRef);
+                if (AstVar* const sizeVarp
+                    = arrayRefp ? VN_CAST(arrayRefp->varp()->user4p(), Var) : nullptr) {
+                    inCurrentRangep = newLogAndp(
+                        fl, inCurrentRangep,
+                        newLogIfp(fl, evalCondp ? evalCondp->cloneTreePure(false) : nullptr,
+                                  newIndexInRangep(fl, indexp->cloneTreePure(false), sizep)));
+                    sizep = new AstVarRef{fl, VN_AS(sizeVarp->user2p(), NodeModule), sizeVarp,
+                                          VAccess::READ};
+                    sizep->user1(true);
+                }
+                inRangep = newLogAndp(
+                    fl, inRangep,
+                    newLogIfp(fl, evalCondp,
+                              newIndexInRangep(fl, indexp->cloneTreePure(false), sizep)));
+            }
+        });
+        if (!inRangep) return;
+        FileLine* const fl = nodep->fileline();
+        exprp->unlinkFrBack();
+        nodep->exprp(newLogAndp(fl, inRangep, newLogIfp(fl, inCurrentRangep, exprp)));
+    }
     void visit(AstStructSel* nodep) override {
         if (editFormat(nodep)) return;
+        if (randIndexedArraySel(nodep)) {
+            lowerRandIndexedStructSel(nodep);
+            return;
+        }
         const bool outermost = !m_deferRandModeHoist;
         AstNodeExpr* const origp = outermost ? nodep->cloneTree(false) : nullptr;
         VL_RESTORER(m_structSel);
@@ -2553,6 +2763,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 nodep->exprp(neqp);
             }
         }
+        guardRandIndexedStructSels(nodep);
         iterateChildren(nodep);
         if (m_wantSingle) {
             nodep->replaceWith(nodep->exprp()->unlinkFrBack());
