@@ -663,6 +663,9 @@ private:
     // dist-ast-dump-suppress  // V3LinkDot temporary use only
     bool m_validated = false;  // identifier_list typo / unused checks already run
     std::set<std::string> m_restrictedNames;  // Names reference is restricted to
+    VIsCached m_purity;  // Pure state
+
+    bool getPurityRecurse() const;
 
 public:
     AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
@@ -674,10 +677,12 @@ public:
     }
     ASTGEN_MEMBERS_AstWith;
     bool hasDType() const override { return true; }
+    bool isPure() override;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     const char* broken() const override {
         BROKEN_RTN(!indexArgRefp());  // varp needed to know lambda's arg dtype
         BROKEN_RTN(!valueArgRefp());  // varp needed to know lambda's arg dtype
+        BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
         return nullptr;
     }
     void dump(std::ostream& str) const override;
@@ -1439,6 +1444,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { return "VL_CVT_UNPACK_TO_Q(%P, %li)"; }
     bool cleanOut() const override { return true; }
+    bool isPure() override { return fromp()->isPure(); }
 };
 class AstCvtUnpackToUnpack final : public AstNodeExpr {
     // Convert an unpacked array to one with the same shape but different ascending/descending
@@ -1459,6 +1465,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    bool isPure() override { return fromp()->isPure(); }
 };
 class AstDist final : public AstNodeExpr {
     // @astgen op1 := exprp : AstNodeExpr
@@ -2283,12 +2290,15 @@ public:
     bool cleanOut() const override { return false; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() override { return !seedp(); }
+    // Each evaluation draws a new value, changing the random state
+    bool isPure() override { return false; }
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool combinable(const AstRand* samep) const {
-        return !seedp() && !samep->seedp() && urandom() == samep->urandom();
+        // Not $urandom, whose draws are part of the random stability of a process
+        // (IEEE 1800-2023 18.14)
+        return !seedp() && !samep->seedp() && !urandom() && !samep->urandom();
     }
     bool urandom() const { return m_urandom; }
 };
@@ -2307,6 +2317,7 @@ public:
                         : "VL_RANDOM_RNG_%nq(__Vm_rng)";
     }
     bool cleanOut() const override { return false; }
+    bool isPure() override { return false; }  // Changes the random state of its object
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool isSystemFunc() const override { return true; }

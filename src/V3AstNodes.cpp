@@ -964,11 +964,7 @@ bool AstCMethodHard::getPurity() {
     for (AstNodeExpr* const argp : pinspList()) {
         if (!argp->isPure()) return false;
     }
-    if (withp()) {
-        for (AstNode* const itemp : withp()->exprpList()) {
-            if (!itemp->isPure()) return false;
-        }
-    }
+    if (withp() && !withp()->isPure()) return false;
     return true;
 }
 int AstCMethodHard::instrCount() const {
@@ -3308,6 +3304,8 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
 }
 bool AstNodeFTask::getPurityRecurse() const {
     if (this->dpiImport()) return this->dpiPure();
+    // A function made internally without statements, e.g. randomize(), is defined later
+    if (!this->verilogFunction() && !this->verilogTask() && !this->stmtsp()) return false;
     // Check the declarations and statements if they contain any impure node
     // or any write reference to a variable that isn't an automatic function local.
     for (AstNode* const listp : std::initializer_list<AstNode*>{this->declsp(), this->stmtsp()}) {
@@ -3367,7 +3365,7 @@ bool AstNodeFTaskRef::getPurityRecurse() const {
     if (!taskp) return false;
     // First compute the purity of arguments
     for (AstArg* const argp : this->argspList()) {
-        if (!argp->isPure()) return false;
+        if (argp->exprp() && !argp->exprp()->isPure()) return false;
         // Writing the caller's variable through an output argument is an effect of the call,
         // though not of the subroutine, whose written variable is its own automatic local
         if (argp->exprp() && argp->exprp()->isLValue()) return false;
@@ -5229,6 +5227,18 @@ void AstWith::dumpJson(std::ostream& str) const {
         dumpJsonStr(str, "restrictedNames", joined);
     }
     dumpJsonGen(str);
+}
+bool AstWith::getPurityRecurse() const {
+    for (AstNode* const itemp : exprpList()) {
+        // After V3Task the body is in an AstCReturn, a statement that ignores its value's purity
+        const AstCReturn* const returnp = VN_CAST(itemp, CReturn);
+        if (!(returnp ? returnp->lhsp() : itemp)->isPure()) return false;
+    }
+    return true;
+}
+bool AstWith::isPure() {
+    if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
+    return m_purity.get();
 }
 void AstWithParse::dump(std::ostream& str) const {
     Super::dump(str);

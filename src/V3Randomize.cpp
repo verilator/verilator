@@ -2261,11 +2261,25 @@ class RandomizeVisitor final : public VNVisitor {
         if (!callp) return;
         if (callp->user4SetOnce()) return;
         FileLine* const fl = callp->fileline();
-        AstNodeExpr* const checkp
-            = new AstNeq{fl, callp->fromp()->cloneTree(false), new AstConst{fl, AstConst::Null{}}};
         VNRelinker relinker;
         callp->unlinkFrBack(&relinker);
-        relinker.relink(new AstCond{fl, checkp, callp, new AstConst{fl, 0}});
+        // The target is used twice, so evaluate an impure one into a temporary
+        AstAssign* assignp = nullptr;
+        if (!callp->fromp()->isPure()) {
+            AstVar* const varp
+                = new AstVar{fl, VVarType::BLOCKTEMP, m_uniqueNames.get("__VrandObj"),
+                             callp->fromp()->dtypep()};
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            addTempVarsp(varp);
+            assignp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                    callp->fromp()->unlinkFrBack()};
+            callp->fromp(new AstVarRef{fl, varp, VAccess::READ});
+        }
+        AstNodeExpr* const checkp
+            = new AstNeq{fl, callp->fromp()->cloneTree(false), new AstConst{fl, AstConst::Null{}}};
+        AstNodeExpr* newp = new AstCond{fl, checkp, callp, new AstConst{fl, 0}};
+        if (assignp) newp = new AstExprStmt{fl, assignp, newp};
+        relinker.relink(newp);
     }
 
     // Handle inline random variable control. After this, the randomize() call has no args

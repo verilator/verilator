@@ -62,6 +62,21 @@ module t;
     f5 = 0;
   endfunction
 
+  // A function forking a process with a delay, called from an array method 'with'. This
+  // covers timing inside a 'with', which works without special handling as well.
+  int q[$] = '{1, 2};
+  int s;
+  function automatic int f6(int v);
+    fork
+      begin
+        #1 s = v;
+      end
+    join_none
+    return v;
+  endfunction
+
+  initial s = q.sum() with (f6(item));
+
   initial begin
     fork
       begin

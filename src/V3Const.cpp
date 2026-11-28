@@ -79,6 +79,17 @@ static int countTrailingZeroes(uint64_t val) {
 #endif
 }
 
+// Whether the only side effects of an expression are unseeded $random draws
+static bool onlyRandomDraws(AstNodeExpr* nodep) {
+    const auto isDraw = [](const AstRand* randp) { return !randp->seedp() && !randp->urandom(); };
+    if (const AstRand* const randp = VN_CAST(nodep, Rand)) return isDraw(randp);
+    if (!nodep->exists(isDraw)) return false;
+    AstNodeExpr* const clonep = V3Const::cloneWithoutDraws(nodep, false);
+    const bool pure = clonep->isPure();
+    VL_DO_DANGLING(clonep->deleteTree(), clonep);
+    return pure;
+}
+
 // Allocates a unique id for each AstNode it is applied to, held in user4.
 class VNIdAllocator final {
     // NODE STATE
@@ -1985,7 +1996,11 @@ class ConstVisitor final : public VNVisitor {
     // Replace 'nodep' with constant 'val', keeping the side effects of impure operands as
     // statements of an AstExprStmt
     void replaceValChkPure(AstNodeBiop* nodep, uint32_t val) {
-        if (nodep->lhsp()->isPure() && nodep->rhsp()->isPure()) {
+        // Discard an operand whose only side effects are unseeded $random draws, an
+        // optimization deviating from IEEE 1800-2023 11.3.5
+        const auto keep
+            = [](AstNodeExpr* const opp) { return !opp->isPure() && !onlyRandomDraws(opp); };
+        if (!keep(nodep->lhsp()) && !keep(nodep->rhsp())) {
             VL_DO_DANGLING(replaceNum(nodep, val), nodep);
             return;
         }
@@ -1995,7 +2010,7 @@ class ConstVisitor final : public VNVisitor {
         stmtFlp->warnOff(V3ErrorCode::IGNOREDRETURN, true);
         AstNodeStmt* stmtsp = nullptr;
         for (AstNodeExpr* const opp : {nodep->lhsp(), nodep->rhsp()}) {
-            if (!opp->isPure()) {
+            if (keep(opp)) {
                 stmtsp = AstNode::addNext(stmtsp, new AstStmtExpr{stmtFlp, opp->unlinkFrBack()});
             }
         }
@@ -3107,6 +3122,8 @@ class ConstVisitor final : public VNVisitor {
     }
     bool matchConcatRand(AstConcat* nodep) {
         //    CONCAT(RAND, RAND) - created by Chisel code
+        // One draw for two unseeded $random calls is an optimization deviating from
+        // IEEE 1800-2023 11.3.5
         AstRand* const aRandp = VN_CAST(nodep->lhsp(), Rand);
         const AstRand* const bRandp = VN_CAST(nodep->rhsp(), Rand);
         if (!aRandp || !bRandp) return false;
@@ -4457,10 +4474,10 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstDivS  {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
     TREEOP ("AstMul   {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
     TREEOP ("AstMulS  {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
-    TREEOP ("AstPow   {$rhsp.isZero}",          "replaceNum(nodep, 1)");  // Overrides lhs zero rule
-    TREEOP ("AstPowSS {$rhsp.isZero}",          "replaceNum(nodep, 1)");  // Overrides lhs zero rule
-    TREEOP ("AstPowSU {$rhsp.isZero}",          "replaceNum(nodep, 1)");  // Overrides lhs zero rule
-    TREEOP ("AstPowUS {$rhsp.isZero}",          "replaceNum(nodep, 1)");  // Overrides lhs zero rule
+    TREEOP ("AstPow   {$rhsp.isZero}",          "replaceValChkPure(nodep, 1)");  // Overrides lhs zero rule
+    TREEOP ("AstPowSS {$rhsp.isZero}",          "replaceValChkPure(nodep, 1)");  // Overrides lhs zero rule
+    TREEOP ("AstPowSU {$rhsp.isZero}",          "replaceValChkPure(nodep, 1)");  // Overrides lhs zero rule
+    TREEOP ("AstPowUS {$rhsp.isZero}",          "replaceValChkPure(nodep, 1)");  // Overrides lhs zero rule
     TREEOP ("AstOr    {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
     TREEOP ("AstShiftL    {$lhsp.isZero, $rhsp}",  "replaceValChkPure(nodep, 0)");
     TREEOP ("AstShiftLOvr {$lhsp.isZero, $rhsp}",  "replaceValChkPure(nodep, 0)");
@@ -4603,12 +4620,12 @@ class ConstVisitor final : public VNVisitor {
     TREEOPV("AstGte   {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",    "DONE");
     TREEOPV("AstLt    {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",    "DONE");
     TREEOPV("AstLte   {$rhsp.castExtend,operandBiExtendConstShrink(nodep)}",    "DONE");
-    TREEOPV("AstEq    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceZero(nodep)");
-    TREEOPV("AstNeq   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceNum(nodep,1)");
-    TREEOPV("AstGt    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceNum(nodep,1)");
-    TREEOPV("AstGte   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceNum(nodep,1)");
-    TREEOPV("AstLt    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceZero(nodep)");
-    TREEOPV("AstLte   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceZero(nodep)");
+    TREEOPV("AstEq    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceValChkPure(nodep, 0)");
+    TREEOPV("AstNeq   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceValChkPure(nodep, 1)");
+    TREEOPV("AstGt    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceValChkPure(nodep, 1)");
+    TREEOPV("AstGte   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceValChkPure(nodep, 1)");
+    TREEOPV("AstLt    {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceValChkPure(nodep, 0)");
+    TREEOPV("AstLte   {$rhsp.castExtend,operandBiExtendConstOver(nodep)}",      "replaceValChkPure(nodep, 0)");
     // Identical operands on both sides
     // AstLogAnd/AstLogOr already converted to AstAnd/AstOr for these rules
     // AstAdd->ShiftL(#,1) but uncommon
@@ -4665,13 +4682,13 @@ class ConstVisitor final : public VNVisitor {
     TREEOPV("AstRedAnd{$lhsp.castConcat}",      "AstAnd{AstRedAnd{$lhsp->castConcat()->lhsp()}, AstRedAnd{$lhsp->castConcat()->rhsp()}}");  // &{a,b} => {&a}&{&b}
     TREEOPV("AstRedOr {$lhsp.castConcat}",      "AstOr {AstRedOr {$lhsp->castConcat()->lhsp()}, AstRedOr {$lhsp->castConcat()->rhsp()}}");  // |{a,b} => {|a}|{|b}
     TREEOPV("AstRedXor{$lhsp.castConcat}",      "AstXor{AstRedXor{$lhsp->castConcat()->lhsp()}, AstRedXor{$lhsp->castConcat()->rhsp()}}");  // ^{a,b} => {^a}^{^b}
-    TREEOPV("AstRedAnd{$lhsp.castExtend, $lhsp->width() > VN_AS($lhsp,,Extend)->lhsp()->width()}", "replaceZero(nodep)");  // &{0,...} => 0  Prevents compiler limited range error
+    TREEOPV("AstRedAnd{$lhsp.castExtend, $lhsp->width() > VN_AS($lhsp,,Extend)->lhsp()->width(), $lhsp.isPure}", "replaceZero(nodep)");  // &{0,...} => 0  Prevents compiler limited range error
     TREEOPV("AstRedOr {$lhsp.castExtend}",      "AstRedOr {$lhsp->castExtend()->lhsp()}");
     TREEOPV("AstRedXor{$lhsp.castExtend}",      "AstRedXor{$lhsp->castExtend()->lhsp()}");
     TREEOP ("AstRedXor{$lhsp.castXor, VN_IS(VN_AS($lhsp,,Xor)->lhsp(),,Const)}", "AstXor{AstRedXor{$lhsp->castXor()->lhsp()}, AstRedXor{$lhsp->castXor()->rhsp()}}");  // ^(const ^ a) => (^const)^(^a)
     TREEOPC("AstAnd {$lhsp.castConst, $rhsp.castRedXor, matchBitOpTree(nodep)}", "DONE");
     TREEOPV("AstOneHot{$lhsp.width1}",          "replaceWLhs(nodep)");
-    TREEOPV("AstOneHot0{$lhsp.width1}",         "replaceNum(nodep,1)");
+    TREEOPV("AstOneHot0{$lhsp.width1, $lhsp.isPure}", "replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
     TREEOPV("AstLogAnd{matchBiopToBitwise(nodep)}", "AstAnd{$lhsp,$rhsp}");
     TREEOPV("AstLogOr {matchBiopToBitwise(nodep)}", "AstOr{$lhsp,$rhsp}");
@@ -4719,7 +4736,7 @@ class ConstVisitor final : public VNVisitor {
     TREEOPV("AstSel{$fromp.castXor, operandSelBiLower(nodep)}", "DONE");
     TREEOPV("AstSel{$fromp.castShiftR, operandSelShiftLower(nodep)}",   "DONE");
     TREEOPA("AstSel{$fromp.castConst, $lsbp.castConst, }",   "replaceConst(nodep)");
-    TREEOPV("AstSel{$fromp.castConcat, $lsbp.castConst, }",  "replaceSelConcat(nodep)");
+    TREEOPV("AstSel{$fromp.castConcat, $lsbp.castConst, $fromp.isPure}",  "replaceSelConcat(nodep)");  // Must not drop side effects
     TREEOPV("AstSel{$fromp.castReplicate, $lsbp.castConst, operandSelReplicate(nodep) }",    "DONE");
     // V3Tristate requires selects below BufIf1.
     // Also do additional operators that are bit-independent, but only definite
@@ -4845,6 +4862,20 @@ uint32_t ConstVisitor::s_globalPassNum = 0;
 
 //######################################################################
 // Const class functions
+
+AstNodeExpr* V3Const::cloneWithoutDraws(AstNodeExpr* nodep, bool urandom) {
+    // A node's purity cannot tell its own side effects from those of a draw beneath it
+    AstNot* const holderp = new AstNot{nodep->fileline(), nodep->cloneTree(false)};
+    std::vector<AstRand*> drawps;
+    holderp->lhsp()->foreach([&](AstRand* randp) {
+        if (!randp->seedp() && (urandom || !randp->urandom())) drawps.push_back(randp);
+    });
+    for (AstRand* const drawp : drawps) drawp->replaceWith(new AstConst{drawp->fileline(), 0U});
+    for (AstRand* drawp : drawps) VL_DO_DANGLING(drawp->deleteTree(), drawp);
+    AstNodeExpr* const clonep = holderp->lhsp()->unlinkFrBack();
+    VL_DO_DANGLING(holderp->deleteTree(), holderp);
+    return clonep;
+}
 
 void V3Const::collectFixedAggregateTerms(VNDeleter& deleter, AstNodeExpr* const fromp,
                                          std::vector<AstNodeExpr*>& termps, const bool packReal,

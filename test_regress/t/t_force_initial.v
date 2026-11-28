@@ -44,4 +44,20 @@ module t;
     #1 $finish;
   end
 
+  // A forced value with side effects is evaluated once, when forced
+  reg [7:0] c = 0;
+  initial begin
+    int unsigned r1, r2, got;
+    void'($urandom(5));
+    r1 = $urandom;
+    r2 = $urandom;
+    void'($urandom(5));
+    force c = 8'($urandom);
+    got = $urandom;
+    `checkh(got, r2);
+    #2;
+    `checkh(c, r1[7:0]);
+    release c;
+  end
+
 endmodule

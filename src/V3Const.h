@@ -49,6 +49,9 @@ public:
     static AstNodeExpr* constifyEdit(AstNodeExpr* exprp) VL_MT_DISABLED {
         return VN_AS(constifyEdit(static_cast<AstNode*>(exprp)), NodeExpr);
     }
+    // Copy of an expression with its unseeded $random draws, and if 'urandom' also its $urandom
+    // draws, replaced by constants, to check the purity of the rest of it
+    static AstNodeExpr* cloneWithoutDraws(AstNodeExpr* nodep, bool urandom) VL_MT_DISABLED;
     // Only the current node and lower, with special SenTree optimization
     // Return new node that may have replaced nodep
     static AstNode* constifyExpensiveEdit(AstNode* nodep) VL_MT_DISABLED;

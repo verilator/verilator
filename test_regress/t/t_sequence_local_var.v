@@ -63,6 +63,32 @@ module t (
   assert property (p_nonoverlap_sideeffect)
   else nonoverlap_fail++;
 
+  // --- Scenario: |=> match item with $urandom, used in two later cycles ---
+  // snap is assigned once per attempt, so its bit 0 cannot be 1 and then 0.
+  int later_pass = 0;
+  int later_fail = 0;
+  property p_later_sideeffect;
+    int snap;
+    @(posedge clk)
+    (1, snap = $urandom()) |=> (snap[0] == 1'b1) ##1 (snap[0] == 1'b0);
+  endproperty
+  assert property (p_later_sideeffect) later_pass++;
+  else later_fail++;
+
+  // --- Scenario: |=> match item with $urandom in a procedural assertion ---
+  int inferred_fail = 0;
+  function automatic int add(int a, int b);
+    return a + b;
+  endfunction
+  property p_inferred_sideeffect;
+    int snap;
+    (1, snap = add($urandom(), 3)) |=> (snap == snap);
+  endproperty
+  always @(posedge clk) begin
+    assert property (p_inferred_sideeffect)
+    else inferred_fail++;
+  end
+
   // --- Scenario: local variable with initializer ---
   // V3LinkParse wraps the init into AstInitialStaticStmt for property locals
   // (automatic is only used for task/function-scope). Exercises the
@@ -96,6 +122,9 @@ module t (
     if (cyc == 100) begin
       if (overlap_fail > 0) $stop;
       if (nonoverlap_fail > 0) $stop;
+      if (later_pass > 0) $stop;
+      if (later_fail == 0) $stop;
+      if (inferred_fail > 0) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
     end

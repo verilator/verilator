@@ -817,7 +817,7 @@ private:
         AstPast* const pastp = new AstPast{fl, exprp};
         pastp->dtypeFrom(exprp);
         pastp->sentreep(newSenTree(nodep, sentreep));
-        exprp = new AstAnd{fl, pastp, new AstNot{fl, exprp->cloneTreePure(false)}};
+        exprp = new AstAnd{fl, pastp, new AstNot{fl, V3AssertCommon::cloneSampled(exprp)}};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -912,7 +912,7 @@ private:
         AstPast* const pastp = new AstPast{fl, exprp};
         pastp->dtypeFrom(exprp);
         pastp->sentreep(newSenTree(nodep, sentreep));
-        exprp = new AstAnd{fl, new AstNot{fl, pastp}, exprp->cloneTreePure(false)};
+        exprp = new AstAnd{fl, new AstNot{fl, pastp}, V3AssertCommon::cloneSampled(exprp)};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -1052,7 +1052,7 @@ private:
         AstPast* const pastp = new AstPast{fl, exprp};
         pastp->dtypeFrom(exprp);
         pastp->sentreep(newSenTree(nodep, sentreep));
-        exprp = new AstEq{fl, pastp, exprp->cloneTreePure(false)};
+        exprp = new AstEq{fl, pastp, V3AssertCommon::cloneSampled(exprp)};
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

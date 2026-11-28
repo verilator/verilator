@@ -22,4 +22,9 @@ module t;
   assert property ((a |-> b) iff (a |-> b));
   assert property ((a #-# b) iff (a #-# b));
   cover property (a);
+  property p_local;
+    int snap;
+    (a, snap = $urandom()) |=> snap == 1;
+  endproperty
+  assert property (p_local);
 endmodule

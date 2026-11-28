@@ -84,6 +84,36 @@ module t;
       `checkd(hit, 2);
       `checkd(sq.size(), 1);
     end
+    // A random case expression is drawn once
+    for (int seed = 1; seed <= 8; ++seed) begin
+      int unsigned value;
+      int unsigned after;
+      void'($urandom(seed));
+      value = $urandom() % 8;
+      after = $urandom();
+      void'($urandom(seed));
+      case ($urandom() % 8) inside
+        [0 : 2]: hit = 1;
+        [3 : 5]: hit = 2;
+        default: hit = 3;
+      endcase
+      `checkd(hit, value <= 2 ? 1 : value <= 5 ? 2 : 3);
+      value = $urandom();
+      `checkd(value, after);
+      // Also under unique and unique0, whose checks compare it with each item
+      void'($urandom(seed));
+      unique case (2'($urandom()))
+        0, 1: hit = 1;
+        2, 3: hit = 2;
+      endcase
+      void'($urandom(seed));
+      unique0 case (2'($urandom()))
+        0: hit = 3;
+        1, 2, 3: hit = 4;
+      endcase
+      value = $urandom();
+      `checkd(value, after);
+    end
     $write("*-* All Finished *-*\n");
     $finish;
   end
