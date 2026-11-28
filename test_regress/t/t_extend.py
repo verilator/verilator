@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile()
+test.compile(verilator_flags2=['-Wno-DEPRECATED'])
 
 test.execute()
 

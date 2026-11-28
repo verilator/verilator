@@ -56,6 +56,8 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: `systemc_ctor
 
+   Deprecated, see :ref:`Deprecations`.
+
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
    verbatim into the C++ class constructor. Must be placed as a module or
@@ -63,6 +65,8 @@ or "`ifdef`"'s may break other tools.
    pair. Despite the name of this macro, this also works in pure C++ code.
 
 .. option:: `systemc_dtor
+
+   Deprecated, see :ref:`Deprecations`.
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
@@ -72,6 +76,8 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: `systemc_header
 
+   Deprecated, see :ref:`Deprecations`.
+
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
    verbatim into the output .h file's header. Must be placed as a module or
@@ -79,6 +85,8 @@ or "`ifdef`"'s may break other tools.
    pair. Despite the name of this macro, this also works in pure C++ code.
 
 .. option:: `systemc_header_post
+
+   Deprecated, see :ref:`Deprecations`.
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
@@ -89,6 +97,8 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: `systemc_imp_header
 
+   Deprecated, see :ref:`Deprecations`.
+
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
    verbatim into the header of all files for this C++ class implementation.
@@ -97,6 +107,8 @@ or "`ifdef`"'s may break other tools.
    this also works in pure C++ code.
 
 .. option:: `systemc_implementation
+
+   Deprecated, see :ref:`Deprecations`.
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
@@ -111,6 +123,8 @@ or "`ifdef`"'s may break other tools.
    feature; writing an accessor may result in cleaner code.
 
 .. option:: `systemc_interface
+
+   Deprecated, see :ref:`Deprecations`.
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it

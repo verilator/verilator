@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(make_flags=["CPPFLAGS_ADD=-I" + test.t_dir])
+test.compile(verilator_flags2=['-Wno-DEPRECATED'], make_flags=["CPPFLAGS_ADD=-I" + test.t_dir])
 
 test.execute()
 

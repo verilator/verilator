@@ -1,0 +1,18 @@
+%Warning-DEPRECATED: t/t_extend_deprecated_bad.v:9:1: '`systemc_header' is deprecated, use DPI instead
+    9 | `systemc_header
+      | ^~~~~~~~~~~~~~~
+                     ... For warning description see https://verilator.org/warn/DEPRECATED?v=latest
+                     ... Use "/* verilator lint_off DEPRECATED */" and lint_on around source to disable this message.
+%Warning-DEPRECATED: t/t_extend_deprecated_bad.v:11:1: '`systemc_header_post' is deprecated, use DPI instead
+   11 | `systemc_header_post
+      | ^~~~~~~~~~~~~~~~~~~~
+%Warning-DEPRECATED: t/t_extend_deprecated_bad.v:13:1: '`systemc_interface' is deprecated, use DPI instead
+   13 | `systemc_interface
+      | ^~~~~~~~~~~~~~~~~~
+%Warning-DEPRECATED: t/t_extend_deprecated_bad.v:14:19: '`systemc_imp_header' is deprecated, use DPI instead
+%Warning-DEPRECATED: t/t_extend_deprecated_bad.v:16:1: '`systemc_implementation' is deprecated, use DPI instead
+   16 | `systemc_implementation
+      | ^~~~~~~~~~~~~~~~~~~~~~~
+%Warning-DEPRECATED: t/t_extend_deprecated_bad.v:17:24: '`systemc_ctor' is deprecated, use DPI instead
+%Warning-DEPRECATED: t/t_extend_deprecated_bad.v:18:14: '`systemc_dtor' is deprecated, use DPI instead
+%Error: Exiting due to
