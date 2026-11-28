@@ -836,7 +836,7 @@ inline IData VL_REDXOR_2(IData r) VL_PURE {
 }
 inline IData VL_REDXOR_4(IData r) VL_PURE {
 #if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
-    return __builtin_parityl(r);
+    return VL_BUILTIN_PARITYL(r);
 #else
     r = (r ^ (r >> 1));
     r = (r ^ (r >> 2));
@@ -845,7 +845,7 @@ inline IData VL_REDXOR_4(IData r) VL_PURE {
 }
 inline IData VL_REDXOR_8(IData r) VL_PURE {
 #if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
-    return __builtin_parityl(r);
+    return VL_BUILTIN_PARITYL(r);
 #else
     r = (r ^ (r >> 1));
     r = (r ^ (r >> 2));
@@ -855,7 +855,7 @@ inline IData VL_REDXOR_8(IData r) VL_PURE {
 }
 inline IData VL_REDXOR_16(IData r) VL_PURE {
 #if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
-    return __builtin_parityl(r);
+    return VL_BUILTIN_PARITYL(r);
 #else
     r = (r ^ (r >> 1));
     r = (r ^ (r >> 2));
@@ -866,7 +866,7 @@ inline IData VL_REDXOR_16(IData r) VL_PURE {
 }
 inline IData VL_REDXOR_32(IData r) VL_PURE {
 #if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
-    return __builtin_parityl(r);
+    return VL_BUILTIN_PARITYL(r);
 #else
     r = (r ^ (r >> 1));
     r = (r ^ (r >> 2));
@@ -878,7 +878,7 @@ inline IData VL_REDXOR_32(IData r) VL_PURE {
 }
 inline IData VL_REDXOR_64(QData r) VL_PURE {
 #if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
-    return __builtin_parityll(r);
+    return VL_BUILTIN_PARITYLL(r);
 #else
     r = (r ^ (r >> 1));
     r = (r ^ (r >> 2));
@@ -898,7 +898,7 @@ inline IData VL_REDXOR_W(int words, WDataInP const lwp) VL_PURE {
 // EMIT_RULE: VL_COUNTONES_II:  oclean = false; lhs clean
 inline IData VL_COUNTONES_I(IData lhs) VL_PURE {
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
-    return static_cast<IData>(__builtin_popcount(lhs));
+    return static_cast<IData>(VL_BUILTIN_POPCOUNT(lhs));
 #else
     IData r = lhs - ((lhs >> 1) & 033333333333) - ((lhs >> 2) & 011111111111);
     r = (r + (r >> 3)) & 030707070707;
@@ -909,7 +909,7 @@ inline IData VL_COUNTONES_I(IData lhs) VL_PURE {
 }
 inline IData VL_COUNTONES_Q(QData lhs) VL_PURE {
 #if (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
-    return static_cast<IData>(__builtin_popcountll(lhs));
+    return static_cast<IData>(VL_BUILTIN_POPCOUNTLL(lhs));
 #else
     return VL_COUNTONES_I(static_cast<IData>(lhs)) + VL_COUNTONES_I(static_cast<IData>(lhs >> 32));
 #endif
@@ -1015,7 +1015,7 @@ inline IData VL_CLOG2_W(int words, WDataInP const lwp) VL_PURE {
 inline IData VL_MOSTSETBITP1_I(IData lhs) VL_PURE {
     if (VL_UNLIKELY(!lhs)) return 0;  // __builtin_clz is undefined for 0
 #if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
-    return VL_EDATASIZE - __builtin_clz(lhs);
+    return VL_EDATASIZE - VL_BUILTIN_CLZ(lhs);
 #else
     for (int bit = VL_EDATASIZE - 1; bit >= 0; --bit) {
         if (VL_BITISSET_E(lhs, bit)) return bit + 1;
@@ -1026,7 +1026,7 @@ inline IData VL_MOSTSETBITP1_I(IData lhs) VL_PURE {
 inline IData VL_MOSTSETBITP1_Q(QData lhs) VL_PURE {
     if (VL_UNLIKELY(!lhs)) return 0;
 #if defined(__GNUC__) && (__GNUC__ >= 4) && !defined(VL_NO_BUILTINS)
-    return 64 - __builtin_clzll(static_cast<unsigned long long>(lhs));
+    return 64 - VL_BUILTIN_CLZLL(static_cast<unsigned long long>(lhs));
 #else
     const IData hi = static_cast<IData>(lhs >> 32ULL);
     return hi ? (VL_EDATASIZE + VL_MOSTSETBITP1_I(hi))

@@ -2574,7 +2574,10 @@ class ConstVisitor final : public VNVisitor {
                 nodep->addHereThisAsNext(asnp);
                 nodep->rhsp(new AstVarRef{rhsp->fileline(), tempPurep, VAccess::READ});
                 // Only the assignment of the temporary waits
-                if (waits) pushDeletep(nodep->timingControlp()->unlinkFrBack());
+                if (waits) {
+                    AstNode* const timingControlp = nodep->timingControlp();
+                    VL_DO_DANGLING(pushDeletep(timingControlp->unlinkFrBack()), timingControlp);
+                }
             } else if (need_temp) {
                 // The first time we constify, there may be the same variable on the LHS
                 // and RHS.  In that case, we must use temporaries, or {a,b}={b,a} will break.
@@ -3965,7 +3968,8 @@ class ConstVisitor final : public VNVisitor {
                 condp->unlinkFrBackWithNext();
                 elsesp->unlinkFrBackWithNext();
                 if (nodep->thensp()) {  // Must have been comment
-                    pushDeletep(nodep->thensp()->unlinkFrBackWithNext());
+                    AstNode* const thensp = nodep->thensp();
+                    VL_DO_DANGLING(pushDeletep(thensp->unlinkFrBackWithNext()), thensp);
                 }
                 nodep->condp(new AstLogNot{condp->fileline(),
                                            condp});  // LogNot, as C++ optimization also possible
@@ -4350,7 +4354,8 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstJumpGo* nodep) override {
         // Any statements following the JumpGo (at this statement level) never execute, delete
         if (nodep->nextp() && canDeleteStatements()) {
-            pushDeletep(nodep->nextp()->unlinkFrBackWithNext());
+            AstNode* const nextp = nodep->nextp();
+            VL_DO_DANGLING(pushDeletep(nextp->unlinkFrBackWithNext()), nextp);
         }
 
         // JumpGo as last statement in target JumpBlock (including last in a last sub-list),
