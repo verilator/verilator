@@ -882,7 +882,7 @@ class VlRtmdHierListener VL_NOT_FINAL {
 
     public:
         // The hierarchical name of the innermost level, as %m would give it
-        std::string name() const;
+        std::string name(char separator) const;
     };
 
     // STATE
@@ -925,7 +925,7 @@ protected:
 
     // METHODS
     // The hierarchical name of the current hierarchy level, as %m would give it
-    std::string pathName() const { return m_path.name(); }
+    std::string pathName(char separator = '.') const { return m_path.name(separator); }
 
     // LISTENERS
     // The 'enter' methods return whether to walk into the level. If false, nothing within it

@@ -32,6 +32,7 @@
 #include "verilated_trace.h"
 #include <algorithm>
 #include <cstring>
+#include <limits>
 #include <list>
 
 // clang-format on
@@ -114,23 +115,85 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addSignal(const char* namep, const VlRt
 }
 
 template <>
-bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvarsSelected(const char* namep) const {
-    if (m_dumpvars.empty()) return true;  // Everything is selected
-    const std::string path = pathName();
-    const std::string name = path.empty() ? namep : path + '.' + namep;
-    // To keep it simple, this is O(dumpvars * signals), but we expect few dumpvars
-    for (const auto& item : m_dumpvars) {
-        const int dumpvarsLevel = item.first;
-        const std::string& hier = item.second;
-        // Must match a whole prefix of hierarchy levels, e.g. "t" does not match "top"
-        if (name.compare(0, hier.size(), hier) != 0) continue;
-        if (name.size() > hier.size() && name[hier.size()] != '.') continue;
-        // Must not be too deep below it
-        const int levels = std::count(name.begin() + hier.size(), name.end(), '.');
-        if (levels > dumpvarsLevel) continue;
-        return true;
+bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::matchDumpvars(DumpSelections& selections,
+                                                       std::string name, char separator) {
+    bool matched = false;
+    for (int depth = 0;; ++depth) {
+        const auto it = selections.find(name);
+        if (it != selections.end() && depth <= it->second.first) {
+            it->second.second = true;
+            matched = true;
+        }
+        const size_t split = name.rfind(separator);
+        if (split == std::string::npos) break;
+        name.resize(split);
     }
-    return false;
+    return matched;
+}
+
+template <>
+bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvarsSelected(const char* namep) {
+    const bool all = m_dumpvars.empty() && m_dumpvarsLegacy.empty() && m_resolvedDumpvars.empty();
+    if (all) return true;
+    bool selected = false;
+    if (!m_dumpvars.empty() || !m_resolvedDumpvars.empty()) {
+        const std::string path = pathName(' ');
+        const std::string name = path.empty() ? namep : path + ' ' + namep;
+        selected |= matchDumpvars(m_dumpvars, name, ' ');
+        selected |= matchDumpvars(m_resolvedDumpvars, name, ' ');
+    }
+    if (!m_dumpvarsLegacy.empty()) {
+        const std::string path = pathName();
+        selected
+            |= matchDumpvars(m_dumpvarsLegacy, path.empty() ? namep : path + '.' + namep, '.');
+    }
+    return m_dumpAll || selected;
+}
+
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::resolveDumpvars() {
+    m_resolvedDumpvars.clear();
+    if (m_dumpRequests.empty() || m_dumpAll) return;
+
+    std::unordered_map<std::string, bool> candidates;
+    std::vector<std::vector<std::string>> searches;
+    searches.reserve(m_dumpRequests.size());
+    for (const DumpRequest& request : m_dumpRequests) {
+        searches.emplace_back();
+        auto& search = searches.back();
+        const bool absolute = request.m_name.compare(0, 6, "$root ") == 0;
+        const std::string name = absolute ? request.m_name.substr(6) : request.m_name;
+        std::string caller = absolute ? "" : request.m_caller;
+        const std::string root = request.m_root.empty() ? "" : request.m_root + ' ';
+        for (;;) {
+            const std::string relative = caller.empty() ? name : caller + ' ' + name;
+            search.push_back(root + relative);
+            candidates.emplace(search.back(), false);
+            if (caller.empty()) break;
+            const size_t split = caller.rfind(' ');
+            caller.resize(split == std::string::npos ? 0 : split);
+        }
+        // An unresolved relative name can refer to an absolute trace path.
+        if (!absolute && !root.empty()) {
+            search.push_back(name);
+            candidates.emplace(name, false);
+        }
+    }
+
+    // Search in the same hierarchy and with the same trace options as declaration.
+    m_dumpCandidatesp = &candidates;
+    walkContext(*m_contextp);
+    m_dumpCandidatesp = nullptr;
+
+    for (size_t i = 0; i < searches.size(); ++i) {
+        const auto& search = searches[i];
+        const auto found
+            = std::find_if(search.begin(), search.end(),
+                           [&](const std::string& name) { return candidates.at(name); });
+        const std::string& resolved = found != search.end() ? *found : search.back();
+        int& depth = m_resolvedDumpvars[resolved].first;
+        depth = std::max(depth, m_dumpRequests[i].m_level);
+    }
 }
 
 template <>
@@ -179,8 +242,14 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
                     "Verilated with a '--trace-*' option");
     }
 
-    // Declare the hierarchy of all models, see the VlRtmdHierListener methods in verilated_trace.h
-    walkContext(*m_contextp);
+    {
+        const VerilatedLockGuard selectionLock{m_dumpvarsMutex};
+        for (auto& item : m_dumpvars) item.second.second = false;
+        for (auto& item : m_dumpvarsLegacy) item.second.second = false;
+        resolveDumpvars();
+        // Declare all models through the VlRtmdHierListener callbacks.
+        walkContext(*m_contextp);
+    }
     m_codes.clear();
 
     // If reopen, check that the number of codes is the same as the previous dump
@@ -315,11 +384,61 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::set_time_resolution(const std::string& 
 }
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& hier) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_dumpvarsMutex};
     if (level == 0) {
-        m_dumpvars.clear();  // empty = everything on
+        m_dumpvarsLegacy.clear();
+        m_dumpvars.clear();
     } else {
-        m_dumpvars.emplace_back(level, hier);
+        const auto result = m_dumpvarsLegacy.emplace(hier, std::make_pair(level, false));
+        result.first->second.first = std::max(level, result.first->second.first);
     }
+}
+
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvarsExact(const std::string& name) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_dumpvarsMutex};
+    m_dumpvars.emplace(name, std::make_pair(0, false));
+}
+
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvarsScope(int level,
+                                                       const std::string& name) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_dumpvarsMutex};
+    if (name.empty()) {
+        m_dumpvars.clear();
+        m_dumpvarsLegacy.clear();
+        return;
+    }
+    const int depth = level <= 0 ? std::numeric_limits<int>::max() : level;
+    int& previous = m_dumpvars[name].first;
+    previous = std::max(depth, previous);
+}
+
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvarsRelative(int level, const std::string& name,
+                                                          const std::string& caller,
+                                                          const std::string& root) VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_dumpvarsMutex};
+    if (name.empty()) {
+        m_dumpAll = true;
+        return;
+    }
+    const int depth = level <= 0 ? std::numeric_limits<int>::max() : level;
+    m_dumpRequests.push_back({depth, name, caller, root});
+}
+
+template <>
+std::vector<std::string> VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvarsUnmatched() const VL_MT_SAFE {
+    const VerilatedLockGuard lock{m_dumpvarsMutex};
+    std::vector<std::string> names;
+    for (const DumpSelections* const selections : {&m_dumpvars, &m_dumpvarsLegacy}) {
+        for (const auto& item : *selections) {
+            if (!item.second.second) names.push_back(item.first);
+        }
+    }
+    std::sort(names.begin(), names.end());
+    names.erase(std::unique(names.begin(), names.end()), names.end());
+    return names;
 }
 
 //=========================================================================

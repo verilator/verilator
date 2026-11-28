@@ -1125,8 +1125,34 @@ public:
             puts(");\n");
             break;
         case VDumpCtlType::VARS:
-            // We ignore number of levels to dump in exprp()
             if (v3Global.opt.trace()) {
+                const auto dumpPath = [](std::string name) {
+                    name = VString::replaceSubstr(name, "__DOT__", " ");
+                    name = AstNode::prettyName(name);
+                    if (VString::startsWith(name, "$root ")) {
+                        return "$root " + VIdProtect::protectWordsIf(name.substr(6));
+                    }
+                    return VIdProtect::protectWordsIf(name);
+                };
+                putns(nodep, "vlSymsp->_traceDumpVars(");
+                if (nodep->scopesp()) {
+                    iterateConst(nodep->exprp());
+                    puts(", {");
+                    for (const AstConst* constp = nodep->scopesp(); constp;
+                         constp = VN_AS(constp->nextp(), Const)) {
+                        if (constp != nodep->scopesp()) puts(", ");
+                        ofp()->putsQuoted(dumpPath(constp->num().toString()));
+                    }
+                    puts("}, ");
+                    std::string caller = nodep->scopeNamep()->scopeAttr();
+                    if (VString::startsWith(caller, "__DOT__TOP")) caller.erase(0, 10);
+                    if (VString::startsWith(caller, "__DOT__")) caller.erase(0, 7);
+                    if (!caller.empty() && caller[0] == '.') caller.erase(0, 1);
+                    ofp()->putsQuoted(dumpPath(VString::replaceSubstr(caller, ".", " ")));
+                } else {
+                    puts("0, {\"\"}, \"\"");
+                }
+                puts(");\n");
                 putns(nodep, "vlSymsp->_traceDumpOpen();\n");
             } else {
                 putns(nodep, "VL_PRINTF_MT(\"-Info: ");

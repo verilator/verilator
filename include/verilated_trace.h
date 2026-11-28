@@ -35,6 +35,7 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 // clang-format on
@@ -174,8 +175,22 @@ private:
     bool m_fullDump = true;  // Whether a full dump is required on the next call to 'dump'
     uint32_t m_nextCode = 0;  // Next code number to assign
     uint32_t m_maxBits = 0;  // Number of bits in the widest signal
-    // TODO: Should keep this as a Trie, that is how it's accessed all the time.
-    std::vector<std::pair<int, std::string>> m_dumpvars;  // dumpvar() entries
+    // Each selection holds its depth and whether the last open() matched it.
+    mutable VerilatedMutex m_dumpvarsMutex;
+    using DumpSelections = std::unordered_map<std::string, std::pair<int, bool>>;
+    DumpSelections m_dumpvars;  // Space-separated declaration paths
+    DumpSelections m_dumpvarsLegacy;  // Dot-separated paths passed to dumpvars()
+    struct DumpRequest final {
+        int m_level;  // Depth argument of the request
+        std::string m_name;  // Requested name, "$root "-prefixed if absolute
+        std::string m_caller;  // Scope of the requesting module, searched outward
+        std::string m_root;  // Trace root prefix of the requesting model
+    };
+    std::vector<DumpRequest> m_dumpRequests;
+    bool m_dumpAll = false;  // A scope-less Verilog $dumpvars
+    // Temporary candidate paths and whether discovery found them in the hierarchy.
+    std::unordered_map<std::string, bool>* m_dumpCandidatesp = nullptr;
+    DumpSelections m_resolvedDumpvars;
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
     uint64_t m_timeLastDump = 0;  // Last time we did a dump
     bool m_didSomeDump = false;  // Did at least one dump (i.e.: m_timeLastDump is valid)
@@ -265,7 +280,9 @@ private:
     }
 
     // Whether the signal 'namep' in the current hierarchy level is selected by 'dumpvars'
-    bool dumpvarsSelected(const char* namep) const;
+    bool dumpvarsSelected(const char* namep);
+    static bool matchDumpvars(DumpSelections& selections, std::string name, char separator);
+    void resolveDumpvars();
     // Declare a value reported by 'onVar' or 'onComponent', which is not split further
     void addSignal(const char* namep, const VlRtmdVarType& varType, const VlRtmdDataType& dtype,
                    const VlRtmdActSet& actSet, const void* datap, uint32_t lsb) VL_MT_UNSAFE;
@@ -308,42 +325,42 @@ private:
         m_traceUnderscore = rtmdp->m_opt.m_traceUnderscore;
         m_traceMaxArray = rtmdp->m_opt.m_traceMaxArray;
         m_traceMaxWidth = rtmdp->m_opt.m_traceMaxWidth;
-        if (m_namedRoot) rootOpen(model.hierName());
+        if (m_namedRoot && !m_dumpCandidatesp) rootOpen(model.hierName());
         return true;
     }
     void exitRoot(const VerilatedModel&) override final {
-        if (m_namedRoot) rootClose();
+        if (m_namedRoot && !m_dumpCandidatesp) rootClose();
     }
     bool enterInstance(InstanceKind kind, const char* namep, const char* modNamep,
                        HierFlags flags) override final {
         if (!flags.hasTracedVars()) return false;  // Nothing to trace in it
         if (hidden(namep)) return false;
-        instanceOpen(kind, namep, modNamep);
+        if (!m_dumpCandidatesp) instanceOpen(kind, namep, modNamep);
         return true;
     }
     void exitInstance(InstanceKind, const char*, const char*, HierFlags) override final {
-        instanceClose();
+        if (!m_dumpCandidatesp) instanceClose();
     }
     bool enterIfaceRef(const char* namep, const char* modNamep, HierFlags flags) override final {
         if (!flags.hasTracedVars()) return false;  // Nothing to trace in it
         if (hidden(namep)) return false;
-        ifaceRefOpen(namep, modNamep);
+        if (!m_dumpCandidatesp) ifaceRefOpen(namep, modNamep);
         return true;
     }
     void exitIfaceRef(const char*, const char*, HierFlags) override final {  //
-        ifaceRefClose();
+        if (!m_dumpCandidatesp) ifaceRefClose();
     }
     bool enterScope(ScopeKind kind, const char* namep, HierFlags flags) override final {
         if (!flags.hasTracedVars()) return false;  // Nothing to trace in it
         if (hidden(namep)) return false;
         // The root IO of a named model is in the root scope, otherwise in a scope of its own
         if (kind == ScopeKind::ROOTIO && m_namedRoot) return true;
-        scopeOpen(kind, namep);
+        if (!m_dumpCandidatesp) scopeOpen(kind, namep);
         return true;
     }
     void exitScope(ScopeKind kind, const char*, HierFlags) override final {
         if (kind == ScopeKind::ROOTIO && m_namedRoot) return;
-        scopeClose();
+        if (!m_dumpCandidatesp) scopeClose();
     }
 
     bool onVar(const char* namep, const VlRtmdVarType& varType, const VlRtmdDataType& dtype,
@@ -352,6 +369,18 @@ private:
         if (hidden(namep)) return false;
         if (m_traceMaxWidth && vlTraceTotalWidth(dtype) > m_traceMaxWidth) return false;
         if (tooManyElements(dtype)) return false;
+        if (m_dumpCandidatesp) {
+            const std::string path = pathName(' ');
+            std::string name = path.empty() ? namep : path + ' ' + namep;
+            do {
+                const auto it = m_dumpCandidatesp->find(name);
+                if (it != m_dumpCandidatesp->end()) it->second = true;
+                const size_t split = name.rfind(' ');
+                if (split == std::string::npos) break;
+                name.resize(split);
+            } while (true);
+            return false;
+        }
         if (!dumpvarsSelected(namep)) return false;
         if (splitSignal(dtype)) {
             // The components of a packed value are slices of it
@@ -498,6 +527,16 @@ public:
     // Set variables to dump, using $dumpvars format
     // If level = 0, dump everything and hier is then ignored
     void dumpvars(int level, const std::string& hier) VL_MT_SAFE;
+
+    // Select a declaration by its space-separated scope and signal names.
+    void dumpvarsExact(const std::string& name) VL_MT_SAFE;
+    // Select a scope to the given depth (0 is unlimited), or a variable by name.
+    void dumpvarsScope(int level, const std::string& name) VL_MT_SAFE;
+    // Names that matched no variable at the last open(), sorted.
+    std::vector<std::string> dumpvarsUnmatched() const VL_MT_SAFE;
+    // Internal use only: select a name relative to the Verilog caller.
+    void dumpvarsRelative(int level, const std::string& name, const std::string& caller,
+                          const std::string& root) VL_MT_SAFE;
 
     // Call
     void dump(uint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex);
