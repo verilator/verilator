@@ -12,11 +12,21 @@ module t (/*AUTOARG*/
   input real rok;
   event ebad;
   struct packed { int a; } sok;
+  logic abad[2];
+  logic dbad[];
+  logic qbad[$];
+  logic aabad[int];
+  struct { logic a; } sbad;
 
   always @ (rok) $stop;
   always @ (sok) $stop;
 
   always @ (posedge rbad) $stop;
   always @ (posedge ebad) $stop;
+  always @ (posedge abad) $stop;
+  always @ (posedge dbad) $stop;
+  always @ (posedge qbad) $stop;
+  always @ (posedge aabad) $stop;
+  always @ (posedge sbad) $stop;
 
 endmodule
