@@ -41,6 +41,8 @@
 
 #include "V3Cast.h"
 
+#include "V3MemberMap.h"
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -54,6 +56,7 @@ class CastVisitor final : public VNVisitor {
 
     // STATE
     const AstNodeDType* m_consArrayElemDTypep = nullptr;  // Current array constructor element type
+    VMemberMap m_memberMap;  // Struct members by name
 
     // METHODS
 
@@ -115,15 +118,77 @@ class CastVisitor final : public VNVisitor {
         }
     }
 
+    // True if values of this type are stored as 'CData' or 'SData'
+    static bool isNarrowStorage(const AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        return dtypep->isIntegralOrPacked() && dtypep->width() <= VL_SHORTSIZE;
+    }
+    // True if the C++ type of the expression is narrower than 'int' (e.g. 'bool' or 'CData'),
+    // or is 'int', so it promotes to (or is) signed 'int'
+    bool promotesToSignedInt(const AstNodeExpr* nodep) {
+        switch (nodep->type()) {
+        // C++ relational, equality and logical operators yield 'bool'. (Signed compares and
+        // reductions are runtime functions or macros, which return 'IData'.)
+        case VNType::Eq:  // FALLTHRU
+        case VNType::EqCase:  // FALLTHRU
+        case VNType::EqD:  // FALLTHRU
+        case VNType::EqN:  // FALLTHRU
+        case VNType::Gt:  // FALLTHRU
+        case VNType::GtD:  // FALLTHRU
+        case VNType::GtN:  // FALLTHRU
+        case VNType::Gte:  // FALLTHRU
+        case VNType::GteD:  // FALLTHRU
+        case VNType::GteN:  // FALLTHRU
+        case VNType::LogAnd:  // FALLTHRU
+        case VNType::LogNot:  // FALLTHRU
+        case VNType::LogOr:  // FALLTHRU
+        case VNType::Lt:  // FALLTHRU
+        case VNType::LtD:  // FALLTHRU
+        case VNType::LtN:  // FALLTHRU
+        case VNType::Lte:  // FALLTHRU
+        case VNType::LteD:  // FALLTHRU
+        case VNType::LteN:  // FALLTHRU
+        case VNType::Neq:  // FALLTHRU
+        case VNType::NeqCase:  // FALLTHRU
+        case VNType::NeqD:  // FALLTHRU
+        case VNType::NeqN: return true;
+        // Element and member reads have the C++ type of their storage, not of their dtype,
+        // which V3Expand might have widened
+        case VNType::ArraySel:  // FALLTHRU
+        case VNType::AssocSel:  // FALLTHRU
+        case VNType::WildcardSel: {
+            const AstNodeDType* const fromDTypep = VN_AS(nodep, NodeSel)->fromp()->dtypep();
+            return isNarrowStorage(fromDTypep->skipRefp()->subDTypep());
+        }
+        case VNType::MemberRef: return isNarrowStorage(VN_AS(nodep, MemberRef)->varp()->dtypep());
+        case VNType::StructSel: {
+            const AstStructSel* const selp = VN_AS(nodep, StructSel);
+            const AstNode* const memberp
+                = m_memberMap.findMember(selp->fromp()->dtypep()->skipRefp(), selp->name());
+            return isNarrowStorage(VN_AS(memberp, MemberDType)->subDTypep());
+        }
+        // Methods might return 'int' (e.g. 'size()') or a narrow element (e.g. 'at()')
+        case VNType::CMethodHard:
+            return nodep->dtypep()->isIntegralOrPacked() && nodep->width() <= VL_IDATASIZE;
+        // Type compares are folded by V3Width, implications are lowered by V3Const
+        case VNType::EqT:  // FALLTHRU
+        case VNType::LogEq:  // FALLTHRU
+        case VNType::LogIf:  // FALLTHRU
+        case VNType::NeqT: nodep->v3fatalSrc("Should have been removed before V3Cast");
+        default: return false;
+        }
+    }
+
     // VISITORS
     void visit(AstNodeUniop* nodep) override {
         iterateChildren(nodep);
-        nodep->user1(nodep->lhsp()->user1());
+        nodep->user1(!promotesToSignedInt(nodep) && nodep->lhsp()->user1());
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
     }
     void visit(AstNodeBiop* nodep) override {
         iterateChildren(nodep);
-        nodep->user1(nodep->lhsp()->user1() | nodep->rhsp()->user1());
+        nodep->user1(!promotesToSignedInt(nodep)
+                     && (nodep->lhsp()->user1() | nodep->rhsp()->user1()));
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) ensureCast(nodep->rhsp());
     }
@@ -151,6 +216,8 @@ class CastVisitor final : public VNVisitor {
             }
         }
         visit(static_cast<AstNodeTriop*>(nodep));
+        // C++ '?:' takes the type of its branches, not of the condition
+        nodep->user1(nodep->thenp()->user1() | nodep->elsep()->user1());
     }
     void visit(AstNodeTriop* nodep) override {
         iterateChildren(nodep);
@@ -263,20 +330,23 @@ class CastVisitor final : public VNVisitor {
     void visit(AstCMethodCall* nodep) override {
         iterateChildren(nodep);
         ensureNullChecked(nodep->fromp());
+        // V3Task passes results through output arguments
+        UASSERT_OBJ(VN_IS(nodep->dtypep()->skipRefp(), VoidDType), nodep,
+                    "Method call should not have a value");
         nodep->user1(true);
     }
     void visit(AstCMethodHard* nodep) override {
         iterateChildren(nodep);
-        nodep->user1(true);
+        nodep->user1(!promotesToSignedInt(nodep));
     }
     void visit(AstMemberRef* nodep) override {
         iterateChildren(nodep);
         ensureNullChecked(nodep->fromp());
-        nodep->user1(true);
+        nodep->user1(!promotesToSignedInt(nodep));
     }
     void visit(AstStructSel* nodep) override {
         iterateChildren(nodep);
-        nodep->user1(true);
+        nodep->user1(!promotesToSignedInt(nodep));
     }
 
     // NOPs
