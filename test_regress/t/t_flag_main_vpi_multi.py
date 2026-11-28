@@ -32,9 +32,10 @@ pli2_cmd += (["-Wl,-undefined,dynamic_lookup"] if platform.system() == 'Darwin' 
 pli2_cmd += ["-o", test.obj_dir + "/libvpi2.so", "t/t_flag_main_vpi_lib2.cpp"]
 test.run(logfile=test.obj_dir + "/pli2_compile.log", cmd=pli2_cmd)
 
+# Startup in the first library must see arguments after both library options.
 test.execute(all_run_flags=[
     "+verilator+vpi+" + test.obj_dir + "/libvpi.so",
-    "+verilator+vpi+" + test.obj_dir + "/libvpi2.so"
+    "+verilator+vpi+" + test.obj_dir + "/libvpi2.so", "+after_library"
 ],
              check_finished=True,
              expect_filename=test.golden_filename)

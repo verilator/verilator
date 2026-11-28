@@ -1,0 +1,3 @@
+%Error: unknown:0: Verilog called $test$plusargs or $value$plusargs without testbench C first calling Verilated::commandArgs(argc,argv).
+Aborting...
+Arguments in exit callback: ''

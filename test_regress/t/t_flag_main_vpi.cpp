@@ -21,6 +21,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 // Number of count increments to observe before calling $finish
 static const int MAX_TICKS = 10;
@@ -67,6 +68,15 @@ static PLI_INT32 end_of_sim_cb(p_cb_data /*cb_data*/) {
 }
 
 static void register_callbacks() {
+    // Startup may query arguments, including options following this library's load option.
+    s_vpi_vlog_info info;
+    if (!vpi_get_vlog_info(&info)) std::abort();
+    bool found = false;
+    for (int i = 0; i < info.argc; ++i) {
+        if (std::strcmp(info.argv[i], "+after_library") == 0) found = true;
+    }
+    if (!found) std::abort();
+
     // cbStartOfSimulation
     t_cb_data cb_data;
     s_vpi_time t;

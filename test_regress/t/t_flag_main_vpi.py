@@ -22,7 +22,8 @@ test.compile(make_pli=True, verilator_flags2=["--binary --vpi --public-flat-rw"]
 # +verilator+vpi+ with an empty payload (skipped by the empty-arg check), so both
 # loader-skip branches are exercised alongside the real library load.
 test.execute(all_run_flags=[
-    "+othertest", "+verilator+vpi+", "+verilator+vpi+" + test.obj_dir + "/libvpi.so"
+    "+othertest", "+verilator+vpi+", "+verilator+vpi+" + test.obj_dir + "/libvpi.so",
+    "+after_library"
 ],
              check_finished=True,
              expect_filename=test.golden_filename)
