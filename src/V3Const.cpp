@@ -173,7 +173,8 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         int msb() const { return std::min(m_msb, varWidth() - 1); }
         int varWidth() const {
             UASSERT(m_refp, "m_refp should be set");
-            const int width = m_refp->varp()->widthMin();
+            // Not widthMin(): bits above it may be set, as in temporaries of uncleaned values
+            const int width = m_refp->varp()->width();
             if (!m_refp->isWide()) {
                 UASSERT_OBJ(m_wordIdx == -1, m_refp, "Bad word index into non-wide");
                 return width;
