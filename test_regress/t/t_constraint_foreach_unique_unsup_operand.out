@@ -1,0 +1,43 @@
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:16:18: Unsupported: Unique constraint on an array slice with an operand that isn't a variable, member, or constant-indexed slice
+                                                                           : ... note: In instance 't'
+   16 |   constraint c1 {unique {get_row()};}
+      |                  ^~~~~~
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:22:33: Unsupported: Unique constraint on an array in an unpacked struct
+                                                                           : ... note: In instance 't'
+   22 |   constraint c1 {foreach (s[i]) unique {s[i].r};}
+      |                                 ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:28:33: Unsupported: Unique constraint on an element of a dynamic array, queue or associative array
+                                                                           : ... note: In instance 't'
+   28 |   constraint c1 {foreach (q[i]) unique {q[i]};}
+      |                                 ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:29:33: Unsupported: Unique constraint on an element of a dynamic array, queue or associative array
+                                                                           : ... note: In instance 't'
+   29 |   constraint c2 {foreach (a[i]) unique {a[i]};}
+      |                                 ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:39:18: Unsupported: Unique constraint on an array in an element of a class handle array
+                                                                           : ... note: In instance 't'
+   39 |   constraint c1 {unique {objs[0].row};}
+      |                  ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:40:18: Unsupported: Unique constraint on an array in an element of a class handle array
+                                                                           : ... note: In instance 't'
+   40 |   constraint c2 {unique {sobjs[1].row};}
+      |                  ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:41:18: Unsupported: Unique constraint on an array in an element of a class handle array
+                                                                           : ... note: In instance 't'
+   41 |   constraint c3 {unique {objs[1].row[1:2]};}
+      |                  ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:42:18: Unsupported: Unique constraint on an array in an element of a class handle array
+                                                                           : ... note: In instance 't'
+   42 |   constraint c4 {unique {objs[0].grid[1]};}
+      |                  ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:53:39: Unsupported: Unique constraint on a slice of a non-random array at a random index
+                                                                           : ... note: In instance 't'
+   53 |   constraint c1 {ri inside {[0 : 2]}; unique {s[ri]};}
+      |                                       ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_foreach_unique_unsup_operand.v:54:18: Unsupported: Unique constraint on a slice of a non-random array at a random index
+                                                                           : ... note: In instance 't'
+   54 |   constraint c2 {unique {s3[ri][1]};}
+      |                  ^~~~~~
+%Error: Exiting due to
