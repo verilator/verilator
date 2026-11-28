@@ -4,8 +4,14 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-`define TRY_ASSIGN(a, b) a = b
-`define TRY_CAST(a, b) a = type(a)'(b)
+// verilog_format: off
+`define stop $stop
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
+`define TRY_ASSIGN(a, b) begin a = b; $display("%p", a); end
+`define TRY_CAST(a, b) begin a = type(a)'(b); $display("%p", a); end
+
 `ifdef VERILATOR
 `define TRY_DYNAMIC(a, b) // UNSUP $cast
 `define TRY_BAD(a, b) // UNSUP $cast
@@ -41,6 +47,7 @@ typedef enum {
 } Enum_B_t;
 
 typedef int int_t;
+typedef string str_t;
 
 typedef struct packed {
   int a;
@@ -54,6 +61,7 @@ module t;
 
   real v_real;  // IEEE 6.12.2 - by rounding
   string v_string;
+  str_t v_str_t;
   int v_int;
   int_t v_int_t;
   chandle v_chandle;
@@ -91,6 +99,7 @@ module t;
     // 6.22.1
     `MATCHING(v_real, v_real);
     `MATCHING(v_string, v_string);
+    `MATCHING(v_string, v_str_t);
     `MATCHING(v_int, v_int);
     `MATCHING(v_chandle, v_chandle);
     `MATCHING(v_int, v_int_t);
@@ -117,6 +126,23 @@ module t;
     // 6.22.4->5.9
 `ifndef NC
     `CAST_COMPATIBLE(v_string, v_int);
+    v_int = "abc";
+    `CAST_COMPATIBLE(v_string, v_int);
+    `checks(v_string, "abc");
+    `CAST_COMPATIBLE(v_str_t, v_int);
+    `checks(v_string, "abc");
+    `CAST_COMPATIBLE(v_real, v_real);
+    `CAST_COMPATIBLE(v_string, v_string);
+    `CAST_COMPATIBLE(v_int, v_int);
+    `CAST_COMPATIBLE(v_chandle, v_chandle);
+    `CAST_COMPATIBLE(v_int, v_int_t);
+    `CAST_COMPATIBLE(v_stpack_a, v_stpack_a1);
+    `CAST_COMPATIBLE(v_simple_a, v_simple_a1);
+    `CAST_COMPATIBLE(v_unpk_a, v_unpk_a1);
+    `CAST_COMPATIBLE(v_q_a, v_q_a1);
+    `CAST_COMPATIBLE(v_int, v_2thirtytwo_a);
+    `CAST_COMPATIBLE(v_cls_a, v_cls_a1);
+    `CAST_COMPATIBLE(v_cls_a, v_cls_ab);
 `endif
     // 6.22.4->6.19.3
 `ifndef NC
