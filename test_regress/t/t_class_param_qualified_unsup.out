@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_class_param_qualified_unsup.v:11:9: Unsupported: Deferred qualified type reference during parameter specialization : 'Inner'
+                                                          : ... note: In instance 't'
+   11 |   Self::Inner #(T) qualified = new;
+      |         ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_class_param_qualified_unsup.v:12:13: Unsupported: Deferred qualified type reference during parameter specialization : 'Inner'
+                                                           : ... note: In instance 't'
+   12 |   Self#(T)::Inner #(bit [14:0]) qualified_wide = new;
+      |             ^~~~~
+%Error: Exiting due to

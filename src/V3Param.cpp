@@ -1022,6 +1022,76 @@ class ParamProcessor final {
         V3Stats::addStatSum("IfaceCapture, Ledger fixups in V3Param", fixedCount);
     }
 
+    class PinRelinkVisitor final : public VNVisitor {
+        const AstNodeModule* const m_rootp;  // module being cloned
+
+        void visit(AstCell* nodep) override {
+            UINFO(10, "PinRelinkVisitor::visit " << nodep);
+            // Don't relink Pins of the AstCell as:
+            // 1. It's not possible to define module inside another module-like node, so the
+            //   situation this Visitor is fixing cannot occur
+            // 2. Recursive modules are handled elsewhere.
+            //
+            // Although, those pins may internally have pins that need relinking,
+            // so we `iterateChildren`
+            iterateChildren(nodep);
+        }
+
+        void relinkPins(const AstNode* const parentp, VNList<AstPin> list,
+                        bool relinkRoot = false) {
+            if (parentp && (relinkRoot || parentp != m_rootp) && parentp->clonep()) {
+                for (AstPin* const pinp : list) {
+                    UINFO(10, "[PinRelinkVisitor] Relinking: " << pinp);
+                    pinp->cloneRelinkGen();
+                }
+            }
+        }
+
+        void visit(AstClassRefDType* refp) override {
+            UINFO(10, "PinRelinkVisitor::visit " << refp << " parent=" << refp->classp());
+            relinkPins(refp->classp(), refp->paramspList());
+            iterateChildren(refp);
+        }
+
+        void visit(AstIfaceRefDType* refp) override {
+            UINFO(10, "PinRelinkVisitor::visit " << refp << " parent=" << refp->ifacep());
+            relinkPins(refp->ifacep(), refp->paramspList(), true);
+            iterateChildren(refp);
+        }
+
+        void visit(AstClassOrPackageRef* refp) override {
+            UINFO(10,
+                  "PinRelinkVisitor::visit " << refp << " parent=" << refp->classOrPackageNodep());
+            relinkPins(refp->classOrPackageNodep(), refp->paramspList());
+            iterateChildren(refp);
+        }
+
+        void visit(AstRefDType* refp) override {
+            UINFO(10, "PinRelinkVisitor::visit " << refp);
+            relinkPins(refp->classOrPackagep(), refp->paramspList());
+            iterateChildren(refp);
+        }
+
+        void visit(AstConfigUse* nodep) override {  // LCOV_EXCL_START
+            // For now this is impossible (as config with params is unsupported, but developer that
+            // will implement them, should stop here and think about this edge case
+            UINFO(10, "PinRelinkVisitor::visit " << nodep);
+            UASSERT_OBJ(!nodep->paramsp(), nodep,
+                        "Parametrized ConfigUse should be rejected by parser");
+        }  // LCOV_EXCL_STOP
+
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+        explicit PinRelinkVisitor(AstNodeModule* modp)
+            : m_rootp{modp} {
+            UINFO(10, "PinRelinkVisitor::apply root=" << modp);
+            iterate(modp);
+        }
+
+    public:
+        static void apply(AstNodeModule* modp) { PinRelinkVisitor{modp}; }
+    };
+
     // Return true on success, false on error
     bool deepCloneModule(AstNodeModule* srcModp, AstNode* ifErrorp, AstPin* paramsp,
                          const string& newname, const IfaceRefRefs& ifaceRefRefs) {
@@ -1035,11 +1105,10 @@ class ParamProcessor final {
             newModp = srcModp->cloneTree(false);
         }
         // AstPin normally retains links to external module formals across cloning. For a cloned
-        // interface, relink pins whose formals were cloned with the interface while clonep() is
-        // still valid, so nested parameterized classes use the cloned interface parameters.
-        if (AstIface* const newIfacep = VN_CAST(newModp, Iface)) {
-            newIfacep->foreach([](AstPin* pinp) { pinp->cloneRelinkGen(); });
-        }
+        // module nodes, relink parameter pins whose formals were cloned with that module node
+        // while clonep() is still valid, so nested parameterized classes link to original
+        // module node's parameter formals.
+        PinRelinkVisitor::apply(newModp);
 
         // Mark the source module as a parameterized template now that a specialized
         // clone exists.  This suppresses width/type errors on the unresolved template
@@ -4215,6 +4284,18 @@ public:
                     UINFO(9, "cleared link " << namep << " on " << nodep);
                 }
             });
+        });
+
+        netlistp->foreach([&](AstRefDType* refp) {
+            const AstClassOrPackageRef* const scopep
+                = VN_CAST(refp->classOrPackageOpp(), ClassOrPackageRef);
+            const AstNodeModule* const classp = scopep ? scopep->classOrPackageSkipp() : nullptr;
+            if (classp && classp->hasParameterList() && refp->paramsp()) {
+                refp->v3warn(E_UNSUPPORTED, "Unsupported: Deferred qualified type reference "
+                                            "during parameter specialization : "
+                                                << refp->prettyNameQ());
+                VL_DO_DANGLING(pushDeletep(refp->unlinkFrBack()), refp);
+            }
         });
     }
     ~ParamTop() = default;
