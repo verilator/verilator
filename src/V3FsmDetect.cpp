@@ -866,8 +866,8 @@ class FsmDetectVisitor final : public VNVisitorConst {
                 } else if (chain.compareVscp != reg.stateVscp()) {
                     continue;
                 }
-                AstNode* const warnNodep = FsmDetectVisitor::ifChainSupportedTransitionNode(
-                    chain /*ref*/, FsmDetectVisitor::ifChainAssignVscp(chain, reg.nextVscp()));
+                AstNode* const warnNodep
+                    = FsmDetectVisitor::ifChainSupportedTransitionNode(chain, reg.nextVscp());
                 if (!warnNodep) continue;
                 match.matchedp = &reg;
                 match.warnNodep = warnNodep;
@@ -1025,11 +1025,42 @@ class FsmDetectVisitor final : public VNVisitorConst {
         }
     }
 
+    // Skip what V3LiftExpr adds before 'state = tmp ? S1 : S2'
+    static AstNode* skipLeadingLiftedStmts(AstNode* stmtp) {
+        const AstAssign* const assp = VN_CAST(stmtp, Assign);
+        if (!assp) return stmtp;
+        const AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
+        if (!lhsp || !lhsp->varp()->isInternal()) return stmtp;
+        AstNode* nodep = assp->nextp();
+        while (const AstIf* const ifp = VN_CAST(nodep, If)) {
+            if (ifp->elsesp() || skipLeadingIgnorableStmt(ifp->thensp())) return stmtp;
+            nodep = nodep->nextp();
+        }
+        return nodep == assp->nextp() ? stmtp : nodep;
+    }
+
+    // The value V3LiftExpr last captured in temporary 'exprp', or 'exprp' itself
+    static AstNodeExpr* liftedValuep(AstNodeExpr* exprp, AstNode* stmtsp, const AstNode* limitp) {
+        const AstVarRef* const refp = VN_CAST(exprp, VarRef);
+        if (!refp || !refp->varp()->isInternal()) return exprp;
+        AstNodeExpr* valuep = exprp;
+        for (AstNode* nodep = stmtsp; nodep != limitp; nodep = nodep->nextp()) {
+            if (const AstIf* const ifp = VN_CAST(nodep, If)) {
+                AstNodeExpr* const thenValuep = liftedValuep(exprp, ifp->thensp(), nullptr);
+                if (thenValuep != exprp) valuep = thenValuep;
+            } else if (const AstAssign* const assp = VN_CAST(nodep, Assign)) {
+                const AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
+                if (lhsp && lhsp->varp() == refp->varp()) valuep = assp->rhsp();
+            }
+        }
+        return valuep;
+    }
+
     // Case-item bodies are single subtrees like if/else arms, not statement
     // lists, so unwrap only local begin/end wrappers here rather than walking
     // sibling case items via nextp().
     static AstNodeAssign* directStateAssign(AstNode* stmtp, AstVarScope* stateVscp) {
-        AstNode* const nodep = singleMeaningfulBranch(stmtp);
+        AstNode* const nodep = singleMeaningfulBranch(skipLeadingLiftedStmts(stmtp));
         if (!nodep) return nullptr;
         AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
         if (!assp) return nullptr;
@@ -1052,36 +1083,18 @@ class FsmDetectVisitor final : public VNVisitorConst {
 
     // Match 'state = reset ? CONST : next', an active high reset folded into the commit,
     // or active low 'state = reset_n ? next : CONST'.
-    // Branch coverage makes V3LiftExpr rewrite it as 'if (reset) tmp = CONST; else tmp =
-    // next; state = tmp;' on a temporary, so match that form too.
+    // Branch coverage makes V3LiftExpr capture 'reset' in a temporary first.
     static AstNodeAssign* condStateVarAssign(AstNode* stmtsp, AstVarScope*& stateVscp,
                                              AstVarScope*& fromVscp, AstNodeExpr*& condp,
                                              AstNodeExpr*& resetValuep, FsmStateValue& resetValue,
                                              bool& activeLow) {
-        AstNodeAssign* assp = VN_CAST(singleMeaningfulStmt(stmtsp), NodeAssign);
-        AstNodeExpr* nextp;
-        if (assp) {
-            AstCond* const rhsp = VN_CAST(assp->rhsp(), Cond);
-            if (!rhsp) return nullptr;
-            condp = rhsp->condp();
-            resetValuep = rhsp->thenp();
-            nextp = rhsp->elsep();
-        } else {
-            AstIf* const ifp = VN_CAST(stmtsp, If);
-            if (!ifp) return nullptr;
-            assp = VN_CAST(singleMeaningfulStmt(ifp->nextp()), NodeAssign);
-            AstVarRef* const tmpRefp = assp ? VN_CAST(assp->rhsp(), VarRef) : nullptr;
-            if (!tmpRefp || !tmpRefp->varp()->isTemp()) return nullptr;
-            // V3LiftExpr assigns its temporary in both arms; other passes' temporaries may not
-            AstNodeAssign* const thenAssp
-                = directStateAssign(singleMeaningfulStmt(ifp->thensp()), tmpRefp->varScopep());
-            AstNodeAssign* const elseAssp
-                = directStateAssign(singleMeaningfulStmt(ifp->elsesp()), tmpRefp->varScopep());
-            if (!thenAssp || !elseAssp) return nullptr;
-            condp = ifp->condp();
-            resetValuep = thenAssp->rhsp();
-            nextp = elseAssp->rhsp();
-        }
+        AstNodeAssign* const assp
+            = VN_CAST(singleMeaningfulStmt(skipLeadingLiftedStmts(stmtsp)), NodeAssign);
+        AstCond* const rhsp = assp ? VN_CAST(assp->rhsp(), Cond) : nullptr;
+        if (!rhsp) return nullptr;
+        condp = liftedValuep(rhsp->condp(), stmtsp, assp);
+        resetValuep = rhsp->thenp();
+        AstNodeExpr* nextp = rhsp->elsep();
         activeLow = !VN_IS(nextp, VarRef) && isSimpleResetCond(condp);
         if (activeLow) std::swap(resetValuep, nextp);
         AstVarRef* const lhsp = VN_CAST(assp->lhsp()->baseFromp(true), VarRef);
@@ -1251,7 +1264,15 @@ class FsmDetectVisitor final : public VNVisitorConst {
     static bool directStateCondConstAssign(AstNode* stmtp, AstVarScope* stateVscp,
                                            FsmStateValue& thenValue, FsmStateValue& elseValue) {
         AstNodeAssign* const assp = directStateAssign(stmtp, stateVscp);
-        return assp && condConstTargets(assp->rhsp(), thenValue, elseValue);
+        if (!assp) return false;
+        // V3Const folds 'c ? 1 : 0' into 'c', where V3LiftExpr captured 'c' first
+        const AstVarRef* const refp = VN_CAST(assp->rhsp(), VarRef);
+        if (refp && refp->varp()->isInternal()) {
+            thenValue = FsmStateValue{V3Number{assp, 1, 1}};
+            elseValue = FsmStateValue{V3Number{assp, 1, 0}};
+            return true;
+        }
+        return condConstTargets(assp->rhsp(), thenValue, elseValue);
     }
 
     static AstNode* caseItemSupportedArcNode(AstCaseItem* itemp, AstVarScope* stateVscp,
@@ -1292,17 +1313,6 @@ class FsmDetectVisitor final : public VNVisitorConst {
         if (branch.targetp) return branch.targetp;
         AstNodeAssign* const assp = directStateAssign(branch.stmtsp, assignVscp);
         return assp ? assp->rhsp() : nullptr;
-    }
-
-    // The variable an if-chain's branches assign.  Branch coverage makes V3LiftExpr rewrite
-    // 'next = c0 ? A : c1 ? B : C' as an if-chain on a temporary, followed by 'next = tmp'.
-    static AstVarScope* ifChainAssignVscp(const FsmIfChainCandidate& chain,
-                                          AstVarScope* nextVscp) {
-        if (!VN_IS(chain.stmtp, If)) return nextVscp;
-        AstNodeAssign* const assp
-            = directStateAssign(skipLeadingIgnorableStmt(chain.stmtp->nextp()), nextVscp);
-        AstVarRef* const tmpRefp = assp ? VN_CAST(assp->rhsp(), VarRef) : nullptr;
-        return tmpRefp && tmpRefp->varp()->isTemp() ? tmpRefp->varScopep() : nextVscp;
     }
 
     static AstNode* ifChainSupportedTransitionNode(const FsmIfChainCandidate& chain,
@@ -1505,7 +1515,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
             if (tailp && VN_IS(tailp->rhsp(), Cond)) {
                 FsmIfChainCandidate tailChain = chain;
                 std::unordered_set<string> tailSeenValues = seenValues;
-                if (collectCondBranches(tailp, aliases, tailChain /*ref*/,
+                if (collectCondBranches(curp->elsesp(), tailp, aliases, tailChain /*ref*/,
                                         tailSeenValues /*ref*/)) {
                     chain = std::move(tailChain);
                     break;
@@ -1520,24 +1530,25 @@ class FsmDetectVisitor final : public VNVisitorConst {
     // Without line coverage, V3Const folds an if/else-if chain of next-state
     // assignments into one assignment of nested conditionals.  Collect that as
     // the same chain, with each branch's value in place of its body.
-    static bool collectCondChain(AstNodeAssign* assp, const FsmAliasMap& aliases,
+    static bool collectCondChain(AstNode* stmtsp, AstNodeAssign* assp, const FsmAliasMap& aliases,
                                  FsmIfChainCandidate& chain) {
         chain.stmtp = assp;
         std::unordered_set<string> seenValues;
-        return collectCondBranches(assp, aliases, chain /*ref*/, seenValues /*ref*/)
+        return collectCondBranches(stmtsp, assp, aliases, chain /*ref*/, seenValues /*ref*/)
                && chain.branches.size() >= 2;
     }
 
     // Add a branch for each conditional in 'x = c0 ? A : c1 ? B : C'
-    static bool collectCondBranches(AstNodeAssign* assp, const FsmAliasMap& aliases,
-                                    FsmIfChainCandidate& chain,
+    static bool collectCondBranches(AstNode* stmtsp, AstNodeAssign* assp,
+                                    const FsmAliasMap& aliases, FsmIfChainCandidate& chain,
                                     std::unordered_set<string>& seenValues) {
         chain.foldedp = assp;
         for (AstCond* condp = VN_AS(assp->rhsp(), Cond); condp;
              condp = VN_CAST(condp->elsep(), Cond)) {
             FsmStateComparison cmp;
             bool hasGuard = false;
-            if (!resolveIfPredicate(condp->condp(), aliases, cmp, hasGuard)) return false;
+            AstNodeExpr* const predp = liftedValuep(condp->condp(), stmtsp, assp);
+            if (!resolveIfPredicate(predp, aliases, cmp, hasGuard)) return false;
             if (chain.compareVscp && chain.compareVscp != cmp.stateVscp) return false;
             if (!seenValues.insert(cmp.value.key()).second) return false;
             chain.compareVscp = cmp.stateVscp;
@@ -2170,7 +2181,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
             FsmIfChainCandidate chain;
             const FsmAliasMap aliases = localAliasesBefore(stmtsp, nodep);
             if (ifp ? !collectIfChain(ifp, aliases, chain)
-                    : !collectCondChain(assp, aliases, chain)) {
+                    : !collectCondChain(stmtsp, assp, aliases, chain)) {
                 continue;
             }
             const ComboAlwaysAnalyzer::ComboMatch match = analyzer.matchIfChain(stmtsp, chain);
@@ -2195,7 +2206,7 @@ class FsmDetectVisitor final : public VNVisitorConst {
                 }
                 firstCand.warnNodep = matchedWarnNodep;
                 firstCand.stateVscp = const_cast<AstVarScope*>(matchedp->stateVscp());
-                processIfChain(chain, ifChainAssignVscp(chain, matchedp->nextVscp()), *matchedp);
+                processIfChain(chain, matchedp->nextVscp(), *matchedp);
                 continue;
             }
             if (matchedp->stateVscp() != firstCand.stateVscp) {

@@ -737,6 +737,46 @@ module fsm_case_guarded_overwrite_bad (
   always_ff @(posedge clk) state_q <= state_d;
 endmodule
 
+module fsm_lifted_calls_bad (
+    input logic clk,
+    input logic sel
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2,
+    S3 = 2'd3
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+  logic [1:0] dbg;
+
+  function automatic logic [1:0] pick(input logic s);
+    return s ? 2'd1 : 2'd2;
+  endfunction
+
+  always_comb begin
+    state_d = state_q;
+    dbg = 2'd0;
+    case (state_q)
+      S0: begin
+        if (pick(sel) == 2'd1) dbg[1] = 1'b1;
+        state_d = S1;
+      end
+      S1: begin
+        dbg[0] = 1'b1;
+        state_d = S2;
+      end
+      S2: state_d = state_t'(pick(sel) - 2'd1);
+      S3: ;
+      default: state_d = S0;
+    endcase
+  end
+
+  always_ff @(posedge clk) state_q <= state_d;
+endmodule
+
 module t (
     input logic clk
 );
@@ -833,6 +873,10 @@ module t (
   fsm_case_guarded_overwrite_bad case_guarded_overwrite_u (
       .clk(clk),
       .start(start)
+  );
+  fsm_lifted_calls_bad lifted_calls_u (
+      .clk(clk),
+      .sel(start)
   );
 
   always @(posedge clk) begin

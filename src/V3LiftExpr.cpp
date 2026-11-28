@@ -44,13 +44,15 @@
 //    z = x && func(y)
 // is transformed into:
 //    __VleLogAnd_0 = x;
-//    if (__VleLogAnd_0) {
+//    if (__VleLogAnd_0 !== 1'b0) {
 //      __VleCall_0 = func(y);
-//      __VleLogAnd_0 = __VleCall_0;
+//      __VleLogAnd_0 = __VleLogAnd_0 & __VleCall_0;
 //    }
-//    z = __VleLogAnd_1;
+//    z = __VleLogAnd_0;
 // Similar patterns are used for AstLogOr, AstLogIf and AstCond to preserve
 // the short-circuiting semantics and side effects.
+// The guard is '!==' as an X/Z condition must evaluate both sides (IEEE
+// 1800-2023 11.4.7, 11.4.11). AstCond is kept for V3Tristate.
 //
 // Care must be taken for impure LValues as well. While, all LValue expressions
 // permitted by IEEE-1800 are themselves pure (except possibly for the non-lvalue
@@ -70,6 +72,9 @@
 // and non-addressable destinations (part-selects, members, array elements)
 // are written through a temporary that is written back after the call.
 // Calls in contexts that cannot be lifted are rejected.
+//
+// Temporaries are only live within their statement, so later statements of the
+// same procedure or function reuse them, except those of a statement with a fork.
 //
 //*************************************************************************
 
@@ -93,7 +98,6 @@ class LiftExprVisitor final : public VNVisitor {
     // NODE STATE
     // AstNodeStmt::user1()  -> bool. Statement already processed
     // AstVar::user1()       -> bool. Variable is a lifted temporary
-    // AstNodeExpr::user1p() -> AstVar*. Existing temporary variable usable for this expression
     const VNUser1InUse m_user1InUse;
 
     // STATE
@@ -104,6 +108,10 @@ class LiftExprVisitor final : public VNVisitor {
     // Expressions in some special locations need not, or should not be lifted
     AstNodeExpr* m_doNotLiftp = nullptr;
     size_t m_nTmps = 0;  // Sequence numbers for temporary variables
+    std::unordered_map<const AstNodeDType*, std::vector<AstVar*>> m_freeTmps;  // Free temporaries
+    std::vector<AstVar*> m_usedTmps;  // Temporaries used by the current statement
+    bool m_forked = false;  // Current statement contains a fork
+    bool m_staticInit = false;  // Under a function's static initializer
     // Statistics
     VDouble0 m_statLiftedExprs;
     VDouble0 m_statLiftedCalls;  // Statistic, calls lifted
@@ -121,10 +129,17 @@ class LiftExprVisitor final : public VNVisitor {
     // METHODS
     AstVar* newVar(const char* baseName, const AstNodeExpr* exprp,
                    const std::string& suffix = "") {
-        // Reuse existing temporary if available
-        if (exprp->user1p()) {
+        AstNodeDType* const dtypep = exprp->dtypep()->skipRefp();
+        // V3Task may use a static function call's temporary as its persistent result variable
+        const AstNodeFTaskRef* const callp = VN_CAST(exprp, NodeFTaskRef);
+        const bool reusable = !callp || callp->taskp()->lifetime().isAutomatic();
+        std::vector<AstVar*>& freeps = m_freeTmps[dtypep];
+        if (reusable && !freeps.empty()) {
             ++m_statTemporariesReused;
-            return VN_AS(exprp->user1p(), Var);
+            AstVar* const varp = freeps.back();
+            freeps.pop_back();
+            m_usedTmps.push_back(varp);
+            return varp;
         }
 
         // Need a separate name in functions vs modules, as module inlining
@@ -136,8 +151,7 @@ class LiftExprVisitor final : public VNVisitor {
 
         // Create variable
         ++m_statTemporariesCreated;
-        AstVar* const varp = new AstVar{exprp->fileline(), VVarType::MODULETEMP, name,
-                                        exprp->dtypep()->skipRefp()};
+        AstVar* const varp = new AstVar{exprp->fileline(), VVarType::MODULETEMP, name, dtypep};
         varp->isInternal(true);
         varp->noReset(true);
         varp->user1(1);  // Mark as lifted temporary so it can be reused
@@ -145,31 +159,86 @@ class LiftExprVisitor final : public VNVisitor {
         if (m_ftaskp) {
             varp->funcLocal(true);
             m_ftaskp->prependDeclsp(varp);
-            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            varp->lifetime(m_staticInit ? VLifetime::STATIC_EXPLICIT
+                                        : VLifetime::AUTOMATIC_EXPLICIT);
         } else {
             m_modp->prependStmtsp(varp);
             // 'automatic' on a variable inside a class actually means 'member'
             varp->lifetime(VN_IS(m_modp, Class) ? VLifetime::STATIC_EXPLICIT
                                                 : VLifetime::AUTOMATIC_EXPLICIT);
         }
+        if (reusable) m_usedTmps.push_back(varp);
         return varp;
     }
 
-    // If the expression is a reference to an existing temporary, return it, otherwise nullptr
-    AstVar* getExistingVar(AstNodeExpr* nodep) {
-        if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
-            if (refp->varp()->user1()) return refp->varp();
+    void iterateStmts(const VNList<AstNodeStmt>& stmtps) {
+        VL_RESTORER_CLEAR(m_freeTmps);
+        VL_RESTORER_CLEAR(m_usedTmps);
+        VL_RESTORER(m_forked);
+        iterateSequence(stmtps);
+    }
+    void iterateSequence(const VNList<AstNodeStmt>& stmtps) {
+        for (AstNodeStmt* const stmtp : stmtps) {
+            // V3Begin flattens these later
+            if (AstBegin* const beginp = VN_CAST(stmtp, Begin)) {
+                iterateSequence(beginp->stmtspList());
+                continue;
+            }
+            m_forked = false;
+            iterate(stmtp);
+            if (!m_forked) {
+                for (AstVar* const varp : m_usedTmps) m_freeTmps[varp->dtypep()].push_back(varp);
+            }
+            m_usedTmps.clear();
         }
-        return nullptr;
     }
 
-    // Unlink and assign given expression to temporary, unless the expression
-    // is a reference to the same temporary
-    AstAssign* assignIfDifferent(FileLine* flp, AstVar* varp, AstNodeExpr* nodep) {
-        if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
-            if (refp->varp() == varp) return nullptr;
+    // Also copies user variables, as side effects might change them
+    AstAssign* newTemporary(const char* baseName, AstNodeExpr* nodep) {
+        if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+            if (refp->varp()->user1()) return nullptr;
         }
-        return new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep->unlinkFrBack()};
+        FileLine* const flp = nodep->fileline();
+        AstVar* const varp = newVar(baseName, nodep);
+        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
+        return new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep};
+    }
+
+    AstIf* newGuard(AstVar* condVarp, bool skipValue, AstNodeStmt* stmtps) {
+        FileLine* const flp = stmtps->fileline();
+        AstIf* const ifp
+            = new AstIf{flp, new AstNeqCase{flp, new AstVarRef{flp, condVarp, VAccess::READ},
+                                            new AstConst{flp, AstConst::BitTrue{}, skipValue}}};
+        ifp->addThensp(stmtps);
+        return ifp;
+    }
+
+    void liftShortCircuit(AstNodeBiop* nodep, bool skipValue, const char* baseName,
+                          VDouble0& stat) {
+        iterate(nodep->lhsp());
+        AstNodeStmt* const rhsStmtps = lift(nodep->rhsp());
+        if (!rhsStmtps) return;
+
+        ++stat;
+        FileLine* const flp = nodep->fileline();
+        AstVar* const varp = newVar(baseName, nodep);
+        AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
+        if (VN_IS(nodep, LogIf)) lhsp = new AstLogNot{flp, lhsp};
+        addStmtps(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, lhsp});
+        // V3Width made the operands 1-bit, so '&' and '|' match '&&' and '||', X/Z included
+        AstNodeExpr* const refp = new AstVarRef{flp, varp, VAccess::READ};
+        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+        AstNodeExpr* valuep;
+        if (skipValue) {
+            valuep = new AstOr{flp, refp, rhsp};
+        } else {
+            valuep = new AstAnd{flp, refp, rhsp};
+        }
+        AstIf* const ifp = newGuard(varp, skipValue, rhsStmtps);
+        ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, valuep});
+        addStmtps(ifp);
+        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     void addStmtps(AstNodeStmt* stmtp) {
@@ -244,7 +313,12 @@ class LiftExprVisitor final : public VNVisitor {
         VL_RESTORER(m_nTmps);
         m_ftaskp = nodep;
         m_nTmps = 0;
-        iterateChildren(nodep);
+        iterateStmts(nodep->stmtspList());
+    }
+    void visit(AstNodeProcedure* nodep) override { iterateStmts(nodep->stmtspList()); }
+    void visit(AstAlways* nodep) override {
+        iterateAndNextNull(nodep->sentreep());
+        iterateStmts(nodep->stmtspList());
     }
     void visit(AstCaseItem* nodep) override {
         for (AstNode* const condp : nodep->condspList()) {
@@ -266,8 +340,15 @@ class LiftExprVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->stmtsp());
     }
     void visit(AstCell* nodep) override {
-        // No need to fix up port connections, V3Tristate called pinReconnectSimple,
-        // so all writes are to simple AstVars, assuming it did it right ...
+        // Inouts are reconnected by V3Tristate
+        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            AstNodeExpr* const exprp = VN_AS(pinp->exprp(), NodeExpr);
+            if (!exprp || pinp->modVarp()->isInout()) continue;
+            // Also pins with calls, which are lifted even when pure
+            if (exprp->isPure() && !exprp->exists([](const AstNodeFTaskRef*) { return true; }))
+                continue;
+            V3Inst::pinReconnectSimple(pinp, nodep, false);
+        }
     }
     void visit(AstAlias* nodep) override {}
     void visit(AstArg* nodep) override {
@@ -276,6 +357,16 @@ class LiftExprVisitor final : public VNVisitor {
     }
 
     // VISITORS - statements
+    void visit(AstFork* nodep) override {
+        m_forked = true;
+        visit(static_cast<AstNodeStmt*>(nodep));
+    }
+    void visit(AstInitialStaticStmt* nodep) override {
+        // V3Begin moves these out of functions, together with static variables
+        VL_RESTORER(m_staticInit);
+        m_staticInit = true;
+        iterateStmts(nodep->stmtspList());
+    }
     void visit(AstWait* nodep) override {
         if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_doNotLiftp);
@@ -401,121 +492,27 @@ class LiftExprVisitor final : public VNVisitor {
 
         // Lift from condition
         iterate(nodep->condp());
-
-        // Temporary variable to use for this expression
-        AstVar* varp = nullptr;
-
-        const bool sameType
-            = nodep->thenp()->dtypep()->skipRefp()->sameTree(nodep->elsep()->dtypep()->skipRefp());
-
-        // Lift from the Then branch
         AstNodeStmt* const thenStmtps = lift(nodep->thenp());
-        // If lifted the Then branch, we can reuse the temporary if same type
-        if (sameType) varp = getExistingVar(nodep->thenp());
-        if (varp) nodep->elsep()->user1p(varp);
-
-        // Lift from the Else branch
         AstNodeStmt* const elseStmtps = lift(nodep->elsep());
-        // If lifted the Else branch, we can reuse the temporary if same type
-        if (sameType && !varp) varp = getExistingVar(nodep->elsep());
-
-        // If nothing lifted, then nothing to do
         if (!thenStmtps && !elseStmtps) return;
 
-        // Otherwise convert to an AstIf with a temporary variable
         ++m_statLiftedConds;
-        FileLine* const flp = nodep->fileline();
-        if (!varp) varp = newVar("Cond", nodep);
-        // Create the AstIf
-        AstIf* const ifp = new AstIf{flp, nodep->condp()->unlinkFrBack()};
-        addStmtps(ifp);
-        ifp->addThensp(thenStmtps);
-        ifp->addThensp(assignIfDifferent(flp, varp, nodep->thenp()));
-        ifp->addElsesp(elseStmtps);
-        ifp->addElsesp(assignIfDifferent(flp, varp, nodep->elsep()));
-        // Replace the expression with a reference to the temporary variable
-        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        addStmtps(newTemporary("Cond", nodep->condp()));
+        AstVar* const condVarp = VN_AS(nodep->condp(), VarRef)->varp();
+        if (thenStmtps) addStmtps(newGuard(condVarp, false, thenStmtps));
+        if (elseStmtps) addStmtps(newGuard(condVarp, true, elseStmtps));
     }
     void visit(AstLogAnd* nodep) override {
         if (!m_lift) return;
-
-        // Lift from LHS
-        iterate(nodep->lhsp());
-
-        // Temporary variable to use for this expression
-        AstVar* varp = getExistingVar(nodep->lhsp());
-        // If lifted the LHS, we can reuse the temporary
-        if (varp) nodep->rhsp()->user1p(varp);
-
-        // Lift from RHS, if nothing lifted, then nothing to do
-        AstNodeStmt* const rhsStmtps = lift(nodep->rhsp());
-        if (!rhsStmtps) return;
-
-        // Otherwise convert to an AstIf with a temporary variable
-        ++m_statLiftedLogAnds;
-        FileLine* const flp = nodep->fileline();
-        if (!varp) varp = getExistingVar(nodep->rhsp());
-        if (!varp) varp = newVar("LogAnd", nodep);
-        addStmtps(assignIfDifferent(flp, varp, nodep->lhsp()));
-        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, varp, VAccess::READ}};
-        addStmtps(ifp);
-        ifp->addThensp(rhsStmtps);
-        ifp->addThensp(assignIfDifferent(flp, varp, nodep->rhsp()));
-        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        liftShortCircuit(nodep, false, "LogAnd", m_statLiftedLogAnds);
     }
     void visit(AstLogOr* nodep) override {
         if (!m_lift) return;
-
-        // Lift from LHS
-        iterate(nodep->lhsp());
-
-        // Temporary variable to use for this expression
-        AstVar* varp = getExistingVar(nodep->lhsp());
-        // If lifted the LHS, we can reuse the temporary
-        if (varp) nodep->rhsp()->user1p(varp);
-
-        // Lift from RHS, if nothing lifted, then nothing to do
-        AstNodeStmt* const rhsStmtps = lift(nodep->rhsp());
-        if (!rhsStmtps) return;
-
-        // Otherwise convert to an AstIf with a temporary variable
-        ++m_statLiftedLogOrs;
-        FileLine* const flp = nodep->fileline();
-        if (!varp) varp = getExistingVar(nodep->rhsp());
-        if (!varp) varp = newVar("LogOr", nodep);
-        addStmtps(assignIfDifferent(flp, varp, nodep->lhsp()));
-        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, varp, VAccess::READ}};
-        addStmtps(ifp);
-        ifp->addElsesp(rhsStmtps);
-        ifp->addElsesp(assignIfDifferent(flp, varp, nodep->rhsp()));
-        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        liftShortCircuit(nodep, true, "LogOr", m_statLiftedLogOrs);
     }
     void visit(AstLogIf* nodep) override {
         if (!m_lift) return;
-
-        // Lift from LHS
-        iterate(nodep->lhsp());
-
-        // Lift from RHS, if nothing lifted, then nothing to do
-        AstNodeStmt* const rhsStmtps = lift(nodep->rhsp());
-        if (!rhsStmtps) return;
-
-        // Otherwise convert to an AstIf with a temporary variable
-        ++m_statLiftedLogIfs;
-        FileLine* const flp = nodep->fileline();
-        AstVar* varp = getExistingVar(nodep->rhsp());
-        if (!varp) varp = newVar("LogIf", nodep);
-        addStmtps(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE},
-                                new AstLogNot{flp, nodep->lhsp()->unlinkFrBack()}});
-        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, varp, VAccess::READ}};
-        addStmtps(ifp);
-        ifp->addElsesp(rhsStmtps);
-        ifp->addElsesp(assignIfDifferent(flp, varp, nodep->rhsp()));
-        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        liftShortCircuit(nodep, true, "LogIf", m_statLiftedLogIfs);
     }
     void visit(AstExprStmt* nodep) override {
         if (!m_lift) return;
