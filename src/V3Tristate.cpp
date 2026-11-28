@@ -1418,6 +1418,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             } else if (nodep->strengthSpecp()) {
                 nodep->strengthSpecp()->unlinkFrBack()->deleteTree();
             }
+        } else if (AstVarRef* const varRefp = VN_CAST(nodep->lhsp()->baseFromp(true), VarRef)) {
+            if (varRefp->varp()->isWiredNet()) { m_assigns[varRefp->varp()].push_back(nodep); }
         } else if (nodep->strengthSpecp()) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Assignments with signal strength with LHS of type: "
@@ -1483,28 +1485,27 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (assigns.size() <= 1) continue;
             AstVar* const varp = varpAssigns.first;
             if (!varp->isWiredNet()) continue;
-            auto it = assigns.begin();
-            AstAssignW* const assignWp0 = *it;
-            FileLine* const fl = assignWp0->fileline();
-            AstNodeExpr* wExp = nullptr;
-            while (++it != assigns.end()) {
-                AstAssignW* assignWpip = *it;
-                if (!wExp) {
-                    wExp = newMergeExpr(assignWp0->rhsp()->cloneTreePure(false),
-                                        assignWpip->rhsp()->cloneTreePure(false), fl,
-                                        varp->isWor());
-                } else {
+            // Nested sameTree is O(n^2) in assigns to one net, not the design.
+            // Each compare is a small LHS; grouping by hash would add more code than it saves.
+            for (AstAssignW* const assignWp0 : assigns) {
+                if (!assignWp0) continue;
+                FileLine* const fl = assignWp0->fileline();
+                AstNodeExpr* wExp = nullptr;
+                for (AstAssignW*& assignWpip : assigns) {
+                    if (!assignWpip || assignWpip == assignWp0) continue;
+                    if (!assignWp0->lhsp()->sameTree(assignWpip->lhsp())) continue;
+                    if (!wExp) wExp = assignWp0->rhsp()->cloneTreePure(false);
                     wExp = newMergeExpr(wExp, assignWpip->rhsp()->cloneTreePure(false), fl,
                                         varp->isWor());
+                    VL_DO_CLEAR(assignWpip->unlinkFrBack()->deleteTree(), assignWpip = nullptr);
                 }
-                VL_DO_DANGLING((assignWpip->unlinkFrBack()->deleteTree()), assignWpip);
+                if (wExp) {
+                    AstNodeExpr* const oldRhsp = assignWp0->rhsp();
+                    oldRhsp->replaceWith(wExp);
+                    VL_DO_DANGLING(pushDeletep(oldRhsp), oldRhsp);
+                }
             }
-            AstVarRef* const wVarRefp = new AstVarRef{fl, varp, VAccess::WRITE};
-            AstAssignW* const wAssignp = new AstAssignW{fl, wVarRefp, wExp};
-            assignWp0->replaceWith(wAssignp);
-            VL_DO_DANGLING(pushDeletep(assignWp0), assignWp0);
-            assigns.clear();
-            assigns.push_back(wAssignp);
+            assigns.erase(std::remove(assigns.begin(), assigns.end(), nullptr), assigns.end());
         }
     }
 
@@ -1535,6 +1536,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         for (auto& varpAssigns : m_assigns) {
             Assigns& assigns = varpAssigns.second;
             if (assigns.size() <= 1) continue;
+            if (varpAssigns.first->isWiredNet()) continue;
             const AstAssignW* const strongest0p = getStrongestAssignmentOfValue(assigns, 0);
             const AstAssignW* const strongest1p = getStrongestAssignmentOfValue(assigns, 1);
             const AstAssignW* strongestp = nullptr;
@@ -1566,6 +1568,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         for (auto& varpAssigns : m_assigns) {
             Assigns& assigns = varpAssigns.second;
             if (assigns.size() <= 1) continue;
+            if (varpAssigns.first->isWiredNet()) continue;
             auto maxIt = std::max_element(
                 assigns.begin(), assigns.end(), [&](const AstAssignW* ap, const AstAssignW* bp) {
                     if (m_tgraph.isTristate(ap)) return !m_tgraph.isTristate(bp);
