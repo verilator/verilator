@@ -376,6 +376,13 @@ class PremitVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkNode(nodep);
     }
+    void visit(AstNodeCCall* nodep) override {
+        // Don't copy element arguments, as a ref parameter must bind to the stored element
+        for (AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
+            if (VN_IS(argp, NodeSel)) argp->user1(true);
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstCvtArrayToPacked* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);
